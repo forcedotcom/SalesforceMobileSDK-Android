@@ -38,37 +38,35 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.net.URI
 
 /**
  * Helper class used in SP app to get auth tokens and create user given auth code
  */
-internal class SPAuthCodeHelper private constructor(
+internal class SPAuthCodeHelper private constructor (
     val context: Context,
     val loginUrl: String,
     val code: String,
     private val codeVerifier: String,
-    val onResult: (result: Result) -> Unit
+    val onResult:(result:Result) -> Unit
 ) : OAuthWebviewHelperEvents {
     data class Result(
         val success: Boolean,
         val user: UserAccount? = null,
         val error: String? = null
     )
-
     companion object {
         private val TAG: String = SPAuthCodeHelper::class.java.simpleName
 
-        fun loginWithAuthCode(
-            context: Context,
-            loginUrl: String, code:
-            String, codeVerifier: String,
-            onResult: (Result) -> Unit
+        fun loginWithAuthCode(context:Context,
+                              loginUrl: String, code:
+                              String, codeVerifier: String,
+                              onResult: (Result) -> Unit
         ) {
             val spAuthCodeHelper = SPAuthCodeHelper(context, loginUrl, code, codeVerifier, onResult)
-            CoroutineScope(IO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 spAuthCodeHelper.loginWithAuthCode()
             }
         }
@@ -105,7 +103,7 @@ internal class SPAuthCodeHelper private constructor(
     }
 
     private fun loginWithAuthCode() {
-        CoroutineScope(IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 completeLogin(getTokenResponse())
             } catch (e: Exception) {

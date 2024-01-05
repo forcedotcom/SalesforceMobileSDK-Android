@@ -32,7 +32,7 @@ import androidx.work.ListenableWorker.Result.success
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.instance
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import org.json.JSONObject
 
@@ -67,7 +67,7 @@ internal class PushNotificationsRegistrationChangeWorker(
         } /* User account is optional where null specifies all accounts */
 
         // Instantiate push notifications registrar...
-        val pushNotificationsRegistrar = instance.pushServiceType.newInstance()
+        val pushNotificationsRegistrar = getInstance().pushServiceType.newInstance()
 
         // ...Determine scope of user accounts when...
         when (userAccount) {
@@ -75,8 +75,8 @@ internal class PushNotificationsRegistrationChangeWorker(
             // ...The input data didn't provide a user account...
             null ->
                 // ...Change push notification registration for all user accounts.
-                instance.userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
-                    pushNotificationsRegistrar?.performRegistrationChange(
+                getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
+                    pushNotificationsRegistrar.performRegistrationChange(
                         pushNotificationsRegistrationAction == Register,
                         nextUserAccount
                     )
@@ -85,7 +85,7 @@ internal class PushNotificationsRegistrationChangeWorker(
             // ...The input data provided a specific user account...
             else ->
                 // ...Change push notification registration for the specified user account.
-                pushNotificationsRegistrar?.performRegistrationChange(
+                pushNotificationsRegistrar.performRegistrationChange(
                     pushNotificationsRegistrationAction == Register,
                     userAccount
                 )

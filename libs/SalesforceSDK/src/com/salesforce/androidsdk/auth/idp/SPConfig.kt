@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.config.BootConfig
 /**
  * SP app configuration
  */
-data class SPConfig (
+data class SPConfig(
     val appPackageName: String,
     val componentName: String,
     val oauthClientId: String,
@@ -42,7 +42,7 @@ data class SPConfig (
     companion object {
         @JvmStatic
         fun forCurrentApp(): SPConfig {
-            val sdkMgr = SalesforceSDKManager.instance
+            val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {
                 SPConfig(
                     appPackageName = sdkMgr.appContext.packageName,
@@ -65,9 +65,7 @@ data class SPConfig (
         if (componentName != other.componentName) return false
         if (oauthClientId != other.oauthClientId) return false
         if (oauthCallbackUrl != other.oauthCallbackUrl) return false
-        if (!oauthScopes.contentEquals(other.oauthScopes)) return false
-
-        return true
+        return oauthScopes.contentEquals(other.oauthScopes)
     }
 
     override fun hashCode(): Int {

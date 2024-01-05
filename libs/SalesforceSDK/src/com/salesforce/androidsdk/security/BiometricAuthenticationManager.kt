@@ -46,12 +46,12 @@ internal class BiometricAuthenticationManager: AppLockManager(
     @get:JvmName("isLocked")
     override var locked = false
     private val currentUser: UserAccount?
-        get() { return SalesforceSDKManager.instance.userAccountManager.currentUser }
+        get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 
     override fun shouldLock(): Boolean {
         val elapsedTime = System.currentTimeMillis() - lastBackgroundTimestamp
-        val account = SalesforceSDKManager.instance.userAccountManager.currentAccount ?: return false
-        val userAccount = SalesforceSDKManager.instance.userAccountManager.buildUserAccount(account)
+        val account = SalesforceSDKManager.getInstance().userAccountManager.currentAccount ?: return false
+        val userAccount = SalesforceSDKManager.getInstance().userAccountManager.buildUserAccount(account)
         val (enabled, timeout) = getPolicy(userAccount)
 
         return enabled && (elapsedTime > timeout)
@@ -59,15 +59,15 @@ internal class BiometricAuthenticationManager: AppLockManager(
     override fun lock() {
         currentUser?.let {
             locked = true
-            val ctx = SalesforceSDKManager.instance.appContext
-            val options = SalesforceSDKManager.instance.getLoginOptions().asBundle()
-            val intent = Intent(ctx, SalesforceSDKManager.instance.loginActivityClass)
+            val ctx = SalesforceSDKManager.getInstance().appContext
+            val options = SalesforceSDKManager.getInstance().loginOptions?.asBundle()
+            val intent = Intent(ctx, SalesforceSDKManager.getInstance().loginActivityClass)
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-            options.putBoolean(SHOW_BIOMETRIC, true)
-            intent.putExtras(options)
+            options?.putBoolean(SHOW_BIOMETRIC, true)
+            options?.let { loginOptions -> intent.putExtras(loginOptions) }
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
         }

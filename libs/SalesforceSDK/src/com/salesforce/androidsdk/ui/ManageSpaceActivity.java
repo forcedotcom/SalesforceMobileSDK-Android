@@ -26,11 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import static com.salesforce.androidsdk.R.string.sf__manage_space_confirmation;
-import static com.salesforce.androidsdk.R.string.sf__manage_space_logout_no;
-import static com.salesforce.androidsdk.R.string.sf__manage_space_logout_yes;
-
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -70,21 +67,23 @@ public class ManageSpaceActivity extends AppCompatActivity {
 	 *
 	 * @return Manage space alert dialog.
 	 */
-	protected AlertDialog buildManageSpaceDialog() {
-		return new AlertDialog.Builder(this)
-				.setMessage(sf__manage_space_confirmation)
-				.setPositiveButton(
-						getString(sf__manage_space_logout_yes),
-						(dialog, which) ->
-								SalesforceSDKManager.getInstance().logout(
-										null,
-										ManageSpaceActivity.this,
-										false
-								)
-				).setNegativeButton(
-						getString(sf__manage_space_logout_no),
-						(dialog, which) ->
-								finish()
-				).create();
-	}
+    protected AlertDialog buildManageSpaceDialog() {
+        return new AlertDialog.Builder(this)
+        .setMessage(R.string.sf__manage_space_confirmation)
+        .setPositiveButton(getString(R.string.sf__manage_space_logout_yes),
+        new DialogInterface.OnClickListener() {
+
+        	@Override
+        	public void onClick(DialogInterface dialog, int which) {
+        		SalesforceSDKManager.getInstance().logout(ManageSpaceActivity.this, false);
+        	}
+        }).setNegativeButton(getString(R.string.sf__manage_space_logout_no),
+        new DialogInterface.OnClickListener() {
+
+        	@Override
+        	public void onClick(DialogInterface dialog, int which) {
+        		finish();
+        	}
+        }).create();
+    }
 }

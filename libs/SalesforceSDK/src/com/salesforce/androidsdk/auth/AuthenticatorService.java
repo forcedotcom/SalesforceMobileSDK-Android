@@ -193,7 +193,7 @@ public class AuthenticatorService extends Service {
             if (encCSRFToken != null) {
                 csrfToken = SalesforceSDKManager.decrypt(encCSRFToken, encryptionKey);
             }
-            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
+            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                 values = new HashMap<>();
@@ -345,7 +345,7 @@ public class AuthenticatorService extends Service {
 
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             final Bundle reply = new Bundle();
-            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().loginActivityClass);
+            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setPackage(context.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);

@@ -187,7 +187,7 @@ object MobileSyncLogger {
     private val logger: SalesforceLogger
         get() = SalesforceLogger.getLogger(
             COMPONENT_NAME,
-            SalesforceSDKManager.instance.appContext
+            SalesforceSDKManager.getInstance().appContext
         )
 
     private fun toString(obj: Any?): String {

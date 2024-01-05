@@ -52,10 +52,10 @@ public class RestExplorerApp extends Application {
 		 */
 		RestExplorerSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
 
-		/**
+		/*
 		 * Let's use the default browser for advanced authentication
 		 */
-		RestExplorerSDKManager.Companion.getInstance().customTabBrowser = null;
+		RestExplorerSDKManager.getInstance().setCustomTabBrowser(null);
 
 		/*
          * Uncomment the following line to enable IDP login flow. This will allow the user to
@@ -94,16 +94,20 @@ public class RestExplorerApp extends Application {
 		 * @param context Application context.
 		 * @param mainActivity Activity that should be launched after the login flow.
 		 */
-		public static void initNative(Context context, Class<? extends Activity> mainActivity) {
-			if (INSTANCE == null) {
-				INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
+		public static void initNative(@NonNull Context context,
+									  @NonNull Class<? extends Activity> mainActivity
+		) {
+			if (SalesforceSDKManager.INSTANCE == null) {
+				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
 			}
 			initInternal(context);
 		}
 
 		@NonNull
 		@Override
-		public Map<String, DevActionHandler> getDevActions(@NonNull Activity frontActivity) {
+		public Map<String, DevActionHandler> getDevActions(
+				@NonNull Activity frontActivity
+		) {
 			if (devActions == null) {
 				devActions = super.getDevActions(frontActivity);
 			}

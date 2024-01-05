@@ -90,7 +90,7 @@ public abstract class AbstractPrefsManager {
             sharedPrefPath = getFilenameRoot() + (isOrgLevel() ?
                     account.getOrgLevelFilenameSuffix() : account.getUserLevelFilenameSuffix());
         }
-        return SalesforceSDKManager.getInstance().appContext.getSharedPreferences(sharedPrefPath,
+        return SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(sharedPrefPath,
                 Context.MODE_PRIVATE);
     }
 
@@ -139,7 +139,7 @@ public abstract class AbstractPrefsManager {
      * Clears the stored prefs for all users.
      */
     public void resetAll() {
-        final String sharedPrefPath = SalesforceSDKManager.getInstance().appContext.getApplicationInfo().dataDir + "/shared_prefs";
+        final String sharedPrefPath = SalesforceSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir + "/shared_prefs";
         final File dir = new File(sharedPrefPath);
         final FilenameFilter fileFilter = new FilenameFilter() {
 
@@ -161,7 +161,7 @@ public abstract class AbstractPrefsManager {
                  * in memory for fast retrieval. If we don't explicitly remove it here,
                  * the next write to the same file will result in stale data being re-added.
                  */
-                final SharedPreferences sp = SalesforceSDKManager.getInstance().appContext.getSharedPreferences(filename,
+                final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(filename,
                         Context.MODE_PRIVATE);
                 sp.edit().clear().commit();
                 file.delete();

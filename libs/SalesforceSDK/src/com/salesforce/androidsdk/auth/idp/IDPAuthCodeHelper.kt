@@ -46,8 +46,7 @@ import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.URI
@@ -59,7 +58,7 @@ internal class IDPAuthCodeHelper private constructor(
     val webView: WebView,
     val userAccount: UserAccount,
     val spConfig: SPConfig,
-    val codeChallenge: String,
+    private val codeChallenge: String,
     val onResult:(result:Result) -> Unit
 ) {
     data class Result(
@@ -80,7 +79,7 @@ internal class IDPAuthCodeHelper private constructor(
      */
     private fun generateAuthCode() {
         SalesforceSDKLogger.d(TAG, "Generating oauth code")
-        CoroutineScope(IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             getValidAccessToken()?.let {accessToken ->
                 makeFrontDoorRequest(accessToken, webView)
             } ?: run {
@@ -96,7 +95,7 @@ internal class IDPAuthCodeHelper private constructor(
      */
     private fun buildRestClient(): RestClient? {
         SalesforceSDKLogger.d(TAG, "Building rest client")
-        val context = SalesforceSDKManager.instance.appContext
+        val context = SalesforceSDKManager.getInstance().appContext
         val bootConfig = BootConfig.getBootConfig(context)
         val idpCallbackUrl = bootConfig.oauthRedirectURI
         val idpClientId = bootConfig.remoteAccessConsumerKey
@@ -104,7 +103,7 @@ internal class IDPAuthCodeHelper private constructor(
         val loginOptions = ClientManager.LoginOptions(
             userAccount.loginServer, idpCallbackUrl, idpClientId, idpScopes
         )
-        val idpAccountType = SalesforceSDKManager.instance.accountType
+        val idpAccountType = SalesforceSDKManager.getInstance().accountType
         val clientManager = ClientManager(
             context, idpAccountType,
             loginOptions, false
@@ -140,10 +139,10 @@ internal class IDPAuthCodeHelper private constructor(
      * @param accessToken Valid access token.
      * @param webView WebView instance.
      */
-    fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
+    private fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
         SalesforceSDKLogger.d(TAG, "Making front door request")
-        val context = SalesforceSDKManager.instance.appContext
-        val useHybridAuthentication = SalesforceSDKManager.instance.useHybridAuthentication
+        val context = SalesforceSDKManager.getInstance().appContext
+        val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
         val frontdoorUrl = getFrontdoorUrl(
             getAuthorizationUrl(
                 true, // use web server flow
@@ -160,13 +159,13 @@ internal class IDPAuthCodeHelper private constructor(
             userAccount.instanceServer,
             null
         )
-        CoroutineScope(Main).launch {
+        CoroutineScope(Dispatchers.Main).launch {
             webView.loadUrl(frontdoorUrl.toString())
         }
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {
-        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: $error", exception)
+        SalesforceSDKLogger.e(TAG, "Auth code obtain failed: $error", exception)
         onResult(Result(success = false, error = error))
     }
 
@@ -182,19 +181,19 @@ internal class IDPAuthCodeHelper private constructor(
      */
     inner class IDPWebViewClient : WebViewClient() {
 
-        fun sanitizeUrl(url: String):String {
+        private fun sanitizeUrl(url: String):String {
             return url.replace("///", "/").lowercase()
         }
 
-        fun isOauthCallbackUrl(url: String):Boolean {
+        private fun isOauthCallbackUrl(url: String):Boolean {
             return sanitizeUrl(url).startsWith(sanitizeUrl(spConfig.oauthCallbackUrl))
         }
 
-        fun extractCode(uri: Uri):String? {
+        private fun extractCode(uri: Uri):String? {
             return UriFragmentParser.parse(uri)[CODE_KEY]
         }
 
-        fun hasUnauthorizedTokenError(uri: Uri): Boolean {
+        private fun hasUnauthorizedTokenError(uri: Uri): Boolean {
             /*
              * Currently there's no good way to recover from an invalid access token
              * loading a page through frontdoor. Until the server API returns an

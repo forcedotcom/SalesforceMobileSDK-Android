@@ -84,9 +84,9 @@ public class AuthConfigUtil {
         final Intent intent = new Intent(AUTH_CONFIG_COMPLETE_INTENT_ACTION);
         // Android 14 requires non-exported receiver to be invoked with explicit intents
         // See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
-        intent.setPackage(SalesforceSDKManager.getInstance().appContext.getPackageName());
+        intent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
         intent.putExtra(WAS_REQUEST_SUCCESSFUL_EXTRA, authConfig != null);
-        SalesforceSDKManager.getInstance().appContext.sendBroadcast(intent);
+        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
         return authConfig;
     }
 

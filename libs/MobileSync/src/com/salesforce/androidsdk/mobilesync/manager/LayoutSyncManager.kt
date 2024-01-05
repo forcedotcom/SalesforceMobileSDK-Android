@@ -307,7 +307,7 @@ class LayoutSyncManager private constructor(
                 store,
                 syncManager
             ).also { INSTANCES[uniqueId] = it }
-            SalesforceSDKManager.instance.registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_LAYOUT_SYNC)
             return instance
         }
 

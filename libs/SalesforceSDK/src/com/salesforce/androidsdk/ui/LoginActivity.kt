@@ -93,7 +93,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DE
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
-import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.instance
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
@@ -145,6 +145,8 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val salesforceSDKManager = SalesforceSDKManager.getInstance()
+
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
             KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
         )?.apply {
@@ -152,13 +154,13 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
 
         setTheme(
-            when (instance.isDarkTheme) {
+            when (salesforceSDKManager.isDarkTheme) {
                 true -> SalesforceSDK_Dark_Login
                 else -> SalesforceSDK
             }
         )
 
-        instance.setViewNavigationVisibility(this)
+        salesforceSDKManager.setViewNavigationVisibility(this)
 
         // Get login options from the intent's extras
         val loginOptions = fromBundleWithSafeLoginUrl(intent.extras)
@@ -170,15 +172,15 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         )
 
         // Fetch authentication configuration if required
-        instance.fetchAuthenticationConfiguration()
+        salesforceSDKManager.fetchAuthenticationConfiguration()
 
         // Setup content view
         setContentView(sf__login_layout)
-        if (instance.isIDPLoginFlowEnabled) {
+        if (salesforceSDKManager.isIDPLoginFlowEnabled) {
             findViewById<Button>(sf__idp_login_button).visibility = VISIBLE
         }
 
-        val biometricAuthenticationManager = (instance.biometricAuthenticationManager as? BiometricAuthenticationManager)
+        val biometricAuthenticationManager = (salesforceSDKManager.biometricAuthenticationManager as? BiometricAuthenticationManager)
         if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn()) {
             if (biometricAuthenticationManager.isNativeBiometricLoginButtonEnabled()) {
                 biometricAuthenticationButton = findViewById<Button>(sf__bio_login_button)?.apply {
@@ -386,7 +388,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     private fun handleBackBehavior() {
         // Do nothing if locked
-        if (instance.biometricAuthenticationManager?.locked == false) {
+        if (SalesforceSDKManager.getInstance().biometricAuthenticationManager?.locked == false) {
 
             /*
              * If there are no accounts signed in, the login screen needs to go
@@ -395,7 +397,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
              * should take the user back to the previous screen.
              */
             wasBackgrounded = true
-            when (instance.userAccountManager.authenticatedUsers) {
+            when (SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers) {
                 null -> moveTaskToBack(true)
                 else -> finish()
             }
@@ -461,7 +463,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * @param v IDP login button
      */
     fun onIDPLoginClick(@Suppress("UNUSED_PARAMETER") v: View?) {
-        instance.sPManager?.kickOffSPInitiatedLoginFlow(
+        SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
             this,
             SPStatusCallback()
         )
@@ -512,7 +514,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     override fun finish(userAccount: UserAccount?) {
         initAnalyticsManager(userAccount)
-        val userAccountManager = instance.userAccountManager
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
         val authenticatedUsers = userAccountManager.authenticatedUsers
         val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
         val userSwitchType = when {
@@ -605,7 +607,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
                 override fun onAuthenticationSucceeded(result: AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    (instance.biometricAuthenticationManager as? BiometricAuthenticationManager?)?.run {
+                    (SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager?)?.run {
                         locked = false
                     }
 
@@ -617,7 +619,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         )
 
     private fun doTokenRefresh(activity: LoginActivity) {
-        instance.clientManager.getRestClient(
+        SalesforceSDKManager.getInstance().clientManager.getRestClient(
             activity
         ) { client ->
             runCatching {
@@ -635,6 +637,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                 SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
                 else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
             }
+
     private val promptInfo: PromptInfo
         get() {
             var hasFaceUnlock = false
@@ -645,7 +648,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                     FEATURE_IRIS
                 )
             }
-            val subtitle = instance.userAccountManager.currentUser.username
+            val subtitle = SalesforceSDKManager.getInstance().userAccountManager.currentUser.username
 
             return PromptInfo.Builder()
                 .setTitle(resources.getString(sf__biometric_opt_in_title))

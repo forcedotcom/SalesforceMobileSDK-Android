@@ -155,6 +155,6 @@ public class SalesforceHybridLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().appContext);
+                SalesforceSDKManager.getInstance().getAppContext());
     }
 }

@@ -89,7 +89,6 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEven
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.instance
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
@@ -199,7 +198,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 javaScriptEnabled = true
                 userAgentString = format(
                     "%s %s",
-                    instance.userAgent,
+                    SalesforceSDKManager.getInstance().userAgent,
                     userAgentString ?: ""
                 )
             }
@@ -209,7 +208,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
         activity.setTheme(
             when {
-                instance.isDarkTheme -> SalesforceSDK_Dark_Login
+                SalesforceSDKManager.getInstance().isDarkTheme -> SalesforceSDK_Dark_Login
                 else -> SalesforceSDK
             }
         )
@@ -317,7 +316,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         errorDesc: String?,
         e: Throwable?
     ) {
-        val instance = instance
+        val instance = SalesforceSDKManager.getInstance()
 
         e(TAG, "$error: $errorDesc", e)
 
@@ -388,11 +387,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     }
 
     private fun doLoadPage() {
-        val instance = instance
+        val instance = SalesforceSDKManager.getInstance()
         runCatching {
             var uri = getAuthorizationUrl(
                 useWebServerAuthentication = instance.isBrowserLoginEnabled || instance.useWebServerAuthentication,
-                useHybridAuthentication = instance.useHybridAuthentication
+                useHybridAuthentication = instance.shouldUseHybridAuthentication()
             )
 
             callback.loadingLoginPage(loginOptions.loginUrl)
@@ -461,7 +460,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
          * - If getCustomTabBrowser() returns null
          * - Or if the specified browser is not installed
          */
-        val customTabBrowser = instance.customTabBrowser
+        val customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
         if (doesBrowserExist(customTabBrowser)) {
             customTabsIntent.intent.setPackage(customTabBrowser)
         }
@@ -559,7 +558,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     /** Override to customize the login url */
     protected val loginUrl: String?
-        get() = instance.loginServerManager?.selectedLoginServer?.url?.run {
+        get() = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.run {
             trim { it <= ' ' }
         }
 
@@ -604,7 +603,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             request: WebResourceRequest
         ): Boolean {
             val activity = activity
-            val instance = instance
+            val instance = SalesforceSDKManager.getInstance()
             val loginOptions = loginOptions
             val loginUrl = loginUrl
 
@@ -627,10 +626,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                     val serverManager = instance.loginServerManager
 
                     // Check if the URL is already in the server list
-                    when (val loginServer = serverManager?.getLoginServerFromURL(baseUrl)) {
+                    when (val loginServer = serverManager.getLoginServerFromURL(baseUrl)) {
                         null ->
                             // Add also sets as selected
-                            serverManager?.addCustomLoginServer("Custom Domain", baseUrl)
+                            serverManager.addCustomLoginServer("Custom Domain", baseUrl)
 
                         else ->
                             serverManager.selectedLoginServer = loginServer
@@ -707,7 +706,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
         @Suppress("MemberVisibilityCanBePrivate")
         fun onAuthConfigFetched() {
-            if (instance.isBrowserLoginEnabled) {
+            if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
                 // This load will trigger advanced auth and do all necessary setup
                 doLoadPage()
             }
@@ -854,7 +853,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         open fun onPostExecute(
             tr: TokenEndpointResponse?
         ) {
-            val instance = instance
+            val instance = SalesforceSDKManager.getInstance()
 
             // Failure cases
             if (shouldBlockSalesforceIntegrationUser) {
@@ -1018,7 +1017,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
             // Screen lock required by mobile policy
             if (id?.screenLockTimeout?.compareTo(0) == 1) {
-                SalesforceSDKManager.instance.registerUsedAppFeature(FEATURE_SCREEN_LOCK)
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
                 val timeoutInMills = (id?.screenLockTimeout ?: 0) * 1000 * 60
                 instance.screenLockManager?.storeMobilePolicy(
                     account,
@@ -1029,7 +1028,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
             // Biometric authorization required by mobile policy
             if (id?.biometricAuth == true) {
-                SalesforceSDKManager.instance.registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
                 val bioAuthManager = instance.biometricAuthenticationManager as BiometricAuthenticationManager?
                 val timeoutInMills = (id?.biometricAuthTimeout ?: 0) * 60 * 1000
                 bioAuthManager?.storeMobilePolicy(
@@ -1076,7 +1075,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 )
 
                 // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
-                shouldBlockSalesforceIntegrationUser = instance.shouldBlockSalesforceIntegrationUser && fetchIsSalesforceIntegrationUser(param)
+                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser && fetchIsSalesforceIntegrationUser(param)
             }.onFailure { throwable ->
                 backgroundException = throwable
             }
@@ -1113,9 +1112,9 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     protected fun addAccount(account: UserAccount?) {
         val clientManager = ClientManager(
             context,
-            instance.accountType,
+            SalesforceSDKManager.getInstance().accountType,
             loginOptions,
-            instance.shouldLogoutWhenTokenRevoked()
+            SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
         )
 
         // Create account name (shown in Settings -> Accounts & sync)
@@ -1159,12 +1158,12 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
          * to happen after the account has been added by client manager, so that
          * the push service has all the account info it needs.
          */
-        register(instance.appContext, account)
+        register(SalesforceSDKManager.getInstance().appContext, account)
 
         callback.onAccountAuthenticatorResult(extras)
 
         when {
-            instance.isTestRun -> logAddAccount(account)
+            SalesforceSDKManager.getInstance().isTestRun -> logAddAccount(account)
             else -> CoroutineScope(Default).launch {
                 logAddAccount(account)
             }
@@ -1181,7 +1180,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         runCatching {
             val users = UserAccountManager.getInstance().authenticatedUsers
             attributes.put("numUsers", users?.size ?: 0)
-            val servers = instance.loginServerManager?.loginServers
+            val servers = SalesforceSDKManager.getInstance().loginServerManager.loginServers
             attributes.put("numLoginServers", servers?.size ?: 0)
             servers?.let { serversUnwrapped ->
                 val serversJson = JSONArray()
@@ -1207,7 +1206,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         instanceServer: String?
     ) = String.format(
         "%s (%s) (%s)", username, instanceServer,
-        instance.applicationName
+        SalesforceSDKManager.getInstance().applicationName
     )
 
     /**
@@ -1265,7 +1264,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             bundle.putString(CSRF_TOKEN, csrfToken)
             bundle = MapUtil.addMapToBundle(
                 additionalOauthValues,
-                instance.additionalOauthKeys, bundle
+                SalesforceSDKManager.getInstance().additionalOauthKeys, bundle
             )
         }
 
@@ -1329,7 +1328,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             private fun getAdditionalOauthValues(options: Bundle) =
                 addBundleToMap(
                     options,
-                    instance.additionalOauthKeys,
+                    SalesforceSDKManager.getInstance().additionalOauthKeys,
                     null
                 )
         }

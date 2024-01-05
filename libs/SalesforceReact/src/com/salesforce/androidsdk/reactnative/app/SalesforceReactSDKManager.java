@@ -100,6 +100,7 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      * @param context Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+	 * @noinspection unused
      */
     public static void initReactNative(Context context, Class<? extends Activity> mainActivity,
                                        Class<? extends Activity> loginActivity) {
@@ -111,7 +112,8 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      *
      * @return Singleton instance of SalesforceReactSDKManager.
      */
-    public static SalesforceReactSDKManager getInstance() {
+    @NonNull
+	public static SalesforceReactSDKManager getInstance() {
     	if (INSTANCE != null) {
     		return (SalesforceReactSDKManager) INSTANCE;
     	} else {
@@ -131,10 +133,12 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 	 */
 	public ReactPackage getReactPackage() {
 		return new ReactPackage() {
+
 			@NonNull
-            @Override
+			@Override
 			public List<NativeModule> createNativeModules(
-					@NonNull ReactApplicationContext reactContext) {
+					@NonNull ReactApplicationContext reactContext
+			) {
 				List<NativeModule> modules = new ArrayList<>();
 				modules.add(new SalesforceOauthReactBridge(reactContext));
 				modules.add(new SalesforceNetReactBridge(reactContext));
@@ -143,13 +147,16 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 				return modules;
 			}
 
+			/** @noinspection unused*/
 			public List<Class<? extends JavaScriptModule>> createJSModules() {
 				return Collections.emptyList();
 			}
 
 			@NonNull
-            @Override
-			public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
+			@Override
+			public List<ViewManager> createViewManagers(
+					@NonNull ReactApplicationContext reactContext
+			) {
 				return Collections.emptyList();
 			}
 		};
@@ -157,11 +164,14 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 
 	@NonNull
 	@Override
-	protected Map<String, DevActionHandler> getDevActions(@NonNull final Activity frontActivity) {
+	protected Map<String, DevActionHandler> getDevActions(
+			@NonNull final Activity frontActivity
+	) {
 		Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
 		devActions.put(
 				"React Native Dev Support",
-				() -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog());
+				() -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog()
+		);
 
 		return devActions;
 	}

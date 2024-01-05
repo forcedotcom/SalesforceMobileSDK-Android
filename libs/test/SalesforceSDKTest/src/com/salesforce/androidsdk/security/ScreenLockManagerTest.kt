@@ -49,7 +49,7 @@ import org.junit.runner.RunWith
 class ScreenLockManagerTest {
     private lateinit var screenLockManager: ScreenLockManager
     private val userAccount = buildTestUserAccount()
-    private val ctx = SalesforceSDKManager.instance.appContext
+    private val ctx = SalesforceSDKManager.getInstance().appContext
     private val globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE)
     private val accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + userAccount.userLevelFilenameSuffix, Context.MODE_PRIVATE
@@ -178,7 +178,7 @@ class ScreenLockManagerTest {
             userAccount.lightningDomain, userAccount.lightningSid, userAccount.vfDomain, userAccount.vfSid, userAccount.contentDomain,
             userAccount.contentSid, userAccount.csrfToken
         )
-        val storedUser = SalesforceSDKManager.instance.userAccountManager.authenticatedUsers[0]
+        val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
         val storedUserPrefs = ctx.getSharedPreferences(
             (MOBILE_POLICY_PREF
                     + storedUser.userLevelFilenameSuffix), Context.MODE_PRIVATE

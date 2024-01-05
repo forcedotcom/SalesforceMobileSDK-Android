@@ -155,6 +155,6 @@ public class SalesforceSDKLogger {
 
     private static SalesforceLogger getLogger() {
         return SalesforceLogger.getLogger(COMPONENT_NAME,
-                SalesforceSDKManager.getInstance().appContext);
+                SalesforceSDKManager.getInstance().getAppContext());
     }
 }

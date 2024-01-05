@@ -74,16 +74,15 @@ public abstract class JSTestCase {
             Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().mainActivityClass.getName());
+            intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
             SalesforceDroidGapActivity activity = (SalesforceDroidGapActivity) instrumentation.startActivitySync(intent);
 
             // Block until the javascript has notified the container that it's ready
             TestRunnerPlugin.readyForTests.take();
 
-            // Now run all the tests and collect the resuts in testResults
+            // Now run all the tests and collect the results in testResults
             for (String testName : testNames) {
-                final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
-                        "navigator.testrunner.startTest('" + testName + "');";
+                final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" + "navigator.testrunner.startTest('" + testName + "');";
                 final CordovaWebView appView = activity.getCordovaWebView();
                 appView.getView().post(() -> appView.loadUrl(jsCmd));
                 SalesforceHybridLogger.i(TAG, "Running test: " + testName);
@@ -101,7 +100,8 @@ public abstract class JSTestCase {
                 SalesforceHybridLogger.i(TAG, "Finished running test: " + testName);
 
                 // Save result
-                testResults.get(jsSuite).put(testName, result);
+                final Map<String, TestResult> testResult = testResults.get(jsSuite);
+                if (testResult != null) testResult.put(testName, result);
             }
 
             // Cleanup
@@ -111,15 +111,19 @@ public abstract class JSTestCase {
     }
 
     /**
-     * Helper method: no longer actually run the javascript test, instead asserts based on saved results
+     * Helper method: No longer actually run the javascript test; Instead,
+     * asserts based on saved results.
      *
-     * @param jsSuite  The Javascript suite name
-     * @param testName the name of the test method in the test suite
+     * @param jsSuite  The test suite name
+     * @param testName The name of the test method in the test suite
      * @
      */
     protected void runTest(String jsSuite, String testName) {
-        TestResult result = testResults.get(jsSuite).get(testName);
-        Assert.assertNotNull("No test result", result);
-        Assert.assertTrue(result.testName + " " + result.message, result.success);
+        final Map<String, TestResult> testResult = testResults.get(jsSuite);
+        if (testResult != null) {
+            final TestResult result = testResult.get(testName);
+            Assert.assertNotNull("No test result", result);
+            Assert.assertTrue(result.testName + " " + result.message, result.success);
+        }
     }
 }

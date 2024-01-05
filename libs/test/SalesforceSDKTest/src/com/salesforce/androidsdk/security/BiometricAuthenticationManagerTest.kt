@@ -47,7 +47,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class BiometricAuthenticationManagerTest {
-    private val ctx = SalesforceSDKManager.instance.appContext
+    private val ctx = SalesforceSDKManager.getInstance().appContext
     private lateinit var bioAuthManager: BiometricAuthenticationManager
     private lateinit var userAccount: UserAccount
     private lateinit var accountPrefs: SharedPreferences
@@ -128,7 +128,7 @@ class BiometricAuthenticationManagerTest {
 
     @Test
     fun testCleanUp() {
-        val storedUser = SalesforceSDKManager.instance.userAccountManager.authenticatedUsers[0]
+        val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
         val storedUserPrefs = ctx.getSharedPreferences((BIO_AUTH_POLICY + storedUser.userLevelFilenameSuffix), Context.MODE_PRIVATE)
         bioAuthManager.storeMobilePolicy(storedUser, true, 60)
         bioAuthManager.cleanUp(storedUser)

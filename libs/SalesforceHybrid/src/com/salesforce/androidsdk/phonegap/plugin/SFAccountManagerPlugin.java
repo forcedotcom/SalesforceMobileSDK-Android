@@ -59,9 +59,11 @@ public class SFAccountManagerPlugin extends ForcePlugin {
     }
 
     @Override
-    protected boolean execute(String actionStr,
-                              JavaScriptPluginVersion jsVersion, JSONArray args,
-                              CallbackContext callbackContext) throws JSONException {
+    protected boolean execute(
+            String actionStr,
+            JavaScriptPluginVersion jsVersion,
+            JSONArray args,
+            CallbackContext callbackContext) throws JSONException {
         Action action;
         try {
             action = Action.valueOf(actionStr);
@@ -101,9 +103,9 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         final List<UserAccount> userAccounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
         final JSONArray accounts = new JSONArray();
         if (userAccounts != null && !userAccounts.isEmpty()) {
-            for (final UserAccount account : userAccounts) {
-                accounts.put(account.toJson());
-            }
+        	for (final UserAccount account : userAccounts) {
+        		accounts.put(account.toJson());
+        	}
         }
         callbackContext.success(accounts);
     }
@@ -118,7 +120,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         final UserAccount userAccount = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         JSONObject account = new JSONObject();
         if (userAccount != null) {
-            account = userAccount.toJson();
+        	account = userAccount.toJson();
         }
         callbackContext.success(account);
     }
@@ -126,17 +128,17 @@ public class SFAccountManagerPlugin extends ForcePlugin {
     /**
      * Native implementation for the 'logout' action.
      *
-     * @param args            Arguments passed in, namely the account to logout of.
+     * @param args Arguments passed in, namely the account to logout of.
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void logout(JSONArray args, CallbackContext callbackContext) {
         SalesforceHybridLogger.i(TAG, "logout called");
         UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         if (args != null && args.length() > 0) {
-            final JSONObject user = args.optJSONObject(0);
-            if (user != null) {
-                account = new UserAccount(user);
-            }
+        	final JSONObject user = args.optJSONObject(0);
+        	if (user != null) {
+        		account = new UserAccount(user);
+        	}
         }
         SalesforceSDKManager.getInstance().getUserAccountManager().signoutUser(account, cordova.getActivity());
         callbackContext.success();
@@ -145,7 +147,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
     /**
      * Native implementation for the 'switchToUser' action.
      *
-     * @param args            Arguments passed in, namely the account to switch to.
+     * @param args Arguments passed in, namely the account to switch to.
      * @param callbackContext Used when calling back into Javascript.
      */
     protected void switchToUser(JSONArray args, CallbackContext callbackContext) {
@@ -161,20 +163,20 @@ public class SFAccountManagerPlugin extends ForcePlugin {
          * made on which account to switch to.
          */
         if (args == null || args.length() == 0) {
-            if (userAccounts == null || userAccounts.size() == 1) {
-                SalesforceSDKManager.getInstance().getUserAccountManager().switchToNewUser();
-            } else {
-                final Intent i = new Intent(SalesforceSDKManager.getInstance().appContext,
-                        SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
-                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                SalesforceSDKManager.getInstance().appContext.startActivity(i);
-            }
+        	if (userAccounts == null || userAccounts.size() == 1) {
+        		SalesforceSDKManager.getInstance().getUserAccountManager().switchToNewUser();
+        	} else {
+        		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+        				SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+        		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        		SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
+        	}
         } else {
-            final JSONObject user = args.optJSONObject(0);
-            if (user != null) {
-                account = new UserAccount(user);
-            }
-            SalesforceSDKManager.getInstance().getUserAccountManager().switchToUser(account);
+        	final JSONObject user = args.optJSONObject(0);
+        	if (user != null) {
+        		account = new UserAccount(user);
+        	}
+    		SalesforceSDKManager.getInstance().getUserAccountManager().switchToUser(account);
         }
         callbackContext.success();
     }

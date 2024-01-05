@@ -76,7 +76,7 @@ open class PushService {
             register ->
                 onRegistered(
                     registrationId = getRegistrationId(
-                        SalesforceSDKManager.instance.appContext,
+                        SalesforceSDKManager.getInstance().appContext,
                         userAccount
                     ) ?: return,
                     account = userAccount
@@ -97,7 +97,7 @@ open class PushService {
             return
         }
 
-        val context = SalesforceSDKManager.instance.appContext
+        val context = SalesforceSDKManager.getInstance().appContext
 
         runCatching {
             when (val id = registerSFDCPushNotification(
@@ -138,7 +138,7 @@ open class PushService {
     }
 
     private fun onUnregistered(account: UserAccount) {
-        val context = SalesforceSDKManager.instance.appContext
+        val context = SalesforceSDKManager.getInstance().appContext
         val packageName = context.packageName
 
         runCatching {
@@ -188,7 +188,7 @@ open class PushService {
     ): RestResponse = restClient.sendSync(
         RestRequest.getRequestForCreate(
             ApiVersionStrings.getVersionNumber(
-                SalesforceSDKManager.instance.appContext
+                SalesforceSDKManager.getInstance().appContext
             ),
             MOBILE_PUSH_SERVICE_DEVICE,
             requestBodyJsonFields
@@ -221,7 +221,7 @@ open class PushService {
         account: UserAccount
     ): String? {
 
-        val sdkManager = SalesforceSDKManager.instance
+        val sdkManager = SalesforceSDKManager.getInstance()
         val accountManager = UserAccountManager.getInstance()
 
         runCatching {
@@ -317,7 +317,7 @@ open class PushService {
         return restClient.sendSync(
             RestRequest.getRequestForDelete(
                 ApiVersionStrings.getVersionNumber(
-                    SalesforceSDKManager.instance.appContext
+                    SalesforceSDKManager.getInstance().appContext
                 ),
                 MOBILE_PUSH_SERVICE_DEVICE,
                 registeredId
@@ -355,7 +355,7 @@ open class PushService {
 
     private fun getRestClient(
         account: UserAccount
-    ) = SalesforceSDKManager.instance.clientManager.let { clientManager ->
+    ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
 
         /*
          * The reason we can't directly call 'peekRestClient()' here is because
@@ -444,7 +444,7 @@ open class PushService {
             action: PushNotificationsRegistrationAction,
             delayMilliseconds: Long?
         ) {
-            val context = SalesforceSDKManager.instance.appContext
+            val context = SalesforceSDKManager.getInstance().appContext
             val workManager = WorkManager.getInstance(context)
             val userAccountJson = userAccount?.toJson()?.toString()
             val workData = Data.Builder().putString(

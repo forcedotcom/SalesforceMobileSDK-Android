@@ -107,7 +107,7 @@ public class ClientManager {
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
             final Intent i = new Intent(activityContext,
-                    SalesforceSDKManager.getInstance().loginActivityClass);
+                    SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setPackage(activityContext.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             if (options != null) {
@@ -250,7 +250,7 @@ public class ClientManager {
         if (encCSRFToken != null) {
             csrfToken = SalesforceSDKManager.decrypt(encCSRFToken, encryptionKey);
         }
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         Map<String, String> values = null;
         if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
             values = new HashMap<>();
@@ -411,7 +411,7 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_CONTENT_DOMAIN, SalesforceSDKManager.encrypt(contentDomain, encryptionKey));
         extras.putString(AuthenticatorService.KEY_CONTENT_SID, SalesforceSDKManager.encrypt(contentSid, encryptionKey));
         extras.putString(AuthenticatorService.KEY_CSRF_TOKEN, SalesforceSDKManager.encrypt(csrfToken, encryptionKey));
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
             for (final String key : additionalOauthKeys) {
                 final String value = additionalOauthValues.get(key);
@@ -602,7 +602,7 @@ public class ClientManager {
                         	if (Looper.myLooper() == null) {
                                 Looper.prepare();
                         	}
-                            SalesforceSDKManager.getInstance().logout(null);
+                            SalesforceSDKManager.getInstance().logout(null, false);
                         }
 
                         // Broadcasts an intent that the access token has been revoked.
@@ -617,8 +617,8 @@ public class ClientManager {
                         broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                         EventBuilderHelper.createAndStoreEvent("tokenRefresh", null, TAG, null);
                     }
-                    broadcastIntent.setPackage(SalesforceSDKManager.getInstance().appContext.getPackageName());
-                    SalesforceSDKManager.getInstance().appContext.sendBroadcast(broadcastIntent);
+                    broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
+                    SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
@@ -649,7 +649,7 @@ public class ClientManager {
 
         private Bundle refreshStaleToken(Account account) throws NetworkErrorException {
             final Bundle resBundle = new Bundle();
-            final Context context = SalesforceSDKManager.getInstance().appContext;
+            final Context context = SalesforceSDKManager.getInstance().getAppContext();
             final AccountManager mgr = AccountManager.get(context);
             final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
             final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
@@ -662,7 +662,7 @@ public class ClientManager {
             final String communityUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
                     AuthenticatorService.KEY_COMMUNITY_URL), encryptionKey);
 
-            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
+            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
             if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                 values = new HashMap<>();
@@ -749,7 +749,7 @@ public class ClientManager {
 
         private Bundle makeAuthIntentBundle(Context context) {
             final Bundle reply = new Bundle();
-            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().loginActivityClass);
+            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setPackage(context.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             reply.putParcelable(AccountManager.KEY_INTENT, i);

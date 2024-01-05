@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.mobilesync.app;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.mobilesync.R;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
@@ -95,6 +97,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * @param context       Application context.
      * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @noinspection unused
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
@@ -106,6 +109,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      *
      * @return Singleton instance of MobileSyncSDKManager.
      */
+    @NonNull
     public static MobileSyncSDKManager getInstance() {
         if (INSTANCE != null) {
             return (MobileSyncSDKManager) INSTANCE;
@@ -125,7 +129,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      */
     public void setupGlobalSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up global syncs using config found in res/raw/globalsyncs.json");
-        SyncsConfig config = new SyncsConfig(appContext, R.raw.globalsyncs);
+        SyncsConfig config = new SyncsConfig(context, R.raw.globalsyncs);
         if (config.hasSyncs()) {
             config.createSyncs(getGlobalSmartStore());
         }
@@ -136,7 +140,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      */
     public void setupUserSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up user syncs using config found in res/raw/usersyncs.json");
-        SyncsConfig config = new SyncsConfig(appContext, R.raw.usersyncs);
+        SyncsConfig config = new SyncsConfig(context, R.raw.usersyncs);
         if (config.hasSyncs()) {
             config.createSyncs(getSmartStore());
         }

@@ -183,12 +183,12 @@ public class SalesforceKeyGenerator {
     }
 
     private static String readFromSharedPrefs(String key) {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().appContext.getSharedPreferences(SHARED_PREF_FILE, 0);
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         return prefs.getString(getSharedPrefKey(key), null);
     }
 
     private synchronized static void storeInSharedPrefs(String key, String value) {
-        final SharedPreferences prefs = SalesforceSDKManager.getInstance().appContext.getSharedPreferences(SHARED_PREF_FILE, 0);
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         prefs.edit().putString(getSharedPrefKey(key), value).commit();
     }
 

@@ -235,7 +235,7 @@ class MetadataSyncManager private constructor(
             val instance = INSTANCES[uniqueId] ?: MetadataSyncManager(store, syncManager).also {
                 INSTANCES[uniqueId] = it
             }
-            SalesforceSDKManager.instance
+            SalesforceSDKManager.getInstance()
                 .registerUsedAppFeature(Features.FEATURE_METADATA_SYNC)
             return instance
         }

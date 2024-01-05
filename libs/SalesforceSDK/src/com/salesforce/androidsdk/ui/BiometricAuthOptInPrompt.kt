@@ -40,7 +40,7 @@ import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationMana
 
 internal class BiometricAuthOptInPrompt(private val bioAuthManager: BiometricAuthenticationManager): DialogFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val isDarkTheme = SalesforceSDKManager.instance.isDarkTheme
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
         val rootView = inflater.inflate(R.layout.sf__biometric_enrollment_prompt, container)
         rootView.context.setTheme(if (isDarkTheme) R.style.SalesforceSDK_AlertDialog_Dark else R.style.SalesforceSDK_AlertDialog)
         dialog?.setTitle(R.string.sf__biometric_opt_in_title)

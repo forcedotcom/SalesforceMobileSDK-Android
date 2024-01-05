@@ -39,7 +39,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  */
 class IDPReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKManager.instance.iDPManager?.onReceive(context, intent) ?: run {
+        SalesforceSDKManager.getInstance().idpManager?.onReceive(context, intent) ?: run {
             SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no idp manager to handle ${LogUtil.intentToString(intent)}")
         }
     }

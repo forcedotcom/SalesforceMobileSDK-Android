@@ -41,7 +41,7 @@ public class ApiVersionStrings {
     public static final String API_PREFIX = "/services/data/";
 
     public static String getBasePath() {
-        return API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().appContext);
+        return API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
     }
 
     public static String getBaseChatterPath() {

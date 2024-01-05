@@ -158,18 +158,16 @@ open class SalesforceSDKManager protected constructor(
 ) : LifecycleObserver {
 
     /** The Android context */
-    @JvmField
     val appContext: Context = context
 
     /** Login options associated with the app */
-    private var loginOptions: LoginOptions? = null
+    private var loginOptionsInternal: LoginOptions? = null
 
     /**
      * Returns the class for the main activity.
      *
      * @return The class for the main activity.
      */
-    @JvmField
     val mainActivityClass: Class<out Activity>
 
     /**
@@ -194,7 +192,6 @@ open class SalesforceSDKManager protected constructor(
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    @JvmField
     var loginActivityClass: Class<out Activity> = LoginActivity::class.java
 
     /** The class for the account switcher activity */
@@ -220,11 +217,7 @@ open class SalesforceSDKManager protected constructor(
         }.also { field = it }
 
     /** The Salesforce SDK manager's login server manager */
-    @get:Synchronized
-    var loginServerManager: LoginServerManager? = null
-        get() = field ?: LoginServerManager(appContext).also { field = it }
-        private set
-
+    val loginServerManager = LoginServerManager(appContext)
 
     /** Optionally enables features for automated testing.
      *
@@ -270,7 +263,7 @@ open class SalesforceSDKManager protected constructor(
     @Suppress("unused")
     @get:Synchronized
     @set:Synchronized
-    var pushServiceType: Class<out PushService?> = PushService::class.java
+    var pushServiceType: Class<out PushService> = PushService::class.java
 
     /** The unique device ID */
     @SuppressLint("HardwareIds")
@@ -283,7 +276,6 @@ open class SalesforceSDKManager protected constructor(
      * An additional list of OAuth keys to fetch and store from the token
      * endpoint
      */
-    @JvmField
     var additionalOauthKeys: List<String>? = null
 
     /**
@@ -316,10 +308,9 @@ open class SalesforceSDKManager protected constructor(
      *
      * Defaults to Chrome.
      */
-    @JvmField
     @get:Synchronized
     @set:Synchronized
-    var customTabBrowser = "com.android.chrome"
+    var customTabBrowser: String? = "com.android.chrome"
 
     /**
      * Optionally enables the web server flow for web view log on.  Defaults to
@@ -332,9 +323,8 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Optionally, enables the hybrid authentication flow.  Defaults to true
      */
-    @get:JvmName("shouldUseHybridAuthentication")
-    @set:Synchronized
-    var useHybridAuthentication = true
+    @Synchronized
+    fun shouldUseHybridAuthentication() = true
 
     /**
      * The regular expression pattern used to detect "Use Custom Domain" input
@@ -386,19 +376,19 @@ open class SalesforceSDKManager protected constructor(
      * The Salesforce SDK manager's admin settings manager. Only
      * defined if setAllowedSPApps() was called first
      */
-    var iDPManager: IDPManager? = null
+    var idpManager: IDPManager? = null
         private set
 
     /**
      * The Salesforce SDK manager's SP manager. Only defined if
      * setIdpAppPackageName() was called first
      */
-    var sPManager: SPManager? = null
+    var spManager: SPManager? = null
         private set
 
     /** Indicates if IDP login flow is enabled */
     val isIDPLoginFlowEnabled
-        get() = sPManager != null
+        get() = spManager != null
 
     /**
      * The available Mobile SDK style themes.
@@ -413,11 +403,26 @@ open class SalesforceSDKManager protected constructor(
     private var devActionsDialog: AlertDialog? = null
 
     /**
-     * Optionally, enables developer support features.  Defaults to
-     * BuildConfig.DEBUG
+     * The app specified option to enable developer support features, which
+     * overrides the default value from BuildConfig.DEBUG.
      */
-    var isDevSupportEnabled: Boolean? = null
-        get() = field ?: isDebugBuild
+    private var isDevSupportEnabledOverride: Boolean? = null
+
+    /**
+     * Indicates if developer support features are enabled.  Defaults to
+     * BuildConfig.DEBUG unless another value is specified.
+     * @return Boolean true enables developer support features; false otherwise
+     */
+    fun isDevSupportEnabled() = isDevSupportEnabledOverride ?: isDebugBuild
+
+    /**
+     * Sets if developer support features are enabled.
+     * @param value Boolean true enables developer support features; false
+     * otherwise
+     */
+    fun setIsDevSupportEnabled(value: Boolean) {
+        isDevSupportEnabledOverride = value
+    }
 
     /** Initializer */
     init {
@@ -460,12 +465,8 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
-    /**
-     * Returns the login options associated with the app.
-     *
-     * @return The login options
-     */
-    fun getLoginOptions() = getLoginOptions(null, null)
+    /** Login options associated with the app */
+    val loginOptions: LoginOptions get() = getLoginOptions(null, null)
 
     /**
      * Sets the login options associated with the app.
@@ -476,7 +477,7 @@ open class SalesforceSDKManager protected constructor(
     fun getLoginOptions(
         jwt: String?,
         url: String?
-    ) = loginOptions?.apply {
+    ) = loginOptionsInternal?.apply {
         this.jwt = jwt
         setUrl(url)
     } ?: getBootConfig(
@@ -497,7 +498,7 @@ open class SalesforceSDKManager protected constructor(
                 config.oauthScopes,
                 jwt
             )
-        }.also { loginOptions = it }
+        }.also { loginOptionsInternal = it }
     }
 
     /**
@@ -553,7 +554,7 @@ open class SalesforceSDKManager protected constructor(
 
     /** Indicates if this app is configured as an identity provider */
     private val isIdentityProvider
-        get() = iDPManager != null
+        get() = idpManager != null
 
     /**
      * Sets the IDP package name for this app.
@@ -562,7 +563,7 @@ open class SalesforceSDKManager protected constructor(
      */
     fun setIDPAppPackageName(idpAppPackageName: String?) {
         registerUsedAppFeature(FEATURE_APP_IS_SP)
-        sPManager = idpAppPackageName?.let { DefaultSPManager(it) }
+        spManager = idpAppPackageName?.let { DefaultSPManager(it) }
     }
 
     /**
@@ -573,7 +574,7 @@ open class SalesforceSDKManager protected constructor(
     @Suppress("unused")
     fun setAllowedSPApps(allowedSPApps: List<SPConfig>) {
         registerUsedAppFeature(FEATURE_APP_IS_IDP)
-        iDPManager = DefaultIDPManager(allowedSPApps)
+        idpManager = DefaultIDPManager(allowedSPApps)
     }
 
 
@@ -805,7 +806,23 @@ open class SalesforceSDKManager protected constructor(
      * Destroys the stored authentication credentials (removes the account)
      * and, if requested, restarts the app.
      *
-     * TODO: The activity instance should be required
+     * This overload uses a null user account.
+     *
+     * @param frontActivity The front activity
+     * @param showLoginPage If true, displays the login page after removing the
+     * account
+     */
+    fun logout(
+        /* Note: Kotlin's @JvmOverloads annotations does not generate this overload */
+        frontActivity: Activity?,
+        showLoginPage: Boolean = true
+    ) {
+        logout(null, frontActivity, showLoginPage)
+    }
+
+    /**
+     * Destroys the stored authentication credentials (removes the account)
+     * and, if requested, restarts the app.
      *
      * @param account The user account
      * @param frontActivity The front activity
@@ -1024,7 +1041,7 @@ open class SalesforceSDKManager protected constructor(
         ClientManager(
             appContext,
             accountType,
-            getLoginOptions(),
+            loginOptions,
             true
         )
     }
@@ -1051,7 +1068,7 @@ open class SalesforceSDKManager protected constructor(
      * features for and display the dialog
      */
     fun showDevSupportDialog(frontActivity: Activity?) {
-        if (isDevSupportEnabled != true || frontActivity == null) return
+        if (!isDevSupportEnabled() || frontActivity == null) return
 
         devActionsDialog?.dismiss()
 
@@ -1358,7 +1375,6 @@ open class SalesforceSDKManager protected constructor(
          * TODO: Remove the suppress lint annotation once the Android context is no longer retained.
          */
         @JvmField
-        @SuppressLint("StaticFieldLeak")
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
@@ -1399,8 +1415,7 @@ open class SalesforceSDKManager protected constructor(
         /** The instance of the SalesforceSDKManager to use for this process */
         @JvmStatic // This removes the `Companion` reference in in Java code
         @Suppress("NON_FINAL_MEMBER_IN_OBJECT") // This allows Java subtypes to override this property without an inspector warning
-        open val instance
-            get() = INSTANCE ?: throw RuntimeException("Apps must call SalesforceSDKManager.init() first.")
+        open fun getInstance() = INSTANCE ?: throw RuntimeException("Apps must call SalesforceSDKManager.init() first.")
 
         /**
          * Indicates if a Salesforce SDK manager instance is initialized.
@@ -1523,8 +1538,8 @@ open class SalesforceSDKManager protected constructor(
             }
 
             // Guards
-            val salesforceSDKManager = instance
-            if (salesforceSDKManager.isDevSupportEnabled != true || application == null || salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport != null || salesforceSDKManager.showDeveloperSupportBroadcastIntentReceiver != null)
+            val salesforceSDKManager = getInstance()
+            if (!salesforceSDKManager.isDevSupportEnabled() || application == null || salesforceSDKManager.activityLifecycleCallbacksForDeveloperSupport != null || salesforceSDKManager.showDeveloperSupportBroadcastIntentReceiver != null)
                 return
 
             /*
@@ -1625,7 +1640,7 @@ open class SalesforceSDKManager protected constructor(
         fun decrypt(
             data: String?,
             key: String?
-        ): String = Encryptor.decrypt(data, key)
+        ): String? = Encryptor.decrypt(data, key)
     }
 
     /**
@@ -1641,7 +1656,7 @@ open class SalesforceSDKManager protected constructor(
     ) = CoroutineScope(Main).launch {
         runCatching {
             withTimeout(5000L) {
-                val loginServer = loginServerManager?.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
+                val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
 
                 if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
                 ) {

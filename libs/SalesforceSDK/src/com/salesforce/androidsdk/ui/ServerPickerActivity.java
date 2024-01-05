@@ -73,8 +73,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Clears any custom URLs that may have been set.
      */
     private void clearCustomUrlSetting() {
-        loginServerManager.reset();
-        rebuildDisplay();
+    	loginServerManager.reset();
+    	rebuildDisplay();
         urlEditDialog = new CustomServerUrlEditor();
     }
 
@@ -90,16 +90,16 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
-        if (group != null) {
-            final SalesforceServerRadioButton rb = group.findViewById(checkedId);
-            if (rb != null) {
-                final String name = rb.getName();
-                final String url = rb.getUrl();
-                boolean isCustom = rb.isCustom();
-                loginServerManager.setSelectedLoginServer(new LoginServer(name,
-                        url, isCustom));
-            }
-        }
+    	if (group != null) {
+    		final SalesforceServerRadioButton rb = group.findViewById(checkedId);
+    		if (rb != null) {
+    			final String name = rb.getName();
+    			final String url = rb.getUrl();
+    			boolean isCustom = rb.isCustom();
+    			loginServerManager.setSelectedLoginServer(new LoginServer(name,
+    					url, isCustom));
+    		}
+    	}
     }
 
     @Override
@@ -128,7 +128,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    	super.onCreate(savedInstanceState);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
         // This makes the navigation bar visible on light themes.
@@ -165,8 +165,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onResume() {
-        super.onResume();
-        rebuildDisplay();
+    	super.onResume();
+    	rebuildDisplay();
     }
 
     @Override
@@ -234,16 +234,16 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Sets the radio state.
      *
      * @param radioGroup RadioGroup instance.
-     * @param server     Login server.
+     * @param server Login server.
      */
     private void setRadioState(RadioGroup radioGroup, LoginServer server) {
-        final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
-                server.name, server.url, server.isCustom);
+    	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
+    			server.name, server.url, server.isCustom);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
-        rb.setTextColor(textColor);
-        rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
-        radioGroup.addView(rb);
+    	rb.setTextColor(textColor);
+    	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
+    	radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
 

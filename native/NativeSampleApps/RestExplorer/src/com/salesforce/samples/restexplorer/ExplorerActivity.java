@@ -88,7 +88,7 @@ public class ExplorerActivity extends SalesforceActivity {
     private LogoutDialogFragment logoutConfirmationDialog;
 
 	// Use for objectId fields auto-complete.
-	private TreeSet<String> knownIds = new TreeSet<>();
+	private TreeSet<String> knownIds = new TreeSet<String>();
 
 	RestClient getClient() {
 		return client;
@@ -131,7 +131,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		resultText.setMovementMethod(new ScrollingMovementMethod());
         logoutConfirmationDialog = new LogoutDialogFragment();
 
-		((RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.Companion.getInstance())
+		((RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.getInstance())
 				.addDevAction(this, "Export Credentials to Clipboard", this::exportCredentials);
 	}
 
@@ -236,7 +236,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		final String objectType = ((EditText) findViewById(R.id.create_object_type_text))
 				.getText().toString();
 		final Map<String, Object> fields = parseFieldMap(R.id.create_fields_text);
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForCreate(apiVersion, objectType,
 					fields);
@@ -259,7 +259,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		final String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
 				.getText().toString();
 		final List<String> fieldList = parseCommaSeparatedList(R.id.retrieve_field_list_text);
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
                     objectId, fieldList);
@@ -282,7 +282,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		final String objectId = ((EditText) findViewById(R.id.update_object_id_text))
 				.getText().toString();
 		final Map<String, Object> fields = parseFieldMap(R.id.update_fields_text);
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpdate(apiVersion, objectType,
                     objectId, fields);
@@ -307,7 +307,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		final String externalId = ((EditText) findViewById(R.id.upsert_external_id_text))
 				.getText().toString();
 		final Map<String, Object> fields = parseFieldMap(R.id.upsert_fields_text);
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpsert(apiVersion, objectType,
                     externalIdField, externalId, fields);
@@ -341,7 +341,7 @@ public class ExplorerActivity extends SalesforceActivity {
 	public void onQueryClick(View v) {
 		final String soql = ((EditText) findViewById(R.id.query_soql_text)).getText()
 				.toString();
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForQuery(apiVersion, soql);
 		} catch (UnsupportedEncodingException e) {
@@ -360,7 +360,7 @@ public class ExplorerActivity extends SalesforceActivity {
 	public void onSearchClick(View v) {
 		final String sosl = ((EditText) findViewById(R.id.search_sosl_text))
 				.getText().toString();
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForSearch(apiVersion, sosl);
 		} catch (UnsupportedEncodingException e) {
@@ -377,7 +377,7 @@ public class ExplorerActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onManualRequestClick(View v) {
-		RestRequest request;
+		RestRequest request = null;
 		try {
 			final EditText editText = (EditText) findViewById(R.id.manual_request_path_text);
 			final String hintText = String.format(getResources().getString(R.string.path_hint),
@@ -411,7 +411,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onSearchResultLayoutClick(View v) {
-        RestRequest request;
+        RestRequest request = null;
         final List<String> objectList = parseCommaSeparatedList(R.id.search_result_layout_object_list_text);
         try {
             request = RestRequest.getRequestForSearchResultLayout(ApiVersionStrings.getVersionNumber(this), objectList);
@@ -429,7 +429,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onOwnedFilesListClick(View v) {
-        RestRequest request;
+        RestRequest request = null;
 		final String userId = ((EditText) findViewById(R.id.owned_files_list_user_id_text))
 				.getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.owned_files_list_page_text)).getText().toString();
@@ -450,7 +450,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onFilesInUsersGroupsClick(View v) {
-        RestRequest request;
+        RestRequest request = null;
         final String userId = ((EditText) findViewById(R.id.files_in_users_groups_user_or_group_id_text))
                 .getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.files_in_users_groups_page_text)).getText().toString();
@@ -471,7 +471,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onFilesSharedWithUserClick(View v) {
-        RestRequest request;
+        RestRequest request = null;
         final String userId = ((EditText) findViewById(R.id.files_shared_with_user_user_id_text))
                 .getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.files_shared_with_user_page_text)).getText().toString();
@@ -516,7 +516,7 @@ public class ExplorerActivity extends SalesforceActivity {
      * @param v View that was clicked.
      */
     public void onFileSharesClick(View v) {
-        RestRequest request;
+        RestRequest request = null;
         final String documentId = ((EditText) findViewById(R.id.file_shares_document_id_text))
                 .getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.file_shares_page_text)).getText().toString();
@@ -614,7 +614,7 @@ public class ExplorerActivity extends SalesforceActivity {
 		}
 		try {
 			JSONObject fieldsJson = new JSONObject(fieldsString);
-			Map<String, Object> fields = new HashMap<>();
+			Map<String, Object> fields = new HashMap<String, Object>();
 			JSONArray names = fieldsJson.names();
 			for (int i = 0; i < names.length(); i++) {
 				String name = (String) names.get(i);
@@ -663,28 +663,34 @@ public class ExplorerActivity extends SalesforceActivity {
 			@Override
 			public void onSuccess(RestRequest request, final RestResponse result) {
                 result.consumeQuietly(); // consume before going back to main thread
-				runOnUiThread(() -> {
-					try {
-						long duration = System.nanoTime() - start;
-						println(result);
-						int size = result.asString().length();
-						int statusCode = result.getStatusCode();
-						printRequestInfo(duration, size, statusCode);
-						extractIdsFromResponse(result.asString());
-					} catch (Exception e) {
-						printException(e);
-					}
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            long duration = System.nanoTime() - start;
+                            println(result);
+                            int size = result.asString().length();
+                            int statusCode = result.getStatusCode();
+                            printRequestInfo(duration, size, statusCode);
+                            extractIdsFromResponse(result.asString());
+                        } catch (Exception e) {
+                            printException(e);
+                        }
 
-					EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-				});
+                        EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+                    }
+                });
 			}
 
 			@Override
 			public void onError(final Exception exception) {
-				runOnUiThread(() -> {
-					printException(exception);
-					EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-				});
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        printException(exception);
+                        EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+                    }
+                });
 			}
 		});
 	}
@@ -764,7 +770,7 @@ public class ExplorerActivity extends SalesforceActivity {
 	private void exportCredentials() {
 		BootConfig config = BootConfig.getBootConfig(this);
 		UserAccount user = UserAccountManager.getInstance().getCurrentUser();
-		HashMap<String, String> credsMap = new HashMap<>();
+		HashMap<String, String> credsMap = new HashMap<String, String>();
 		credsMap.put("test_client_id", config.getRemoteAccessConsumerKey());
 		credsMap.put("test_login_domain", user.getLoginServer());
 		credsMap.put("test_redirect_uri", config.getOauthRedirectURI());
@@ -812,7 +818,7 @@ public class ExplorerActivity extends SalesforceActivity {
 
 	private void extractIdsFromResponse(String responseString) {
 		Matcher matcher = idPattern.matcher(responseString);
-		List<String> ids = new ArrayList<>();
+		List<String> ids = new ArrayList<String>();
 		while (matcher.find()) {
 			ids.add(matcher.group());
 		}
@@ -824,9 +830,9 @@ public class ExplorerActivity extends SalesforceActivity {
 	private void fixAutoCompleteFields(int... fieldIds) {
 		for (int fieldId : fieldIds) {
 			AutoCompleteTextView tv = (AutoCompleteTextView) findViewById(fieldId);
-			tv.setAdapter(new ArrayAdapter<>(this,
+			tv.setAdapter(new ArrayAdapter<String>(this,
 					android.R.layout.simple_dropdown_item_1line, knownIds
-					.toArray(new String[]{})));
+							.toArray(new String[] {})));
 		}
 	}
 }

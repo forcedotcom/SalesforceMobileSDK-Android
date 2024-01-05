@@ -26,13 +26,12 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
-
 import android.app.Activity;
 import android.content.IntentFilter;
 import android.view.KeyEvent;
 
 import androidx.core.content.ContextCompat;
+import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -85,19 +84,23 @@ public class SalesforceActivityDelegate {
 
             // Gets a rest client.
             new ClientManager(
-                    SalesforceSDKManager.getInstance().appContext,
+                    SalesforceSDKManager.getInstance().getAppContext(),
                     accountType,
                     loginOptions,
                     SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
-            ).getRestClient(activity, client -> {
-                if (client == null) {
-                    SalesforceSDKManager.getInstance().logout(activity);
-                    return;
-                }
-                ((SalesforceActivityInterface) activity).onResume(client);
+            ).getRestClient(activity, new ClientManager.RestClientCallback() {
 
-                // Lets observers know that rendition is complete.
-                EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
+                @Override
+                public void authenticatedRestClient(RestClient client) {
+                    if (client == null) {
+                        SalesforceSDKManager.getInstance().logout(activity);
+                        return;
+                    }
+                    ((SalesforceActivityInterface) activity).onResume(client);
+
+                    // Lets observers know that rendition is complete.
+                    EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
+                }
             });
         }
         else {

@@ -59,7 +59,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
         globalSyncs("globalsyncs.json"),
         userSyncs("usersyncs.json");
 
-        String path;
+        final String path;
 
         ConfigAssetPath(String fileName) {
             path = "www" + System.getProperty("file.separator") + fileName;
@@ -110,6 +110,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      *
      * @param context Application context.
      * @param loginActivity Login activity.
+     * @noinspection unused
      */
     public static void initHybrid(Context context, Class<? extends Activity> loginActivity) {
         SalesforceHybridSDKManager.init(context, SalesforceDroidGapActivity.class,
@@ -135,6 +136,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      *
      * @return Singleton instance of SalesforceHybridSDKManager.
      */
+    @NonNull
     public static SalesforceHybridSDKManager getInstance() {
     	if (INSTANCE != null) {
     		return (SalesforceHybridSDKManager) INSTANCE;
@@ -146,7 +148,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	@NonNull
     @Override
 	public final String getUserAgent(@NonNull String qualifier) {
-		final BootConfig config = BootConfig.getBootConfig(appContext);
+		final BootConfig config = BootConfig.getBootConfig(context);
 		if (config.isLocal()) {
 			qualifier = qualifier + "Local";
 		} else {
@@ -170,7 +172,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	 */
 	public void setupGlobalStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up global store using config found in " + ConfigAssetPath.globalStore.path);
-        StoreConfig config = new StoreConfig(appContext, ConfigAssetPath.globalStore.path);
+        StoreConfig config = new StoreConfig(context, ConfigAssetPath.globalStore.path);
         if (config.hasSoups()) {
             config.registerSoups(getGlobalSmartStore());
         }
@@ -181,7 +183,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	 */
 	public void setupUserStoreFromDefaultConfig() {
         SmartStoreLogger.d(TAG, "Setting up user store using config found in " + ConfigAssetPath.userStore.path);
-        StoreConfig config = new StoreConfig(appContext, ConfigAssetPath.userStore.path);
+        StoreConfig config = new StoreConfig(context, ConfigAssetPath.userStore.path);
         if (config.hasSoups()) {
             config.registerSoups(getSmartStore());
         }
@@ -192,7 +194,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      */
     public void setupGlobalSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.globalSyncs.path);
-        SyncsConfig config = new SyncsConfig(appContext, ConfigAssetPath.globalSyncs.path);
+        SyncsConfig config = new SyncsConfig(context, ConfigAssetPath.globalSyncs.path);
         if (config.hasSyncs()) {
             config.createSyncs(getGlobalSmartStore());
         }
@@ -203,7 +205,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      */
     public void setupUserSyncsFromDefaultConfig() {
         MobileSyncLogger.d(TAG, "Setting up global syncs using config found in " + ConfigAssetPath.userSyncs.path);
-        SyncsConfig config = new SyncsConfig(appContext, ConfigAssetPath.userSyncs.path);
+        SyncsConfig config = new SyncsConfig(context, ConfigAssetPath.userSyncs.path);
         if (config.hasSyncs()) {
             config.createSyncs(getSmartStore());
         }

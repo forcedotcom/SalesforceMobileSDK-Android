@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  */
 class SPReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        SalesforceSDKManager.instance.sPManager?.onReceive(context, intent) ?: run {
+        SalesforceSDKManager.getInstance().spManager?.onReceive(context, intent) ?: run {
             SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no sp manager to handle ${LogUtil.intentToString(intent)}")
         }
     }

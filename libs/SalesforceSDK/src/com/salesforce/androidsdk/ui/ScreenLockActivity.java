@@ -127,10 +127,10 @@ public class ScreenLockActivity extends FragmentActivity {
         }
     }
 
-    @Override
     @SuppressLint("MissingSuperCall")
+    @Override
     public void onBackPressed() {
-        // Purposefully blank
+        // purposefully blank
     }
 
     private void presentAuth() {
@@ -244,7 +244,7 @@ public class ScreenLockActivity extends FragmentActivity {
     private void logoutScreenLockUsers() {
         final UserAccountManager manager = SalesforceSDKManager.getInstance().getUserAccountManager();
         final List<UserAccount> accounts = manager.getAuthenticatedUsers();
-        Context ctx = SalesforceSDKManager.getInstance().appContext;
+        Context ctx = SalesforceSDKManager.getInstance().getAppContext();
 
         if (accounts != null) {
             for (UserAccount account : accounts) {

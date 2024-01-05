@@ -124,7 +124,7 @@ public class UserAccountManager {
 	 * Protected constructor.
 	 */
 	protected UserAccountManager() {
-		context = SalesforceSDKManager.getInstance().appContext;
+		context = SalesforceSDKManager.getInstance().getAppContext();
 		accountManager = AccountManager.get(context);
 		accountType = SalesforceSDKManager.getInstance().getAccountType();
 	}
@@ -379,7 +379,7 @@ public class UserAccountManager {
 	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
 	 */
 	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage) {
-		SalesforceSDKManager.getInstance().logout(null, frontActivity, showLoginPage);
+		SalesforceSDKManager.getInstance().logout(frontActivity, showLoginPage);
 	}
 
 	/**
@@ -450,7 +450,7 @@ public class UserAccountManager {
 			thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl, encryptionKey);
 		}
         Map<String, String> additionalOauthValues = null;
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().additionalOauthKeys;
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
             additionalOauthValues = new HashMap<>();
             for (final String key : additionalOauthKeys) {
@@ -568,10 +568,10 @@ public class UserAccountManager {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
 		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);
-		if (extras != null) {
-			intent.putExtras(extras);
-		}
-		SalesforceSDKManager.getInstance().appContext.sendBroadcast(intent);
+        if (extras != null) {
+            intent.putExtras(extras);
+        }
+		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 
     /**
@@ -622,7 +622,7 @@ public class UserAccountManager {
 
 	private void switchToNewUserWithOptions(Bundle options) {
 		final Bundle reply = new Bundle();
-		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().loginActivityClass);
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
 		i.putExtras(options);
