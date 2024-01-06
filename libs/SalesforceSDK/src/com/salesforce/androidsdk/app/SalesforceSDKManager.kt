@@ -348,7 +348,7 @@ open class SalesforceSDKManager protected constructor(
      * persistent across instances of Salesforce SDK Manager
      */
     @set:Synchronized
-    private var theme = SYSTEM_DEFAULT
+    var theme = SYSTEM_DEFAULT
 
     /**
      * The app name to use in [.getUserAgent]. This string must only contain
