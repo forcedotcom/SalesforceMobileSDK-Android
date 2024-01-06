@@ -81,7 +81,7 @@ public class EventBuilderHelper {
         // Do nothing if not enabled
         if (!enabled)
             return;
-
+        
         // don't run on background if this is a test run
         if (SalesforceSDKManager.getInstance().getIsTestRun()) {
             createAndStore(name, userAccount, className, attributes);

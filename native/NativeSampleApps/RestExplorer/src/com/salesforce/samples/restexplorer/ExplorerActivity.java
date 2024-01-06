@@ -155,9 +155,9 @@ public class ExplorerActivity extends SalesforceActivity {
 	}
 
 	/**************************************************************************************************
-	 *
+	 * 
 	 * Buttons click handlers
-	 *
+	 * 
 	 **************************************************************************************************/
 
 	/**
@@ -681,7 +681,7 @@ public class ExplorerActivity extends SalesforceActivity {
                     }
                 });
 			}
-
+			
 			@Override
 			public void onError(final Exception exception) {
                 runOnUiThread(new Runnable() {
@@ -704,9 +704,9 @@ public class ExplorerActivity extends SalesforceActivity {
 	}
 
 	/**************************************************************************************************
-	 *
+	 * 
 	 * Pretty printing helpers
-	 *
+	 * 
 	 **************************************************************************************************/
 
 	private void printRequestInfo(long nanoDuration, int characterLength, int statusCode) {
