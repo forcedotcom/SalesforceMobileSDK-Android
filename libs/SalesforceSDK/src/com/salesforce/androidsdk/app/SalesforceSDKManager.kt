@@ -217,7 +217,9 @@ open class SalesforceSDKManager protected constructor(
         }.also { field = it }
 
     /** The Salesforce SDK manager's login server manager */
-    val loginServerManager = LoginServerManager(appContext)
+    val loginServerManager by lazy {
+        LoginServerManager(appContext)
+    }
 
     /** Optionally enables features for automated testing.
      *
@@ -514,7 +516,9 @@ open class SalesforceSDKManager protected constructor(
     fun shouldLogoutWhenTokenRevoked() = true
 
     /** The Salesforce SDK manager's user account manager */
-    val userAccountManager: UserAccountManager by lazy { UserAccountManager.getInstance() }
+    val userAccountManager: UserAccountManager by lazy {
+        UserAccountManager.getInstance()
+    }
 
     /**
      * Sets authentication ability for Salesforce integration users.  When true,
