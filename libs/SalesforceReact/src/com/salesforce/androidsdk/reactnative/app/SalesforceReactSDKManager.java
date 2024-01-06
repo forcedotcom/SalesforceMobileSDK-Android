@@ -56,36 +56,36 @@ import java.util.Map;
  */
 public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 
-	/**
-	 * Protected constructor.
-	 *
-	 * @param context Application context.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-	 */
-	protected SalesforceReactSDKManager(Context context, Class<? extends Activity> mainActivity,
+    /**
+     * Protected constructor.
+     *
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected SalesforceReactSDKManager(Context context, Class<? extends Activity> mainActivity,
                                         Class<? extends Activity> loginActivity) {
-		super(context, mainActivity, loginActivity);
-	}
+        super(context, mainActivity, loginActivity);
+    }
 
-	private static void init(Context context, Class<? extends Activity> mainActivity,
-							 Class<? extends Activity> loginActivity) {
-		if (INSTANCE == null) {
-    		INSTANCE = new SalesforceReactSDKManager(context, mainActivity, loginActivity);
-    	}
+    private static void init(Context context, Class<? extends Activity> mainActivity,
+                             Class<? extends Activity> loginActivity) {
+        if (INSTANCE == null) {
+            INSTANCE = new SalesforceReactSDKManager(context, mainActivity, loginActivity);
+        }
 
-		// Upgrade to the latest version.
-		SalesforceReactUpgradeManager.getInstance().upgrade();
-		initInternal(context);
+        // Upgrade to the latest version.
+        SalesforceReactUpgradeManager.getInstance().upgrade();
+        initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
-	}
+    }
 
     /**
      * Initializes components required for this class
      * to properly function. This method should be called
      * by react native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
+     * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initReactNative(Context context, Class<? extends Activity> mainActivity) {
@@ -97,10 +97,10 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      * to properly function. This method should be called
      * by react native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
-	 * @noinspection unused
+     * @noinspection unused
      */
     public static void initReactNative(Context context, Class<? extends Activity> mainActivity,
                                        Class<? extends Activity> loginActivity) {
@@ -113,66 +113,67 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      * @return Singleton instance of SalesforceReactSDKManager.
      */
     @NonNull
-	public static SalesforceReactSDKManager getInstance() {
-    	if (INSTANCE != null) {
-    		return (SalesforceReactSDKManager) INSTANCE;
-    	} else {
+    public static SalesforceReactSDKManager getInstance() {
+        if (INSTANCE != null) {
+            return (SalesforceReactSDKManager) INSTANCE;
+        } else {
             throw new RuntimeException("Applications need to call SalesforceReactSDKManager.init() first.");
-    	}
+        }
     }
 
-	@NonNull
+    @NonNull
     @Override
-	public String getAppType() {
-		return "ReactNative";
-	}
+    public String getAppType() {
+        return "ReactNative";
+    }
 
-	/**
-	 * Call this method when setting up ReactInstanceManager
-	 * @return ReactPackage for this application
-	 */
-	public ReactPackage getReactPackage() {
-		return new ReactPackage() {
+    /**
+     * Call this method when setting up ReactInstanceManager
+     *
+     * @return ReactPackage for this application
+     */
+    public ReactPackage getReactPackage() {
+        return new ReactPackage() {
 
-			@NonNull
-			@Override
-			public List<NativeModule> createNativeModules(
-					@NonNull ReactApplicationContext reactContext
-			) {
-				List<NativeModule> modules = new ArrayList<>();
-				modules.add(new SalesforceOauthReactBridge(reactContext));
-				modules.add(new SalesforceNetReactBridge(reactContext));
-				modules.add(new SmartStoreReactBridge(reactContext));
-				modules.add(new MobileSyncReactBridge(reactContext));
-				return modules;
-			}
+            @NonNull
+            @Override
+            public List<NativeModule> createNativeModules(
+                    @NonNull ReactApplicationContext reactContext
+            ) {
+                List<NativeModule> modules = new ArrayList<>();
+                modules.add(new SalesforceOauthReactBridge(reactContext));
+                modules.add(new SalesforceNetReactBridge(reactContext));
+                modules.add(new SmartStoreReactBridge(reactContext));
+                modules.add(new MobileSyncReactBridge(reactContext));
+                return modules;
+            }
 
-			/** @noinspection unused*/
-			public List<Class<? extends JavaScriptModule>> createJSModules() {
-				return Collections.emptyList();
-			}
+            /** @noinspection unused*/
+            public List<Class<? extends JavaScriptModule>> createJSModules() {
+                return Collections.emptyList();
+            }
 
-			@NonNull
-			@Override
-			public List<ViewManager> createViewManagers(
-					@NonNull ReactApplicationContext reactContext
-			) {
-				return Collections.emptyList();
-			}
-		};
-	}
+            @NonNull
+            @Override
+            public List<ViewManager> createViewManagers(
+                    @NonNull ReactApplicationContext reactContext
+            ) {
+                return Collections.emptyList();
+            }
+        };
+    }
 
-	@NonNull
-	@Override
-	protected Map<String, DevActionHandler> getDevActions(
-			@NonNull final Activity frontActivity
-	) {
-		Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
-		devActions.put(
-				"React Native Dev Support",
-				() -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog()
-		);
+    @NonNull
+    @Override
+    protected Map<String, DevActionHandler> getDevActions(
+            @NonNull final Activity frontActivity
+    ) {
+        Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+        devActions.put(
+                "React Native Dev Support",
+                () -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog()
+        );
 
-		return devActions;
-	}
+        return devActions;
+    }
 }
