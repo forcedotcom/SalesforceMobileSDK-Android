@@ -584,7 +584,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         val loginServer = SalesforceHybridSDKManager
             .getInstance()
             .loginServerManager
-            ?.selectedLoginServer
+            .selectedLoginServer
             ?.url
             ?.trim { it <= ' ' } ?: return
 

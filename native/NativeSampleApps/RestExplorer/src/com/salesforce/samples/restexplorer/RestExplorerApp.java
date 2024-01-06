@@ -94,8 +94,9 @@ public class RestExplorerApp extends Application {
 		 * @param context Application context.
 		 * @param mainActivity Activity that should be launched after the login flow.
 		 */
-		public static void initNative(@NonNull Context context,
-									  @NonNull Class<? extends Activity> mainActivity
+		public static void initNative(
+				@NonNull Context context,
+				@NonNull Class<? extends Activity> mainActivity
 		) {
 			if (SalesforceSDKManager.INSTANCE == null) {
 				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);

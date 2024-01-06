@@ -35,8 +35,8 @@ import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManagerTest
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_TIMEOUT
 import org.junit.After
 import org.junit.Assert

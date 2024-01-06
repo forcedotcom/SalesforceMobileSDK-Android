@@ -346,7 +346,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     private fun reSync(sync: SyncState, callback: SyncUpdateCallback?): SyncState {
         sync.totalSize = -1
         if (sync.isStopped) {
-            // Sync was interrupted, re-fetch records including those with maxTimeStamp
+            // Sync was interrupted, refetch records including those with maxTimeStamp
             val maxTimeStamp = sync.maxTimeStamp
             sync.maxTimeStamp = max(maxTimeStamp - 1, -1L)
         }
@@ -529,7 +529,6 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
      *
      * @param syncName: name of sync
      */
-    @Suppress("unused")
     @Throws(CleanResyncGhostsException::class)
     suspend fun suspendCleanResyncGhosts(syncName: String): Int {
         try {
@@ -561,25 +560,24 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
         }
     }
 
-    private suspend fun suspendCleanResyncGhosts(sync: SyncState): Int =
-        withContext(NonCancellable) {
-            suspendCoroutine { cont ->
-                val callback = object : CleanResyncGhostsCallback {
-                    override fun onSuccess(numRecords: Int) = cont.resume(numRecords)
+    private suspend fun suspendCleanResyncGhosts(sync: SyncState) = withContext(NonCancellable) {
+        suspendCoroutine<Int> { cont ->
+            val callback = object : CleanResyncGhostsCallback {
+                override fun onSuccess(numRecords: Int) = cont.resume(numRecords)
 
-                    override fun onError(e: java.lang.Exception?) {
-                        cont.resumeWithException(
-                            CleanResyncGhostsException.FailedToFinish(
-                                message = "Clean Resync Ghosts failed to run to completion",
-                                cause = e
-                            )
+                override fun onError(e: java.lang.Exception?) {
+                    cont.resumeWithException(
+                        CleanResyncGhostsException.FailedToFinish(
+                            message = "Clean Resync Ghosts failed to run to completion",
+                            cause = e
                         )
-                    }
+                    )
                 }
-
-                cleanResyncGhosts(sync, callback)
             }
+
+            cleanResyncGhosts(sync, callback)
         }
+    }
 
     /**
      * Removes local copies of records that have been deleted on the server
@@ -646,7 +644,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     }
 
     /**
-     * Throw exception if no sync found with id syncId
+     * Throw excpetion if no sync found with id syncId
      * @param syncId Id of sync to look for.
      * @return sync if found.
      */
@@ -656,7 +654,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     }
 
     /**
-     * Throw exception if no sync found with name syncName
+     * Throw excpetion if no sync found with name syncName
      * @param syncName Name of sync to look for.
      * @return sync if found.
      */
@@ -715,7 +713,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
     }
 
     /**
-     * Callback to get sync status updates
+     * Callback to get sync status udpates
      */
     interface SyncUpdateCallback {
         fun onUpdate(sync: SyncState)

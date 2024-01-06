@@ -58,7 +58,7 @@ internal class IDPAuthCodeHelper private constructor(
     val webView: WebView,
     val userAccount: UserAccount,
     val spConfig: SPConfig,
-    private val codeChallenge: String,
+    val codeChallenge: String,
     val onResult:(result:Result) -> Unit
 ) {
     data class Result(
@@ -139,7 +139,7 @@ internal class IDPAuthCodeHelper private constructor(
      * @param accessToken Valid access token.
      * @param webView WebView instance.
      */
-    private fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
+    fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
         SalesforceSDKLogger.d(TAG, "Making front door request")
         val context = SalesforceSDKManager.getInstance().appContext
         val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
@@ -165,7 +165,7 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {
-        SalesforceSDKLogger.e(TAG, "Auth code obtain failed: $error", exception)
+        SalesforceSDKLogger.e(TAG, "Auth code obtention failed: $error", exception)
         onResult(Result(success = false, error = error))
     }
 
@@ -181,19 +181,19 @@ internal class IDPAuthCodeHelper private constructor(
      */
     inner class IDPWebViewClient : WebViewClient() {
 
-        private fun sanitizeUrl(url: String):String {
+        fun sanitizeUrl(url: String):String {
             return url.replace("///", "/").lowercase()
         }
 
-        private fun isOauthCallbackUrl(url: String):Boolean {
+        fun isOauthCallbackUrl(url: String):Boolean {
             return sanitizeUrl(url).startsWith(sanitizeUrl(spConfig.oauthCallbackUrl))
         }
 
-        private fun extractCode(uri: Uri):String? {
+        fun extractCode(uri: Uri):String? {
             return UriFragmentParser.parse(uri)[CODE_KEY]
         }
 
-        private fun hasUnauthorizedTokenError(uri: Uri): Boolean {
+        fun hasUnauthorizedTokenError(uri: Uri): Boolean {
             /*
              * Currently there's no good way to recover from an invalid access token
              * loading a page through frontdoor. Until the server API returns an

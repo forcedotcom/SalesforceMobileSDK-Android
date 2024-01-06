@@ -58,40 +58,33 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         switchToUser
     }
 
-    @Override
-    protected boolean execute(
-            String actionStr,
-            JavaScriptPluginVersion jsVersion,
-            JSONArray args,
-            CallbackContext callbackContext) throws JSONException {
-        Action action;
+	@Override
+	protected boolean execute(String actionStr,
+			JavaScriptPluginVersion jsVersion, JSONArray args,
+			CallbackContext callbackContext) throws JSONException {
+        Action action = null;
         try {
             action = Action.valueOf(actionStr);
-            switch (action) {
-                case getUsers -> {
-                    getUsers(callbackContext);
-                    return true;
-                }
-                case getCurrentUser -> {
-                    getCurrentUser(callbackContext);
-                    return true;
-                }
-                case logout -> {
-                    logout(args, callbackContext);
-                    return true;
-                }
-                case switchToUser -> {
-                    switchToUser(args, callbackContext);
-                    return true;
-                }
-                default -> {
-                    return false;
-                }
+            switch(action) {
+                case getUsers:
+                	getUsers(callbackContext);
+                	return true;
+                case getCurrentUser:
+                	getCurrentUser(callbackContext);
+                	return true;
+                case logout:
+                	logout(args, callbackContext);
+                	return true;
+                case switchToUser:
+                	switchToUser(args, callbackContext);
+                	return true;
+                default:
+                	return false;
             }
         } catch (IllegalArgumentException e) {
             return false;
         }
-    }
+	}
 
     /**
      * Native implementation for the 'getUsers' action.

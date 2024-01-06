@@ -179,7 +179,7 @@ public class UserAccountManager {
 
 	/**
 	 * Returns a cached value of the current user.
-	 * <p>
+	 *
 	 * NB: The oauth tokens might be outdated
 	 *     Should be used by methods that only care about the current user's identity (org id, user id etc)
 	 *     Is faster than getCurrentUser()
@@ -248,7 +248,7 @@ public class UserAccountManager {
         if (accounts.length == 0) {
         	return null;
         }
-        final List<UserAccount> userAccounts = new ArrayList<>();
+        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
         for (final Account account : accounts) {
         	final UserAccount userAccount = buildUserAccount(account);
         	if (userAccount != null) {

@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
@@ -137,8 +138,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
         setContentView(R.layout.sf__server_picker);
 
         final ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle(R.string.sf__server_picker_title);
-        actionBar.setDisplayHomeAsUpEnabled(true);
+        if (actionBar != null) {
+            actionBar.setTitle(R.string.sf__server_picker_title);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
@@ -242,7 +245,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
-    	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
+        final Drawable buttonDrawable = rb.getButtonDrawable();
+        if (buttonDrawable != null) {
+            buttonDrawable.setTint(getColor(R.color.sf__primary_color));
+        }
     	radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }

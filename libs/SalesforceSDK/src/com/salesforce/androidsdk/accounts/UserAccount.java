@@ -237,12 +237,12 @@ public class UserAccount {
 			accountName = bundle.getString(ACCOUNT_NAME);
 			communityId = bundle.getString(COMMUNITY_ID);
 			communityUrl = bundle.getString(COMMUNITY_URL);
-			firstName = bundle.getString(FIRST_NAME);
-			lastName = bundle.getString(LAST_NAME);
+            firstName = bundle.getString(FIRST_NAME);
+            lastName = bundle.getString(LAST_NAME);
 			displayName = bundle.getString(DISPLAY_NAME);
 			email = bundle.getString(EMAIL);
-			photoUrl = bundle.getString(PHOTO_URL);
-			thumbnailUrl = bundle.getString(THUMBNAIL_URL);
+            photoUrl = bundle.getString(PHOTO_URL);
+            thumbnailUrl = bundle.getString(THUMBNAIL_URL);
 			lightningDomain = bundle.getString(LIGHTNING_DOMAIN);
 			lightningSid = bundle.getString(LIGHTNING_SID);
 			vfDomain = bundle.getString(VF_DOMAIN);
@@ -250,7 +250,7 @@ public class UserAccount {
 			contentDomain = bundle.getString(CONTENT_DOMAIN);
 			contentSid = bundle.getString(CONTENT_SID);
 			csrfToken = bundle.getString(CSRF_TOKEN);
-			additionalOauthValues = MapUtil.addBundleToMap(bundle,
+            additionalOauthValues = MapUtil.addBundleToMap(bundle,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}

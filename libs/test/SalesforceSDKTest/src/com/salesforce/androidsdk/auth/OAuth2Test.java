@@ -315,6 +315,7 @@ public class OAuth2Test {
         tryScopes(new String[] {}, null);
 	}
 
+
 	/**
 	 * Testing refreshAuthToken. Call refresh token, then try out the auth token by calling /services/data/vXX.
 	 *

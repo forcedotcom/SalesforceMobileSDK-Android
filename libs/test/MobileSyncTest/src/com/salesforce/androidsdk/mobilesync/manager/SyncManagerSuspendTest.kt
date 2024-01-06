@@ -62,7 +62,7 @@ class SyncManagerSuspendTest : SyncManagerTestCase() {
     @After
     @Throws(Exception::class)
     override fun tearDown() {
-        deleteRecordsByIdOnServer(idToFields.keys, Constants.ACCOUNT)
+        idToFields?.let { deleteRecordsByIdOnServer(it.keys, Constants.ACCOUNT) }
         dropAccountsSoup()
         super.tearDown()
     }
@@ -167,7 +167,7 @@ class SyncManagerSuspendTest : SyncManagerTestCase() {
         query: String? = null): Long {
         val queryToUse = query
             ?: "SELECT Id, Name, Description, LastModifiedDate FROM Account WHERE Id IN ${makeInClause(
-            idToFields.keys)}"
+            idToFields!!.keys)}"
         val target: SyncDownTarget = SoqlSyncDownTarget(queryToUse)
         val options = optionsForSyncDown(mergeMode)
         val sync = createSyncDown(smartStore, target, options, ACCOUNTS_SOUP, syncName)

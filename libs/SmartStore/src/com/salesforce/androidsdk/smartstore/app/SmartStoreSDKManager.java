@@ -96,8 +96,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
-    public static void initNative(@NonNull Context context,
-                                  @NonNull Class<? extends Activity> mainActivity
+    public static void initNative(
+            @NonNull Context context,
+            @NonNull Class<? extends Activity> mainActivity
     ) {
         SmartStoreSDKManager.init(context, mainActivity, LoginActivity.class);
     }
@@ -351,7 +352,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     /**
      * Returns a list of store names for current user.
-     * @return The list of store names for current user.
+     * @return The list of store names for current user
      */
     public List<String> getUserStoresPrefixList() {
         return getUserStoresPrefixList(getUserAccountManager().getCachedCurrentUser());
@@ -360,7 +361,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     /**
      * Returns a list of store names for given user.
      * @param account user account
-     * @return The list of store names for given user.
+     * @return The list of store names for given user
      */
     public List<String> getUserStoresPrefixList(UserAccount account) {
         if (account != null) {
@@ -427,19 +428,19 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
 
         devActions.put(
-                "Inspect SmartStore", new DevActionHandler() {
-                    @Override
-                    public void onSelected() {
-                        frontActivity.startActivity(SmartStoreInspectorActivity.getIntent(frontActivity, false, DBOpenHelper.DEFAULT_DB_NAME));
-                    }
-                });
+                "Inspect SmartStore",
+                () -> frontActivity.startActivity(
+                        SmartStoreInspectorActivity.getIntent(
+                                frontActivity,
+                                false,
+                                DBOpenHelper.DEFAULT_DB_NAME
+                        )));
 
-        devActions.put("Inspect KeyValue Store", new DevActionHandler() {
-            @Override
-            public void onSelected() {
-                frontActivity.startActivity(KeyValueStoreInspectorActivity.getIntent(frontActivity));
-            }
-        });
+        devActions.put(
+                "Inspect KeyValue Store",
+                () -> frontActivity.startActivity(
+                        KeyValueStoreInspectorActivity.getIntent(frontActivity))
+        );
 
         return devActions;
     }
@@ -611,7 +612,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     /**
      * Returns a list of global key value store names.
-     * @return The list of global key value store names.
+     * @return The list of global key value store names
      */
     public List<String> getGlobalKeyValueStoresPrefixList(){
         return ManagedFilesHelper.getPrefixList(getAppContext(), KEY_VALUE_STORES,
