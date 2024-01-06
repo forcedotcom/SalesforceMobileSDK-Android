@@ -420,6 +420,7 @@ open class SalesforceSDKManager protected constructor(
      * @param value Boolean true enables developer support features; false
      * otherwise
      */
+    @Suppress("unused")
     fun setIsDevSupportEnabled(value: Boolean) {
         isDevSupportEnabledOverride = value
     }
@@ -1615,14 +1616,14 @@ open class SalesforceSDKManager protected constructor(
          * Encrypts the provided data with the provided key.
          *
          * @param data The data to be encrypted
-         * @param key  The encryption key to use
+         * @param key The encryption key to use
          * @return The encrypted data
          */
         @JvmStatic
         fun encrypt(
             data: String?,
             key: String?
-        ): String = Encryptor.encrypt(data, key)
+        ): String? = Encryptor.encrypt(data, key)
 
         /** The active encryption key */
         @JvmStatic
