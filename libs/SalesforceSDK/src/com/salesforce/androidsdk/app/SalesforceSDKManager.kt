@@ -829,7 +829,8 @@ open class SalesforceSDKManager protected constructor(
      * Destroys the stored authentication credentials (removes the account)
      * and, if requested, restarts the app.
      *
-     * @param account The user account
+     * @param account The user account to logout. Defaults to the current user
+     * account
      * @param frontActivity The front activity
      * @param showLoginPage If true, displays the login page after removing the
      * account
@@ -847,19 +848,22 @@ open class SalesforceSDKManager protected constructor(
             null,
             shouldLogoutWhenTokenRevoked()
         )
+
+        val accountToLogout = account ?: clientMgr.account
+
         isLoggingOut = true
         val mgr = AccountManager.get(appContext)
         var refreshToken: String? = null
         var loginServer: String? = null
-        if (account != null) {
+        if (accountToLogout != null) {
             val encryptionKey = encryptionKey
             refreshToken = decrypt(
-                mgr.getPassword(account),
+                mgr.getPassword(accountToLogout),
                 encryptionKey
             )
             loginServer = decrypt(
                 mgr.getUserData(
-                    account,
+                    accountToLogout,
                     KEY_INSTANCE_URL
                 ),
                 encryptionKey
@@ -870,7 +874,7 @@ open class SalesforceSDKManager protected constructor(
          * Makes a call to un-register from push notifications only if the
          * refresh token is available.
          */
-        val userAcc = userAccountManager.buildUserAccount(account)
+        val userAcc = userAccountManager.buildUserAccount(accountToLogout)
         val numAccounts = mgr.getAccountsByType(accountType).size
         if (isRegistered(
                 appContext,
@@ -882,7 +886,7 @@ open class SalesforceSDKManager protected constructor(
                 showLoginPage,
                 refreshToken,
                 loginServer,
-                account,
+                accountToLogout,
                 frontActivity,
                 numAccounts == 1
             )
@@ -892,7 +896,7 @@ open class SalesforceSDKManager protected constructor(
                 showLoginPage,
                 refreshToken,
                 loginServer,
-                account,
+                accountToLogout,
                 frontActivity
             )
         }
