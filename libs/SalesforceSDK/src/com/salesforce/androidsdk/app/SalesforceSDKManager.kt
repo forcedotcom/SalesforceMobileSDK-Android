@@ -763,7 +763,7 @@ open class SalesforceSDKManager protected constructor(
         refreshToken: String,
         loginServer: String?,
         account: Account?,
-        frontActivity: Activity,
+        frontActivity: Activity?,
         isLastAccount: Boolean
     ) {
         val intentFilter = IntentFilter(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
@@ -872,31 +872,29 @@ open class SalesforceSDKManager protected constructor(
          */
         val userAcc = userAccountManager.buildUserAccount(account)
         val numAccounts = mgr.getAccountsByType(accountType).size
-        frontActivity?.let { activity ->
-            if (isRegistered(
-                    appContext,
-                    userAcc
-                ) && refreshToken != null
-            ) {
-                unregisterPush(
-                    clientMgr,
-                    showLoginPage,
-                    refreshToken,
-                    loginServer,
-                    account,
-                    activity,
-                    numAccounts == 1
-                )
-            } else {
-                removeAccount(
-                    clientMgr,
-                    showLoginPage,
-                    refreshToken,
-                    loginServer,
-                    account,
-                    activity
-                )
-            }
+        if (isRegistered(
+                appContext,
+                userAcc
+            ) && refreshToken != null
+        ) {
+            unregisterPush(
+                clientMgr,
+                showLoginPage,
+                refreshToken,
+                loginServer,
+                account,
+                frontActivity,
+                numAccounts == 1
+            )
+        } else {
+            removeAccount(
+                clientMgr,
+                showLoginPage,
+                refreshToken,
+                loginServer,
+                account,
+                frontActivity
+            )
         }
     }
 
@@ -917,7 +915,7 @@ open class SalesforceSDKManager protected constructor(
         refreshToken: String?,
         loginServer: String?,
         account: Account?,
-        frontActivity: Activity
+        frontActivity: Activity?
     ) {
         cleanUp(
             frontActivity,
