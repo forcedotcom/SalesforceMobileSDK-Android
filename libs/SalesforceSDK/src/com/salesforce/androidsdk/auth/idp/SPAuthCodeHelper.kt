@@ -49,7 +49,7 @@ internal class SPAuthCodeHelper private constructor (
     val context: Context,
     val loginUrl: String,
     val code: String,
-    val codeVerifier: String,
+    private val codeVerifier: String,
     val onResult:(result:Result) -> Unit
 ) : OAuthWebviewHelperEvents {
     data class Result(
@@ -72,7 +72,7 @@ internal class SPAuthCodeHelper private constructor (
         }
     }
 
-    val spConfig: SPConfig = SPConfig.forCurrentApp()
+    private val spConfig: SPConfig = SPConfig.forCurrentApp()
 
     private fun getTokenResponse(): TokenEndpointResponse {
         val tokenResponse = OAuth2.exchangeCode(
@@ -113,17 +113,17 @@ internal class SPAuthCodeHelper private constructor (
         }
     }
 
-    override fun loadingLoginPage(loginUrl: String?) {
+    override fun loadingLoginPage(loginUrl: String) {
         SalesforceSDKLogger.d(TAG, "loadingLoginPage $loginUrl")
     }
 
-    override fun onAccountAuthenticatorResult(authResult: Bundle?) {
+    override fun onAccountAuthenticatorResult(authResult: Bundle) {
         SalesforceSDKLogger.d(TAG, "onAccountAuthenticatorResult ${LogUtil.bundleToString(authResult)}")
     }
 
-    override fun finish(user: UserAccount?) {
-        SalesforceSDKLogger.d(TAG, "finish $user")
-        user?.let {
+    override fun finish(userAccount: UserAccount?) {
+        SalesforceSDKLogger.d(TAG, "finish $userAccount")
+        userAccount?.let {
             onResult(Result(success = true, user = it))
         }
     }

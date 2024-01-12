@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.mobilesync.app;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.mobilesync.R;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
@@ -83,7 +85,10 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
-    public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+    public static void initNative(
+            @NonNull Context context,
+            @NonNull Class<? extends Activity> mainActivity
+    ) {
         MobileSyncSDKManager.init(context, mainActivity, LoginActivity.class);
     }
 
@@ -95,6 +100,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      * @param context       Application context.
      * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @noinspection unused
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
@@ -106,6 +112,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
      *
      * @return Singleton instance of MobileSyncSDKManager.
      */
+    @NonNull
     public static MobileSyncSDKManager getInstance() {
         if (INSTANCE != null) {
             return (MobileSyncSDKManager) INSTANCE;

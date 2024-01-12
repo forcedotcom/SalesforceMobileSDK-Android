@@ -32,6 +32,7 @@ import static androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTI
 import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY_PREF;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 
+import android.annotation.SuppressLint;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
@@ -51,12 +52,10 @@ import android.widget.TextView;
 import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.OptIn;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.core.os.BuildCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.salesforce.androidsdk.R;
@@ -128,6 +127,7 @@ public class ScreenLockActivity extends FragmentActivity {
         }
     }
 
+    @SuppressLint("MissingSuperCall")
     @Override
     public void onBackPressed() {
         // purposefully blank

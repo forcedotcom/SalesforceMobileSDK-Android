@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.reactnative.app;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
@@ -46,44 +48,44 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SDK Manager for all react native applications
  */
 public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 
-	/**
-	 * Protected constructor.
-	 *
-	 * @param context Application context.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-	 */
-	protected SalesforceReactSDKManager(Context context, Class<? extends Activity> mainActivity,
+    /**
+     * Protected constructor.
+     *
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected SalesforceReactSDKManager(Context context, Class<? extends Activity> mainActivity,
                                         Class<? extends Activity> loginActivity) {
-		super(context, mainActivity, loginActivity);
-	}
+        super(context, mainActivity, loginActivity);
+    }
 
-	private static void init(Context context, Class<? extends Activity> mainActivity,
-							 Class<? extends Activity> loginActivity) {
-		if (INSTANCE == null) {
-    		INSTANCE = new SalesforceReactSDKManager(context, mainActivity, loginActivity);
-    	}
+    private static void init(Context context, Class<? extends Activity> mainActivity,
+                             Class<? extends Activity> loginActivity) {
+        if (INSTANCE == null) {
+            INSTANCE = new SalesforceReactSDKManager(context, mainActivity, loginActivity);
+        }
 
-		// Upgrade to the latest version.
-		SalesforceReactUpgradeManager.getInstance().upgrade();
-		initInternal(context);
+        // Upgrade to the latest version.
+        SalesforceReactUpgradeManager.getInstance().upgrade();
+        initInternal(context);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
-	}
+    }
 
     /**
      * Initializes components required for this class
      * to properly function. This method should be called
      * by react native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
+     * @param context      Application context.
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initReactNative(Context context, Class<? extends Activity> mainActivity) {
@@ -95,9 +97,10 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      * to properly function. This method should be called
      * by react native apps using the Salesforce Mobile SDK.
      *
-     * @param context Application context.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param context       Application context.
+     * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @noinspection unused
      */
     public static void initReactNative(Context context, Class<? extends Activity> mainActivity,
                                        Class<? extends Activity> loginActivity) {
@@ -109,58 +112,68 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
      *
      * @return Singleton instance of SalesforceReactSDKManager.
      */
+    @NonNull
     public static SalesforceReactSDKManager getInstance() {
-    	if (INSTANCE != null) {
-    		return (SalesforceReactSDKManager) INSTANCE;
-    	} else {
+        if (INSTANCE != null) {
+            return (SalesforceReactSDKManager) INSTANCE;
+        } else {
             throw new RuntimeException("Applications need to call SalesforceReactSDKManager.init() first.");
-    	}
+        }
     }
 
-	@Override
-	public String getAppType() {
-		return "ReactNative";
-	}
+    @NonNull
+    @Override
+    public String getAppType() {
+        return "ReactNative";
+    }
 
-	/**
-	 * Call this method when setting up ReactInstanceManager
-	 * @return ReactPackage for this application
-	 */
-	public ReactPackage getReactPackage() {
-		return new ReactPackage() {
-			@Override
-			public List<NativeModule> createNativeModules(
-					ReactApplicationContext reactContext) {
-				List<NativeModule> modules = new ArrayList<>();
-				modules.add(new SalesforceOauthReactBridge(reactContext));
-				modules.add(new SalesforceNetReactBridge(reactContext));
-				modules.add(new SmartStoreReactBridge(reactContext));
-				modules.add(new MobileSyncReactBridge(reactContext));
-				return modules;
-			}
+    /**
+     * Call this method when setting up ReactInstanceManager
+     *
+     * @return ReactPackage for this application
+     */
+    public ReactPackage getReactPackage() {
+        return new ReactPackage() {
 
-			public List<Class<? extends JavaScriptModule>> createJSModules() {
-				return Collections.emptyList();
-			}
+            @NonNull
+            @Override
+            public List<NativeModule> createNativeModules(
+                    @NonNull ReactApplicationContext reactContext
+            ) {
+                List<NativeModule> modules = new ArrayList<>();
+                modules.add(new SalesforceOauthReactBridge(reactContext));
+                modules.add(new SalesforceNetReactBridge(reactContext));
+                modules.add(new SmartStoreReactBridge(reactContext));
+                modules.add(new MobileSyncReactBridge(reactContext));
+                return modules;
+            }
 
-			@Override
-			public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
-				return Collections.emptyList();
-			}
-		};
-	}
+            /** @noinspection unused*/
+            public List<Class<? extends JavaScriptModule>> createJSModules() {
+                return Collections.emptyList();
+            }
 
-	@Override
-	protected LinkedHashMap<String, DevActionHandler> getDevActions(final Activity frontActivity) {
-		LinkedHashMap<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
-		devActions.put(
-				"React Native Dev Support", new DevActionHandler() {
-					@Override
-					public void onSelected() {
-						((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog();
-					}
-				});
+            @NonNull
+            @Override
+            public List<ViewManager> createViewManagers(
+                    @NonNull ReactApplicationContext reactContext
+            ) {
+                return Collections.emptyList();
+            }
+        };
+    }
 
-		return devActions;
-	}
+    @NonNull
+    @Override
+    protected Map<String, DevActionHandler> getDevActions(
+            @NonNull final Activity frontActivity
+    ) {
+        Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
+        devActions.put(
+                "React Native Dev Support",
+                () -> ((SalesforceReactActivity) frontActivity).showReactDevOptionsDialog()
+        );
+
+        return devActions;
+    }
 }

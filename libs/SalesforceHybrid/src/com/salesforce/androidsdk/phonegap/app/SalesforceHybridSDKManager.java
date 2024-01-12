@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.phonegap.app;
 import android.app.Activity;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
@@ -57,7 +59,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
         globalSyncs("globalsyncs.json"),
         userSyncs("usersyncs.json");
 
-        String path;
+        final String path;
 
         ConfigAssetPath(String fileName) {
             path = "www" + System.getProperty("file.separator") + fileName;
@@ -108,6 +110,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      *
      * @param context Application context.
      * @param loginActivity Login activity.
+     * @noinspection unused
      */
     public static void initHybrid(Context context, Class<? extends Activity> loginActivity) {
         SalesforceHybridSDKManager.init(context, SalesforceDroidGapActivity.class,
@@ -127,12 +130,13 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
                                   Class<? extends Activity> loginActivity) {
         SalesforceHybridSDKManager.init(context, mainActivity, loginActivity);
     }
-    
+
     /**
      * Returns a singleton instance of this class.
      *
      * @return Singleton instance of SalesforceHybridSDKManager.
      */
+    @NonNull
     public static SalesforceHybridSDKManager getInstance() {
     	if (INSTANCE != null) {
     		return (SalesforceHybridSDKManager) INSTANCE;
@@ -141,11 +145,9 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
     	}
     }
 
-	@Override
-	public final String getUserAgent(String qualifier) {
-		if (qualifier == null) {
-			qualifier = "";
-		}
+	@NonNull
+    @Override
+	public final String getUserAgent(@NonNull String qualifier) {
 		final BootConfig config = BootConfig.getBootConfig(context);
 		if (config.isLocal()) {
 			qualifier = qualifier + "Local";
@@ -155,6 +157,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 		return super.getUserAgent(qualifier);
 	}
 
+    @NonNull
     public String getAppType() {
         return "Hybrid";
     }

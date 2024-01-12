@@ -355,7 +355,7 @@ open class PushService {
 
     private fun getRestClient(
         account: UserAccount
-    ) = SalesforceSDKManager.getInstance().clientManager?.let { clientManager ->
+    ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
 
         /*
          * The reason we can't directly call 'peekRestClient()' here is because
