@@ -821,7 +821,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
          * Finishes the authentication flow.
          * @param request The authentication response
          */
-        internal suspend fun execute(request: Parameter?) = withContext(Main) {
+        internal suspend fun execute(request: Parameter?) = withContext(Default) {
             onPostExecute(doInBackground(request))
         }
 
