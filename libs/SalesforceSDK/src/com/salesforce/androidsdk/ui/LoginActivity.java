@@ -79,7 +79,8 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
-
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,9 @@ public class LoginActivity extends AppCompatActivity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
     private static final int SETUP_REQUEST_CODE = 72;
     private static final String TAG = "LoginActivity";
+    public static final String DISTRICT_SELECTED = "district_selected";
+    public static final String SERVER_SETTINGS = "server_settings";
+    public static final String SHOULD_UNCHECK_ITEMS = "should_uncheck_items";
 
     private boolean wasBackgrounded;
     private OAuthWebviewHelper webviewHelper;
@@ -381,8 +385,21 @@ public class LoginActivity extends AppCompatActivity
     public void loadingLoginPage(String loginUrl) {
         final ActionBar ab = getSupportActionBar();
         if (ab != null) {
-            ab.setTitle(loginUrl);
+            final LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
+            final List<LoginServer> servers = loginServerManager.getLoginServers();
+            String serverName = null;
+            for (LoginServer server: servers) {
+                if (loginUrl != null && loginUrl.equals(server.url)) {
+                    serverName = server.name;
+                    break;
+                }
+            }
+            ab.setTitle(serverName != null ? serverName : loginUrl);
         }
+//        final ActionBar ab = getSupportActionBar();
+//        if (ab != null) {
+//            ab.setTitle("loginUrl");
+//        }
     }
 
 	@Override

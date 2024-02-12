@@ -2,8 +2,8 @@
 
 <resources>
     <!-- Mobile SDK Sample App (cs1.mobilesdk.ee.org) -->
-    <string name="remoteAccessConsumerKey">3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw</string>
-    <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>
+    <string name="remoteAccessConsumerKey">3MVG9ux34Ig8G5eqGtsZfUwvvvqTzPvFKyqUNJNnI3wcPz35HVytrD8yPQQ3iCaZCZrvoDehKTEic4cAJQLau</string>
+    <string name="oauthRedirectURI">https://login.salesforce.com/services/oauth2/success</string>
     <string-array name="oauthScopes">
         <item>api</item>
         <item>web</item>

@@ -36,7 +36,7 @@
             'scheme', 'host' and 'path' with their corresponding values from your connected app.
 
             For example, if the callback URL of your connected app is
-            "testsfdc:///mobilesdk/detect/oauth/done",
+            "https://login.salesforce.com/services/oauth2/success",
             'scheme' would be "testsfdc", 'host' would be "*" since it doesn't exist, and
             'path' would be "/mobilesdk/detect/oauth/done".
 

@@ -54,8 +54,8 @@ public class LoginServerManager {
 	private static final String TAG = "LoginServerManager";
 
 	// Default login servers.
-    public static final String PRODUCTION_LOGIN_URL = "https://login.salesforce.com";
-    public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
+    public static final String PRODUCTION_LOGIN_URL = "https://hisd--partial.sandbox.my.site.com/purple";
+    public static final String SANDBOX_LOGIN_URL = "https://hisd--partial.sandbox.my.site.com/purple";
 
 	// Keys used in shared preferences.
 	private static final String SERVER_URL_FILE = "server_url_file";

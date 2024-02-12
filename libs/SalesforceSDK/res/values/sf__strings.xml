@@ -21,7 +21,7 @@
 
 	<!-- Login -->
 	<string name="sf__login_title">Login</string>
-	<string name="sf__pick_server">Change Server</string>
+	<string name="sf__pick_server">Select District</string>
 	<string name="sf__clear_cookies">Clear Cookies</string>
 	<string name="sf__reload">Reload</string>
 	<string name="sf__launch_idp">Log In with IDP App</string>
@@ -38,7 +38,8 @@
 	<string name="sf__server_url_default_cancel">Cancel</string>
 	<string name="sf__server_url_default_apply">Apply</string>
 	<string name="sf__server_url_reset">Reset</string>
-	<string name="sf__server_picker_title">Change Server</string>
+	<string name="sf__server_picker_title">Select District</string>
+	<string name="sf__server_not_selected">Please select a district</string>
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>

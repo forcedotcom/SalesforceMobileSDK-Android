@@ -28,14 +28,20 @@ package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.Toast;
 import android.window.OnBackInvokedDispatcher;
 
 import androidx.appcompat.app.ActionBar;
@@ -63,7 +69,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
-
+    private boolean shouldUncheckItems = false;
+    private boolean isUpdating = false;
+    private ProgressBar progressBar;
+    private String lastSavedServerURL;
     private CustomServerUrlEditor urlEditDialog;
     private LoginServerManager loginServerManager;
 
@@ -82,23 +91,56 @@ public class ServerPickerActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
+//        if (isUpdating) {
+//            return;
+//        }
+        if (shouldUncheckItems) {
+            Toast.makeText(this, R.string.sf__server_not_selected, Toast.LENGTH_SHORT).show();
+        } else {
+            finish();
+        }
         reconfigureAuthorization();
     }
 
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
+
     	if (group != null) {
     		final SalesforceServerRadioButton rb = group.findViewById(checkedId);
     		if (rb != null) {
     			final String name = rb.getName();
     			final String url = rb.getUrl();
     			boolean isCustom = rb.isCustom();
-    			loginServerManager.setSelectedLoginServer(new LoginServer(name,
-    					url, isCustom));
-    		}
-    	}
-    }
+                lastSavedServerURL = loginServerManager.getSelectedLoginServer().url;
 
+                Log.d("lastSavedServerURL", lastSavedServerURL + " "+url);
+//                if (isUpdating) {
+//                    return;
+//                }
+
+//                LoginServer selectedServer = servers.get(position);
+                if (null != lastSavedServerURL && lastSavedServerURL.equals(url)) {
+                    updateDistrictSelectionStatus();
+
+                } else {
+                    loginServerManager.setSelectedLoginServer(new LoginServer(name,
+                            url, isCustom));
+                    progressBar.setVisibility(View.VISIBLE);
+                    (new AuthConfigTask(this)).execute();
+                }
+                isUpdating = true;
+
+    		}
+
+    	}
+
+    }
+    private void updateDistrictSelectionStatus() {
+        final SharedPreferences sp = getSharedPreferences(LoginActivity.SERVER_SETTINGS, MODE_PRIVATE);
+        final SharedPreferences.Editor ed = sp.edit();
+        ed.putBoolean(LoginActivity.DISTRICT_SELECTED, true);
+        ed.commit();
+    }
     @Override
     public boolean onNavigateUp() {
         onBackPressed();
@@ -119,36 +161,66 @@ public class ServerPickerActivity extends AppCompatActivity implements
      *
      * @return Server list group ID.
      */
-    protected int getServerListGroupId() {
-        return R.id.sf__server_list_group;
-    }
+//    protected int getServerListGroupId() {
+//        return R.id.sf__server_list_group;
+//    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         setTheme(isDarkTheme ? R.style.SalesforceSDK_Dark : R.style.SalesforceSDK);
+
         // This makes the navigation bar visible on light themes.
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(R.layout.sf__server_picker);
-
+        progressBar = findViewById(R.id.progressBar);
         final ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(R.string.sf__server_picker_title);
-        actionBar.setDisplayHomeAsUpEnabled(true);
+
+        if (shouldUncheckItems) {
+            actionBar.setHomeButtonEnabled(false); // disable the button
+            actionBar.setDisplayHomeAsUpEnabled(false); // remove the left caret
+            actionBar.setDisplayShowHomeEnabled(false); // remove the icon
+        } else {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
+        final List<LoginServer> servers = loginServerManager.getLoginServers();
+        ServerPickerAdapter adapter = new ServerPickerAdapter(this, R.layout.sf__server_list_item, servers, loginServerManager, shouldUncheckItems);
+        ListView listView = findViewById(R.id.sf__server_list);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+//            if (isUpdating) {
+//                return;
+//            }
+            LoginServer selectedServer = servers.get(position);
+            if (null != lastSavedServerURL && lastSavedServerURL.equals(selectedServer.url)) {
+                updateDistrictSelectionStatus();
+                finish();
+            } else {
+                loginServerManager.setSelectedLoginServer(new LoginServer(selectedServer.name,
+                        selectedServer.url, selectedServer.isCustom));
+                progressBar.setVisibility(View.VISIBLE);
+                (new AuthConfigTask(this)).execute();
+            }
+            isUpdating = true;
+            adapter.notifyDataSetChanged();
+        });
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
          * adding of custom hosts is set.
          */
-        final Button addConnectionButton = findViewById(R.id.sf__show_custom_url_edit);
-        if (addConnectionButton != null) {
-            if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts)) {
-                addConnectionButton.setVisibility(View.GONE);
-            }
-        }
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.setOnCheckedChangeListener(this);
+//        final Button addConnectionButton = findViewById(R.id.sf__show_custom_url_edit);
+//        if (addConnectionButton != null) {
+//            if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts)) {
+//                addConnectionButton.setVisibility(View.GONE);
+//            }
+//        }
+//        final RadioGroup radioGroup = findViewById(getServerListGroupId());
+//        radioGroup.setOnCheckedChangeListener(this);
         urlEditDialog = new CustomServerUrlEditor();
 
         // TODO:  Remove this when min API > 33
@@ -168,8 +240,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     @Override
     public void onDestroy() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.setOnCheckedChangeListener(null);
+//        final RadioGroup radioGroup = findViewById(getServerListGroupId());
+//        radioGroup.setOnCheckedChangeListener(null);
         urlEditDialog = null;
         super.onDestroy();
     }
@@ -237,6 +309,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
         int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
     	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
+rb.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        rb.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        rb.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        rb.setGravity(Gravity.START);
     	radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
@@ -245,44 +321,43 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Controls the elements in the layout based on past user choices.
      */
     protected void setupRadioButtons() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        final List<LoginServer> servers = loginServerManager.getLoginServers();
-        if (servers != null) {
-            for (final LoginServer currentServer : servers) {
-                setRadioState(radioGroup, currentServer);
-            }
-        }
+//        final RadioGroup radioGroup = findViewById(getServerListGroupId());
+//        final List<LoginServer> servers = loginServerManager.getLoginServers();
+//        if (servers != null) {
+//            for (final LoginServer currentServer : servers) {
+//                setRadioState(radioGroup, currentServer);
+//            }
+//        }
     }
 
     /**
      * Rebuilds the display.
      */
     public void rebuildDisplay() {
-        final RadioGroup radioGroup = findViewById(getServerListGroupId());
-        radioGroup.removeAllViews();
-        setupRadioButtons();
+//        final RadioGroup radioGroup = findViewById(getServerListGroupId());
+//        radioGroup.removeAllViews();
+//        setupRadioButtons();
 
         // Sets selected server.
-        final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
-        int numServers = radioGroup.getChildCount();
-        for (int i = 0; i < numServers; i++) {
-            final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) radioGroup.getChildAt(i);
-            if (rb != null) {
-                final LoginServer loginServer = new LoginServer(rb.getName(), rb.getUrl(), rb.isCustom());
-                if (loginServer.equals(selectedServer)) {
-                    rb.setChecked(true);
-                }
-            }
-        }
+//        final LoginServer selectedServer = loginServerManager.getSelectedLoginServer();
+//        int numServers = radioGroup.getChildCount();
+//        for (int i = 0; i < numServers; i++) {
+//            final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) radioGroup.getChildAt(i);
+//            if (rb != null) {
+//                final LoginServer loginServer = new LoginServer(rb.getName(), rb.getUrl(), rb.isCustom());
+//                if (loginServer.equals(selectedServer)) {
+//                    rb.setChecked(true);
+//                }
+//            }
+//        }
     }
 
     @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
+        updateDistrictSelectionStatus();
+        progressBar.setVisibility(View.GONE);
         final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        // Android 14 requires non-exported receiver to be invoked with explicit intents
-        // See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
-        changeServerIntent.setPackage(getPackageName());
         sendBroadcast(changeServerIntent);
         finish();
     }

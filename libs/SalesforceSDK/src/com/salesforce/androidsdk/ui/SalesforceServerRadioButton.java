@@ -68,6 +68,7 @@ public class SalesforceServerRadioButton extends RadioButton {
 		this.name = name;
 		this.url = url;
 		this.isCustom = isCustom;
+
 		setText();
 	}
 
@@ -88,7 +89,7 @@ public class SalesforceServerRadioButton extends RadioButton {
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        result.append(titleSpan);
 	        result.append(System.getProperty("line.separator"));
-	        result.append(urlSpan);	
+	        result.append(urlSpan);
 		}
         super.setText(result, BufferType.SPANNABLE);
 	}
