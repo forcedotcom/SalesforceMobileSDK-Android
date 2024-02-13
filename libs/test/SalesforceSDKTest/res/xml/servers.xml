@@ -9,12 +9,5 @@
     <server name="KIPP Texas Public Schools" url="https://kipptexas.purplesense.org/purple" />
     <server name="CICS Public Schools" url="https://cics.purplesense.org/purple" />
     <server name="Service Providers" url="https://purplesense.my.site.com" />
-    <server name="Sandbox IDEA Houston" url="https://ideahouston--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox Harmony Public Schools" url="https://harmonyps--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox Houston ISD" url="https://hisd--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox Yellowstone Schools" url="https://prounitas--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox YES Prep Public Schools" url="https://purpleyesprep--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox KIPP Texas Public Schools" url="https://purplekipptexas--partial.sandbox.my.site.com/purple" />
-    <server name="Sandbox CICS Public Schools" url="https://purplecics--partialsb.sandbox.my.site.com/purple" />
-    
+   
 </servers>
