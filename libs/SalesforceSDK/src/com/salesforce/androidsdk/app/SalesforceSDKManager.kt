@@ -1301,7 +1301,7 @@ open class SalesforceSDKManager protected constructor(
         @Suppress("SameParameterValue") fieldName: String
     ) = runCatching {
         Class.forName(
-            "${context.javaClass.getPackage()?.name ?: ""}.BuildConfig"
+            "${context.packageName ?: ""}.BuildConfig"
         ).getField(
             fieldName
         )[null]
