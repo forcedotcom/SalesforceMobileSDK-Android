@@ -88,6 +88,8 @@ import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
+import com.salesforce.androidsdk.auth.nativeLogin.NativeLoginManager as NativeLoginManagerInterface
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
@@ -135,7 +137,7 @@ import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
-import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as DefaultBiometricAuthenticationManager
+import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
 
 /**
  * This class serves as an interface to the various functions of the Salesforce
@@ -154,7 +156,8 @@ open class SalesforceSDKManager protected constructor(
     @JvmField
     protected val context: Context,
     mainActivity: Class<out Activity>,
-    loginActivity: Class<out Activity>?
+    private val loginActivity: Class<out Activity>? = null,
+    private val nativeLoginActivity: Class<out Activity>? = null,
 ) : LifecycleObserver {
 
     /** The Android context */
@@ -192,7 +195,11 @@ open class SalesforceSDKManager protected constructor(
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    var loginActivityClass: Class<out Activity> = LoginActivity::class.java
+    val loginActivityClass: Class<out Activity>
+        get() {
+            // TODO: check fallback to webview here
+            return nativeLoginActivity ?: loginActivity ?: LoginActivity::class.java
+        }
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -211,7 +218,7 @@ open class SalesforceSDKManager protected constructor(
     private val bioAuthManagerLock = Any()
 
     /** The Salesforce SDK manager's biometric authentication manager */
-    var biometricAuthenticationManager: DefaultBiometricAuthenticationManager? = null
+    var biometricAuthenticationManager: BiometricAuthenticationManagerInterface? = null
         get() = field ?: synchronized(bioAuthManagerLock) {
             BiometricAuthenticationManager()
         }.also { field = it }
@@ -220,6 +227,10 @@ open class SalesforceSDKManager protected constructor(
     val loginServerManager by lazy {
         LoginServerManager(appContext)
     }
+
+    /** The Salesforce SDK manager's native login manager */
+    var nativeLoginManager: NativeLoginManagerInterface? = null
+        private set
 
     /** Optionally enables features for automated testing.
      *
@@ -430,11 +441,6 @@ open class SalesforceSDKManager protected constructor(
     /** Initializer */
     init {
         mainActivityClass = mainActivity
-
-        if (loginActivity != null) {
-            loginActivityClass = loginActivity
-        }
-
         features = ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER)
 
         /*
@@ -530,6 +536,20 @@ open class SalesforceSDKManager protected constructor(
      * backend.
      */
     var shouldBlockSalesforceIntegrationUser = false
+
+    /**
+     * Creates a NativeLoginManager instance that allows the app to use it's
+     * own native UI for authentication.
+     *
+     * @param consumerKey The Connected App consumer key.
+     * @param callbackUrl The Connected App redirect URI.
+     * @param communityUrl The login url for native login.
+     * @return The Native Login Manager.
+     */
+    fun useNativeLogin(consumerKey: String, callbackUrl: String, communityUrl: String): NativeLoginManagerInterface {
+        nativeLoginManager = NativeLoginManager(consumerKey, callbackUrl, communityUrl)
+        return nativeLoginManager as NativeLoginManagerInterface
+    }
 
     /**
      * Optionally enables browser based login instead of web view login. This

@@ -84,7 +84,7 @@ public class RestExplorerApp extends Application {
 		 * @param loginActivity Login activity.
 		 */
 		private RestExplorerSDKManager(Context context, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-			super(context, mainActivity, loginActivity);
+			super(context, mainActivity, loginActivity, null);
 		}
 
 		/**

@@ -538,7 +538,7 @@ public class RestClient {
 		 * @return Instance URL.
 		 */
 		public URI getInstanceUrl() {
-			if (communityUrl != null && !"".equals(communityUrl.trim())) {
+			if (communityUrl != null && !communityUrl.trim().isEmpty()) {
 				URI uri = null;
 				try {
 					uri = new URI(communityUrl);
@@ -585,7 +585,7 @@ public class RestClient {
 			// Resolve URL only for a relative URL.
 			if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
 				final StringBuilder resolvedUrlBuilder = new StringBuilder();
-				if (communityUrl != null && !"".equals(communityUrl.trim())) {
+				if (communityUrl != null && !communityUrl.trim().isEmpty()) {
 					resolvedUrlBuilder.append(communityUrl);
 				} else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
 					resolvedUrlBuilder.append(instanceUrl.toString());
