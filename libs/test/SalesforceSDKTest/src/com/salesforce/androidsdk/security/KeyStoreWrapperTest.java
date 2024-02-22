@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.security;
 
 import android.app.Application;
 import android.app.Instrumentation;
+import android.util.Base64;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -37,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -115,5 +117,29 @@ public class KeyStoreWrapperTest {
         final PrivateKey key1 = keyStoreWrapper.getECPrivateKey(KEY_1);
         final PrivateKey key1Again = keyStoreWrapper.getECPrivateKey(KEY_1);
         Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
+    }
+
+    @Test
+    public void testDecryptDataEncryptedWithLegacyNotificationCipher() {
+        tryDecryptDataEncryptedWithNotificationCipher(Encryptor.LEGACY_NOTIFICATION_CIPHER);
+    }
+
+    @Test
+    public void testDecryptDataEncryptedWithNotificationCipher() {
+        tryDecryptDataEncryptedWithNotificationCipher(Encryptor.NOTIFICATION_CIPHER);
+    }
+
+    void tryDecryptDataEncryptedWithNotificationCipher(String cipher) {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
+        final String data = "Test data for encryption";
+        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, cipher);
+        final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
+        final byte[] decryptedBytes = Encryptor.decryptWithNotificationCiphersBytes(privateKey, encryptedData);
+        final String decryptedData = new String(Base64.decode(decryptedBytes, Base64.DEFAULT), StandardCharsets.UTF_8);
+        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
 }

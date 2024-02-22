@@ -60,6 +60,13 @@ public class Encryptor {
     private static final String AES_GCM_CIPHER = "AES/GCM/NoPadding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
     private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
+
+    // Cipher in use until 248 (API 59)
+    public static final String LEGACY_NOTIFICATION_CIPHER = RSA_PKCS1;
+
+    // Cipher in use starting 250 (API 60)
+    public static final String NOTIFICATION_CIPHER = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
+
     private static final String BOUNCY_CASTLE = "BC";
     private static final int READ_BUFFER_LENGTH = 1024;
 
@@ -503,7 +510,7 @@ public class Encryptor {
         return output;
     }
 
-    private static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
+    public static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
         if (publicKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
@@ -517,7 +524,7 @@ public class Encryptor {
         return null;
     }
 
-    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipher) {
+    public static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipher) {
         if (privateKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
@@ -530,6 +537,16 @@ public class Encryptor {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption", e);
         }
         return null;
+    }
+
+    public static byte[] decryptWithNotificationCiphersBytes(PrivateKey privateKey, String data) {
+        byte[] result = Encryptor.decryptWithPrivateKey(privateKey, data, NOTIFICATION_CIPHER);
+        if (result != null) {
+            return result;
+        } else {
+            // try the legacy cipher
+            return Encryptor.decryptWithPrivateKey(privateKey, data, LEGACY_NOTIFICATION_CIPHER);
+        }
     }
 
     private static byte[] generateInitVector() {
