@@ -139,7 +139,7 @@ public class KeyStoreWrapperTest {
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
         final byte[] decryptedBytes = Encryptor.decryptWithNotificationCiphersBytes(privateKey, encryptedData);
-        final String decryptedData = new String(Base64.decode(decryptedBytes, Base64.DEFAULT), StandardCharsets.UTF_8);
+        final String decryptedData = new String(decryptedBytes, StandardCharsets.UTF_8);
         Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
 }
