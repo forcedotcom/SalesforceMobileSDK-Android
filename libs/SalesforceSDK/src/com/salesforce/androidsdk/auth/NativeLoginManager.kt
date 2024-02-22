@@ -26,7 +26,10 @@
  */
 package com.salesforce.androidsdk.auth
 
+import android.content.Intent
+import android.os.Bundle
 import android.util.Base64
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
@@ -40,12 +43,14 @@ import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
 import com.salesforce.androidsdk.auth.OAuth2.REDIRECT_URI
 import com.salesforce.androidsdk.auth.OAuth2.RESPONSE_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
-import com.salesforce.androidsdk.auth.nativeLogin.NativeLoginManager
-import com.salesforce.androidsdk.auth.nativeLogin.NativeLoginResult
+import com.salesforce.androidsdk.auth.nativeLoginInterface.NativeLoginManager
+import com.salesforce.androidsdk.auth.nativeLoginInterface.NativeLoginResult
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -127,8 +132,7 @@ internal class NativeLoginManager(
             // Second REST Call - token request with code verifier
             val tokenResponse = suspendedRestCall(tokenRequest) ?: return NativeLoginResult.UnknownError
             return if (tokenResponse.isSuccess) {
-                // TODO: Use response to create user account
-
+                finishAuthFlow(tokenResponse)
                 NativeLoginResult.Success
             } else {
                 // TODO: log
@@ -166,6 +170,29 @@ internal class NativeLoginManager(
 
         return containsNumber && containsLetter && password.length >= MIN_PASSWORD_LENGTH
                 && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
+    }
+
+    private fun finishAuthFlow(tokenResponse: RestResponse) {
+        val appContext = SalesforceSDKManager.getInstance().appContext
+        val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
+        val tokenEndpointResponse = OAuth2.TokenEndpointResponse(tokenResponse.rawResponse)
+        val callback = object : OAuthWebviewHelper.OAuthWebviewHelperEvents {
+            override fun loadingLoginPage(loginUrl: String) { /* This will never be called. */ }
+            override fun onAccountAuthenticatorResult(authResult: Bundle) { /* Unused */ }
+
+            override fun finish(userAccount: UserAccount?) {
+                SalesforceSDKManager.getInstance().userAccountManager.switchToUser(userAccount)
+                // Start App's Main Activity
+                appContext.startActivity(
+                    Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
+                            setPackage(appContext.packageName)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                )
+            }
+        }
+
+        OAuthWebviewHelper(appContext, callback, loginOptions).onAuthFlowComplete(tokenEndpointResponse)
     }
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {

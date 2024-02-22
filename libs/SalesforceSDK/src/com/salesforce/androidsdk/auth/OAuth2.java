@@ -511,10 +511,8 @@ public class OAuth2 {
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
                 final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
-                if (photos != null) {
-                    pictureUrl = photos.getString(PICTURE);
-                    thumbnailUrl = photos.getString(THUMBNAIL);
-                }
+                pictureUrl = photos.getString(PICTURE);
+                thumbnailUrl = photos.getString(THUMBNAIL);
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
@@ -663,17 +661,13 @@ public class OAuth2 {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
-                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                        additionalOauthValues = new HashMap<>();
-                        for (final String key : additionalOauthKeys) {
-                            if (!TextUtils.isEmpty(key)) {
-                                final String value = parsedResponse.optString(key, null);
-                                if (value != null) {
-                                    additionalOauthValues.put(key, value);
-                                }
-                            }
+                final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    additionalOauthValues = new HashMap<>();
+                    for (final String key : additionalOauthKeys) {
+                        if (!TextUtils.isEmpty(key)) {
+                            final String value = parsedResponse.optString(key);
+                            additionalOauthValues.put(key, value);
                         }
                     }
                 }

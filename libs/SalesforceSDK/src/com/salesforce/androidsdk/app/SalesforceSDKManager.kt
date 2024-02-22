@@ -88,7 +88,7 @@ import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
-import com.salesforce.androidsdk.auth.nativeLogin.NativeLoginManager as NativeLoginManagerInterface
+import com.salesforce.androidsdk.auth.nativeLoginInterface.NativeLoginManager as NativeLoginManagerInterface
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
@@ -229,7 +229,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** The Salesforce SDK manager's native login manager */
-    var nativeLoginManager: NativeLoginManagerInterface? = null
+    lateinit var nativeLoginManager: NativeLoginManagerInterface
         private set
 
     /** Optionally enables features for automated testing.
