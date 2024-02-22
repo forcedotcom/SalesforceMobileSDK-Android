@@ -59,15 +59,12 @@ public class Encryptor {
     private static final String AES_CBC_CIPHER = "AES/CBC/PKCS5Padding";
     private static final String AES_GCM_CIPHER = "AES/GCM/NoPadding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
-
-    // Cipher in use until 248 (API 59)
-    public static final String LEGACY_NOTIFICATION_CIPHER = RSA_PKCS1;
-
-    // Cipher in use starting 250 (API 60)
-    public static final String NOTIFICATION_CIPHER = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
+    public static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding"; // legacy
+    public static final String RSA_ECB_OAEP = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
 
     private static final String BOUNCY_CASTLE = "BC";
+
+    private static final String BOUNCY_CASTLE_WORKAROUND = "AndroidKeyStoreBCWorkaround";
     private static final int READ_BUFFER_LENGTH = 1024;
 
     /**
@@ -398,7 +395,11 @@ public class Encryptor {
      * @return Encrypted data.
      */
     public static byte[] encryptWithRSABytes(PublicKey publicKey, String data) {
-        return encryptWithPublicKey(publicKey, data, RSA_PKCS1);
+        byte[] result = encryptWithPublicKey(publicKey, data, RSA_ECB_OAEP);
+        if (result == null) {
+            result = encryptWithPublicKey(publicKey, data, RSA_PKCS1);
+        }
+        return result;
     }
 
     /**
@@ -429,7 +430,11 @@ public class Encryptor {
      * @return Decrypted data.
      */
     public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
-        return decryptWithPrivateKey(privateKey, data, RSA_PKCS1);
+        byte[] result =  decryptWithPrivateKey(privateKey, data, RSA_ECB_OAEP);
+        if (result == null) {
+            result = decryptWithPrivateKey(privateKey, data, RSA_PKCS1);
+        }
+        return result;
     }
 
     /**
@@ -510,12 +515,12 @@ public class Encryptor {
         return output;
     }
 
-    public static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
+    public static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipherMode) {
         if (publicKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
         try {
-            final Cipher cipherInstance = Cipher.getInstance(cipher);
+            final Cipher cipherInstance = getBestCipher(cipherMode);
             cipherInstance.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipherInstance.doFinal(data.getBytes());
         } catch (Exception e) {
@@ -524,12 +529,12 @@ public class Encryptor {
         return null;
     }
 
-    public static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipher) {
+    public static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipherMode) {
         if (privateKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
         try {
-            final Cipher cipherInstance = Cipher.getInstance(cipher);
+            final Cipher cipherInstance = getBestCipher(cipherMode);
             cipherInstance.init(Cipher.DECRYPT_MODE, privateKey);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipherInstance.doFinal(decodedBytes);
@@ -537,16 +542,6 @@ public class Encryptor {
             SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption", e);
         }
         return null;
-    }
-
-    public static byte[] decryptWithNotificationCiphersBytes(PrivateKey privateKey, String data) {
-        byte[] result = Encryptor.decryptWithPrivateKey(privateKey, data, NOTIFICATION_CIPHER);
-        if (result != null) {
-            return result;
-        } else {
-            // try the legacy cipher
-            return Encryptor.decryptWithPrivateKey(privateKey, data, LEGACY_NOTIFICATION_CIPHER);
-        }
     }
 
     private static byte[] generateInitVector() {
@@ -592,9 +587,11 @@ public class Encryptor {
     private static Cipher getBestCipher(String cipherMode) {
         Cipher cipher = null;
         try {
-            if (AES_GCM_CIPHER.equals(cipherMode)) {
+            if (AES_GCM_CIPHER.equals(cipherMode) || RSA_PKCS1.equals(cipherMode)) {
                 cipher = Cipher.getInstance(cipherMode);
-            } else {
+            } if (RSA_ECB_OAEP.equals(cipherMode)) {
+                cipher = Cipher.getInstance(cipherMode, BOUNCY_CASTLE_WORKAROUND);
+            } else if (AES_CBC_CIPHER.equals(cipherMode)) {
                 cipher = Cipher.getInstance(cipherMode, getLegacyEncryptionProvider());
             }
         } catch (Exception e) {

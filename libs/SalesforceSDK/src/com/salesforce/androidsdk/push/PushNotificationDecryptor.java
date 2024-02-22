@@ -102,7 +102,7 @@ class PushNotificationDecryptor {
         if (privateKey == null) {
             return data;
         }
-        byte[] symmetricKey = Encryptor.decryptWithNotificationCiphersBytes(privateKey, encryptedSecretKey);
+        byte[] symmetricKey = Encryptor.decryptWithRSABytes(privateKey, encryptedSecretKey);
         if (symmetricKey == null) {
             return data;
         }

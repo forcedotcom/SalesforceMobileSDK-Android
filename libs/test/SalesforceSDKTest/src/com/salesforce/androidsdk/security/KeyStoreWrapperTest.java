@@ -30,21 +30,21 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.util.Base64;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for {@link KeyStoreWrapper}.
@@ -64,6 +64,13 @@ public class KeyStoreWrapperTest {
         final Application app = Instrumentation.newApplication(TestForceApp.class,
                 InstrumentationRegistry.getInstrumentation().getTargetContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        keyStoreWrapper.deleteKey(KEY_1);
+        keyStoreWrapper.deleteKey(KEY_2);
     }
 
     @Test
@@ -120,26 +127,16 @@ public class KeyStoreWrapperTest {
     }
 
     @Test
-    public void testDecryptDataEncryptedWithLegacyNotificationCipher() {
-        tryDecryptDataEncryptedWithNotificationCipher(Encryptor.LEGACY_NOTIFICATION_CIPHER);
-    }
-
-    @Test
-    public void testDecryptDataEncryptedWithNotificationCipher() {
-        tryDecryptDataEncryptedWithNotificationCipher(Encryptor.NOTIFICATION_CIPHER);
-    }
-
-    void tryDecryptDataEncryptedWithNotificationCipher(String cipher) {
+    public void testDecryptDataEncryptedWithLegacyRSACipher() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
         final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
         final String data = "Test data for encryption";
-        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, cipher);
+        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, Encryptor.RSA_PKCS1);
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
-        final byte[] decryptedBytes = Encryptor.decryptWithNotificationCiphersBytes(privateKey, encryptedData);
-        final String decryptedData = new String(decryptedBytes, StandardCharsets.UTF_8);
+        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
         Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
 }

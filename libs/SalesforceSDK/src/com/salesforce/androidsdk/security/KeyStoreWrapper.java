@@ -79,6 +79,21 @@ public class KeyStoreWrapper {
     }
 
     /**
+     * Delete key if it exists
+     *
+     * @param name Name of the key to delete
+     */
+    public void deleteKey(String name) {
+        try {
+            if (keyStore.containsAlias(name)) {
+                keyStore.deleteEntry(name);
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Could not delete key " + name, e);
+        }
+    }
+
+    /**
      * Generates an RSA keypair and returns the public key of length 2048.
      *
      * @param name Alias of the entry in which the generated key will appear in Android KeyStore.
@@ -220,7 +235,8 @@ public class KeyStoreWrapper {
                         name,
                         KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
                         .setKeySize(length)
-                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
+                        .setDigests(KeyProperties.DIGEST_SHA1, KeyProperties.DIGEST_SHA256)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1, KeyProperties.ENCRYPTION_PADDING_RSA_OAEP);
 
                 /*
                  * TODO: Remove this check once minVersion > 28.
