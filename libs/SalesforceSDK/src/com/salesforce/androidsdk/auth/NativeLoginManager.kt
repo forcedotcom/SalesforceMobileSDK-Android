@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth
 
+import android.accounts.AccountManager
 import android.content.Intent
 import android.os.Bundle
 import android.util.Base64
@@ -145,7 +146,16 @@ internal class NativeLoginManager(
     }
 
     override fun fallbackToWebAuthentication() {
-        TODO("Not yet implemented")
+        val context = SalesforceSDKManager.getInstance().appContext
+        val i = Intent(context, SalesforceSDKManager.getInstance().webviewLoginActivityClass)
+        /**
+         * Use MULTIPLE_TASK instead of FLAG_ACTIVITY_NEW_TASK because unlike webview login flow
+         * we want to come back to the Native Login Activity if the user backs out of LoginActivity.
+         */
+        i.setFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        i.putExtras(SalesforceSDKManager.getInstance().loginOptions.asBundle())
+        Bundle().putParcelable(AccountManager.KEY_INTENT, i)
+        context.startActivity(i)
     }
 
     override fun cancelAuthentication() {

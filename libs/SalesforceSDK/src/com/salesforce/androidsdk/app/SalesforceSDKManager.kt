@@ -157,7 +157,7 @@ open class SalesforceSDKManager protected constructor(
     protected val context: Context,
     mainActivity: Class<out Activity>,
     private val loginActivity: Class<out Activity>? = null,
-    private val nativeLoginActivity: Class<out Activity>? = null,
+    internal val nativeLoginActivity: Class<out Activity>? = null,
 ) : LifecycleObserver {
 
     /** The Android context */
@@ -197,8 +197,12 @@ open class SalesforceSDKManager protected constructor(
      */
     val loginActivityClass: Class<out Activity>
         get() {
-            // TODO: check fallback to webview here
-            return nativeLoginActivity ?: loginActivity ?: LoginActivity::class.java
+            return nativeLoginActivity ?: webviewLoginActivityClass
+        }
+
+    internal val webviewLoginActivityClass: Class<out Activity>
+        get() {
+            return loginActivity ?: LoginActivity::class.java
         }
 
     /** The class for the account switcher activity */

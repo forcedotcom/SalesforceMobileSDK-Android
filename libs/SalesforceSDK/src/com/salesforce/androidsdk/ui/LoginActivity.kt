@@ -166,10 +166,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         val loginOptions = fromBundleWithSafeLoginUrl(intent.extras)
 
         // Protect against screenshots
-        window.setFlags(
-            FLAG_SECURE,
-            FLAG_SECURE
-        )
+        window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
         // Fetch authentication configuration if required
         salesforceSDKManager.fetchAuthenticationConfiguration()
@@ -389,6 +386,11 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     private fun handleBackBehavior() {
         // Do nothing if locked
         if (SalesforceSDKManager.getInstance().biometricAuthenticationManager?.locked == false) {
+
+            // If app is using Native Login this activity is a fallback and can be dismissed.
+            if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
+                finish()
+            }
 
             /*
              * If there are no accounts signed in, the login screen needs to go
