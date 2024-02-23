@@ -64,6 +64,15 @@ public class Encryptor {
 
     private static final String BOUNCY_CASTLE = "BC";
 
+
+    // This provider was separated out of AndroidKeyStoreProvider to work around the issue
+    // that Bouncy Castle provider incorrectly declares that it accepts arbitrary keys (incl. Android
+    // KeyStore ones). This causes JCA to select the Bouncy Castle's implementation of JCA crypto
+    // operations for Android KeyStore keys unless Android KeyStore's own implementations are installed
+    // as higher-priority than Bouncy Castle ones. The purpose of this provider is to do just that: to
+    // offer crypto operations operating on Android KeyStore keys and to be installed at higher priority
+    // than the Bouncy Castle provider.
+    // See https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/keystore/java/android/security/keystore2/AndroidKeyStoreBCWorkaroundProvider.java
     private static final String BOUNCY_CASTLE_WORKAROUND = "AndroidKeyStoreBCWorkaround";
     private static final int READ_BUFFER_LENGTH = 1024;
 
