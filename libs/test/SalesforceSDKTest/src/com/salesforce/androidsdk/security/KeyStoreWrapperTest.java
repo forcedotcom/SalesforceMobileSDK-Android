@@ -126,14 +126,50 @@ public class KeyStoreWrapperTest {
         Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
     }
 
+    // RSA is used to encrypt push notifications.
+    // 1. Client generates key pair, stores keys to key store and sends public key to server.
+    // 2. Server uses public key to encrypt part of push notification.
+    // 3. Client uses private key stored in key store to decrypt push notification.
+    //
+    // In 11.1.1 client will use a new RSA cipher mode
+    // In 250 server will use the new RSA cipher mode
+
+    /**
+     * Upgrade test: client upgraded and server not yet upgraded
+     * 1. Client generates key pair before upgrading to 11.1.1
+     * 2. Server has not been upgraded yet and encrypts push notification with stored key using old RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
     @Test
     public void testDecryptDataEncryptedWithLegacyRSACipher() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
         final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
         final String data = "Test data for encryption";
         final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, Encryptor.RSA_PKCS1);
+        final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
+        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
+        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
+    }
+
+    /**
+     * Upgrade test: client upgraded and server upgraded
+     * 1. Client generated key pair before upgrading to 11.1.1
+     * 2. Server is upgraded and encrypts push notification with stored key using new RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithNewCipherForKeyCreatedBeforeChange() {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
+        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
+        final String data = "Test data for encryption";
+        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, Encryptor.RSA_ECB_OAEP);
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
         final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
