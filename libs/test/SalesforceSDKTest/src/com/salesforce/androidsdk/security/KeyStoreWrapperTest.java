@@ -135,41 +135,70 @@ public class KeyStoreWrapperTest {
     // In 250 server will use the new RSA cipher mode
 
     /**
-     * Upgrade test: client upgraded and server not yet upgraded
-     * 1. Client generates key pair before upgrading to 11.1.1
-     * 2. Server has not been upgraded yet and encrypts push notification with stored key using old RSA cipher mode
+     * New client against new server
+     * 1. Client generates key pair with new code
+     * 2. Server encrypts push notification using new RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithNewRSACipher() {
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, true);
+    }
+
+    /**
+     * New client against old server
+     * 1. Client generates key pair with new code
+     * 2. Server has not been upgraded yet and encrypts push notification using old RSA cipher mode
      * 3. Client tries to decrypt push notification
      */
     @Test
     public void testDecryptDataEncryptedWithLegacyRSACipher() {
-        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
-        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
-        keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
-        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
-        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
-        final String data = "Test data for encryption";
-        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, Encryptor.RSA_PKCS1);
-        final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
-        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
-        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
-        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, false);
     }
 
     /**
-     * Upgrade test: client upgraded and server upgraded
+     * Upgraded client against new server
      * 1. Client generated key pair before upgrading to 11.1.1
-     * 2. Server is upgraded and encrypts push notification with stored key using new RSA cipher mode
+     * 2. Server encrypts push notification using new RSA cipher mode
      * 3. Client tries to decrypt push notification
      */
     @Test
-    public void testDecryptDataEncryptedWithNewCipherForKeyCreatedBeforeChange() {
+    public void testDecryptDataEncryptedWithNewRSACipherForKeyCreatedBeforeUpgrade() {
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, true);
+    }
+
+    /**
+     * Upgraded client against old server
+     * 1. Client generates key pair before upgrading to 11.1.1
+     * 2. Server has not been upgraded yet and encrypts push notification using old RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithLegacyRSACipherForKeyCreatedBeforeUpgrade() {
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false);
+    }
+
+    /**
+     * Helper method for tests for RSA cipher mode change
+     * @param newClient true means new client (key generated with new code), false means upgraded client (key generated the old way)
+     * @param newServer true means new server (using new cipher mode), false means old server (using old cipher mode)
+     */
+    private void tryNewOrUpgradedClientAgainstNewOrOldServer(boolean newClient, boolean newServer) {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
-        keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
+        if (!newClient) {
+            // Simulating upgraded client / generating key the old way
+            keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
+        }
         final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
         final String data = "Test data for encryption";
-        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data, Encryptor.RSA_ECB_OAEP);
+        // Simulating server
+        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data,
+                newServer
+                        ? Encryptor.RSA_ECB_OAEP // new server / cipher mode
+                        : Encryptor.RSA_PKCS1    // old server / cipher mode
+        );
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
         final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
