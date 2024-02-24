@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 
@@ -48,7 +49,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * retrieval of push notification registration information from a
  * private shared preference file.
  */
-object PushMessaging {
+public object PushMessaging {
     private const val TAG = "PushMessaging"
 
     // Public constants.
@@ -73,12 +74,32 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
+        register(context = context, account = account, recreateKey = false);
+    }
+
+    /**
+     * Initiates push registration, if the application is not already registered.
+     * Otherwise, this method initiates registration/re-registration to the
+     * SFDC endpoint, in order to keep it alive, or to register a new account
+     * that just logged in.
+     *
+     * @param context Context.
+     * @param account User account.
+     * @param recreateKey true if RSA key should be regenerated
+     */
+    @JvmStatic
+    fun register(context: Context, account: UserAccount?, recreateKey: Boolean) {
         if (isPushSetup(context)) {
             // Ensure Firebase is initialized
             getFirebaseApp(context)
             val firebaseMessaging = SalesforceSDKManager.getInstance()
                 .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
             firebaseMessaging.isAutoInitEnabled = true
+
+            // Delete existing key if recreateKey is true
+            if (recreateKey && PushService.pushNotificationKeyName.isNotEmpty()) {
+                KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
+            }
 
             /*
              * Performs registration steps if it is a new account, or if the
