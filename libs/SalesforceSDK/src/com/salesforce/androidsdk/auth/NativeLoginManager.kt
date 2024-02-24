@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -142,14 +143,16 @@ internal class NativeLoginManager(
             // Second REST Call - token request with code verifier
             val tokenResponse = suspendedRestCall(tokenRequest) ?: return NativeLoginResult.UnknownError
             return if (tokenResponse.isSuccess) {
-                finishAuthFlow(tokenResponse)
-                NativeLoginResult.Success
+                if (suspendFinishAuthFlow(tokenResponse) != null) {
+                    NativeLoginResult.Success
+                } else {
+                    SalesforceSDKLogger.e(TAG, "Unable to create user account from successful token response.")
+                    NativeLoginResult.UnknownError
+                }
             } else {
-                // TODO: log
                 NativeLoginResult.UnknownError
             }
         } else {
-            // TODO: log
             return NativeLoginResult.InvalidCredentials
         }
     }
@@ -181,30 +184,39 @@ internal class NativeLoginManager(
                 && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
     }
 
-    private fun finishAuthFlow(tokenResponse: RestResponse) {
+    private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): UserAccount? {
         val appContext = SalesforceSDKManager.getInstance().appContext
         val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
         val tokenEndpointResponse = OAuth2.TokenEndpointResponse(tokenResponse.rawResponse)
-        val callback = object : OAuthWebviewHelper.OAuthWebviewHelperEvents {
-            override fun loadingLoginPage(loginUrl: String) { /* This will never be called. */ }
-            override fun onAccountAuthenticatorResult(authResult: Bundle) { /* Unused */ }
 
-            override fun finish(userAccount: UserAccount?) {
-                accountManager.switchToUser(userAccount)
-                // Start App's Main Activity
-                appContext.startActivity(
-                    Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-                            setPackage(appContext.packageName)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                )
+        return suspendCoroutine { continuation ->
+            OAuthWebviewHelper(appContext, object : OAuthWebviewHelper.OAuthWebviewHelperEvents {
+                override fun loadingLoginPage(loginUrl: String) { /* This will never be called. */ }
+                override fun onAccountAuthenticatorResult(authResult: Bundle) { /* Unused */ }
 
-                // TODO: finish native login from here
+                override fun finish(userAccount: UserAccount?) {
+                    if (userAccount != null) {
+                        accountManager.switchToUser(userAccount)
+                        // Start App's Main Activity
+                        appContext.startActivity(
+                            Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
+                                setPackage(appContext.packageName)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                        )
+                    }
 
-            }
+                    /**
+                     * We need to wait until the main activity is launched here before
+                     * returning success back to the apps Native Login Activity.  If we
+                     * don't when they call finish() the activity will just be restarted
+                     * and will hand around forever behind the main activity.
+                     */
+                    continuation.resume(userAccount)
+                }
+
+            }, loginOptions).onAuthFlowComplete(tokenEndpointResponse)
         }
-
-        OAuthWebviewHelper(appContext, callback, loginOptions).onAuthFlowComplete(tokenEndpointResponse)
     }
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {
@@ -218,6 +230,7 @@ internal class NativeLoginManager(
 
                     override fun onError(exception: Exception?) {
                         if (exception != null) {
+                            SalesforceSDKLogger.e(TAG, "Authentication call was unsuccessful.", exception)
                             continuation.resumeWithException(exception)
                         }
                     }
@@ -243,5 +256,6 @@ internal class NativeLoginManager(
         private const val HTTP_POST_CONTENT_TYPE = "application/x-www-form-urlencoded"
         private const val AUTHORIZATION_TYPE_BASIC = "Basic "
         private const val CODE_CREDENTIALS = "code_credentials"
+        private const val TAG = "NativeLoginManager"
     }
 }
