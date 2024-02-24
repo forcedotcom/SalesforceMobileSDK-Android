@@ -248,14 +248,14 @@ public class UserAccountManager {
         if (accounts.length == 0) {
         	return null;
         }
-        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
+        final List<UserAccount> userAccounts = new ArrayList<>();
         for (final Account account : accounts) {
         	final UserAccount userAccount = buildUserAccount(account);
         	if (userAccount != null) {
         		userAccounts.add(userAccount);
         	}
         }
-        if (userAccounts.size() == 0) {
+        if (userAccounts.isEmpty()) {
         	return null;
         }
         return userAccounts;

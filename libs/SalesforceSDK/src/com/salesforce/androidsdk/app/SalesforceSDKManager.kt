@@ -552,7 +552,7 @@ open class SalesforceSDKManager protected constructor(
      */
     fun useNativeLogin(consumerKey: String, callbackUrl: String, communityUrl: String): NativeLoginManagerInterface {
         nativeLoginManager = NativeLoginManager(consumerKey, callbackUrl, communityUrl)
-        return nativeLoginManager as NativeLoginManagerInterface
+        return nativeLoginManager
     }
 
     /**

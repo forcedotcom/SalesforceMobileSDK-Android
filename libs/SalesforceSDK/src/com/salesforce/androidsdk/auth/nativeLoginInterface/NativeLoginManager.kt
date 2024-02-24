@@ -45,10 +45,16 @@ interface NativeLoginManager {
     val shouldShowBackButton: Boolean
 
     /**
+     * The username of the locked account or null.  Can be used to pre-populate the username field
+     * or in a message telling the user which account biometric will unlock.
+     */
+    val biometricAuthenticationUsername: String?
+
+    /**
      * Initiate a login with user provided username and password.
      *
      * @param username User provided Salesforce username.
-     * @param password User provided Salesforce password.f
+     * @param password User provided Salesforce password.
      * @return NativeLoginResult
      */
     suspend fun login(username: String, password: String): NativeLoginResult
@@ -57,28 +63,4 @@ interface NativeLoginManager {
      * Initiates web based authentication.
      */
     fun fallbackToWebAuthentication()
-
-
-    /**
-     * Cancels authentication if appropriate.  Use this function to
-     * navigate back to the app if the user backs out of authentication
-     * when another user is logged in.
-     */
-    fun cancelAuthentication()
-
-    // Biometric Authentication Helpers
-
-    /**
-     * The username of the locked account or null.  Can be used to pre-populate the username field
-     * or in a message telling the user which account biometric will unlock.
-     */
-    val getBiometricAuthenticationUsername: String?
-
-    /**
-     * Signals that the user has preformed a successful biometric challenge.
-     * Used to unlock the app in the case of Biometric Authentication.
-     *
-     * Note: this call will dismiss your login activity.
-     */
-    fun biometricAuthenticationSuccess()
 }

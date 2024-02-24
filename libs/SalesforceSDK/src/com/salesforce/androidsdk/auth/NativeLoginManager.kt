@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -66,11 +67,19 @@ internal class NativeLoginManager(
     private val loginUrl: String,
 ): NativeLoginManager {
 
+    private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
+    private val bioAuthLocked
+        get() = SalesforceSDKManager.getInstance().biometricAuthenticationManager?.locked == true
     override val shouldShowBackButton: Boolean
-        get() { return false }
-
-    override val getBiometricAuthenticationUsername: String?
-        get() { return null }
+        get() = !bioAuthLocked && accountManager.authenticatedUsers != null
+    override val biometricAuthenticationUsername: String?
+        get() {
+            return if (bioAuthLocked) {
+                accountManager.currentUser.username
+            } else {
+                null
+            }
+        }
 
     override suspend fun login(username: String, password: String): NativeLoginResult {
         val trimmedUsername = username.trim()
@@ -147,23 +156,13 @@ internal class NativeLoginManager(
 
     override fun fallbackToWebAuthentication() {
         val context = SalesforceSDKManager.getInstance().appContext
-        val i = Intent(context, SalesforceSDKManager.getInstance().webviewLoginActivityClass)
-        /**
-         * Use MULTIPLE_TASK instead of FLAG_ACTIVITY_NEW_TASK because unlike webview login flow
-         * we want to come back to the Native Login Activity if the user backs out of LoginActivity.
-         */
-        i.setFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-        i.putExtras(SalesforceSDKManager.getInstance().loginOptions.asBundle())
-        Bundle().putParcelable(AccountManager.KEY_INTENT, i)
-        context.startActivity(i)
-    }
-
-    override fun cancelAuthentication() {
-        TODO("Not yet implemented")
-    }
-
-    override fun biometricAuthenticationSuccess() {
-        TODO("Not yet implemented")
+        val intent = Intent(context, SalesforceSDKManager.getInstance().webviewLoginActivityClass)
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
+        options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, bioAuthLocked)
+        intent.putExtras(options)
+        Bundle().putParcelable(AccountManager.KEY_INTENT, intent)
+        context.startActivity(intent)
     }
 
     private fun isValidUsername(username: String): Boolean {
@@ -176,7 +175,7 @@ internal class NativeLoginManager(
 
     private fun isValidPassword(password: String): Boolean {
         val containsNumber = password.contains("[0-9]".toRegex())
-        val containsLetter = password.contains("[A-Za-z]".toRegex()) // TODO: check this works correctly
+        val containsLetter = password.contains("[A-Za-z]".toRegex())
 
         return containsNumber && containsLetter && password.length >= MIN_PASSWORD_LENGTH
                 && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
@@ -191,7 +190,7 @@ internal class NativeLoginManager(
             override fun onAccountAuthenticatorResult(authResult: Bundle) { /* Unused */ }
 
             override fun finish(userAccount: UserAccount?) {
-                SalesforceSDKManager.getInstance().userAccountManager.switchToUser(userAccount)
+                accountManager.switchToUser(userAccount)
                 // Start App's Main Activity
                 appContext.startActivity(
                     Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
@@ -199,6 +198,9 @@ internal class NativeLoginManager(
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                 )
+
+                // TODO: finish native login from here
+
             }
         }
 

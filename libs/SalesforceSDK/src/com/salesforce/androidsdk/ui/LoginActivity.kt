@@ -384,14 +384,13 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
 
     private fun handleBackBehavior() {
+        // If app is using Native Login this activity is a fallback and can be dismissed.
+        if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
+            finish()
+        }
+
         // Do nothing if locked
         if (SalesforceSDKManager.getInstance().biometricAuthenticationManager?.locked == false) {
-
-            // If app is using Native Login this activity is a fallback and can be dismissed.
-            if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
-                finish()
-            }
-
             /*
              * If there are no accounts signed in, the login screen needs to go
              * away and go back to the home screen. However, if the login screen
