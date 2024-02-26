@@ -160,6 +160,12 @@ open class SalesforceSDKManager protected constructor(
     internal val nativeLoginActivity: Class<out Activity>? = null,
 ) : LifecycleObserver {
 
+    constructor(
+        context: Context,
+        mainActivity: Class<out Activity>,
+        loginActivity: Class<out Activity>? = null
+    ) : this(context, mainActivity, loginActivity, nativeLoginActivity = null)
+
     /** The Android context */
     val appContext: Context = context
 

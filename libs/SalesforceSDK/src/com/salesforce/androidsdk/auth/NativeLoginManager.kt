@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.jetbrains.annotations.VisibleForTesting
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -168,7 +169,8 @@ internal class NativeLoginManager(
         context.startActivity(intent)
     }
 
-    private fun isValidUsername(username: String): Boolean {
+    @VisibleForTesting
+    internal fun isValidUsername(username: String): Boolean {
         if (username.length > MAX_USERNAME_LENGTH) {
             return false
         }
@@ -176,7 +178,8 @@ internal class NativeLoginManager(
         return Regex(USERNAME_REGEX_PATTERN).matches(username)
     }
 
-    private fun isValidPassword(password: String): Boolean {
+    @VisibleForTesting
+    internal fun isValidPassword(password: String): Boolean {
         val containsNumber = password.contains("[0-9]".toRegex())
         val containsLetter = password.contains("[A-Za-z]".toRegex())
 
