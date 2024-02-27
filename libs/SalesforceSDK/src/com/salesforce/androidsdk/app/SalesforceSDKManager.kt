@@ -1660,7 +1660,7 @@ open class SalesforceSDKManager protected constructor(
      */
     fun fetchAuthenticationConfiguration(
         completion: (() -> Unit)? = null
-    ) = CoroutineScope(Main).launch {
+    ) = CoroutineScope(Default).launch {
         runCatching {
             withTimeout(5000L) {
                 val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout

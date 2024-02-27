@@ -121,7 +121,6 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
-import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request.Builder
@@ -380,7 +379,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 doLoadPage()
             }
 
-            else -> CoroutineScope(Main).launch {
+            else -> CoroutineScope(Default).launch {
                 SwapJWTForAccessTokenTask().execute(loginOptions)
             }
         }
@@ -720,19 +719,19 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      */
     fun onAuthFlowComplete(tr: TokenEndpointResponse?) {
         d(TAG, "token response -> $tr")
-        CoroutineScope(Main).launch {
+        CoroutineScope(Default).launch {
             FinishAuthTask().execute(tr)
         }
     }
 
     fun onWebServerFlowComplete(code: String?) =
-        CoroutineScope(Main).launch {
+        CoroutineScope(Default).launch {
             doCodeExchangeEndpoint(code)
         }
 
     private suspend fun doCodeExchangeEndpoint(
         code: String?
-    ) = withContext(Main) {
+    ) = withContext(Default) {
         var tokenResponse: TokenEndpointResponse? = null
         runCatching {
             tokenResponse = exchangeCode(
