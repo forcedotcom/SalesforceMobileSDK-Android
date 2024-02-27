@@ -615,7 +615,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
             refIdToFields.put(refIdAccount, accountFields);
             List<RestRequest.SObjectTree> contactTrees = new ArrayList<>();
             for (int j = 0; j<listContactFields.size(); j++) {
-                String refIdContact = refIdAccount + ":refContact_" + j;
+                String refIdContact = refIdAccount + "__refContact_" + j;
                 Map<String, Object> contactFields = listContactFields.get(j);
                 refIdToFields.put(refIdContact, contactFields);
                 contactTrees.add(new RestRequest.SObjectTree(Constants.CONTACT, Constants.CONTACTS, refIdContact, contactFields, null));
@@ -640,7 +640,7 @@ public class ParentChildrenSyncTestCase extends SyncManagerTestCase {
         // Populate accountIdToFields and accountIdContactIdToFields
         for (String refId : refIdToId.keySet()) {
             Map<String, Object> fields = refIdToFields.get(refId);
-            String[] parts = refId.split(":");
+            String[] parts = refId.split("__");
             String accountId = refIdToId.get(parts[0]);
             String contactId = parts.length > 1 ? refIdToId.get(refId) : null;
             if (contactId == null) {
