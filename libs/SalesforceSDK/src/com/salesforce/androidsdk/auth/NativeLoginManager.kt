@@ -132,7 +132,6 @@ internal class NativeLoginManager(
                 CODE_VERIFIER to codeVerifier,
             )
 
-            // Use authEndpoint from community?
             val tokenRequest = RestRequest(
                 RestRequest.RestMethod.POST,
                 RestRequest.RestEndpoint.LOGIN,
@@ -144,12 +143,8 @@ internal class NativeLoginManager(
             // Second REST Call - token request with code verifier
             val tokenResponse = suspendedRestCall(tokenRequest) ?: return NativeLoginResult.UnknownError
             return if (tokenResponse.isSuccess) {
-                if (suspendFinishAuthFlow(tokenResponse) != null) {
-                    NativeLoginResult.Success
-                } else {
-                    SalesforceSDKLogger.e(TAG, "Unable to create user account from successful token response.")
-                    NativeLoginResult.UnknownError
-                }
+                // Returns NativeLoginResult.Success or UnknownError based on if the user is created.
+                suspendFinishAuthFlow(tokenResponse)
             } else {
                 NativeLoginResult.UnknownError
             }
@@ -187,7 +182,7 @@ internal class NativeLoginManager(
                 && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
     }
 
-    private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): UserAccount? {
+    private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
         val appContext = SalesforceSDKManager.getInstance().appContext
         val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
         val tokenEndpointResponse = OAuth2.TokenEndpointResponse(tokenResponse.rawResponse)
@@ -215,7 +210,15 @@ internal class NativeLoginManager(
                      * don't when they call finish() the activity will just be restarted
                      * and will hand around forever behind the main activity.
                      */
-                    continuation.resume(userAccount)
+                    continuation.resume(
+                        when(userAccount) {
+                            null -> {
+                                SalesforceSDKLogger.e(TAG, "Unable to create user account from successful token response.")
+                                NativeLoginResult.UnknownError
+                            }
+                            else -> NativeLoginResult.Success
+                        }
+                    )
                 }
 
             }, loginOptions).onAuthFlowComplete(tokenEndpointResponse)
