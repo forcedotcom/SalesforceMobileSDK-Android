@@ -120,8 +120,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.Default
-import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request.Builder
@@ -380,7 +379,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 doLoadPage()
             }
 
-            else -> CoroutineScope(Main).launch {
+            else -> CoroutineScope(IO).launch {
                 SwapJWTForAccessTokenTask().execute(loginOptions)
             }
         }
@@ -720,19 +719,19 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      */
     fun onAuthFlowComplete(tr: TokenEndpointResponse?) {
         d(TAG, "token response -> $tr")
-        CoroutineScope(Main).launch {
+        CoroutineScope(IO).launch {
             FinishAuthTask().execute(tr)
         }
     }
 
     fun onWebServerFlowComplete(code: String?) =
-        CoroutineScope(Main).launch {
+        CoroutineScope(IO).launch {
             doCodeExchangeEndpoint(code)
         }
 
     private suspend fun doCodeExchangeEndpoint(
         code: String?
-    ) = withContext(Main) {
+    ) = withContext(IO) {
         var tokenResponse: TokenEndpointResponse? = null
         runCatching {
             tokenResponse = exchangeCode(
@@ -821,7 +820,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
          * Finishes the authentication flow.
          * @param request The authentication response
          */
-        internal suspend fun execute(request: Parameter?) = withContext(Default) {
+        internal suspend fun execute(request: Parameter?) = withContext(IO) {
             onPostExecute(doInBackground(request))
         }
 
@@ -979,7 +978,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         }.onFailure { throwable ->
                             w(TAG, "Revoking token failed", throwable)
                         }.onSuccess { uri ->
-                            CoroutineScope(Default).launch {
+                            CoroutineScope(IO).launch {
                                 revokeRefreshToken(
                                     DEFAULT,
                                     uri,
@@ -1164,7 +1163,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
         when {
             SalesforceSDKManager.getInstance().isTestRun -> logAddAccount(account)
-            else -> CoroutineScope(Default).launch {
+            else -> CoroutineScope(IO).launch {
                 logAddAccount(account)
             }
         }
