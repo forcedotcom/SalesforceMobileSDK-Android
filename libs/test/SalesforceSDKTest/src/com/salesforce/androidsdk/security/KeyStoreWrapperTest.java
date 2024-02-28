@@ -36,6 +36,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.push.PushMessaging;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -142,7 +143,7 @@ public class KeyStoreWrapperTest {
      */
     @Test
     public void testDecryptDataEncryptedWithNewRSACipher() {
-        tryNewOrUpgradedClientAgainstNewOrOldServer(true, true);
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, true, false);
     }
 
     /**
@@ -153,7 +154,7 @@ public class KeyStoreWrapperTest {
      */
     @Test
     public void testDecryptDataEncryptedWithLegacyRSACipher() {
-        tryNewOrUpgradedClientAgainstNewOrOldServer(true, false);
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, false, false);
     }
 
     /**
@@ -164,7 +165,8 @@ public class KeyStoreWrapperTest {
      */
     @Test
     public void testDecryptDataEncryptedWithNewRSACipherForKeyCreatedBeforeUpgrade() {
-        tryNewOrUpgradedClientAgainstNewOrOldServer(false, true);
+        // NB: only works with upgrade step (which regenerates the key)
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, true, true);
     }
 
     /**
@@ -175,20 +177,29 @@ public class KeyStoreWrapperTest {
      */
     @Test
     public void testDecryptDataEncryptedWithLegacyRSACipherForKeyCreatedBeforeUpgrade() {
-        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false);
+        // With upgrade step (which regenerates the key)
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false, true);
+
+        // Also works without the upgrade step
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false, false);
     }
 
     /**
      * Helper method for tests for RSA cipher mode change
      * @param newClient true means new client (key generated with new code), false means upgraded client (key generated the old way)
      * @param newServer true means new server (using new cipher mode), false means old server (using old cipher mode)
+     * @param simulateUpgradeStep true means run the code that SalesforceSDKUpgradeManager would run if coming from an older version (one with the old cipher mode)
      */
-    private void tryNewOrUpgradedClientAgainstNewOrOldServer(boolean newClient, boolean newServer) {
+    private void tryNewOrUpgradedClientAgainstNewOrOldServer(boolean newClient, boolean newServer, boolean simulateUpgradeStep) {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
         if (!newClient) {
             // Simulating upgraded client / generating key the old way
             keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
+            if (simulateUpgradeStep) {
+                // Simulating the upgrade step which should run when app first run
+                KeyStoreWrapper.getInstance().deleteKey(KEY_1);
+            }
         }
         final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
