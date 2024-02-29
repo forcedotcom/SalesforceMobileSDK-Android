@@ -107,8 +107,8 @@ public object PushMessaging {
                 .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
             firebaseMessaging.isAutoInitEnabled = true
 
-            // Delete existing key if recreateKeyAtReRegistration is true
-            // Then sets recreateKeyAtReRegistration to false
+            // Delete existing key if recreateKey is true
+            // That will cause the key to be recreated when registerSFDCPush is called
             if (recreateKey && PushService.pushNotificationKeyName.isNotEmpty()) {
                 KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
             }
