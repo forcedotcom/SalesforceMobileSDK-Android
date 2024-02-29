@@ -49,7 +49,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * retrieval of push notification registration information from a
  * private shared preference file.
  */
-public object PushMessaging {
+object PushMessaging {
     private const val TAG = "PushMessaging"
 
     // Public constants.

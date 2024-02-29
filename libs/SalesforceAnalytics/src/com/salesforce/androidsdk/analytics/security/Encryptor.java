@@ -439,9 +439,9 @@ public class Encryptor {
      * @return Decrypted data.
      */
     public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
-        byte[] result =  decryptWithPrivateKey(privateKey, data, RSA_ECB_OAEP);
+        byte[] result =  decryptWithPrivateKey(privateKey, data, RSA_ECB_OAEP, /* logErrorOnFailure */ false);
         if (result == null) {
-            result = decryptWithPrivateKey(privateKey, data, RSA_PKCS1);
+            result = decryptWithPrivateKey(privateKey, data, RSA_PKCS1, /* logErrorOnFailure */ true);
         }
         return result;
     }
@@ -533,12 +533,12 @@ public class Encryptor {
             cipherInstance.init(Cipher.ENCRYPT_MODE, publicKey);
             return cipherInstance.doFinal(data.getBytes());
         } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Failed to encrypt with " + cipherMode, e);
         }
         return null;
     }
 
-    public static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipherMode) {
+    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipherMode, boolean logErrorOnFailure) {
         if (privateKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
@@ -548,7 +548,11 @@ public class Encryptor {
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipherInstance.doFinal(decodedBytes);
         } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption", e);
+            if (logErrorOnFailure) {
+                SalesforceAnalyticsLogger.e(null, TAG, "Failed to decrypt with " + cipherMode, e);
+            } else {
+                SalesforceAnalyticsLogger.w(null, TAG, "Failed to decrypt with " + cipherMode);
+            }
         }
         return null;
     }
