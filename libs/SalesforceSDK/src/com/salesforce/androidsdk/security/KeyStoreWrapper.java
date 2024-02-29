@@ -85,7 +85,7 @@ public class KeyStoreWrapper {
      */
     public void deleteKey(String name) {
         try {
-            if (keyStore.containsAlias(name)) {
+            if (!name.isEmpty() && keyStore.containsAlias(name)) {
                 keyStore.deleteEntry(name);
             }
         } catch (Exception e) {
