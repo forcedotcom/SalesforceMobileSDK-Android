@@ -7,6 +7,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager.UserManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.LegacyAdminSettingsManager
+import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import org.junit.Assert
@@ -149,10 +150,8 @@ class SalesforceSDKUpgradeManagerTest {
         // Upgrade to 11.1.1
         upgradeMgr.upgrade()
 
-        // Public key stored should have changed
-        val currentKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
-
-        Assert.assertNotEquals("Key should have changed", originalKey, currentKey);
+        // Make sure re-registration is requested
+        Assert.assertTrue(PushMessaging.reRegistrationRequested)
     }
 
     @Test
@@ -164,10 +163,8 @@ class SalesforceSDKUpgradeManagerTest {
         setVersion("12.0.0")
         upgradeMgr.upgrade()
 
-        // Public key stored should have changed
-        val currentKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
-
-        Assert.assertEquals("Key should not have changed", originalKey, currentKey);
+        // Make sure re-registration is NOT requested
+        Assert.assertFalse(PushMessaging.reRegistrationRequested)
     }
 
     fun setVersion(version: String) {

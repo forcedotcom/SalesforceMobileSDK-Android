@@ -63,6 +63,17 @@ public object PushMessaging {
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
 
+    // Re-register once push is setup
+    @JvmStatic
+    var reRegistrationRequested = false
+
+    @JvmStatic
+    fun onPushReceiverSetup(context: Context) {
+        if (isPushSetup(context) && reRegistrationRequested) {
+            register(context, null, true)
+        }
+    }
+
     /**
      * Initiates push registration, if the application is not already registered.
      * Otherwise, this method initiates registration/re-registration to the
@@ -89,20 +100,18 @@ public object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?, recreateKey: Boolean) {
-        // Delete existing key if recreateKey is true
-        // NB: Not needed (but won't do any harm) if push is not setup
-        //     Having it here rather than within if (isPushSetup(context)) {}
-        //     to make unit testing easier
-        if (recreateKey && PushService.pushNotificationKeyName.isNotEmpty()) {
-            KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
-        }
-
         if (isPushSetup(context)) {
             // Ensure Firebase is initialized
             getFirebaseApp(context)
             val firebaseMessaging = SalesforceSDKManager.getInstance()
                 .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
             firebaseMessaging.isAutoInitEnabled = true
+
+            // Delete existing key if recreateKeyAtReRegistration is true
+            // Then sets recreateKeyAtReRegistration to false
+            if (recreateKey && PushService.pushNotificationKeyName.isNotEmpty()) {
+                KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
+            }
 
             /*
              * Performs registration steps if it is a new account, or if the

@@ -302,8 +302,8 @@ public class SalesforceSDKUpgradeManager {
     }
 
     private void updateFromBefore11_1_1() {
-        // Re-register all users for push notifications with new keys
-        PushMessaging.register(SalesforceSDKManager.getInstance().context, null, true);
+        // Re-register all users for push notifications with new keys once push is setup
+        PushMessaging.setReRegistrationRequested(true);
     }
 
 }
