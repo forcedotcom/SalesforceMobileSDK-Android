@@ -99,6 +99,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
+import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
 import com.salesforce.androidsdk.push.PushMessaging.unregister
@@ -253,6 +254,10 @@ open class SalesforceSDKManager protected constructor(
     @get:Synchronized
     @set:Synchronized
     var pushNotificationReceiver: PushNotificationInterface? = null
+        set(value) {
+            field = value
+            PushMessaging.onPushReceiverSetup(appContext)
+        }
 
     /**
      * The class fulfilling push notification registration features.  A default

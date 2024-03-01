@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 
@@ -62,6 +63,17 @@ object PushMessaging {
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
 
+    // Re-register once push is setup
+    @JvmStatic
+    var reRegistrationRequested = false
+
+    @JvmStatic
+    fun onPushReceiverSetup(context: Context) {
+        if (isPushSetup(context) && reRegistrationRequested) {
+            register(context, null, true)
+        }
+    }
+
     /**
      * Initiates push registration, if the application is not already registered.
      * Otherwise, this method initiates registration/re-registration to the
@@ -73,6 +85,21 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
+        register(context = context, account = account, recreateKey = false);
+    }
+
+    /**
+     * Initiates push registration, if the application is not already registered.
+     * Otherwise, this method initiates registration/re-registration to the
+     * SFDC endpoint, in order to keep it alive, or to register a new account
+     * that just logged in.
+     *
+     * @param context Context.
+     * @param account User account.
+     * @param recreateKey true if RSA key should be regenerated
+     */
+    @JvmStatic
+    fun register(context: Context, account: UserAccount?, recreateKey: Boolean) {
         if (isPushSetup(context)) {
             // Ensure Firebase is initialized
             getFirebaseApp(context)
@@ -100,6 +127,11 @@ object PushMessaging {
                     }
                 }
             } else {
+                // Delete existing key if recreateKey is true
+                if (recreateKey) {
+                    KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
+                }
+
                 registerSFDCPush(context, account)
             }
         }

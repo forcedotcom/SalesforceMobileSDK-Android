@@ -28,10 +28,17 @@ package com.salesforce.androidsdk.security;
 
 import android.app.Application;
 import android.app.Instrumentation;
+import android.util.Base64;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.push.PushMessaging;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,10 +46,6 @@ import org.junit.runner.RunWith;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
-
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 /**
  * Tests for {@link KeyStoreWrapper}.
@@ -62,6 +65,13 @@ public class KeyStoreWrapperTest {
         final Application app = Instrumentation.newApplication(TestForceApp.class,
                 InstrumentationRegistry.getInstrumentation().getTargetContext());
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        keyStoreWrapper.deleteKey(KEY_1);
+        keyStoreWrapper.deleteKey(KEY_2);
     }
 
     @Test
@@ -115,5 +125,94 @@ public class KeyStoreWrapperTest {
         final PrivateKey key1 = keyStoreWrapper.getECPrivateKey(KEY_1);
         final PrivateKey key1Again = keyStoreWrapper.getECPrivateKey(KEY_1);
         Assert.assertEquals("Private keys with the same name should be the same", key1, key1Again);
+    }
+
+    // RSA is used to encrypt push notifications.
+    // 1. Client generates key pair, stores keys to key store and sends public key to server.
+    // 2. Server uses public key to encrypt part of push notification.
+    // 3. Client uses private key stored in key store to decrypt push notification.
+    //
+    // In 11.1.1 client will use a new RSA cipher mode
+    // In 250 server will use the new RSA cipher mode
+
+    /**
+     * New client against new server
+     * 1. Client generates key pair with new code
+     * 2. Server encrypts push notification using new RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithNewRSACipher() {
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, true, false);
+    }
+
+    /**
+     * New client against old server
+     * 1. Client generates key pair with new code
+     * 2. Server has not been upgraded yet and encrypts push notification using old RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithLegacyRSACipher() {
+        tryNewOrUpgradedClientAgainstNewOrOldServer(true, false, false);
+    }
+
+    /**
+     * Upgraded client against new server
+     * 1. Client generated key pair before upgrading to 11.1.1
+     * 2. Server encrypts push notification using new RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithNewRSACipherForKeyCreatedBeforeUpgrade() {
+        // NB: only works with upgrade step (which regenerates the key)
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, true, true);
+    }
+
+    /**
+     * Upgraded client against old server
+     * 1. Client generates key pair before upgrading to 11.1.1
+     * 2. Server has not been upgraded yet and encrypts push notification using old RSA cipher mode
+     * 3. Client tries to decrypt push notification
+     */
+    @Test
+    public void testDecryptDataEncryptedWithLegacyRSACipherForKeyCreatedBeforeUpgrade() {
+        // With upgrade step (which regenerates the key)
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false, true);
+
+        // Also works without the upgrade step
+        tryNewOrUpgradedClientAgainstNewOrOldServer(false, false, false);
+    }
+
+    /**
+     * Helper method for tests for RSA cipher mode change
+     * @param newClient true means new client (key generated with new code), false means upgraded client (key generated the old way)
+     * @param newServer true means new server (using new cipher mode), false means old server (using old cipher mode)
+     * @param simulateUpgradeStep true means run the code that SalesforceSDKUpgradeManager would run if coming from an older version (one with the old cipher mode)
+     */
+    private void tryNewOrUpgradedClientAgainstNewOrOldServer(boolean newClient, boolean newServer, boolean simulateUpgradeStep) {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        if (!newClient) {
+            // Simulating upgraded client / generating key the old way
+            keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_1, RSA_LENGTH);
+            if (simulateUpgradeStep) {
+                // Simulating the upgrade step which should run when app first run
+                KeyStoreWrapper.getInstance().deleteKey(KEY_1);
+            }
+        }
+        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
+        final String data = "Test data for encryption";
+        // Simulating server
+        final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data,
+                newServer
+                        ? Encryptor.RSA_ECB_OAEP // new server / cipher mode
+                        : Encryptor.RSA_PKCS1    // old server / cipher mode
+        );
+        final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
+        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
+        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
 }
