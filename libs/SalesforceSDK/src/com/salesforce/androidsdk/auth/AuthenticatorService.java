@@ -78,6 +78,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CONTENT_DOMAIN = "contentDomain";
     public static final String KEY_CONTENT_SID = "contentSid";
     public static final String KEY_CSRF_TOKEN = "csrfToken";
+    public static final String KEY_NATIVE_LOGIN = "nativeLogin";
     private static final String TAG = "AuthenticatorService";
 
     private Authenticator getAuthenticator() {

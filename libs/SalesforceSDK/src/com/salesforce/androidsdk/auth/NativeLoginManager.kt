@@ -223,7 +223,7 @@ internal class NativeLoginManager(
                     )
                 }
 
-            }, loginOptions).onAuthFlowComplete(tokenEndpointResponse)
+            }, loginOptions).onAuthFlowComplete(tokenEndpointResponse, nativeLogin = true)
         }
     }
 

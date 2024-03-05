@@ -59,6 +59,8 @@ public class UserAccountBuilder {
     private String contentDomain;
     private String contentSid;
     private String csrfToken;
+
+    private Boolean nativeLogin = false;
     private Map<String, String> additionalOauthValues;
 
     /**
@@ -339,6 +341,17 @@ public class UserAccountBuilder {
     }
 
     /**
+     * Sets if the user authenticated with native login.
+     *
+     * @param nativeLogin if the user authenticated with native login.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder nativeLogin(Boolean nativeLogin) {
+        this.nativeLogin = nativeLogin;
+        return this;
+    }
+
+    /**
      * Sets additional OAuth values.
      *
      * @param additionalOauthValues Additional OAuth values.
@@ -358,6 +371,6 @@ public class UserAccountBuilder {
         return new UserAccount(authToken, refreshToken, loginServer, idUrl, instanceServer, orgId,
                 userId, username, accountName, communityId, communityUrl, firstName, lastName,
                 displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
-                lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken);
+                lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin);
     }
 }

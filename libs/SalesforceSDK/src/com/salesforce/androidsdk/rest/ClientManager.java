@@ -379,7 +379,7 @@ public class ClientManager {
             String firstName, String lastName, String displayName, String email, String photoUrl,
             String thumbnailUrl, Map<String, String> additionalOauthValues,
             String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-            String contentDomain, String contentSid, String csrfToken) {
+            String contentDomain, String contentSid, String csrfToken, Boolean nativeLogin) {
         final Bundle extras = new Bundle();
         final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
@@ -411,6 +411,7 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_CONTENT_DOMAIN, SalesforceSDKManager.encrypt(contentDomain, encryptionKey));
         extras.putString(AuthenticatorService.KEY_CONTENT_SID, SalesforceSDKManager.encrypt(contentSid, encryptionKey));
         extras.putString(AuthenticatorService.KEY_CSRF_TOKEN, SalesforceSDKManager.encrypt(csrfToken, encryptionKey));
+        extras.putString(AuthenticatorService.KEY_NATIVE_LOGIN,  SalesforceSDKManager.encrypt(nativeLogin.toString(), encryptionKey));
         final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
             for (final String key : additionalOauthKeys) {
