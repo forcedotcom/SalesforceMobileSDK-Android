@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.auth.nativeLoginInterface
 
+import android.content.Intent
+
 enum class NativeLoginResult {
     InvalidUsername,      // Username does not meet Salesforce criteria (length, email format, ect).
     InvalidPassword,      // Password does not meet the weakest Salesforce criteria.
@@ -60,7 +62,13 @@ interface NativeLoginManager {
     suspend fun login(username: String, password: String): NativeLoginResult
 
     /**
-     * Initiates web based authentication.
+     * Use this function to get the intent for fallback web based authentication.
+     *
+     * In your native login activity start this intent in such a way as to [get a result callback](https://developer.android.com/training/basics/intents/result).
+     * A result code of `Activity.RESULT_OK` means the user has successfully authenticated via the webview and you
+     * can finish your activity.
+     *
+     * @return the intent to be started for fallback web based authentication.
      */
-    fun fallbackToWebAuthentication()
+    fun getFallbackWebAuthenticationIntent() : Intent
 }

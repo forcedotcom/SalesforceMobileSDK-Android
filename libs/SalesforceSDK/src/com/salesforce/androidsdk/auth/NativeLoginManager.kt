@@ -149,19 +149,21 @@ internal class NativeLoginManager(
                 NativeLoginResult.UnknownError
             }
         } else {
+            SalesforceSDKLogger.e(TAG, "Native Login Authorization Error: $authResponse")
             return NativeLoginResult.InvalidCredentials
         }
     }
 
-    override fun fallbackToWebAuthentication() {
+    override fun getFallbackWebAuthenticationIntent(): Intent {
         val context = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(context, SalesforceSDKManager.getInstance().webviewLoginActivityClass)
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
         options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, bioAuthLocked)
         intent.putExtras(options)
         Bundle().putParcelable(AccountManager.KEY_INTENT, intent)
-        context.startActivity(intent)
+
+        return intent
     }
 
     @VisibleForTesting

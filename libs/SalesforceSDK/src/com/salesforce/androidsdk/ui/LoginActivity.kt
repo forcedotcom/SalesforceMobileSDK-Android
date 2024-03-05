@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui
 import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
+import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -386,7 +387,9 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     private fun handleBackBehavior() {
         // If app is using Native Login this activity is a fallback and can be dismissed.
         if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
+            setResult(Activity.RESULT_CANCELED)
             finish()
+            return // If we don't call return here moveTaskToBack can also be called below.
         }
 
         // Do nothing if locked
@@ -529,6 +532,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             else -> USER_SWITCH_TYPE_DEFAULT
         }
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+        setResult(Activity.RESULT_OK)
         finish()
     }
 
