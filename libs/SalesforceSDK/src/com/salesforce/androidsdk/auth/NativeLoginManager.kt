@@ -131,6 +131,7 @@ internal class NativeLoginManager(
                 REDIRECT_URI to redirectUri,
                 CODE_VERIFIER to codeVerifier,
             )
+            authResponse.consumeQuietly()
 
             val tokenRequest = RestRequest(
                 RestRequest.RestMethod.POST,
@@ -188,6 +189,7 @@ internal class NativeLoginManager(
         val appContext = SalesforceSDKManager.getInstance().appContext
         val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
         val tokenEndpointResponse = OAuth2.TokenEndpointResponse(tokenResponse.rawResponse)
+        tokenResponse.consumeQuietly()
 
         return suspendCoroutine { continuation ->
             OAuthWebviewHelper(appContext, object : OAuthWebviewHelper.OAuthWebviewHelperEvents {

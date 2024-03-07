@@ -389,7 +389,12 @@ public class OAuth2 {
      * @param authToken Access token.
      */
     public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
-        return builder.header(AUTHORIZATION, BEARER + authToken);
+        if (builder.getHeaders$okhttp().get(AUTHORIZATION) == null) {
+            return builder.header(AUTHORIZATION, BEARER + authToken);
+        } else {
+            // Don't override header for Native Login authentication.
+            return builder;
+        }
     }
 
     private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
