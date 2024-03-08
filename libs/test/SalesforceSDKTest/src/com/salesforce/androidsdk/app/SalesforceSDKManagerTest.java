@@ -160,7 +160,7 @@ public class SalesforceSDKManagerTest {
                 null, null, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null);
+                null, false);
         final AccountManager accMgr = AccountManager.get(targetContext);
         final UserAccount curUser = userAccMgr.getCurrentUser();
         Assert.assertNotNull("Current user should NOT be null", curUser);

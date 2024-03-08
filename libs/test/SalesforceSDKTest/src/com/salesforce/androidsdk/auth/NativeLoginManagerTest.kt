@@ -109,7 +109,7 @@ class NativeLoginManagerTest {
             ClientManagerTest.TEST_USER_ID, null, null, null,
             null, null, null, null, null,
             null, null, null, null, null,
-            null, null, null
+            null, null, null, true
         )
     }
 }

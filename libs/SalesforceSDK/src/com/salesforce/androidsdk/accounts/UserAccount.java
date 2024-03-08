@@ -81,7 +81,7 @@ public class UserAccount {
 	public static final String CONTENT_DOMAIN = "contentDomain";
 	public static final String CONTENT_SID = "contentSid";
 	public static final String CSRF_TOKEN = "csrfToken";
-	private static final String NATIVE_LOGIN = "native_login";
+	public static final String NATIVE_LOGIN = "native_login";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";

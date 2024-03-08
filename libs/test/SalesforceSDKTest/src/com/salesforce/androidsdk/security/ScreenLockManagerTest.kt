@@ -176,7 +176,7 @@ class ScreenLockManagerTest {
             userAccount.userId, userAccount.communityId, userAccount.communityId, userAccount.firstName, userAccount.lastName,
             userAccount.displayName, userAccount.email, userAccount.photoUrl, userAccount.thumbnailUrl, userAccount.additionalOauthValues,
             userAccount.lightningDomain, userAccount.lightningSid, userAccount.vfDomain, userAccount.vfSid, userAccount.contentDomain,
-            userAccount.contentSid, userAccount.csrfToken
+            userAccount.contentSid, userAccount.csrfToken, userAccount.nativeLogin
         )
         val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
         val storedUserPrefs = ctx.getSharedPreferences(
