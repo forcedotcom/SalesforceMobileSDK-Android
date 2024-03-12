@@ -197,19 +197,13 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
+    internal val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+
     /**
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    val loginActivityClass: Class<out Activity>
-        get() {
-            return nativeLoginActivity ?: webviewLoginActivityClass
-        }
-
-    internal val webviewLoginActivityClass: Class<out Activity>
-        get() {
-            return loginActivity ?: LoginActivity::class.java
-        }
+    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -548,7 +542,7 @@ open class SalesforceSDKManager protected constructor(
     var shouldBlockSalesforceIntegrationUser = false
 
     /**
-     * Creates a NativeLoginManager instance that allows the app to use it's
+     * Creates a NativeLoginManager instance that allows the app to use its
      * own native UI for authentication.
      *
      * @param consumerKey The Connected App consumer key.

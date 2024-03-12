@@ -209,10 +209,10 @@ internal class NativeLoginManager(
                     }
 
                     /**
-                     * We need to wait until the main activity is launched here before
-                     * returning success back to the apps Native Login Activity.  If we
-                     * don't when they call finish() the activity will just be restarted
-                     * and will hand around forever behind the main activity.
+                     * We need to wait until the main activity is launched before
+                     * returning success back to the app's Native Login Activity.  If we
+                     * don't they call finish() too early and the activity will be restarted.
+                     * This will cause it to hang around forever behind the main activity.
                      */
                     continuation.resume(
                         when(userAccount) {
