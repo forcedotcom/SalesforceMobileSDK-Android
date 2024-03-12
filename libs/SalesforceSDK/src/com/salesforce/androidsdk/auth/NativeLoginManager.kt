@@ -44,8 +44,8 @@ import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
 import com.salesforce.androidsdk.auth.OAuth2.REDIRECT_URI
 import com.salesforce.androidsdk.auth.OAuth2.RESPONSE_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
-import com.salesforce.androidsdk.auth.nativeLoginInterface.NativeLoginManager
-import com.salesforce.androidsdk.auth.nativeLoginInterface.NativeLoginResult
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest

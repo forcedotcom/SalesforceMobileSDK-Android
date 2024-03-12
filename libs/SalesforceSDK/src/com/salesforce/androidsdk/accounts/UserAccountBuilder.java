@@ -343,11 +343,11 @@ public class UserAccountBuilder {
     /**
      * Sets if the user authenticated with native login.
      *
-     * @param nativeLogin if the user authenticated with native login.
+     * @param isNativeLogin if the user authenticated with native login.
      * @return Instance of this class.
      */
-    public UserAccountBuilder nativeLogin(Boolean nativeLogin) {
-        this.nativeLogin = nativeLogin;
+    public UserAccountBuilder nativeLogin(Boolean isNativeLogin) {
+        this.nativeLogin = isNativeLogin;
         return this;
     }
 

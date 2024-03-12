@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth.nativeLoginInterface
+package com.salesforce.androidsdk.auth.interfaces
 
 import android.content.Intent
 
