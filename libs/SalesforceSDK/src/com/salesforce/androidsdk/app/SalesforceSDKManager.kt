@@ -1472,13 +1472,15 @@ open class SalesforceSDKManager protected constructor(
         private fun init(
             context: Context,
             mainActivity: Class<out Activity>,
-            loginActivity: Class<out Activity>
+            loginActivity: Class<out Activity>? = null,
+            nativeLoginActivity: Class<out Activity>? = null,
         ) {
             if (INSTANCE == null) {
                 INSTANCE = SalesforceSDKManager(
                     context,
                     mainActivity,
-                    loginActivity
+                    loginActivity,
+                    nativeLoginActivity,
                 )
             }
             initInternal(context)
@@ -1548,7 +1550,28 @@ open class SalesforceSDKManager protected constructor(
         ) = init(
             context,
             mainActivity,
-            loginActivity
+            loginActivity,
+        )
+
+        /**
+         * Initializes required components. Native apps must call one overload
+         * of this method before using the Salesforce Mobile SDK.
+         *
+         * @param context The Android context
+         * @param mainActivity The app's main activity class
+         * @param loginActivity The app's login activity
+         * @param nativeLoginActivity The app's native login activity
+         */
+        fun initNative(
+            context: Context,
+            mainActivity: Class<out Activity>,
+            loginActivity: Class<out Activity>? = null,
+            nativeLoginActivity: Class<out Activity>,
+        ) = init(
+            context,
+            mainActivity,
+            loginActivity,
+            nativeLoginActivity,
         )
 
         /**
