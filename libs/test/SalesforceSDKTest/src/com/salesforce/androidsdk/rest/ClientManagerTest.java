@@ -557,7 +557,7 @@ public class ClientManagerTest {
                 TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
                 TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
                 null, null, null, null, null,
-                null, null);
+                null, null, false);
     }
 
     /**
@@ -571,6 +571,6 @@ public class ClientManagerTest {
                 null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME,
                 TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
                 null, null, null, null, null,
-                null, null);
+                null, null, false);
     }
 }

@@ -7,6 +7,9 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager.UserManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.LegacyAdminSettingsManager
+import com.salesforce.androidsdk.push.PushMessaging
+import com.salesforce.androidsdk.push.PushService
+import com.salesforce.androidsdk.security.KeyStoreWrapper
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -134,6 +137,34 @@ class SalesforceSDKUpgradeManagerTest {
             mutableMapOf("custom-org3" to "value3", "custom-user31" to "value31"),
             adminSettingsMgr.getPrefs(user31)
         )
+    }
+
+    @Test
+    fun testUpgradeFromBefore111() {
+        // Set version to a version before 11.1.1
+        setVersion("11.1.0")
+
+        // Create public key for push notifications
+        val originalKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
+
+        // Upgrade to 11.1.1
+        upgradeMgr.upgrade()
+
+        // Make sure re-registration is requested
+        Assert.assertTrue(PushMessaging.reRegistrationRequested)
+    }
+
+    @Test
+    fun testUpgradeAfter111() {
+        // Create public key for push notifications
+        val originalKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
+
+        // Upgrade to 12.0.0
+        setVersion("12.0.0")
+        upgradeMgr.upgrade()
+
+        // Make sure re-registration is NOT requested
+        Assert.assertFalse(PushMessaging.reRegistrationRequested)
     }
 
     fun setVersion(version: String) {

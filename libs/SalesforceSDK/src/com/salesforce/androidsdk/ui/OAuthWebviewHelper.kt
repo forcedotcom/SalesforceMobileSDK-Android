@@ -717,10 +717,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * successfully. The last step is to call the identity service to get the
      * username.
      */
-    fun onAuthFlowComplete(tr: TokenEndpointResponse?) {
+    fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
         d(TAG, "token response -> $tr")
         CoroutineScope(IO).launch {
-            FinishAuthTask().execute(tr)
+            FinishAuthTask().execute(tr, nativeLogin)
         }
     }
 
@@ -767,7 +767,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             backgroundException = throwable
         }.getOrNull()
 
-        override fun onPostExecute(tr: TokenEndpointResponse?) {
+        override fun onPostExecute(tr: TokenEndpointResponse?, nativeLogin: Boolean) {
             if (backgroundException != null) {
                 handleJWTError()
                 loginOptions.jwt = null
@@ -820,8 +820,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
          * Finishes the authentication flow.
          * @param request The authentication response
          */
-        internal suspend fun execute(request: Parameter?) = withContext(IO) {
-            onPostExecute(doInBackground(request))
+        internal suspend fun execute(request: Parameter?, nativeLogin: Boolean = false) = withContext(IO) {
+            onPostExecute(doInBackground(request), nativeLogin)
         }
 
         /** The exception that occurred during background work, if applicable */
@@ -849,9 +849,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             param: Parameter?
         ): TokenEndpointResponse?
 
-        open fun onPostExecute(
-            tr: TokenEndpointResponse?
-        ) {
+        open fun onPostExecute(tr: TokenEndpointResponse?, nativeLogin: Boolean) {
             val instance = SalesforceSDKManager.getInstance()
 
             // Failure cases
@@ -918,7 +916,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 tr?.vfSid,
                 tr?.contentDomain,
                 tr?.contentSid,
-                tr?.csrfToken
+                tr?.csrfToken,
+                nativeLogin
             )
 
             // Set additional administrator prefs if they exist
@@ -952,6 +951,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 .contentSid(accountOptions?.contentSid)
                 .csrfToken(accountOptions?.csrfToken)
                 .additionalOauthValues(accountOptions?.additionalOauthValues)
+                .nativeLogin(accountOptions?.nativeLogin)
                 .build()
 
             account.downloadProfilePhoto()
@@ -1149,7 +1149,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             accountOptions?.vfSid,
             accountOptions?.contentDomain,
             accountOptions?.contentSid,
-            accountOptions?.csrfToken
+            accountOptions?.csrfToken,
+            accountOptions?.nativeLogin,
         )
 
         /*
@@ -1234,7 +1235,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         val vfSid: String?,
         val contentDomain: String?,
         val contentSid: String?,
-        val csrfToken: String?
+        val csrfToken: String?,
+        val nativeLogin: Boolean = false,
     ) {
         private var bundle: Bundle = Bundle()
 
@@ -1261,6 +1263,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             bundle.putString(CONTENT_DOMAIN, contentDomain)
             bundle.putString(CONTENT_SID, contentSid)
             bundle.putString(CSRF_TOKEN, csrfToken)
+            bundle.putBoolean(NATIVE_LOGIN, nativeLogin)
             bundle = MapUtil.addMapToBundle(
                 additionalOauthValues,
                 SalesforceSDKManager.getInstance().additionalOauthKeys, bundle
@@ -1294,6 +1297,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             private const val CONTENT_DOMAIN = "content_domain"
             private const val CONTENT_SID = "content_sid"
             private const val CSRF_TOKEN = "csrf_token"
+            private const val NATIVE_LOGIN = "native_login"
 
             fun fromBundle(options: Bundle?): AccountOptions? =
                 options?.run {
@@ -1320,7 +1324,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         getString(VF_SID),
                         getString(CONTENT_DOMAIN),
                         getString(CONTENT_SID),
-                        getString(CSRF_TOKEN)
+                        getString(CSRF_TOKEN),
+                        getBoolean(NATIVE_LOGIN, false),
                     )
                 }
 

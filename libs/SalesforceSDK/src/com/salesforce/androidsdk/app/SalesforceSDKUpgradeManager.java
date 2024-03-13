@@ -38,12 +38,14 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.LegacyAdminSettingsManager;
+import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+
 
 /**
  * This class handles upgrades from one version to another.
@@ -124,6 +126,9 @@ public class SalesforceSDKUpgradeManager {
             }
             if (installedVersion.isLessThan(new SdkVersion(11, 0, 0, false))) {
                 updateFromBefore11_0_0();
+            }
+            if (installedVersion.isLessThan(new SdkVersion(11, 1, 1, false))) {
+                updateFromBefore11_1_1();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(
@@ -295,4 +300,10 @@ public class SalesforceSDKUpgradeManager {
             }
         }
     }
+
+    private void updateFromBefore11_1_1() {
+        // Re-register all users for push notifications with new keys once push is setup
+        PushMessaging.setReRegistrationRequested(true);
+    }
+
 }

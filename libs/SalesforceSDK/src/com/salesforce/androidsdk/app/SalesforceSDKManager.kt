@@ -88,6 +88,8 @@ import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
@@ -99,6 +101,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
+import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
 import com.salesforce.androidsdk.push.PushMessaging.unregister
@@ -135,7 +138,7 @@ import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
-import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as DefaultBiometricAuthenticationManager
+import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
 
 /**
  * This class serves as an interface to the various functions of the Salesforce
@@ -154,8 +157,15 @@ open class SalesforceSDKManager protected constructor(
     @JvmField
     protected val context: Context,
     mainActivity: Class<out Activity>,
-    loginActivity: Class<out Activity>?
+    private val loginActivity: Class<out Activity>? = null,
+    internal val nativeLoginActivity: Class<out Activity>? = null,
 ) : LifecycleObserver {
+
+    constructor(
+        context: Context,
+        mainActivity: Class<out Activity>,
+        loginActivity: Class<out Activity>? = null
+    ) : this(context, mainActivity, loginActivity, nativeLoginActivity = null)
 
     /** The Android context */
     val appContext: Context = context
@@ -188,11 +198,13 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
+    internal val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+
     /**
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    var loginActivityClass: Class<out Activity> = LoginActivity::class.java
+    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -211,7 +223,7 @@ open class SalesforceSDKManager protected constructor(
     private val bioAuthManagerLock = Any()
 
     /** The Salesforce SDK manager's biometric authentication manager */
-    var biometricAuthenticationManager: DefaultBiometricAuthenticationManager? = null
+    var biometricAuthenticationManager: BiometricAuthenticationManagerInterface? = null
         get() = field ?: synchronized(bioAuthManagerLock) {
             BiometricAuthenticationManager()
         }.also { field = it }
@@ -220,6 +232,10 @@ open class SalesforceSDKManager protected constructor(
     val loginServerManager by lazy {
         LoginServerManager(appContext)
     }
+
+    /** The Salesforce SDK manager's native login manager */
+    var nativeLoginManager: NativeLoginManagerInterface? = null
+        private set
 
     /** Optionally enables features for automated testing.
      *
@@ -253,6 +269,10 @@ open class SalesforceSDKManager protected constructor(
     @get:Synchronized
     @set:Synchronized
     var pushNotificationReceiver: PushNotificationInterface? = null
+        set(value) {
+            field = value
+            PushMessaging.onPushReceiverSetup(appContext)
+        }
 
     /**
      * The class fulfilling push notification registration features.  A default
@@ -430,11 +450,6 @@ open class SalesforceSDKManager protected constructor(
     /** Initializer */
     init {
         mainActivityClass = mainActivity
-
-        if (loginActivity != null) {
-            loginActivityClass = loginActivity
-        }
-
         features = ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER)
 
         /*
@@ -530,6 +545,20 @@ open class SalesforceSDKManager protected constructor(
      * backend.
      */
     var shouldBlockSalesforceIntegrationUser = false
+
+    /**
+     * Creates a NativeLoginManager instance that allows the app to use its
+     * own native UI for authentication.
+     *
+     * @param consumerKey The Connected App consumer key.
+     * @param callbackUrl The Connected App redirect URI.
+     * @param communityUrl The login url for native login.
+     * @return The Native Login Manager.
+     */
+    fun useNativeLogin(consumerKey: String, callbackUrl: String, communityUrl: String): NativeLoginManagerInterface {
+        nativeLoginManager = NativeLoginManager(consumerKey, callbackUrl, communityUrl)
+        return nativeLoginManager as NativeLoginManagerInterface
+    }
 
     /**
      * Optionally enables browser based login instead of web view login. This
@@ -1448,13 +1477,15 @@ open class SalesforceSDKManager protected constructor(
         private fun init(
             context: Context,
             mainActivity: Class<out Activity>,
-            loginActivity: Class<out Activity>
+            loginActivity: Class<out Activity>? = null,
+            nativeLoginActivity: Class<out Activity>? = null,
         ) {
             if (INSTANCE == null) {
                 INSTANCE = SalesforceSDKManager(
                     context,
                     mainActivity,
-                    loginActivity
+                    loginActivity,
+                    nativeLoginActivity,
                 )
             }
             initInternal(context)
@@ -1524,7 +1555,28 @@ open class SalesforceSDKManager protected constructor(
         ) = init(
             context,
             mainActivity,
-            loginActivity
+            loginActivity,
+        )
+
+        /**
+         * Initializes required components. Native apps must call one overload
+         * of this method before using the Salesforce Mobile SDK.
+         *
+         * @param context The Android context
+         * @param mainActivity The app's main activity class
+         * @param loginActivity The app's login activity
+         * @param nativeLoginActivity The app's native login activity
+         */
+        fun initNative(
+            context: Context,
+            mainActivity: Class<out Activity>,
+            loginActivity: Class<out Activity>? = null,
+            nativeLoginActivity: Class<out Activity>,
+        ) = init(
+            context,
+            mainActivity,
+            loginActivity,
+            nativeLoginActivity,
         )
 
         /**

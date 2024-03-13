@@ -288,10 +288,8 @@ open class PushService {
             val keyStoreWrapper = KeyStoreWrapper.getInstance()
 
             var rsaPublicKey: String? = null
-            val name = SalesforceKeyGenerator.getUniqueId(PUSH_NOTIFICATION_KEY_NAME)
-            val sanitizedName = name.replace("[^A-Za-z0-9]".toRegex(), "")
-            if (sanitizedName.isNotEmpty()) {
-                rsaPublicKey = keyStoreWrapper.getRSAPublicString(sanitizedName)
+            if (pushNotificationKeyName.isNotEmpty()) {
+                rsaPublicKey = keyStoreWrapper.getRSAPublicString(pushNotificationKeyName)
             }
             return rsaPublicKey
         }
@@ -425,6 +423,10 @@ open class PushService {
         private const val FIELD_ID = "id"
         private const val NOT_ENABLED = "not_enabled"
         const val PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey"
+        val pushNotificationKeyName = SalesforceKeyGenerator
+            .getUniqueId(PUSH_NOTIFICATION_KEY_NAME)
+            .replace("[^A-Za-z0-9]".toRegex(), "")
+
         protected const val REGISTRATION_STATUS_SUCCEEDED = 0
         protected const val REGISTRATION_STATUS_FAILED = 1
         protected const val UNREGISTRATION_STATUS_SUCCEEDED = 2

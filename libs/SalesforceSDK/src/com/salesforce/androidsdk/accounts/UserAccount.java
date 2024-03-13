@@ -81,6 +81,7 @@ public class UserAccount {
 	public static final String CONTENT_DOMAIN = "contentDomain";
 	public static final String CONTENT_SID = "contentSid";
 	public static final String CSRF_TOKEN = "csrfToken";
+	public static final String NATIVE_LOGIN = "native_login";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -114,6 +115,7 @@ public class UserAccount {
 	private String contentDomain;
 	private String contentSid;
 	private String csrfToken;
+	private Boolean nativeLogin;
     private Map<String, String> additionalOauthValues;
 
 	/**
@@ -143,6 +145,7 @@ public class UserAccount {
 	 * @param vfSid VF SID.
 	 * @param contentDomain Content domain.
 	 * @param contentSid Content SID.
+	 * @param nativeLogin If the account was added with native auth.
 	 */
 	UserAccount(String authToken, String refreshToken,
 					   String loginServer, String idUrl, String instanceServer,
@@ -151,7 +154,7 @@ public class UserAccount {
                        String displayName, String email, String photoUrl,
 					   String thumbnailUrl, Map<String, String> additionalOauthValues,
 					   String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-					   String  contentDomain, String contentSid, String csrfToken) {
+					   String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -177,6 +180,7 @@ public class UserAccount {
 		this.contentDomain = contentDomain;
 		this.contentSid = contentSid;
 		this.csrfToken = csrfToken;
+		this.nativeLogin = nativeLogin;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -214,6 +218,7 @@ public class UserAccount {
 			contentDomain = object.optString(CONTENT_DOMAIN, null);
 			contentSid = object.optString(CONTENT_SID, null);
 			csrfToken = object.optString(CSRF_TOKEN, null);
+			nativeLogin = object.optBoolean(NATIVE_LOGIN);
             additionalOauthValues = MapUtil.addJSONObjectToMap(object,
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -250,6 +255,7 @@ public class UserAccount {
 			contentDomain = bundle.getString(CONTENT_DOMAIN);
 			contentSid = bundle.getString(CONTENT_SID);
 			csrfToken = bundle.getString(CSRF_TOKEN);
+			nativeLogin = bundle.getBoolean(NATIVE_LOGIN);
             additionalOauthValues = MapUtil.addBundleToMap(bundle,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -469,6 +475,15 @@ public class UserAccount {
 	 */
 	public String getCSRFToken() {
 		return csrfToken;
+	}
+
+	/**
+	 * Whether or not the user was added through native headless authentication.
+	 *
+	 * @return True if the user was added with native authentication.
+	 */
+	public Boolean getNativeLogin() {
+		return nativeLogin;
 	}
 
     /**
@@ -730,6 +745,7 @@ public class UserAccount {
             object.put(CONTENT_DOMAIN, contentDomain);
             object.put(CONTENT_SID, contentSid);
             object.put(CSRF_TOKEN, csrfToken);
+			object.put(NATIVE_LOGIN, nativeLogin);
             object = MapUtil.addMapToJSONObject(additionalOauthValues,
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	} catch (JSONException e) {
@@ -769,6 +785,7 @@ public class UserAccount {
 		object.putString(CONTENT_DOMAIN, contentDomain);
 		object.putString(CONTENT_SID, contentSid);
 		object.putString(CSRF_TOKEN, csrfToken);
+		object.putBoolean(NATIVE_LOGIN, nativeLogin);
         object = MapUtil.addMapToBundle(additionalOauthValues,
                 SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	return object;
