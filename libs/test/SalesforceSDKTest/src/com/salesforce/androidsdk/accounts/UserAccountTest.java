@@ -120,7 +120,7 @@ public class UserAccountTest {
                 lastName(TEST_LAST_NAME).displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL).
                 photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL).
                 lightningDomain(null).lightningSid(null).vfDomain(null).vfSid(null).
-                contentDomain(null).contentSid(null).csrfToken(null).
+                contentDomain(null).contentSid(null).csrfToken(null).nativeLogin(false).
                 additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
@@ -242,6 +242,7 @@ public class UserAccountTest {
         object.putString(UserAccount.CONTENT_DOMAIN, null);
         object.putString(UserAccount.CONTENT_SID, null);
         object.putString(UserAccount.CSRF_TOKEN, null);
+        object.putBoolean(UserAccount.NATIVE_LOGIN, false);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }

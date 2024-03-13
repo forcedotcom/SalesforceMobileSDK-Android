@@ -248,14 +248,14 @@ public class UserAccountManager {
         if (accounts.length == 0) {
         	return null;
         }
-        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
+        final List<UserAccount> userAccounts = new ArrayList<>();
         for (final Account account : accounts) {
         	final UserAccount userAccount = buildUserAccount(account);
         	if (userAccount != null) {
         		userAccounts.add(userAccount);
         	}
         }
-        if (userAccounts.size() == 0) {
+        if (userAccounts.isEmpty()) {
         	return null;
         }
         return userAccounts;
@@ -430,6 +430,8 @@ public class UserAccountManager {
 		final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
 		final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
 		final String encFirstName =  accountManager.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
+		final Boolean nativeLogin = Boolean.valueOf(SalesforceSDKManager.decrypt(accountManager.getUserData(account,
+				AuthenticatorService.KEY_NATIVE_LOGIN), encryptionKey));
 		String firstName = null;
 		if (encFirstName != null) {
 			firstName = SalesforceSDKManager.decrypt(encFirstName, encryptionKey);
@@ -519,7 +521,7 @@ public class UserAccountManager {
                 email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
 				lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid).contentDomain(contentDomain).
 				contentSid(contentSid).csrfToken(csrfToken).additionalOauthValues(additionalOauthValues).
-				build();
+				nativeLogin(nativeLogin).build();
 	}
 
 	/**

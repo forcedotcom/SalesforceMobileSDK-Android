@@ -241,8 +241,8 @@ public class RestClientTest {
     @Test
     public void testCallWithBadAuthToken() throws IOException {
         RestClient.clearCaches();
-        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
-        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        RestClient restClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         Assert.assertFalse("Expected error", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_UNAUTHORIZED, true);
     }
@@ -275,10 +275,10 @@ public class RestClientTest {
             @Override
             public String getInstanceUrl() { return instanceUrl; }
         };
-        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-        Assert.assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
-        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        Assert.assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
+        RestClient restClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
+        Assert.assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, restClient.getAuthToken());
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        Assert.assertEquals("RestClient should now be using the good token", authToken, restClient.getAuthToken());
         Assert.assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
@@ -311,10 +311,10 @@ public class RestClientTest {
             @Override
             public String getInstanceUrl() { return instanceUrl; }
         };
-        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-        Assert.assertEquals("RestClient has bad instance url", new URI(TestCredentials.INSTANCE_URL), unauthenticatedRestClient.getClientInfo().instanceUrl);
-        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        Assert.assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), unauthenticatedRestClient.getClientInfo().instanceUrl);
+        RestClient restClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
+        Assert.assertEquals("RestClient has bad instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        Assert.assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), restClient.getClientInfo().instanceUrl);
         Assert.assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
@@ -325,8 +325,8 @@ public class RestClientTest {
      */
     @Test
     public void testGetRawResponse() throws Exception {
-        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
-        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
+        RestClient restClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForVersions());
         Response rawResponse = response.getRawResponse();
         Assert.assertEquals(200, rawResponse.code());
         Assert.assertEquals("application/json;charset=UTF-8", rawResponse.header("Content-Type"));
@@ -341,8 +341,8 @@ public class RestClientTest {
     @Test
     public void testGetVersions() throws Exception {
         // We don't need to be authenticated
-        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
-        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
+        RestClient restClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForVersions());
         checkResponse(response, HttpURLConnection.HTTP_OK, true);
         checkKeys(response.asJSONArray().getJSONObject(0), "label", "url", "version");
     }
@@ -761,6 +761,8 @@ public class RestClientTest {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = unauthenticatedRestClient.sendSync(request);
+        Assert.assertNull("Unauthenticated requests should not have auth header.",
+                response.getRawResponse().request().headers().get("Authentication"));
         checkResponse(response, HttpURLConnection.HTTP_OK, true);
         JSONArray jsonResponse = response.asJSONArray();
         checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");
@@ -776,6 +778,8 @@ public class RestClientTest {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
+        Assert.assertNull("Unauthenticated requests should not have auth header.",
+                response.getRawResponse().request().headers().get("Authentication"));
         checkResponse(response, HttpURLConnection.HTTP_OK, true);
         JSONArray jsonResponse = response.asJSONArray();
         checkKeys(jsonResponse.getJSONObject(0), "label", "url", "version");

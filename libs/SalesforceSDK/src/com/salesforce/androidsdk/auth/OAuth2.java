@@ -80,11 +80,11 @@ import okhttp3.Response;
 public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
-    private static final String CLIENT_ID = "client_id";
+    protected static final String CLIENT_ID = "client_id";
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
     private static final String FORMAT = "format";
-    private static final String GRANT_TYPE = "grant_type";
+    protected static final String GRANT_TYPE = "grant_type";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
     private static final String JSON = "json";
@@ -95,9 +95,9 @@ public class OAuth2 {
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
-    private static final String RESPONSE_TYPE = "response_type";
+    protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
-    private static final String REDIRECT_URI = "redirect_uri";
+    protected static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
     private static final String TOKEN = "token";
     private static final String HYBRID_TOKEN = "hybrid_token";
@@ -110,15 +110,15 @@ public class OAuth2 {
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
 
-    private static final String AUTHORIZATION_CODE = "authorization_code";
+    protected static final String AUTHORIZATION_CODE = "authorization_code";
     private static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
-    private static final String CODE = "code";
-    private static final String CODE_CHALLENGE = "code_challenge";
-    private static final String CODE_VERIFIER = "code_verifier";
+    protected static final String CODE = "code";
+    protected static final String CODE_CHALLENGE = "code_challenge";
+    protected static final String CODE_VERIFIER = "code_verifier";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
-    private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
+    protected static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
     private static final String ID_TOKEN = "id_token";
     private static final String AND = "&";
     private static final String EQUAL = "=";
@@ -127,13 +127,13 @@ public class OAuth2 {
     private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
     private static final String SID = "sid";
     private static final String RETURL = "retURL";
-    private static final String AUTHORIZATION = "Authorization";
+    protected static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
-    private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
+    protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
     private static final String LIGHTNING_DOMAIN = "lightning_domain";
     private static final String LIGHTNING_SID = "lightning_sid";
@@ -511,10 +511,8 @@ public class OAuth2 {
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
                 final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
-                if (photos != null) {
-                    pictureUrl = photos.getString(PICTURE);
-                    thumbnailUrl = photos.getString(THUMBNAIL);
-                }
+                pictureUrl = photos.getString(PICTURE);
+                thumbnailUrl = photos.getString(THUMBNAIL);
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
@@ -663,17 +661,13 @@ public class OAuth2 {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
-                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                        additionalOauthValues = new HashMap<>();
-                        for (final String key : additionalOauthKeys) {
-                            if (!TextUtils.isEmpty(key)) {
-                                final String value = parsedResponse.optString(key, null);
-                                if (value != null) {
-                                    additionalOauthValues.put(key, value);
-                                }
-                            }
+                final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    additionalOauthValues = new HashMap<>();
+                    for (final String key : additionalOauthKeys) {
+                        if (!TextUtils.isEmpty(key)) {
+                            final String value = parsedResponse.optString(key);
+                            additionalOauthValues.put(key, value);
                         }
                     }
                 }

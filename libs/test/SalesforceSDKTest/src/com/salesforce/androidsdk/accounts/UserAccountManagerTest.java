@@ -253,7 +253,7 @@ public class UserAccountManagerTest {
         		ClientManagerTest.TEST_USER_ID, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false);
     }
 
     /**
@@ -270,6 +270,6 @@ public class UserAccountManagerTest {
         		ClientManagerTest.TEST_USER_ID_2, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false);
     }
 }
