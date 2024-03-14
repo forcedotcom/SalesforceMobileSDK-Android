@@ -75,7 +75,7 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
      */
     protected SalesforceHybridSDKManager(Context context, Class<? extends Activity> mainActivity,
                                          Class<? extends Activity> loginActivity) {
-        super(context, mainActivity, loginActivity);
+        super(context, mainActivity, loginActivity, null);
     }
 
 	private static void init(Context context, Class<? extends Activity> mainActivity,

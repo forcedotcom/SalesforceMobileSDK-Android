@@ -67,19 +67,22 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     /**
      * Protected constructor.
      *
-     * @param context       Application context.
-     * @param mainActivity  Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
+     * @param context             Application context.
+     * @param mainActivity        Activity that should be launched after the login flow.
+     * @param loginActivity       Login activity.
+     * @param nativeLoginActivity Native login activity.
      */
     protected SmartStoreSDKManager(Context context, Class<? extends Activity> mainActivity,
-                                   Class<? extends Activity> loginActivity) {
-        super(context, mainActivity, loginActivity);
+                                   Class<? extends Activity> loginActivity,
+                                   Class<? extends Activity> nativeLoginActivity) {
+        super(context, mainActivity, loginActivity, nativeLoginActivity);
     }
 
     private static void init(Context context, Class<? extends Activity> mainActivity,
-                             Class<? extends Activity> loginActivity) {
+                             Class<? extends Activity> loginActivity,
+                             Class<? extends Activity> nativeLoginActivity) {
         if (INSTANCE == null) {
-            INSTANCE = new SmartStoreSDKManager(context, mainActivity, loginActivity);
+            INSTANCE = new SmartStoreSDKManager(context, mainActivity, loginActivity, nativeLoginActivity);
         }
 
         // Upgrade to the latest version.
@@ -100,7 +103,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
             @NonNull Context context,
             @NonNull Class<? extends Activity> mainActivity
     ) {
-        SmartStoreSDKManager.init(context, mainActivity, LoginActivity.class);
+        SmartStoreSDKManager.init(context, mainActivity, LoginActivity.class, null);
     }
 
     /**
@@ -115,7 +118,24 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public static void initNative(Context context, Class<? extends Activity> mainActivity,
                                   Class<? extends Activity> loginActivity) {
-        SmartStoreSDKManager.init(context, mainActivity, loginActivity);
+        SmartStoreSDKManager.init(context, mainActivity, loginActivity, null);
+    }
+
+    /**
+     * Initializes components required for this class
+     * to properly function. This method should be called
+     * by native apps using the Salesforce Mobile SDK.
+     *
+     * @param context             Application context.
+     * @param mainActivity        Activity that should be launched after the login flow.
+     * @param loginActivity       Login activity.
+     * @param nativeLoginActivity Native login activity.
+     * @noinspection unused
+     */
+    public static void initNative(Context context, Class<? extends Activity> mainActivity,
+                                  Class<? extends Activity> loginActivity,
+                                  Class<? extends Activity> nativeLoginActivity) {
+        SmartStoreSDKManager.init(context, mainActivity, loginActivity, nativeLoginActivity);
     }
 
     /**

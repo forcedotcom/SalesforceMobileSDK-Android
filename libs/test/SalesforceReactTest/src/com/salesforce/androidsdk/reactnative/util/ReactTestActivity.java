@@ -58,7 +58,7 @@ public class ReactTestActivity extends SalesforceReactActivity {
                 loginUrl, identityUrl, clientId, orgId, userId,
                 null, null, null, null, null,
                 null, photoUrl, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, false);
         return clientManager;
     }
 
