@@ -163,7 +163,7 @@ public class StoreConfigTest extends SmartStoreTestCase {
          *  @param userStore    The store to return from getSmartStore()
          */
         protected SmartStoreSDKTestManager(Context context, SmartStore userStore) {
-            super(context, MainActivity.class, LoginActivity.class);
+            super(context, MainActivity.class, LoginActivity.class, null);
             this.userStore = userStore;
         }
 

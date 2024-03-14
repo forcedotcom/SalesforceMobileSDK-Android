@@ -112,7 +112,7 @@ abstract public class ManagerTestCase {
         		TestCredentials.USER_ID, null, null, null,
                 null, null, null, TestCredentials.PHOTO_URL, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false);
     	SyncManager.reset();
     	sdkManager = MobileSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
