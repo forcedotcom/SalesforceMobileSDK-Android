@@ -82,6 +82,8 @@ public class UserAccount {
 	public static final String CONTENT_SID = "contentSid";
 	public static final String CSRF_TOKEN = "csrfToken";
 	public static final String NATIVE_LOGIN = "native_login";
+	public static final String LANGUAGE = "language";
+	public static final String LOCALE = "locale";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -116,6 +118,8 @@ public class UserAccount {
 	private String contentSid;
 	private String csrfToken;
 	private Boolean nativeLogin;
+	private String language;
+	private String locale;
     private Map<String, String> additionalOauthValues;
 
 	/**
@@ -146,6 +150,8 @@ public class UserAccount {
 	 * @param contentDomain Content domain.
 	 * @param contentSid Content SID.
 	 * @param nativeLogin If the account was added with native auth.
+	 * @param language User's language,
+	 * @param locale User's locale,
 	 */
 	UserAccount(String authToken, String refreshToken,
 					   String loginServer, String idUrl, String instanceServer,
@@ -154,7 +160,8 @@ public class UserAccount {
                        String displayName, String email, String photoUrl,
 					   String thumbnailUrl, Map<String, String> additionalOauthValues,
 					   String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-					   String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin) {
+					   String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
+				       String language, String locale) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -181,6 +188,8 @@ public class UserAccount {
 		this.contentSid = contentSid;
 		this.csrfToken = csrfToken;
 		this.nativeLogin = nativeLogin;
+		this.language = language;
+		this.locale = locale;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -219,6 +228,8 @@ public class UserAccount {
 			contentSid = object.optString(CONTENT_SID, null);
 			csrfToken = object.optString(CSRF_TOKEN, null);
 			nativeLogin = object.optBoolean(NATIVE_LOGIN);
+			language = object.optString(LANGUAGE, null);
+			locale = object.optString(LOCALE, null);
             additionalOauthValues = MapUtil.addJSONObjectToMap(object,
                     SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -256,6 +267,8 @@ public class UserAccount {
 			contentSid = bundle.getString(CONTENT_SID);
 			csrfToken = bundle.getString(CSRF_TOKEN);
 			nativeLogin = bundle.getBoolean(NATIVE_LOGIN);
+			language = bundle.getString(LANGUAGE);
+			locale = bundle.getString(LOCALE);
             additionalOauthValues = MapUtil.addBundleToMap(bundle,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -485,6 +498,25 @@ public class UserAccount {
 	public Boolean getNativeLogin() {
 		return nativeLogin;
 	}
+
+	/**
+	 * Returns the language for this user.
+	 *
+	 * @return language.
+	 */
+	public String getLanguage() {
+		return language;
+	}
+
+	/**
+	 * Returns the locale for this user.
+	 *
+	 * @return locale.
+	 */
+	public String getLocale() {
+		return locale;
+	}
+
 
     /**
      * Returns the additional OAuth values for this user.

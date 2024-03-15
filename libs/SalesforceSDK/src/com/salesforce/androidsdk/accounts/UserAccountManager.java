@@ -429,6 +429,8 @@ public class UserAccountManager {
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
 		final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
 		final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
+		final String language = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LANGUAGE), encryptionKey);
+		final String locale = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOCALE), encryptionKey);
 		final String encFirstName =  accountManager.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
 		final Boolean nativeLogin = Boolean.valueOf(SalesforceSDKManager.decrypt(accountManager.getUserData(account,
 				AuthenticatorService.KEY_NATIVE_LOGIN), encryptionKey));
@@ -521,7 +523,7 @@ public class UserAccountManager {
                 email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
 				lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid).contentDomain(contentDomain).
 				contentSid(contentSid).csrfToken(csrfToken).additionalOauthValues(additionalOauthValues).
-				nativeLogin(nativeLogin).build();
+				nativeLogin(nativeLogin).language(language).locale(locale).build();
 	}
 
 	/**
