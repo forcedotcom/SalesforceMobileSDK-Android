@@ -195,11 +195,11 @@ public class UserAccountManagerTest {
 				email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
                 language(TEST_LANGUAGE).locale(TEST_LOCALE).build();
         Assert.assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
-    	userAcc = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
-                refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
-                idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL).
-                orgId(TEST_ORG_ID).userId(TEST_USER_ID).
-                username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
+        userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
+                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
+                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
+                orgId(ClientManagerTest.TEST_ORG_ID_2).userId(ClientManagerTest.TEST_USER_ID_2).
+                username(ClientManagerTest.TEST_OTHER_USERNAME).accountName(ClientManagerTest.TEST_OTHER_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
                 email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
                 language(TEST_LANGUAGE).locale(TEST_LOCALE).build();

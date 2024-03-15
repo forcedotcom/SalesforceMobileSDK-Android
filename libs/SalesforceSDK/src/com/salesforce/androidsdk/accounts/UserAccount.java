@@ -68,12 +68,12 @@ public class UserAccount {
 	public static final String COMMUNITY_URL = "communityUrl";
 	public static final String INTERNAL_COMMUNITY_ID = "000000000000000AAA";
 	public static final String INTERNAL_COMMUNITY_PATH = "internal";
-    public static final String EMAIL = "email";
-    public static final String FIRST_NAME = "first_name";
+	public static final String EMAIL = "email";
+	public static final String FIRST_NAME = "first_name";
 	public static final String DISPLAY_NAME = "display_name";
 	public static final String LAST_NAME = "last_name";
-    public static final String PHOTO_URL = "photoUrl";
-    public static final String THUMBNAIL_URL = "thumbnailUrl";
+	public static final String PHOTO_URL = "photoUrl";
+	public static final String THUMBNAIL_URL = "thumbnailUrl";
 	public static final String LIGHTNING_DOMAIN = "lightningDomain";
 	public static final String LIGHTNING_SID = "lightningSid";
 	public static final String VF_DOMAIN = "vfDomain";
@@ -89,9 +89,9 @@ public class UserAccount {
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 	private static final String PROFILE_PHOTO_PATH_PREFIX = "profile_photo_";
-    private static final String AUTHORIZATION = "Authorization";
-    private static final String BEARER = "Bearer ";
-    private static final String JPG = ".jpg";
+	private static final String AUTHORIZATION = "Authorization";
+	private static final String BEARER = "Bearer ";
+	private static final String JPG = ".jpg";
 
 	private String authToken;
 	private String refreshToken;
@@ -104,12 +104,12 @@ public class UserAccount {
 	private String accountName;
 	private String communityId;
 	private String communityUrl;
-    private String firstName;
-    private String lastName;
+	private String firstName;
+	private String lastName;
 	private String displayName;
 	private String email;
-    private String photoUrl;
-    private String thumbnailUrl;
+	private String photoUrl;
+	private String thumbnailUrl;
 	private String lightningDomain;
 	private String lightningSid;
 	private String vfDomain;
@@ -120,7 +120,7 @@ public class UserAccount {
 	private Boolean nativeLogin;
 	private String language;
 	private String locale;
-    private Map<String, String> additionalOauthValues;
+	private Map<String, String> additionalOauthValues;
 
 	/**
 	 * Parameterized constructor.
@@ -154,14 +154,14 @@ public class UserAccount {
 	 * @param locale User's locale,
 	 */
 	UserAccount(String authToken, String refreshToken,
-					   String loginServer, String idUrl, String instanceServer,
-					   String orgId, String userId, String username, String accountName,
-					   String communityId, String communityUrl, String firstName, String lastName,
-                       String displayName, String email, String photoUrl,
-					   String thumbnailUrl, Map<String, String> additionalOauthValues,
-					   String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-					   String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
-				       String language, String locale) {
+				String loginServer, String idUrl, String instanceServer,
+				String orgId, String userId, String username, String accountName,
+				String communityId, String communityUrl, String firstName, String lastName,
+				String displayName, String email, String photoUrl,
+				String thumbnailUrl, Map<String, String> additionalOauthValues,
+				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
+				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
+				String language, String locale) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -214,11 +214,11 @@ public class UserAccount {
 			}
 			communityId = object.optString(COMMUNITY_ID, null);
 			communityUrl = object.optString(COMMUNITY_URL, null);
-            firstName = object.optString(FIRST_NAME, null);
-            lastName = object.optString(LAST_NAME, null);
+			firstName = object.optString(FIRST_NAME, null);
+			lastName = object.optString(LAST_NAME, null);
 			displayName = object.optString(DISPLAY_NAME, null);
 			email = object.optString(EMAIL, null);
-            photoUrl = object.optString(PHOTO_URL, null);
+			photoUrl = object.optString(PHOTO_URL, null);
 			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
 			lightningDomain = object.optString(LIGHTNING_DOMAIN, null);
 			lightningSid = object.optString(LIGHTNING_SID, null);
@@ -230,8 +230,8 @@ public class UserAccount {
 			nativeLogin = object.optBoolean(NATIVE_LOGIN);
 			language = object.optString(LANGUAGE, null);
 			locale = object.optString(LOCALE, null);
-            additionalOauthValues = MapUtil.addJSONObjectToMap(object,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			additionalOauthValues = MapUtil.addJSONObjectToMap(object,
+					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
 
@@ -253,12 +253,12 @@ public class UserAccount {
 			accountName = bundle.getString(ACCOUNT_NAME);
 			communityId = bundle.getString(COMMUNITY_ID);
 			communityUrl = bundle.getString(COMMUNITY_URL);
-            firstName = bundle.getString(FIRST_NAME);
-            lastName = bundle.getString(LAST_NAME);
+			firstName = bundle.getString(FIRST_NAME);
+			lastName = bundle.getString(LAST_NAME);
 			displayName = bundle.getString(DISPLAY_NAME);
 			email = bundle.getString(EMAIL);
-            photoUrl = bundle.getString(PHOTO_URL);
-            thumbnailUrl = bundle.getString(THUMBNAIL_URL);
+			photoUrl = bundle.getString(PHOTO_URL);
+			thumbnailUrl = bundle.getString(THUMBNAIL_URL);
 			lightningDomain = bundle.getString(LIGHTNING_DOMAIN);
 			lightningSid = bundle.getString(LIGHTNING_SID);
 			vfDomain = bundle.getString(VF_DOMAIN);
@@ -269,7 +269,7 @@ public class UserAccount {
 			nativeLogin = bundle.getBoolean(NATIVE_LOGIN);
 			language = bundle.getString(LANGUAGE);
 			locale = bundle.getString(LOCALE);
-            additionalOauthValues = MapUtil.addBundleToMap(bundle,
+			additionalOauthValues = MapUtil.addBundleToMap(bundle,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
@@ -373,14 +373,14 @@ public class UserAccount {
 		return communityUrl;
 	}
 
-    /**
-     * Returns the first name for this user account.
-     *
-     * @return First Name.
-     */
-    public String getFirstName() {
-        return firstName;
-    }
+	/**
+	 * Returns the first name for this user account.
+	 *
+	 * @return First Name.
+	 */
+	public String getFirstName() {
+		return firstName;
+	}
 
 	/**
 	 * Returns the Display name for this user account.
@@ -392,40 +392,40 @@ public class UserAccount {
 	}
 
 	/**
-     * Returns the last name for this user account.
-     *
-     * @return Last Name.
-     */
-    public String getLastName() {
-        return lastName;
-    }
+	 * Returns the last name for this user account.
+	 *
+	 * @return Last Name.
+	 */
+	public String getLastName() {
+		return lastName;
+	}
 
-    /**
-     * Returns the email for this user account.
-     *
-     * @return Email.
-     */
-    public String getEmail() {
-        return email;
-    }
+	/**
+	 * Returns the email for this user account.
+	 *
+	 * @return Email.
+	 */
+	public String getEmail() {
+		return email;
+	}
 
-    /**
-     * Returns the photo url for this user.
-     *
-     * @return Photo URL.
-     */
-    public String getPhotoUrl() {
-        return photoUrl;
-    }
+	/**
+	 * Returns the photo url for this user.
+	 *
+	 * @return Photo URL.
+	 */
+	public String getPhotoUrl() {
+		return photoUrl;
+	}
 
-    /**
-     * Returns the thumbnail for this user.
-     *
-     * @return Thumbnail.
-     */
-    public String getThumbnailUrl() {
-        return thumbnailUrl;
-    }
+	/**
+	 * Returns the thumbnail for this user.
+	 *
+	 * @return Thumbnail.
+	 */
+	public String getThumbnailUrl() {
+		return thumbnailUrl;
+	}
 
 	/**
 	 * Returns the Lightning domain for this user.
@@ -518,48 +518,48 @@ public class UserAccount {
 	}
 
 
-    /**
-     * Returns the additional OAuth values for this user.
-     *
-     * @return Additional OAuth values.
-     */
-    public Map<String, String> getAdditionalOauthValues() {
-        return additionalOauthValues;
-    }
+	/**
+	 * Returns the additional OAuth values for this user.
+	 *
+	 * @return Additional OAuth values.
+	 */
+	public Map<String, String> getAdditionalOauthValues() {
+		return additionalOauthValues;
+	}
 
-    /**
-     * Fetches this user's profile photo from the cache.
-     *
-     * @return User's profile photo.
-     */
-    public Bitmap getProfilePhoto() {
-        final File file = getProfilePhotoFile();
-        if (file == null) {
-            return null;
-        }
-        final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-        bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
-    }
+	/**
+	 * Fetches this user's profile photo from the cache.
+	 *
+	 * @return User's profile photo.
+	 */
+	public Bitmap getProfilePhoto() {
+		final File file = getProfilePhotoFile();
+		if (file == null) {
+			return null;
+		}
+		final BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+		bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;
+		return BitmapFactory.decodeFile(file.getAbsolutePath(), bitmapOptions);
+	}
 
-    /**
-     * Fetches this user's profile photo from the server and stores it in the cache.
-     */
-    public void downloadProfilePhoto() {
-        final File file = getProfilePhotoFile();
-        if (photoUrl == null || file == null) {
-            return;
-        }
-        final Uri srcUri = Uri.parse(photoUrl);
-        final Uri destUri = Uri.fromFile(file);
-        if (srcUri == null || destUri == null) {
-        	return;
+	/**
+	 * Fetches this user's profile photo from the server and stores it in the cache.
+	 */
+	public void downloadProfilePhoto() {
+		final File file = getProfilePhotoFile();
+		if (photoUrl == null || file == null) {
+			return;
+		}
+		final Uri srcUri = Uri.parse(photoUrl);
+		final Uri destUri = Uri.fromFile(file);
+		if (srcUri == null || destUri == null) {
+			return;
 		}
 
-        // Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
-        final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
-        int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
-        if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
+		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
+		int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
 			downloadReq.setDestinationUri(destUri);
 			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
@@ -570,7 +570,7 @@ public class UserAccount {
 				downloadManager.enqueue(downloadReq);
 			}
 		}
-    }
+	}
 
 	/**
 	 * Returns the org level storage path for this user account, relative to
@@ -726,90 +726,92 @@ public class UserAccount {
 		return sb.toString();
 	}
 
-    @Override
-    public boolean equals(Object object) {
-        if (!(object instanceof UserAccount)) {
-            return false;
-        }
-        final UserAccount userAccount = (UserAccount) object;
-        if (userId == null || orgId == null || userAccount.getUserId() == null
-        		|| userAccount.getOrgId() == null) {
-        	return false;
-        }
+	@Override
+	public boolean equals(Object object) {
+		if (!(object instanceof UserAccount)) {
+			return false;
+		}
+		final UserAccount userAccount = (UserAccount) object;
+		if (userId == null || orgId == null || userAccount.getUserId() == null
+				|| userAccount.getOrgId() == null) {
+			return false;
+		}
 		return (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId));
 	}
 
-    @Override
-    public int hashCode() {
-        int result = userId.hashCode();
-        result ^= orgId.hashCode() + result * 37;
-        return result;
-    }
+	@Override
+	public int hashCode() {
+		int result = userId.hashCode();
+		result ^= orgId.hashCode() + result * 37;
+		return result;
+	}
 
-    /**
-     * Returns a JSON representation of this instance.
-     *
-     * @return JSONObject instance.
-     */
-    public JSONObject toJson() {
-    	JSONObject object = new JSONObject();
-    	try {
-        	object.put(AUTH_TOKEN, authToken);
-        	object.put(REFRESH_TOKEN, refreshToken);
-        	object.put(LOGIN_SERVER, loginServer);
-        	object.put(ID_URL, idUrl);
-        	object.put(INSTANCE_SERVER, instanceServer);
-        	object.put(ORG_ID, orgId);
-        	object.put(USER_ID, userId);
-        	object.put(USERNAME, username);
-        	object.put(COMMUNITY_ID, communityId);
-        	object.put(COMMUNITY_URL, communityUrl);
-            object.put(FIRST_NAME, firstName);
-            object.put(LAST_NAME, lastName);
+	/**
+	 * Returns a JSON representation of this instance.
+	 *
+	 * @return JSONObject instance.
+	 */
+	public JSONObject toJson() {
+		JSONObject object = new JSONObject();
+		try {
+			object.put(AUTH_TOKEN, authToken);
+			object.put(REFRESH_TOKEN, refreshToken);
+			object.put(LOGIN_SERVER, loginServer);
+			object.put(ID_URL, idUrl);
+			object.put(INSTANCE_SERVER, instanceServer);
+			object.put(ORG_ID, orgId);
+			object.put(USER_ID, userId);
+			object.put(USERNAME, username);
+			object.put(COMMUNITY_ID, communityId);
+			object.put(COMMUNITY_URL, communityUrl);
+			object.put(FIRST_NAME, firstName);
+			object.put(LAST_NAME, lastName);
 			object.put(DISPLAY_NAME, displayName);
 			object.put(EMAIL, email);
-            object.put(PHOTO_URL, photoUrl);
-            object.put(THUMBNAIL_URL, thumbnailUrl);
-            object.put(LIGHTNING_DOMAIN, lightningDomain);
-            object.put(LIGHTNING_SID, lightningSid);
-            object.put(VF_DOMAIN, vfDomain);
-            object.put(VF_SID, vfSid);
-            object.put(CONTENT_DOMAIN, contentDomain);
-            object.put(CONTENT_SID, contentSid);
-            object.put(CSRF_TOKEN, csrfToken);
+			object.put(PHOTO_URL, photoUrl);
+			object.put(THUMBNAIL_URL, thumbnailUrl);
+			object.put(LIGHTNING_DOMAIN, lightningDomain);
+			object.put(LIGHTNING_SID, lightningSid);
+			object.put(VF_DOMAIN, vfDomain);
+			object.put(VF_SID, vfSid);
+			object.put(CONTENT_DOMAIN, contentDomain);
+			object.put(CONTENT_SID, contentSid);
+			object.put(CSRF_TOKEN, csrfToken);
 			object.put(NATIVE_LOGIN, nativeLogin);
-            object = MapUtil.addMapToJSONObject(additionalOauthValues,
-                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
-    	} catch (JSONException e) {
+			object = MapUtil.addMapToJSONObject(additionalOauthValues,
+					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
-    	}
-    	return object;
-    }
+		}
+		return object;
+	}
 
-    /**
-     * Returns a representation of this instance in a bundle.
-     *
-     * @return Bundle instance.
-     */
-    public Bundle toBundle() {
-    	Bundle object = new Bundle();
-        object.putString(AUTH_TOKEN, authToken);
-        object.putString(REFRESH_TOKEN, refreshToken);
-        object.putString(LOGIN_SERVER, loginServer);
-        object.putString(ID_URL, idUrl);
-        object.putString(INSTANCE_SERVER, instanceServer);
-        object.putString(ORG_ID, orgId);
-        object.putString(USER_ID, userId);
-        object.putString(USERNAME, username);
-        object.putString(ACCOUNT_NAME, accountName);
-        object.putString(COMMUNITY_ID, communityId);
-        object.putString(COMMUNITY_URL, communityUrl);
-        object.putString(FIRST_NAME, firstName);
-        object.putString(LAST_NAME, lastName);
+	/**
+	 * Returns a representation of this instance in a bundle.
+	 *
+	 * @return Bundle instance.
+	 */
+	public Bundle toBundle() {
+		Bundle object = new Bundle();
+		object.putString(AUTH_TOKEN, authToken);
+		object.putString(REFRESH_TOKEN, refreshToken);
+		object.putString(LOGIN_SERVER, loginServer);
+		object.putString(ID_URL, idUrl);
+		object.putString(INSTANCE_SERVER, instanceServer);
+		object.putString(ORG_ID, orgId);
+		object.putString(USER_ID, userId);
+		object.putString(USERNAME, username);
+		object.putString(ACCOUNT_NAME, accountName);
+		object.putString(COMMUNITY_ID, communityId);
+		object.putString(COMMUNITY_URL, communityUrl);
+		object.putString(FIRST_NAME, firstName);
+		object.putString(LAST_NAME, lastName);
 		object.putString(DISPLAY_NAME, displayName);
 		object.putString(EMAIL, email);
-        object.putString(PHOTO_URL, photoUrl);
-        object.putString(THUMBNAIL_URL, thumbnailUrl);
+		object.putString(LANGUAGE, language);
+		object.putString(LOCALE, locale);
+		object.putString(PHOTO_URL, photoUrl);
+		object.putString(THUMBNAIL_URL, thumbnailUrl);
 		object.putString(LIGHTNING_DOMAIN, lightningDomain);
 		object.putString(LIGHTNING_SID, lightningSid);
 		object.putString(VF_DOMAIN, vfDomain);
@@ -818,14 +820,14 @@ public class UserAccount {
 		object.putString(CONTENT_SID, contentSid);
 		object.putString(CSRF_TOKEN, csrfToken);
 		object.putBoolean(NATIVE_LOGIN, nativeLogin);
-        object = MapUtil.addMapToBundle(additionalOauthValues,
-                SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
-    	return object;
-    }
+		object = MapUtil.addMapToBundle(additionalOauthValues,
+				SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+		return object;
+	}
 
-    private File getProfilePhotoFile() {
-        final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
-        File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
-        return baseDir != null ? new File(baseDir, filename) : null;
-    }
+	private File getProfilePhotoFile() {
+		final String filename = PROFILE_PHOTO_PATH_PREFIX + getUserLevelFilenameSuffix() + JPG;
+		File baseDir = SalesforceSDKManager.getInstance().getAppContext().getExternalCacheDir();
+		return baseDir != null ? new File(baseDir, filename) : null;
+	}
 }

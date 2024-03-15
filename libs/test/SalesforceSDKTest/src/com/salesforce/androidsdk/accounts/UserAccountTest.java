@@ -213,10 +213,10 @@ public class UserAccountTest {
         object.put(UserAccount.LAST_NAME, TEST_LAST_NAME);
         object.put(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.put(UserAccount.EMAIL, TEST_EMAIL);
+        object.put(UserAccount.LANGUAGE, TEST_LANGUAGE);
+        object.put(UserAccount.LOCALE, TEST_LOCALE);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        object.put(UserAccount.LANGUAGE, TEST_LANGUAGE);
-        object.put(UserAccount.LANGUAGE, TEST_LOCALE);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -243,6 +243,8 @@ public class UserAccountTest {
         object.putString(UserAccount.LAST_NAME, TEST_LAST_NAME);
         object.putString(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
+        object.putString(UserAccount.LANGUAGE, TEST_LANGUAGE);
+        object.putString(UserAccount.LOCALE, TEST_LOCALE);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
         object.putString(UserAccount.LIGHTNING_DOMAIN, null);
@@ -253,8 +255,6 @@ public class UserAccountTest {
         object.putString(UserAccount.CONTENT_SID, null);
         object.putString(UserAccount.CSRF_TOKEN, null);
         object.putBoolean(UserAccount.NATIVE_LOGIN, false);
-        object.putString(UserAccount.LANGUAGE, TEST_LANGUAGE);
-        object.putString(UserAccount.LOCALE, TEST_LOCALE);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
