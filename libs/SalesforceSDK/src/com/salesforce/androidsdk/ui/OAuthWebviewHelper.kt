@@ -917,7 +917,9 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 tr?.contentDomain,
                 tr?.contentSid,
                 tr?.csrfToken,
-                nativeLogin
+                nativeLogin,
+                id?.language,
+                id?.locale,
             )
 
             // Set additional administrator prefs if they exist
@@ -952,6 +954,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 .csrfToken(accountOptions?.csrfToken)
                 .additionalOauthValues(accountOptions?.additionalOauthValues)
                 .nativeLogin(accountOptions?.nativeLogin)
+                .language(accountOptions?.language)
+                .locale(accountOptions?.locale)
                 .build()
 
             account.downloadProfilePhoto()
@@ -1151,6 +1155,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             accountOptions?.contentSid,
             accountOptions?.csrfToken,
             accountOptions?.nativeLogin,
+            accountOptions?.language,
+            accountOptions?.locale
         )
 
         /*
@@ -1237,6 +1243,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         val contentSid: String?,
         val csrfToken: String?,
         val nativeLogin: Boolean = false,
+        val language: String?,
+        val locale: String?
     ) {
         private var bundle: Bundle = Bundle()
 
@@ -1264,6 +1272,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             bundle.putString(CONTENT_SID, contentSid)
             bundle.putString(CSRF_TOKEN, csrfToken)
             bundle.putBoolean(NATIVE_LOGIN, nativeLogin)
+            bundle.putString(LANGUAGE, language)
+            bundle.putString(LOCALE, locale)
             bundle = MapUtil.addMapToBundle(
                 additionalOauthValues,
                 SalesforceSDKManager.getInstance().additionalOauthKeys, bundle
@@ -1298,6 +1308,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             private const val CONTENT_SID = "content_sid"
             private const val CSRF_TOKEN = "csrf_token"
             private const val NATIVE_LOGIN = "native_login"
+            private const val LANGUAGE = "language"
+            private const val LOCALE = "locale"
 
             fun fromBundle(options: Bundle?): AccountOptions? =
                 options?.run {
@@ -1326,6 +1338,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         getString(CONTENT_SID),
                         getString(CSRF_TOKEN),
                         getBoolean(NATIVE_LOGIN, false),
+                        getString(LANGUAGE),
+                        getString(LOCALE)
                     )
                 }
 

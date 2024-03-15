@@ -54,6 +54,8 @@ public class TestCredentials {
     public static String CLIENT_ID;
     public static String REFRESH_TOKEN;
     public static String PHOTO_URL;
+    public static String LANGUAGE;
+    public static String LOCALE;
 
     public static void init(Context ctx) {
         try {
@@ -72,6 +74,8 @@ public class TestCredentials {
             CLIENT_ID = json.getString("test_client_id");
             REFRESH_TOKEN = json.getString("refresh_token");
             PHOTO_URL = json.getString("photo_url");
+            LANGUAGE = json.optString("language", "en_US");
+            LOCALE = json.optString("locale", "en_US");
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to read test_credentials.json", e);
