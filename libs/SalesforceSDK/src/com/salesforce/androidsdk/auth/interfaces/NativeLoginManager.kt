@@ -70,5 +70,71 @@ interface NativeLoginManager {
      *
      * @return the intent to be started for fallback web based authentication.
      */
-    fun getFallbackWebAuthenticationIntent() : Intent
+    fun getFallbackWebAuthenticationIntent(): Intent
+
+    // region Headless, Password-Less Login Via One-Time-Passcode
+
+    /**
+     * Submits a request for a one-time-passcode to the Salesforce headless
+     * password-less login flow. This fulfills step three of the headless
+     * password-less login flow.
+     *
+     * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_passwordless_login_public_clients.htm&type=5
+     *
+     * @param username A valid Salesforce username.  Note that email may be used
+     * for community users
+     * @param reCaptchaToken A reCAPTCHA token provided by the reCAPTCHA SDK
+     * @param otpVerificationMethod: The delivery method for the OTP
+     * @return An OTP request result with the overall login result and the OTP
+     * identifier for successful OTP requests
+     */
+    suspend fun submitOtpRequest(
+        username: String,
+        reCaptchaToken: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ): OtpRequestResult
+
+    /**
+     * Submits a request for a one-time-passcode to the Salesforce headless
+     * password-less login flow. This fulfills steps eight, eleven and thirteen
+     * of the headless password-less login flow.
+     *
+     * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_passwordless_login_public_clients.htm&type=5
+     *
+     * @param otp A user-entered OTP
+     * @param otpIdentifier The OTP identifier issued by the Headless Identity
+     * API
+     * @param otpVerificationMethod The OTP verification method used to obtain
+     * the OTP identifier
+     * @return A login result indicating the outcome of the authorization and
+     * access token requests
+     */
+    suspend fun submitPasswordlessAuthorizationRequest(
+        otp: String,
+        otpIdentifier: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ): NativeLoginResult
+}
+
+/**
+ * An OTP request result.
+ * @param nativeLoginResult The overall result of the OTP request
+ * @param otpIdentifier On success result, the OTP identifier provided by the
+ * API
+ */
+data class OtpRequestResult(
+    val nativeLoginResult: NativeLoginResult,
+    val otpIdentifier: String? = null
+)
+
+/**
+ * The possible OTP verification methods.
+ * @param identityApiAuthVerificationTypeHeaderValue The expected string value
+ * when used in the Salesforce Identity API `Auth-Verification-Type` request
+ * header
+ */
+@Suppress("unused")
+enum class OtpVerificationMethod(val identityApiAuthVerificationTypeHeaderValue: String) {
+    Email("email"),
+    Sms("sms")
 }
