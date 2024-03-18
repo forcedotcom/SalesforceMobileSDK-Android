@@ -127,9 +127,9 @@ public class MemCachedKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public void deleteAll() {
+    public boolean deleteAll() {
         memCache.evictAll();
-        keyValueStore.deleteAll();
+        return keyValueStore.deleteAll();
     }
 
     @Override
