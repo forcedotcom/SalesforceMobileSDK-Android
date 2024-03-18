@@ -137,8 +137,10 @@ public abstract class AbstractPrefsManager {
 
     /**
      * Clears the stored prefs for all users.
+     *
+     * @return true if successful
      */
-    public void resetAll() {
+    public boolean resetAll() {
         final String sharedPrefPath = SalesforceSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir + "/shared_prefs";
         final File dir = new File(sharedPrefPath);
         final FilenameFilter fileFilter = new FilenameFilter() {
@@ -148,6 +150,7 @@ public abstract class AbstractPrefsManager {
                 return filename != null && filename.startsWith(getFilenameRoot());
             }
         };
+        boolean success = true;
         for (final File file : dir.listFiles()) {
             if (file != null && fileFilter.accept(dir, file.getName())) {
 
@@ -164,8 +167,9 @@ public abstract class AbstractPrefsManager {
                 final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(filename,
                         Context.MODE_PRIVATE);
                 sp.edit().clear().commit();
-                file.delete();
+                success = file.delete() && success; // NB: delete file even if another delete failed
             }
         }
+        return success;
     }
 }
