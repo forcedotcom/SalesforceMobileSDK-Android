@@ -79,5 +79,6 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
     }
 }
