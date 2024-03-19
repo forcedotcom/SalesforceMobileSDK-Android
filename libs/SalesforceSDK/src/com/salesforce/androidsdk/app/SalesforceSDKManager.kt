@@ -42,9 +42,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
 import android.os.Build.VERSION.RELEASE
-import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION.SECURITY_PATCH
-import android.os.Build.VERSION_CODES.O
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper.getMainLooper
@@ -67,7 +65,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.salesforce.androidsdk.BuildConfig.DEBUG
 import com.salesforce.androidsdk.R.string.account_type
 import com.salesforce.androidsdk.R.string.sf__dev_support_title
-import com.salesforce.androidsdk.R.style.SalesforceSDK_AccessibleNav
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -84,12 +81,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
-import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
-import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
@@ -138,6 +134,7 @@ import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
 
 /**
@@ -1367,14 +1364,8 @@ open class SalesforceSDKManager protected constructor(
             /*
              * This covers the case where OS dark theme is true, but app has
              * disabled.
-             * TODO: Remove SalesforceSDK_AccessibleNav style when min API becomes 26.
              */
-            when {
-                SDK_INT >= O ->
-                    activity.window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-
-                else -> activity.setTheme(SalesforceSDK_AccessibleNav)
-            }
+            activity.window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         }
     }
 
