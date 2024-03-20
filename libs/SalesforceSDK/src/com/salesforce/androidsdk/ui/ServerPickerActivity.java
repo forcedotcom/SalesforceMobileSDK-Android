@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -156,6 +157,12 @@ public class ServerPickerActivity extends AppCompatActivity implements
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
         urlEditDialog = new CustomServerUrlEditor();
+
+        if (SalesforceSDKManager.getInstance().compactScreen(this)) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+        }
 
         // TODO:  Remove this when min API > 33
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

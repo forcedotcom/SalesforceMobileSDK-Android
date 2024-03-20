@@ -35,6 +35,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.os.Build.VERSION.SDK_INT
@@ -233,6 +234,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                 PRIORITY_DEFAULT
             ) { handleBackBehavior() }
         }
+
+        requestedOrientation = if (salesforceSDKManager.compactScreen(this))
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
+            ActivityInfo.SCREEN_ORIENTATION_FULL_USER
     }
 
     override fun onDestroy() {

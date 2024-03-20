@@ -62,6 +62,10 @@ import androidx.lifecycle.Lifecycle.Event.ON_STOP
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.layout.WindowMetricsCalculator
 import com.salesforce.androidsdk.BuildConfig.DEBUG
 import com.salesforce.androidsdk.R.string.account_type
 import com.salesforce.androidsdk.R.string.sf__dev_support_title
@@ -1367,6 +1371,21 @@ open class SalesforceSDKManager protected constructor(
              */
             activity.window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         }
+    }
+
+    /**
+     * Determines whether the device has a compact screen.
+     * Taken directly from https://developer.android.com/guide/topics/large-screens/large-screen-cookbook#kotlin
+     */
+    fun compactScreen(activity: Activity) : Boolean {
+        val metrics = WindowMetricsCalculator.getOrCreate().computeMaximumWindowMetrics(activity)
+        val width = metrics.bounds.width()
+        val height = metrics.bounds.height()
+        val density = activity.resources.displayMetrics.density
+        val windowSizeClass = WindowSizeClass.compute(width/density, height/density)
+
+        return windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT ||
+                windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
     }
 
     @Suppress("unused")
