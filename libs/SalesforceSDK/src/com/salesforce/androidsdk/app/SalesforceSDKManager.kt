@@ -84,12 +84,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
-import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
-import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
@@ -138,6 +137,7 @@ import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
 
 /**
@@ -553,10 +553,31 @@ open class SalesforceSDKManager protected constructor(
      * @param consumerKey The Connected App consumer key.
      * @param callbackUrl The Connected App redirect URI.
      * @param communityUrl The login url for native login.
+     * @param reCaptchaSiteKeyId The Google Cloud project reCAPTCHA Key's "Id"
+     * as shown in Google Cloud Console under "Products & Solutions", "Security"
+     * and "reCAPTCHA Enterprise"
+     * @param googleCloudProjectId The Google Cloud project's "Id" as shown in
+     * Google Cloud Console
+     * @param isReCaptchaEnterprise Specifies if reCAPTCHA uses the enterprise
+     * license
      * @return The Native Login Manager.
      */
-    fun useNativeLogin(consumerKey: String, callbackUrl: String, communityUrl: String): NativeLoginManagerInterface {
-        nativeLoginManager = NativeLoginManager(consumerKey, callbackUrl, communityUrl)
+    fun useNativeLogin(
+        consumerKey: String,
+        callbackUrl: String,
+        communityUrl: String,
+        reCaptchaSiteKeyId: String? = null,
+        googleCloudProjectId: String? = null,
+        isReCaptchaEnterprise: Boolean = false
+    ): NativeLoginManagerInterface {
+        nativeLoginManager = NativeLoginManager(
+            consumerKey,
+            callbackUrl,
+            communityUrl,
+            reCaptchaSiteKeyId,
+            googleCloudProjectId,
+            isReCaptchaEnterprise
+        )
         return nativeLoginManager as NativeLoginManagerInterface
     }
 
