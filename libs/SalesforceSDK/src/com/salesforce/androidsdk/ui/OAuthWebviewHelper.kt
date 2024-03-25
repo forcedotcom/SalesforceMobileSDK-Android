@@ -1137,8 +1137,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
         val salesforceHosts = listOf(".salesforce.com", ".force.com", ".sfdcopens.com", ".site.com", ".lightning.com",
             ".salesforce-sites.com", ".force-user-content.com", ".salesforce-experience.com", ".salesforce-scrt.com")
-        salesforceHosts.map { if (host.endsWith(it)) return true }
-        return false
+        return salesforceHosts.map { host.endsWith(it) }.any() { it }
     }
 
     protected fun addAccount(account: UserAccount?) {
