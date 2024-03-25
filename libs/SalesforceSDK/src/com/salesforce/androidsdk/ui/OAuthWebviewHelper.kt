@@ -123,6 +123,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.Request.Builder
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1077,8 +1079,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                     param?.authToken
                 )
 
-                // Request the authenticated user's information to determine if it is a Salesforce integration user.  This is a synchronous network request, so it must be performed here in the background stage.
-                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser && fetchIsSalesforceIntegrationUser(param)
+                // Request the authenticated user's information to determine if it is a Salesforce integration user.
+                // This is a synchronous network request, so it must be performed here in the background stage.
+                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance()
+                    .shouldBlockSalesforceIntegrationUser && fetchIsSalesforceIntegrationUser(param)
             }.onFailure { throwable ->
                 backgroundException = throwable
             }
@@ -1100,16 +1104,40 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     private fun fetchIsSalesforceIntegrationUser(
         tokenEndpointResponse: TokenEndpointResponse?
     ): Boolean {
-        val url = "$loginUrl/services/oauth2/userinfo"
-        val builder: Builder = Builder().url(url).get()
+        val baseUrl = tokenEndpointResponse?.instanceUrl ?: loginUrl
+        val userInfoEndpoint = "$baseUrl/services/oauth2/userinfo"
+        val builder: Builder = Builder().url(userInfoEndpoint).get()
         addAuthorizationHeader(
             builder,
             tokenEndpointResponse?.authToken
         )
         val request = builder.build()
-        val response = DEFAULT.okHttpClient.newCall(request).execute()
+
+        val clientBuilder = DEFAULT.okHttpClient.newBuilder()
+        clientBuilder.addNetworkInterceptor { chain: Interceptor.Chain ->
+            val url = chain.request().url
+            val interceptedRequestBuilder = chain.request().newBuilder()
+
+            // if the url no longer matches we were redirected
+            if (url.toString() != userInfoEndpoint && url.isSalesforceUrl()) {
+                 addAuthorizationHeader(
+                    interceptedRequestBuilder,
+                    tokenEndpointResponse?.authToken,
+                )
+            }
+
+            chain.proceed(interceptedRequestBuilder.build())
+        }
+        val response = clientBuilder.build().newCall(request).execute()
         val responseString = response.body?.string()
         return responseString != null && JSONObject(responseString).getBoolean("is_salesforce_integration_user")
+    }
+
+    private fun HttpUrl.isSalesforceUrl(): Boolean {
+        // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
+        val salesforceHosts = listOf(".salesforce.com", ".force.com", ".sfdcopens.com", ".site.com", ".lightning.com",
+            ".salesforce-sites.com", ".force-user-content.com", ".salesforce-experience.com", ".salesforce-scrt.com")
+        return salesforceHosts.map { host.endsWith(it) }.any() { it }
     }
 
     protected fun addAccount(account: UserAccount?) {
