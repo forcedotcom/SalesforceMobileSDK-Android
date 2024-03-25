@@ -448,7 +448,7 @@ internal class NativeLoginManager(
         // TODO: Inquire regarding modern JSON serialization in MSDK. ECJ20240317
         fun toJson() = JSONObject().apply {
             put("recaptcha", recaptcha)
-            put("recaptchaevent", recaptchaevent)
+            put("recaptchaevent", recaptchaevent?.toJson())
             put("username", username)
             put("verificationmethod", verificationMethod)
         }
@@ -473,7 +473,14 @@ internal class NativeLoginManager(
         val siteKey: String,
         val expectedAction: String = "login",
         val projectId: String
-    )
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("token", token)
+            put("siteKey", siteKey)
+            put("expectedAction", expectedAction)
+            put("projectId", projectId)
+        }
+    }
 
     // endregion
     // region Private Implementation
