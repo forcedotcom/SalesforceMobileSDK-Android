@@ -137,6 +137,10 @@ public class OAuth2 {
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+
+    /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
+    protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
+
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";

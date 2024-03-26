@@ -554,10 +554,31 @@ open class SalesforceSDKManager protected constructor(
      * @param consumerKey The Connected App consumer key.
      * @param callbackUrl The Connected App redirect URI.
      * @param communityUrl The login url for native login.
+     * @param reCaptchaSiteKeyId The Google Cloud project reCAPTCHA Key's "Id"
+     * as shown in Google Cloud Console under "Products & Solutions", "Security"
+     * and "reCAPTCHA Enterprise"
+     * @param googleCloudProjectId The Google Cloud project's "Id" as shown in
+     * Google Cloud Console
+     * @param isReCaptchaEnterprise Specifies if reCAPTCHA uses the enterprise
+     * license
      * @return The Native Login Manager.
      */
-    fun useNativeLogin(consumerKey: String, callbackUrl: String, communityUrl: String): NativeLoginManagerInterface {
-        nativeLoginManager = NativeLoginManager(consumerKey, callbackUrl, communityUrl)
+    fun useNativeLogin(
+        consumerKey: String,
+        callbackUrl: String,
+        communityUrl: String,
+        reCaptchaSiteKeyId: String? = null,
+        googleCloudProjectId: String? = null,
+        isReCaptchaEnterprise: Boolean = false
+    ): NativeLoginManagerInterface {
+        nativeLoginManager = NativeLoginManager(
+            consumerKey,
+            callbackUrl,
+            communityUrl,
+            reCaptchaSiteKeyId,
+            googleCloudProjectId,
+            isReCaptchaEnterprise
+        )
         return nativeLoginManager as NativeLoginManagerInterface
     }
 
