@@ -247,8 +247,8 @@ open class PushService {
 
             getRestClient(account)?.let { restClient ->
                 val apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
-                // TODO remove once MSDK default api version is 60 or greater
-                if (apiVersion.compareTo("v60.0") >= 0) {
+                // TODO remove once MSDK default api version is 61 or greater
+                if (apiVersion.compareTo("v61.0") >= 0) {
                     fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
                 }
 
