@@ -32,6 +32,8 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -66,10 +68,10 @@ public class LoginServerManager {
 	private static final String IS_CUSTOM = "is_custom_%d";
     private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
-	private Context ctx;
+	private final Context ctx;
 	private LoginServer selectedServer;
-	private SharedPreferences settings;
-	private SharedPreferences runtimePrefs;
+	private final SharedPreferences settings;
+	private final SharedPreferences runtimePrefs;
 
     /**
      * Parameterized constructor.
@@ -78,7 +80,7 @@ public class LoginServerManager {
      */
     public LoginServerManager(Context ctx) {
     	this.ctx = ctx;
-    	settings = ctx.getSharedPreferences(SERVER_URL_FILE,
+		settings = ctx.getSharedPreferences(SERVER_URL_FILE,
     			Context.MODE_PRIVATE);
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
 				Context.MODE_PRIVATE);
@@ -160,7 +162,7 @@ public class LoginServerManager {
         edit.putString(SERVER_NAME, server.name);
         edit.putString(SERVER_URL, server.url);
         edit.putBoolean(IS_CUSTOM, server.isCustom);
-        edit.commit();
+        edit.apply();
     	selectedServer = server;
     }
 
@@ -193,15 +195,15 @@ public class LoginServerManager {
 	public void reset() {
 		Editor edit = settings.edit();
 		edit.clear();
-		edit.commit();
+		edit.apply();
 		edit = runtimePrefs.edit();
 		edit.clear();
-		edit.commit();
+		edit.apply();
         final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
                 Context.MODE_PRIVATE);
         edit = selectedServerPrefs.edit();
         edit.clear();
-        edit.commit();
+		edit.apply();
 		initSharedPrefFile();
 	}
 
@@ -245,7 +247,7 @@ public class LoginServerManager {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
-                SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
+				SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
             final List<LoginServer> storedServers = getLoginServersFromPreferences(runtimePrefs);
@@ -259,7 +261,7 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
-		return (allServers.size() > 0 ? allServers : null);
+		return (!allServers.isEmpty() ? allServers : null);
 	}
 
 	/**
@@ -347,7 +349,7 @@ public class LoginServerManager {
 		    }
 		}
 	    edit.putInt(NUMBER_OF_ENTRIES, numServers);
-	    edit.commit();
+	    edit.apply();
 	}
 
 	/**
@@ -368,7 +370,7 @@ public class LoginServerManager {
 		edit.putString(String.format(Locale.US, SERVER_URL, numServers), url.trim());
 		edit.putBoolean(String.format(Locale.US, IS_CUSTOM, numServers), isCustom);
 		edit.putInt(NUMBER_OF_ENTRIES, ++numServers);
-		edit.commit();
+		edit.apply();
 	}
 
 	/**
@@ -417,7 +419,8 @@ public class LoginServerManager {
 			this.isCustom = isCustom;
 		}
 
-		@Override 
+		@NonNull
+		@Override
 		public String toString() {
 			return "Name: " + name + ", URL: " + url + ", Custom URL: " + isCustom;
 		}
