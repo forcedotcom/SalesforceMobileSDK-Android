@@ -294,11 +294,11 @@ open class PushService {
         get() {
             val keyStoreWrapper = KeyStoreWrapper.getInstance()
 
-            var rsaPublicKey: String? = null
+            var publicKey: String? = null
             if (pushNotificationKeyName.isNotEmpty()) {
-                rsaPublicKey = keyStoreWrapper.getRSAPublicString(pushNotificationKeyName)
+                publicKey = keyStoreWrapper.getRSAPublicString(pushNotificationKeyName)
             }
-            return rsaPublicKey
+            return publicKey
         }
 
     /**
