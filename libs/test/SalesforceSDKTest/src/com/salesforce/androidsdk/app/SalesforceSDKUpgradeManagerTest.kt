@@ -41,6 +41,7 @@ class SalesforceSDKUpgradeManagerTest {
         // start clean
         legacySettingsMgr.resetAll()
         adminSettingsMgr.resetAll()
+        PushMessaging.reRegistrationRequested = false
     }
 
     @Test
@@ -140,14 +141,14 @@ class SalesforceSDKUpgradeManagerTest {
     }
 
     @Test
-    fun testUpgradeFromBefore111() {
-        // Set version to a version before 11.1.1
+    fun testUpgradeFromBefore12() {
+        // Set version to a version before 12.0.0
         setVersion("11.1.0")
 
         // Create public key for push notifications
-        val originalKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
+        KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
 
-        // Upgrade to 11.1.1
+        // Upgrade to latest
         upgradeMgr.upgrade()
 
         // Make sure re-registration is requested
@@ -155,12 +156,14 @@ class SalesforceSDKUpgradeManagerTest {
     }
 
     @Test
-    fun testUpgradeAfter111() {
-        // Create public key for push notifications
-        val originalKey = KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
-
-        // Upgrade to 12.0.0
+    fun testUpgradeAfter12() {
+        // Set version to 12.0.0
         setVersion("12.0.0")
+
+        // Create public key for push notifications
+        KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
+
+        // Upgrade to latest
         upgradeMgr.upgrade()
 
         // Make sure re-registration is NOT requested

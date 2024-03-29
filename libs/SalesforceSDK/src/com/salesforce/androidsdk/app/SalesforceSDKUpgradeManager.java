@@ -127,8 +127,8 @@ public class SalesforceSDKUpgradeManager {
             if (installedVersion.isLessThan(new SdkVersion(11, 0, 0, false))) {
                 updateFromBefore11_0_0();
             }
-            if (installedVersion.isLessThan(new SdkVersion(11, 1, 1, false))) {
-                updateFromBefore11_1_1();
+            if (installedVersion.isLessThan(new SdkVersion(12, 0, 0, false))) {
+                updateFromBefore12_0_0();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(
@@ -301,7 +301,7 @@ public class SalesforceSDKUpgradeManager {
         }
     }
 
-    private void updateFromBefore11_1_1() {
+    private void updateFromBefore12_0_0() {
         // Re-register all users for push notifications with new keys once push is setup
         PushMessaging.setReRegistrationRequested(true);
     }
