@@ -36,7 +36,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
-import com.salesforce.androidsdk.push.PushMessaging;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -44,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -95,17 +95,31 @@ public class KeyStoreWrapperTest {
     }
 
     @Test
-    public void testRSAEncryptDecrypt() {
+    public void testRSAPKCS1EncryptDecrypt() {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
         final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
         final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
         final String data = "Test data for encryption";
-        final String encryptedData = Encryptor.encryptWithRSA(publicKey, data);
+        final String encryptedData = Encryptor.encryptWithRSA(publicKey, data, Encryptor.CipherMode.RSA_PKCS1);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
-        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
+        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData, Encryptor.CipherMode.RSA_PKCS1);
         Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
+
+    @Test
+    public void testRSAOAEPSHA256EncryptDecrypt() {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+        final PrivateKey privateKey = keyStoreWrapper.getRSAPrivateKey(KEY_1, RSA_LENGTH);
+        final PublicKey publicKey = keyStoreWrapper.getRSAPublicKey(KEY_1, RSA_LENGTH);
+        final String data = "Test data for encryption";
+        final String encryptedData = Encryptor.encryptWithRSA(publicKey, data, Encryptor.CipherMode.RSA_OAEP_SHA256);
+        Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
+        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData, Encryptor.CipherMode.RSA_OAEP_SHA256);
+        Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
+    }
+
 
     @Test
     public void testGetECPublicString() {
@@ -132,7 +146,7 @@ public class KeyStoreWrapperTest {
     // 2. Server uses public key to encrypt part of push notification.
     // 3. Client uses private key stored in key store to decrypt push notification.
     //
-    // In 11.1.1 client will use a new RSA cipher mode
+    // In 12.0 client will use a new RSA cipher mode
     // In 250 server will use the new RSA cipher mode
 
     /**
@@ -207,12 +221,12 @@ public class KeyStoreWrapperTest {
         // Simulating server
         final byte[] encryptedBytes = Encryptor.encryptWithPublicKey(publicKey, data,
                 newServer
-                        ? Encryptor.RSA_ECB_OAEP // new server / cipher mode
-                        : Encryptor.RSA_PKCS1    // old server / cipher mode
+                        ? Encryptor.CipherMode.RSA_OAEP_SHA256 // new server / cipher mode
+                        : Encryptor.CipherMode.RSA_PKCS1       // old server / cipher mode
         );
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
-        final String decryptedData = Encryptor.decryptWithRSA(privateKey, encryptedData);
+        final String decryptedData = new String(Encryptor.decryptWithRSAMultiCipherNodes(privateKey, encryptedData), StandardCharsets.UTF_8);
         Assert.assertEquals("Decrypted data should match original data", data, decryptedData);
     }
 }

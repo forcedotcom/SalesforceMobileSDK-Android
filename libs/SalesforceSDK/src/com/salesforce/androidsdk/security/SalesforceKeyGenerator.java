@@ -83,7 +83,7 @@ public class SalesforceKeyGenerator {
      * @return Unique ID.
      */
     public static String getUniqueId(String name, int length) {
-        return generateUniqueId(name, length);
+        return generateUniqueIdIfNoneStored(name, length);
     }
 
     /**
@@ -153,33 +153,45 @@ public class SalesforceKeyGenerator {
         return encryptionKey;
     }
 
-    private synchronized static String generateUniqueId(String name, int length) {
+    private synchronized static String generateUniqueIdIfNoneStored(String name, int length) {
         final String id = readFromSharedPrefs(ID_PREFIX + name);
+        String uniqueId = null;
 
         // Checks if we have a unique identifier stored.
         if (id != null) {
             final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
-            return Encryptor.decryptWithRSA(privateKey, id);
-        } else {
-            String uniqueId;
-            try {
-                // Create the key generator with its recommended secure random number generator provider algorithm.
-                final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
-                keyGenerator.init(length);
-
-                // Generates a 256-bit key.
-                uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
-            } catch (NoSuchAlgorithmException e) {
-                SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
-
-                // Generates a random UUID 128-bit key instead.
-                uniqueId = UUID.randomUUID().toString();
+            uniqueId = Encryptor.decryptWithRSA(privateKey, id, Encryptor.CipherMode.RSA_PKCS1);
+            if (uniqueId == null) {
+                SalesforceSDKLogger.e(TAG, "Unable to decrpyt unique identifier stored");
             }
-            final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
-            final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId);
-            storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
-            return uniqueId;
         }
+
+        // Other create a new one and store it
+        if (uniqueId == null) {
+            uniqueId = createUniqueId(length);
+            final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
+            final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId, Encryptor.CipherMode.RSA_PKCS1);
+            storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
+        }
+        return uniqueId;
+    }
+
+    private static String createUniqueId(int length) {
+        String uniqueId;
+        try {
+            // Create the key generator with its recommended secure random number generator provider algorithm.
+            final KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
+            keyGenerator.init(length);
+
+            // Generates a 256-bit key.
+            uniqueId = Base64.encodeToString(keyGenerator.generateKey().getEncoded(), Base64.NO_WRAP);
+        } catch (NoSuchAlgorithmException e) {
+            SalesforceSDKLogger.e(TAG, "Security exception thrown", e);
+
+            // Generates a random UUID 128-bit key instead.
+            uniqueId = UUID.randomUUID().toString();
+        }
+        return uniqueId;
     }
 
     private static String readFromSharedPrefs(String key) {
@@ -189,7 +201,7 @@ public class SalesforceKeyGenerator {
 
     private synchronized static void storeInSharedPrefs(String key, String value) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
-        prefs.edit().putString(getSharedPrefKey(key), value).commit();
+        prefs.edit().putString(getSharedPrefKey(key), value).apply();
     }
 
     private static String getSharedPrefKey(String name) {

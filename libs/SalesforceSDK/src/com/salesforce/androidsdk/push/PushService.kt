@@ -245,6 +245,12 @@ open class PushService {
             }
 
             getRestClient(account)?.let { restClient ->
+                val apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
+                // TODO remove once MSDK default api version is 60 or greater
+                if (apiVersion.compareTo("v60.0") >= 0) {
+                    fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
+                }
+
                 var status = REGISTRATION_STATUS_FAILED
                 val response = onSendRegisterPushNotificationRequest(fields, restClient)
                 var id: String? = null
@@ -420,6 +426,7 @@ open class PushService {
         private const val RSA_PUBLIC_KEY = "RsaPublicKey"
         private const val CONNECTION_TOKEN = "ConnectionToken"
         private const val APPLICATION_BUNDLE = "ApplicationBundle"
+        private const val CIPHER_NAME = "CipherName"
         private const val FIELD_ID = "id"
         private const val NOT_ENABLED = "not_enabled"
         const val PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey"
