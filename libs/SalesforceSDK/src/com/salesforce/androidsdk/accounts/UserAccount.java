@@ -35,6 +35,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.MapUtil;
@@ -360,6 +362,7 @@ public class UserAccount {
 	 *
 	 * @return Community ID.
 	 */
+	@Nullable
 	public String getCommunityId() {
 		return communityId;
 	}
