@@ -114,6 +114,7 @@ internal class ScreenLockManager: AppLockManager(
             .remove(SCREEN_LOCK)
             .remove(SCREEN_LOCK_TIMEOUT)
             .apply()
+        onUnlock()
     }
 
     companion object {
