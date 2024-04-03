@@ -65,6 +65,7 @@ internal class ScreenLockManager: AppLockManager(
     }
 
     override fun lock() {
+        locked = true
         val ctx = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(ctx, ScreenLockActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)

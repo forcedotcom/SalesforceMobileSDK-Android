@@ -40,6 +40,12 @@ interface ScreenLockManager {
     val enabled: Boolean
 
     /**
+     * If the device is currently locked.
+     */
+    @get:JvmName("isLocked")
+    val locked: Boolean
+
+    /**
      * Locks the app immediately.
      */
     fun lock()

@@ -42,9 +42,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
     @get:JvmName("isEnabled")
     override val enabled: Boolean
         get() { return currentUser != null && getPolicy(currentUser!!).first }
-    @Suppress("INAPPLICABLE_JVM_NAME")
-    @get:JvmName("isLocked")
-    override var locked = false
     private val currentUser: UserAccount?
         get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 
@@ -127,7 +124,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
         internal const val BIO_AUTH_NATIVE_BUTTON = "bio_auth_native_button"
         internal const val SHOW_BIOMETRIC = "show_biometric"
 
-        fun isEnabled(userAccount: UserAccount): Boolean {
+        fun isBiometricAuthenticationEnabled(userAccount: UserAccount): Boolean {
             return BiometricAuthenticationManager().getAccountPrefs(userAccount).getBoolean(BIO_AUTH_ENABLED, false)
         }
     }

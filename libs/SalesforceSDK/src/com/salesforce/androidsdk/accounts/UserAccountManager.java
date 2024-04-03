@@ -333,9 +333,9 @@ public class UserAccountManager {
 		BiometricAuthenticationManager bioAuthManager =
 				(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 		ScreenLockManager screenLockManager = (ScreenLockManager) SalesforceSDKManager.getInstance().getScreenLockManager();
-		if (bioAuthManager.isEnabled()) {
+		if (bioAuthManager != null && bioAuthManager.isEnabled()) {
 			bioAuthManager.lock();
-		} else if (screenLockManager.isEnabled()) {
+		} else if (screenLockManager != null && screenLockManager.isEnabled()) {
 			screenLockManager.lock();
 		}
 	}

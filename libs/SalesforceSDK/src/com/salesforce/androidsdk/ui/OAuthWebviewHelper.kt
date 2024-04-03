@@ -106,7 +106,7 @@ import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isEnabled
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
@@ -984,6 +984,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         }.onFailure { throwable ->
                             w(TAG, "Revoking token failed", throwable)
                         }.onSuccess { uri ->
+                            // The user authenticated via webview again, unlock the app.
+                            if (isBiometricAuthenticationEnabled(duplicateUserAccount)) {
+                                (SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                                        as? BiometricAuthenticationManager)?.onUnlock()
+                            }
                             CoroutineScope(IO).launch {
                                 revokeRefreshToken(
                                     DEFAULT,
@@ -998,7 +1003,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 // If this account has biometric authentication enabled remove any others that also have it
                 if (id?.biometricAuth == true) {
                     existingUsers.forEach(Consumer { existingUser ->
-                        if (isEnabled(existingUser)) {
+                        if (isBiometricAuthenticationEnabled(existingUser)) {
                             activity?.runOnUiThread {
                                 makeText(
                                     activity,

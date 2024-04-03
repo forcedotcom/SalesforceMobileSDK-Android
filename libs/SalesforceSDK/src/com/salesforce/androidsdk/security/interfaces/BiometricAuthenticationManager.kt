@@ -42,13 +42,15 @@ interface BiometricAuthenticationManager {
     val enabled: Boolean
 
     /**
-     * If the device is currently locked.  Authenticated rest requests will fail.
+     * If the device is currently locked.  The users tokens will not be refreshed while locked,
+     * which can cause authenticated rest requests to fail.
      */
     @get:JvmName("isLocked")
     val locked: Boolean
 
     /**
-     * Locks the device immediately.  Authenticated rest requests will fail until the user unlocks the app.
+     * Locks the device immediately.  The users tokens will not be refreshed while locked,
+     * which can cause authenticated rest requests to fail.
      */
     fun lock()
 
