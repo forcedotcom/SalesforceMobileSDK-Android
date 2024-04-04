@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.List;
@@ -231,6 +232,10 @@ public class ScreenLockActivity extends FragmentActivity {
     private void finishSuccess() {
         resetUI();
         sendAccessibilityEvent(getString(R.string.sf__screen_lock_auth_success));
+        ScreenLockManager screenLockManager = SalesforceSDKManager.getInstance().getScreenLockManager();
+        if (screenLockManager != null) {
+            screenLockManager.onUnlock();
+        }
         finish();
     }
 

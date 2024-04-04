@@ -114,7 +114,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
 import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
@@ -617,11 +617,12 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
                 override fun onAuthenticationSucceeded(result: AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    (SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager?)?.run {
-                        locked = false
+                    (SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                            as? BiometricAuthenticationManager?)?.run {
+                        onUnlock()
                     }
 
-                    CoroutineScope(Main).launch {
+                    CoroutineScope(IO).launch {
                         doTokenRefresh(this@LoginActivity)
                     }
                 }
