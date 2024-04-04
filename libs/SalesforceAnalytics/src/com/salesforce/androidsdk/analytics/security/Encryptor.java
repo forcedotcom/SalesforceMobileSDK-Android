@@ -41,13 +41,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -553,7 +558,7 @@ public class Encryptor {
         }
         try {
             final Cipher cipherInstance = getBestCipher(cipherMode);
-            cipherInstance.init(Cipher.ENCRYPT_MODE, publicKey);
+            initRSACipher(cipherInstance, Cipher.ENCRYPT_MODE, publicKey, cipherMode);
             return cipherInstance.doFinal(data.getBytes());
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG, "Failed to encrypt with " + cipherMode, e);
@@ -567,7 +572,7 @@ public class Encryptor {
         }
         try {
             final Cipher cipherInstance = getBestCipher(cipherMode);
-            cipherInstance.init(Cipher.DECRYPT_MODE, privateKey);
+            initRSACipher(cipherInstance, Cipher.DECRYPT_MODE, privateKey, cipherMode);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipherInstance.doFinal(decodedBytes);
         } catch (Exception e) {
@@ -578,6 +583,20 @@ public class Encryptor {
             }
         }
         return null;
+    }
+
+
+    private static void initRSACipher(Cipher cipherInstance, int opmode, Key key, CipherMode cipherMode) throws InvalidKeyException, InvalidAlgorithmParameterException {
+        if (cipherMode == CipherMode.RSA_OAEP_SHA256) {
+            // OAEP uses a separate hash invocation for MGF (mask generation function) and for the hashing of the label.
+            // Most libraries use the same hash algorithm for MGF and the hashing of the label.
+            // But Java uses a different hash algorithm: it defaults to SHA-1 when using the cipher RSA/ECB/OAEPWithSHA-256AndMGF1Padding.
+            OAEPParameterSpec paramSpec = new OAEPParameterSpec("SHA-256", "MGF1",
+                    new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
+            cipherInstance.init(opmode, key, paramSpec);
+        } else {
+            cipherInstance.init(opmode, key);
+        }
     }
 
     private static byte[] generateInitVector() {
