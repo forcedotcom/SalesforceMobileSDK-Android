@@ -389,7 +389,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                     if (!instance.isShareBrowserSessionEnabled) {
                         uri = URI("$uri$PROMPT_LOGIN")
                     }
-                    loadLoginPageInChrome(uri)
+                    loadLoginPageInCustomTab(uri)
                 }
 
                 else -> webView?.loadUrl(uri.toString())
@@ -399,7 +399,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         }
     }
 
-    private fun loadLoginPageInChrome(uri: URI) {
+    private fun loadLoginPageInCustomTab(uri: URI) {
         val activity = activity ?: return
 
         val customTabsIntent = CustomTabsIntent.Builder().apply {
