@@ -185,14 +185,12 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         loginOptions: LoginOptions,
         webView: WebView,
         savedInstanceState: Bundle?,
-        shouldReloadPage: Boolean = true
     ) {
         this.activity = activity
         this.callback = callback
         this.context = webView.context
         this.webView = webView
         this.loginOptions = loginOptions
-        this.shouldReloadPage = shouldReloadPage
 
         webView.apply {
             webView.settings.apply {
@@ -240,7 +238,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         this.loginOptions = loginOptions
         this.webView = null
         this.activity = null
-        this.shouldReloadPage = true
     }
 
     private val callback: OAuthWebviewHelperEvents
@@ -258,16 +255,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     private var key: PrivateKey? = null
 
     private var certChain: Array<X509Certificate>? = null
-
-    /**
-     * Indicates whether the login page should be reloaded when the app is
-     * backgrounded and foregrounded. By default, this is set to 'true' in the
-     * SDK in order to support various supported OAuth flows. Subclasses may
-     * override this for cases where they need to display the page as-is, such
-     * as TBID or social login pages where a code is typed in.
-     */
-    var shouldReloadPage: Boolean
-        private set
 
     fun saveState(outState: Bundle) {
         val accountOptions = accountOptions
@@ -464,15 +451,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         val customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
         if (doesBrowserExist(customTabBrowser)) {
             customTabsIntent.intent.setPackage(customTabBrowser)
-        }
-
-        /*
-         * Prevent Chrome custom tab from staying in the activity history stack.
-         * This flag ensures that the Chrome custom tab is dismissed once the
-         * login process is complete
-         */
-        if (shouldReloadPage) {
-            customTabsIntent.intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         }
 
         runCatching {

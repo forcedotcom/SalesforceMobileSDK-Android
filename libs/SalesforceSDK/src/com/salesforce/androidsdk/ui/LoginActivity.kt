@@ -259,9 +259,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         // Reload the login page for every new intent to ensure the correct login server is selected
         webviewHelper?.run {
-            if (shouldReloadPage) {
-                loadLoginPage()
-            }
+            loadLoginPage()
         }
     }
 
@@ -347,15 +345,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     override fun onResume() {
         super.onResume()
-        if (wasBackgrounded) {
-            webviewHelper?.run {
-                if (shouldReloadPage) {
-                    clearView()
-                    loadLoginPage()
-                }
-            }
-            wasBackgrounded = false
-        }
+        wasBackgrounded = false
     }
 
     public override fun onSaveInstanceState(bundle: Bundle) {
