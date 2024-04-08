@@ -303,7 +303,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
         Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
         Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getLoginActivityClass());
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         BiometricAuthenticationManager bioAuthManager =
                 SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
@@ -313,8 +313,9 @@ public class ServerPickerActivity extends AppCompatActivity implements
         intent.putExtras(options);
 
         /*
-         * The activity needs to be created (instead of just reloading the webview)
-         * to support the transition from custom tab to standard webview login.
+         * The activity needs to be recreated (instead of just reloading the webview)
+         * to support the transition from custom tab to standard webview login.  If we do this
+         * with the CLEAR_TOP flag we ensure unnecessary Custom Tabs are destroyed.
          *
          * The only other way to do this is with the NO_HISTORY flag on the custom tab, however
          * this will cause it to always reload on background -- breaking MFA.

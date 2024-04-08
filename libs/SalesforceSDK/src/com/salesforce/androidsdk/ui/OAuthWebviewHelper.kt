@@ -143,6 +143,11 @@ import java.util.function.Consumer
  * c) Navigate to the authentication completion URL and token fetch
  * d) Call the id service to obtain additional info about the user
  * e) Create a local account and return an authentication result bundle
+ *
+ * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
+ * is no longer necessary to extend or change LoginActivity's instance of this class
+ * to support multi-factory authentication.  If there are other uses cases please
+ * inform the team via Github or our Trailblazer community.  
  */
 open class OAuthWebviewHelper : KeyChainAliasCallback {
 
