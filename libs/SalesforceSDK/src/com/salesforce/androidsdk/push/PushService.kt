@@ -27,7 +27,9 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Intent
+import androidx.work.Constraints
 import androidx.work.Data
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -44,6 +46,7 @@ import com.salesforce.androidsdk.push.PushMessaging.getRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
@@ -156,12 +159,6 @@ open class PushService {
         }
 
         clearRegistrationInfo(context, account)
-
-        context.sendBroadcast(
-            Intent(
-                UNREGISTERED_ATTEMPT_COMPLETE_EVENT
-            ).setPackage(packageName)
-        )
         context.sendBroadcast(
             Intent(
                 UNREGISTERED_EVENT
@@ -456,22 +453,30 @@ open class PushService {
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
             val workManager = WorkManager.getInstance(context)
+            // Require network connectivity in case the user is logging out while offline.
+            val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
             val userAccountJson = userAccount?.toJson()?.toString()
-            val workData = Data.Builder().putString(
-                "USER_ACCOUNT",
-                userAccountJson
-            ).putString(
-                "ACTION",
-                action.name
-            ).build()
-            val workRequest: OneTimeWorkRequest = OneTimeWorkRequest.Builder(
-                PushNotificationsRegistrationChangeWorker::class.java
-            ).setInputData(
-                workData
-            ).setInitialDelay(
-                delayMilliseconds ?: 0, TimeUnit.MILLISECONDS
-            ).build()
+            val workData = Data.Builder()
+                .putString("USER_ACCOUNT", userAccountJson)
+                .putString("ACTION", action.name)
+                .build()
+            val workRequest: OneTimeWorkRequest =
+                OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
+                    .setInputData(workData)
+                    .setInitialDelay(delayMilliseconds ?: 0, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .build()
+
             workManager.enqueue(workRequest)
+
+            if (action == Deregister) {
+                // Send broadcast now to finish logout in case we are offline.
+                context.sendBroadcast(
+                    Intent(
+                        UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+                    ).setPackage(context.packageName)
+                )
+            }
         }
     }
 }
