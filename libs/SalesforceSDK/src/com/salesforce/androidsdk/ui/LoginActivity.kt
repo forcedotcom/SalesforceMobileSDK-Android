@@ -197,7 +197,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             useWideViewPort = true
             layoutAlgorithm = LayoutAlgorithm.NORMAL
             javaScriptEnabled = true
-            allowFileAccessFromFileURLs = true
             javaScriptCanOpenWindowsAutomatically = true
             databaseEnabled = true
             domStorageEnabled = true
