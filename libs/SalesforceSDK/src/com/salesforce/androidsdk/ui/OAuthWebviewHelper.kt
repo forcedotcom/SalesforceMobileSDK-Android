@@ -146,9 +146,13 @@ import java.util.function.Consumer
  *
  * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
  * is no longer necessary to extend or change LoginActivity's instance of this class
- * to support multi-factory authentication.  If there are other uses cases please
+ * to support multi-factor authentication.  If there are other uses cases please
  * inform the team via Github or our Trailblazer community.  
  */
+@Deprecated(
+    "This class will no longer be public starting in Mobile SDK 13.0.",
+    level = DeprecationLevel.WARNING,
+)
 open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     private var codeVerifier: String? = null
@@ -190,6 +194,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         loginOptions: LoginOptions,
         webView: WebView,
         savedInstanceState: Bundle?,
+        shouldReloadPage: Boolean = false,
     ) {
         this.activity = activity
         this.callback = callback
@@ -260,6 +265,15 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     private var key: PrivateKey? = null
 
     private var certChain: Array<X509Certificate>? = null
+
+    /**
+     * This value is no longer needed to support Multi-Factor Authentication via
+     * standard or advanced authentication flows.
+     *
+     * @Deprecated This value is no longer used.
+     */
+    var shouldReloadPage: Boolean = false
+        private set
 
     fun saveState(outState: Bundle) {
         val accountOptions = accountOptions
