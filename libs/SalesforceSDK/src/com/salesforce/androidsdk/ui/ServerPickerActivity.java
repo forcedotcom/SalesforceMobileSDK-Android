@@ -26,8 +26,11 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.security.BiometricAuthenticationManager.SHOW_BIOMETRIC;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
@@ -50,6 +53,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager;
 
 import java.util.List;
 
@@ -64,8 +68,6 @@ import kotlin.Unit;
  */
 public class ServerPickerActivity extends AppCompatActivity implements
         android.widget.RadioGroup.OnCheckedChangeListener {
-
-    public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
     private CustomServerUrlEditor urlEditDialog;
@@ -297,11 +299,28 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
-        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        // Android 14 requires non-exported receiver to be invoked with explicit intents
-        // See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
-        changeServerIntent.setPackage(getPackageName());
-        sendBroadcast(changeServerIntent);
+        Context ctx = SalesforceSDKManager.getInstance().getAppContext();
+        Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
+        Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getLoginActivityClass());
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        BiometricAuthenticationManager bioAuthManager =
+                SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+        if (bioAuthManager != null && bioAuthManager.isLocked()) {
+            options.putBoolean(SHOW_BIOMETRIC, true);
+        }
+        intent.putExtras(options);
+
+        /*
+         * The activity needs to be recreated (instead of just reloading the webview)
+         * to support the transition from custom tab to standard webview login.  If we do this
+         * with the CLEAR_TOP flag we ensure unnecessary Custom Tabs are destroyed.
+         *
+         * The only other way to do this is with the NO_HISTORY flag on the custom tab, however
+         * this will cause it to always reload on background -- breaking MFA.
+         */
+        ctx.startActivity(intent);
         finish();
     }
 }
