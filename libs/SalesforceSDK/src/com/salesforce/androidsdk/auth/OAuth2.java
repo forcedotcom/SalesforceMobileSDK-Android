@@ -116,7 +116,7 @@ public class OAuth2 {
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
     protected static final String AUTHORIZATION_CODE = "authorization_code";
-    private static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
+    protected static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
     protected static final String CODE = "code";
     protected static final String CODE_CHALLENGE = "code_challenge";
     protected static final String CODE_VERIFIER = "code_verifier";
