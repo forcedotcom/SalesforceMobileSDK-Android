@@ -44,6 +44,7 @@ import com.salesforce.androidsdk.auth.OAuth2.CODE
 import com.salesforce.androidsdk.auth.OAuth2.CODE_CHALLENGE
 import com.salesforce.androidsdk.auth.OAuth2.CODE_VERIFIER
 import com.salesforce.androidsdk.auth.OAuth2.GRANT_TYPE
+import com.salesforce.androidsdk.auth.OAuth2.HYBRID_AUTH_CODE
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
@@ -516,10 +517,11 @@ internal class NativeLoginManager(
     ): NativeLoginResult {
         if (authorizationResponse.isSuccess) {
             val code = authorizationResponse.asJSONObject().get(CODE).toString()
+            val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
             val authEndpoint = authorizationResponse.asJSONObject().get(SFDC_COMMUNITY_URL).toString()
             val tokenRequestBody = createRequestBody(
                 CODE to code,
-                GRANT_TYPE to AUTHORIZATION_CODE,
+                GRANT_TYPE to if (useHybridAuthentication) HYBRID_AUTH_CODE else AUTHORIZATION_CODE,
                 CLIENT_ID to clientId,
                 REDIRECT_URI to redirectUri,
                 CODE_VERIFIER to codeVerifier,
