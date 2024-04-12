@@ -301,7 +301,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
         setResult(Activity.RESULT_OK, null);
         Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
-        Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getLoginActivityClass());
+        Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getWebviewLoginActivityClass());
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 

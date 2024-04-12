@@ -199,7 +199,7 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-    internal val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
 
     /**
      * The class of the activity used to perform the login process and create
