@@ -517,7 +517,7 @@ internal class NativeLoginManager(
     ): NativeLoginResult {
         if (authorizationResponse.isSuccess) {
             val code = authorizationResponse.asJSONObject().get(CODE).toString()
-            val useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication()
+            val useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
             val authEndpoint = authorizationResponse.asJSONObject().get(SFDC_COMMUNITY_URL).toString()
             val tokenRequestBody = createRequestBody(
                 CODE to code,

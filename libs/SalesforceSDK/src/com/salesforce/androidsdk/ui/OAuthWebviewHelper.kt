@@ -398,7 +398,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         runCatching {
             var uri = getAuthorizationUrl(
                 useWebServerAuthentication = instance.isBrowserLoginEnabled || instance.useWebServerAuthentication,
-                useHybridAuthentication = instance.shouldUseHybridAuthentication()
+                useHybridAuthentication = instance.useHybridAuthentication
             )
 
             callback.loadingLoginPage(loginOptions.loginUrl)

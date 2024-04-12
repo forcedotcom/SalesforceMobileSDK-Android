@@ -346,8 +346,9 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Optionally, enables the hybrid authentication flow.  Defaults to true
      */
-    @Synchronized
-    fun shouldUseHybridAuthentication() = true
+    @get:JvmName("shouldUseHybridAuthentication")
+    @set:Synchronized
+    var useHybridAuthentication = true
 
     /**
      * The regular expression pattern used to detect "Use Custom Domain" input
