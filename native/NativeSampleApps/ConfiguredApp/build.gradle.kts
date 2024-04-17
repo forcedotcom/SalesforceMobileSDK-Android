@@ -18,7 +18,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        compileSdk = 34
+        targetSdk = 34
         minSdk = 26
     }
 
