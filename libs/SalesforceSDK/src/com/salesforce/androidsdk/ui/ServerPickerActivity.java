@@ -30,7 +30,6 @@ import static com.salesforce.androidsdk.security.BiometricAuthenticationManager.
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
@@ -299,9 +298,11 @@ public class ServerPickerActivity extends AppCompatActivity implements
 
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
-        Context ctx = SalesforceSDKManager.getInstance().getAppContext();
         Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
-        Intent intent = new Intent(ctx, SalesforceSDKManager.getInstance().getWebviewLoginActivityClass());
+        Intent intent = new Intent(
+                this,
+                SalesforceSDKManager.getInstance().getWebviewLoginActivityClass()
+        );
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
@@ -320,7 +321,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
          * The only other way to do this is with the NO_HISTORY flag on the custom tab, however
          * this will cause it to always reload on background -- breaking MFA.
          */
-        ctx.startActivity(intent);
+        startActivity(intent);
         finish();
     }
 }
