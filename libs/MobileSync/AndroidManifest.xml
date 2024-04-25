@@ -2,7 +2,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="83"
-    android:versionName="12.0.0.dev">
+    android:versionName="12.0.0">
 
     <application />
 
