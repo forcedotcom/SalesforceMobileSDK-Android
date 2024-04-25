@@ -224,6 +224,7 @@ public class KeyStoreWrapperTest {
                         ? Encryptor.CipherMode.RSA_OAEP_SHA256 // new server / cipher mode
                         : Encryptor.CipherMode.RSA_PKCS1       // old server / cipher mode
         );
+        
         final String encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         Assert.assertNotSame("Encrypted data should not match original data", data, encryptedData);
         final String decryptedData = new String(Encryptor.decryptWithRSAMultiCipherNodes(privateKey, encryptedData), StandardCharsets.UTF_8);
