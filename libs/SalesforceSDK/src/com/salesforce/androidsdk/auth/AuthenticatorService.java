@@ -78,6 +78,10 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CONTENT_DOMAIN = "contentDomain";
     public static final String KEY_CONTENT_SID = "contentSid";
     public static final String KEY_CSRF_TOKEN = "csrfToken";
+    public static final String KEY_NATIVE_LOGIN = "nativeLogin";
+    public static final String KEY_LANGUAGE = "language";
+    public static final String KEY_LOCALE = "locale";
+
     private static final String TAG = "AuthenticatorService";
 
     private Authenticator getAuthenticator() {
@@ -138,6 +142,8 @@ public class AuthenticatorService extends Service {
             final String username = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), encryptionKey);
             final String lastName = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
             final String email = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
+            final String language = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LANGUAGE), encryptionKey);
+            final String locale = SalesforceSDKManager.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LOCALE), encryptionKey);
             final String encFirstName = mgr.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
             String firstName = null;
             if (encFirstName != null) {
@@ -239,6 +245,8 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(orgId, encryptionKey));
                 resBundle.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(lastName, encryptionKey));
                 resBundle.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(email, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_LANGUAGE, SalesforceSDKManager.encrypt(language, encryptionKey));
+                resBundle.putString(AuthenticatorService.KEY_LOCALE, SalesforceSDKManager.encrypt(locale, encryptionKey));
                 String encrFirstName = null;
                 if (firstName != null) {
                     encrFirstName = SalesforceSDKManager.encrypt(firstName, encryptionKey);

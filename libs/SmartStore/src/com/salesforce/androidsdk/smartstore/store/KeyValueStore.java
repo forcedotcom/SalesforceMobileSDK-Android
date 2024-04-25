@@ -45,7 +45,7 @@ public interface KeyValueStore {
 
     boolean deleteValue(String key);
 
-    void deleteAll();
+    boolean deleteAll();
 
     Set<String> keySet();
 

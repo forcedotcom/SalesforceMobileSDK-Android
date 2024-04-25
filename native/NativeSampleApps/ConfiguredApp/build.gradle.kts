@@ -9,7 +9,7 @@ dependencies {
     api(project(":libs:SalesforceSDK"))
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.appcompat:appcompat-resources:1.6.1")
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.12.0")
 }
 
 android {
@@ -18,8 +18,8 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        compileSdk = 34
-        minSdk = 24
+        targetSdk = 34
+        minSdk = 26
     }
 
     sourceSets {
@@ -34,7 +34,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -48,5 +48,6 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
     }
 }

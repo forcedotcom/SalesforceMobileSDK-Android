@@ -39,11 +39,17 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.TreeSet;
 
 import okhttp3.FormBody;
@@ -80,11 +86,11 @@ import okhttp3.Response;
 public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
-    private static final String CLIENT_ID = "client_id";
+    protected static final String CLIENT_ID = "client_id";
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
     private static final String FORMAT = "format";
-    private static final String GRANT_TYPE = "grant_type";
+    protected static final String GRANT_TYPE = "grant_type";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
     private static final String JSON = "json";
@@ -95,9 +101,9 @@ public class OAuth2 {
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String HYBRID_REFRESH = "hybrid_refresh";
-    private static final String RESPONSE_TYPE = "response_type";
+    protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
-    private static final String REDIRECT_URI = "redirect_uri";
+    protected static final String REDIRECT_URI = "redirect_uri";
     private static final String DEVICE_ID = "device_id";
     private static final String TOKEN = "token";
     private static final String HYBRID_TOKEN = "hybrid_token";
@@ -109,16 +115,15 @@ public class OAuth2 {
     private static final String PHOTOS = "photos";
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
-
-    private static final String AUTHORIZATION_CODE = "authorization_code";
-    private static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
-    private static final String CODE = "code";
-    private static final String CODE_CHALLENGE = "code_challenge";
-    private static final String CODE_VERIFIER = "code_verifier";
+    protected static final String AUTHORIZATION_CODE = "authorization_code";
+    protected static final String HYBRID_AUTH_CODE = "hybrid_auth_code";
+    protected static final String CODE = "code";
+    protected static final String CODE_CHALLENGE = "code_challenge";
+    protected static final String CODE_VERIFIER = "code_verifier";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
     private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
-    private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
+    protected static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
     private static final String ID_TOKEN = "id_token";
     private static final String AND = "&";
     private static final String EQUAL = "=";
@@ -127,13 +132,17 @@ public class OAuth2 {
     private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
     private static final String SID = "sid";
     private static final String RETURL = "retURL";
-    private static final String AUTHORIZATION = "Authorization";
+    protected static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+
+    /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
+    protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
+
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
-    private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
+    protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
     private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
     private static final String LIGHTNING_DOMAIN = "lightning_domain";
     private static final String LIGHTNING_SID = "lightning_sid";
@@ -146,6 +155,39 @@ public class OAuth2 {
     private static final String FORWARD_SLASH = "/";
     private static final String SINGLE_SPACE = " ";
     private static final String TAG = "OAuth2";
+    private static final String ID_URL = "id";
+    private static final String ASSERTED_USER = "asserted_user";
+    private static final String USER_ID = "user_id";
+    private static final String ORG_ID = "organization_id";
+    private static final String NICKNAME = "nick_name";
+    private static final String URLS = "urls";
+    private static final String ENTERPRISE_SOAP_URL = "enterprise";
+    private static final String METADATA_SOAP_URL = "metadata";
+    private static final String PARTNER_SOAP_URL = "partner";
+    private static final String REST_URL = "rest";
+    private static final String REST_SOBJECTS_URL = "sobjects";
+    private static final String REST_SEARCH_URL = "search";
+    private static final String REST_QUERY_URL = "query";
+    private static final String REST_RECENT_URL = "recent";
+    private static final String PROFILE_URL = "profile";
+    private static final String CHATTER_FEEDS_URL = "feeds";
+    private static final String CHATTER_GROUPS_URL = "groups";
+    private static final String CHATTER_USERS_URL = "users";
+    private static final String CHATTER_FEED_ITEMS_URL = "feed_items";
+    private static final String IS_ACTIVE = "active";
+    private static final String USER_TYPE = "user_type";
+    private static final String LANGUAGE = "language";
+    private static final String LOCALE = "locale";
+    private static final String UTC_OFFSET = "utcOffset";
+    private static final String LAST_MODIFIED_DATE = "last_modified_date";
+    private static final String NATIVE_LOGIN = "nativeLogin";
+
+    public static final DateFormat TIMESTAMP_FORMAT;
+    static {
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        TIMESTAMP_FORMAT.setTimeZone(tz);
+    }
 
     /**
      * Builds the URL to the authorization web page for this login server.
@@ -497,6 +539,35 @@ public class OAuth2 {
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
+        public String idUrl;
+        public boolean assertedUser;
+        public String userId;
+        public String orgId;
+        public String nickname;
+        public String photos;
+        public String urls;
+        public String enterpriseSoapUrl;
+        public String metadataSoapUrl;
+        public String partnerSoapUrl;
+        public String restUrl;
+        public String restSObjectsUrl;
+        public String restSearchUrl;
+        public String restQueryUrl;
+        public String restRecentUrl;
+        public String profileUrl;
+        public String chatterFeedsUrl;
+        public String chatterGroupsUrl;
+        public String chatterUsersUrl;
+        public String chatterFeedItemsUrl;
+        public boolean isActive;
+        public String userType;
+        public String language;
+        public String locale;
+        public int utcOffset;
+        public boolean mobilePolicyConfigured;
+        public Date lastModifiedDate;
+        public boolean nativeLogin;
+
         /**
          * Parameterized constructor built from identity service response.
          *
@@ -505,6 +576,23 @@ public class OAuth2 {
         public IdServiceResponse(Response response) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                populateFromJSON(parsedResponse);
+            } catch (Exception e) {
+                SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
+            }
+        }
+
+        /**
+         * Parameterized constructor built from identity service response json.
+         *
+         * @param jsonObject Identity service response json.
+         */
+        public IdServiceResponse(JSONObject jsonObject) {
+            populateFromJSON(jsonObject);
+        }
+
+        private void populateFromJSON(JSONObject parsedResponse) {
+            try {
                 username = parsedResponse.getString(USERNAME);
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
@@ -515,6 +603,37 @@ public class OAuth2 {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
                 }
+
+                idUrl = parsedResponse.getString(ID_URL);
+                assertedUser = parsedResponse.optBoolean(ASSERTED_USER);
+                userId = parsedResponse.getString(USER_ID);
+                orgId = parsedResponse.getString(ORG_ID);
+                nickname = parsedResponse.getString(NICKNAME);
+                final JSONObject urls = parsedResponse.getJSONObject(URLS);
+                if (urls != null) {
+                    enterpriseSoapUrl = urls.getString(ENTERPRISE_SOAP_URL);
+                    metadataSoapUrl = urls.getString(METADATA_SOAP_URL);
+                    partnerSoapUrl = urls.getString(PARTNER_SOAP_URL);
+                    restUrl = urls.getString(REST_URL);
+                    restSObjectsUrl = urls.getString(REST_SOBJECTS_URL);
+                    restSearchUrl = urls.getString(REST_SEARCH_URL);
+                    restQueryUrl = urls.getString(REST_QUERY_URL);
+                    restRecentUrl = urls.getString(REST_RECENT_URL);
+                    profileUrl = urls.getString(PROFILE_URL);
+                    chatterFeedsUrl = urls.getString(CHATTER_FEEDS_URL);
+                    chatterGroupsUrl = urls.getString(CHATTER_GROUPS_URL);
+                    chatterUsersUrl = urls.getString(CHATTER_USERS_URL);
+                    chatterFeedItemsUrl = urls.getString(CHATTER_FEED_ITEMS_URL);
+                }
+                isActive = parsedResponse.optBoolean(IS_ACTIVE);
+                userType = parsedResponse.getString(USER_TYPE);
+                language = parsedResponse.getString(LANGUAGE);
+                locale = parsedResponse.getString(LOCALE);
+                utcOffset = parsedResponse.optInt(UTC_OFFSET, -1);
+                mobilePolicyConfigured = parsedResponse.has(MOBILE_POLICY);
+                lastModifiedDate = parseDateString(parsedResponse.getString(LAST_MODIFIED_DATE));
+                nativeLogin = parsedResponse.optBoolean(NATIVE_LOGIN);
+
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
@@ -531,7 +650,7 @@ public class OAuth2 {
                 }
 
 
-                if (parsedResponse.has(MOBILE_POLICY)) {
+                if (mobilePolicyConfigured) {
                     JSONObject mobilePolicyObject = parsedResponse.getJSONObject(MOBILE_POLICY);
                     screenLock = mobilePolicyObject.has(SCREEN_LOCK_TIMEOUT);
                     screenLockTimeout = mobilePolicyObject.getInt(SCREEN_LOCK_TIMEOUT);
@@ -543,6 +662,15 @@ public class OAuth2 {
                 }
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse identity response", e);
+            }
+        }
+
+        public static Date parseDateString(String dateString) {
+            try {
+                return TIMESTAMP_FORMAT.parse(dateString);
+            } catch (ParseException e) {
+                SalesforceSDKLogger.w(TAG, "Could not parse date string " + dateString, e);
+                return null;
             }
         }
     }
@@ -663,17 +791,13 @@ public class OAuth2 {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
-                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                        additionalOauthValues = new HashMap<>();
-                        for (final String key : additionalOauthKeys) {
-                            if (!TextUtils.isEmpty(key)) {
-                                final String value = parsedResponse.optString(key, null);
-                                if (value != null) {
-                                    additionalOauthValues.put(key, value);
-                                }
-                            }
+                final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    additionalOauthValues = new HashMap<>();
+                    for (final String key : additionalOauthKeys) {
+                        if (!TextUtils.isEmpty(key)) {
+                            final String value = parsedResponse.optString(key);
+                            additionalOauthValues.put(key, value);
                         }
                     }
                 }

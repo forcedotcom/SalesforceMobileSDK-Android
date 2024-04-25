@@ -32,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -189,6 +190,15 @@ public class SOQLMutatorTest {
         String soql = "select LastModifiedDate,Id, OwnerId, WhatId, Status, Subject, Priority, Description, ActivityDate, WhoId from Task where (OwnerId = '<<<UserIDHERE>>>' OR (What.Type = 'Account' AND (Account.OwnerId = '<<<UserIDHERE>>>' OR Account.Owner.ManagerId = '<<<UserIDHERE>>>'))) AND (LastModifiedDate > 2019-05-15T07:52:27.000Z ) order by Description";
         String expectedSoql = "select LastModifiedDate,Id, OwnerId, WhatId, Status, Subject, Priority, Description, ActivityDate, WhoId from Task where (OwnerId = '<<<UserIDHERE>>>' OR (What.Type = 'Account' AND (Account.OwnerId = '<<<UserIDHERE>>>' OR Account.Owner.ManagerId = '<<<UserIDHERE>>>'))) AND (LastModifiedDate > 2019-05-15T07:52:27.000Z ) order by LastModifiedDate";
         Assert.assertEquals(expectedSoql, new SOQLMutator(soql).replaceOrderBy("LastModifiedDate").replaceOrderBy("LastModifiedDate").asBuilder().build());
+    }
+    
+    @Test
+    public void testAddWherePredicateToQueryWithOrClause() {
+        String soql = "select Id from Account where Id != null or Name != null";
+        String additionalPredicate = "LastModifiedDate > " + Constants.TIMESTAMP_FORMAT.format(new Date());
+        String expectedSoql = "select Id from Account where "  + additionalPredicate + " and Id != null or Name != null";
+
+        Assert.assertEquals(expectedSoql, new SOQLMutator(soql).addWherePredicates(additionalPredicate).asBuilder().build());
     }
 
     @Test

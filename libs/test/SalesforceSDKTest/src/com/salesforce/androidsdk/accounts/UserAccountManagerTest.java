@@ -26,6 +26,21 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_AUTH_TOKEN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_IDENTITY_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_INSTANCE_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LANGUAGE;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOCALE;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOGIN_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ORG_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ORG_ID_2;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_OTHER_ACCOUNT_NAME;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_OTHER_USERNAME;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_REFRESH_TOKEN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USER_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USER_ID_2;
+
 import android.accounts.AccountManager;
 import android.app.Application;
 import android.app.Instrumentation;
@@ -78,9 +93,9 @@ public class UserAccountManagerTest {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-        loginOptions = new LoginOptions(ClientManagerTest.TEST_LOGIN_URL,
+        loginOptions = new LoginOptions(TEST_LOGIN_URL,
         		ClientManagerTest.TEST_CALLBACK_URL,
-        		ClientManagerTest.TEST_CLIENT_ID,
+        		TEST_CLIENT_ID,
 				ClientManagerTest.TEST_SCOPES);
         clientManager = new ClientManager(targetContext,
         		ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
@@ -127,9 +142,9 @@ public class UserAccountManagerTest {
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
     	final UserAccount curUser = userAccMgr.getCurrentUser();
         Assert.assertNotNull("Current user should not be null", curUser);
-        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
+        Assert.assertEquals("User IDs should match", TEST_USER_ID,
     			curUser.getUserId());
-        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
+        Assert.assertEquals("Org IDs should match", TEST_ORG_ID,
     			curUser.getOrgId());
     }
 
@@ -148,16 +163,16 @@ public class UserAccountManagerTest {
         Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
     	UserAccount curUser = userAccMgr.getCurrentUser();
         Assert.assertNotNull("Current user should not be null", curUser);
-        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID_2,
+        Assert.assertEquals("User IDs should match", TEST_USER_ID_2,
     			curUser.getUserId());
-        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID_2,
+        Assert.assertEquals("Org IDs should match", TEST_ORG_ID_2,
     			curUser.getOrgId());
     	userAccMgr.switchToUser(users.get(0));
     	curUser = userAccMgr.getCurrentUser();
         Assert.assertNotNull("Current user should not be null", curUser);
-        Assert.assertEquals("User IDs should match", ClientManagerTest.TEST_USER_ID,
+        Assert.assertEquals("User IDs should match", TEST_USER_ID,
     			curUser.getUserId());
-        Assert.assertEquals("Org IDs should match", ClientManagerTest.TEST_ORG_ID,
+        Assert.assertEquals("Org IDs should match", TEST_ORG_ID,
     			curUser.getOrgId());
     }
 
@@ -171,21 +186,23 @@ public class UserAccountManagerTest {
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
-		UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
-                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
-                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
-                orgId(ClientManagerTest.TEST_ORG_ID).userId(ClientManagerTest.TEST_USER_ID).
+		UserAccount userAcc = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
+                refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
+                idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL).
+                orgId(TEST_ORG_ID).userId(TEST_USER_ID).
                 username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
-				email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
+				email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
+                language(TEST_LANGUAGE).locale(TEST_LOCALE).build();
         Assert.assertTrue("User account should exist", userAccMgr.doesUserAccountExist(userAcc));
-    	userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
+        userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
                 refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
                 idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
                 orgId(ClientManagerTest.TEST_ORG_ID_2).userId(ClientManagerTest.TEST_USER_ID_2).
                 username(ClientManagerTest.TEST_OTHER_USERNAME).accountName(ClientManagerTest.TEST_OTHER_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
-                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
+                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
+                language(TEST_LANGUAGE).locale(TEST_LOCALE).build();
         Assert.assertFalse("User account should not exist", userAccMgr.doesUserAccountExist(userAcc));
     }
 
@@ -219,13 +236,14 @@ public class UserAccountManagerTest {
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
-        final UserAccount userAcc = UserAccountBuilder.getInstance().authToken(ClientManagerTest.TEST_AUTH_TOKEN).
-                refreshToken(ClientManagerTest.TEST_REFRESH_TOKEN).loginServer(ClientManagerTest.TEST_LOGIN_URL).
-                idUrl(ClientManagerTest.TEST_IDENTITY_URL).instanceServer(ClientManagerTest.TEST_INSTANCE_URL).
-                orgId(ClientManagerTest.TEST_ORG_ID).userId(ClientManagerTest.TEST_USER_ID).
+        final UserAccount userAcc = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
+                refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
+                idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL).
+                orgId(TEST_ORG_ID).userId(TEST_USER_ID).
                 username(ClientManagerTest.TEST_USERNAME).accountName(ClientManagerTest.TEST_ACCOUNT_NAME).
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
-                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).build();
+                email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
+                language(TEST_LANGUAGE).locale(TEST_LOCALE).build();
 		userAccMgr.signoutUser(userAcc, null, false);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
@@ -246,14 +264,14 @@ public class UserAccountManagerTest {
      */
     private Bundle createTestAccount() {
         return clientManager.createNewAccount(ClientManagerTest.TEST_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_REFRESH_TOKEN,
-        		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
-        		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
-        		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID,
-        		ClientManagerTest.TEST_USER_ID, null, null, null,
+        		ClientManagerTest.TEST_USERNAME, TEST_REFRESH_TOKEN,
+        		TEST_AUTH_TOKEN, TEST_INSTANCE_URL,
+        		TEST_LOGIN_URL, TEST_IDENTITY_URL,
+        		TEST_CLIENT_ID, TEST_ORG_ID,
+        		TEST_USER_ID, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false, TEST_LANGUAGE, TEST_LOCALE);
     }
 
     /**
@@ -262,14 +280,15 @@ public class UserAccountManagerTest {
      * @return Bundle.
      */
     private Bundle createOtherTestAccount() {
-        return clientManager.createNewAccount(ClientManagerTest.TEST_OTHER_ACCOUNT_NAME,
-        		ClientManagerTest.TEST_OTHER_USERNAME, ClientManagerTest.TEST_REFRESH_TOKEN,
-        		ClientManagerTest.TEST_AUTH_TOKEN, ClientManagerTest.TEST_INSTANCE_URL,
-        		ClientManagerTest.TEST_LOGIN_URL, ClientManagerTest.TEST_IDENTITY_URL,
-        		ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_ORG_ID_2,
-        		ClientManagerTest.TEST_USER_ID_2, null, null, null,
+        return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME,
+        		TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN,
+        		TEST_AUTH_TOKEN, TEST_INSTANCE_URL,
+        		TEST_LOGIN_URL, TEST_IDENTITY_URL,
+        		TEST_CLIENT_ID, TEST_ORG_ID_2,
+        		TEST_USER_ID_2, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false,
+                TEST_LANGUAGE, TEST_LOCALE);
     }
 }

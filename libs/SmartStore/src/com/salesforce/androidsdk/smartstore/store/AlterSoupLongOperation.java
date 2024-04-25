@@ -32,7 +32,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -220,7 +220,11 @@ public class AlterSoupLongOperation extends LongOperation {
 				reIndexSoup();
 			if (toStep == AlterSoupStep.RE_INDEX_SOUP) break;
 		case RE_INDEX_SOUP:
-			dropOldTable();		
+			dropOldTable();
+			// After upgrading to 4.5.5
+			// Functional indices are only picked after one query is run against the database
+			// See @W-14397675
+			store.getLongOperations();
 			if (toStep == AlterSoupStep.DROP_OLD_TABLE) break;
 		case DROP_OLD_TABLE:
 			// Nothing left to do

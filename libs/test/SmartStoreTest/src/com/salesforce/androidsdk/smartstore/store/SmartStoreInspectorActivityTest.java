@@ -47,7 +47,7 @@ import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
-import net.sqlcipher.database.SQLiteOpenHelper;
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -226,9 +226,9 @@ public class SmartStoreInspectorActivityTest {
 	}
 
 	private void createStore() {
-		final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-		DBHelper.getInstance(dbOpenHelper.getWritableDatabase("")).clearMemoryCache();
-		store = new SmartStore(dbOpenHelper, "");
+		final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper("", targetContext, null);
+		DBHelper.getInstance(dbOpenHelper.getWritableDatabase()).clearMemoryCache();
+		store = new SmartStore(dbOpenHelper);
 		store.dropAllSoups();
 	}
 

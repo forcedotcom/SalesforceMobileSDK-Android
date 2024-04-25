@@ -59,6 +59,10 @@ public class UserAccountBuilder {
     private String contentDomain;
     private String contentSid;
     private String csrfToken;
+
+    private Boolean nativeLogin = false;
+    private String language;
+    private String locale;
     private Map<String, String> additionalOauthValues;
 
     /**
@@ -339,6 +343,39 @@ public class UserAccountBuilder {
     }
 
     /**
+     * Sets if the user authenticated with native login.
+     *
+     * @param isNativeLogin if the user authenticated with native login.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder nativeLogin(Boolean isNativeLogin) {
+        this.nativeLogin = isNativeLogin;
+        return this;
+    }
+
+    /**
+     * Sets language.
+     *
+     * @param language User's language.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder language(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
+     * Sets locale.
+     *
+     * @param locale User's locale.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder locale(String locale) {
+        this.locale = locale;
+        return this;
+    }
+
+    /**
      * Sets additional OAuth values.
      *
      * @param additionalOauthValues Additional OAuth values.
@@ -358,6 +395,7 @@ public class UserAccountBuilder {
         return new UserAccount(authToken, refreshToken, loginServer, idUrl, instanceServer, orgId,
                 userId, username, accountName, communityId, communityUrl, firstName, lastName,
                 displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
-                lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken);
+                lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin,
+                language, locale);
     }
 }

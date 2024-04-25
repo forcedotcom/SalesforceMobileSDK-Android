@@ -271,28 +271,37 @@ public class KeyValueEncryptedFileStore implements KeyValueStore {
         if (!isKeyValid(key, "deleteValue")) {
             return false;
         }
-        if (kvVersion >= 2)  getKeyFile(key).delete();
-        return getValueFile(key).delete();
+        boolean success = true;
+        if (kvVersion >= 2)  {
+            success = getKeyFile(key).delete();
+        }
+        success = getValueFile(key).delete() && success; // NB: delete file even if the other delete failed
+        return success;
     }
 
-    /** Deletes all stored values. */
+    /**
+     * Deletes all stored values.
+     * @return true if successful
+     * */
     @Override
-    public void deleteAll() {
+    public boolean deleteAll() {
+        boolean success = true;
         if (kvVersion == 1) {
             for (File file : safeListFiles(null)) {
                 SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
-                file.delete();
+                success = file.delete() && success; // NB: delete file even if the other delete failed
             }
         } else {
             for (File file : safeListFiles(KEY_SUFFIX)) {
                 SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
-                file.delete();
+                success = file.delete() && success; // NB: delete file even if the other delete failed
             }
             for (File file : safeListFiles(VALUE_SUFFIX)) {
                 SmartStoreLogger.i(TAG, "deleting file :" + file.getName());
-                file.delete();
+                success = file.delete() && success; // NB: delete file even if the other delete failed
             }
         }
+        return success;
     }
 
     /**

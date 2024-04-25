@@ -30,10 +30,12 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Application class for the rest explorer app.
@@ -50,7 +52,7 @@ public class RestExplorerApp extends Application {
 		 */
 		RestExplorerSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
 
-		/**
+		/*
 		 * Let's use the default browser for advanced authentication
 		 */
 		RestExplorerSDKManager.getInstance().setCustomTabBrowser(null);
@@ -72,7 +74,7 @@ public class RestExplorerApp extends Application {
 	}
 
 	static class RestExplorerSDKManager extends SalesforceSDKManager {
-		LinkedHashMap<String, DevActionHandler> devActions;
+		Map<String, DevActionHandler> devActions;
 
 		/**
 		 * Protected constructor.
@@ -92,15 +94,21 @@ public class RestExplorerApp extends Application {
 		 * @param context Application context.
 		 * @param mainActivity Activity that should be launched after the login flow.
 		 */
-		public static void initNative(Context context, Class<? extends Activity> mainActivity) {
+		public static void initNative(
+				@NonNull Context context,
+				@NonNull Class<? extends Activity> mainActivity
+		) {
 			if (SalesforceSDKManager.INSTANCE == null) {
 				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
 			}
 			initInternal(context);
 		}
 
+		@NonNull
 		@Override
-		public LinkedHashMap<String, DevActionHandler> getDevActions(Activity frontActivity) {
+		public Map<String, DevActionHandler> getDevActions(
+				@NonNull Activity frontActivity
+		) {
 			if (devActions == null) {
 				devActions = super.getDevActions(frontActivity);
 			}

@@ -57,7 +57,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;

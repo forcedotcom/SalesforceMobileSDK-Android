@@ -38,8 +38,8 @@ import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationTyp
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.util.SmartStoreLogger;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -109,7 +109,6 @@ public class SmartStore  {
 
 	// Backing database
 	protected SQLiteOpenHelper dbOpenHelper;
-	protected String encryptionKey;
 
 	// Flag indicating if database was just opened
 	AtomicBoolean dbJustOpened = new AtomicBoolean(true);
@@ -196,18 +195,16 @@ public class SmartStore  {
      * Relies on SQLiteOpenHelper for database handling.
      *
      * @param dbOpenHelper DB open helper.
-     * @param encryptionKey Encryption key.
      */
-    public SmartStore(SQLiteOpenHelper dbOpenHelper, String encryptionKey) {
+    public SmartStore(SQLiteOpenHelper dbOpenHelper) {
     	this.dbOpenHelper = dbOpenHelper;
-        this.encryptionKey = encryptionKey;
     }
 
     /**
      * Return db
      */
     public SQLiteDatabase getDatabase() {
-		SQLiteDatabase db = this.dbOpenHelper.getWritableDatabase(encryptionKey);
+		SQLiteDatabase db = this.dbOpenHelper.getWritableDatabase();
 		if (dbJustOpened.compareAndSet(true, false)) {
 			resumeLongOperations();
 		}
@@ -235,7 +232,7 @@ public class SmartStore  {
      */
     public int getDatabaseSize() {
 		// With WAL enabled we must force a WAL checkpoint if we want the actual DB file size.
-		getDatabase().query("PRAGMA wal_checkpoint(FULL);").moveToNext();
+		queryPragma("wal_checkpoint(FULL)");
     	int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
     	return size;
     }

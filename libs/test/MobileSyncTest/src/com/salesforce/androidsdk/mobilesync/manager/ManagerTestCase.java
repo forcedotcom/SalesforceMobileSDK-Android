@@ -26,6 +26,16 @@
  */
 package com.salesforce.androidsdk.mobilesync.manager;
 
+import static com.salesforce.androidsdk.util.test.TestCredentials.ACCOUNT_NAME;
+import static com.salesforce.androidsdk.util.test.TestCredentials.CLIENT_ID;
+import static com.salesforce.androidsdk.util.test.TestCredentials.IDENTITY_URL;
+import static com.salesforce.androidsdk.util.test.TestCredentials.INSTANCE_URL;
+import static com.salesforce.androidsdk.util.test.TestCredentials.LANGUAGE;
+import static com.salesforce.androidsdk.util.test.TestCredentials.LOCALE;
+import static com.salesforce.androidsdk.util.test.TestCredentials.LOGIN_URL;
+import static com.salesforce.androidsdk.util.test.TestCredentials.ORG_ID;
+import static com.salesforce.androidsdk.util.test.TestCredentials.USERNAME;
+
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -100,19 +110,20 @@ abstract public class ManagerTestCase {
         if (MobileSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
-        		TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
+        final LoginOptions loginOptions = new LoginOptions(LOGIN_URL,
+        		TEST_CALLBACK_URL, CLIENT_ID, TEST_SCOPES);
         final ClientManager clientManager = new ClientManager(targetContext,
         		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
-        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
-        		TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN,
-        		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
-        		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
-        		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
+        clientManager.createNewAccount(ACCOUNT_NAME,
+        		USERNAME, TestCredentials.REFRESH_TOKEN,
+        		TEST_AUTH_TOKEN, INSTANCE_URL,
+        		LOGIN_URL, IDENTITY_URL,
+        		CLIENT_ID, ORG_ID,
         		TestCredentials.USER_ID, null, null, null,
                 null, null, null, TestCredentials.PHOTO_URL, null,
                 null, null, null, null, null,
-                null, null, null);
+                null, null, null, false,
+                LANGUAGE, LOCALE);
     	SyncManager.reset();
     	sdkManager = MobileSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
@@ -134,14 +145,14 @@ abstract public class ManagerTestCase {
     private RestClient initRestClient() throws Exception {
         httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-        		new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID,
+        		new URI(LOGIN_URL), CLIENT_ID,
         		TestCredentials.REFRESH_TOKEN, null);
         final String authToken = refreshResponse.authToken;
-        final ClientInfo clientInfo = new ClientInfo(new URI(TestCredentials.INSTANCE_URL),
-        		new URI(TestCredentials.LOGIN_URL),
-        		new URI(TestCredentials.IDENTITY_URL),
-        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
-        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
+        final ClientInfo clientInfo = new ClientInfo(new URI(INSTANCE_URL),
+        		new URI(LOGIN_URL),
+        		new URI(IDENTITY_URL),
+        		ACCOUNT_NAME, USERNAME,
+        		TestCredentials.USER_ID, ORG_ID, null, null,
                 null, null, null, null, TestCredentials.PHOTO_URL,
                 null, null, null, null,
                 null, null, null, null, null);

@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import java.util.HashMap;
 import java.util.Locale;

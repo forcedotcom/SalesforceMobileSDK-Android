@@ -83,6 +83,9 @@ public class UserAccountTest {
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
+    public static final String TEST_LANGUAGE = "en_US";
+    public static final String TEST_LOCALE = "fr_FR";
+
 
     private EventsListenerQueue eq;
 
@@ -120,7 +123,8 @@ public class UserAccountTest {
                 lastName(TEST_LAST_NAME).displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL).
                 photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL).
                 lightningDomain(null).lightningSid(null).vfDomain(null).vfSid(null).
-                contentDomain(null).contentSid(null).csrfToken(null).
+                contentDomain(null).contentSid(null).csrfToken(null).nativeLogin(false).
+                language(TEST_LANGUAGE).locale(TEST_LOCALE).
                 additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
@@ -151,6 +155,8 @@ public class UserAccountTest {
         Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        Assert.assertEquals("Language should match", TEST_LANGUAGE, account.getLanguage());
+        Assert.assertEquals("Locale should match", TEST_LOCALE, account.getLocale());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -177,6 +183,8 @@ public class UserAccountTest {
         Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        Assert.assertEquals("Language should match", TEST_LANGUAGE, account.getLanguage());
+        Assert.assertEquals("Locale should match", TEST_LOCALE, account.getLocale());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
         Assert.assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
@@ -205,6 +213,8 @@ public class UserAccountTest {
         object.put(UserAccount.LAST_NAME, TEST_LAST_NAME);
         object.put(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.put(UserAccount.EMAIL, TEST_EMAIL);
+        object.put(UserAccount.LANGUAGE, TEST_LANGUAGE);
+        object.put(UserAccount.LOCALE, TEST_LOCALE);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
@@ -233,6 +243,8 @@ public class UserAccountTest {
         object.putString(UserAccount.LAST_NAME, TEST_LAST_NAME);
         object.putString(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
+        object.putString(UserAccount.LANGUAGE, TEST_LANGUAGE);
+        object.putString(UserAccount.LOCALE, TEST_LOCALE);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
         object.putString(UserAccount.LIGHTNING_DOMAIN, null);
@@ -242,6 +254,7 @@ public class UserAccountTest {
         object.putString(UserAccount.CONTENT_DOMAIN, null);
         object.putString(UserAccount.CONTENT_SID, null);
         object.putString(UserAccount.CSRF_TOKEN, null);
+        object.putBoolean(UserAccount.NATIVE_LOGIN, false);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }

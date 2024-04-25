@@ -82,9 +82,9 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
  * Class handling SP operations within a SP app
  */
 internal class SPManager(
-    val idpAppPackageName: String,
+    private val idpAppPackageName: String,
     // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test
-    val sdkMgr: SDKManager,
+    private val sdkMgr: SDKManager,
     sendBroadcast: (context:Context, intent:Intent) -> Unit,
     startActivity: (context:Context, intent:Intent) -> Unit
 ): IDPSPManager(sendBroadcast, startActivity), com.salesforce.androidsdk.auth.idp.interfaces.SPManager {
@@ -126,7 +126,7 @@ internal class SPManager(
                 SalesforceSDKManager.getInstance().userAccountManager.switchToUser(user)
             }
 
-            override fun getMainActivityClass(): Class<out Activity>? {
+            override fun getMainActivityClass(): Class<out Activity> {
                 return SalesforceSDKManager.getInstance().mainActivityClass
             }
 
@@ -243,7 +243,7 @@ internal class SPManager(
      * - If the user specified is available in SP app we just switch to it
      * - If the user specified is not available in SP app, we send a login request to IDP app
      */
-    fun handleLoginRequest(context: Context, message: IDPToSPRequest) {
+    private fun handleLoginRequest(context: Context, message: IDPToSPRequest) {
         SalesforceSDKLogger.d(TAG, "handleIDPToSPRequest $message")
         val user = sdkMgr.getUserFromOrgAndUserId(
             message.orgId,
@@ -264,7 +264,7 @@ internal class SPManager(
      * - we switch to the user
      * - we send a SPToIDPResponse to have the IDP app launch the SP main activity
      */
-    fun handleUserExists(context: Context, message: IDPSPMessage, user: UserAccount) {
+    private fun handleUserExists(context: Context, message: IDPSPMessage, user: UserAccount) {
         SalesforceSDKLogger.d(TAG, "handleUserExists $message")
         sdkMgr.switchToUser(user)
         // SP is in the background either because:
@@ -279,7 +279,7 @@ internal class SPManager(
      * Handle request to login coming from IDP app - when user hinted is not available in SP app
      * We kick off a SP initiated login flow using the same uuid as the original IDP login request
      */
-    fun handleNoUser(context: Context, message: IDPToSPRequest) {
+    private fun handleNoUser(context: Context, message: IDPToSPRequest) {
         SalesforceSDKLogger.d(TAG, "handleNoUser $message")
         SPLoginFlow.kickOff(this, context, idpToSpRequest = message)
     }
@@ -289,7 +289,7 @@ internal class SPManager(
      * It will contain either an auth code that we need to exchange for auth tokens
      * or an error if the auth code could not be obtained from the server
      */
-    fun handleLoginResponse(activeFlow: SPLoginFlow, message: IDPToSPResponse) {
+    private fun handleLoginResponse(activeFlow: SPLoginFlow, message: IDPToSPResponse) {
         SalesforceSDKLogger.d(TAG, "handleLoginResponse $message")
         if (message.error != null) {
             activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_IDP)

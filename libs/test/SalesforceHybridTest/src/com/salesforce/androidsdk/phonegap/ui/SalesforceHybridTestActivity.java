@@ -48,6 +48,8 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	static String userId = TestCredentials.USER_ID;
     static String photoUrl = TestCredentials.PHOTO_URL;
 	static String clientId = TestCredentials.CLIENT_ID;
+	static String language = TestCredentials.LANGUAGE;
+	static String locale = TestCredentials.LOCALE;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -61,7 +63,8 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
         		loginUrl, identityUrl, clientId, orgId, userId,
 				null, null, null, null, null,
                 null, photoUrl, null, null, null,
-				null, null, null, null, null, null);
+				null, null, null, null, null, null, false,
+				language, locale);
 		return clientManager;
 	}
 }

@@ -30,6 +30,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.util.EventsObservable
 
 typealias Policy = Pair<Boolean, Int>
 
@@ -38,6 +39,10 @@ internal abstract class AppLockManager(
     private val enabledKey: String,
     private val timeoutKey: String,
 ) {
+    // @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
+    @Suppress("INAPPLICABLE_JVM_NAME")
+    @get:JvmName("isLocked")
+    var locked = false
     abstract fun shouldLock(): Boolean
     abstract fun lock()
 
@@ -51,6 +56,11 @@ internal abstract class AppLockManager(
 
     fun onAppBackgrounded() {
         lastBackgroundTimestamp = System.currentTimeMillis()
+    }
+
+    fun onUnlock() {
+        locked = false
+        EventsObservable.get().notifyEvent(EventsObservable.EventType.AppUnlocked)
     }
 
     fun getAccountPrefs(account: UserAccount): SharedPreferences {

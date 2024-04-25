@@ -23,8 +23,8 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-native:0.70.14")
-    implementation("androidx.core:core-ktx:1.9.0")
+    api("com.facebook.react:react-android:0.73.6")
+    implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -42,10 +42,10 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
     }
 
     buildTypes {
@@ -73,7 +73,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -92,6 +92,7 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
     }
 }
 
@@ -137,12 +138,9 @@ task<Exec>("buildReactTestBundle") {
 }
 
 task("buildReactTestBundleIfNotExists") {
-    doLast {
-        if (!reactTestsBundleFile.exists()) {
-            assetsFolder.mkdirs()
-
-            dependsOn("buildReactTestBundle")
-        }
+    if (!reactTestsBundleFile.exists()) {
+        assetsFolder.mkdirs()
+        dependsOn("buildReactTestBundle")
     }
 }
 

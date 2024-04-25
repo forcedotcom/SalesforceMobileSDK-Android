@@ -36,6 +36,8 @@ import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -139,10 +141,10 @@ public class UserAccountManager {
 		clearCachedCurrentUser();
 		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
-        final Editor e = sp.edit();
-        e.putString(USER_ID_KEY, userId);
-        e.putString(ORG_ID_KEY, orgId);
-        e.commit();
+		final Editor e = sp.edit();
+		e.putString(USER_ID_KEY, userId);
+		e.putString(ORG_ID_KEY, orgId);
+		e.commit();
 	}
 
 	/**
@@ -153,7 +155,7 @@ public class UserAccountManager {
 	public String getStoredUserId() {
 		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
-        return sp.getString(USER_ID_KEY, null);
+		return sp.getString(USER_ID_KEY, null);
 	}
 
 	/**
@@ -164,7 +166,7 @@ public class UserAccountManager {
 	public String getStoredOrgId() {
 		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
-        return sp.getString(ORG_ID_KEY, null);
+		return sp.getString(ORG_ID_KEY, null);
 	}
 
 	/**
@@ -203,10 +205,10 @@ public class UserAccountManager {
 	 * @return Current user that's logged in.
 	 */
 	public Account getCurrentAccount() {
-        final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts.length == 0) {
-        	return null;
-        }
+		final Account[] accounts = accountManager.getAccountsByType(accountType);
+		if (accounts.length == 0) {
+			return null;
+		}
 
 		// Register feature MU if more than one user
 		if (accounts.length > 1) {
@@ -216,25 +218,25 @@ public class UserAccountManager {
 		}
 
 		// Reads the stored user ID and org ID.
-        final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
-        final String storedUserId = sp.getString(USER_ID_KEY, "");
-        final String storedOrgId = sp.getString(ORG_ID_KEY, "");
-        for (final Account account : accounts) {
-        	if (account != null) {
+		final String storedUserId = sp.getString(USER_ID_KEY, "");
+		final String storedOrgId = sp.getString(ORG_ID_KEY, "");
+		for (final Account account : accounts) {
+			if (account != null) {
 
-        		// Reads the user ID and org ID from account manager.
+				// Reads the user ID and org ID from account manager.
 				final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 				final String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-                		AuthenticatorService.KEY_ORG_ID), encryptionKey);
-        		final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-        				AuthenticatorService.KEY_USER_ID), encryptionKey);
-        		if (storedUserId.trim().equals(userId)
-        				&& storedOrgId.trim().equals(orgId)) {
-        			return account;
-        		}
-        	}
-        }
+						AuthenticatorService.KEY_ORG_ID), encryptionKey);
+				final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
+						AuthenticatorService.KEY_USER_ID), encryptionKey);
+				if (storedUserId.trim().equals(userId)
+						&& storedOrgId.trim().equals(orgId)) {
+					return account;
+				}
+			}
+		}
 		return null;
 	}
 
@@ -244,21 +246,21 @@ public class UserAccountManager {
 	 * @return List of authenticated users.
 	 */
 	public List<UserAccount> getAuthenticatedUsers() {
-        final Account[] accounts = accountManager.getAccountsByType(accountType);
-        if (accounts.length == 0) {
-        	return null;
-        }
-        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
-        for (final Account account : accounts) {
-        	final UserAccount userAccount = buildUserAccount(account);
-        	if (userAccount != null) {
-        		userAccounts.add(userAccount);
-        	}
-        }
-        if (userAccounts.size() == 0) {
-        	return null;
-        }
-        return userAccounts;
+		final Account[] accounts = accountManager.getAccountsByType(accountType);
+		if (accounts.length == 0) {
+			return null;
+		}
+		final List<UserAccount> userAccounts = new ArrayList<>();
+		for (final Account account : accounts) {
+			final UserAccount userAccount = buildUserAccount(account);
+			if (userAccount != null) {
+				userAccounts.add(userAccount);
+			}
+		}
+		if (userAccounts.isEmpty()) {
+			return null;
+		}
+		return userAccounts;
 	}
 
 	/**
@@ -331,9 +333,9 @@ public class UserAccountManager {
 		BiometricAuthenticationManager bioAuthManager =
 				(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 		ScreenLockManager screenLockManager = (ScreenLockManager) SalesforceSDKManager.getInstance().getScreenLockManager();
-		if (bioAuthManager.isEnabled()) {
+		if (bioAuthManager != null && bioAuthManager.isEnabled()) {
 			bioAuthManager.lock();
-		} else if (screenLockManager.isEnabled()) {
+		} else if (screenLockManager != null && screenLockManager.isEnabled()) {
 			screenLockManager.lock();
 		}
 	}
@@ -345,8 +347,8 @@ public class UserAccountManager {
 	 * in ClientManager will return a RestClient instance for the new user.
 	 */
 	public void switchToNewUser() {
-        final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
-        switchToNewUserWithOptions(options);
+		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
+		switchToNewUserWithOptions(options);
 	}
 
 	/**
@@ -359,8 +361,8 @@ public class UserAccountManager {
 	 * @param url Instance/My domain URL.
 	 */
 	public void switchToNewUser(String jwt, String url) {
-        final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
-        switchToNewUserWithOptions(options);
+		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
+		switchToNewUserWithOptions(options);
 	}
 
 	/**
@@ -413,7 +415,7 @@ public class UserAccountManager {
 	 * @param account Account object.
 	 * @return UserAccount object.
 	 */
-	public UserAccount buildUserAccount(Account account) {
+	public @Nullable UserAccount buildUserAccount(Account account) {
 		if (account == null) {
 			return null;
 		}
@@ -429,16 +431,20 @@ public class UserAccountManager {
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
 		final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
 		final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
+		final String language = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LANGUAGE), encryptionKey);
+		final String locale = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOCALE), encryptionKey);
 		final String encFirstName =  accountManager.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
+		final Boolean nativeLogin = Boolean.valueOf(SalesforceSDKManager.decrypt(accountManager.getUserData(account,
+				AuthenticatorService.KEY_NATIVE_LOGIN), encryptionKey));
 		String firstName = null;
 		if (encFirstName != null) {
 			firstName = SalesforceSDKManager.decrypt(encFirstName, encryptionKey);
 		}
-        final String encDisplayName = accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
-        String displayName = null;
-        if (encDisplayName != null) {
-            displayName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), encryptionKey);
-        }
+		final String encDisplayName = accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
+		String displayName = null;
+		if (encDisplayName != null) {
+			displayName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), encryptionKey);
+		}
 		final String encPhotoUrl = accountManager.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
 		String photoUrl = null;
 		if (encPhotoUrl != null) {
@@ -449,31 +455,31 @@ public class UserAccountManager {
 		if (encThumbnailUrl != null) {
 			thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl, encryptionKey);
 		}
-        Map<String, String> additionalOauthValues = null;
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
-        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-            additionalOauthValues = new HashMap<>();
-            for (final String key : additionalOauthKeys) {
-                if (!TextUtils.isEmpty(key)) {
-                    final String encValue = accountManager.getUserData(account, key);
-                    String value = null;
-                    if (encValue != null) {
-                        value = SalesforceSDKManager.decrypt(encValue, encryptionKey);
-                    }
-                    additionalOauthValues.put(key, value);
-                }
-            }
-        }
+		Map<String, String> additionalOauthValues = null;
+		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+			additionalOauthValues = new HashMap<>();
+			for (final String key : additionalOauthKeys) {
+				if (!TextUtils.isEmpty(key)) {
+					final String encValue = accountManager.getUserData(account, key);
+					String value = null;
+					if (encValue != null) {
+						value = SalesforceSDKManager.decrypt(encValue, encryptionKey);
+					}
+					additionalOauthValues.put(key, value);
+				}
+			}
+		}
 		final String encCommunityId = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
-        String communityId = null;
-        if (encCommunityId != null) {
-        	communityId = SalesforceSDKManager.decrypt(encCommunityId, encryptionKey);
-        }
-        final String encCommunityUrl = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
-        String communityUrl = null;
-        if (encCommunityUrl != null) {
-        	communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl, encryptionKey);
-        }
+		String communityId = null;
+		if (encCommunityId != null) {
+			communityId = SalesforceSDKManager.decrypt(encCommunityId, encryptionKey);
+		}
+		final String encCommunityUrl = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
+		String communityUrl = null;
+		if (encCommunityUrl != null) {
+			communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl, encryptionKey);
+		}
 		final String encLightningDomain = accountManager.getUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN);
 		String lightningDomain = null;
 		if (encLightningDomain != null) {
@@ -513,13 +519,13 @@ public class UserAccountManager {
 			return null;
 		}
 		return UserAccountBuilder.getInstance().authToken(authToken).refreshToken(refreshToken).
-                loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
-                userId(userId).username(username).accountName(accountName).communityId(communityId).
-                communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
-                email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
+				loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
+				userId(userId).username(username).accountName(accountName).communityId(communityId).
+				communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
+				email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
 				lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid).contentDomain(contentDomain).
 				contentSid(contentSid).csrfToken(csrfToken).additionalOauthValues(additionalOauthValues).
-				build();
+				nativeLogin(nativeLogin).language(language).locale(locale).build();
 	}
 
 	/**
@@ -533,28 +539,28 @@ public class UserAccountManager {
 		if (userAccount == null) {
 			return null;
 		}
-        if (accounts.length == 0) {
-        	return null;
-        }
+		if (accounts.length == 0) {
+			return null;
+		}
 
-        // Reads the user account's user ID and org ID.
-        final String storedUserId = ((userAccount.getUserId() == null) ? "" : userAccount.getUserId());
-        final String storedOrgId = ((userAccount.getOrgId() == null) ? "" : userAccount.getOrgId());
-        for (final Account account : accounts) {
-        	if (account != null) {
+		// Reads the user account's user ID and org ID.
+		final String storedUserId = ((userAccount.getUserId() == null) ? "" : userAccount.getUserId());
+		final String storedOrgId = ((userAccount.getOrgId() == null) ? "" : userAccount.getOrgId());
+		for (final Account account : accounts) {
+			if (account != null) {
 
-        		// Reads the user ID and org ID from account manager.
-                final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+				// Reads the user ID and org ID from account manager.
+				final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 				final String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-                		AuthenticatorService.KEY_ORG_ID), encryptionKey);
-        		final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-        				AuthenticatorService.KEY_USER_ID), encryptionKey);
-        		if (storedUserId.trim().equals(userId.trim())
-        				&& storedOrgId.trim().equals(orgId.trim())) {
-        			return account;
-        		}
-        	}
-        }
+						AuthenticatorService.KEY_ORG_ID), encryptionKey);
+				final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
+						AuthenticatorService.KEY_USER_ID), encryptionKey);
+				if (storedUserId.trim().equals(userId.trim())
+						&& storedOrgId.trim().equals(orgId.trim())) {
+					return account;
+				}
+			}
+		}
 		return null;
 	}
 
@@ -568,34 +574,34 @@ public class UserAccountManager {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
 		intent.setPackage(context.getPackageName());
 		intent.putExtra(EXTRA_USER_SWITCH_TYPE, userSwitchType);
-        if (extras != null) {
-            intent.putExtras(extras);
-        }
+		if (extras != null) {
+			intent.putExtras(extras);
+		}
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 
-    /**
-     * Retrieves a stored user account from org ID and user ID.
-     *
-     * @param orgId Org ID.
-     * @param userId User ID.
-     * @return User account.
-     */
+	/**
+	 * Retrieves a stored user account from org ID and user ID.
+	 *
+	 * @param orgId Org ID.
+	 * @param userId User ID.
+	 * @return User account.
+	 */
 	public UserAccount getUserFromOrgAndUserId(String orgId, String userId) {
-        if (TextUtils.isEmpty(orgId) || TextUtils.isEmpty(userId)) {
-            return null;
-        }
-        final List<UserAccount> userAccounts = getAuthenticatedUsers();
-        if (userAccounts == null || userAccounts.size() == 0) {
-            return null;
-        }
-        for (final UserAccount userAccount : userAccounts) {
-            if (orgId.equals(userAccount.getOrgId()) && userId.equals(userAccount.getUserId())) {
-                return userAccount;
-            }
-        }
-        return null;
-    }
+		if (TextUtils.isEmpty(orgId) || TextUtils.isEmpty(userId)) {
+			return null;
+		}
+		final List<UserAccount> userAccounts = getAuthenticatedUsers();
+		if (userAccounts == null || userAccounts.size() == 0) {
+			return null;
+		}
+		for (final UserAccount userAccount : userAccounts) {
+			if (orgId.equals(userAccount.getOrgId()) && userId.equals(userAccount.getUserId())) {
+				return userAccount;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Attempts to refresh the access token for this user by making an API call

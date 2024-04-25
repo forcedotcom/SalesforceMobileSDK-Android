@@ -26,8 +26,13 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.security.BiometricAuthenticationManager.SHOW_BIOMETRIC;
+
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
@@ -47,9 +52,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.config.RuntimeConfig;
-import com.salesforce.androidsdk.util.AuthConfigTask;
+import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager;
 
 import java.util.List;
+
+import kotlin.Unit;
 
 /**
  * This class provides UI to change the login server URL to use
@@ -59,9 +66,7 @@ import java.util.List;
  * @author bhariharan
  */
 public class ServerPickerActivity extends AppCompatActivity implements
-        android.widget.RadioGroup.OnCheckedChangeListener, AuthConfigTask.AuthConfigCallbackInterface {
-
-    public static final String CHANGE_SERVER_INTENT = "com.salesforce.SERVER_CHANGED";
+        android.widget.RadioGroup.OnCheckedChangeListener {
     private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
     private CustomServerUrlEditor urlEditDialog;
@@ -80,6 +85,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Sets the return value of the activity. Selection is stored in the
      * shared prefs file, AuthActivity pulls from the file or a default value.
      */
+    @SuppressLint("MissingSuperCall")
     @Override
     public void onBackPressed() {
         reconfigureAuthorization();
@@ -134,8 +140,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
         setContentView(R.layout.sf__server_picker);
 
         final ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle(R.string.sf__server_picker_title);
-        actionBar.setDisplayHomeAsUpEnabled(true);
+        if (actionBar != null) {
+            actionBar.setTitle(R.string.sf__server_picker_title);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
 
         /*
          * Hides the 'Add Connection' button if the MDM variable to disable
@@ -150,6 +158,12 @@ public class ServerPickerActivity extends AppCompatActivity implements
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
         urlEditDialog = new CustomServerUrlEditor();
+
+        if (SalesforceSDKManager.getInstance().compactScreen(this)) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+        }
 
         // TODO:  Remove this when min API > 33
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -221,7 +235,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
      * Refreshes the authorization configuration.
      */
     private void reconfigureAuthorization() {
-        (new AuthConfigTask(this)).execute();
+        SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(() -> {
+            onAuthConfigFetched();
+            return Unit.INSTANCE;
+        });
     }
 
     /**
@@ -236,7 +253,10 @@ public class ServerPickerActivity extends AppCompatActivity implements
         boolean isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme();
         int textColor = getColor(isDarkTheme ? R.color.sf__text_color_dark : R.color.sf__text_color);
     	rb.setTextColor(textColor);
-    	rb.getButtonDrawable().setTint(getColor(R.color.sf__primary_color));
+        final Drawable buttonDrawable = rb.getButtonDrawable();
+        if (buttonDrawable != null) {
+            buttonDrawable.setTint(getColor(R.color.sf__primary_color));
+        }
     	radioGroup.addView(rb);
         ((ScrollView) radioGroup.getParent()).scrollTo(0, radioGroup.getBottom());
     }
@@ -276,14 +296,32 @@ public class ServerPickerActivity extends AppCompatActivity implements
         }
     }
 
-    @Override
     public void onAuthConfigFetched() {
         setResult(Activity.RESULT_OK, null);
-        final Intent changeServerIntent = new Intent(CHANGE_SERVER_INTENT);
-        // Android 14 requires non-exported receiver to be invoked with explicit intents
-        // See https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
-        changeServerIntent.setPackage(getPackageName());
-        sendBroadcast(changeServerIntent);
+        Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
+        Intent intent = new Intent(
+                this,
+                SalesforceSDKManager.getInstance().getWebviewLoginActivityClass()
+        );
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        BiometricAuthenticationManager bioAuthManager =
+                SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+        if (bioAuthManager != null && bioAuthManager.isLocked()) {
+            options.putBoolean(SHOW_BIOMETRIC, true);
+        }
+        intent.putExtras(options);
+
+        /*
+         * The activity needs to be recreated (instead of just reloading the webview)
+         * to support the transition from custom tab to standard webview login.  If we do this
+         * with the CLEAR_TOP flag we ensure unnecessary Custom Tabs are destroyed.
+         *
+         * The only other way to do this is with the NO_HISTORY flag on the custom tab, however
+         * this will cause it to always reload on background -- breaking MFA.
+         */
+        startActivity(intent);
         finish();
     }
 }

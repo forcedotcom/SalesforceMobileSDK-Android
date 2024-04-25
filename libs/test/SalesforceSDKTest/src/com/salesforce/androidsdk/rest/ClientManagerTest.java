@@ -95,6 +95,8 @@ public class ClientManagerTest {
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
+    public static final String TEST_LANGUAGE = "en_US";
+    public static final String TEST_LOCALE = "en_US";
 
     private ClientManager clientManager;
     private AccountManager accountManager;
@@ -557,7 +559,7 @@ public class ClientManagerTest {
                 TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
                 TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
                 null, null, null, null, null,
-                null, null);
+                null, null, false, TEST_LANGUAGE, TEST_LOCALE);
     }
 
     /**
@@ -571,6 +573,6 @@ public class ClientManagerTest {
                 null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME,
                 TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
                 null, null, null, null, null,
-                null, null);
+                null, null, false, TEST_LANGUAGE, TEST_LOCALE);
     }
 }

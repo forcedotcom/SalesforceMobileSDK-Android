@@ -13,7 +13,7 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -23,10 +23,10 @@ android {
     namespace = "com.salesforce.androidsdk.analytics"
     testNamespace = "com.salesforce.androidsdk.analytics.tests"
 
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
     }
 
     buildTypes {
@@ -54,7 +54,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -73,5 +73,6 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
     }
 }

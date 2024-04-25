@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -60,6 +61,12 @@ public class AccountSwitcherActivity extends AppCompatActivity {
 		// This makes the navigation bar visible on light themes.
 		SalesforceSDKManager.getInstance().setViewNavigationVisibility(this);
 		setContentView(R.layout.sf__account_switcher);
+
+		if (SalesforceSDKManager.getInstance().compactScreen(this)) {
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+		} else {
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+		}
 	}
 
 	@Override

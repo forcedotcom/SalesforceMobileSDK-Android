@@ -29,19 +29,17 @@ package com.salesforce.androidsdk.push
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.installations.FirebaseInstallations
+import com.google.firebase.messaging.FirebaseMessaging
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 
@@ -65,6 +63,17 @@ object PushMessaging {
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
 
+    // Re-register once push is setup
+    @JvmStatic
+    var reRegistrationRequested = false
+
+    @JvmStatic
+    fun onPushReceiverSetup(context: Context) {
+        if (isPushSetup(context) && reRegistrationRequested) {
+            register(context, null, true)
+        }
+    }
+
     /**
      * Initiates push registration, if the application is not already registered.
      * Otherwise, this method initiates registration/re-registration to the
@@ -76,21 +85,55 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
-        /*
-         * Performs registration steps if it is a new account, or if the
-         * account hasn't been registered yet. Otherwise, performs
-         * re-registration at the SFDC endpoint, to keep it alive.
-         */
-        initializeFirebaseIfNeeded(context)
-        if (account != null && !isRegistered(context, account)) {
-            setInProgress(context, account)
+        register(context = context, account = account, recreateKey = false);
+    }
 
-            if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
-                val registrationWorker = OneTimeWorkRequestBuilder<SFDCRegistrationServiceWorker>().build()
-                WorkManager.getInstance(context).enqueue(registrationWorker)
+    /**
+     * Initiates push registration, if the application is not already registered.
+     * Otherwise, this method initiates registration/re-registration to the
+     * SFDC endpoint, in order to keep it alive, or to register a new account
+     * that just logged in.
+     *
+     * @param context Context.
+     * @param account User account.
+     * @param recreateKey true if RSA key should be regenerated
+     */
+    @JvmStatic
+    fun register(context: Context, account: UserAccount?, recreateKey: Boolean) {
+        if (isPushSetup(context)) {
+            // Ensure Firebase is initialized
+            getFirebaseApp(context)
+            val firebaseMessaging = SalesforceSDKManager.getInstance()
+                .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
+            firebaseMessaging.isAutoInitEnabled = true
+
+            /*
+             * Performs registration steps if it is a new account, or if the
+             * account hasn't been registered yet. Otherwise, performs
+             * re-registration at the SFDC endpoint, to keep it alive.
+             */
+            if (account != null && !isRegistered(context, account)) {
+                setInProgress(context, account)
+
+                firebaseMessaging.token.addOnSuccessListener { token: String? ->
+                    try {
+                        // Store the new token.
+                        setRegistrationId(context, token, account)
+
+                        // Send it to SFDC.
+                        registerSFDCPush(context, account)
+                    } catch (e: Exception) {
+                        SalesforceSDKLogger.e(TAG, "Error during FCM registration", e)
+                    }
+                }
+            } else {
+                // Delete existing key if recreateKey is true
+                if (recreateKey) {
+                    KeyStoreWrapper.getInstance().deleteKey(PushService.pushNotificationKeyName)
+                }
+
+                registerSFDCPush(context, account)
             }
-        } else {
-            registerSFDCPush(context, account)
         }
     }
 
@@ -109,39 +152,17 @@ object PushMessaging {
 
             // Deletes InstanceID only if there are no other logged in accounts.
             if (isLastAccount) {
-                initializeFirebaseIfNeeded(context)
-                val appName = getAppNameForFirebase(context)
-                val instanceID = FirebaseInstanceId.getInstance(FirebaseApp.getInstance(appName))
-                kotlin.runCatching { instanceID.deleteInstanceId() }
+                val firebaseApp = getFirebaseApp(context)
+                val firebaseMessaging = SalesforceSDKManager.getInstance()
+                    .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
+                firebaseMessaging.isAutoInitEnabled = false
+                FirebaseInstallations.getInstance(firebaseApp).delete()
+                firebaseApp.delete()
             }
+            unregisterSFDCPush(context, account)
         }
 
         unregisterSFDCPush(context, account)
-    }
-
-    /**
-     * Will make call to Firebase.initializeApp if it hasn't already taken place.
-     *
-     * @param context Context
-     * @return True - if Firebase is now initialized, False - if the operation could not be completed.
-     */
-    private fun initializeFirebaseIfNeeded(context: Context) {
-        val appName = getAppNameForFirebase(context)
-        val firebaseOptions = FirebaseOptions.Builder()
-            .setGcmSenderId(BootConfig.getBootConfig(context).pushNotificationClientId)
-            .setApplicationId(context.packageName)
-            .build()
-
-        /*
-         * Ensures that Firebase initialization occurs only once for this app. If an exception
-         * isn't thrown, this means that the initialization has already been completed.
-         */
-        try {
-            FirebaseApp.getInstance(appName)
-        } catch (e: IllegalStateException) {
-            SalesforceSDKLogger.i(TAG, "Firebase hasn't been initialized yet", e)
-            FirebaseApp.initializeApp(context, firebaseOptions, appName)
-        }
     }
 
     /**
@@ -185,35 +206,6 @@ object PushMessaging {
         runPushService(context, account, Register)
     }
 
-    /**
-     * Initiates push un-registration against the SFDC endpoint.
-     *
-     * @param context Context.
-     * @param account User account.
-     */
-    private fun unregisterSFDCPush(context: Context, account: UserAccount?) {
-        runPushService(context, account, Deregister)
-    }
-
-    private fun runPushService(
-        context: Context,
-        account: UserAccount?,
-        action: PushNotificationsRegistrationAction,
-    ) {
-        if (account == null) {
-            enqueuePushNotificationsRegistrationWork(
-                null,
-                action,
-                null
-            )
-        } else if (isRegistered(context, account)) {
-            enqueuePushNotificationsRegistrationWork(
-                account,
-                action,
-                null
-            )
-        }
-    }
 
     /**
      * Returns the current registration ID, or null, if registration
@@ -341,26 +333,6 @@ object PushMessaging {
     }
 
     /**
-     * Sets a boolean that reflects the status of push notification
-     * registration or un-registration (in progress or not).
-     *
-     * @param context Context.
-     * @param account User account.
-     */
-    private fun setInProgress(
-        context: Context,
-        account: UserAccount?,
-    ) {
-        val prefs = context.getSharedPreferences(
-            getSharedPrefFile(account),
-            Context.MODE_PRIVATE
-        )
-        val editor = prefs.edit()
-        editor.putBoolean(IN_PROGRESS, true)
-        editor.apply()
-    }
-
-    /**
      * Returns whether push notification registration/un-registration is in progress.
      *
      * @param context Context.
@@ -416,6 +388,101 @@ object PushMessaging {
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
         editor.putBoolean(IN_PROGRESS, false)
         editor.apply()
+    }
+
+    /**
+     * Checks if the app has implemented a push receiver and added the google-services.json file to the project.
+     *
+     * @param context The context to use.
+     * @return if the app is setup for push messages to be registered.
+     */
+    private fun isPushSetup(context: Context): Boolean {
+        // If an instance of PushNotificationInterface is not provided the app does not intent to use the feature.
+        SalesforceSDKManager.getInstance().pushNotificationReceiver ?: return false
+
+        val firebaseOptions = FirebaseOptions.fromResource(context)
+        @Suppress("UselessCallOnNotNull") // FirebaseOptions instance could be from an older version.
+        if ((firebaseOptions == null) || firebaseOptions.apiKey.isNullOrBlank()) {
+            SalesforceSDKLogger.w(
+                TAG, "Unable to retrieve Firebase values.  This usually " +
+                        "means that com.google.gms:google-services was not applied to your gradle project."
+            )
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Will make call to Firebase.initializeApp if it hasn't already taken place.
+     *
+     * @param context Context
+     * @return True - if Firebase is now initialized, False - if the operation could not be completed.
+     */
+    private fun getFirebaseApp(context: Context): FirebaseApp {
+        val appName = getAppNameForFirebase(context)
+        val firebaseOptions = FirebaseOptions.fromResource(context)!! // checked in isPushSetup
+
+        /*
+         * Ensures that Firebase initialization occurs only once for this app. If an exception
+         * isn't thrown, this means that the initialization has already been completed.
+         */
+        return try {
+            FirebaseApp.getInstance(appName)
+        } catch (e: IllegalStateException) {
+            SalesforceSDKLogger.i(TAG, "Firebase hasn't been initialized yet", e)
+            FirebaseApp.initializeApp(context, firebaseOptions, appName)
+        }
+    }
+
+    /**
+     * Initiates push un-registration against the SFDC endpoint.
+     *
+     * @param context Context.
+     * @param account User account.
+     */
+    private fun unregisterSFDCPush(context: Context, account: UserAccount?) {
+        runPushService(context, account, Deregister)
+    }
+
+    /**
+     * Sets a boolean that reflects the status of push notification
+     * registration or un-registration (in progress or not).
+     *
+     * @param context Context.
+     * @param account User account.
+     */
+    private fun setInProgress(
+        context: Context,
+        account: UserAccount?,
+    ) {
+        val prefs = context.getSharedPreferences(
+            getSharedPrefFile(account),
+            Context.MODE_PRIVATE
+        )
+        val editor = prefs.edit()
+        editor.putBoolean(IN_PROGRESS, true)
+        editor.apply()
+    }
+
+    private fun runPushService(
+        context: Context,
+        account: UserAccount?,
+        action: PushNotificationsRegistrationAction,
+    ) {
+        if (account == null) {
+            enqueuePushNotificationsRegistrationWork(
+                null,
+                action,
+                null
+            )
+        } else if (isRegistered(context, account)) {
+            enqueuePushNotificationsRegistrationWork(
+                account,
+                action,
+                null
+            )
+        }
     }
 
     private fun getSharedPrefFile(account: UserAccount?): String {

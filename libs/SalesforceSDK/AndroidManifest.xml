@@ -2,10 +2,9 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-	android:versionCode="82"
-	android:versionName="11.1.0">
+	android:versionCode="83"
+	android:versionName="12.0.0.dev">
 
-    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
@@ -40,14 +39,12 @@
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustNothing"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true" />
 
         <!-- Screen Lock Activity-->
         <activity android:name="com.salesforce.androidsdk.ui.ScreenLockActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
             android:theme="@style/SalesforceSDK.ScreenLock" />
 
@@ -61,14 +58,12 @@
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
-            android:screenOrientation="portrait"
             android:exported="false" />
 
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
-            android:screenOrientation="portrait"
             android:exported="false" />
 
         <!-- IDP auth code activity -->

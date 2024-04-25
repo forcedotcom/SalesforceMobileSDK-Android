@@ -15,9 +15,9 @@ dependencies {
     api("org.apache.cordova:framework:12.0.1")
     api("androidx.appcompat:appcompat:1.6.1")
     api("androidx.appcompat:appcompat-resources:1.6.1")
-    api("androidx.webkit:webkit:1.6.0")
-    api("androidx.core:core-splashscreen:1.0.0")
-    implementation("androidx.core:core-ktx:1.9.0")
+    api("androidx.webkit:webkit:1.9.0")
+    api("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.core:core-ktx:1.12.0")
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -27,10 +27,10 @@ android {
     namespace = "com.salesforce.androidsdk.hybrid"
     testNamespace = "com.salesforce.androidsdk.phonegap"
 
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 26
     }
 
     buildTypes {
@@ -58,7 +58,7 @@ android {
         }
     }
 
-    packagingOptions {
+    packaging {
         resources {
             excludes += setOf("META-INF/LICENSE", "META-INF/LICENSE.txt", "META-INF/DEPENDENCIES", "META-INF/NOTICE")
         }
@@ -77,5 +77,10 @@ android {
     buildFeatures {
         renderScript = true
         aidl = true
+        buildConfig = true
+    }
+
+    kotlin {
+        jvmToolchain(17)
     }
 }

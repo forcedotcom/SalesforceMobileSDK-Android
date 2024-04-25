@@ -41,13 +41,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -55,12 +60,33 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class Encryptor {
 
+    public enum CipherMode {
+        AES_CBC_CIPHER("AES/CBC/PKCS5Padding"),
+        AES_GCM_CIPHER("AES/GCM/NoPadding"),
+        RSA_PKCS1("RSA/ECB/PKCS1Padding"),
+        RSA_OAEP_SHA256("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+
+        final String fullName;
+
+        CipherMode(String fullName) {
+            this.fullName = fullName;
+        }
+    }
+
     private static final String TAG = "Encryptor";
-    private static final String AES_CBC_CIPHER = "AES/CBC/PKCS5Padding";
-    private static final String AES_GCM_CIPHER = "AES/GCM/NoPadding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String RSA_PKCS1 = "RSA/ECB/PKCS1Padding";
     private static final String BOUNCY_CASTLE = "BC";
+
+
+    // This provider was separated out of AndroidKeyStoreProvider to work around the issue
+    // that Bouncy Castle provider incorrectly declares that it accepts arbitrary keys (incl. Android
+    // KeyStore ones). This causes JCA to select the Bouncy Castle's implementation of JCA crypto
+    // operations for Android KeyStore keys unless Android KeyStore's own implementations are installed
+    // as higher-priority than Bouncy Castle ones. The purpose of this provider is to do just that: to
+    // offer crypto operations operating on Android KeyStore keys and to be installed at higher priority
+    // than the Bouncy Castle provider.
+    // See https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/keystore/java/android/security/keystore2/AndroidKeyStoreBCWorkaroundProvider.java
+    private static final String BOUNCY_CASTLE_WORKAROUND = "AndroidKeyStoreBCWorkaround";
     private static final int READ_BUFFER_LENGTH = 1024;
 
     /**
@@ -77,7 +103,7 @@ public class Encryptor {
 
     private static Cipher getEncryptingCipher(byte[] keyBytes, byte[] iv)
             throws InvalidAlgorithmParameterException, InvalidKeyException {
-        final Cipher cipher = getBestCipher(AES_GCM_CIPHER);
+        final Cipher cipher = getBestCipher(CipherMode.AES_GCM_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
@@ -100,7 +126,7 @@ public class Encryptor {
 
     private static Cipher getDecryptingCipher(byte[] keyBytes, byte[] iv)
             throws InvalidAlgorithmParameterException, InvalidKeyException {
-        final Cipher cipher = getBestCipher(AES_GCM_CIPHER);
+        final Cipher cipher = getBestCipher(CipherMode.AES_GCM_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
@@ -110,7 +136,7 @@ public class Encryptor {
 
     private static Cipher getAESCBCDecryptingCipher(byte[] keyBytes, byte[] iv)
             throws InvalidAlgorithmParameterException, InvalidKeyException {
-        final Cipher cipher = getBestCipher(AES_CBC_CIPHER);
+        final Cipher cipher = getBestCipher(CipherMode.AES_CBC_CIPHER);
         final SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, cipher.getAlgorithm());
         final IvParameterSpec ivSpec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
@@ -370,13 +396,14 @@ public class Encryptor {
     /**
      * Returns data encrypted with an RSA public key.
      *
-     * @param publicKey RSA public key.
-     * @param data Data to be encrypted.
+     * @param publicKey  RSA public key.
+     * @param data       Data to be encrypted.
+     * @param cipherMode Cipher mode.
      * @return Encrypted data.
      */
-    public static String encryptWithRSA(PublicKey publicKey, String data) {
+    public static String encryptWithRSA(PublicKey publicKey, String data, CipherMode cipherMode) {
         String encryptedData = null;
-        byte[] encryptedBytes = encryptWithRSABytes(publicKey, data);
+        byte[] encryptedBytes = encryptWithRSABytes(publicKey, data, cipherMode);
         if (encryptedBytes != null) {
             encryptedData = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
         }
@@ -386,24 +413,26 @@ public class Encryptor {
     /**
      * Returns data encrypted with an RSA public key.
      *
-     * @param publicKey RSA public key.
-     * @param data Data to be encrypted.
+     * @param publicKey  RSA public key.
+     * @param data       Data to be encrypted.
+     * @param cipherMode Cipher mode.
      * @return Encrypted data.
      */
-    public static byte[] encryptWithRSABytes(PublicKey publicKey, String data) {
-        return encryptWithPublicKey(publicKey, data, RSA_PKCS1);
+    public static byte[] encryptWithRSABytes(PublicKey publicKey, String data, CipherMode cipherMode) {
+        return encryptWithPublicKey(publicKey, data, cipherMode);
     }
 
     /**
      * Returns data decrypted with an RSA private key.
      *
      * @param privateKey RSA private key.
-     * @param data Data to be decrypted.
+     * @param data       Data to be decrypted.
+     * @param cipherMode Cipher mode.
      * @return Decrypted data.
      */
-    public static String decryptWithRSA(PrivateKey privateKey, String data) {
+    public static String decryptWithRSA(PrivateKey privateKey, String data, CipherMode cipherMode) {
         String decryptedData = null;
-        byte[] decryptedBytes = decryptWithRSABytes(privateKey, data);
+        byte[] decryptedBytes = decryptWithRSABytes(privateKey, data, cipherMode);
         if (decryptedBytes != null) {
             try {
                 decryptedData = new String(decryptedBytes, 0, decryptedBytes.length, StandardCharsets.UTF_8);
@@ -418,11 +447,31 @@ public class Encryptor {
      * Returns data decrypted with an RSA private key.
      *
      * @param privateKey RSA private key.
-     * @param data Data to be decrypted.
+     * @param data       Data to be decrypted.
+     * @param cipherMode Ciper mode.
      * @return Decrypted data.
      */
-    public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data) {
-        return decryptWithPrivateKey(privateKey, data, RSA_PKCS1);
+    public static byte[] decryptWithRSABytes(PrivateKey privateKey, String data, CipherMode cipherMode) {
+        return decryptWithPrivateKey(privateKey, data, cipherMode, /* logErrorOnFailure */ true);
+    }
+
+    /**
+     * Attempt to decrypt with a RSA private key using different cipher modes:
+     * - RSA_OAEP_SHA256
+     * - then RSA_PKCS1 (legacy)
+     *
+     * TODO retire this method when the server only supports RSA_OAEP_SHA256
+     *
+     * @param privateKey RSA private key.
+     * @param data       Data to be decrypted.
+     * @return Decrypted data.
+     */
+    public static byte[] decryptWithRSAMultiCipherNodes(PrivateKey privateKey, String data) {
+        byte[] result =  decryptWithPrivateKey(privateKey, data, CipherMode.RSA_OAEP_SHA256, /* logErrorOnFailure */ false);
+        if (result == null) {
+            result = decryptWithPrivateKey(privateKey, data, CipherMode.RSA_PKCS1, /* logErrorOnFailure */ true);
+        }
+        return result;
     }
 
     /**
@@ -503,33 +552,42 @@ public class Encryptor {
         return output;
     }
 
-    private static byte[] encryptWithPublicKey(PublicKey publicKey, String data, String cipher) {
+    public static byte[] encryptWithPublicKey(PublicKey publicKey, String data, CipherMode cipherMode) {
         if (publicKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
         try {
-            final Cipher cipherInstance = Cipher.getInstance(cipher);
-            cipherInstance.init(Cipher.ENCRYPT_MODE, publicKey);
+            final Cipher cipherInstance = getBestCipher(cipherMode);
+            initRSACipher(cipherInstance, Cipher.ENCRYPT_MODE, publicKey, cipherMode);
             return cipherInstance.doFinal(data.getBytes());
         } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric encryption", e);
+            SalesforceAnalyticsLogger.e(null, TAG, "Failed to encrypt with " + cipherMode, e);
         }
         return null;
     }
 
-    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, String cipher) {
+    private static byte[] decryptWithPrivateKey(PrivateKey privateKey, String data, CipherMode cipherMode, boolean logErrorOnFailure) {
         if (privateKey == null || TextUtils.isEmpty(data)) {
             return null;
         }
         try {
-            final Cipher cipherInstance = Cipher.getInstance(cipher);
-            cipherInstance.init(Cipher.DECRYPT_MODE, privateKey);
+            final Cipher cipherInstance = getBestCipher(cipherMode);
+            initRSACipher(cipherInstance, Cipher.DECRYPT_MODE, privateKey, cipherMode);
             byte[] decodedBytes = Base64.decode(data.getBytes(),Base64.NO_WRAP | Base64.NO_PADDING);
             return cipherInstance.doFinal(decodedBytes);
         } catch (Exception e) {
-            SalesforceAnalyticsLogger.e(null, TAG, "Error during asymmetric decryption", e);
+            if (logErrorOnFailure) {
+                SalesforceAnalyticsLogger.e(null, TAG, "Failed to decrypt with " + cipherMode, e);
+            } else {
+                SalesforceAnalyticsLogger.w(null, TAG, "Failed to decrypt with " + cipherMode);
+            }
         }
         return null;
+    }
+
+
+    private static void initRSACipher(Cipher cipherInstance, int opmode, Key key, CipherMode cipherMode) throws InvalidKeyException, InvalidAlgorithmParameterException {
+        cipherInstance.init(opmode, key);
     }
 
     private static byte[] generateInitVector() {
@@ -572,13 +630,15 @@ public class Encryptor {
         return cipher.doFinal(meat, 0, meatLen);
     }
 
-    private static Cipher getBestCipher(String cipherMode) {
+    private static Cipher getBestCipher(CipherMode cipherMode) {
         Cipher cipher = null;
         try {
-            if (AES_GCM_CIPHER.equals(cipherMode)) {
-                cipher = Cipher.getInstance(cipherMode);
-            } else {
-                cipher = Cipher.getInstance(cipherMode, getLegacyEncryptionProvider());
+            if ((CipherMode.AES_GCM_CIPHER == cipherMode) || (CipherMode.RSA_PKCS1 == cipherMode)) {
+                cipher = Cipher.getInstance(cipherMode.fullName);
+            } else if (CipherMode.RSA_OAEP_SHA256 == cipherMode) {
+                cipher = Cipher.getInstance(cipherMode.fullName, BOUNCY_CASTLE_WORKAROUND);
+            } else if (CipherMode.AES_CBC_CIPHER == cipherMode) {
+                cipher = Cipher.getInstance(cipherMode.fullName, getLegacyEncryptionProvider());
             }
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG,

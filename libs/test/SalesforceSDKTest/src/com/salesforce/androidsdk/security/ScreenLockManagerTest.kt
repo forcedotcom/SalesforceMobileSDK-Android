@@ -31,7 +31,25 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
-import com.salesforce.androidsdk.accounts.UserAccountTest
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_AUTH_TOKEN
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_COMMUNITY_ID
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_COMMUNITY_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_DISPLAY_NAME
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_EMAIL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_FIRST_NAME
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_IDENTITY_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_INSTANCE_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LANGUAGE
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LAST_NAME
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LOCALE
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LOGIN_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ORG_ID
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_PHOTO_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_REFRESH_TOKEN
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_THUMBNAIL_URL
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USERNAME
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USER_ID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManagerTest
@@ -167,7 +185,7 @@ class ScreenLockManagerTest {
     @Test
     fun testCleanUp() {
         val loginOptions = ClientManager.LoginOptions(
-            UserAccountTest.TEST_LOGIN_URL, ClientManagerTest.TEST_CALLBACK_URL,
+            TEST_LOGIN_URL, ClientManagerTest.TEST_CALLBACK_URL,
             ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES
         )
         val clientManager = ClientManager(ctx, ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true)
@@ -176,7 +194,7 @@ class ScreenLockManagerTest {
             userAccount.userId, userAccount.communityId, userAccount.communityId, userAccount.firstName, userAccount.lastName,
             userAccount.displayName, userAccount.email, userAccount.photoUrl, userAccount.thumbnailUrl, userAccount.additionalOauthValues,
             userAccount.lightningDomain, userAccount.lightningSid, userAccount.vfDomain, userAccount.vfSid, userAccount.contentDomain,
-            userAccount.contentSid, userAccount.csrfToken
+            userAccount.contentSid, userAccount.csrfToken, userAccount.nativeLogin, userAccount.language, userAccount.locale
         )
         val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
         val storedUserPrefs = ctx.getSharedPreferences(
@@ -203,16 +221,17 @@ class ScreenLockManagerTest {
         const val LONG_TIMEOUT = 100000
 
         fun buildTestUserAccount(): UserAccount {
-            return UserAccountBuilder.getInstance().authToken(UserAccountTest.TEST_AUTH_TOKEN)
-                .refreshToken(UserAccountTest.TEST_REFRESH_TOKEN).loginServer(UserAccountTest.TEST_LOGIN_URL)
-                .idUrl(UserAccountTest.TEST_IDENTITY_URL).instanceServer(UserAccountTest.TEST_INSTANCE_URL)
-                .orgId(UserAccountTest.TEST_ORG_ID).userId(UserAccountTest.TEST_USER_ID)
-                .username(UserAccountTest.TEST_USERNAME).accountName(UserAccountTest.TEST_ACCOUNT_NAME)
-                .communityId(UserAccountTest.TEST_COMMUNITY_ID).communityUrl(UserAccountTest.TEST_COMMUNITY_URL)
-                .firstName(UserAccountTest.TEST_FIRST_NAME).lastName(UserAccountTest.TEST_LAST_NAME)
-                .displayName(UserAccountTest.TEST_DISPLAY_NAME).email(UserAccountTest.TEST_EMAIL)
-                .photoUrl(UserAccountTest.TEST_PHOTO_URL).thumbnailUrl(UserAccountTest.TEST_THUMBNAIL_URL)
-                .additionalOauthValues(null).build()
+            return UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN)
+                .refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL)
+                .idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL)
+                .orgId(TEST_ORG_ID).userId(TEST_USER_ID)
+                .username(TEST_USERNAME).accountName(TEST_ACCOUNT_NAME)
+                .communityId(TEST_COMMUNITY_ID).communityUrl(TEST_COMMUNITY_URL)
+                .firstName(TEST_FIRST_NAME).lastName(TEST_LAST_NAME)
+                .displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL)
+                .photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL)
+                .additionalOauthValues(null).language(TEST_LANGUAGE).locale(TEST_LOCALE)
+                .build()
         }
     }
 }
