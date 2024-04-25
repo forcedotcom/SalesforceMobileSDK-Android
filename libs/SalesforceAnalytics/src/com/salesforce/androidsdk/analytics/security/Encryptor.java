@@ -587,16 +587,7 @@ public class Encryptor {
 
 
     private static void initRSACipher(Cipher cipherInstance, int opmode, Key key, CipherMode cipherMode) throws InvalidKeyException, InvalidAlgorithmParameterException {
-        if (cipherMode == CipherMode.RSA_OAEP_SHA256) {
-            // OAEP uses a separate hash invocation for MGF (mask generation function) and for the hashing of the label.
-            // Most libraries use the same hash algorithm for MGF and the hashing of the label.
-            // But Java uses a different hash algorithm: it defaults to SHA-1 when using the cipher RSA/ECB/OAEPWithSHA-256AndMGF1Padding.
-            OAEPParameterSpec paramSpec = new OAEPParameterSpec("SHA-256", "MGF1",
-                    new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
-            cipherInstance.init(opmode, key, paramSpec);
-        } else {
-            cipherInstance.init(opmode, key);
-        }
+        cipherInstance.init(opmode, key);
     }
 
     private static byte[] generateInitVector() {
