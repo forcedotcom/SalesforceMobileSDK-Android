@@ -306,7 +306,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     /** The unauthenticated start page from the boot configuration */
     @Suppress("MemberVisibilityCanBePrivate")
-    protected val unauthenticatedStartPage
+    protected open val unauthenticatedStartPage
         get() = bootConfig?.unauthenticatedStartPage
 
     fun logout(callbackContext: CallbackContext?) {

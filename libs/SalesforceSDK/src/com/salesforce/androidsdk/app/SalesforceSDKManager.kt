@@ -230,7 +230,7 @@ open class SalesforceSDKManager protected constructor(
         }.also { field = it }
 
     /** The Salesforce SDK manager's login server manager */
-    val loginServerManager by lazy {
+    open val loginServerManager by lazy {
         LoginServerManager(appContext)
     }
 
@@ -316,8 +316,8 @@ open class SalesforceSDKManager protected constructor(
      * based on the value configured on the server
      */
     @set:Synchronized
-    var isBrowserLoginEnabled = false
-        private set
+    open var isBrowserLoginEnabled = false
+        protected set
 
     /** Optionally enables browser session sharing */
     var isShareBrowserSessionEnabled = false
@@ -379,8 +379,9 @@ open class SalesforceSDKManager protected constructor(
      * By default, the display name under
      * [android.content.pm.ApplicationInfo.labelRes] will be used.
      */
+    @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("provideAppName")
-    var appName: String? = null
+    open var appName: String? = null
         get() = runCatching {
             if (field == null) {
                 val packageInfo = appContext.packageManager.getPackageInfo(
@@ -437,7 +438,7 @@ open class SalesforceSDKManager protected constructor(
      * BuildConfig.DEBUG unless another value is specified.
      * @return Boolean true enables developer support features; false otherwise
      */
-    fun isDevSupportEnabled() = isDevSupportEnabledOverride ?: isDebugBuild
+    open fun isDevSupportEnabled() = isDevSupportEnabledOverride ?: isDebugBuild
 
     /**
      * Sets if developer support features are enabled.
@@ -486,7 +487,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Login options associated with the app */
-    val loginOptions: LoginOptions get() = getLoginOptions(null, null)
+    open val loginOptions: LoginOptions get() = getLoginOptions(null, null)
 
     /**
      * Sets the login options associated with the app.
@@ -494,7 +495,7 @@ open class SalesforceSDKManager protected constructor(
      * @param jwt The `jwt`
      * @param url The URL
      */
-    fun getLoginOptions(
+    open fun getLoginOptions(
         jwt: String?,
         url: String?
     ) = loginOptionsInternal?.apply {
@@ -530,10 +531,10 @@ open class SalesforceSDKManager protected constructor(
      * @return True if the Salesforce Mobile SDK should automatically logout when
      * the access token is revoked
      */
-    fun shouldLogoutWhenTokenRevoked() = true
+    open fun shouldLogoutWhenTokenRevoked() = true
 
     /** The Salesforce SDK manager's user account manager */
-    val userAccountManager: UserAccountManager by lazy {
+    open val userAccountManager: UserAccountManager by lazy {
         UserAccountManager.getInstance()
     }
 
@@ -546,7 +547,7 @@ open class SalesforceSDKManager protected constructor(
      * for this option.  This functionality will eventually be provided by the
      * backend.
      */
-    var shouldBlockSalesforceIntegrationUser = false
+    open var shouldBlockSalesforceIntegrationUser = false
 
     /**
      * Creates a NativeLoginManager instance that allows the app to use its
@@ -595,7 +596,7 @@ open class SalesforceSDKManager protected constructor(
      * false otherwise
      */
     @Synchronized
-    fun setBrowserLoginEnabled(
+    internal fun setBrowserLoginEnabled(
         browserLoginEnabled: Boolean,
         shareBrowserSessionEnabled: Boolean
     ) {
@@ -638,7 +639,7 @@ open class SalesforceSDKManager protected constructor(
 
     /** Returns the app display name used by the passcode dialog */
     @Suppress("unused")
-    val appDisplayString = DEFAULT_APP_DISPLAY_NAME
+    open val appDisplayString = DEFAULT_APP_DISPLAY_NAME
 
     /** Returns the name of the app as defined in AndroidManifest.xml */
     val applicationName
@@ -719,8 +720,7 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Starts the login flow if user account has been removed.
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected fun startLoginPage() {
+    protected open fun startLoginPage() {
 
         // Clear cookies
         CookieManager.getInstance().removeAllCookies(null)
@@ -870,7 +870,7 @@ open class SalesforceSDKManager protected constructor(
      * @param showLoginPage If true, displays the login page after removing the
      * account
      */
-    fun logout(
+    open fun logout(
         /* Note: Kotlin's @JvmOverloads annotations does not generate this overload */
         frontActivity: Activity?,
         showLoginPage: Boolean = true
@@ -889,7 +889,7 @@ open class SalesforceSDKManager protected constructor(
      * account
      */
     @JvmOverloads
-    fun logout(
+    open fun logout(
         account: Account? = null,
         frontActivity: Activity?,
         showLoginPage: Boolean = true
@@ -1386,7 +1386,7 @@ open class SalesforceSDKManager protected constructor(
      *
      * @param activity The activity used to set style attributes
      */
-    fun setViewNavigationVisibility(activity: Activity) {
+    open fun setViewNavigationVisibility(activity: Activity) {
         if (!isDarkTheme || activity.javaClass.name == loginActivityClass.name) {
             /*
              * This covers the case where OS dark theme is true, but app has
@@ -1400,7 +1400,7 @@ open class SalesforceSDKManager protected constructor(
      * Determines whether the device has a compact screen.
      * Taken directly from https://developer.android.com/guide/topics/large-screens/large-screen-cookbook#kotlin
      */
-    fun compactScreen(activity: Activity): Boolean {
+    open fun compactScreen(activity: Activity): Boolean {
         val metrics = WindowMetricsCalculator.getOrCreate().computeMaximumWindowMetrics(activity)
         val width = metrics.bounds.width()
         val height = metrics.bounds.height()
@@ -1413,7 +1413,7 @@ open class SalesforceSDKManager protected constructor(
 
     @Suppress("unused")
     @OnLifecycleEvent(ON_STOP)
-    protected fun onAppBackgrounded() {
+    protected open fun onAppBackgrounded() {
         screenLockManager?.onAppBackgrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppBackgrounded()
 
@@ -1425,7 +1425,7 @@ open class SalesforceSDKManager protected constructor(
 
     @Suppress("unused")
     @OnLifecycleEvent(ON_START)
-    protected fun onAppForegrounded() {
+    protected open fun onAppForegrounded() {
         screenLockManager?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
