@@ -82,7 +82,7 @@ update_config_xml ()
     gsed -i "s/version.*=.*\"[^\"]*\">/version   = \"${versionName}\">/g" ${file}
 }
 
-update_salesforcesdkmanager_java ()
+update_salesforcesdkmanager_kt ()
 {
     local file=$1
     local versionName=$2
@@ -166,8 +166,8 @@ echo "*** Updating config.xml files ***"
 update_config_xml "./libs/SalesforceHybrid/res/xml/config.xml" "${OPT_VERSION}"
 update_config_xml "./libs/test/SalesforceHybridTest/res/xml/config.xml" "${OPT_VERSION}"
 
-echo "*** Updating SalesforceSDKManager.java ***"
-update_salesforcesdkmanager_java "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.java" "${VERSION_SUFFIXED}"
+echo "*** Updating SalesforceSDKManager.kt ***"
+update_salesforcesdkmanager_kt "./libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.kt" "${VERSION_SUFFIXED}"
 
 echo "*** Updating generate_doc.sh ***"
 update_generate_doc "./tools/generate_doc.sh" "${SHORT_VERSION}"
