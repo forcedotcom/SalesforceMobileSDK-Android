@@ -74,8 +74,10 @@ internal class PublicOverridesTest {
             override fun onBioAuthClick(view: View?) { }
         }
 
-        // Instantiate to ensure this compiles.
-        Override()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            // Instantiate to ensure this compiles.
+            Override()
+        }
     }
 
     @Test
