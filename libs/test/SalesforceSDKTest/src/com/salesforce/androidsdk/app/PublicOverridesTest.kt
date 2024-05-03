@@ -6,7 +6,6 @@ import android.accounts.Account
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
-import android.view.Menu
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -45,10 +44,11 @@ internal class PublicOverridesTest {
 
     @Test
     fun overrideOAuthWebviewHelper() {
-        class Override(context: Context, callback: OAuthWebviewHelperEvents, loginOptions: LoginOptions) : OAuthWebviewHelper(context, callback, loginOptions) {
+        class OverrideOAuthWebviewHelper(context: Context, callback: OAuthWebviewHelperEvents, loginOptions: LoginOptions) : OAuthWebviewHelper(context, callback, loginOptions) {
 
             override val authorizationDisplayType: String get() = ""
             override val loginUrl: String get() = ""
+            override fun alias(alias: String?) { }
 
             // functions/properties below this are used by internal apps
             override fun clearCookies() {}
@@ -60,15 +60,16 @@ internal class PublicOverridesTest {
             override val oAuthClientId: String get() = super.oAuthClientId
             @Suppress("unused")
             private inner class TestClient: AuthWebViewClient()
+            override fun showError(exception: Throwable) { }
         }
 
         // Instantiate to ensure this compiles.
-        Override(context, callback, loginOptions)
+        OverrideOAuthWebviewHelper(context, callback, loginOptions)
     }
 
     @Test
     fun overrideLoginActivity() {
-        class Override : LoginActivity() {
+        class OverrideLoginActivity : LoginActivity() {
             override fun shouldUseCertBasedAuth(): Boolean { return  true }
             override fun onIDPLoginClick(v: View?) { }
             override fun onBioAuthClick(view: View?) { }
@@ -83,13 +84,13 @@ internal class PublicOverridesTest {
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             // Instantiate to ensure this compiles.
-            Override()
+            OverrideLoginActivity()
         }
     }
 
     @Test
     fun overrideSalesforceSDKManager() {
-        class Override(context: Context, mainActivity: Class<out Activity>) : SalesforceSDKManager(context, mainActivity) {
+        class OverrideSalesforceSDKManager(context: Context, mainActivity: Class<out Activity>) : SalesforceSDKManager(context, mainActivity) {
             override fun shouldLogoutWhenTokenRevoked(): Boolean { return false }
             override val appDisplayString: String get() = ""
             override fun cleanUp(userAccount: UserAccount?) { }
@@ -98,6 +99,7 @@ internal class PublicOverridesTest {
             override fun compactScreen(activity: Activity): Boolean { return true }
 
             // functions/properties below this are used by internal apps
+
             override var isBrowserLoginEnabled = false
             override val userAccountManager: UserAccountManager get() = super.userAccountManager
             override fun isDevSupportEnabled(): Boolean { return false }
@@ -109,9 +111,12 @@ internal class PublicOverridesTest {
             override fun setViewNavigationVisibility(activity: Activity) { }
             override fun onAppBackgrounded() { }
             override fun onAppForegrounded() { }
+            init {
+                INSTANCE = this
+            }
         }
 
         // Instantiate to ensure this compiles.
-        Override()
+        OverrideSalesforceSDKManager(context, Activity()::class.java)
     }
 }

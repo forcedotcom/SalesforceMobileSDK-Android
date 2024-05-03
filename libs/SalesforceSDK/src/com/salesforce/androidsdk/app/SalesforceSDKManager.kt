@@ -1445,7 +1445,7 @@ open class SalesforceSDKManager protected constructor(
          */
         @JvmField
         @SuppressLint("StaticFieldLeak")
-        protected var INSTANCE: SalesforceSDKManager? = null
+        var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
         const val SDK_VERSION = "12.1.0.dev"
