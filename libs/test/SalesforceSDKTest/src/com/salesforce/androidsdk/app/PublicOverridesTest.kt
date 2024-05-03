@@ -116,7 +116,9 @@ internal class PublicOverridesTest {
             }
         }
 
-        // Instantiate to ensure this compiles.
-        OverrideSalesforceSDKManager(context, Activity()::class.java)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            // Instantiate to ensure this compiles.
+            OverrideSalesforceSDKManager(context, Activity()::class.java)
+        }
     }
 }
