@@ -596,7 +596,7 @@ open class SalesforceSDKManager protected constructor(
      * false otherwise
      */
     @Synchronized
-    internal fun setBrowserLoginEnabled(
+    fun setBrowserLoginEnabled(
         browserLoginEnabled: Boolean,
         shareBrowserSessionEnabled: Boolean
     ) {

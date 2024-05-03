@@ -6,6 +6,7 @@ import android.accounts.Account
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
+import android.view.Menu
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -56,6 +57,7 @@ internal class PublicOverridesTest {
             override fun makeWebChromeClient(): WebChromeClient { return WebChromeClient() }
             override fun makeWebViewClient(): AuthWebViewClient { return AuthWebViewClient() }
             override fun onAuthFlowComplete(tr: OAuth2.TokenEndpointResponse?, nativeLogin: Boolean) { }
+            override val oAuthClientId: String get() = super.oAuthClientId
             @Suppress("unused")
             private inner class TestClient: AuthWebViewClient()
         }
@@ -67,11 +69,16 @@ internal class PublicOverridesTest {
     @Test
     fun overrideLoginActivity() {
         class Override : LoginActivity() {
-            override fun certAuthOrLogin() { }
             override fun shouldUseCertBasedAuth(): Boolean { return  true }
-            override fun getOAuthWebviewHelper(callback: OAuthWebviewHelper.OAuthWebviewHelperEvents, loginOptions: LoginOptions, webView: WebView, savedInstanceState: Bundle?): OAuthWebviewHelper { return OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState) }
             override fun onIDPLoginClick(v: View?) { }
             override fun onBioAuthClick(view: View?) { }
+
+            // functions/properties below this are used by internal apps
+            override fun fixBackButtonBehavior(keyCode: Int): Boolean { return false }
+            override fun certAuthOrLogin() { }
+            override fun getOAuthWebviewHelper(callback: OAuthWebviewHelper.OAuthWebviewHelperEvents, loginOptions: LoginOptions, webView: WebView, savedInstanceState: Bundle?): OAuthWebviewHelper { return OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState) }
+            override fun onPickServerClick(v: View?) { }
+            override fun onClearCookiesClick(v: View?) { }
         }
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {

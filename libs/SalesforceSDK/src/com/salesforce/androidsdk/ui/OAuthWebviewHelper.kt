@@ -494,8 +494,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             }.getOrDefault(false)
         }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected val oAuthClientId: String
+    protected open val oAuthClientId: String
         get() = loginOptions.oauthClientId
 
     @Suppress("MemberVisibilityCanBePrivate")

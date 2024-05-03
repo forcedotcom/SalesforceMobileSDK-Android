@@ -446,7 +446,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * reload the login page.
      * @param v The view that was clicked
      */
-    private fun onClearCookiesClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    open fun onClearCookiesClick(v: View?) {
         webviewHelper?.clearCookies()
         webviewHelper?.loadLoginPage()
     }
@@ -476,7 +476,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * activity.
      * @param v The pick server button
      */
-    private fun onPickServerClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    open fun onPickServerClick(v: View?) {
         Intent(this, ServerPickerActivity::class.java).also { intent ->
             startActivityForResult(
                 intent,
