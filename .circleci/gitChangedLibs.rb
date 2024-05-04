@@ -19,9 +19,10 @@ libsModified = Set.new
 
 for prfile in prfiles
   path = prfile["filename"]
-  for lib in libsTopoSorted
-    if path.include? lib
-      libsModified.add(lib)
+  libsTopoSorted.each do |lib|
+    if path.include?(lib)
+      libsModified.merge(libsTopoSorted[libsTopoSorted.index(lib)..])
+      break 
     end
   end
 end
