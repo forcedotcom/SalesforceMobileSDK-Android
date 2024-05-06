@@ -275,7 +275,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     var shouldReloadPage: Boolean = false
         private set
 
-    fun saveState(outState: Bundle) {
+    internal fun saveState(outState: Bundle) {
         val accountOptions = accountOptions
 
         webView?.saveState(outState)
@@ -288,10 +288,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         }
     }
 
-    fun clearCookies() =
+    open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
-    fun clearView() =
+    internal fun clearView() =
         webView?.loadUrl("about:blank")
 
     /**
@@ -299,14 +299,14 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * needed.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    protected fun makeWebViewClient() = AuthWebViewClient()
+    protected open fun makeWebViewClient() = AuthWebViewClient()
 
     /**
      * A factory method for the web Chrome client. This can be overridden as
      * needed
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    protected fun makeWebChromeClient() = WebChromeClient()
+    protected open fun makeWebChromeClient() = WebChromeClient()
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -318,7 +318,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * @param errorDesc The error description
      * @param e The exception
      */
-    fun onAuthFlowError(
+    internal fun onAuthFlowError(
         error: String,
         errorDesc: String?,
         e: Throwable?
@@ -365,7 +365,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    protected fun showError(exception: Throwable) {
+    protected open fun showError(exception: Throwable) {
         makeText(
             context,
             context.getString(
@@ -380,7 +380,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * Reloads the authorization page in the web view.  Also, updates the window
      * title so it's easier to identify the login system.
      */
-    fun loadLoginPage() = loginOptions.let { loginOptions ->
+    internal fun loadLoginPage() = loginOptions.let { loginOptions ->
         when {
             isEmpty(loginOptions.jwt) -> {
                 loginOptions.loginUrl = this@OAuthWebviewHelper.loginUrl
@@ -494,12 +494,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             }.getOrDefault(false)
         }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected val oAuthClientId: String
+    protected open val oAuthClientId: String
         get() = loginOptions.oauthClientId
 
     @Suppress("MemberVisibilityCanBePrivate")
-    protected fun getAuthorizationUrl(
+    protected open fun getAuthorizationUrl(
         useWebServerAuthentication: Boolean,
         useHybridAuthentication: Boolean
     ): URI {
@@ -551,11 +550,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * See the OAuth docs for the complete list of valid values
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    protected val authorizationDisplayType
+    protected open val authorizationDisplayType
         get() = context.getString(oauth_display_type)
 
     /** Override to customize the login url */
-    protected val loginUrl: String?
+    protected open val loginUrl: String?
         get() = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.run {
             trim { it <= ' ' }
         }
@@ -565,7 +564,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * URL.  That redirect marks the end of the user facing portion of the
      * authentication flow.
      */
-    protected inner class AuthWebViewClient : WebViewClient() {
+    protected open inner class AuthWebViewClient : WebViewClient() {
 
         override fun onPageFinished(
             view: WebView,
@@ -716,14 +715,14 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * successfully. The last step is to call the identity service to get the
      * username.
      */
-    fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
+    open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
         d(TAG, "token response -> $tr")
         CoroutineScope(IO).launch {
             FinishAuthTask().execute(tr, nativeLogin)
         }
     }
 
-    fun onWebServerFlowComplete(code: String?) =
+    internal fun onWebServerFlowComplete(code: String?) =
         CoroutineScope(IO).launch {
             doCodeExchangeEndpoint(code)
         }
@@ -1142,7 +1141,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         return salesforceHosts.map { host.endsWith(it) }.any() { it }
     }
 
-    protected fun addAccount(account: UserAccount?) {
+    private fun addAccount(account: UserAccount?) {
         val clientManager = ClientManager(
             context,
             SalesforceSDKManager.getInstance().accountType,
@@ -1237,7 +1236,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * The name to be shown for account in Settings -> Accounts & Sync
      * @return name to be shown for account in Settings -> Accounts & Sync
      */
-    protected fun buildAccountName(
+    protected open fun buildAccountName(
         username: String?,
         instanceServer: String?
     ) = String.format(

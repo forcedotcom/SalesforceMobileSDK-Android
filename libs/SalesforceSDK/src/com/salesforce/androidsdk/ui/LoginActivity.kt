@@ -280,8 +280,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         super.finish()
     }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected fun certAuthOrLogin() {
+    protected open fun certAuthOrLogin() {
         when {
             shouldUseCertBasedAuth() -> {
                 val alias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
@@ -298,7 +297,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             }
 
             else -> {
-                d(TAG, "User agent login flow being triggered")
+                d(TAG, "Web server or user agent login flow triggered")
                 webviewHelper?.loadLoginPage()
             }
         }
@@ -325,12 +324,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * @return True if certificate based authentication flow should be used and
      * false otherwise
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected fun shouldUseCertBasedAuth(): Boolean =
+    protected open fun shouldUseCertBasedAuth(): Boolean =
         getRuntimeConfig(this).getBoolean(RequireCertAuth)
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected fun getOAuthWebviewHelper(
+    protected open fun getOAuthWebviewHelper(
         callback: OAuthWebviewHelperEvents,
         loginOptions: LoginOptions,
         webView: WebView,
@@ -366,8 +363,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * @return true if the fix was applied and false if the key code was not
      * handled
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected fun fixBackButtonBehavior(keyCode: Int) =
+    protected open fun fixBackButtonBehavior(keyCode: Int) =
         when (keyCode) {
             KEYCODE_BACK -> {
                 handleBackBehavior()
@@ -450,8 +446,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * reload the login page.
      * @param v The view that was clicked
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun onClearCookiesClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    open fun onClearCookiesClick(v: View?) {
         webviewHelper?.clearCookies()
         webviewHelper?.loadLoginPage()
     }
@@ -461,7 +456,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      *
      * @param v IDP login button
      */
-    fun onIDPLoginClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    open fun onIDPLoginClick(v: View?) {
         SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
             this,
             SPStatusCallback()
@@ -472,8 +467,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * Called when the "reload" button is clicked to reloads the login page.
      * @param v The reload button
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun onReloadClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    private fun onReloadClick(@Suppress("UNUSED_PARAMETER") v: View?) {
         webviewHelper?.loadLoginPage()
     }
 
@@ -482,8 +476,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * activity.
      * @param v The pick server button
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun onPickServerClick(@Suppress("UNUSED_PARAMETER") v: View?) {
+    open fun onPickServerClick(v: View?) {
         Intent(this, ServerPickerActivity::class.java).also { intent ->
             startActivityForResult(
                 intent,
@@ -554,7 +547,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
-    fun presentBiometric() {
+    internal fun presentBiometric() {
         val biometricPrompt = biometricPrompt
         val biometricManager = BiometricManager.from(this)
         when (biometricManager.canAuthenticate(authenticators)) {
@@ -659,8 +652,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                 .build()
         }
 
-    fun onBioAuthClick(@Suppress("UNUSED_PARAMETER") view: View?) =
-        presentBiometric()
+    open fun onBioAuthClick(view: View?) = presentBiometric()
 
     companion object {
         const val PICK_SERVER_REQUEST_CODE = 10

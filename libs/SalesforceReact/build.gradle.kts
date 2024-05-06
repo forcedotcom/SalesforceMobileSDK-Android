@@ -12,7 +12,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 val useIntlJsc = false
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.0.0"
+rootProject.ext["PUBLISH_VERSION"] = "12.1.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceReact"
 
 plugins {
