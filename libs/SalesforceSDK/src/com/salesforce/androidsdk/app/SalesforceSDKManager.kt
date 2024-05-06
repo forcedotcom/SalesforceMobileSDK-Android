@@ -1448,7 +1448,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "12.0.1"
+        const val SDK_VERSION = "12.1.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager
