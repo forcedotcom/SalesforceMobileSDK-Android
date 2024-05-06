@@ -1487,6 +1487,12 @@ open class SalesforceSDKManager protected constructor(
         @Suppress("NON_FINAL_MEMBER_IN_OBJECT") // This allows Java subtypes to override this property without an inspector warning
         open fun getInstance() = INSTANCE ?: throw RuntimeException("Apps must call SalesforceSDKManager.init() first.")
 
+        /** Allow Kotlin subclasses to set themselves as the instance. */
+        @JvmSynthetic
+        fun setInstance(subclass: SalesforceSDKManager) {
+            INSTANCE = subclass
+        }
+
         /**
          * Indicates if a Salesforce SDK manager instance is initialized.
          * @return true if SalesforceSDKManager has been initialized already
