@@ -14,9 +14,7 @@ import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.O
 import android.os.Build.VERSION_CODES.TIRAMISU
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.PRIORITY_DEFAULT
@@ -26,6 +24,7 @@ import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_content
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_text
 import com.salesforce.androidsdk.R.string.sf__notifications_local_show_dev_support_title
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.NotificationId.SHOW_DEVELOPER_SUPPORT
 
 /**
@@ -63,8 +62,7 @@ internal class ShowDeveloperSupportNotifier {
          *
          * @param application The Android application
          */
-        @RequiresApi(O)
-        fun createNotificationChannel(application: Application) =
+        private fun createNotificationChannel(application: Application) =
             (application.getSystemService(
                 NOTIFICATION_SERVICE
             ) as? NotificationManager)?.createNotificationChannel(
@@ -111,7 +109,7 @@ internal class ShowDeveloperSupportNotifier {
         @SuppressLint("LaunchActivityFromNotification")
         fun showDeveloperSupportNotification(activity: Activity?) {
             // Guards.
-            if (activity == null) {
+            if (activity == null || !SalesforceSDKManager.getInstance().isDevSupportEnabled()) {
                 return
             }
 
@@ -163,9 +161,7 @@ internal class ShowDeveloperSupportNotifier {
             if (!notificationManager.areNotificationsEnabled()) return
 
             // Create the notification channel.
-            if (SDK_INT >= O) {
-                createNotificationChannel(activity.application)
-            }
+            createNotificationChannel(activity.application)
 
             // Initialize a notification builder for the Show Developer Support local notification.
             NotificationCompat.Builder(
