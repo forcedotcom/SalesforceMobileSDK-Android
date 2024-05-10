@@ -641,7 +641,7 @@ internal class NativeLoginManager(
     )
 
     /**
-     * Generates either the reCAPTCHA token parameter for non- enterprise
+     * Generates either the reCAPTCHA token parameter for non-enterprise
      * reCAPTCHA configurations or the reCAPTCHA event parameter for enterprise
      * reCAPTCHA configurations.
      * @param reCaptchaToken A reCAPTCHA token provided by the reCAPTCHA SDK
