@@ -286,7 +286,7 @@ internal class NativeLoginManager(
                 username = trimmedUsername
             ).toJson()
         }.onFailure { e ->
-            SalesforceSDKLogger.e(TAG, "Cannot JSON encode OTP request body due to an encoding error with message '${e.message}'.", e)
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start password reset request body due to an encoding error with message '${e.message}'.", e)
             return UnknownError
         }.getOrNull()
 
