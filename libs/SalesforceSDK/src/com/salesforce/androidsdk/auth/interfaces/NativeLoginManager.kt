@@ -131,16 +131,6 @@ interface NativeLoginManager {
      * @return An OTP request result with the overall login result and the OTP
      * identifier for successful OTP requests
      */
-    suspend fun startPasswordLessAuthorization(
-        username: String,
-        reCaptchaToken: String,
-        otpVerificationMethod: OtpVerificationMethod
-    ): OtpRequestResult
-
-    @Deprecated(
-        "Use the replacement function provided in 12.1.0 for more consistent naming conventions.",
-        ReplaceWith("startPasswordLessAuthorization(username, reCaptchaToken, otpVerificationMethod)")
-    )
     suspend fun submitOtpRequest(
         username: String,
         reCaptchaToken: String,
@@ -164,16 +154,6 @@ interface NativeLoginManager {
      * possible failures, including both in-app and Salesforce Identity API
      * results
      */
-    suspend fun completePasswordLessAuthorization(
-        otp: String,
-        otpIdentifier: String,
-        otpVerificationMethod: OtpVerificationMethod
-    ): NativeLoginResult
-
-    @Deprecated(
-        "Use the replacement function provided in 12.1.0 for more consistent naming conventions.",
-        ReplaceWith("completePasswordLessAuthorization(otp, otpIdentifier, otpVerificationMethod)")
-    )
     suspend fun submitPasswordlessAuthorizationRequest(
         otp: String,
         otpIdentifier: String,

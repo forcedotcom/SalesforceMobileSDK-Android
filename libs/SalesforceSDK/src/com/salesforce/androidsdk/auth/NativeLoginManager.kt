@@ -376,7 +376,7 @@ internal class NativeLoginManager(
     // endregion
     // region Salesforce Identity API Headless, Password-Less Login Via One-Time-Passcode
 
-    override suspend fun startPasswordLessAuthorization(
+    override suspend fun submitOtpRequest(
         username: String,
         reCaptchaToken: String,
         otpVerificationMethod: OtpVerificationMethod
@@ -395,7 +395,7 @@ internal class NativeLoginManager(
         )
         // Generate the start password-less login request body.
         val startPasswordLessLoginRequestBodyString = runCatching {
-            StartPasswordLessLoginRequestBody(
+            OtpRequestBody(
                 recaptcha = reCaptchaParameterGenerationResult.nonEnterpriseReCaptchaToken,
                 recaptchaevent = reCaptchaParameterGenerationResult.enterpriseReCaptchaEvent,
                 username = trimmedUsername,
@@ -439,21 +439,7 @@ internal class NativeLoginManager(
         }
     }
 
-    @Deprecated(
-        "The replacement function provided in 12.1.0 uses a more consistent naming convention.",
-        ReplaceWith("submitStartPasswordLessAuthorizationRequest(username, reCaptchaToken, otpVerificationMethod)")
-    )
-    override suspend fun submitOtpRequest(
-        username: String,
-        reCaptchaToken: String,
-        otpVerificationMethod: OtpVerificationMethod
-    ): OtpRequestResult = startPasswordLessAuthorization(
-        username,
-        reCaptchaToken,
-        otpVerificationMethod
-    )
-
-    override suspend fun completePasswordLessAuthorization(
+    override suspend fun submitPasswordlessAuthorizationRequest(
         otp: String,
         otpIdentifier: String,
         otpVerificationMethod: OtpVerificationMethod
@@ -512,20 +498,6 @@ internal class NativeLoginManager(
         )
     }
 
-    @Deprecated(
-        "The replacement function provided in 12.1.0 uses a more consistent naming convention.",
-        ReplaceWith("submitCompletePasswordLessAuthorizationRequest(otp, otpIdentifier, otpVerificationMethod)")
-    )
-    override suspend fun submitPasswordlessAuthorizationRequest(
-        otp: String,
-        otpIdentifier: String,
-        otpVerificationMethod: OtpVerificationMethod
-    ) = completePasswordLessAuthorization(
-        otp,
-        otpIdentifier,
-        otpVerificationMethod
-    )
-
     /**
      * A data class for the start password reset request body.
      * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
@@ -578,7 +550,7 @@ internal class NativeLoginManager(
      * @param verificationMethod The OTP verification code's delivery method in
      * "email" or "sms"
      */
-    private data class StartPasswordLessLoginRequestBody(
+    private data class OtpRequestBody(
         val recaptcha: String?,
         val recaptchaevent: ReCaptchaEventRequestParameter?,
         val username: String,
