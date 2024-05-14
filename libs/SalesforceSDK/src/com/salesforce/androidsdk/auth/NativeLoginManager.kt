@@ -504,8 +504,7 @@ internal class NativeLoginManager(
      * SDK.  This is not used with reCAPTCHA Enterprise
      * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
      * Enterprise
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      */
     private data class StartPasswordResetRequestBody(
         val recaptcha: String?,
@@ -521,8 +520,7 @@ internal class NativeLoginManager(
 
     /**
      * A data class for the complete reset password OTP request body.
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      * @param otp The user-entered one-time-password previously delivered to the
      * user by the Salesforce Identity API forgot password endpoint
      * @param newPassword The user-entered new password
@@ -545,8 +543,7 @@ internal class NativeLoginManager(
      * SDK.  This is not used with reCAPTCHA Enterprise
      * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
      * Enterprise
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      * @param verificationMethod The OTP verification code's delivery method in
      * "email" or "sms"
      */

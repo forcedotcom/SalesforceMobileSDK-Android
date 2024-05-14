@@ -81,8 +81,7 @@ interface NativeLoginManager {
      *
      * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_forgot_password_flow.htm&type=5
      *
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      * @param reCaptchaToken A reCAPTCHA token provided by the reCAPTCHA SDK
      * @return A native login result indicating success or one of several
      * possible failures, including both in-app and Salesforce Identity API
@@ -100,8 +99,7 @@ interface NativeLoginManager {
      *
      * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_forgot_password_flow.htm&type=5
      *
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      * @param otp A user-entered one-time-password
      * @param newPassword The user-entered new password
      * @return A native login result indicating success or one of several
@@ -124,8 +122,7 @@ interface NativeLoginManager {
      *
      * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_passwordless_login_public_clients.htm&type=5
      *
-     * @param username A valid Salesforce username.  Note that email may be used
-     * for community users
+     * @param username A valid Salesforce username or email
      * @param reCaptchaToken A reCAPTCHA token provided by the reCAPTCHA SDK
      * @param otpVerificationMethod: The delivery method for the OTP
      * @return An OTP request result with the overall login result and the OTP
