@@ -35,8 +35,10 @@ import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
+import android.util.Patterns.EMAIL_ADDRESS
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_ID
@@ -48,14 +50,17 @@ import com.salesforce.androidsdk.auth.OAuth2.HYBRID_AUTH_CODE
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
 import com.salesforce.androidsdk.auth.OAuth2.REDIRECT_URI
 import com.salesforce.androidsdk.auth.OAuth2.RESPONSE_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager.StartRegistrationResult
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidCredentials
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidEmail
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidPassword
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidUsername
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.Success
@@ -266,6 +271,146 @@ internal class NativeLoginManager(
         return requestBodyString.toRequestBody(mediaType)
     }
 
+    // region Salesforce Identity API Headless Registration Flow
+
+    override suspend fun startRegistration(
+        email: String,
+        firstName: String,
+        lastName: String,
+        username: String,
+        newPassword: String,
+        reCaptchaToken: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ): StartRegistrationResult {
+        // Validate parameters.
+        val trimmedEmail = email.trim()
+        if (!EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+            return StartRegistrationResult(InvalidEmail)
+        }
+        val trimmedNewPassword = newPassword.trim()
+        trimmedNewPassword.mapInvalidPasswordToResult()?.let { return StartRegistrationResult(it) }
+        val trimmedUsername = username.trim()
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return StartRegistrationResult(it) }
+        val reCaptchaParameterGenerationResult = generateReCaptchaParameters(reCaptchaToken)
+
+        // Determine the OTP verification method.
+        val otpVerificationMethodString = otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue
+        // Generate the start registration request body.
+        val startRegistrationRequestBodyString = runCatching {
+            StartRegistrationRequestBody(
+                recaptcha = reCaptchaParameterGenerationResult.nonEnterpriseReCaptchaToken,
+                recaptchaevent = reCaptchaParameterGenerationResult.enterpriseReCaptchaEvent,
+                userData = UserData(
+                    email = trimmedEmail,
+                    username = trimmedUsername,
+                    password = trimmedNewPassword,
+                    firstName = firstName.trim(),
+                    lastName = lastName.trim()
+                ),
+                otpVerificationMethod = otpVerificationMethodString
+            ).toJson()
+        }.onFailure { e ->
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start password reset request body due to an encoding error with message '${e.message}'.", e)
+            return StartRegistrationResult(UnknownError)
+        }.getOrNull()
+
+        // Create the start registration request.
+        val startRegistrationRequest = RestRequest(
+            POST,
+            LOGIN,
+            "$loginUrl$OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION",
+            startRegistrationRequestBodyString,
+            null
+        )
+
+        // Submit the start registration request and fetch the response.
+        val startRegistrationResponse = suspendedRestCall(startRegistrationRequest) ?: return StartRegistrationResult(UnknownError)
+
+        // React to the start registration response.
+        return when (startRegistrationResponse.isSuccess) {
+            true -> {
+                startRegistrationResponse.consumeQuietly()
+                startRegistrationResponse.asJSONObject().let { response ->
+                    StartRegistrationResult(
+                        nativeLoginResult = Success,
+                        email = response.get("email").toString(),
+                        requestIdentifier = response.get("identifier").toString()
+                    )
+                }
+            }
+
+            else -> {
+                SalesforceSDKLogger.e(
+                    TAG,
+                    "Cannot start registration as the Salesforce Identity API returned an unsuccessful HTTP status. '${startRegistrationResponse.asString()}'"
+                )
+                StartRegistrationResult(UnknownError)
+            }
+        }
+    }
+
+    override suspend fun completeRegistration(
+        otp: String,
+        requestIdentifier: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ) = submitAuthorizationRequest(
+        authRequestType = AUTH_REQUEST_TYPE_VALUE_USER_REGISTRATION,
+        otp = otp,
+        identifier = requestIdentifier,
+        otpVerificationMethod = otpVerificationMethod
+    )
+
+    /**
+     * A data class for the Salesforce Identity API start registration request
+     * body.
+     * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
+     * SDK.  This is not used with reCAPTCHA Enterprise
+     * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
+     * Enterprise
+     * @param userData The start registration request user data
+     * @param otpVerificationMethod The one-time-password's delivery method for
+     * verification in "email" or "sms"
+     */
+    private data class StartRegistrationRequestBody(
+        val recaptcha: String?,
+        val recaptchaevent: ReCaptchaEventRequestParameter?,
+        val userData: UserData,
+        val otpVerificationMethod: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("recaptcha", recaptcha)
+            put("recaptchaevent", recaptchaevent?.toJson())
+            put("userdata", userData.toJson())
+            put("verificationmethod", otpVerificationMethod)
+        }
+
+        /**
+         * A data class for the Salesforce Identity API start registration
+         * request body's user info parameter.
+         * @param email A valid, user-entered email address
+         * @param username A valid Salesforce username or email
+         * @param password The user-entered new password
+         * @param firstName The user-entered first name
+         * @param lastName The user-entered last name
+         */
+        data class UserData(
+            val email: String,
+            val username: String,
+            val password: String,
+            val firstName: String,
+            val lastName: String
+        ) {
+            fun toJson() = JSONObject().apply {
+                put("email", email)
+                put("username", username)
+                put("password", password)
+                put("firstName", firstName)
+                put("lastName", lastName)
+            }
+        }
+    }
+
+    // endregion
     // region Salesforce Identity API Headless Forgot Password Flow
 
     override suspend fun startPasswordReset(
@@ -443,60 +588,12 @@ internal class NativeLoginManager(
         otp: String,
         otpIdentifier: String,
         otpVerificationMethod: OtpVerificationMethod
-    ): NativeLoginResult {
-        // Validate parameters.
-        val trimmedOtp = otp.trim()
-
-        // Generate code verifier and code challenge.
-        val codeVerifier = getRandom128ByteKey()
-        val codeChallenge = getSHA256Hash(codeVerifier)
-
-        // Determine the OTP verification method.
-        otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue
-
-        // Generate the authorization.
-        val authorization = generateColonConcatenatedBase64String(
-            value1 = otpIdentifier,
-            value2 = trimmedOtp
-        )
-
-        // Generate the authorization request headers.
-        val authorizationRequestHeaders = hashMapOf(
-            AUTH_REQUEST_TYPE_HEADER_NAME to AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN,
-            AUTH_VERIFICATION_TYPE_HEADER_NAME to otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue,
-            CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
-            AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $authorization"
-        )
-
-        // Generate the authorization request body.
-        val authorizationRequestBodyString = createRequestBody(
-            RESPONSE_TYPE to CODE_CREDENTIALS,
-            CLIENT_ID to clientId,
-            REDIRECT_URI to redirectUri,
-            CODE_CHALLENGE to codeChallenge,
-        )
-
-        // Create the authorization request.
-        val authorizationRequest = RestRequest(
-            POST,
-            LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH",
-            authorizationRequestBodyString,
-            authorizationRequestHeaders,
-        )
-
-        /*
-         * Submit the authorization request, fetch the authorization response,
-         * submit the access token request and return an appropriate login
-         * result.
-         */
-        return submitAccessTokenRequest(
-            authorizationResponse = suspendedRestCall(
-                authorizationRequest
-            ) ?: return UnknownError,
-            codeVerifier = codeVerifier
-        )
-    }
+    ) = submitAuthorizationRequest(
+        authRequestType = AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN,
+        otp = otp,
+        identifier = otpIdentifier,
+        otpVerificationMethod = otpVerificationMethod
+    )
 
     /**
      * A data class for the start password reset request body.
@@ -674,6 +771,78 @@ internal class NativeLoginManager(
     )
 
     /**
+     * Submits an authorization request to the Salesforce Identity API and, on
+     * success, submits the access token request.
+     * @param authRequestType The Salesforce Identity API authorization request
+     * type header value
+     * @param otp A one-time-password (OTP) previously issued by the Salesforce
+     * Identity API
+     * @param identifier A OTP or request identifier previously issued by the
+     * Salesforce Identity API to match the provided OTP
+     * @param otpVerificationMethod The OTP verification method used to obtain
+     * the identifier from the Salesforce Identity API
+     * @return A native login result indicating success or one of several
+     * possible failures, including both in-app and Salesforce Identity API
+     * results
+     */
+    private suspend fun submitAuthorizationRequest(
+        authRequestType: String,
+        otp: String,
+        identifier: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ): NativeLoginResult {
+        // Validate parameters.
+        val trimmedOtp = otp.trim()
+
+        // Generate code verifier and code challenge.
+        val codeVerifier = getRandom128ByteKey()
+        val codeChallenge = getSHA256Hash(codeVerifier)
+
+        // Generate the authorization.
+        val authorization = generateColonConcatenatedBase64String(
+            value1 = identifier,
+            value2 = trimmedOtp
+        )
+
+        // Generate the authorization request headers.
+        val authorizationRequestHeaders = hashMapOf(
+            AUTH_REQUEST_TYPE_HEADER_NAME to authRequestType,
+            AUTH_VERIFICATION_TYPE_HEADER_NAME to otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue,
+            CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
+            AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $authorization"
+        )
+
+        // Generate the authorization request body.
+        val authorizationRequestBodyString = createRequestBody(
+            RESPONSE_TYPE to CODE_CREDENTIALS,
+            CLIENT_ID to clientId,
+            REDIRECT_URI to redirectUri,
+            CODE_CHALLENGE to codeChallenge,
+        )
+
+        // Create the authorization request.
+        val authorizationRequest = RestRequest(
+            POST,
+            LOGIN,
+            "$loginUrl$OAUTH_AUTH_PATH",
+            authorizationRequestBodyString,
+            authorizationRequestHeaders,
+        )
+
+        /*
+         * Submit the authorization request, fetch the authorization response,
+         * submit the access token request and return an appropriate login
+         * result.
+         */
+        return submitAccessTokenRequest(
+            authorizationResponse = suspendedRestCall(
+                authorizationRequest
+            ) ?: return UnknownError,
+            codeVerifier = codeVerifier
+        )
+    }
+
+    /**
      * Reacts to a response from the Headless Identity API authorization
      * endpoint to initiate the token exchange, request a granted access token
      * and create the user's session.
@@ -760,6 +929,7 @@ internal class NativeLoginManager(
         private const val AUTH_REQUEST_TYPE_HEADER_NAME = "Auth-Request-Type"
         private const val AUTH_REQUEST_TYPE_VALUE_VALUE_NAMED_USER = "Named-User"
         private const val AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN = "passwordless-login"
+        private const val AUTH_REQUEST_TYPE_VALUE_USER_REGISTRATION = "user-registration"
 
         private const val AUTH_VERIFICATION_TYPE_HEADER_NAME = "Auth-Verification-Type"
 
