@@ -310,7 +310,7 @@ internal class NativeLoginManager(
                 otpVerificationMethod = otpVerificationMethodString
             ).toJson()
         }.onFailure { e ->
-            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start password reset request body due to an encoding error with message '${e.message}'.", e)
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start registration request body due to an encoding error with message '${e.message}'.", e)
             return StartRegistrationResult(UnknownError)
         }.getOrNull()
 
