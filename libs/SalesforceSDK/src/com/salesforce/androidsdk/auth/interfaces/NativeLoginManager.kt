@@ -88,6 +88,9 @@ interface NativeLoginManager {
      * Submits a request to start a user registration to the Salesforce Identity
      * API headless registration flow.  This fulfills step four of the headless
      * registration flow.
+     *
+     * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_registration_public_clients.htm&type=5
+     *
      * @param email The user-entered email address
      * @param firstName The user-entered first name
      * @param lastName The user-entered last name
@@ -114,6 +117,9 @@ interface NativeLoginManager {
      * Submits a request to complete a user registration to the Salesforce
      * Identity API headless registration flow.  This fulfills step eight of the
      * headless registration flow.
+     *
+     * See https://help.salesforce.com/s/articleView?id=sf.remoteaccess_headless_registration_public_clients.htm&type=5
+     *
      * @param otp A user-entered one-time-password
      * @param requestIdentifier The request identifier issued by the Salesforce
      * Identity API headless registration flow in the start registration method
