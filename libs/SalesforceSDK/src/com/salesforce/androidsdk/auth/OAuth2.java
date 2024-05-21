@@ -141,6 +141,9 @@ public class OAuth2 {
     /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
     protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
 
+    /** Endpoint path for Salesforce Identity API initialize headless registration flow */
+    protected static String OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION = "/services/auth/headless/init/registration";
+
     /** Endpoint path for Salesforce Identity API headless forgot password flow */
     protected static String OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD = "/services/auth/headless/forgot_password";
 
