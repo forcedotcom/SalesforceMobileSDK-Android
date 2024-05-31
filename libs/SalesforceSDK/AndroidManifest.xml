@@ -18,6 +18,8 @@
     <!-- USE_BIOMETRIC is available on API 28 and higher -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <uses-permission android:name="android.permission.CAMERA"/>
+
     <application>
 
         <!-- Metadata for supported app restrictions -->

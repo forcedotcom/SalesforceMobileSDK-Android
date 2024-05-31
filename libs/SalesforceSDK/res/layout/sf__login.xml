@@ -55,5 +55,20 @@
             android:textAllCaps="false"
             android:textSize="14sp"
             android:textStyle="bold"/>
+
+        <Button android:id="@+id/sf__qr_login_button"
+            android:text="@string/sf__login_with_qr"
+            android:visibility="gone"
+            android:onClick="onQRLoginClick"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/sf__primary_color_button"
+            android:textColor="?attr/sfColorSecondary"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
     </LinearLayout>
 </RelativeLayout>
