@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
+    <string name="oauthRedirectURI">mobilesdk://android/pn/tester</string>
+    <string name="remoteAccessConsumerKey">3MVG9.AgwtoIvERSd8i8lePrqfnKG_MM7P9KAJ4g53iaPA4EN8zUt3__o.8YA_hCeRn_kGR.Xe9I9_pnsFuAW</string>
+
     <!-- Mobile SDK Sample App (cs1.mobilesdk.ee.org) -->
-    <string name="remoteAccessConsumerKey">3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw</string>
-    <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>
+<!--    <string name="remoteAccessConsumerKey">3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw</string>-->
+<!--    <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>-->
     <string-array name="oauthScopes">
         <item>api</item>
         <item>web</item>
