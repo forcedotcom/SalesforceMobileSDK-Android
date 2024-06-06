@@ -581,7 +581,12 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                 if (result.contents != null) {
                     val qrContents = result.contents
                     Log.i(TAG, "qrContents-->" + qrContents)
-                    parseQRContents(qrContents)
+                    parseQRContents(qrContents)?.let {
+                        webviewHelper?.loginWithFrontdoorBridgeUrl(
+                            it.frontdoorBridgeUrl,
+                            it.pkceCodeVerifier
+                        )
+                    }
                 }
                 else {
                     // TBD
