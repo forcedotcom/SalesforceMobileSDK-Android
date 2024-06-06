@@ -258,6 +258,9 @@ open class SalesforceSDKManager protected constructor(
             field = value
         }
 
+    @set:Synchronized
+    open var isQRLoginFlowEnabled = false
+
     /** Indicates if logout is in progress */
     var isLoggingOut = false
         private set
