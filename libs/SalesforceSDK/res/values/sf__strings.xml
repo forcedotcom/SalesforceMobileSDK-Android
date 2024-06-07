@@ -27,7 +27,6 @@
 	<string name="sf__launch_idp">Log In with IDP App</string>
 	<string name="sf__login_with_biometric">Log In with Biometric</string>
 	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
-	<string name="sf__login_with_qr">Log In with QR</string>
 
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>

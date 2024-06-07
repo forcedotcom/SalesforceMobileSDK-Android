@@ -56,15 +56,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-			<!-- Login with QR -->
-			<intent-filter>
-				<data android:scheme="restexplorer"
-					android:host="*"
-					android:path="/login/qr" />
-				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.BROWSABLE" />
-				<category android:name="android.intent.category.DEFAULT" />
-			</intent-filter>
         </activity>
 
 	</application>

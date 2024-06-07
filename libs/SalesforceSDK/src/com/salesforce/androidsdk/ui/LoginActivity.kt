@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.R.attr.action
-import android.R.attr.data
 import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
@@ -48,7 +46,6 @@ import android.os.Bundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.security.KeyChain.choosePrivateKeyAlias
-import android.util.Log
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.Menu
@@ -62,9 +59,6 @@ import android.widget.Button
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
 import android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -84,16 +78,12 @@ import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.content.ContextCompat.registerReceiver
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanIntentResult
-import com.journeyapps.barcodescanner.ScanOptions
 import com.salesforce.androidsdk.R.id.sf__bio_login_button
 import com.salesforce.androidsdk.R.id.sf__idp_login_button
 import com.salesforce.androidsdk.R.id.sf__menu_clear_cookies
 import com.salesforce.androidsdk.R.id.sf__menu_pick_server
 import com.salesforce.androidsdk.R.id.sf__menu_reload
 import com.salesforce.androidsdk.R.id.sf__oauth_webview
-import com.salesforce.androidsdk.R.id.sf__qr_login_button
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
@@ -157,8 +147,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     private var biometricAuthenticationButton: Button? = null
 
-    private var qrReaderLauncher: ActivityResultLauncher<Intent>? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -193,11 +181,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         if (salesforceSDKManager.isIDPLoginFlowEnabled) {
             findViewById<Button>(sf__idp_login_button).visibility = VISIBLE
-        }
-
-        if (salesforceSDKManager.isQRLoginFlowEnabled) {
-            findViewById<Button>(sf__qr_login_button).visibility = VISIBLE
-            prepareQRReader()
         }
 
         val biometricAuthenticationManager = (salesforceSDKManager.biometricAuthenticationManager as? BiometricAuthenticationManager)
@@ -259,11 +242,13 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
             ActivityInfo.SCREEN_ORIENTATION_FULL_USER
 
-        if (intent.action == Intent.ACTION_VIEW
-            && intent.data != null
-            && intent.data?.path == "/login/qr") {
+        // QR login
+        if (salesforceSDKManager.isQRLoginFlowEnabled) {
+            if ((intent.action == Intent.ACTION_VIEW)
+                && intent.data?.path?.contains(LOGIN_QR_PATH) == true) {
+                loginFromQR(intent.data?.query)
+            }
 
-            loginFromQR("?${intent.data?.query}")
         }
     }
 
@@ -575,50 +560,24 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
-    internal fun prepareQRReader() {
-        qrReaderLauncher = registerForActivityResult<Intent, ActivityResult>(
-            ActivityResultContracts.StartActivityForResult()
-        ) { resultData: ActivityResult ->
-            if (resultData.resultCode == RESULT_OK) {
-
-                val result = ScanIntentResult.parseActivityResult(
-                    resultData.resultCode,
-                    resultData.data
-                )
-
-                if (result.contents != null) {
-                    val qrContents = result.contents
-                    Log.i(TAG, "qrContents-->" + qrContents)
-                    loginFromQR(qrContents)
-                }
-                else {
-                    // TBD
-                }
-            }
-        }
-    }
-    internal fun presentQRReader() {
-         qrReaderLauncher?.launch(ScanContract().createIntent(this, ScanOptions()));
-    }
-
-    data class BridgeInfo(
+    private data class BridgeInfo(
         val frontdoorBridgeUrl: String,
         val pkceCodeVerifier: String
     )
 
-    internal fun parseQRContents(contents: String): BridgeInfo? {
-        val queryParams = getQueryParams(contents)
-        val bridgeJsonEncoded = queryParams["bridgeJson"]
-        if (bridgeJsonEncoded != null) {
-            val bridgeJsonDecoded = URLDecoder.decode(bridgeJsonEncoded, "UTF-8")
-            return parseBridgeInfo(bridgeJsonDecoded)
-        } else {
-            return null
+    private fun parseQRContents(contents: String?): BridgeInfo? {
+        if (contents != null) {
+            val bridgeJsonEncoded = getQueryParams(contents)[BRIDGE_JSON_PARAM]
+            if (bridgeJsonEncoded != null) {
+                val bridgeJsonDecoded = URLDecoder.decode(bridgeJsonEncoded, "UTF-8")
+                return parseBridgeInfo(bridgeJsonDecoded)
+            }
         }
+        return null
     }
 
-    internal fun getQueryParams(urlString: String): Map<String, String> {
-        val query = urlString.substringAfter("?", "")
+    private fun getQueryParams(urlOrQueryString: String): Map<String, String> {
+        val query = urlOrQueryString.substringAfter("?", urlOrQueryString /* if we are just given the query */)
         return query.split("&")
             .map { it.split("=") }
             .associate {
@@ -628,24 +587,35 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             }
     }
 
-    internal fun parseBridgeInfo(jsonString: String): BridgeInfo {
+    private fun parseBridgeInfo(jsonString: String): BridgeInfo {
         val jsonObject = JSONObject(jsonString)
-        val frontdoorBridgeUrl = jsonObject.getString("frontdoor_bridge_url")
-        val pkceCodeVerifier = jsonObject.getString("pkce_code_verifier")
-        Log.i(TAG, "frontdoot_bridge_url-->" + frontdoorBridgeUrl)
-        Log.i(TAG,"pkce_code_verifier-->" + pkceCodeVerifier)
+        val frontdoorBridgeUrl = jsonObject.getString(FRONTDOOR_BRIDGE_URL_KEY)
+        val pkceCodeVerifier = jsonObject.getString(PKCE_CODE_VERIFIER_KEY)
         return BridgeInfo(frontdoorBridgeUrl, pkceCodeVerifier)
     }
 
-    open fun onQRLoginClick(view: View?) = presentQRReader()
-
-    fun loginFromQR(qrContents: String) {
+    /**
+     * Login with qr contents
+     * @param qrContents a url or url query containing a bridgeJson parameter
+     *      bridgeJson parameter should contain a url-encoded JSON with two values: frontdoor_bridge_url and pkce_code_verifier
+     * NB: does nothing if qrContents is null or bridgeJson parameter is not found
+     */
+    fun loginFromQR(qrContents: String?) {
         parseQRContents(qrContents)?.let {
-            webviewHelper?.loginWithFrontdoorBridgeUrl(
+            loginWithFrontdoorBridgeUrl(
                 it.frontdoorBridgeUrl,
                 it.pkceCodeVerifier
             )
         }
+    }
+
+    /**
+     * Login with a frontdoor bridge url and PKCE code verifier
+     * @param frontdoorBridgeUrl
+     * @param pkceCodeVerifier
+     */
+    fun loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl: String, pkceCodeVerifier: String) {
+        webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
     }
 
     internal fun presentBiometric() {
@@ -759,6 +729,11 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         const val PICK_SERVER_REQUEST_CODE = 10
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
+
+        const val LOGIN_QR_PATH = "/login/qr"
+        const val BRIDGE_JSON_PARAM = "bridgeJson"
+        const val FRONTDOOR_BRIDGE_URL_KEY = "frontdoor_bridge_url"
+        const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
     }
 }
 

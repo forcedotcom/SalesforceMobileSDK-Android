@@ -25,8 +25,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
     implementation("androidx.window:window:1.3.0")
     implementation("androidx.window:window-core:1.3.0")
-    implementation("com.google.zxing:core:3.4.1")
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     androidTestImplementation("androidx.test:runner:1.6.0")
     androidTestImplementation("androidx.test:rules:1.6.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.0")
