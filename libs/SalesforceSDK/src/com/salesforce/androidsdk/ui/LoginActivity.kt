@@ -117,6 +117,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.net.URLDecoder
 import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
 import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
 
@@ -591,9 +592,14 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     }
 
     private fun extractBridgeJsonParam(qrContents: String): String? {
-        val regex = """\?bridgeJson=(\{.*\})""".toRegex()
-        val matchResult = regex.find(qrContents)
-        return matchResult?.groups?.get(1)?.value
+        // Coming from intent (external QR reader) we have ?bridgeJson={...}
+        // Coming from embedded QR reader we have ?bridgeJson=%7B...%7D
+        val regexExternal = """\?bridgeJson=(\{.*\})""".toRegex()
+        val regexInternal = """\?bridgeJson=(%7B.*%7D)""".toRegex()
+        return regexExternal.find(qrContents)?.groups?.get(1)?.value
+            ?: regexInternal.find(qrContents)?.groups?.get(1)?.value?.let {
+                URLDecoder.decode(it, "UTF-8")
+            }
     }
 
     private fun parseBridgeInfo(jsonString: String): BridgeInfo {
