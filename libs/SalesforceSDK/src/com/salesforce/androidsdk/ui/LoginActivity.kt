@@ -605,7 +605,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     private fun parseBridgeInfo(jsonString: String): BridgeInfo {
         val jsonObject = JSONObject(jsonString)
         val frontdoorBridgeUrl = jsonObject.getString(FRONTDOOR_BRIDGE_URL_KEY)
-        val pkceCodeVerifier = jsonObject.getString(PKCE_CODE_VERIFIER_KEY)
+        val pkceCodeVerifier = jsonObject.optString(PKCE_CODE_VERIFIER_KEY, "")
         return BridgeInfo(frontdoorBridgeUrl, pkceCodeVerifier)
     }
 
@@ -613,6 +613,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * Login with qr contents
      * @param qrContents a url or url query containing a bridgeJson parameter
      *      bridgeJson parameter should contain a url-encoded JSON with two values: frontdoor_bridge_url and pkce_code_verifier
+     *      if not pkce_code_verifier is specified we use user agent flow
      * @return true if a frontdoor bridge url could be extracted from qrContents
      */
     fun loginFromQR(qrContents: String?): Boolean {
