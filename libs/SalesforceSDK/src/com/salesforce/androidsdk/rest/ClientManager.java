@@ -606,7 +606,8 @@ public class ClientManager {
                         	if (Looper.myLooper() == null) {
                                 Looper.prepare();
                         	}
-                            SalesforceSDKManager.getInstance().logout(null, false);
+                            SalesforceSDKManager.getInstance()
+                                    .logout(null, null, false, OAuth2.LogoutReason.TOKEN_EXPIRED);
                         }
 
                         // Broadcasts an intent that the access token has been revoked.

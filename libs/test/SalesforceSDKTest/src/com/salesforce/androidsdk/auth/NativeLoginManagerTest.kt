@@ -39,7 +39,8 @@ class NativeLoginManagerTest {
 
     @After
     fun tearDown() {
-        SalesforceSDKManager.getInstance().userAccountManager.signoutCurrentUser(null)
+        SalesforceSDKManager.getInstance().userAccountManager
+            .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
     }
 
     @Test
@@ -67,7 +68,8 @@ class NativeLoginManagerTest {
         addUserAccount()
         Assert.assertTrue("Should show back button when there is a logged in user.", mgr.shouldShowBackButton)
 
-        SalesforceSDKManager.getInstance().userAccountManager.signoutCurrentUser(null)
+        SalesforceSDKManager.getInstance().userAccountManager
+            .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
         Assert.assertFalse("Should not show back button with no users logged in.", mgr.shouldShowBackButton)
     }
 

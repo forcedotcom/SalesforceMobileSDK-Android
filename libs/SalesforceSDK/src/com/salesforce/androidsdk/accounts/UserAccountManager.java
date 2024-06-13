@@ -41,6 +41,7 @@ import androidx.annotation.Nullable;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
@@ -385,6 +386,17 @@ public class UserAccountManager {
 	}
 
 	/**
+	 * Logs the current user out.
+	 *
+	 * @param frontActivity Front activity.
+	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
+	 * @param reason The reason for the logout.
+	 */
+	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
+		SalesforceSDKManager.getInstance().logout(null, frontActivity, showLoginPage, reason);
+	}
+
+	/**
 	 * Logs the specified user out. If the user specified is not the current
 	 * user, push notification un-registration will not take place.
 	 *
@@ -407,6 +419,20 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
+	}
+
+	/**
+	 * Logs the specified user out. If the user specified is not the current
+	 * user, push notification un-registration will not take place.
+	 *
+	 * @param userAccount User account.
+	 * @param frontActivity Front activity.
+	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
+	 * @param reason The reason for the logout.
+	 */
+	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
+		final Account account = buildAccount(userAccount);
+		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage, reason);
 	}
 
 	/**
