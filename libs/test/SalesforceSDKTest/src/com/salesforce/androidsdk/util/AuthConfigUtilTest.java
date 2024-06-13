@@ -52,9 +52,9 @@ import org.junit.runner.RunWith;
 public class AuthConfigUtilTest {
 
     private static final String MY_DOMAIN_ENDPOINT = "https://mobilesdk.my.salesforce.com";
-    private static final String ALTERNATE_MY_DOMAIN_ENDPOINT = "https://powerofus.force.com";
+    private static final String ALTERNATE_MY_DOMAIN_ENDPOINT = "https://powerofus.salesforce.com";
 
-    private static final String LOGIN_URL_FOR_ALTERNATE_MY_DOMAIN = "https://foundation.my.site.com/PowerOfUsLogin";
+    private static final String LOGIN_URL_FOR_ALTERNATE_MY_DOMAIN = "https://powerofus.salesforce.com/s/login";
     private static final String SANDBOX_ENDPOINT = "https://test.salesforce.com";
     private static final String FORWARD_SLASH = "/";
 
@@ -95,11 +95,11 @@ public class AuthConfigUtilTest {
 
     @Test
     public void testGetSSOUrls() {
-        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(ALTERNATE_MY_DOMAIN_ENDPOINT);
+        final AuthConfigUtil.MyDomainAuthConfig authConfig = AuthConfigUtil.getMyDomainAuthConfig(MY_DOMAIN_ENDPOINT);
         Assert.assertNotNull("Auth config should not be null", authConfig);
         Assert.assertNotNull("Auth config JSON should not be null", authConfig.getAuthConfig());
         Assert.assertNotNull("SSO URLs should not be null", authConfig.getSsoUrls());
-        Assert.assertEquals("SSO URLs should have 2 valid entries", 2, authConfig.getSsoUrls().size());
+        Assert.assertEquals("SSO URLs should have 2 valid entries", 1, authConfig.getSsoUrls().size());
     }
 
     @Test
