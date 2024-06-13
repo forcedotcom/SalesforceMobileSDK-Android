@@ -606,6 +606,9 @@ public class ClientManager {
                         	if (Looper.myLooper() == null) {
                                 Looper.prepare();
                         	}
+                            // Note: As of writing (2024) this call will never succeed because revoke API is an
+                            // authenticated endpoint.  However, there is no harm in attempting and the debug logs
+                            // produced may help developers better understand the state of their app.
                             SalesforceSDKManager.getInstance()
                                     .logout(null, null, false, OAuth2.LogoutReason.TOKEN_EXPIRED);
                         }

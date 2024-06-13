@@ -211,7 +211,7 @@ public class OAuth2 {
         @NonNull
         @Override
         public String toString() {
-            return this.name().toLowerCase();
+            return this.name().toLowerCase(Locale.ROOT);
         }
     }
 
