@@ -31,6 +31,7 @@ import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import java.util.Locale
 
 /**
  * Listens for the logout complete event, and acts on it.
@@ -41,12 +42,13 @@ abstract class LogoutCompleteReceiver : BroadcastReceiver() {
             onLogoutComplete()
 
             val reason = intent.getStringExtra(SalesforceSDKManager.LOGOUT_REASON_KEY) ?: LogoutReason.UNKNOWN.toString()
-            onLogoutComplete(LogoutReason.valueOf(reason))
+            onLogoutComplete(LogoutReason.valueOf(reason.uppercase(Locale.ROOT)))
         }
     }
 
     /** @deprecated Will be removed in 13.0.  Use the new [onLogoutComplete] that provides a [LogoutReason] instead. */
     protected abstract fun onLogoutComplete()
 
-    protected abstract fun onLogoutComplete(reason: LogoutReason)
+    // TODO: Make this abstract in 13.0 to replace the above onLogoutComplete()
+    protected open fun onLogoutComplete(reason: LogoutReason) { }
 }
