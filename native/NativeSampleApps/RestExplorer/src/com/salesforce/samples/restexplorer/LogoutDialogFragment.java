@@ -34,6 +34,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.DialogFragment;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * A simple dialog fragment to provide options at logout.
@@ -52,7 +53,8 @@ public class LogoutDialogFragment extends DialogFragment {
 		return new AlertDialog.Builder(getActivity())
 				.setTitle(R.string.logout_title)
 				.setPositiveButton(R.string.logout_yes,
-						(dialog, which) -> SalesforceSDKManager.getInstance().logout(getActivity()))
+						(dialog, which) -> SalesforceSDKManager.getInstance()
+								.logout(null, getActivity(), true, OAuth2.LogoutReason.USER_LOGOUT))
 				.setNegativeButton(R.string.logout_cancel, null)
 				.create();
 	}

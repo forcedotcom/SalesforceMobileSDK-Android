@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.security.ScreenLockManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -256,7 +257,7 @@ public class ScreenLockActivity extends FragmentActivity {
                 SharedPreferences accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                         + account.getUserLevelFilenameSuffix(), Context.MODE_PRIVATE);
                 if (accountPrefs.getBoolean(SCREEN_LOCK, false)) {
-                    manager.signoutUser(account, null);
+                    manager.signoutUser(account, null, true, OAuth2.LogoutReason.USER_LOGOUT);
                 }
             }
         }

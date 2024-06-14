@@ -90,6 +90,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -989,7 +990,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                                 revokeRefreshToken(
                                     DEFAULT,
                                     uri,
-                                    duplicateUserAccount.refreshToken
+                                    duplicateUserAccount.refreshToken,
+                                    OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
                                 )
                             }
                         }
@@ -1010,8 +1012,9 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                                     LENGTH_LONG
                                 ).show()
                             }
+                            // This is an unexpected logout(s) because we only support one Bio Auth user.
                             instance.userAccountManager.signoutUser(
-                                existingUser, activity, false
+                                existingUser, activity, false, OAuth2.LogoutReason.UNEXPECTED
                             )
                         }
                     })

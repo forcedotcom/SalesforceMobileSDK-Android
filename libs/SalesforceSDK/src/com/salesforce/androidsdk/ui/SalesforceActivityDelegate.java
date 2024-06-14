@@ -35,6 +35,7 @@ import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -93,7 +94,8 @@ public class SalesforceActivityDelegate {
                 @Override
                 public void authenticatedRestClient(RestClient client) {
                     if (client == null) {
-                        SalesforceSDKManager.getInstance().logout(activity);
+                        SalesforceSDKManager.getInstance()
+                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE);
                         return;
                     }
                     ((SalesforceActivityInterface) activity).onResume(client);

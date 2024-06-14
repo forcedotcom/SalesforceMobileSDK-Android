@@ -86,6 +86,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
@@ -817,7 +818,8 @@ open class SalesforceSDKManager protected constructor(
         loginServer: String?,
         account: Account?,
         frontActivity: Activity?,
-        isLastAccount: Boolean
+        isLastAccount: Boolean,
+        logoutReason: LogoutReason,
     ) {
         val intentFilter = IntentFilter(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
 
@@ -839,7 +841,8 @@ open class SalesforceSDKManager protected constructor(
                         refreshToken,
                         loginServer,
                         account,
-                        frontActivity
+                        frontActivity,
+                        logoutReason,
                     )
                 }
             }
@@ -871,9 +874,10 @@ open class SalesforceSDKManager protected constructor(
      * account
      */
     open fun logout(
-        /* Note: Kotlin's @JvmOverloads annotations does not generate this overload */
+        /* Note: Kotlin's @JvmOverloads annotations does not correctly
+           generate this overload due to a JVM naming conflict.         */
         frontActivity: Activity?,
-        showLoginPage: Boolean = true
+        showLoginPage: Boolean = true,
     ) {
         logout(null, frontActivity, showLoginPage)
     }
@@ -892,7 +896,34 @@ open class SalesforceSDKManager protected constructor(
     open fun logout(
         account: Account? = null,
         frontActivity: Activity?,
-        showLoginPage: Boolean = true
+        showLoginPage: Boolean = true,
+    ) {
+        logout(account, frontActivity, showLoginPage)
+    }
+
+    // Note the below overload exists because @JvmOverloads generates non-overrideable
+    // signatures for all but the overload with all params. see:
+    // https://youtrack.jetbrains.com/issue/KT-33240/Generated-overloads-for-JvmOverloads-on-open-methods-should-be-final
+    //
+    // I highly doubt any apps are overriding the above function but it is technically breaking and shouldn't be
+    // combined until Mobile SDK 13.0.  TODO: remove above method and move @JvmOverloads to below overload -- or remove open.
+
+    /**
+     * Destroys the stored authentication credentials (removes the account)
+     * and, if requested, restarts the app.
+     *
+     * @param account The user account to logout. Defaults to the current user
+     * account
+     * @param frontActivity The front activity
+     * @param showLoginPage If true, displays the login page after removing the
+     * account
+     * @param reason The reason for the logout.
+     */
+    open fun logout(
+        account: Account? = null,
+        frontActivity: Activity?,
+        showLoginPage: Boolean = true,
+        reason: LogoutReason = LogoutReason.UNKNOWN,
     ) {
         createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
@@ -941,7 +972,8 @@ open class SalesforceSDKManager protected constructor(
                 loginServer,
                 accountToLogout,
                 frontActivity,
-                numAccounts == 1
+                isLastAccount = (numAccounts == 1),
+                reason,
             )
         } else {
             removeAccount(
@@ -950,7 +982,8 @@ open class SalesforceSDKManager protected constructor(
                 refreshToken,
                 loginServer,
                 accountToLogout,
-                frontActivity
+                frontActivity,
+                reason,
             )
         }
     }
@@ -972,7 +1005,8 @@ open class SalesforceSDKManager protected constructor(
         refreshToken: String?,
         loginServer: String?,
         account: Account?,
-        frontActivity: Activity?
+        frontActivity: Activity?,
+        logoutReason: LogoutReason,
     ) {
         cleanUp(
             frontActivity,
@@ -990,7 +1024,8 @@ open class SalesforceSDKManager protected constructor(
                     revokeRefreshToken(
                         DEFAULT,
                         URI(loginServer),
-                        refreshToken
+                        refreshToken,
+                        logoutReason,
                     )
                 }.onFailure { e ->
                     w(TAG, "Revoking token failed", e)
@@ -1181,7 +1216,7 @@ open class SalesforceSDKManager protected constructor(
 
         "Logout" to object : DevActionHandler {
             override fun onSelected() {
-                logout(frontActivity = frontActivity)
+                logout(frontActivity = frontActivity, reason = LogoutReason.USER_LOGOUT)
             }
         },
 
