@@ -35,7 +35,7 @@ import android.database.Observable;
  */
 public class EventsObservable extends Observable<EventsObserver> {
 
-    public static enum EventType {
+    public enum EventType {
     	AppCreateComplete,
     	AppLocked,
     	AppUnlocked,
@@ -51,8 +51,8 @@ public class EventsObservable extends Observable<EventsObserver> {
     }
 
     public static class Event {
-    	private EventType type;
-		private Object data;
+    	private final EventType type;
+		private final Object data;
 
 		public Event(EventType eventType) {
 			this(eventType, null);

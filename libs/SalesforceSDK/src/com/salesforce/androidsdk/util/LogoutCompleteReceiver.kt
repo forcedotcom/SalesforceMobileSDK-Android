@@ -24,29 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
+package com.salesforce.androidsdk.util
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
-import java.util.Objects;
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 
 /**
  * Listens for the logout complete event, and acts on it.
- *
- * @author bhariharan
  */
-public abstract class LogoutCompleteReceiver extends BroadcastReceiver {
+abstract class LogoutCompleteReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) {
+            onLogoutComplete()
 
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (Objects.equals(intent.getAction(), SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)) {
-            onLogoutComplete();
+            val reason = intent.getStringExtra(SalesforceSDKManager.LOGOUT_REASON_KEY) ?: LogoutReason.UNKNOWN.toString()
+            onLogoutComplete(LogoutReason.valueOf(reason))
         }
     }
 
-    protected abstract void onLogoutComplete();
+    /** @deprecated Will be removed in 13.0.  Use the new [onLogoutComplete] that provides a [LogoutReason] instead. */
+    protected abstract fun onLogoutComplete()
+
+    protected abstract fun onLogoutComplete(reason: LogoutReason)
 }

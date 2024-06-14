@@ -1015,7 +1015,7 @@ open class SalesforceSDKManager protected constructor(
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
-        notifyLogoutComplete(showLoginPage)
+        notifyLogoutComplete(showLoginPage, logoutReason)
 
         // Revoke the existing refresh token
         if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
@@ -1038,9 +1038,9 @@ open class SalesforceSDKManager protected constructor(
      * Sends the logout complete event.
      * @param showLoginPage When true, shows the login page
      */
-    private fun notifyLogoutComplete(showLoginPage: Boolean) {
-        EventsObservable.get().notifyEvent(LogoutComplete)
-        sendLogoutCompleteIntent()
+    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason) {
+        EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
+        sendLogoutCompleteIntent(logoutReason)
         if (showLoginPage) {
             startSwitcherActivityIfRequired()
         }
@@ -1317,11 +1317,12 @@ open class SalesforceSDKManager protected constructor(
     } ?: ""
 
     /** Sends the logout completed intent */
-    private fun sendLogoutCompleteIntent() =
+    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason) =
         appContext.sendBroadcast(Intent(
             LOGOUT_COMPLETE_INTENT_ACTION
         ).apply {
             setPackage(appContext.packageName)
+            putExtra(LOGOUT_REASON_KEY, logoutReason.toString())
         })
 
     /**
@@ -1503,6 +1504,9 @@ open class SalesforceSDKManager protected constructor(
 
         /** An intent action indicating logout was completed */
         const val LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE"
+
+        /** Key for Logout Reason sent with the logout intent */
+        internal const val LOGOUT_REASON_KEY = "logout_reason"
 
         /** The default app name */
         private const val DEFAULT_APP_DISPLAY_NAME = "Salesforce"
