@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.IntentFilter;
 import android.view.KeyEvent;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 
@@ -145,7 +146,10 @@ public class SalesforceActivityDelegate {
     private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
 
         @Override
-        protected void onLogoutComplete() {
+        protected void onLogoutComplete() { }
+
+        @Override
+        protected void onLogoutComplete(@NonNull OAuth2.LogoutReason reason) {
             ((SalesforceActivityInterface) activity).onLogoutComplete();
         }
     }
