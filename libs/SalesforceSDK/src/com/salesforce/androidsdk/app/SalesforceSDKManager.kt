@@ -50,6 +50,7 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
+import android.util.Log
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
@@ -716,6 +717,13 @@ open class SalesforceSDKManager protected constructor(
             (biometricAuthenticationManager as BiometricAuthenticationManager)
                 .cleanUp(userAccountResolved)
         }
+
+
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
     }
 
     /**

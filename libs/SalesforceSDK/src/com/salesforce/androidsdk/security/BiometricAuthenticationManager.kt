@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.security
 
 import android.content.Intent
+import android.util.Log
 import androidx.fragment.app.FragmentManager
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -114,6 +115,14 @@ internal class BiometricAuthenticationManager: AppLockManager(
         if (!biometricPrompt.isAdded) {
             biometricPrompt.show(fragmentManager, null)
         }
+
+
+
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
+        Log.i("test", "test codecov")
     }
 
     companion object {
