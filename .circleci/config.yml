@@ -1,8 +1,11 @@
+orbs:
+  codecov: codecov/codecov@4.0.1
+
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2023.11.1-node
+  - &cimg cimg/android:2024.04.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-  - &default-api-level 33
+  - &default-api-level 34
 
   - &gradle-cache-key
       gradle-cache-v2-{{ checksum "build.gradle.kts" }}-{{
@@ -188,6 +191,7 @@ jobs:
                 when: always
                 environment:
                   CURRENT_LIB: << parameters.lib >>
+            - codecov/upload    
       - store_artifacts:
           path: firebase/
       - store_artifacts:
@@ -254,6 +258,7 @@ jobs:
               exit 1
             fi
           when: always
+      - codecov/upload
       - store_artifacts:
           path: firebase/
       - store_test_results:
