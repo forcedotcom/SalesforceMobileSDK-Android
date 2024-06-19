@@ -192,7 +192,7 @@ jobs:
                 environment:
                   CURRENT_LIB: << parameters.lib >>
             - codecov/upload:
-                file: firebase/artifacts/coverage.ec
+                file: firebase/artifacts/sdcard/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_artifacts:
@@ -260,7 +260,7 @@ jobs:
             fi
           when: always
       - codecov/upload:
-          file: firebase/artifacts/coverage.ec
+          file: firebase/artifacts/sdcard/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_test_results:
