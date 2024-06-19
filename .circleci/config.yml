@@ -1,5 +1,5 @@
 orbs:
-  codecov: codecov/codecov@4.0.1
+  codecov: codecov/codecov@4.1.0
 
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
@@ -191,7 +191,8 @@ jobs:
                 when: always
                 environment:
                   CURRENT_LIB: << parameters.lib >>
-            - codecov/upload    
+            - codecov/upload:
+                file: firebase/artifacts/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_artifacts:
@@ -258,7 +259,8 @@ jobs:
               exit 1
             fi
           when: always
-      - codecov/upload
+      - codecov/upload:
+          file: firebase/artifacts/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_test_results:
