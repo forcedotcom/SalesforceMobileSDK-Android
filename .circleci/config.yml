@@ -191,8 +191,8 @@ jobs:
                 when: always
                 environment:
                   CURRENT_LIB: << parameters.lib >>
-            - codecov/upload:
-                file: firebase/artifacts/sdcard/coverage.ec
+      - codecov/upload:
+          file: firebase/artifacts/sdcard/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_artifacts:
