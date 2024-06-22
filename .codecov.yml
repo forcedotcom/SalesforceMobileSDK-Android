@@ -1,4 +1,4 @@
-# Validate changes to this class with: curl -X POST --data-binary @codecov.yml https://codecov.io/validate
+# Validate changes to this class with: curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
 
 codecov:
   branch: dev
