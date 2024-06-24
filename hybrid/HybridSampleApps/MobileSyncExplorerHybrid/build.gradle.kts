@@ -7,7 +7,7 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceHybrid"))
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.core:core-ktx:1.13.1")
 }
 
 android {

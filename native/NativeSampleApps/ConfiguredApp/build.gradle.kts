@@ -7,9 +7,9 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.appcompat:appcompat-resources:1.6.1")
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.appcompat:appcompat-resources:1.7.0")
+    implementation("androidx.core:core-ktx:1.13.1")
 }
 
 android {
