@@ -27,16 +27,18 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import android.content.Context;
 import android.content.Intent;
-import androidx.test.rule.ActivityTestRule;
+
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
@@ -45,14 +47,13 @@ public abstract class ReactTestCase {
     private static final long TEST_TIMEOUT_SECONDS = 90;
     public static final String TEST_NAME = "testName";
 
-    @Rule
-    public ActivityTestRule<ReactTestActivity> mActivityRule = new ActivityTestRule<ReactTestActivity>(
-            ReactTestActivity.class, false, false) {
-    };
+    public ActivityScenario<ReactTestActivity> activityScenario;
 
     @After
-    public void finishActivity() {
-        mActivityRule.getActivity().finish();
+    public void tearDown() {
+        if (activityScenario != null) {
+            activityScenario.close();
+        }
     }
 
     protected void runReactNativeTest(String testName) throws InterruptedException {
@@ -66,9 +67,10 @@ public abstract class ReactTestCase {
     }
 
     private TestResult getTestResult(String testName) throws InterruptedException {
-        Intent intent = new Intent();
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Intent intent = new Intent(context, ReactTestActivity.class);
         intent.putExtra(TEST_NAME,testName);
-        mActivityRule.launchActivity(intent);
+        activityScenario = ActivityScenario.launch(intent);
         return TestResult.waitForTestResult(getTestTimeoutSeconds());
     }
 
