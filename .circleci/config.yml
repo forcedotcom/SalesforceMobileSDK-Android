@@ -70,7 +70,7 @@ executors:
     docker:
       - image: *cimg
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx3584m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process'
 
 jobs:
   pr-danger:
@@ -198,6 +198,7 @@ jobs:
       - codecov/upload:
           file: libs/<< parameters.lib >>/build/reports/jacoco/convertedCodeCoverage/convertedCodeCoverage.xml
           flags: << parameters.lib >>
+          validate: false
       - store_artifacts:
           path: firebase/
       - store_artifacts:
