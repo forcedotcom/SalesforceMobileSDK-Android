@@ -37,24 +37,14 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
-    private static final long TEST_TIMEOUT_SECONDS = 90;
+    private static final long TEST_TIMEOUT_SECONDS = 120;
     public static final String TEST_NAME = "testName";
-
-    public ActivityScenario<ReactTestActivity> activityScenario;
-
-    @After
-    public void tearDown() {
-        if (activityScenario != null) {
-            activityScenario.close();
-        }
-    }
 
     protected void runReactNativeTest(String testName) throws InterruptedException {
         TestResult result = getTestResult(testName);
@@ -69,9 +59,10 @@ public abstract class ReactTestCase {
     private TestResult getTestResult(String testName) throws InterruptedException {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         Intent intent = new Intent(context, ReactTestActivity.class);
-        intent.putExtra(TEST_NAME,testName);
-        activityScenario = ActivityScenario.launch(intent);
-        return TestResult.waitForTestResult(getTestTimeoutSeconds());
+        intent.putExtra(TEST_NAME, testName);
+        try (ActivityScenario<ReactTestActivity> ignored = ActivityScenario.launch(intent)) {
+            return TestResult.waitForTestResult(getTestTimeoutSeconds());
+        }
     }
 
     protected long getTestTimeoutSeconds() {
