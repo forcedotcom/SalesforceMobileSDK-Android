@@ -193,6 +193,7 @@ jobs:
                   CURRENT_LIB: << parameters.lib >>
       - codecov/upload:
           file: firebase/artifacts/sdcard/coverage.ec
+          flags: << parameters.lib >>
       - store_artifacts:
           path: firebase/
       - store_artifacts:
@@ -261,6 +262,7 @@ jobs:
           when: always
       - codecov/upload:
           file: firebase/artifacts/sdcard/coverage.ec
+          flags: RestExplorer
       - store_artifacts:
           path: firebase/
       - store_test_results:
