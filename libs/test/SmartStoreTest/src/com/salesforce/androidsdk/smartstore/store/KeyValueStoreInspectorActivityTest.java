@@ -34,6 +34,7 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.hamcrest.CoreMatchers.allOf;
 
 import android.widget.AutoCompleteTextView;
@@ -43,6 +44,10 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
@@ -52,6 +57,7 @@ import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -75,6 +81,17 @@ public class KeyValueStoreInspectorActivityTest {
 
     public ActivityScenario<KeyValueStoreInspectorActivity> activityScenario;
     public KeyValueStoreInspectorActivity keyValueStoreInspectorActivity;
+
+    // Dismissing system dialog if shown
+    // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+    @BeforeClass
+    public static void dismissSystemDialog() throws UiObjectNotFoundException {
+        UiDevice device = UiDevice.getInstance(getInstrumentation());
+        UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+        if (okButton.exists()) {
+            okButton.click();
+        }
+    }
 
     @Before
     public void setUp() {

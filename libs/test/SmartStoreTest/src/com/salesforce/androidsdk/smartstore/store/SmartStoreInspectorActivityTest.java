@@ -31,6 +31,7 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import android.content.Context;
 import android.widget.ListAdapter;
@@ -41,6 +42,10 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
@@ -54,6 +59,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -78,6 +84,17 @@ public class SmartStoreInspectorActivityTest {
 
 	public ActivityScenario<SmartStoreInspectorActivity> activityScenario;
 	public SmartStoreInspectorActivity smartStoreInspectorActivity;
+
+	// Dismissing system dialog if shown
+	// See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+	@BeforeClass
+	public static void dismissSystemDialog() throws UiObjectNotFoundException {
+		UiDevice device = UiDevice.getInstance(getInstrumentation());
+		UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+		if (okButton.exists()) {
+			okButton.click();
+		}
+	}
 
 	@Before
 	public void setUp() throws Exception {
