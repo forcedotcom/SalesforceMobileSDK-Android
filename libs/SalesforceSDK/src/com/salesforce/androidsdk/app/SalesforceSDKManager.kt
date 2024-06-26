@@ -74,6 +74,7 @@ import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.analytics.security.Encryptor
@@ -1451,6 +1452,14 @@ open class SalesforceSDKManager protected constructor(
     @OnLifecycleEvent(ON_STOP)
     protected open fun onAppBackgrounded() {
         screenLockManager?.onAppBackgrounded()
+
+        // Publish analytics one-time on app background, if enabled.
+        if (SalesforceAnalyticsManager.isPublishOnceTimeOnAppBackgroundEnabled()) {
+            enqueueAnalyticsPublishWorkRequest(
+                getInstance().appContext
+            )
+        }
+
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppBackgrounded()
 
         // Hide the Salesforce Mobile SDK "Show Developer Support" notification

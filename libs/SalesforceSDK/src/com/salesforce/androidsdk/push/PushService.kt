@@ -47,7 +47,6 @@ import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
-import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.rest.RestClient
@@ -125,20 +124,6 @@ open class PushService {
                 throwable
             )
         }
-
-        /*
-         * Although each user account should be registered with the SFDC API
-         * for push notifications on login and Firebase push notifications
-         * registration, enqueue an additional SFDC API push notifications
-         * registration for all users six days from now.  This may provide
-         * an additional level of registration verification, though the
-         * actual requirements may need more definition in the future.
-         */
-        enqueuePushNotificationsRegistrationWork(
-            userAccount = null,
-            action = Register,
-            delayMilliseconds = MILLISECONDS_IN_SIX_DAYS
-        )
     }
 
     private fun onUnregistered(account: UserAccount) {
@@ -412,9 +397,6 @@ open class PushService {
 
     companion object {
         private const val TAG = "PushService"
-
-        // Retry time constants.
-        private const val MILLISECONDS_IN_SIX_DAYS = 518400000L
 
         // Salesforce push notification constants.
         private const val MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice"

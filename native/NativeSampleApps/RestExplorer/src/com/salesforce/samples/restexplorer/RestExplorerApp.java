@@ -32,6 +32,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
@@ -63,8 +64,11 @@ public class RestExplorerApp extends Application {
          * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name
          * of the IDP app meant to be used.
          */
-         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
+		SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 
+		SalesforceAnalyticsManager.setPublishOnceTimeOnAppBackgroundEnabled(false);
+		SalesforceAnalyticsManager.setPublishPeriodicallyOnFrequencyEnabled(true);
+		SalesforceAnalyticsManager.setPublishPeriodicallyFrequencyHours(1);
 		/*
 		 * Un-comment the line below to enable push notifications in this app.
 		 * Replace 'pnInterface' with your implementation of 'PushNotificationInterface'.
