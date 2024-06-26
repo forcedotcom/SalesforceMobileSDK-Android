@@ -31,16 +31,21 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import android.content.Context;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
 
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
@@ -51,14 +56,15 @@ import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests for SmartStoreInspectorActivity
@@ -75,8 +81,20 @@ public class SmartStoreInspectorActivityTest {
 	private Context targetContext;
 	private SmartStore store;
 
-	@Rule
-    public ActivityTestRule<SmartStoreInspectorActivity> smartStoreInspectorActivityTestRule = new ActivityTestRule<>(SmartStoreInspectorActivity.class);
+	public ActivityScenario<SmartStoreInspectorActivity> activityScenario;
+	public SmartStoreInspectorActivity smartStoreInspectorActivity;
+
+	// Dismissing system dialog if shown
+	// See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+	private void dismissSystemDialog() {
+		UiDevice device = UiDevice.getInstance(getInstrumentation());
+		UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+		try {
+			okButton.click();
+		} catch (UiObjectNotFoundException e) {
+			// Nothing to do
+		}
+	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -87,8 +105,19 @@ public class SmartStoreInspectorActivityTest {
 		populateSoup(TEST_SOUP, NUMBER_ROWS_TEST_SOUP);
 		populateSoup(OTHER_TEST_SOUP, NUMBER_ROWS_OTHER_TEST_SOUP);
 
+		// launch activity
+		launchActivityBlocking();
+
 		// Check initial state
 		checkInspectorIsReset();
+	}
+
+	@After
+	public void tearDown() {
+		if (activityScenario != null) {
+			activityScenario.close();
+			smartStoreInspectorActivity = null;
+		}
 	}
 
 	/**
@@ -97,7 +126,7 @@ public class SmartStoreInspectorActivityTest {
     @Test
 	public void testClickingClear() {
 		clickButton(R.id.sf__inspector_indices_button);
-        Assert.assertNotNull(smartStoreInspectorActivityTestRule.getActivity().getLastResults());
+        Assert.assertNotNull(smartStoreInspectorActivity.getLastResults());
 		clickButton(R.id.sf__inspector_clear_button);
 		checkInspectorIsReset();
 	}
@@ -205,7 +234,7 @@ public class SmartStoreInspectorActivityTest {
 	 */
     @Test
 	public void testAutoComplete() {
-		MultiAutoCompleteTextView queryTextView = smartStoreInspectorActivityTestRule.getActivity()
+		MultiAutoCompleteTextView queryTextView = smartStoreInspectorActivity
 				.findViewById(R.id.sf__inspector_query_text);
 		ListAdapter adapter = queryTextView.getAdapter();
 		Set<String> values = new HashSet<>();
@@ -252,12 +281,28 @@ public class SmartStoreInspectorActivityTest {
 		}
 	}
 
+	private void launchActivityBlocking() {
+		activityScenario = ActivityScenario.launch(SmartStoreInspectorActivity.class);
+		CountDownLatch latch = new CountDownLatch(1);
+		activityScenario.onActivity(activity -> {
+			smartStoreInspectorActivity = activity;
+			latch.countDown();
+		});
+		try {
+			latch.await(); // Wait for the activity to be set
+		} catch (InterruptedException e) {
+			Assert.fail("Failed to launch activity");
+		}
+
+		dismissSystemDialog();
+	}
+
 	private void clickButton(int id) {
         onView(withId(id)).perform(click());
     }
 
 	private void checkText(String message, int id, String expectedString) {
-        final TextView view = smartStoreInspectorActivityTestRule.getActivity().findViewById(id);
+        final TextView view = smartStoreInspectorActivity.findViewById(id);
         Assert.assertNotNull("TextView not found", view);
         Assert.assertEquals(message, expectedString, view.getText().toString());
 	}
@@ -278,16 +323,16 @@ public class SmartStoreInspectorActivityTest {
 
 		// Check results
 		if (expectedResultsAsString == null) {
-            Assert.assertNull("Wrong results", smartStoreInspectorActivityTestRule.getActivity().getLastResults());
+            Assert.assertNull("Wrong results", smartStoreInspectorActivity.getLastResults());
 		} else {
             Assert.assertEquals("Wrong results", expectedResultsAsString,
-                    smartStoreInspectorActivityTestRule.getActivity().getLastResults().toString());
+                    smartStoreInspectorActivity.getLastResults().toString());
 		}
 
 		// Check alert
-        Assert.assertEquals("Wrong alert title", expectedAlertTitle, smartStoreInspectorActivityTestRule.getActivity()
+        Assert.assertEquals("Wrong alert title", expectedAlertTitle, smartStoreInspectorActivity
 				.getLastAlertTitle());
-		String actualAlertMessage = smartStoreInspectorActivityTestRule.getActivity().getLastAlertMessage();
+		String actualAlertMessage = smartStoreInspectorActivity.getLastAlertMessage();
 		if (expectedAlertMessageSubstring == null
 				|| expectedAlertMessageSubstring.length() == 0) {
             Assert.assertEquals("Wrong alert message", expectedAlertMessageSubstring,

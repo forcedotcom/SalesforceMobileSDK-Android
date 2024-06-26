@@ -203,7 +203,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // Parse args
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
-        String endPoint = args.isNull(END_POINT_KEY) ? "" : args.getString(END_POINT_KEY);
+        String endPoint = !args.hasKey(END_POINT_KEY) || args.isNull(END_POINT_KEY) ? "" : args.getString(END_POINT_KEY);
         String path = args.getString(PATH_KEY);
         ReadableMap queryParams = args.getMap(QUERY_PARAMS_KEY);
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
