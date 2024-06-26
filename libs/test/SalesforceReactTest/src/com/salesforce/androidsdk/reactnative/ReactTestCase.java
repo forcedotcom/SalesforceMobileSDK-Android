@@ -44,7 +44,6 @@ import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
@@ -55,12 +54,13 @@ public abstract class ReactTestCase {
 
     // Dismissing system dialog if shown
     // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
-    @BeforeClass
-    public static void dismissSystemDialog() throws UiObjectNotFoundException {
+    private void dismissSystemDialog() {
         UiDevice device = UiDevice.getInstance(getInstrumentation());
         UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
-        if (okButton.exists()) {
+        try {
             okButton.click();
+        } catch (UiObjectNotFoundException e) {
+            // Nothing to do
         }
     }
 
@@ -79,6 +79,7 @@ public abstract class ReactTestCase {
         Intent intent = new Intent(context, ReactTestActivity.class);
         intent.putExtra(TEST_NAME, testName);
         try (ActivityScenario<ReactTestActivity> ignored = ActivityScenario.launch(intent)) {
+            dismissSystemDialog();
             return TestResult.waitForTestResult(getTestTimeoutSeconds());
         }
     }

@@ -59,7 +59,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -87,12 +86,13 @@ public class SmartStoreInspectorActivityTest {
 
 	// Dismissing system dialog if shown
 	// See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
-	@BeforeClass
-	public static void dismissSystemDialog() throws UiObjectNotFoundException {
+	private void dismissSystemDialog() {
 		UiDevice device = UiDevice.getInstance(getInstrumentation());
 		UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
-		if (okButton.exists()) {
+		try {
 			okButton.click();
+		} catch (UiObjectNotFoundException e) {
+			// Nothing to do
 		}
 	}
 
@@ -293,6 +293,8 @@ public class SmartStoreInspectorActivityTest {
 		} catch (InterruptedException e) {
 			Assert.fail("Failed to launch activity");
 		}
+
+		dismissSystemDialog();
 	}
 
 	private void clickButton(int id) {
