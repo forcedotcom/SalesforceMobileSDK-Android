@@ -171,6 +171,10 @@ jobs:
               exit 1
             fi
           when: always
+      - run: 
+          name: Convert Code Coverage
+          command: ./gradlew libs:<< parameters.lib >>:convertCodeCoverage
+          when: always
       - when:
           condition: << parameters.pr >>
           steps:
@@ -192,7 +196,9 @@ jobs:
                 environment:
                   CURRENT_LIB: << parameters.lib >>
       - codecov/upload:
-          file: firebase/artifacts/sdcard/coverage.ec
+          file: libs/<< parameters.lib >>/build/reports/jacoco/convertedCodeCoverage/convertedCodeCoverage.xml
+          flags: << parameters.lib >>
+          validate: false
       - store_artifacts:
           path: firebase/
       - store_artifacts:
@@ -259,8 +265,6 @@ jobs:
               exit 1
             fi
           when: always
-      - codecov/upload:
-          file: firebase/artifacts/sdcard/coverage.ec
       - store_artifacts:
           path: firebase/
       - store_test_results:
