@@ -12,6 +12,7 @@ buildscript {
         classpath("com.android.tools.build:gradle:8.5.0")
         classpath("io.github.gradle-nexus:publish-plugin:1.1.0")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20")
+        classpath("org.jacoco:org.jacoco.core:0.8.12")
     }
 }
 
