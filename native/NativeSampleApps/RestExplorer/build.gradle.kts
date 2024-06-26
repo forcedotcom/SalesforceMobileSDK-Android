@@ -22,6 +22,7 @@ dependencies {
         exclude("com.android.support", "support-annotations")
     }
     androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 
 android {
