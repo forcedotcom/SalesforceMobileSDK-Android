@@ -27,17 +27,24 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import android.content.Context;
 import android.content.Intent;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
@@ -45,6 +52,17 @@ public abstract class ReactTestCase {
 
     private static final long TEST_TIMEOUT_SECONDS = 120;
     public static final String TEST_NAME = "testName";
+
+    // Dismissing system dialog if shown
+    // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+    @BeforeClass
+    public static void dismissSystemDialog() throws UiObjectNotFoundException {
+        UiDevice device = UiDevice.getInstance(getInstrumentation());
+        UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+        if (okButton.exists()) {
+            okButton.click();
+        }
+    }
 
     protected void runReactNativeTest(String testName) throws InterruptedException {
         TestResult result = getTestResult(testName);
