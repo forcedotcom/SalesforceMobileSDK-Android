@@ -106,9 +106,11 @@ import com.salesforce.androidsdk.developer.support.notifications.local.ShowDevel
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
+import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
+import com.salesforce.androidsdk.push.PushService.Companion.isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
@@ -1473,6 +1475,18 @@ open class SalesforceSDKManager protected constructor(
     protected open fun onAppForegrounded() {
         screenLockManager?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
+
+        // Review push-notifications registration for the current user, if enabled.
+        /* TODO: W-15993636: Review that push notifications registration is performed when switching users. ECJ20240629 */
+        userAccountManager.currentUser?.let { userAccount ->
+            if (isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled) {
+                register(
+                    context = appContext,
+                    account = userAccount,
+                    recreateKey = false
+                )
+            }
+        }
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
         if (userAccountManager.currentAccount != null && authenticatedActivityForDeveloperSupport != null) {

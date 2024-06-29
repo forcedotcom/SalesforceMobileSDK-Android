@@ -66,6 +66,7 @@ public class RestExplorerApp extends Application {
          */
 		SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 
+		// TODO: Remove this diagnostic. ECJ20240626
 		SalesforceAnalyticsManager.setPublishOnceTimeOnAppBackgroundEnabled(false);
 		SalesforceAnalyticsManager.setPublishPeriodicallyOnFrequencyEnabled(true);
 		SalesforceAnalyticsManager.setPublishPeriodicallyFrequencyHours(1);

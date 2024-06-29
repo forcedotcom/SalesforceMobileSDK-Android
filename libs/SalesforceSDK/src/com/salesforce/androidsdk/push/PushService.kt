@@ -27,10 +27,14 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Intent
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.Data
-import androidx.work.NetworkType
+import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
+import androidx.work.ExistingWorkPolicy.REPLACE
+import androidx.work.NetworkType.CONNECTED
 import androidx.work.OneTimeWorkRequest
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -47,6 +51,7 @@ import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.rest.RestClient
@@ -60,7 +65,7 @@ import java.io.IOException
 import java.net.HttpURLConnection.HTTP_CREATED
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.net.URI
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.DAYS
 
 /**
  * Provides a default implementation of push notifications registration and
@@ -122,6 +127,19 @@ open class PushService {
                 TAG,
                 "Error occurred during SFDC registration",
                 throwable
+            )
+        }
+
+        /*
+         * When optionally specified, enqueue periodic SFDC API push
+         * notifications re-registration for all users every six days via a
+         * Android Background Tasks work request.
+         */
+        if (isPushNotificationsRegisterPeriodicallyEnabled) {
+            enqueuePushNotificationsRegistrationWork(
+                userAccount = null,
+                action = Register,
+                delayDays = 6
             )
         }
     }
@@ -189,14 +207,14 @@ open class PushService {
      */
     @Suppress(
         "unused",
-        "MemberVisibilityCanBePrivate",
-        "UNUSED_PARAMETER"
+        "MemberVisibilityCanBePrivate"
     )
     protected fun onPushNotificationRegistrationStatus(
         status: Int,
         userAccount: UserAccount?
     ) {
-        // Intentionally Blank.
+        // TODO: W-15993636: Remove this diagnostic. ECJ20240629
+        Log.i("PushService", "onPushNotificationRegistrationStatus: '$status', '${userAccount?.accountName}'.")
     }
 
     private fun registerSFDCPushNotification(
@@ -398,6 +416,33 @@ open class PushService {
     companion object {
         private const val TAG = "PushService"
 
+        /**
+         * Specifies if push notification (re-)registration should occur one
+         * time when the app is brought to the foreground.
+         *
+         * This is mutually exclusive with
+         * [isPushNotificationsRegisterPeriodicallyEnabled] and is the
+         * default option of the two.
+         */
+        var isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled = true
+
+        /**
+         * When optionally specified, enqueues periodic SFDC API push
+         * notifications re-registration for all users every six days via a
+         * Android Background Tasks work request.  This re-registers users for
+         * push notifications so long as the app is installed even though SFDC
+         * API periodically de-registers push notifications.
+         *
+         * This is mutually exclusive with
+         * [isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled]
+         * and is the non-default option of the two.
+         *
+         * Note that enabling periodic re-registration may incur additional
+         * authorization licensing costs.
+         */
+        var isPushNotificationsRegisterPeriodicallyEnabled = false
+            get() = field && !isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled
+
         // Salesforce push notification constants.
         private const val MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice"
         private const val ANDROID_GCM = "androidGcm"
@@ -420,36 +465,63 @@ open class PushService {
         protected const val UNREGISTRATION_STATUS_FAILED = 3
 
         /**
+         * The Android background tasks name of the push notifications
+         * registration work request
+         */
+        private const val PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME = "SalesforcePushNotificationsRegistrationWork"
+
+        /**
          * Enqueues a change to one or more user accounts' push notifications
          * registration as persistent work via Android background tasks.
          *
-         * @param userAccount       The user account or null for all user accounts
-         * @param action            The push notifications registration action
-         * @param delayMilliseconds The amount of delay before the push registration
-         * action is taken, such as in a retry scenario
+         * @param userAccount The user account or null for all user accounts
+         * @param action The push notifications registration action
+         * @param delayDays For registration actions, the interval in days
+         * between periodic registration or null for immediate one-time
+         * registration
          */
         internal fun enqueuePushNotificationsRegistrationWork(
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
-            delayMilliseconds: Long?
+            delayDays: Long?
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
             val workManager = WorkManager.getInstance(context)
             // Require network connectivity in case the user is logging out while offline.
-            val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val constraints = Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
             val userAccountJson = userAccount?.toJson()?.toString()
             val workData = Data.Builder()
                 .putString("USER_ACCOUNT", userAccountJson)
                 .putString("ACTION", action.name)
                 .build()
-            val workRequest: OneTimeWorkRequest =
-                OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
-                    .setInputData(workData)
-                    .setInitialDelay(delayMilliseconds ?: 0, TimeUnit.MILLISECONDS)
-                    .setConstraints(constraints)
-                    .build()
 
-            workManager.enqueue(workRequest)
+            when (delayDays) {
+                null -> OneTimeWorkRequest.Builder(
+                    workerClass = PushNotificationsRegistrationChangeWorker::class.java
+                ).setInputData(workData)
+                    .setConstraints(constraints)
+                    .build().also { workRequest ->
+                        workManager.enqueueUniqueWork(
+                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                            REPLACE,
+                            workRequest
+                        )
+                    }
+
+                else -> PeriodicWorkRequest.Builder(
+                    workerClass = PushNotificationsRegistrationChangeWorker::class.java,
+                    repeatInterval = delayDays,
+                    repeatIntervalTimeUnit = DAYS
+                ).setInputData(workData)
+                    .setConstraints(constraints)
+                    .build().also { workRequest ->
+                        workManager.enqueueUniquePeriodicWork(
+                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                            UPDATE,
+                            workRequest
+                        )
+                    }
+            }
 
             if (action == Deregister) {
                 // Send broadcast now to finish logout in case we are offline.
