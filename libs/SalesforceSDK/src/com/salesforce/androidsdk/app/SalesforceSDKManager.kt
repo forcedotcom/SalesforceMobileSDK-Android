@@ -901,7 +901,12 @@ open class SalesforceSDKManager protected constructor(
         frontActivity: Activity?,
         showLoginPage: Boolean = true,
     ) {
-        logout(account, frontActivity, showLoginPage)
+        logout(
+            account = account,
+            frontActivity = frontActivity,
+            showLoginPage = showLoginPage,
+            reason = LogoutReason.UNKNOWN
+        )
     }
 
     // Note the below overload exists because @JvmOverloads generates non-overrideable
@@ -1477,7 +1482,6 @@ open class SalesforceSDKManager protected constructor(
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
         // Review push-notifications registration for the current user, if enabled.
-        /* TODO: W-15993636: Review that push notifications registration is performed when switching users. ECJ20240629 */
         userAccountManager.currentUser?.let { userAccount ->
             if (isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled) {
                 register(

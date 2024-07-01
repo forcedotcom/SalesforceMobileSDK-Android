@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Intent
-import android.util.Log
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -213,8 +212,7 @@ open class PushService {
         status: Int,
         userAccount: UserAccount?
     ) {
-        // TODO: W-15993636: Remove this diagnostic. ECJ20240629
-        Log.i("PushService", "onPushNotificationRegistrationStatus: '$status', '${userAccount?.accountName}'.")
+        // Intentionally Blank.
     }
 
     private fun registerSFDCPushNotification(

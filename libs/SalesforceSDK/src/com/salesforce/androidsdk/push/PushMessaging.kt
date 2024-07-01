@@ -160,11 +160,9 @@ object PushMessaging {
                 firebaseApp.delete()
             }
             unregisterSFDCPush(context, account)
-        } else {
-
-            // TODO: W-15993636: This is currently running twice with the call several lines above. ECJ20240629
-            unregisterSFDCPush(context, account)
         }
+
+        unregisterSFDCPush(context, account)
     }
 
     /**
