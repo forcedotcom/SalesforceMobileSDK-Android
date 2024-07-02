@@ -188,7 +188,10 @@ public class SalesforceAnalyticsManager {
      *
      * @param periodicBackgroundPublishingHoursInterval The interval for
      *                                                  periodic background
-     *                                                  publishing in hours
+     *                                                  publishing in hours. It
+     *                                                  is recommended to keep
+     *                                                  this value under seven
+     *                                                  days
      * @see #setPublishPeriodicallyOnFrequencyEnabled(boolean)
      */
     public static synchronized void setPublishPeriodicallyFrequencyHours(
