@@ -85,7 +85,7 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
-        register(context = context, account = account, recreateKey = false);
+        register(context = context, account = account, recreateKey = false)
     }
 
     /**
@@ -184,7 +184,6 @@ object PushMessaging {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
-                @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
             appName = context.getString(packageInfo.applicationInfo.labelRes)
@@ -472,15 +471,15 @@ object PushMessaging {
     ) {
         if (account == null) {
             enqueuePushNotificationsRegistrationWork(
-                null,
-                action,
-                null
+                userAccount = null,
+                action = action,
+                delayDays = null
             )
         } else if (isRegistered(context, account)) {
             enqueuePushNotificationsRegistrationWork(
-                account,
-                action,
-                null
+                userAccount = account,
+                action = action,
+                delayDays = null
             )
         }
     }
