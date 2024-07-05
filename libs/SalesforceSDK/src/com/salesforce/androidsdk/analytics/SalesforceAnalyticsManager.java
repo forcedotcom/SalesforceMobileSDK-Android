@@ -218,7 +218,7 @@ public class SalesforceAnalyticsManager {
      * Specifies if analytics publishing should occur one time when the app is
      * sent to the background.
      */
-    public static boolean isPublishOnceTimeOnAppBackgroundEnabled() {
+    public static boolean isPublishOneTimeOnAppBackgroundEnabled() {
         return isPublishOneTimeOnAppBackgroundEnabled;
     }
 
@@ -231,7 +231,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param value True to enable.  False to disable
      */
-    public static void setPublishOnceTimeOnAppBackgroundEnabled(boolean value) {
+    public static void setPublishOneTimeOnAppBackgroundEnabled(boolean value) {
         isPublishOneTimeOnAppBackgroundEnabled = value;
     }
 

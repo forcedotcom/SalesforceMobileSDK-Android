@@ -1461,7 +1461,7 @@ open class SalesforceSDKManager protected constructor(
         screenLockManager?.onAppBackgrounded()
 
         // Publish analytics one-time on app background, if enabled.
-        if (SalesforceAnalyticsManager.isPublishOnceTimeOnAppBackgroundEnabled()) {
+        if (SalesforceAnalyticsManager.isPublishOneTimeOnAppBackgroundEnabled()) {
             enqueueAnalyticsPublishWorkRequest(
                 getInstance().appContext
             )

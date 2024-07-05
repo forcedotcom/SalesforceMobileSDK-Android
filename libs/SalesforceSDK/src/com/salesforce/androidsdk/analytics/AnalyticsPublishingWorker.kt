@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit.HOURS
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
- * @see [SalesforceAnalyticsManager.setPublishOnceTimeOnAppBackgroundEnabled]
+ * @see [SalesforceAnalyticsManager.setPublishOneTimeOnAppBackgroundEnabled]
  * @see [SalesforceAnalyticsManager.setPublishPeriodicallyOnFrequencyEnabled]
  * @see [SalesforceAnalyticsManager.setPublishPeriodicallyFrequencyHours]
  * @see <a href='https://developer.android.com/guide/background'>Android
