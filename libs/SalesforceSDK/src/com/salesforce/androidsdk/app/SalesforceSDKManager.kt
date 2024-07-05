@@ -111,7 +111,8 @@ import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
-import com.salesforce.androidsdk.push.PushService.Companion.isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
+import com.salesforce.androidsdk.push.PushService.PushNotificationRegistrationType.PushNotificationsRegistrationOneTimeOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
@@ -1484,7 +1485,7 @@ open class SalesforceSDKManager protected constructor(
 
         // Review push-notifications registration for the current user, if enabled.
         userAccountManager.currentUser?.let { userAccount ->
-            if (isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled) {
+            if (pushNotificationsRegistrationType == PushNotificationsRegistrationOneTimeOnAppForeground) {
                 register(
                     context = appContext,
                     account = userAccount,
