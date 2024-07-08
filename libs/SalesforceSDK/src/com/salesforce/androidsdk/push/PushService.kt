@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.PushNotificationRegistrationType.PushNotificationsRegisterPeriodically
+import com.salesforce.androidsdk.push.PushService.PushNotificationRegistrationType.PushNotificationsRegistrationDisabled
 import com.salesforce.androidsdk.push.PushService.PushNotificationRegistrationType.PushNotificationsRegistrationOneTimeOnAppForeground
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
@@ -132,8 +133,9 @@ open class PushService {
         }
 
         /*
-         * When optionally specified, enqueue periodic SFDC API push notifications re-registration
-         * for all users every six days via a Android Background Tasks work request.
+         * When optionally specified, enqueue periodic SFDC API push
+         * notifications re-registration for all users every six days via a
+         * Android Background Tasks work request.
          */
         if (pushNotificationsRegistrationType == PushNotificationsRegisterPeriodically) {
             enqueuePushNotificationsRegistrationWork(
@@ -246,8 +248,7 @@ open class PushService {
             }
 
             getRestClient(account)?.let { restClient ->
-                val apiVersion =
-                    ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
+                val apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().appContext)
                 // TODO remove once MSDK default api version is 61 or greater
                 if (apiVersion >= "v61.0") {
                     fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
@@ -445,8 +446,7 @@ open class PushService {
          * The Android background tasks name of the push notifications
          * registration work request
          */
-        private const val PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME =
-            "SalesforcePushNotificationsRegistrationWork"
+        private const val PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME = "SalesforcePushNotificationsRegistrationWork"
 
         /**
          * Enqueues a change to one or more user accounts' push notifications
@@ -454,6 +454,9 @@ open class PushService {
          *
          * @param userAccount The user account or null for all user accounts
          * @param action The push notifications registration action
+         * @param pushNotificationsRegistrationType Optionally, a specific
+         * push notification registration type.  Defaults to the current
+         * push notification registration type applied to this class
          * @param delayDays For registration actions, the interval in days
          * between periodic registration or null for immediate one-time
          * registration
@@ -461,6 +464,7 @@ open class PushService {
         internal fun enqueuePushNotificationsRegistrationWork(
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
+            pushNotificationsRegistrationType: PushNotificationRegistrationType = this.pushNotificationsRegistrationType,
             delayDays: Long?
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
@@ -473,8 +477,12 @@ open class PushService {
                 .putString("ACTION", action.name)
                 .build()
 
-            when (delayDays) {
-                null -> OneTimeWorkRequest.Builder(
+            when (pushNotificationsRegistrationType) {
+                PushNotificationsRegistrationDisabled -> {
+                    /* Intentionally Blank */
+                }
+
+                PushNotificationsRegistrationOneTimeOnAppForeground -> OneTimeWorkRequest.Builder(
                     workerClass = PushNotificationsRegistrationChangeWorker::class.java
                 ).setInputData(workData)
                     .setConstraints(constraints)
@@ -486,9 +494,9 @@ open class PushService {
                         )
                     }
 
-                else -> PeriodicWorkRequest.Builder(
+                PushNotificationsRegisterPeriodically -> PeriodicWorkRequest.Builder(
                     workerClass = PushNotificationsRegistrationChangeWorker::class.java,
-                    repeatInterval = delayDays,
+                    repeatInterval = delayDays ?: 6,
                     repeatIntervalTimeUnit = DAYS
                 ).setInputData(workData)
                     .setConstraints(constraints)
@@ -502,6 +510,14 @@ open class PushService {
             }
 
             if (action == Deregister) {
+
+                val workRequest: OneTimeWorkRequest =
+                    OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
+                        .setInputData(workData)
+                        .setConstraints(constraints)
+                        .build()
+                workManager.enqueue(workRequest)
+
                 // Send broadcast now to finish logout in case we are offline.
                 context.sendBroadcast(
                     Intent(
@@ -515,7 +531,6 @@ open class PushService {
     enum class PushNotificationRegistrationType {
 
         /** Specifies push notification (re-)registration should not occur */
-        @Suppress("unused")
         PushNotificationsRegistrationDisabled,
 
         /**

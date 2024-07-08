@@ -89,6 +89,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
@@ -907,7 +908,7 @@ open class SalesforceSDKManager protected constructor(
             account = account,
             frontActivity = frontActivity,
             showLoginPage = showLoginPage,
-            reason = LogoutReason.UNKNOWN
+            reason = UNKNOWN
         )
     }
 
@@ -933,7 +934,7 @@ open class SalesforceSDKManager protected constructor(
         account: Account? = null,
         frontActivity: Activity?,
         showLoginPage: Boolean = true,
-        reason: LogoutReason = LogoutReason.UNKNOWN,
+        reason: LogoutReason = UNKNOWN,
     ) {
         createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(

@@ -53,9 +53,7 @@ import java.util.concurrent.TimeUnit.HOURS
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
- * @see [SalesforceAnalyticsManager.setPublishOneTimeOnAppBackgroundEnabled]
- * @see [SalesforceAnalyticsManager.setPublishPeriodicallyOnFrequencyEnabled]
- * @see [SalesforceAnalyticsManager.setPublishPeriodicallyFrequencyHours]
+ * @see [SalesforceAnalyticsManager.analyticsPublishingType]
  * @see <a href='https://developer.android.com/guide/background'>Android
  * Background Tasks</a>
  */
@@ -98,27 +96,29 @@ internal class AnalyticsPublishingWorker(
          * If a work request is already queued, it will be cancelled before
          * the replacement is enqueued.
          *
-         * The publish hours interval parameter determines between background
-         * periodic publishing and one-time publishing.  Note, background
-         * periodic publishing starts or resumes the host app and may incur
-         * licensing costs if authorization token refresh is required.
+         * Note, background periodic publishing starts or resumes the host app
+         * and may incur licensing costs if authorization token refresh is
+         * required.
          *
          * Only the Salesforce Mobile SDK should call this method as it is not
          * intended for public use.
          *
          * @param context The Android context
          * @param periodicBackgroundPublishingHoursInterval The interval for
-         * periodic background publishing in hours or null to publish one time
-         * only
+         * periodic background publishing in hours
          * @return UUID The worker's unique id, which may be used for
          * cancellation
          */
         fun enqueueAnalyticsPublishWorkRequest(
             context: Context,
             periodicBackgroundPublishingHoursInterval: Long? = null
-        ) = when (periodicBackgroundPublishingHoursInterval) {
+        ) = when (SalesforceAnalyticsManager.analyticsPublishingType()) {
 
-            null -> OneTimeWorkRequest.Builder(
+            PublishDisabled -> {
+                /* Intentionally Blank */
+            }
+
+            PublishOneTimeOnAppBackground -> OneTimeWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java
             ).setConstraints(
                 Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
@@ -128,7 +128,7 @@ internal class AnalyticsPublishingWorker(
                 }.getOrNull()?.enqueue(publishAnalyticsOneTimeWorkRequest)
             }.id
 
-            else -> PeriodicWorkRequest.Builder(
+            PublishPeriodicallyOnFrequency -> PeriodicWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java,
                 periodicBackgroundPublishingHoursInterval,
                 HOURS
