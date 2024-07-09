@@ -77,6 +77,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LO
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
@@ -88,6 +89,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
@@ -110,7 +112,8 @@ import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
-import com.salesforce.androidsdk.push.PushService.Companion.isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
@@ -905,7 +908,7 @@ open class SalesforceSDKManager protected constructor(
             account = account,
             frontActivity = frontActivity,
             showLoginPage = showLoginPage,
-            reason = LogoutReason.UNKNOWN
+            reason = UNKNOWN
         )
     }
 
@@ -931,7 +934,7 @@ open class SalesforceSDKManager protected constructor(
         account: Account? = null,
         frontActivity: Activity?,
         showLoginPage: Boolean = true,
-        reason: LogoutReason = LogoutReason.UNKNOWN,
+        reason: LogoutReason = UNKNOWN,
     ) {
         createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
@@ -1461,7 +1464,7 @@ open class SalesforceSDKManager protected constructor(
         screenLockManager?.onAppBackgrounded()
 
         // Publish analytics one-time on app background, if enabled.
-        if (SalesforceAnalyticsManager.isPublishOnceTimeOnAppBackgroundEnabled()) {
+        if (SalesforceAnalyticsManager.analyticsPublishingType() == PublishOnAppBackground) {
             enqueueAnalyticsPublishWorkRequest(
                 getInstance().appContext
             )
@@ -1483,7 +1486,7 @@ open class SalesforceSDKManager protected constructor(
 
         // Review push-notifications registration for the current user, if enabled.
         userAccountManager.currentUser?.let { userAccount ->
-            if (isPushNotificationsRegistrationOneTimeOnAppForegroundEnabled) {
+            if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
                 register(
                     context = appContext,
                     account = userAccount,

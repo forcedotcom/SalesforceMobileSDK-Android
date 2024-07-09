@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.analytics;
 
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground;
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
@@ -71,8 +76,10 @@ public class SalesforceAnalyticsManager {
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
     private static boolean isPublishWorkRequestEnqueued;
-    private static boolean isPublishOneTimeOnAppBackgroundEnabled = true;
-    private static boolean isPublishPeriodicallyOnFrequencyEnabled = false;
+
+    /** The enabled Salesforce analytics publishing type */
+    private static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOnAppBackground;
+
     private static int publishPeriodicallyFrequencyHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
@@ -192,13 +199,13 @@ public class SalesforceAnalyticsManager {
      *                                                  is recommended to keep
      *                                                  this value under seven
      *                                                  days
-     * @see #setPublishPeriodicallyOnFrequencyEnabled(boolean)
+     * @see #setAnalyticsPublishingType(SalesforceAnalyticsPublishingType)
      */
     public static synchronized void setPublishPeriodicallyFrequencyHours(
             int periodicBackgroundPublishingHoursInterval
     ) {
         SalesforceAnalyticsManager.publishPeriodicallyFrequencyHours = periodicBackgroundPublishingHoursInterval;
-        setPublishPeriodicallyOnFrequencyEnabled(true);
+        setAnalyticsPublishingType(PublishPeriodically);
     }
 
     /**
@@ -215,49 +222,21 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
-     * Specifies if analytics publishing should occur one time when the app is
-     * sent to the background.
+     * The enabled Salesforce analytics publishing type.
+     *
+     * @return The enabled Salesforce analytics publishing type
      */
-    public static boolean isPublishOnceTimeOnAppBackgroundEnabled() {
-        return isPublishOneTimeOnAppBackgroundEnabled;
+    public static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType() {
+        return analyticsPublishingType;
     }
 
     /**
-     * Specifies if analytics publishing should occur one time when the app is
-     * sent to the background.
-     * <p/>
-     * This is mutually exclusive with
-     * [setPublishPeriodicallyOnFrequencyEnabled]
+     * Sets the enabled Salesforce analytics publishing type.
      *
-     * @param value True to enable.  False to disable
+     * @param value The Salesforce analytics publishing type
      */
-    public static void setPublishOnceTimeOnAppBackgroundEnabled(boolean value) {
-        isPublishOneTimeOnAppBackgroundEnabled = value;
-    }
-
-    /**
-     * Specifies if analytics publishing should occur periodically as an
-     * Android Background Task according to the frequency.
-     *
-     * @noinspection unused
-     * @see #setPublishPeriodicallyFrequencyHours
-     */
-    public static boolean isPublishPeriodicallyOnFrequencyEnabled() {
-        return isPublishPeriodicallyOnFrequencyEnabled;
-    }
-
-    /**
-     * Specifies if analytics publishing should occur periodically as an
-     * Android Background Task according to the frequency.
-     * <p>
-     * This is mutually exclusive with
-     * [setPublishOnceTimeOnAppBackgroundEnabled]
-     *
-     * @param value True to enable.  False to disable
-     * @see #setPublishPeriodicallyFrequencyHours
-     */
-    public static void setPublishPeriodicallyOnFrequencyEnabled(boolean value) {
-        isPublishPeriodicallyOnFrequencyEnabled = value;
+    public static void setAnalyticsPublishingType(@NonNull final SalesforceAnalyticsPublishingType value) {
+        analyticsPublishingType = value;
     }
 
     /**
@@ -563,5 +542,30 @@ public class SalesforceAnalyticsManager {
                 SalesforceSDKManager.getInstance().getAppContext(),
                 (long) publishPeriodicallyFrequencyHours
         );
+    }
+
+    /**
+     * The available Salesforce analytics publishing types.
+     */
+    public enum SalesforceAnalyticsPublishingType {
+
+        /**
+         * Specifies analytics should not be published
+         */
+        PublishDisabled,
+
+        /**
+         * Specifies analytics publishing should occur one time when the app is sent to the
+         * background
+         */
+        PublishOnAppBackground,
+
+        /**
+         * Specifies analytics publishing should occur periodically as a Android Background Task
+         * according to the frequency
+         *
+         * @see #setPublishPeriodicallyFrequencyHours
+         */
+        PublishPeriodically
     }
 }

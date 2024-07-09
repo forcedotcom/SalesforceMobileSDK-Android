@@ -38,6 +38,10 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishDisabled
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically
+import java.util.UUID
 import java.util.concurrent.TimeUnit.HOURS
 
 /**
@@ -53,9 +57,7 @@ import java.util.concurrent.TimeUnit.HOURS
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
- * @see [SalesforceAnalyticsManager.setPublishOnceTimeOnAppBackgroundEnabled]
- * @see [SalesforceAnalyticsManager.setPublishPeriodicallyOnFrequencyEnabled]
- * @see [SalesforceAnalyticsManager.setPublishPeriodicallyFrequencyHours]
+ * @see [SalesforceAnalyticsManager.analyticsPublishingType]
  * @see <a href='https://developer.android.com/guide/background'>Android
  * Background Tasks</a>
  */
@@ -98,27 +100,27 @@ internal class AnalyticsPublishingWorker(
          * If a work request is already queued, it will be cancelled before
          * the replacement is enqueued.
          *
-         * The publish hours interval parameter determines between background
-         * periodic publishing and one-time publishing.  Note, background
-         * periodic publishing starts or resumes the host app and may incur
-         * licensing costs if authorization token refresh is required.
+         * Note, background periodic publishing starts or resumes the host app
+         * and may incur licensing costs if authorization token refresh is
+         * required.
          *
          * Only the Salesforce Mobile SDK should call this method as it is not
          * intended for public use.
          *
          * @param context The Android context
          * @param periodicBackgroundPublishingHoursInterval The interval for
-         * periodic background publishing in hours or null to publish one time
-         * only
+         * periodic background publishing in hours
          * @return UUID The worker's unique id, which may be used for
          * cancellation
          */
         fun enqueueAnalyticsPublishWorkRequest(
             context: Context,
-            periodicBackgroundPublishingHoursInterval: Long? = null
-        ) = when (periodicBackgroundPublishingHoursInterval) {
+            periodicBackgroundPublishingHoursInterval: Long = SalesforceAnalyticsManager.getPublishPeriodicallyFrequencyHours().toLong()
+        ): UUID? = when (SalesforceAnalyticsManager.analyticsPublishingType()) {
 
-            null -> OneTimeWorkRequest.Builder(
+            PublishDisabled -> null
+
+            PublishOnAppBackground -> OneTimeWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java
             ).setConstraints(
                 Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
@@ -128,7 +130,7 @@ internal class AnalyticsPublishingWorker(
                 }.getOrNull()?.enqueue(publishAnalyticsOneTimeWorkRequest)
             }.id
 
-            else -> PeriodicWorkRequest.Builder(
+            PublishPeriodically -> PeriodicWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java,
                 periodicBackgroundPublishingHoursInterval,
                 HOURS
