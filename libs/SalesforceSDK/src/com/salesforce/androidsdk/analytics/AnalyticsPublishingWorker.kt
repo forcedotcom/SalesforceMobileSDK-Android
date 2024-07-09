@@ -38,6 +38,10 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishDisabled
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOneTimeOnAppBackground
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodicallyOnFrequency
+import java.util.UUID
 import java.util.concurrent.TimeUnit.HOURS
 
 /**
@@ -111,12 +115,10 @@ internal class AnalyticsPublishingWorker(
          */
         fun enqueueAnalyticsPublishWorkRequest(
             context: Context,
-            periodicBackgroundPublishingHoursInterval: Long? = null
-        ) = when (SalesforceAnalyticsManager.analyticsPublishingType()) {
+            periodicBackgroundPublishingHoursInterval: Long = SalesforceAnalyticsManager.getPublishPeriodicallyFrequencyHours().toLong()
+        ): UUID? = when (SalesforceAnalyticsManager.analyticsPublishingType()) {
 
-            PublishDisabled -> {
-                /* Intentionally Blank */
-            }
+            PublishDisabled -> null
 
             PublishOneTimeOnAppBackground -> OneTimeWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java

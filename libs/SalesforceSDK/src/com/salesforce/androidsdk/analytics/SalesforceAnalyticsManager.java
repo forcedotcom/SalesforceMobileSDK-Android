@@ -34,6 +34,8 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
@@ -76,7 +78,7 @@ public class SalesforceAnalyticsManager {
     private static boolean isPublishWorkRequestEnqueued;
 
     /** The enabled Salesforce analytics publishing type */
-    private static SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOneTimeOnAppBackground;
+    private static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOneTimeOnAppBackground;
 
     private static int publishPeriodicallyFrequencyHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
@@ -224,7 +226,7 @@ public class SalesforceAnalyticsManager {
      *
      * @return The enabled Salesforce analytics publishing type
      */
-    public static SalesforceAnalyticsPublishingType analyticsPublishingType() {
+    public static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType() {
         return analyticsPublishingType;
     }
 
@@ -233,7 +235,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param value The Salesforce analytics publishing type
      */
-    public static void setAnalyticsPublishingType(final SalesforceAnalyticsPublishingType value) {
+    public static void setAnalyticsPublishingType(@NonNull final SalesforceAnalyticsPublishingType value) {
         analyticsPublishingType = value;
     }
 
