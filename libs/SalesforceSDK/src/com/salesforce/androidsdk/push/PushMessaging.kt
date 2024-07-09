@@ -39,7 +39,7 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
-import com.salesforce.androidsdk.push.PushService.PushNotificationRegistrationType.PushNotificationsRegistrationOneTimeOnAppForeground
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
@@ -474,14 +474,14 @@ object PushMessaging {
             enqueuePushNotificationsRegistrationWork(
                 userAccount = null,
                 action = action,
-                pushNotificationsRegistrationType = PushNotificationsRegistrationOneTimeOnAppForeground,
+                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
                 delayDays = null
             )
         } else if (isRegistered(context, account)) {
             enqueuePushNotificationsRegistrationWork(
                 userAccount = account,
                 action = action,
-                pushNotificationsRegistrationType = PushNotificationsRegistrationOneTimeOnAppForeground,
+                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
                 delayDays = null
             )
         }

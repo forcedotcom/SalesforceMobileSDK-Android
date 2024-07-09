@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.analytics;
 
-import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOneTimeOnAppBackground;
-import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodicallyOnFrequency;
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground;
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -78,7 +78,7 @@ public class SalesforceAnalyticsManager {
     private static boolean isPublishWorkRequestEnqueued;
 
     /** The enabled Salesforce analytics publishing type */
-    private static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOneTimeOnAppBackground;
+    private static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOnAppBackground;
 
     private static int publishPeriodicallyFrequencyHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
@@ -205,7 +205,7 @@ public class SalesforceAnalyticsManager {
             int periodicBackgroundPublishingHoursInterval
     ) {
         SalesforceAnalyticsManager.publishPeriodicallyFrequencyHours = periodicBackgroundPublishingHoursInterval;
-        setAnalyticsPublishingType(PublishPeriodicallyOnFrequency);
+        setAnalyticsPublishingType(PublishPeriodically);
     }
 
     /**
@@ -558,7 +558,7 @@ public class SalesforceAnalyticsManager {
          * Specifies analytics publishing should occur one time when the app is sent to the
          * background
          */
-        PublishOneTimeOnAppBackground,
+        PublishOnAppBackground,
 
         /**
          * Specifies analytics publishing should occur periodically as a Android Background Task
@@ -566,6 +566,6 @@ public class SalesforceAnalyticsManager {
          *
          * @see #setPublishPeriodicallyFrequencyHours
          */
-        PublishPeriodicallyOnFrequency
+        PublishPeriodically
     }
 }

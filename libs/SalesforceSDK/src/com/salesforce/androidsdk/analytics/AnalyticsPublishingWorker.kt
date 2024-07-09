@@ -39,8 +39,8 @@ import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishDisabled
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOneTimeOnAppBackground
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodicallyOnFrequency
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically
 import java.util.UUID
 import java.util.concurrent.TimeUnit.HOURS
 
@@ -120,7 +120,7 @@ internal class AnalyticsPublishingWorker(
 
             PublishDisabled -> null
 
-            PublishOneTimeOnAppBackground -> OneTimeWorkRequest.Builder(
+            PublishOnAppBackground -> OneTimeWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java
             ).setConstraints(
                 Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
@@ -130,7 +130,7 @@ internal class AnalyticsPublishingWorker(
                 }.getOrNull()?.enqueue(publishAnalyticsOneTimeWorkRequest)
             }.id
 
-            PublishPeriodicallyOnFrequency -> PeriodicWorkRequest.Builder(
+            PublishPeriodically -> PeriodicWorkRequest.Builder(
                 AnalyticsPublishingWorker::class.java,
                 periodicBackgroundPublishingHoursInterval,
                 HOURS
