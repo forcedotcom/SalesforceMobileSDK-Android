@@ -63,13 +63,7 @@ public class RestExplorerApp extends Application {
          * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name
          * of the IDP app meant to be used.
          */
-		// SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
-
-		/*
-		 * Uncomment the following line enable QR login flow. This will allow the user to
-		 * login by scanning a QR code.
-		 */
-		SalesforceSDKManager.getInstance().setQRLoginFlowEnabled(true);
+         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
 
 		/*
 		 * Un-comment the line below to enable push notifications in this app.

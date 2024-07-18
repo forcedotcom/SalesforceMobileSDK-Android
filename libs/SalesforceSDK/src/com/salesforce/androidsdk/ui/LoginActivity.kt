@@ -121,7 +121,6 @@ import java.net.URLDecoder
 import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
 import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
 
-
 /**
  * Login activity authenticates a user. Authorization happens inside a web view.
  * Once an authorization code is obtained, it is exchanged for access and
@@ -187,7 +186,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         // Setup content view
         setContentView(sf__login_layout)
-
         if (salesforceSDKManager.isIDPLoginFlowEnabled) {
             findViewById<Button>(sf__idp_login_button).visibility = VISIBLE
         }
@@ -365,9 +363,9 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         wasBackgrounded = false
     }
 
-    public override fun onSaveInstanceState(bundle: Bundle) {
-        super.onSaveInstanceState(bundle)
-        webviewHelper?.saveState(bundle)
+    public override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webviewHelper?.saveState(outState)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent) =
@@ -569,7 +567,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     private fun isQRLogin(intent: Intent): Boolean {
         return SalesforceSDKManager.getInstance().isQRLoginFlowEnabled
-            && intent.data?.path?.contains(LOGIN_QR_PATH) == true
+                && intent.data?.path?.contains(LOGIN_QR_PATH) == true
     }
 
     private data class BridgeInfo(
@@ -755,4 +753,3 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
     }
 }
-
