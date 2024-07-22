@@ -1399,7 +1399,15 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         }
     }
 
-    fun loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl: String, pkceCodeVerifier: String) {
+    /**
+     * Automatically log in using the provided UI Bridge API parameters.
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
+     * @param pkceCodeVerifier The PKCE code verifier
+     */
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String
+    ) {
         val uri = URI(frontdoorBridgeUrl)
         loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
         codeVerifier = pkceCodeVerifier

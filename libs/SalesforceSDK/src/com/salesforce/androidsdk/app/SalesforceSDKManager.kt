@@ -258,9 +258,9 @@ open class SalesforceSDKManager protected constructor(
             field = value
         }
 
-    /** Indicates if login via the UI bridge API via QR code is enabled */
+    /** Indicates if login via QR Code and UI bridge API is enabled */
     @set:Synchronized
-    open var isQRLoginFlowEnabled = false
+    open var isQrCodeLoginEnabled = false
 
     /** Indicates if logout is in progress */
     var isLoggingOut = false
@@ -1561,6 +1561,7 @@ open class SalesforceSDKManager protected constructor(
         open fun getInstance() = INSTANCE ?: throw RuntimeException("Apps must call SalesforceSDKManager.init() first.")
 
         /** Allow Kotlin subclasses to set themselves as the instance. */
+        @Suppress("unused")
         @JvmSynthetic
         fun setInstance(subclass: SalesforceSDKManager) {
             INSTANCE = subclass
