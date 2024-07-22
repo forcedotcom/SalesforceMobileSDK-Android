@@ -148,7 +148,7 @@ import java.util.function.Consumer
  * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
  * is no longer necessary to extend or change LoginActivity's instance of this class
  * to support multi-factor authentication.  If there are other uses cases please
- * inform the team via Github or our Trailblazer community.  
+ * inform the team via Github or our Trailblazer community.
  */
 @Deprecated(
     "This class will no longer be public starting in Mobile SDK 13.0.",
@@ -1402,7 +1402,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     fun loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl: String, pkceCodeVerifier: String) {
         val uri = URI(frontdoorBridgeUrl)
         loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
-        d(TAG, "loginUrl-->${loginOptions.loginUrl}")
         codeVerifier = pkceCodeVerifier
         webView?.loadUrl(frontdoorBridgeUrl)
     }

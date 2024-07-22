@@ -258,6 +258,7 @@ open class SalesforceSDKManager protected constructor(
             field = value
         }
 
+    /** Indicates if login via the UI bridge API via QR code is enabled */
     @set:Synchronized
     open var isQRLoginFlowEnabled = false
 

@@ -169,7 +169,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         salesforceSDKManager.setViewNavigationVisibility(this)
 
         val loginOptions = if (isQRLogin) {
-            // Get app login options
+            // Get the app's login options
             salesforceSDKManager.loginOptions
         } else {
             // Get login options from the intent's extras
@@ -226,7 +226,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             this
         )
 
-        // QR login
         if (isQRLogin) {
             loginFromQR("?" + intent.data?.query)
         } else {
@@ -565,33 +564,26 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
-    private fun isQRLogin(intent: Intent): Boolean {
-        return SalesforceSDKManager.getInstance().isQRLoginFlowEnabled
-                && intent.data?.path?.contains(LOGIN_QR_PATH) == true
-    }
+    private fun isQRLogin(intent: Intent) = SalesforceSDKManager.getInstance().isQRLoginFlowEnabled
+            && intent.data?.path?.contains(LOGIN_QR_PATH) == true
 
-    private data class BridgeInfo(
+    private data class UiBridgeInfo(
         val frontdoorBridgeUrl: String,
         val pkceCodeVerifier: String
     )
 
-    private fun parseQRContents(qrContents: String?): BridgeInfo? {
-        if (qrContents != null) {
-            d(TAG, "qrContents-->${qrContents}")
-            val bridgeJsonString = extractBridgeJsonParam(qrContents)
-            d(TAG, "bridgeJsonString-->${bridgeJsonString}")
-            if (bridgeJsonString != null) {
-                val bridgeInfo = parseBridgeInfo(bridgeJsonString)
-                d(TAG, "bridgeInfo-->${bridgeInfo}")
-                return bridgeInfo
+    private fun parseQRContents(qrContents: String?) =
+        qrContents?.let { qrContentsUnwrapped ->
+            extractBridgeJsonParam(qrContentsUnwrapped)?.let { bridgeJsonStringUnwrapped ->
+                parseBridgeInfo(bridgeJsonStringUnwrapped)
             }
         }
-        return null
-    }
 
     private fun extractBridgeJsonParam(qrContents: String): String? {
-        // Coming from intent (external QR reader) we have ?bridgeJson={...}
-        // Coming from embedded QR reader we have ?bridgeJson=%7B...%7D
+        /*
+         * Coming from intent (external QR reader) expect ?bridgeJson={...}
+         * Coming from embedded QR reader expect ?bridgeJson=%7B...%7D
+         */
         val regexExternal = """\?bridgeJson=(\{.*\})""".toRegex()
         val regexInternal = """\?bridgeJson=(%7B.*%7D)""".toRegex()
         return regexExternal.find(qrContents)?.groups?.get(1)?.value
@@ -600,40 +592,41 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             }
     }
 
-    private fun parseBridgeInfo(jsonString: String): BridgeInfo {
+    private fun parseBridgeInfo(jsonString: String): UiBridgeInfo {
         val jsonObject = JSONObject(jsonString)
         val frontdoorBridgeUrl = jsonObject.getString(FRONTDOOR_BRIDGE_URL_KEY)
         val pkceCodeVerifier = jsonObject.optString(PKCE_CODE_VERIFIER_KEY, "")
-        return BridgeInfo(frontdoorBridgeUrl, pkceCodeVerifier)
+        return UiBridgeInfo(frontdoorBridgeUrl, pkceCodeVerifier)
     }
 
     /**
-     * Login with qr contents
-     * @param qrContents a url or url query containing a bridgeJson parameter
-     *      bridgeJson parameter should contain a url-encoded JSON with two values: frontdoor_bridge_url and pkce_code_verifier
-     *      if not pkce_code_verifier is specified we use user agent flow
-     * @return true if a frontdoor bridge url could be extracted from qrContents
+     * Login with QR code contents.
+     * @param qrContents A URL or URL query containing a bridge JSON parameter.
+     * The bridge JSON parameter should contain URL-encoded JSON with two
+     * values: frontdoor_bridge_url and pkce_code_verifier. If
+     * pkce_code_verifier is not specified then the user agent flow is used
+     * @return Boolean true if a frontdoor bridge URL could be extracted from QR
+     * contents
      */
-    fun loginFromQR(qrContents: String?): Boolean {
-        val bridgeInfo = parseQRContents(qrContents)
-        if (bridgeInfo != null) {
+    fun loginFromQR(qrContents: String?) =
+        parseQRContents(qrContents)?.let { bridgeInfoUnwrapped ->
             loginWithFrontdoorBridgeUrl(
-                bridgeInfo.frontdoorBridgeUrl,
-                bridgeInfo.pkceCodeVerifier
+                bridgeInfoUnwrapped.frontdoorBridgeUrl,
+                bridgeInfoUnwrapped.pkceCodeVerifier
             )
-            return true
-        }
-        return false
-    }
+            true
+        } ?: false
 
     /**
-     * Login with a frontdoor bridge url and PKCE code verifier
-     * @param frontdoorBridgeUrl
-     * @param pkceCodeVerifier
+     * Login with a front door bridge URL and PKCE code verifier
+     * @param frontdoorBridgeUrl The front door bridge URL
+     * @param pkceCodeVerifier The PKCE code verifier
      */
-    fun loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl: String, pkceCodeVerifier: String) {
-        webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
-    }
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String
+    ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     internal fun presentBiometric() {
         val biometricPrompt = biometricPrompt
@@ -748,7 +741,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         private const val TAG = "LoginActivity"
 
         const val LOGIN_QR_PATH = "/login/qr"
-        const val BRIDGE_JSON_PARAM = "bridgeJson"
         const val FRONTDOOR_BRIDGE_URL_KEY = "frontdoor_bridge_url"
         const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
     }
