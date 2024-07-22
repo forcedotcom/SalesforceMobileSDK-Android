@@ -1831,6 +1831,8 @@ open class SalesforceSDKManager protected constructor(
                         browserLoginEnabled = false,
                         shareBrowserSessionEnabled = false
                     )
+
+                    return@withTimeout
                 }
 
                 getMyDomainAuthConfig(loginServer).let { authConfig ->
