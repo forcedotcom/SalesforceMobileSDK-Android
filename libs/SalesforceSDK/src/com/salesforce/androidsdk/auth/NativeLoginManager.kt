@@ -303,10 +303,10 @@ internal class NativeLoginManager(
                 userData = UserData(
                     email = trimmedEmail,
                     username = trimmedUsername,
-                    password = trimmedNewPassword,
                     firstName = firstName.trim(),
                     lastName = lastName.trim()
                 ),
+                password = trimmedNewPassword,
                 otpVerificationMethod = otpVerificationMethodString
             ).toJson()
         }.onFailure { e ->
@@ -368,6 +368,7 @@ internal class NativeLoginManager(
      * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
      * Enterprise
      * @param userData The start registration request user data
+     * @param password The user-entered new password
      * @param otpVerificationMethod The one-time-password's delivery method for
      * verification in "email" or "sms"
      */
@@ -375,12 +376,14 @@ internal class NativeLoginManager(
         val recaptcha: String?,
         val recaptchaevent: ReCaptchaEventRequestParameter?,
         val userData: UserData,
+        val password: String,
         val otpVerificationMethod: String
     ) {
         fun toJson() = JSONObject().apply {
             put("recaptcha", recaptcha)
             put("recaptchaevent", recaptchaevent?.toJson())
             put("userdata", userData.toJson())
+            put("password", password)
             put("verificationmethod", otpVerificationMethod)
         }
 
@@ -389,21 +392,18 @@ internal class NativeLoginManager(
          * request body's user info parameter.
          * @param email A valid, user-entered email address
          * @param username A valid Salesforce username or email
-         * @param password The user-entered new password
          * @param firstName The user-entered first name
          * @param lastName The user-entered last name
          */
         data class UserData(
             val email: String,
             val username: String,
-            val password: String,
             val firstName: String,
             val lastName: String
         ) {
             fun toJson() = JSONObject().apply {
                 put("email", email)
                 put("username", username)
-                put("password", password)
                 put("firstName", firstName)
                 put("lastName", lastName)
             }
