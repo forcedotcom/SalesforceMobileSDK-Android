@@ -30,11 +30,13 @@ import android.app.Activity;
 import android.content.IntentFilter;
 import android.view.KeyEvent;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -93,7 +95,8 @@ public class SalesforceActivityDelegate {
                 @Override
                 public void authenticatedRestClient(RestClient client) {
                     if (client == null) {
-                        SalesforceSDKManager.getInstance().logout(activity);
+                        SalesforceSDKManager.getInstance()
+                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE);
                         return;
                     }
                     ((SalesforceActivityInterface) activity).onResume(client);
@@ -143,7 +146,10 @@ public class SalesforceActivityDelegate {
     private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
 
         @Override
-        protected void onLogoutComplete() {
+        protected void onLogoutComplete() { }
+
+        @Override
+        protected void onLogoutComplete(@NonNull OAuth2.LogoutReason reason) {
             ((SalesforceActivityInterface) activity).onLogoutComplete();
         }
     }

@@ -53,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
@@ -216,7 +217,7 @@ public class UserAccountManagerTest {
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
-    	userAccMgr.signoutCurrentUser(null);
+    	userAccMgr.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
         Assert.assertNull("There should be no authenticated users", users);
@@ -244,7 +245,7 @@ public class UserAccountManagerTest {
                 communityId(null).communityUrl(null).firstName(null).lastName(null).displayName(null).
                 email(null).photoUrl(null).thumbnailUrl(null).additionalOauthValues(null).
                 language(TEST_LANGUAGE).locale(TEST_LOCALE).build();
-		userAccMgr.signoutUser(userAcc, null, false);
+		userAccMgr.signoutUser(userAcc, null, false, OAuth2.LogoutReason.USER_LOGOUT);
     	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());

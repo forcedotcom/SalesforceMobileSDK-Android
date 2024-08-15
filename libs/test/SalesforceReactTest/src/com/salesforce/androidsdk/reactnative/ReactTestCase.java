@@ -27,32 +27,41 @@
 
 package com.salesforce.androidsdk.reactnative;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import android.content.Context;
 import android.content.Intent;
-import androidx.test.rule.ActivityTestRule;
+
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.reactnative.util.ReactTestActivity;
 import com.salesforce.androidsdk.reactnative.util.TestResult;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public abstract class ReactTestCase {
 
-    private static final long TEST_TIMEOUT_SECONDS = 90;
+    private static final long TEST_TIMEOUT_SECONDS = 120;
     public static final String TEST_NAME = "testName";
 
-    @Rule
-    public ActivityTestRule<ReactTestActivity> mActivityRule = new ActivityTestRule<ReactTestActivity>(
-            ReactTestActivity.class, false, false) {
-    };
-
-    @After
-    public void finishActivity() {
-        mActivityRule.getActivity().finish();
+    // Dismissing system dialog if shown
+    // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+    private void dismissSystemDialog() {
+        UiDevice device = UiDevice.getInstance(getInstrumentation());
+        UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+        try {
+            okButton.click();
+        } catch (UiObjectNotFoundException e) {
+            // Nothing to do
+        }
     }
 
     protected void runReactNativeTest(String testName) throws InterruptedException {
@@ -66,10 +75,13 @@ public abstract class ReactTestCase {
     }
 
     private TestResult getTestResult(String testName) throws InterruptedException {
-        Intent intent = new Intent();
-        intent.putExtra(TEST_NAME,testName);
-        mActivityRule.launchActivity(intent);
-        return TestResult.waitForTestResult(getTestTimeoutSeconds());
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Intent intent = new Intent(context, ReactTestActivity.class);
+        intent.putExtra(TEST_NAME, testName);
+        try (ActivityScenario<ReactTestActivity> ignored = ActivityScenario.launch(intent)) {
+            dismissSystemDialog();
+            return TestResult.waitForTestResult(getTestTimeoutSeconds());
+        }
     }
 
     protected long getTestTimeoutSeconds() {

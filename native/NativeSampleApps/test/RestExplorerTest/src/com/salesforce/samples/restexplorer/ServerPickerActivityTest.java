@@ -49,11 +49,16 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 
 import androidx.appcompat.widget.MenuPopupWindow.MenuDropDownListView;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.ViewInteraction;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
@@ -68,9 +73,11 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests for ServerPickerActivity.
@@ -80,10 +87,20 @@ import org.junit.runner.RunWith;
 public class ServerPickerActivityTest {
 
     private EventsListenerQueue eq;
-    private ServerPickerActivity activity;
+    private ServerPickerActivity serverPickerActivity;
 
-    @Rule
-    public ActivityTestRule<ServerPickerActivity> serverPickerActivityTestRule = new ActivityTestRule<>(ServerPickerActivity.class);
+    public ActivityScenario<ServerPickerActivity> activityScenario;
+
+    // Dismissing system dialog if shown
+    // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+    @BeforeClass
+    public static void dismissSystemDialog() throws UiObjectNotFoundException {
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+        if (okButton.exists()) {
+            okButton.click();
+        }
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -93,9 +110,11 @@ public class ServerPickerActivityTest {
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        activity = serverPickerActivityTestRule.getActivity();
+        // launch activity
+        launchActivityBlocking();
+
         removeFragmentIfRequired();
-        Assert.assertNotNull("Activity should not be null", activity);
+        Assert.assertNotNull("Activity should not be null", serverPickerActivity);
     }
 
     @After
@@ -104,8 +123,8 @@ public class ServerPickerActivityTest {
             eq.tearDown();
             eq = null;
         }
-        activity.finish();
-        activity = null;
+        serverPickerActivity.finish();
+        serverPickerActivity = null;
     }
 
     /**
@@ -118,7 +137,7 @@ public class ServerPickerActivityTest {
         openCustomEditDialog();
         clickView(com.salesforce.androidsdk.R.id.sf__cancel_button);
         Assert.assertNull("Custom URL dialog should be closed",
-                activity.getCustomServerUrlEditor().getDialog());
+                serverPickerActivity.getCustomServerUrlEditor().getDialog());
     }
 
     /**
@@ -145,7 +164,7 @@ public class ServerPickerActivityTest {
         String url = "";
         addCustomUrl(label, url);
         Assert.assertTrue("Custom URL dialog should not be closed",
-                activity.getCustomServerUrlEditor().getDialog().isShowing());
+                serverPickerActivity.getCustomServerUrlEditor().getDialog().isShowing());
         try {
             onView(allOf(withText(label + "\n" + url), findUiElement())).check(doesNotExist());
         } catch (Throwable t) {
@@ -206,9 +225,23 @@ public class ServerPickerActivityTest {
         }
     }
 
+    private void launchActivityBlocking() {
+        activityScenario = ActivityScenario.launch(ServerPickerActivity.class);
+        CountDownLatch latch = new CountDownLatch(1);
+        activityScenario.onActivity(activity -> {
+            serverPickerActivity = activity;
+            latch.countDown();
+        });
+        try {
+            latch.await(); // Wait for the activity to be set
+        } catch (InterruptedException e) {
+            Assert.fail("Failed to launch activity");
+        }
+    }
+
     private void openCustomEditDialog() throws Throwable {
         clickView(com.salesforce.androidsdk.R.id.sf__show_custom_url_edit);
-        final CustomServerUrlEditor dialog = activity.getCustomServerUrlEditor();
+        final CustomServerUrlEditor dialog = serverPickerActivity.getCustomServerUrlEditor();
         Thread.sleep(3000);
         final View rootView = dialog.getRootView();
         Assert.assertNotNull("Root view should not be null", rootView);
@@ -216,7 +249,7 @@ public class ServerPickerActivityTest {
     }
 
     private void addCustomUrl(String label, String url) throws Throwable {
-        if (!activity.getCustomServerUrlEditor().isVisible()) {
+        if (!serverPickerActivity.getCustomServerUrlEditor().isVisible()) {
             openCustomEditDialog();
         }
         setText(com.salesforce.androidsdk.R.id.sf__picker_custom_label, label);
@@ -225,8 +258,8 @@ public class ServerPickerActivityTest {
     }
 
     private void removeFragmentIfRequired() {
-        final FragmentManager fm = activity.getFragmentManager();
-        final Fragment dialog = activity.getFragmentManager().findFragmentByTag("custom_server_dialog");
+        final FragmentManager fm = serverPickerActivity.getFragmentManager();
+        final Fragment dialog = serverPickerActivity.getFragmentManager().findFragmentByTag("custom_server_dialog");
         if (dialog != null && dialog.isAdded()) {
             final FragmentTransaction ft = fm.beginTransaction();
             ft.remove(dialog);
@@ -252,7 +285,7 @@ public class ServerPickerActivityTest {
 
     private void checkServerAdded(String name, String url) {
         Assert.assertNull("Custom URL dialog should be closed",
-                activity.getCustomServerUrlEditor().getDialog());
+                serverPickerActivity.getCustomServerUrlEditor().getDialog());
         try {
             ViewInteraction salesforceServerRadioButton = onView(allOf(withText(name + "\n" + url),
                     findUiElement()));

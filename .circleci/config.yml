@@ -1,8 +1,11 @@
+orbs:
+  codecov: codecov/codecov@4.1.0
+
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2023.11.1-node
+  - &cimg cimg/android:2024.04.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-  - &default-api-level 33
+  - &default-api-level 34
 
   - &gradle-cache-key
       gradle-cache-v2-{{ checksum "build.gradle.kts" }}-{{
@@ -67,7 +70,7 @@ executors:
     docker:
       - image: *cimg
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false -Dkotlin.compiler.execution.strategy=in-process'
 
 jobs:
   pr-danger:
@@ -168,6 +171,10 @@ jobs:
               exit 1
             fi
           when: always
+      - run: 
+          name: Convert Code Coverage
+          command: ./gradlew libs:<< parameters.lib >>:convertCodeCoverage
+          when: always
       - when:
           condition: << parameters.pr >>
           steps:
@@ -188,6 +195,10 @@ jobs:
                 when: always
                 environment:
                   CURRENT_LIB: << parameters.lib >>
+      - codecov/upload:
+          file: libs/<< parameters.lib >>/build/reports/jacoco/convertedCodeCoverage/convertedCodeCoverage.xml
+          flags: << parameters.lib >>
+          validate: false
       - store_artifacts:
           path: firebase/
       - store_artifacts:

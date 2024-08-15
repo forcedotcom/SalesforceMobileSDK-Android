@@ -9,15 +9,16 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.2.0")
+        classpath("com.android.tools.build:gradle:8.5.0")
         classpath("io.github.gradle-nexus:publish-plugin:1.1.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
+        classpath("org.jacoco:org.jacoco.core:0.8.12")
     }
 }
 
 allprojects {
     group = "com.salesforce.mobilesdk"
-    version = "12.0.1"
+    version = "12.1.0"
 
     // Ensure that we do not use newer language features that would make the SDK incompatible with
     // apps that do not target the latest version of Kotlin.

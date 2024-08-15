@@ -74,8 +74,10 @@ import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
@@ -86,6 +88,8 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
@@ -104,9 +108,12 @@ import com.salesforce.androidsdk.developer.support.notifications.local.ShowDevel
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
+import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
@@ -817,7 +824,8 @@ open class SalesforceSDKManager protected constructor(
         loginServer: String?,
         account: Account?,
         frontActivity: Activity?,
-        isLastAccount: Boolean
+        isLastAccount: Boolean,
+        logoutReason: LogoutReason,
     ) {
         val intentFilter = IntentFilter(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
 
@@ -839,7 +847,8 @@ open class SalesforceSDKManager protected constructor(
                         refreshToken,
                         loginServer,
                         account,
-                        frontActivity
+                        frontActivity,
+                        logoutReason,
                     )
                 }
             }
@@ -871,9 +880,10 @@ open class SalesforceSDKManager protected constructor(
      * account
      */
     open fun logout(
-        /* Note: Kotlin's @JvmOverloads annotations does not generate this overload */
+        /* Note: Kotlin's @JvmOverloads annotations does not correctly
+           generate this overload due to a JVM naming conflict.         */
         frontActivity: Activity?,
-        showLoginPage: Boolean = true
+        showLoginPage: Boolean = true,
     ) {
         logout(null, frontActivity, showLoginPage)
     }
@@ -892,7 +902,39 @@ open class SalesforceSDKManager protected constructor(
     open fun logout(
         account: Account? = null,
         frontActivity: Activity?,
-        showLoginPage: Boolean = true
+        showLoginPage: Boolean = true,
+    ) {
+        logout(
+            account = account,
+            frontActivity = frontActivity,
+            showLoginPage = showLoginPage,
+            reason = UNKNOWN
+        )
+    }
+
+    // Note the below overload exists because @JvmOverloads generates non-overrideable
+    // signatures for all but the overload with all params. see:
+    // https://youtrack.jetbrains.com/issue/KT-33240/Generated-overloads-for-JvmOverloads-on-open-methods-should-be-final
+    //
+    // I highly doubt any apps are overriding the above function but it is technically breaking and shouldn't be
+    // combined until Mobile SDK 13.0.  TODO: remove above method and move @JvmOverloads to below overload -- or remove open.
+
+    /**
+     * Destroys the stored authentication credentials (removes the account)
+     * and, if requested, restarts the app.
+     *
+     * @param account The user account to logout. Defaults to the current user
+     * account
+     * @param frontActivity The front activity
+     * @param showLoginPage If true, displays the login page after removing the
+     * account
+     * @param reason The reason for the logout.
+     */
+    open fun logout(
+        account: Account? = null,
+        frontActivity: Activity?,
+        showLoginPage: Boolean = true,
+        reason: LogoutReason = UNKNOWN,
     ) {
         createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
@@ -941,7 +983,8 @@ open class SalesforceSDKManager protected constructor(
                 loginServer,
                 accountToLogout,
                 frontActivity,
-                numAccounts == 1
+                isLastAccount = (numAccounts == 1),
+                reason,
             )
         } else {
             removeAccount(
@@ -950,7 +993,8 @@ open class SalesforceSDKManager protected constructor(
                 refreshToken,
                 loginServer,
                 accountToLogout,
-                frontActivity
+                frontActivity,
+                reason,
             )
         }
     }
@@ -972,7 +1016,8 @@ open class SalesforceSDKManager protected constructor(
         refreshToken: String?,
         loginServer: String?,
         account: Account?,
-        frontActivity: Activity?
+        frontActivity: Activity?,
+        logoutReason: LogoutReason,
     ) {
         cleanUp(
             frontActivity,
@@ -981,7 +1026,7 @@ open class SalesforceSDKManager protected constructor(
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
-        notifyLogoutComplete(showLoginPage)
+        notifyLogoutComplete(showLoginPage, logoutReason)
 
         // Revoke the existing refresh token
         if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
@@ -990,7 +1035,8 @@ open class SalesforceSDKManager protected constructor(
                     revokeRefreshToken(
                         DEFAULT,
                         URI(loginServer),
-                        refreshToken
+                        refreshToken,
+                        logoutReason,
                     )
                 }.onFailure { e ->
                     w(TAG, "Revoking token failed", e)
@@ -1003,9 +1049,9 @@ open class SalesforceSDKManager protected constructor(
      * Sends the logout complete event.
      * @param showLoginPage When true, shows the login page
      */
-    private fun notifyLogoutComplete(showLoginPage: Boolean) {
-        EventsObservable.get().notifyEvent(LogoutComplete)
-        sendLogoutCompleteIntent()
+    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason) {
+        EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
+        sendLogoutCompleteIntent(logoutReason)
         if (showLoginPage) {
             startSwitcherActivityIfRequired()
         }
@@ -1181,7 +1227,7 @@ open class SalesforceSDKManager protected constructor(
 
         "Logout" to object : DevActionHandler {
             override fun onSelected() {
-                logout(frontActivity = frontActivity)
+                logout(frontActivity = frontActivity, reason = LogoutReason.USER_LOGOUT)
             }
         },
 
@@ -1282,11 +1328,12 @@ open class SalesforceSDKManager protected constructor(
     } ?: ""
 
     /** Sends the logout completed intent */
-    private fun sendLogoutCompleteIntent() =
+    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason) =
         appContext.sendBroadcast(Intent(
             LOGOUT_COMPLETE_INTENT_ACTION
         ).apply {
             setPackage(appContext.packageName)
+            putExtra(LOGOUT_REASON_KEY, logoutReason.toString())
         })
 
     /**
@@ -1415,6 +1462,14 @@ open class SalesforceSDKManager protected constructor(
     @OnLifecycleEvent(ON_STOP)
     protected open fun onAppBackgrounded() {
         screenLockManager?.onAppBackgrounded()
+
+        // Publish analytics one-time on app background, if enabled.
+        if (SalesforceAnalyticsManager.analyticsPublishingType() == PublishOnAppBackground) {
+            enqueueAnalyticsPublishWorkRequest(
+                getInstance().appContext
+            )
+        }
+
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppBackgrounded()
 
         // Hide the Salesforce Mobile SDK "Show Developer Support" notification
@@ -1428,6 +1483,17 @@ open class SalesforceSDKManager protected constructor(
     protected open fun onAppForegrounded() {
         screenLockManager?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
+
+        // Review push-notifications registration for the current user, if enabled.
+        userAccountManager.currentUser?.let { userAccount ->
+            if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
+                register(
+                    context = appContext,
+                    account = userAccount,
+                    recreateKey = false
+                )
+            }
+        }
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
         if (userAccountManager.currentAccount != null && authenticatedActivityForDeveloperSupport != null) {
@@ -1448,7 +1514,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "12.0.1"
+        const val SDK_VERSION = "12.1.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager
@@ -1468,6 +1534,9 @@ open class SalesforceSDKManager protected constructor(
 
         /** An intent action indicating logout was completed */
         const val LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE"
+
+        /** Key for Logout Reason sent with the logout intent */
+        internal const val LOGOUT_REASON_KEY = "logout_reason"
 
         /** The default app name */
         private const val DEFAULT_APP_DISPLAY_NAME = "Salesforce"
@@ -1762,6 +1831,8 @@ open class SalesforceSDKManager protected constructor(
                         browserLoginEnabled = false,
                         shareBrowserSessionEnabled = false
                     )
+
+                    return@withTimeout
                 }
 
                 getMyDomainAuthConfig(loginServer).let { authConfig ->

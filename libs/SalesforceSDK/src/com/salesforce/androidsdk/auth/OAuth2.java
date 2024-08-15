@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.auth;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -141,9 +143,15 @@ public class OAuth2 {
     /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
     protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
 
+    /** Endpoint path for Salesforce Identity API initialize headless registration flow */
+    protected static String OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION = "/services/auth/headless/init/registration";
+
+    /** Endpoint path for Salesforce Identity API headless forgot password flow */
+    protected static String OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD = "/services/auth/headless/forgot_password";
+
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
+    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=%s&revoke_reason=%s";
     private static final String LIGHTNING_DOMAIN = "lightning_domain";
     private static final String LIGHTNING_SID = "lightning_sid";
     private static final String VF_DOMAIN = "visualforce_domain";
@@ -187,6 +195,24 @@ public class OAuth2 {
         TimeZone tz = TimeZone.getTimeZone("UTC");
         TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
         TIMESTAMP_FORMAT.setTimeZone(tz);
+    }
+
+    public enum LogoutReason {
+        CORRUPT_STATE,           // "Corrupted client state"
+        TOKEN_EXPIRED,           // "Refresh token expired"
+        SSDK_LOGOUT_POLICY,      // "SSDK initiated logout for policy violation"
+        TIMEOUT,                 // "Timeout while waiting for server response"
+        UNEXPECTED,              // "Unexpected error or crash"
+        UNEXPECTED_RESPONSE,     // "Unexpected response from server"
+        UNKNOWN,                 // "Unknown"
+        USER_LOGOUT,             // "User initiated logout"
+        REFRESH_TOKEN_ROTATED;   // "Refresh token rotated"
+
+        @NonNull
+        @Override
+        public String toString() {
+            return this.name().toLowerCase(Locale.ROOT);
+        }
     }
 
     /**
@@ -369,12 +395,24 @@ public class OAuth2 {
      * @param httpAccessor HttpAccess instance.
      * @param loginServer Login server.
      * @param refreshToken Refresh token.
+     *
+     * @deprecated Will be removed in 13.0.  Use {@link #revokeRefreshToken(HttpAccess, URI, String, LogoutReason)} instead.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
-        final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_REVOKE_PATH);
-        sb.append(Uri.encode(refreshToken));
-        final Request request = new Request.Builder().url(sb.toString()).get().build();
+        revokeRefreshToken(httpAccessor, loginServer, refreshToken, LogoutReason.UNKNOWN);
+    }
+
+    /**
+     * Revokes the existing refresh token.
+     *
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param refreshToken Refresh token.
+     * @param reason The reason the refresh token is being revoked.
+     */
+    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
+        final String requestPath = String.format(OAUTH_REVOKE_PATH, refreshToken, reason.toString());
+        final Request request = new Request.Builder().url(loginServer.toString() + requestPath).get().build();
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {

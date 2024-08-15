@@ -35,8 +35,10 @@ import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
+import android.util.Patterns.EMAIL_ADDRESS
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_ID
@@ -46,15 +48,19 @@ import com.salesforce.androidsdk.auth.OAuth2.CODE_VERIFIER
 import com.salesforce.androidsdk.auth.OAuth2.GRANT_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.HYBRID_AUTH_CODE
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
 import com.salesforce.androidsdk.auth.OAuth2.REDIRECT_URI
 import com.salesforce.androidsdk.auth.OAuth2.RESPONSE_TYPE
 import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager.StartRegistrationResult
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidCredentials
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidEmail
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidPassword
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.InvalidUsername
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.Success
@@ -123,13 +129,8 @@ internal class NativeLoginManager(
         val trimmedUsername = username.trim()
         val trimmedPassword = password.trim()
 
-        if (!isValidUsername(trimmedUsername)) {
-            return InvalidUsername
-        }
-
-        if (!isValidPassword(trimmedPassword)) {
-            return InvalidPassword
-        }
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return it }
+        trimmedPassword.mapInvalidPasswordToResult()?.let { return it }
 
         val encodedCreds = generateColonConcatenatedBase64String(
             value1 = trimmedUsername,
@@ -270,7 +271,255 @@ internal class NativeLoginManager(
         return requestBodyString.toRequestBody(mediaType)
     }
 
-    // region Headless, Password-Less Login Via One-Time-Passcode
+    // region Salesforce Identity API Headless Registration Flow
+
+    override suspend fun startRegistration(
+        email: String,
+        firstName: String,
+        lastName: String,
+        username: String,
+        newPassword: String,
+        reCaptchaToken: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ): StartRegistrationResult {
+        // Validate parameters.
+        val trimmedEmail = email.trim()
+        if (!EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+            return StartRegistrationResult(InvalidEmail)
+        }
+        val trimmedNewPassword = newPassword.trim()
+        trimmedNewPassword.mapInvalidPasswordToResult()?.let { return StartRegistrationResult(it) }
+        val trimmedUsername = username.trim()
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return StartRegistrationResult(it) }
+        val reCaptchaParameterGenerationResult = generateReCaptchaParameters(reCaptchaToken)
+
+        // Determine the OTP verification method.
+        val otpVerificationMethodString = otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue
+        // Generate the start registration request body.
+        val startRegistrationRequestBodyString = runCatching {
+            StartRegistrationRequestBody(
+                recaptcha = reCaptchaParameterGenerationResult.nonEnterpriseReCaptchaToken,
+                recaptchaevent = reCaptchaParameterGenerationResult.enterpriseReCaptchaEvent,
+                userData = UserData(
+                    email = trimmedEmail,
+                    username = trimmedUsername,
+                    firstName = firstName.trim(),
+                    lastName = lastName.trim()
+                ),
+                password = trimmedNewPassword,
+                otpVerificationMethod = otpVerificationMethodString
+            ).toJson()
+        }.onFailure { e ->
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start registration request body due to an encoding error with message '${e.message}'.", e)
+            return StartRegistrationResult(UnknownError)
+        }.getOrNull()
+
+        // Create the start registration request.
+        val startRegistrationRequest = RestRequest(
+            POST,
+            LOGIN,
+            "$loginUrl$OAUTH_ENDPOINT_HEADLESS_INIT_REGISTRATION",
+            startRegistrationRequestBodyString,
+            null
+        )
+
+        // Submit the start registration request and fetch the response.
+        val startRegistrationResponse = suspendedRestCall(startRegistrationRequest) ?: return StartRegistrationResult(UnknownError)
+
+        // React to the start registration response.
+        return when (startRegistrationResponse.isSuccess) {
+            true -> {
+                startRegistrationResponse.consumeQuietly()
+                startRegistrationResponse.asJSONObject().let { response ->
+                    StartRegistrationResult(
+                        nativeLoginResult = Success,
+                        email = response.get("email").toString(),
+                        requestIdentifier = response.get("identifier").toString()
+                    )
+                }
+            }
+
+            else -> {
+                SalesforceSDKLogger.e(
+                    TAG,
+                    "Cannot start registration as the Salesforce Identity API returned an unsuccessful HTTP status. '${startRegistrationResponse.asString()}'"
+                )
+                StartRegistrationResult(UnknownError)
+            }
+        }
+    }
+
+    override suspend fun completeRegistration(
+        otp: String,
+        requestIdentifier: String,
+        otpVerificationMethod: OtpVerificationMethod
+    ) = submitAuthorizationRequest(
+        authRequestType = AUTH_REQUEST_TYPE_VALUE_USER_REGISTRATION,
+        otp = otp,
+        identifier = requestIdentifier,
+        otpVerificationMethod = otpVerificationMethod
+    )
+
+    /**
+     * A data class for the Salesforce Identity API start registration request
+     * body.
+     * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
+     * SDK.  This is not used with reCAPTCHA Enterprise
+     * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
+     * Enterprise
+     * @param userData The start registration request user data
+     * @param password The user-entered new password
+     * @param otpVerificationMethod The one-time-password's delivery method for
+     * verification in "email" or "sms"
+     */
+    private data class StartRegistrationRequestBody(
+        val recaptcha: String?,
+        val recaptchaevent: ReCaptchaEventRequestParameter?,
+        val userData: UserData,
+        val password: String,
+        val otpVerificationMethod: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("recaptcha", recaptcha)
+            put("recaptchaevent", recaptchaevent?.toJson())
+            put("userdata", userData.toJson())
+            put("password", password)
+            put("verificationmethod", otpVerificationMethod)
+        }
+
+        /**
+         * A data class for the Salesforce Identity API start registration
+         * request body's user info parameter.
+         * @param email A valid, user-entered email address
+         * @param username A valid Salesforce username or email
+         * @param firstName The user-entered first name
+         * @param lastName The user-entered last name
+         */
+        data class UserData(
+            val email: String,
+            val username: String,
+            val firstName: String,
+            val lastName: String
+        ) {
+            fun toJson() = JSONObject().apply {
+                put("email", email)
+                put("username", username)
+                put("firstName", firstName)
+                put("lastName", lastName)
+            }
+        }
+    }
+
+    // endregion
+    // region Salesforce Identity API Headless Forgot Password Flow
+
+    override suspend fun startPasswordReset(
+        username: String,
+        reCaptchaToken: String,
+    ): NativeLoginResult {
+
+        // Validate parameters.
+        val trimmedUsername = username.trim()
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return it }
+        val reCaptchaParameterGenerationResult = generateReCaptchaParameters(reCaptchaToken)
+
+        // Generate the start password reset request body.
+        val startPasswordResetRequestBodyString = runCatching {
+            StartPasswordResetRequestBody(
+                recaptcha = reCaptchaParameterGenerationResult.nonEnterpriseReCaptchaToken,
+                recaptchaevent = reCaptchaParameterGenerationResult.enterpriseReCaptchaEvent,
+                username = trimmedUsername
+            ).toJson()
+        }.onFailure { e ->
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start password reset request body due to an encoding error with message '${e.message}'.", e)
+            return UnknownError
+        }.getOrNull()
+
+        // Create the start password reset request.
+        val startPasswordResetRequest = RestRequest(
+            POST,
+            LOGIN,
+            "$loginUrl$OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD",
+            startPasswordResetRequestBodyString,
+            null
+        )
+
+        // Submit the start password reset request and fetch the response.
+        val startPasswordResetResponse = suspendedRestCall(startPasswordResetRequest) ?: return UnknownError
+
+        // React to the start password reset response.
+        return when (startPasswordResetResponse.isSuccess) {
+            true -> {
+                startPasswordResetResponse.consumeQuietly()
+                Success
+            }
+
+            else -> {
+                SalesforceSDKLogger.e(
+                    TAG,
+                    "Cannot start password reset as the Salesforce Identity API returned an unsuccessful HTTP status. '${startPasswordResetResponse.asString()}'"
+                )
+                UnknownError
+            }
+        }
+    }
+
+    override suspend fun completePasswordReset(
+        username: String,
+        otp: String,
+        newPassword: String
+    ): NativeLoginResult {
+
+        // Validate parameters.
+        val trimmedUsername = username.trim()
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return it }
+        val trimmedNewPassword = newPassword.trim()
+        trimmedNewPassword.mapInvalidPasswordToResult()?.let { return it }
+        val trimmedOtp = otp.trim()
+
+        // Generate the complete password reset request body.
+        val completePasswordResetRequestBodyString = runCatching {
+            CompletePasswordResetRequestBody(
+                username = trimmedUsername,
+                otp = trimmedOtp,
+                newPassword = newPassword
+            ).toJson()
+        }.onFailure { e ->
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode complete password reset request body due to an encoding error with message '${e.message}'.", e)
+            return UnknownError
+        }.getOrNull()
+
+        // Create the complete password reset request.
+        val completePasswordResetRequest = RestRequest(
+            POST,
+            LOGIN,
+            "$loginUrl$OAUTH_ENDPOINT_HEADLESS_FORGOT_PASSWORD",
+            completePasswordResetRequestBodyString,
+            null
+        )
+
+        // Submit the complete password reset request and fetch the response.
+        val completePasswordResetResponse = suspendedRestCall(completePasswordResetRequest) ?: return UnknownError
+
+        // React to the complete password reset response.
+        return when (completePasswordResetResponse.isSuccess) {
+            true -> {
+                completePasswordResetResponse.consumeQuietly()
+                Success
+            }
+
+            else -> {
+                SalesforceSDKLogger.e(
+                    TAG,
+                    "Cannot complete password reset as the Salesforce Identity API returned an unsuccessful HTTP status. '${completePasswordResetResponse.asString()}'"
+                )
+                UnknownError
+            }
+        }
+    }
+
+    // endregion
+    // region Salesforce Identity API Headless, Password-Less Login Via One-Time-Passcode
 
     override suspend fun submitOtpRequest(
         username: String,
@@ -279,93 +528,57 @@ internal class NativeLoginManager(
     ): OtpRequestResult {
 
         // Validate parameters.
-        if (!isValidUsername(username.trim())) {
-            return OtpRequestResult(InvalidUsername)
-        }
-        val reCaptchaSiteKeyId = when {
-            reCaptchaSiteKeyId == null -> {
-                SalesforceSDKLogger.e(TAG, "A reCAPTCHA site key wasn't and must be provided when using enterprise reCAPATCHA.")
-                return OtpRequestResult(UnknownError)
-            }
+        val trimmedUsername = username.trim()
+        trimmedUsername.mapInvalidUsernameToResult()?.let { return OtpRequestResult(it) }
+        val reCaptchaParameterGenerationResult = generateReCaptchaParameters(reCaptchaToken)
 
-            else -> reCaptchaSiteKeyId
-        }
-        val googleCloudProjectId = when {
-            googleCloudProjectId == null -> {
-                SalesforceSDKLogger.e(TAG, "A Google Cloud project id wasn't and must be provided when using enterprise reCAPATCHA.")
-                return OtpRequestResult(nativeLoginResult = UnknownError)
-            }
-
-            else -> googleCloudProjectId
-        }
-
-        /*
-         * Create the OTP request body with the provided parameters. Note: The
-         * `emailtemplate` parameter isn't supported here, but could be added in
-         * the future.
-         */
-        // Determine the reCAPTCHA parameter for non-enterprise reCAPTCHA
-        val reCaptchaParameter = when {
-            isReCaptchaEnterprise -> null
-            else -> reCaptchaToken
-        }
-        // Determine the reCAPTCHA "event" parameter for enterprise reCAPTCHA
-        val reCaptchaEventParameter = when {
-            isReCaptchaEnterprise -> OtpRequestBodyReCaptchaEvent(
-                token = reCaptchaToken,
-                siteKey = reCaptchaSiteKeyId,
-                projectId = googleCloudProjectId
-            )
-
-            else -> null
-        }
         // Determine the OTP verification method.
         val otpVerificationMethodString = otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue
-        // Determine the OTP request headers.
-        val otpRequestHeaders = hashMapOf(
+        // Determine the start password-less login request headers.
+        val startPasswordLessLoginRequestHeaders = hashMapOf(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_APPLICATION_JSON,
         )
-        // Generate the OTP request body.
-        val requestBodyString = runCatching {
+        // Generate the start password-less login request body.
+        val startPasswordLessLoginRequestBodyString = runCatching {
             OtpRequestBody(
-                recaptcha = reCaptchaParameter,
-                recaptchaevent = reCaptchaEventParameter,
-                username = username,
+                recaptcha = reCaptchaParameterGenerationResult.nonEnterpriseReCaptchaToken,
+                recaptchaevent = reCaptchaParameterGenerationResult.enterpriseReCaptchaEvent,
+                username = trimmedUsername,
                 verificationMethod = otpVerificationMethodString
             ).toJson()
         }.onFailure { e ->
-            SalesforceSDKLogger.e(TAG, "Cannot JSON encode OTP request body due to an encoding error with message '${e.message}'.", e)
+            SalesforceSDKLogger.e(TAG, "Cannot JSON encode start password-less login request body due to an encoding error with message '${e.message}'.", e)
             return OtpRequestResult(nativeLoginResult = UnknownError)
         }.getOrNull()
 
-        // Create the OTP request.
-        val otpRequest = RestRequest(
+        // Create the start password-less login request.
+        val startPasswordLessLoginRequest = RestRequest(
             POST,
             LOGIN,
             "$loginUrl$OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN",
-            requestBodyString,
-            otpRequestHeaders
+            startPasswordLessLoginRequestBodyString,
+            startPasswordLessLoginRequestHeaders
         )
 
-        // Submit the OTP request and fetch the OTP response.
-        val otpResponse = suspendedRestCall(otpRequest) ?: return OtpRequestResult(nativeLoginResult = UnknownError)
+        // Submit the start password-less login request and fetch the OTP response.
+        val startPasswordLessLoginResponse = suspendedRestCall(startPasswordLessLoginRequest) ?: return OtpRequestResult(nativeLoginResult = UnknownError)
 
-        // React to the OTP response.
-        return when (otpResponse.isSuccess) {
+        // React to the start password-less login response.
+        return when (startPasswordLessLoginResponse.isSuccess) {
             true -> {
                 runCatching {
-                    // Decode the OTP response to obtain the OTP identifier.
-                    otpResponse.consumeQuietly()
-                    OtpRequestResult(Success, otpResponse.asJSONObject().get("identifier").toString())
+                    // Decode the start password-less login response to obtain the OTP identifier.
+                    startPasswordLessLoginResponse.consumeQuietly()
+                    OtpRequestResult(Success, startPasswordLessLoginResponse.asJSONObject().get("identifier").toString())
                 }.getOrElse { e ->
-                    SalesforceSDKLogger.e(TAG, "Cannot JSON decode OTP response body due to a decoding error with message '${e.message}'.")
-                    otpResponse.consumeQuietly()
+                    SalesforceSDKLogger.e(TAG, "Cannot JSON decode start password-less login response body due to a decoding error with message '${e.message}'.")
+                    startPasswordLessLoginResponse.consumeQuietly()
                     OtpRequestResult(UnknownError)
                 }
             }
 
             else -> {
-                SalesforceSDKLogger.e(TAG, "OTP request failure.")
+                SalesforceSDKLogger.e(TAG, "Start password-less login request failure.")
                 OtpRequestResult(UnknownError)
             }
         }
@@ -375,6 +588,208 @@ internal class NativeLoginManager(
         otp: String,
         otpIdentifier: String,
         otpVerificationMethod: OtpVerificationMethod
+    ) = submitAuthorizationRequest(
+        authRequestType = AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN,
+        otp = otp,
+        identifier = otpIdentifier,
+        otpVerificationMethod = otpVerificationMethod
+    )
+
+    /**
+     * A data class for the start password reset request body.
+     * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
+     * SDK.  This is not used with reCAPTCHA Enterprise
+     * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
+     * Enterprise
+     * @param username A valid Salesforce username or email
+     */
+    private data class StartPasswordResetRequestBody(
+        val recaptcha: String?,
+        val recaptchaevent: ReCaptchaEventRequestParameter?,
+        val username: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("recaptcha", recaptcha)
+            put("recaptchaevent", recaptchaevent?.toJson())
+            put("username", username)
+        }
+    }
+
+    /**
+     * A data class for the complete reset password OTP request body.
+     * @param username A valid Salesforce username or email
+     * @param otp The user-entered one-time-password previously delivered to the
+     * user by the Salesforce Identity API forgot password endpoint
+     * @param newPassword The user-entered new password
+     */
+    private data class CompletePasswordResetRequestBody(
+        val username: String,
+        val otp: String,
+        val newPassword: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("username", username)
+            put("otp", otp)
+            put("newpassword", newPassword)
+        }
+    }
+
+    /**
+     * A data class for the start password-less login request body.
+     * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
+     * SDK.  This is not used with reCAPTCHA Enterprise
+     * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
+     * Enterprise
+     * @param username A valid Salesforce username or email
+     * @param verificationMethod The OTP verification code's delivery method in
+     * "email" or "sms"
+     */
+    private data class OtpRequestBody(
+        val recaptcha: String?,
+        val recaptchaevent: ReCaptchaEventRequestParameter?,
+        val username: String,
+        val verificationMethod: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("recaptcha", recaptcha)
+            put("recaptchaevent", recaptchaevent?.toJson())
+            put("username", username)
+            put("verificationmethod", verificationMethod)
+        }
+    }
+
+    /**
+     * A data class for the Salesforce Identity API request body reCAPTCHA event
+     * parameters.
+     * @param token The reCAPTCHA token provided by the reCAPTCHA Android SDK.
+     * This is used only with reCAPTCHA Enterprise
+     * @param siteKey The Google Cloud project reCAPTCHA Key's "Id" as shown in
+     * Google Cloud Console under "Products & Solutions", "Security" and
+     * "reCAPTCHA Enterprise"
+     * @param expectedAction The user-initiated "Action Name" for the reCAPTCHA
+     * event.  A specific value is not required by Google though it is used in
+     * reCAPTCHA Metrics.  "login" is a recommended value from Google
+     * documentation
+     * @param projectId The Google Cloud project's "Id" as shown in Google Cloud
+     * Console
+     */
+    private data class ReCaptchaEventRequestParameter(
+        val token: String,
+        val siteKey: String,
+        val expectedAction: String = "login",
+        val projectId: String
+    ) {
+        fun toJson() = JSONObject().apply {
+            put("token", token)
+            put("siteKey", siteKey)
+            put("expectedAction", expectedAction)
+            put("projectId", projectId)
+        }
+    }
+
+    // endregion
+    // region Private Implementation
+
+    /**
+     * Generates a Base64 encoded value by concatenating the provided values
+     * with a colon, which is commonly used in the Headless Identity API request
+     * headers.
+     * @param value1 The left-side value
+     * @param value2 The right-side value
+     * @return The Base64 encoded value
+     */
+    private fun generateColonConcatenatedBase64String(
+        value1: String,
+        value2: String
+    ) = encodeToString(
+        "$value1:$value2".toByteArray(),
+        URL_SAFE or NO_WRAP or NO_PADDING
+    )
+
+    /**
+     * Generates either the reCAPTCHA token parameter for non-enterprise
+     * reCAPTCHA configurations or the reCAPTCHA event parameter for enterprise
+     * reCAPTCHA configurations.
+     * @param reCaptchaToken A reCAPTCHA token provided by the reCAPTCHA SDK
+     * @return The reCAPTCHA parameter generation result with exactly one of the
+     * non-enterprise reCAPTCHA parameter, enterprise reCAPTCHA parameter or
+     * a native login result for generation failure
+     */
+    private fun generateReCaptchaParameters(
+        reCaptchaToken: String
+    ): ReCaptchaParameterGenerationResult {
+
+        // Validate state.
+        val reCaptchaSiteKeyId = when {
+            reCaptchaSiteKeyId == null -> {
+                SalesforceSDKLogger.e(TAG, "A reCAPTCHA site key wasn't and must be provided when using enterprise reCAPATCHA.")
+                return ReCaptchaParameterGenerationResult(result = UnknownError)
+            }
+
+            else -> reCaptchaSiteKeyId
+        }
+        val googleCloudProjectId = when {
+            googleCloudProjectId == null -> {
+                SalesforceSDKLogger.e(TAG, "A Google Cloud project id wasn't and must be provided when using enterprise reCAPATCHA.")
+                return ReCaptchaParameterGenerationResult(result = UnknownError)
+            }
+
+            else -> googleCloudProjectId
+        }
+
+        // Generate the Salesforce Identity API reCAPTCHA request parameters.
+        return ReCaptchaParameterGenerationResult(
+            nonEnterpriseReCaptchaToken = when {
+                isReCaptchaEnterprise -> null
+                else -> reCaptchaToken
+            },
+            enterpriseReCaptchaEvent = when {
+                isReCaptchaEnterprise -> ReCaptchaEventRequestParameter(
+                    token = reCaptchaToken,
+                    siteKey = reCaptchaSiteKeyId,
+                    projectId = googleCloudProjectId
+                )
+
+                else -> null
+            }
+        )
+    }
+
+    /**
+     * The result of generating Salesforce Identity API request reCAPTCHA
+     * parameters.
+     */
+    private data class ReCaptchaParameterGenerationResult(
+        /** The reCAPTCHA token parameter for non-enterprise reCAPTCHA */
+        val nonEnterpriseReCaptchaToken: String? = null,
+
+        /** The reCAPTCHA event parameter for enterprise reCAPTCHA */
+        val enterpriseReCaptchaEvent: ReCaptchaEventRequestParameter? = null,
+
+        /** The error native login result of the reCAPTCHA parameter generation or null for successful generation */
+        val result: NativeLoginResult? = null
+    )
+
+    /**
+     * Submits an authorization request to the Salesforce Identity API and, on
+     * success, submits the access token request.
+     * @param authRequestType The Salesforce Identity API authorization request
+     * type header value
+     * @param otp A one-time-password (OTP) previously issued by the Salesforce
+     * Identity API
+     * @param identifier A OTP or request identifier previously issued by the
+     * Salesforce Identity API to match the provided OTP
+     * @param otpVerificationMethod The OTP verification method used to obtain
+     * the identifier from the Salesforce Identity API
+     * @return A native login result indicating success or one of several
+     * possible failures, including both in-app and Salesforce Identity API
+     * results
+     */
+    private suspend fun submitAuthorizationRequest(
+        authRequestType: String,
+        otp: String,
+        identifier: String,
+        otpVerificationMethod: OtpVerificationMethod
     ): NativeLoginResult {
         // Validate parameters.
         val trimmedOtp = otp.trim()
@@ -383,18 +798,15 @@ internal class NativeLoginManager(
         val codeVerifier = getRandom128ByteKey()
         val codeChallenge = getSHA256Hash(codeVerifier)
 
-        // Determine the OTP verification method.
-        otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue
-
         // Generate the authorization.
         val authorization = generateColonConcatenatedBase64String(
-            value1 = otpIdentifier,
+            value1 = identifier,
             value2 = trimmedOtp
         )
 
         // Generate the authorization request headers.
         val authorizationRequestHeaders = hashMapOf(
-            AUTH_REQUEST_TYPE_HEADER_NAME to AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN,
+            AUTH_REQUEST_TYPE_HEADER_NAME to authRequestType,
             AUTH_VERIFICATION_TYPE_HEADER_NAME to otpVerificationMethod.identityApiAuthVerificationTypeHeaderValue,
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $authorization"
@@ -429,78 +841,6 @@ internal class NativeLoginManager(
             codeVerifier = codeVerifier
         )
     }
-
-    /**
-     * A data class for the OTP request body.
-     * @param recaptcha The reCAPTCHA token provided by the reCAPTCHA Android
-     * SDK.  This is not used with reCAPTCHA Enterprise
-     * @param recaptchaevent The reCAPTCHA parameters for use with reCAPTCHA
-     * Enterprise
-     * @param username The Salesforce username
-     * @param verificationMethod The OTP verification code's delivery method in
-     * "email" or "sms"
-     */
-    private data class OtpRequestBody(
-        val recaptcha: String?,
-        val recaptchaevent: OtpRequestBodyReCaptchaEvent?,
-        val username: String,
-        val verificationMethod: String
-    ) {
-        // TODO: Inquire regarding modern JSON serialization in MSDK. ECJ20240317
-        fun toJson() = JSONObject().apply {
-            put("recaptcha", recaptcha)
-            put("recaptchaevent", recaptchaevent?.toJson())
-            put("username", username)
-            put("verificationmethod", verificationMethod)
-        }
-    }
-
-    /**
-     * A data class for the OTP request body's reCAPTCHA event parameter.
-     * @param token The reCAPTCHA token provided by the reCAPTCHA Android SDK.
-     * This is used only with reCAPTCHA Enterprise
-     * @param siteKey The Google Cloud project reCAPTCHA Key's "Id" as shown in
-     * Google Cloud Console under "Products & Solutions", "Security" and
-     * "reCAPTCHA Enterprise"
-     * @param expectedAction The user-initiated "Action Name" for the reCAPTCHA
-     * event.  A specific value is not required by Google though it is used in
-     * reCAPTCHA Metrics.  "login" is a recommended value from Google
-     * documentation
-     * @param projectId The Google Cloud project's "Id" as shown in Google Cloud
-     * Console
-     */
-    private data class OtpRequestBodyReCaptchaEvent(
-        val token: String,
-        val siteKey: String,
-        val expectedAction: String = "login",
-        val projectId: String
-    ) {
-        fun toJson() = JSONObject().apply {
-            put("token", token)
-            put("siteKey", siteKey)
-            put("expectedAction", expectedAction)
-            put("projectId", projectId)
-        }
-    }
-
-    // endregion
-    // region Private Implementation
-
-    /**
-     * Generates a Base64 encoded value by concatenating the provided values
-     * with a colon, which is commonly used in the Headless Identity API request
-     * headers.
-     * @param value1 The left-side value
-     * @param value2 The right-side value
-     * @return The Base64 encoded value
-     */
-    private fun generateColonConcatenatedBase64String(
-        value1: String,
-        value2: String
-    ) = encodeToString(
-        "$value1:$value2".toByteArray(),
-        URL_SAFE or NO_WRAP or NO_PADDING
-    )
 
     /**
      * Reacts to a response from the Headless Identity API authorization
@@ -552,6 +892,32 @@ internal class NativeLoginManager(
         }
     }
 
+
+    // endregion
+    // region Private String Parameter Validation
+
+    /**
+     * Validates this string is valid password.
+     * @return null for valid passwords - The invalid password login result
+     * otherwise.
+     */
+    private fun String.mapInvalidPasswordToResult() =
+        when {
+            !isValidPassword(trim()) -> InvalidPassword
+            else -> null
+        }
+
+    /**
+     * Validates this string is valid username.
+     * @return null for valid usernames - The invalid username login result
+     * otherwise.
+     */
+    private fun String.mapInvalidUsernameToResult() =
+        when {
+            !isValidUsername(trim()) -> InvalidUsername
+            else -> null
+        }
+
     // endregion
 
     companion object {
@@ -563,6 +929,7 @@ internal class NativeLoginManager(
         private const val AUTH_REQUEST_TYPE_HEADER_NAME = "Auth-Request-Type"
         private const val AUTH_REQUEST_TYPE_VALUE_VALUE_NAMED_USER = "Named-User"
         private const val AUTH_REQUEST_TYPE_VALUE_PASSWORDLESS_LOGIN = "passwordless-login"
+        private const val AUTH_REQUEST_TYPE_VALUE_USER_REGISTRATION = "user-registration"
 
         private const val AUTH_VERIFICATION_TYPE_HEADER_NAME = "Auth-Verification-Type"
 

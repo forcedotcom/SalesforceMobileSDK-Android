@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.analytics;
 
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground;
+import static com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.text.TextUtils;
+
+import androidx.annotation.NonNull;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
@@ -70,8 +75,12 @@ public class SalesforceAnalyticsManager {
     private static final String UNAUTH_INSTANCE_KEY = "_no_user";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
-    private static boolean sPublishHandlerActive;
-    private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
+    private static boolean isPublishWorkRequestEnqueued;
+
+    /** The enabled Salesforce analytics publishing type */
+    private static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType = PublishOnAppBackground;
+
+    private static int publishPeriodicallyFrequencyHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
     private static int sEventPublishBatchSize = DEFAULT_BATCH_SIZE;
 
     private final AnalyticsManager analyticsManager;
@@ -102,7 +111,7 @@ public class SalesforceAnalyticsManager {
     /**
      * Returns the instance of this class associated with this user and community.
      *
-     * @param account User account.
+     * @param account     User account.
      * @param communityId Community ID.
      * @return Instance of this class.
      */
@@ -131,9 +140,9 @@ public class SalesforceAnalyticsManager {
         }
 
         // Adds a handler for publishing if not already active.
-        if (!sPublishHandlerActive) {
-            recreateAnalyticsPublishPeriodicWorkRequest();
-            sPublishHandlerActive = true;
+        if (!isPublishWorkRequestEnqueued) {
+            recreateAnalyticsPeriodicBackgroundPublishingWorkRequest();
+            isPublishWorkRequestEnqueued = true;
         }
         return instance;
     }
@@ -157,7 +166,7 @@ public class SalesforceAnalyticsManager {
     /**
      * Resets the instance of this class associated with this user and community.
      *
-     * @param account User account.
+     * @param account     User account.
      * @param communityId Community ID.
      */
     public static synchronized void reset(UserAccount account, String communityId) {
@@ -182,13 +191,52 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
-     * Sets the publish frequency, in hours.
+     * Sets the interval for periodic background publishing in hours.
      *
-     * @param publishFrequencyInHours Publish frequency, in hours.
+     * @param periodicBackgroundPublishingHoursInterval The interval for
+     *                                                  periodic background
+     *                                                  publishing in hours. It
+     *                                                  is recommended to keep
+     *                                                  this value under seven
+     *                                                  days
+     * @see #setAnalyticsPublishingType(SalesforceAnalyticsPublishingType)
      */
-    public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
-        sPublishFrequencyInHours = publishFrequencyInHours;
-        recreateAnalyticsPublishPeriodicWorkRequest();
+    public static synchronized void setPublishPeriodicallyFrequencyHours(
+            int periodicBackgroundPublishingHoursInterval
+    ) {
+        SalesforceAnalyticsManager.publishPeriodicallyFrequencyHours = periodicBackgroundPublishingHoursInterval;
+        setAnalyticsPublishingType(PublishPeriodically);
+    }
+
+    /**
+     * Sets the interval for periodic background publishing in hours.
+     *
+     * @deprecated Planned for removal 13.0.
+     * Use {@link #setPublishPeriodicallyFrequencyHours(int)} )}.
+     */
+    @Deprecated()
+    public static synchronized void setPublishFrequencyInHours(
+            int periodicBackgroundPublishingHoursInterval
+    ) {
+        setPublishPeriodicallyFrequencyHours(periodicBackgroundPublishingHoursInterval);
+    }
+
+    /**
+     * The enabled Salesforce analytics publishing type.
+     *
+     * @return The enabled Salesforce analytics publishing type
+     */
+    public static @NonNull SalesforceAnalyticsPublishingType analyticsPublishingType() {
+        return analyticsPublishingType;
+    }
+
+    /**
+     * Sets the enabled Salesforce analytics publishing type.
+     *
+     * @param value The Salesforce analytics publishing type
+     */
+    public static void setAnalyticsPublishingType(@NonNull final SalesforceAnalyticsPublishingType value) {
+        analyticsPublishingType = value;
     }
 
     /**
@@ -209,9 +257,23 @@ public class SalesforceAnalyticsManager {
      * Returns the publish frequency currently set, in hours.
      *
      * @return Publish frequency, in hours.
+     * @noinspection unused
      */
+    public static int getPublishPeriodicallyFrequencyHours() {
+        return publishPeriodicallyFrequencyHours;
+    }
+
+    /**
+     * Returns the publish frequency currently set, in hours.
+     *
+     * @return Publish frequency, in hours.
+     * @noinspection unused
+     * @deprecated Planned for removal 13.0.
+     * Use {@link #getPublishPeriodicallyFrequencyHours()} )}.
+     */
+    @Deprecated
     public static int getPublishFrequencyInHours() {
-        return sPublishFrequencyInHours;
+        return getPublishPeriodicallyFrequencyHours();
     }
 
     /**
@@ -295,6 +357,7 @@ public class SalesforceAnalyticsManager {
         if (events == null) {
             return;
         }
+
         final Set<String> eventsIds = new HashSet<>();
         boolean success = true;
         final Set<Map.Entry<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>> remoteKeySet = remotes.entrySet();
@@ -474,10 +537,35 @@ public class SalesforceAnalyticsManager {
         e.commit();
     }
 
-    private static void recreateAnalyticsPublishPeriodicWorkRequest() {
-        AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest(
+    private static void recreateAnalyticsPeriodicBackgroundPublishingWorkRequest() {
+        AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest(
                 SalesforceSDKManager.getInstance().getAppContext(),
-                sPublishFrequencyInHours
+                (long) publishPeriodicallyFrequencyHours
         );
+    }
+
+    /**
+     * The available Salesforce analytics publishing types.
+     */
+    public enum SalesforceAnalyticsPublishingType {
+
+        /**
+         * Specifies analytics should not be published
+         */
+        PublishDisabled,
+
+        /**
+         * Specifies analytics publishing should occur one time when the app is sent to the
+         * background
+         */
+        PublishOnAppBackground,
+
+        /**
+         * Specifies analytics publishing should occur periodically as a Android Background Task
+         * according to the frequency
+         *
+         * @see #setPublishPeriodicallyFrequencyHours
+         */
+        PublishPeriodically
     }
 }

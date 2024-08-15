@@ -34,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * Displays an activity that gives the user the option to clear app data
@@ -71,19 +72,8 @@ public class ManageSpaceActivity extends AppCompatActivity {
         return new AlertDialog.Builder(this)
         .setMessage(R.string.sf__manage_space_confirmation)
         .setPositiveButton(getString(R.string.sf__manage_space_logout_yes),
-        new DialogInterface.OnClickListener() {
-
-        	@Override
-        	public void onClick(DialogInterface dialog, int which) {
-        		SalesforceSDKManager.getInstance().logout(ManageSpaceActivity.this, false);
-        	}
-        }).setNegativeButton(getString(R.string.sf__manage_space_logout_no),
-        new DialogInterface.OnClickListener() {
-
-        	@Override
-        	public void onClick(DialogInterface dialog, int which) {
-        		finish();
-        	}
-        }).create();
+                (dialog, which) -> SalesforceSDKManager.getInstance()
+                        .logout(null, ManageSpaceActivity.this, false, OAuth2.LogoutReason.USER_LOGOUT))
+						.setNegativeButton(getString(R.string.sf__manage_space_logout_no), (dialog, which) -> finish()).create();
     }
 }

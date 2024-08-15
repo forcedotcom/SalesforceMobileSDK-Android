@@ -27,14 +27,21 @@
 package com.salesforce.androidsdk.analytics
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
 import androidx.work.ListenableWorker.Result.success
-import androidx.work.PeriodicWorkRequest.Builder
+import androidx.work.NetworkType.CONNECTED
+import androidx.work.OneTimeWorkRequest
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager.getInstance
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.reEnqueueAnalyticsPublishPeriodicWorkRequest
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishDisabled
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishPeriodically
+import java.util.UUID
 import java.util.concurrent.TimeUnit.HOURS
 
 /**
@@ -42,11 +49,15 @@ import java.util.concurrent.TimeUnit.HOURS
  * This class is intended to be instantiated by the background tasks work
  * manager.
  *
- * Use [reEnqueueAnalyticsPublishPeriodicWorkRequest] to enqueue a analytics
- * publish periodic work request.  Previous requests will be cancelled.
+ * [enqueueAnalyticsPublishWorkRequest] is used internally by the Salesforce
+ * Mobile SDK to enqueue analytics publish work requests to match the current
+ * analytics publishing configuration. Only one request may be active at a time.
+ * Only the Salesforce Mobile SDK should call this method as it is not intended
+ * for public use.
  *
  * @param context The Android context provided by the work manager
  * @param workerParams The worker parameters provided by the work manager
+ * @see [SalesforceAnalyticsManager.analyticsPublishingType]
  * @see <a href='https://developer.android.com/guide/background'>Android
  * Background Tasks</a>
  */
@@ -73,36 +84,67 @@ internal class AnalyticsPublishingWorker(
 
     companion object {
 
-        private const val publishAnalyticsPeriodicWorkName = "SalesforceAnalyticsPublishingPeriodicWork"
+        /**
+         * The Android background tasks name of the publish analytics work
+         * request.
+         * Note: This name is also used for one-time work, yet maintains this
+         * value for backwards compatibility and to ensure both periodic and one
+         * time work are mutually exclusive.
+         */
+        private const val PUBLISH_ANALYTICS_WORK_NAME = "SalesforceAnalyticsPublishingPeriodicWork"
 
         /**
-         * Enqueues a persistent background tasks periodic work request to
-         * publish stored analytics for the current user at the provided
-         * interval.
+         * Enqueues a persistent background tasks work request to publish stored
+         * analytics for the current user.
          *
          * If a work request is already queued, it will be cancelled before
          * the replacement is enqueued.
          *
+         * Note, background periodic publishing starts or resumes the host app
+         * and may incur licensing costs if authorization token refresh is
+         * required.
+         *
+         * Only the Salesforce Mobile SDK should call this method as it is not
+         * intended for public use.
+         *
          * @param context The Android context
-         * @param publishHoursInterval The interval at which to publish in hours
+         * @param periodicBackgroundPublishingHoursInterval The interval for
+         * periodic background publishing in hours
          * @return UUID The worker's unique id, which may be used for
          * cancellation
          */
-        fun reEnqueueAnalyticsPublishPeriodicWorkRequest(
+        fun enqueueAnalyticsPublishWorkRequest(
             context: Context,
-            publishHoursInterval: Long
-        ) = Builder(
-            AnalyticsPublishingWorker::class.java,
-            publishHoursInterval,
-            HOURS
-        ).build().also { publishAnalyticsPeriodicWorkRequest ->
-            runCatching {
-                getInstance(context)
-            }.getOrNull()?.enqueueUniquePeriodicWork(
-                publishAnalyticsPeriodicWorkName,
-                CANCEL_AND_REENQUEUE,
-                publishAnalyticsPeriodicWorkRequest
-            )
-        }.id
+            periodicBackgroundPublishingHoursInterval: Long = SalesforceAnalyticsManager.getPublishPeriodicallyFrequencyHours().toLong()
+        ): UUID? = when (SalesforceAnalyticsManager.analyticsPublishingType()) {
+
+            PublishDisabled -> null
+
+            PublishOnAppBackground -> OneTimeWorkRequest.Builder(
+                AnalyticsPublishingWorker::class.java
+            ).setConstraints(
+                Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
+            ).build().also { publishAnalyticsOneTimeWorkRequest ->
+                runCatching {
+                    getInstance(context)
+                }.getOrNull()?.enqueue(publishAnalyticsOneTimeWorkRequest)
+            }.id
+
+            PublishPeriodically -> PeriodicWorkRequest.Builder(
+                AnalyticsPublishingWorker::class.java,
+                periodicBackgroundPublishingHoursInterval,
+                HOURS
+            ).setConstraints(
+                Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
+            ).build().also { publishAnalyticsPeriodicWorkRequest ->
+                runCatching {
+                    getInstance(context)
+                }.getOrNull()?.enqueueUniquePeriodicWork(
+                    PUBLISH_ANALYTICS_WORK_NAME,
+                    CANCEL_AND_REENQUEUE,
+                    publishAnalyticsPeriodicWorkRequest
+                )
+            }.id
+        }
     }
 }

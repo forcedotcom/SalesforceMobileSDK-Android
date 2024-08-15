@@ -1,0 +1,70 @@
+# Validate changes to this class with: curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
+
+codecov:
+  branch: dev
+
+coverage:
+  precision: 2
+  round: down
+  range: "35...85"
+
+  status:
+    project:
+      default: false  # disable the default status that measures entire project
+      SalesforceAnalytics:
+        target: auto
+        paths:
+          - "libs/SalesforceAnalytics/src/"
+        flags:
+          - SalesforceAnalytics
+      SalesforceSDK:
+        target: auto
+        paths:
+          - "libs/SalesforceSDK/src/"
+        flags:
+          - SalesforceSDK
+      SalesforceHybrid:
+        target: auto
+        paths:
+          - "libs/SalesforceHybrid/src/"
+        flags:
+          - SalesforceHybrid
+      SmartStore:
+        target: auto
+        paths:
+          - "libs/SmartStore/src/"
+        flags:
+          - SmartStore
+      MobileSync:
+        target: auto
+        paths: 
+          - "libs/MobileSync/src/"
+        flags: 
+          - MobileSync
+      SalesforceReact:
+        target: auto
+        paths:
+          - "libs/SalesforceReact/src/"
+        flags:
+          - SalesforceReact
+      RestExplorer:
+        target: auto
+        paths: 
+          - "native/NativeSampleApps/RestExplorer/src/"
+        flags:
+          - RestExplorer
+
+ignore:
+  - "hybrid"
+  - "native"
+  - "test"
+  - "libs/**/src/com/salesforce/androidsdk/**/util/test"
+
+flag_management:
+  default_rules: # the rules that will be followed for any flag added, generally
+    carryforward: true
+
+comment:
+  layout: "diff, flags, files"
+  behavior: default
+  require_changes: true

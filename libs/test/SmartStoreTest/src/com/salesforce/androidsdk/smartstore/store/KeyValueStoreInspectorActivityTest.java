@@ -34,27 +34,33 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.hamcrest.CoreMatchers.allOf;
 
-import android.content.Intent;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests for KeyValueStoreInspectorActivity
@@ -72,13 +78,51 @@ public class KeyValueStoreInspectorActivityTest {
     private final String VALUE_3 = "this is a third value in ";
     private final String GLOBAL_STORE_TEXT = KeyValueStoreInspectorActivity.GLOBAL_STORE;
 
-    @Rule
-    public ActivityTestRule<KeyValueStoreInspectorActivity> keyValueStoreInspectorActivityTestRule = new ActivityTestRule<>(KeyValueStoreInspectorActivity.class, true, false);
+    public ActivityScenario<KeyValueStoreInspectorActivity> activityScenario;
+    public KeyValueStoreInspectorActivity keyValueStoreInspectorActivity;
+
+    // Dismissing system dialog if shown
+    // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
+    private void dismissSystemDialog() {
+        UiDevice device = UiDevice.getInstance(getInstrumentation());
+        UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
+        if (okButton.exists()) {
+            try {
+                okButton.click();
+            } catch (UiObjectNotFoundException e) {
+                // Nothing to do
+            }
+        }
+    }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         EventBuilderHelper.enableDisable(false);
         SmartStoreSDKManager.getInstance().removeAllGlobalKeyValueStores();
+    }
+
+    @After
+    public void tearDown() {
+        if (activityScenario != null) {
+            activityScenario.close();
+            keyValueStoreInspectorActivity = null;
+        }
+    }
+
+    private void launchActivityBlocking() {
+        activityScenario = ActivityScenario.launch(KeyValueStoreInspectorActivity.class);
+        CountDownLatch latch = new CountDownLatch(1);
+        activityScenario.onActivity(activity -> {
+            keyValueStoreInspectorActivity = activity;
+            latch.countDown();
+        });
+        try {
+            latch.await(); // Wait for the activity to be set
+        } catch (InterruptedException e) {
+            Assert.fail("Failed to launch activity");
+        }
+
+        dismissSystemDialog();
     }
 
     /**
@@ -86,7 +130,7 @@ public class KeyValueStoreInspectorActivityTest {
      */
     @Test
     public void testNoStore() {
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         Assert.assertEquals("Incorrect message for no store.",
                 KeyValueStoreInspectorActivity.NO_STORE, getCurrentStoreName());
         Assert.assertFalse("Get Value Button should be disabled.", isGetValueButtonEnabled());
@@ -98,7 +142,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testSingleStore() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         Assert.assertEquals("Wrong Store name shown.",
                 STORE_1 + GLOBAL_STORE_TEXT, getCurrentStoreName());
         Assert.assertTrue("Get Value Button should be enabled.", isGetValueButtonEnabled());
@@ -117,7 +161,7 @@ public class KeyValueStoreInspectorActivityTest {
     public void testChangingStores() {
         createKeyValueStore(STORE_1);
         createKeyValueStore(STORE_2);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         Assert.assertEquals("Wrong Store name shown.",
                 STORE_1 + GLOBAL_STORE_TEXT, getCurrentStoreName());
         changeStore(STORE_2);
@@ -134,7 +178,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testKeyNotFound() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("badKey");
         tapGetValueButton();
         checkForKeyNotFoundDialog();
@@ -146,7 +190,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testStarQuery() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("*");
         tapGetValueButton();
         checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
@@ -160,7 +204,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryEndingWithStarMatchingOne() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("f*");
         tapGetValueButton();
         checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
@@ -174,7 +218,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryEndingWithStarMatchingNone() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("x*");
         tapGetValueButton();
         checkForKeyNotFoundDialog();
@@ -189,7 +233,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryStartingWithStarMatchingTwo() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("*Key");
         tapGetValueButton();
         checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
@@ -203,7 +247,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryEndingWithStarMatchingTwo() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("*x");
         tapGetValueButton();
         checkForKeyNotFoundDialog();
@@ -218,7 +262,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryStartingAndEndingWithStarMatchingTwo() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("*r*");
         tapGetValueButton();
         checkKeyValuePairShown(KEY_1, VALUE_1 + STORE_1);
@@ -232,7 +276,7 @@ public class KeyValueStoreInspectorActivityTest {
     @Test
     public void testQueryStartingAndEndingWithStarMatchingNone() {
         createKeyValueStore(STORE_1);
-        keyValueStoreInspectorActivityTestRule.launchActivity(new Intent());
+        launchActivityBlocking();
         writeKey("*zz*");
         tapGetValueButton();
         checkForKeyNotFoundDialog();
@@ -249,13 +293,13 @@ public class KeyValueStoreInspectorActivityTest {
     }
 
     private String getCurrentStoreName() {
-        final AutoCompleteTextView textView = keyValueStoreInspectorActivityTestRule.getActivity()
+        final AutoCompleteTextView textView = keyValueStoreInspectorActivity
                 .findViewById(R.id.sf__inspector_stores_dropdown);
         return textView.getText().toString();
     }
 
     private boolean isGetValueButtonEnabled() {
-        final Button getValueButton = keyValueStoreInspectorActivityTestRule.getActivity()
+        final Button getValueButton = keyValueStoreInspectorActivity
                 .findViewById(R.id.sf__inspector_get_value_button);
         return getValueButton.isEnabled();
     }

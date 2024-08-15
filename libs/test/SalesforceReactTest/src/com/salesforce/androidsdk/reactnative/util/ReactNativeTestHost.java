@@ -80,7 +80,6 @@ public class ReactNativeTestHost extends ReactNativeHost {
                 // Always reading from bundle
                 // NB: Bundle is generated during build
                 .setBundleAssetName("index.android.bundle")
-                .setJSIModulesPackage(getJSIModulePackage())
                 .setUseDeveloperSupport(false);
 
         for (ReactPackage reactPackage : getPackages()) {

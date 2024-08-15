@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
@@ -85,7 +86,7 @@ object PushMessaging {
      */
     @JvmStatic
     fun register(context: Context, account: UserAccount?) {
-        register(context = context, account = account, recreateKey = false);
+        register(context = context, account = account, recreateKey = false)
     }
 
     /**
@@ -184,7 +185,6 @@ object PushMessaging {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
-                @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
             appName = context.getString(packageInfo.applicationInfo.labelRes)
@@ -472,15 +472,17 @@ object PushMessaging {
     ) {
         if (account == null) {
             enqueuePushNotificationsRegistrationWork(
-                null,
-                action,
-                null
+                userAccount = null,
+                action = action,
+                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
+                delayDays = null
             )
         } else if (isRegistered(context, account)) {
             enqueuePushNotificationsRegistrationWork(
-                account,
-                action,
-                null
+                userAccount = account,
+                action = action,
+                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
+                delayDays = null
             )
         }
     }

@@ -1,28 +1,29 @@
 {
   "name": "SalesforceReact",
-  "version": "12.0.1",
+  "version": "12.1.0",
   "private": true,
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start"
   },
   "dependencies": {
+    "@babel/plugin-transform-private-property-in-object": "^7.24.7",
     "create-react-class": "^15.7.0",
     "react": "18.2.0",
-    "react-native": "0.73.6",
-    "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#v12.0.1"
+    "react-native": "0.74.3",
+    "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
   },
   "devDependencies": {
-    "chai": "4.4.1",
     "@babel/core": "^7.20.0",
     "@babel/preset-env": "^7.20.0",
     "@babel/runtime": "^7.20.0",
-    "@react-native/babel-preset": "0.73.21",
-    "@react-native/eslint-config": "0.73.2",
-    "@react-native/metro-config": "0.73.5",
-    "@react-native/typescript-config": "0.73.1",
+    "@react-native/babel-preset": "0.74.85",
+    "@react-native/eslint-config": "0.74.85",
+    "@react-native/metro-config": "0.74.85",
+    "@react-native/typescript-config": "0.74.85",
     "@types/react": "^18.2.6",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.6.3",
+    "chai": "4.4.1",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
     "metro-react-native-babel-preset": "0.77.0",
