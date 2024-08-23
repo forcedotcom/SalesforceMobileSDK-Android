@@ -153,6 +153,13 @@ public class RestClient {
 		String orgId = userAccount != null ? userAccount.getOrgId() : null;
 		String userId = userAccount != null ? userAccount.getUserId() : null;
 		String cacheKey = computeCacheKey(orgId, userId);
+		OAuthRefreshInterceptor interceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
+		if (interceptor != null) {
+			// There is no way to remove an interceptor from the OkHttp builder so get rid of the
+			// access token to prevent it from being used by the OAuthRefreshInterceptor in memory.
+			interceptor.setAuthToken(null);
+		}
+
 		OAUTH_REFRESH_INTERCEPTORS.remove(cacheKey);
 		OK_CLIENT_BUILDERS.remove(cacheKey);
 		OkHttpClient client = OK_CLIENTS.remove(cacheKey);
