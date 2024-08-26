@@ -204,7 +204,7 @@ public class RestClient {
 
 		// If none cached, create new one
 		if (okHttpClientBuilder == null) {
-			okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder();
+			okHttpClientBuilder = httpAccessor.createNewClientBuilder();
 			if (!cacheKey.equals("unauthenticated")) {
 				okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
 			}

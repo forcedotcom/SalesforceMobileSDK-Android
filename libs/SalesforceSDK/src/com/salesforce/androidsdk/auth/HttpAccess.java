@@ -98,8 +98,33 @@ public class HttpAccess {
      *
      * @return okHttpClient.Builder with appropriate connection spec
      * and user agent interceptor for an authenticated client.
+     *
+     * @deprecated To be removed in 14.0.  Please use {@link #createNewClientBuilder()} instead.
      */
+    @Deprecated
     public OkHttpClient.Builder getOkHttpClientBuilder() {
+        return createNewClientBuilder();
+    }
+
+    /**
+     *
+     * @return okHttpClient.Builder with appropriate connection spec
+     * and user agent interceptor for an unauthenticated client.
+     *
+     * @deprecated To be removed in 14.0.  Please use {@link #createNewClientBuilder()} instead.
+     */
+    @Deprecated
+    public OkHttpClient.Builder getUnauthenticatedOkHttpBuilder() {
+        return createNewClientBuilder();
+    }
+
+    /**
+     * Creates a new OkHttp Client Builder with appropriate connection spec
+     * and user agent interceptor.
+     *
+     * @return the okHttpClient.Builder
+     */
+    public OkHttpClient.Builder createNewClientBuilder() {
         ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
                 .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
                 .build();
@@ -112,23 +137,11 @@ public class HttpAccess {
 
     /**
      *
-     * @return okHttpClient.Builder with appropriate connection spec
-     * and user agent interceptor for an unauthenticated client.
-     *
-     * @deprecated To be removed in 14.0.  Please use {{@link #getOkHttpClientBuilder()}} instead.
-     */
-    @Deprecated
-    public OkHttpClient.Builder getUnauthenticatedOkHttpBuilder() {
-        return getOkHttpClientBuilder();
-    }
-
-    /**
-     *
      * @return okHttpClient tied to this HttpAccess - builds one if needed
      */
     public synchronized OkHttpClient getOkHttpClient() {
         if (okHttpClient == null) {
-            okHttpClient = getOkHttpClientBuilder().build();
+            okHttpClient = createNewClientBuilder().build();
         }
         return okHttpClient;
     }
