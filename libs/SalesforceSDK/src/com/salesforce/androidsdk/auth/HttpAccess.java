@@ -58,8 +58,6 @@ public class HttpAccess {
 
     private String userAgent;
     private OkHttpClient okHttpClient;
-    private OkHttpClient.Builder okHttpBuilder;
-    private OkHttpClient.Builder unauthenticatedOkHttpBuilder;
 
     // Connection manager.
     private final ConnectivityManager conMgr;
@@ -102,24 +100,26 @@ public class HttpAccess {
      * and user agent interceptor for an authenticated client.
      */
     public OkHttpClient.Builder getOkHttpClientBuilder() {
-        if (okHttpBuilder == null) {
-            okHttpBuilder = createNewClientBuilder();
-        }
-
-        return okHttpBuilder;
+        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
+                .build();
+        return new OkHttpClient.Builder()
+                .connectionSpecs(Collections.singletonList(connectionSpec))
+                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+                .addNetworkInterceptor(new UserAgentInterceptor());
     }
 
     /**
      *
      * @return okHttpClient.Builder with appropriate connection spec
      * and user agent interceptor for an unauthenticated client.
+     *
+     * @deprecated To be removed in 14.0.  Please use {{@link #getOkHttpClientBuilder()}} instead.
      */
+    @Deprecated
     public OkHttpClient.Builder getUnauthenticatedOkHttpBuilder() {
-        if (unauthenticatedOkHttpBuilder == null) {
-            unauthenticatedOkHttpBuilder = createNewClientBuilder();
-        }
-
-        return unauthenticatedOkHttpBuilder;
+        return getOkHttpClientBuilder();
     }
 
     /**
@@ -156,17 +156,6 @@ public class HttpAccess {
      */
     public String getUserAgent() {
     	return userAgent;
-    }
-
-    private OkHttpClient.Builder createNewClientBuilder() {
-        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
-                .build();
-        return new OkHttpClient.Builder()
-                .connectionSpecs(Collections.singletonList(connectionSpec))
-                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-                .addNetworkInterceptor(new UserAgentInterceptor());
     }
 
     /**
