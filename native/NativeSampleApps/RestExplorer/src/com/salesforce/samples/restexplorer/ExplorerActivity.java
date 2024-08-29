@@ -85,7 +85,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	private RestClient client;
 	private TextView resultText;
     private TabHost tabHost;
-    private LogoutDialogFragment logoutConfirmationDialog;
 
 	// Use for objectId fields auto-complete.
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -129,8 +128,6 @@ public class ExplorerActivity extends SalesforceActivity {
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
-        logoutConfirmationDialog = new LogoutDialogFragment();
-
 		((RestExplorerApp.RestExplorerSDKManager) RestExplorerApp.RestExplorerSDKManager.getInstance())
 				.addDevAction(this, "Export Credentials to Clipboard", this::exportCredentials);
 	}
@@ -138,15 +135,6 @@ public class ExplorerActivity extends SalesforceActivity {
 	@Override
 	public void onResume(RestClient client) {
 		this.client = client;
-	}
-
-	/**
-	 * Returns the logout dialog fragment (used mainly by tests).
-	 *
-	 * @return Logout dialog fragment.
-	 */
-	public LogoutDialogFragment getLogoutConfirmationDialog() {
-		return logoutConfirmationDialog;
 	}
 
 	private void addTab(String tag, int titleId, int tabId) {

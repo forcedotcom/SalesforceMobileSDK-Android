@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.1.0"
+rootProject.ext["PUBLISH_VERSION"] = "12.2.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SmartStore"
 
 plugins {
@@ -15,7 +15,7 @@ dependencies {
     api(project(":libs:SalesforceSDK"))
     //noinspection GradleDependency -  Needs to line up with supported SQLCipher version.
     api("androidx.sqlite:sqlite:2.2.0")
-    api("net.zetetic:sqlcipher-android:4.6.0")
+    api("net.zetetic:sqlcipher-android:4.6.1")
     implementation("androidx.core:core-ktx:1.13.1")
     androidTestImplementation("androidx.test:runner:1.6.0")
     androidTestImplementation("androidx.test:rules:1.6.0")

@@ -204,11 +204,9 @@ public class RestClient {
 
 		// If none cached, create new one
 		if (okHttpClientBuilder == null) {
-			if (cacheKey.equals("unauthenticated")) {
-				okHttpClientBuilder = httpAccessor.getUnauthenticatedOkHttpBuilder();
-			} else {
-				okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
-						.addInterceptor(getOAuthRefreshInterceptor());
+			okHttpClientBuilder = httpAccessor.createNewClientBuilder();
+			if (!cacheKey.equals("unauthenticated")) {
+				okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
 			}
 
 			OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
