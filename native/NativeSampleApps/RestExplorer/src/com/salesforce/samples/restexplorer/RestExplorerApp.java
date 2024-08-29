@@ -74,6 +74,7 @@ public class RestExplorerApp extends Application {
 	}
 
 	static class RestExplorerSDKManager extends SalesforceSDKManager {
+		Activity frontActivityForDevActions;
 		Map<String, DevActionHandler> devActions;
 
 		/**
@@ -109,6 +110,11 @@ public class RestExplorerApp extends Application {
 		public Map<String, DevActionHandler> getDevActions(
 				@NonNull Activity frontActivity
 		) {
+			if (frontActivityForDevActions != frontActivity) {
+				devActions = null;
+				frontActivityForDevActions = frontActivity;
+			}
+
 			if (devActions == null) {
 				devActions = super.getDevActions(frontActivity);
 			}
@@ -117,11 +123,7 @@ public class RestExplorerApp extends Application {
 		}
 
 		public void addDevAction(Activity frontActivity, String name, DevActionHandler handler) {
-			if (devActions == null) {
-				devActions = super.getDevActions(frontActivity);
-			}
-
-			devActions.put(name, handler);
+			getDevActions(frontActivity).put(name, handler);
 		}
 	}
 }
