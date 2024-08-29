@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.2.0"
+rootProject.ext["PUBLISH_VERSION"] = "12.1.1"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceAnalytics"
 
 plugins {
