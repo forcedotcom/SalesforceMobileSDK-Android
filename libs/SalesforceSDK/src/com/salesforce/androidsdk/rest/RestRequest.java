@@ -62,6 +62,7 @@ import okhttp3.RequestBody;
  * <ul>
  * <li> userinfo</li>
  * <li> tokeninfo</li>
+ * <li> singleaccess</li>
  * <li> versions</li>
  * <li> resources</li>
  * <li> describeGlobal</li>
@@ -118,6 +119,7 @@ public class RestRequest {
     public static final String HALT_ON_ERROR = "haltOnError";
     public static final String RICH_INPUT = "richInput";
     public static final String SERVICES_DATA = "/services/data/";
+	public static final String SERVICES_OAUTH2 = "/services/oauth2/";
     public static final String REFERENCE_ID = "referenceId";
     public static final String TYPE = "type";
     public static final String ATTRIBUTES = "attributes";
@@ -159,8 +161,9 @@ public class RestRequest {
 
 	enum RestAction {
 
-		USERINFO("/services/oauth2/userinfo"),
-		TOKENINFO("/services/oauth2/introspect"),
+		USERINFO(SERVICES_OAUTH2 + "userinfo"),
+		TOKENINFO(SERVICES_OAUTH2 + "introspect"),
+		SINGLEACCESS(SERVICES_OAUTH2 + "singleaccess"),
 		VERSIONS(SERVICES_DATA),
 		RESOURCES(SERVICES_DATA + "%s/"),
 		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
@@ -368,6 +371,20 @@ public class RestRequest {
 	 */
 	public static RestRequest getRequestForUserInfo() {
 		return new RestRequest(RestMethod.GET, RestEndpoint.LOGIN, RestAction.USERINFO.getPath(), (RequestBody) null, null);
+	}
+
+	/**
+	 * Request to generate URL to bridge into UI sessions
+	 * @param redirectUri A relative path that points to where the user is redirected when their new session begins.
+	 * @return RestRequest object that requests single access URL.
+	 * @see <a href="https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm">https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm</a></a>
+	 */
+	public static RestRequest getRequestForSingleAccess(String redirectUri) {
+		RequestBody requestBody = RequestBody.create(
+				"redirect_uri=" + redirectUri,
+				MediaType.parse("application/x-www-form-urlencoded")
+		);
+		return new RestRequest(RestMethod.POST, RestEndpoint.INSTANCE, RestAction.SINGLEACCESS.getPath(), requestBody, null);
 	}
 
 	/**
