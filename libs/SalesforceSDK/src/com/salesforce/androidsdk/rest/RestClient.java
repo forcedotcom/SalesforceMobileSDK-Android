@@ -248,7 +248,7 @@ public class RestClient {
 	 * @return credentials as JSONObject
 	 */
 	public JSONObject getJSONCredentials() {
-		RestClient.ClientInfo clientInfo = getClientInfo();
+		ClientInfo clientInfo = getClientInfo();
 		Map<String, String> data = new HashMap<>();
 		data.put(ACCESS_TOKEN, getAuthToken());
 		data.put(REFRESH_TOKEN, getRefreshToken());
@@ -577,7 +577,7 @@ public class RestClient {
 		 * Resolves the given path against the community URL, login URL, or instance
 		 * URL.  If the user is a community user, the community URL will be used.  Otherwise,
 		 * the URL will be built from the
-		 * {@link com.salesforce.androidsdk.rest.RestRequest.RestEndpoint} parameter.
+		 * {@link RestRequest.RestEndpoint} parameter.
 		 * @param path Path
 		 * @param endpoint The Rest endpoint of the URL.
 		 * @return Resolved URL.
@@ -681,19 +681,37 @@ public class RestClient {
             this.authTokenProvider = authTokenProvider;
         }
 
+		private boolean shouldRefresh(Response response) throws IOException {
+			int responseCode = response.code();
+
+			// most calls return 401 if oauth access token is not valid
+			boolean isNotAuthorized = responseCode == HttpURLConnection.HTTP_UNAUTHORIZED;
+
+			// service/oauth2 calls return 403 with Bad_OAuth_Token response if oauth access is not valid
+			boolean hasBadOAuthToken = responseCode == HttpURLConnection.HTTP_FORBIDDEN
+					&& response.request().url().encodedPath().startsWith(RestRequest.SERVICES_OAUTH2)
+					&& (response.body() != null && response.body().string().equals("Bad_OAuth_Token"));
+
+			if (isNotAuthorized || hasBadOAuthToken) {
+				// Is biometric enabled and locked ?
+				BiometricAuthenticationManager bioAuthManager =
+						(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+				return bioAuthManager == null || bioAuthManager.shouldAllowRefresh();
+			} else {
+				return true;
+			}
+		}
+
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request request = chain.request();
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
-			int responseCode = response.code();
-			BiometricAuthenticationManager bioAuthManager =
-					(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 
 			/*
 			 * Standard access token expiry returns 401 as the error code.
 			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && bioAuthManager.shouldAllowRefresh()) {
+            if (shouldRefresh(response)) {
 
 				final URI curInstanceUrl = clientInfo.getInstanceUrl();
 				if (curInstanceUrl != null) {
