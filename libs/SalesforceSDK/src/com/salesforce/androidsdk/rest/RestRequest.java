@@ -374,7 +374,8 @@ public class RestRequest {
 	}
 
 	/**
-	 * Request to generate URL to bridge into UI sessions
+	 * Request to generate URL to bridge into UI sessions (a front door URL)
+	 * Applications should use that API instead of building front door URLs directly
 	 * @param redirectUri A relative path that points to where the user is redirected when their new session begins.
 	 * @return RestRequest object that requests single access URL.
 	 * @see <a href="https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm">https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm</a></a>
