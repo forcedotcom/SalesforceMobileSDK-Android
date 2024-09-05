@@ -698,7 +698,7 @@ public class RestClient {
 						(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 				return bioAuthManager == null || bioAuthManager.shouldAllowRefresh();
 			} else {
-				return true;
+				return false;
 			}
 		}
 
