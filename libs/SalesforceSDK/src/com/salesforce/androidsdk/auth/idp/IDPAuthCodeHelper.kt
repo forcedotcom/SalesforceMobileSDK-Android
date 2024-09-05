@@ -132,7 +132,6 @@ internal class IDPAuthCodeHelper private constructor(
             codeChallenge,
             null
         )
-        SalesforceSDKLogger.d(TAG, "Authorization url: $authorizationUri")
 
         return authorizationUri?.let {
             it.path + (it.query?.let { query -> "?$query" } ?: "")
@@ -148,7 +147,6 @@ internal class IDPAuthCodeHelper private constructor(
             SalesforceSDKLogger.e(TAG, "Failed to obtain valid front door url", e)
             null
         }
-        SalesforceSDKLogger.d(TAG, "Single access response: $restResponse")
         return if (restResponse == null || !restResponse.isSuccess) null else restResponse.asJSONObject().getString("frontdoor_uri")
     }
 

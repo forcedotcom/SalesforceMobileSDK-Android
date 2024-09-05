@@ -693,6 +693,9 @@ public class RestClient {
 					&& (response.body() != null && response.body().string().equals("Bad_OAuth_Token"));
 
 			if (isNotAuthorized || hasBadOAuthToken) {
+				SalesforceSDKLogger.d(TAG, "response request url: " + response.request().url());
+				SalesforceSDKLogger.d(TAG, "response code: " + response.code());
+
 				// Is biometric enabled and locked ?
 				BiometricAuthenticationManager bioAuthManager =
 						(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
@@ -712,6 +715,7 @@ public class RestClient {
 			 * Standard access token expiry returns 401 as the error code.
 			 */
             if (shouldRefresh(response)) {
+				SalesforceSDKLogger.d(TAG, "shouldRefresh() returned true");
 
 				final URI curInstanceUrl = clientInfo.getInstanceUrl();
 				if (curInstanceUrl != null) {
