@@ -114,7 +114,7 @@ public class RestRequestTest {
 	public void testGetRequestForSingleAccess() throws IOException {
 		RestRequest request = RestRequest.getRequestForSingleAccess("abc/def");
 		RequestBody expectedRequestBody = RequestBody.create(
-				"redirect_uri=abc/def",
+				"redirect_uri=abc%2Fdef",
 				MediaType.parse("application/x-www-form-urlencoded")
 		);
 		Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());

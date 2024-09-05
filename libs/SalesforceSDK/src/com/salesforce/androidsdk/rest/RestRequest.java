@@ -379,9 +379,9 @@ public class RestRequest {
 	 * @return RestRequest object that requests single access URL.
 	 * @see <a href="https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm">https://help.salesforce.com/s/articleView?id=sf.frontdoor_singleaccess.htm</a></a>
 	 */
-	public static RestRequest getRequestForSingleAccess(String redirectUri) {
+	public static RestRequest getRequestForSingleAccess(String redirectUri) throws UnsupportedEncodingException {
 		RequestBody requestBody = RequestBody.create(
-				"redirect_uri=" + redirectUri,
+				"redirect_uri=" + URLEncoder.encode(redirectUri, UTF_8),
 				MediaType.parse("application/x-www-form-urlencoded")
 		);
 		return new RestRequest(RestMethod.POST, RestEndpoint.INSTANCE, RestAction.SINGLEACCESS.getPath(), requestBody, null);
