@@ -37,9 +37,7 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
-import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
@@ -48,6 +46,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.URI
 
@@ -80,10 +79,13 @@ internal class IDPAuthCodeHelper private constructor(
     private fun generateAuthCode() {
         SalesforceSDKLogger.d(TAG, "Generating oauth code")
         CoroutineScope(Dispatchers.IO).launch {
-            getValidAccessToken()?.let {accessToken ->
-                makeFrontDoorRequest(accessToken, webView)
-            } ?: run {
-                onError("Failed to get an access token")
+            val restClient = buildRestClient() ?: return@launch onError("Failed to build rest client")
+            val authorizationUrlForSP = getAuthorizationPathForSP() ?: return@launch onError("Failed to get authorization url")
+            val frontdoorUrl = getFrontdoorUrl(restClient, authorizationUrlForSP) ?: return@launch onError("Failed to get front door url")
+
+            // Launch front door url in web view on the main thread
+            withContext(Dispatchers.Main) {
+                webView.loadUrl(frontdoorUrl)
             }
         }
     }
@@ -112,56 +114,40 @@ internal class IDPAuthCodeHelper private constructor(
     }
 
     /**
-     * Helper function to get a fresh access token
-     *
-     * @return the valid access token or null
+     * Compute relative path of authorization url for SP
+     * @return authorization relative path
      */
-    private fun getValidAccessToken(): String? {
-        SalesforceSDKLogger.d(TAG, "Obtaining valid access token")
-        buildRestClient()?.let {restClient ->
-            val restResponse = try {
-                restClient.sendSync(RestRequest.getCheapRequest(ApiVersionStrings.VERSION_NUMBER))
-            } catch (e: IOException) {
-                SalesforceSDKLogger.e(TAG, "Failed to obtain valid access token", e)
-                null
-            }
-
-            return if (restResponse == null || !restResponse.isSuccess) null else restClient.authToken
-        } ?: run {
-            SalesforceSDKLogger.e(TAG, "Cannot get valid access token - failed to build rest client")
-            return null
-        }
-    }
-
-    /**
-     * Kicks off the 'frontdoor' request in the supplied WebView instance.
-     *
-     * @param accessToken Valid access token.
-     * @param webView WebView instance.
-     */
-    fun makeFrontDoorRequest(accessToken: String, webView: WebView) {
-        SalesforceSDKLogger.d(TAG, "Making front door request")
+    fun getAuthorizationPathForSP(): String? {
+        SalesforceSDKLogger.d(TAG, "Getting authorization url")
         val context = SalesforceSDKManager.getInstance().appContext
         val useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
-        val frontdoorUrl = getFrontdoorUrl(
-            getAuthorizationUrl(
-                true, // use web server flow
-                useHybridAuthentication,
-                URI(userAccount.loginServer),
-                spConfig.oauthClientId,
-                spConfig.oauthCallbackUrl,
-                spConfig.oauthScopes,
-                context.getString(R.string.oauth_display_type),
-                codeChallenge,
-                null
-            ),
-            accessToken,
-            userAccount.instanceServer,
+        val authorizationUri = getAuthorizationUrl(
+            true, // use web server flow
+            useHybridAuthentication,
+            URI(userAccount.loginServer),
+            spConfig.oauthClientId,
+            spConfig.oauthCallbackUrl,
+            spConfig.oauthScopes,
+            context.getString(R.string.oauth_display_type),
+            codeChallenge,
             null
         )
-        CoroutineScope(Dispatchers.Main).launch {
-            webView.loadUrl(frontdoorUrl.toString())
+
+        return authorizationUri?.let {
+            it.path + (it.query?.let { query -> "?$query" } ?: "")
+        } ?: null
+    }
+
+    fun getFrontdoorUrl(restClient:RestClient, redirectUri: String): String? {
+        SalesforceSDKLogger.d(TAG, "Getting front door url")
+        val singleAccessRequest = RestRequest.getRequestForSingleAccess(redirectUri)
+        val restResponse = try {
+            restClient.sendSync(singleAccessRequest)
+        } catch (e: IOException) {
+            SalesforceSDKLogger.e(TAG, "Failed to obtain valid front door url", e)
+            null
         }
+        return if (restResponse == null || !restResponse.isSuccess) null else restResponse.asJSONObject().getString("frontdoor_uri")
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {

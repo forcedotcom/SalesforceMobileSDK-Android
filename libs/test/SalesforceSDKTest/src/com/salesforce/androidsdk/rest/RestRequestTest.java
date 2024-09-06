@@ -49,6 +49,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import okio.Buffer;
 
 @RunWith(AndroidJUnit4.class)
@@ -102,6 +104,23 @@ public class RestRequestTest {
 		Assert.assertEquals("Wrong path", "/services/oauth2/userinfo", request.getPath());
 		Assert.assertEquals("Wrong endpoint", RestRequest.RestEndpoint.LOGIN, request.getEndpoint());
 		Assert.assertNull("Wrong request entity", request.getRequestBody());
+		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForSingleAcess
+	 */
+	@Test
+	public void testGetRequestForSingleAccess() throws IOException {
+		RestRequest request = RestRequest.getRequestForSingleAccess("abc/def");
+		RequestBody expectedRequestBody = RequestBody.create(
+				"redirect_uri=abc%2Fdef",
+				MediaType.parse("application/x-www-form-urlencoded")
+		);
+		Assert.assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+		Assert.assertEquals("Wrong path", "/services/oauth2/singleaccess", request.getPath());
+		Assert.assertEquals("Wrong endpoint", RestRequest.RestEndpoint.INSTANCE, request.getEndpoint());
+		Assert.assertEquals("Wrong request body", bodyToString(expectedRequestBody), bodyToString(request.getRequestBody()));
 		Assert.assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
@@ -695,5 +714,11 @@ public class RestRequestTest {
 		final Buffer buffer = new Buffer();
 		request.getRequestBody().writeTo(buffer);
 		return buffer.readUtf8();
-	}	
+	}
+
+	private static String bodyToString(RequestBody requestBody) throws IOException {
+		Buffer buffer = new Buffer();
+		requestBody.writeTo(buffer);
+		return buffer.readUtf8();
+	}
 }

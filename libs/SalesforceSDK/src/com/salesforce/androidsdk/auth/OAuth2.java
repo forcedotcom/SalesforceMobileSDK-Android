@@ -292,7 +292,9 @@ public class OAuth2 {
      * @param addlParams additional paramaters
      *
      * @return 'frontdoor'ed URL (or the original url if access token or instance url are null)
+     * @deprecated Use {@link com.salesforce.androidsdk.rest.RestRequest#getRequestForSingleAccess(String)} instead
      */
+    @Deprecated
     public static URI getFrontdoorUrl(URI url,
                                       String accessToken,
                                       String instanceURL,
