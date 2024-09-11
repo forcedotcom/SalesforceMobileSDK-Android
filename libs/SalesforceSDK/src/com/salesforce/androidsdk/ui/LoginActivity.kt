@@ -253,13 +253,18 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         // If the intent is a callback from Chrome, process it and do nothing else
         if (isChromeCallback(intent)) {
             completeAuthFlow(intent)
-            webviewHelper?.clearView()
             return
         }
 
-        // Reload the login page for every new intent to ensure the correct login server is selected
-        webviewHelper?.run {
-            loadLoginPage()
+        /*
+         * It is important to not reload if we have a custom tab displayed because that also generates
+         * a new code verifier which will break PKCE.
+         */
+        if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
+            // Reload the login page to ensure the correct login server is displayed in the webview.
+            webviewHelper?.run {
+                loadLoginPage()
+            }
         }
     }
 
@@ -431,7 +436,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * Callbacks from the OAuth web view helper
      */
     override fun loadingLoginPage(loginUrl: String) {
-        supportActionBar?.title = loginUrl
+        this@LoginActivity.runOnUiThread { supportActionBar?.title = loginUrl }
     }
 
     /**

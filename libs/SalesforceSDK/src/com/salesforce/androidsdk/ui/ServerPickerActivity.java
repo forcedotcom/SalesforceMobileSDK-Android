@@ -303,8 +303,6 @@ public class ServerPickerActivity extends AppCompatActivity implements
                 this,
                 SalesforceSDKManager.getInstance().getWebviewLoginActivityClass()
         );
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         BiometricAuthenticationManager bioAuthManager =
                 SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
