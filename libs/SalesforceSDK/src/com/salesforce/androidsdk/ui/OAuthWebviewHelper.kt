@@ -292,8 +292,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
-    internal fun clearView() =
-        webView?.loadUrl("about:blank")
+    private fun clearView() =
+        activity?.runOnUiThread { webView?.loadUrl("about:blank") }
 
     /**
      * A factory method for the web view client. This can be overridden as
@@ -367,14 +367,16 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     @Suppress("MemberVisibilityCanBePrivate")
     protected open fun showError(exception: Throwable) {
-        makeText(
-            context,
-            context.getString(
-                sf__generic_error,
-                exception.toString()
-            ),
-            LENGTH_LONG
-        ).show()
+        activity?.runOnUiThread {
+            makeText(
+                context,
+                context.getString(
+                    sf__generic_error,
+                    exception.toString()
+                ),
+                LENGTH_LONG
+            ).show()
+        }
     }
 
     /**
@@ -478,6 +480,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 activity,
                 parse(uri.toString())
             )
+            // Making the webview blank gives custom tab login a cleaner appearance.
+            clearView()
         }.onFailure { throwable ->
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
             makeText(context, "To log in, install Chrome.", LENGTH_LONG).show()
