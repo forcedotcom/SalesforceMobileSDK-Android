@@ -26,7 +26,10 @@
  */
 package com.salesforce.androidsdk.push
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -80,7 +83,7 @@ import java.util.concurrent.TimeUnit.DAYS
 open class PushService {
     fun performRegistrationChange(
         register: Boolean,
-        userAccount: UserAccount
+        userAccount: UserAccount,
     ) {
         when {
             register ->
@@ -100,7 +103,7 @@ open class PushService {
 
     private fun onRegistered(
         registrationId: String,
-        account: UserAccount?
+        account: UserAccount?,
     ) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later")
@@ -166,6 +169,11 @@ open class PushService {
         clearRegistrationInfo(context, account)
         context.sendBroadcast(
             Intent(
+                UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+            ).setPackage(packageName)
+        )
+        context.sendBroadcast(
+            Intent(
                 UNREGISTERED_EVENT
             ).setPackage(packageName)
         )
@@ -187,7 +195,7 @@ open class PushService {
     @Throws(IOException::class)
     protected fun onSendRegisterPushNotificationRequest(
         requestBodyJsonFields: Map<String, Any?>?,
-        restClient: RestClient
+        restClient: RestClient,
     ): RestResponse = restClient.sendSync(
         RestRequest.getRequestForCreate(
             ApiVersionStrings.getVersionNumber(
@@ -214,14 +222,14 @@ open class PushService {
     )
     protected fun onPushNotificationRegistrationStatus(
         status: Int,
-        userAccount: UserAccount?
+        userAccount: UserAccount?,
     ) {
         // Intentionally Blank.
     }
 
     private fun registerSFDCPushNotification(
         registrationId: String,
-        account: UserAccount
+        account: UserAccount,
     ): String? {
 
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -319,7 +327,7 @@ open class PushService {
     @Throws(IOException::class)
     protected fun onSendUnregisterPushNotificationRequest(
         registeredId: String?,
-        restClient: RestClient
+        restClient: RestClient,
     ): RestResponse {
         return restClient.sendSync(
             RestRequest.getRequestForDelete(
@@ -334,7 +342,7 @@ open class PushService {
 
     private fun unregisterSFDCPushNotification(
         registeredId: String?,
-        account: UserAccount
+        account: UserAccount,
     ) {
         runCatching {
             getRestClient(account)?.let { restClient ->
@@ -361,7 +369,7 @@ open class PushService {
     }
 
     private fun getRestClient(
-        account: UserAccount
+        account: UserAccount,
     ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
 
         /*
@@ -465,7 +473,7 @@ open class PushService {
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
             pushNotificationsRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
-            delayDays: Long?
+            delayDays: Long?,
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
             val workManager = WorkManager.getInstance(context)
@@ -510,7 +518,6 @@ open class PushService {
             }
 
             if (action == Deregister) {
-
                 val workRequest: OneTimeWorkRequest =
                     OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                         .setInputData(workData)
@@ -518,12 +525,15 @@ open class PushService {
                         .build()
                 workManager.enqueue(workRequest)
 
-                // Send broadcast now to finish logout in case we are offline.
-                context.sendBroadcast(
-                    Intent(
-                        UNREGISTERED_ATTEMPT_COMPLETE_EVENT
-                    ).setPackage(context.packageName)
-                )
+                // Send broadcast now to finish logout if we are offline.
+                val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                if (connectivityManager.activeNetworkInfo?.isConnected != true) {
+                    context.sendBroadcast(
+                        Intent(
+                            UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+                        ).setPackage(context.packageName)
+                    )
+                }
             }
         }
     }
