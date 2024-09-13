@@ -147,6 +147,7 @@ import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
+import com.salesforce.androidsdk.security.interfaces.ScreenLockManager as ScreenLockManagerInterface
 
 /**
  * This class serves as an interface to the various functions of the Salesforce
@@ -221,7 +222,7 @@ open class SalesforceSDKManager protected constructor(
     private val screenLockManagerLock = Any()
 
     /** The Salesforce SDK manager's screen lock manager */
-    var screenLockManager: ScreenLockManager? = null
+    var screenLockManager: ScreenLockManagerInterface? = null
         @JvmName("getScreenLockManager")
         get() = field ?: synchronized(screenLockManagerLock) {
             ScreenLockManager()
@@ -701,7 +702,7 @@ open class SalesforceSDKManager protected constructor(
             adminPermsManager?.resetAll()
             adminSettingsManager = null
             adminPermsManager = null
-            screenLockManager?.reset()
+            (screenLockManager as ScreenLockManager?)?.reset()
             screenLockManager = null
             biometricAuthenticationManager = null
         }
@@ -718,7 +719,7 @@ open class SalesforceSDKManager protected constructor(
         UserAccountManager.getInstance().clearCachedCurrentUser()
 
         userAccount?.let { userAccountResolved ->
-            screenLockManager?.cleanUp(userAccountResolved)
+            (screenLockManager as ScreenLockManager?)?.cleanUp(userAccountResolved)
             (biometricAuthenticationManager as BiometricAuthenticationManager)
                 .cleanUp(userAccountResolved)
         }
@@ -1461,7 +1462,7 @@ open class SalesforceSDKManager protected constructor(
     @Suppress("unused")
     @OnLifecycleEvent(ON_STOP)
     protected open fun onAppBackgrounded() {
-        screenLockManager?.onAppBackgrounded()
+        (screenLockManager as ScreenLockManager?)?.onAppBackgrounded()
 
         // Publish analytics one-time on app background, if enabled.
         if (SalesforceAnalyticsManager.analyticsPublishingType() == PublishOnAppBackground) {
@@ -1481,7 +1482,7 @@ open class SalesforceSDKManager protected constructor(
     @Suppress("unused")
     @OnLifecycleEvent(ON_START)
     protected open fun onAppForegrounded() {
-        screenLockManager?.onAppForegrounded()
+        (screenLockManager as ScreenLockManager?)?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
         // Review push-notifications registration for the current user, if enabled.
