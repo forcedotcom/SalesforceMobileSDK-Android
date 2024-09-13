@@ -221,7 +221,7 @@ open class SalesforceSDKManager protected constructor(
     private val screenLockManagerLock = Any()
 
     /** The Salesforce SDK manager's screen lock manager */
-    internal var screenLockManager: ScreenLockManager? = null
+    var screenLockManager: ScreenLockManager? = null
         @JvmName("getScreenLockManager")
         get() = field ?: synchronized(screenLockManagerLock) {
             ScreenLockManager()
