@@ -721,7 +721,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * username.
      */
     open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
-        d(TAG, "token response -> $tr")
         CoroutineScope(IO).launch {
             FinishAuthTask().execute(tr, nativeLogin)
         }

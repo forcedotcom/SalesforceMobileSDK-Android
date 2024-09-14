@@ -30,47 +30,16 @@ import android.net.Uri
 import android.os.SystemClock
 import android.webkit.CookieManager
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.d
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.w
 import java.net.URI
 
 class SalesforceWebViewCookieManager {
     private val cookieManager = CookieManager.getInstance()
 
-    private fun getAdditionalOauthValues(
-        userAccount: UserAccount?,
-        key: String?
-    ): String? {
-        userAccount?.additionalOauthValues?.let {
-            return it[key]
-        }
-        return null
-    }
+    fun setCookies(userAccount: UserAccount) {
+        d(TAG, "setCookies for userAccount:${userAccount.toJson()}")
 
-    /**
-     * Helper method to check if current account has available cookies
-     *
-     * @return return true if account provides; otherwise, false
-     */
-    fun areCookiesAvailable(userAccount: UserAccount): Boolean {
-        val lightningDomain = userAccount.lightningDomain
-        val lightningSid = userAccount.lightningSid
-        val contentDomain = userAccount.contentDomain
-        val contentSid = userAccount.contentSid
-        val vfDomain = userAccount.vfDomain
-        val vfSid = userAccount.vfSid
-        val areCookiesAvailable =
-            lightningDomain != null &&
-                    lightningSid != null &&
-                    contentDomain != null &&
-                    contentSid != null &&
-                    vfDomain != null &&
-                    vfSid != null
-        w(TAG, "areCookiesAvailable - Are cookies available $areCookiesAvailable")
-        return areCookiesAvailable
-    }
-
-    @Suppress("LongMethod")
-    fun setCookies(userAccount:UserAccount) {
         val instanceUrl = userAccount.instanceServer
         val lightningDomain = userAccount.lightningDomain
         val lightningSid = userAccount.lightningSid
@@ -79,148 +48,51 @@ class SalesforceWebViewCookieManager {
         val accessToken = userAccount.authToken
         val vfDomain = userAccount.vfDomain
         val vfSid = userAccount.vfSid
-        val clientSrc = getAdditionalOauthValues(userAccount, COOKIE_CLIENT_SRC)
-        val sidClient = getAdditionalOauthValues(userAccount, COOKIE_SID_CLIENT)
-        val sidCookieName = getAdditionalOauthValues(userAccount, SID_COOKIE_NAME)
+        val clientSrc = userAccount.cookieClientSrc
+        val sidClient = userAccount.cookieSidClient
+        val sidCookieName = userAccount.sidCookieName
         val csrfToken = userAccount.csrfToken
         val orgId = userAccount.orgId
         val communityUrl = userAccount.communityUrl
-        val isCommunity = !communityUrl.isNullOrBlank()
+        val mainDomain = getDomainFromUrl(instanceUrl)
 
-        setMainDomainCookies(
-            instanceUrl,
-            getDomainFromUrl(instanceUrl),
-            isCommunity,
-            sidCookieName,
-            accessToken,
-            clientSrc,
-            sidClient,
-            csrfToken,
-            orgId
-        )
+        // Setup domain for community to avoid dupe cookies
+        // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent
+        val setDomain = !communityUrl.isNullOrBlank()
 
-        setLightningDomainCookies(lightningDomain, isCommunity, sidCookieName, lightningSid, csrfToken)
+        // Main domain cookies
+        setCookieValue("sid for main", mainDomain, setDomain, sidCookieName, accessToken)
+        setCookieValue(CLIENT_SRC, mainDomain, setDomain, CLIENT_SRC, clientSrc)
+        setCookieValue(SID_CLIENT, mainDomain, setDomain, SID_CLIENT, sidClient)
+        setCookieValue(ORG_ID, mainDomain, setDomain, ORG_ID, orgId)
+        setCookieValue(csrfTokenCookieName, mainDomain, setDomain, csrfTokenCookieName, csrfToken)
 
-        // set content domain cookies
-        if (!sidCookieName.isNullOrBlank() && !contentDomain.isNullOrBlank() && !contentSid.isNullOrBlank()) {
-            setCookieValue(getHttpsUrlFromDomain(contentDomain), contentDomain, isCommunity, sidCookieName, contentSid)
-        } else {
-            w(TAG, "setCookies - Unable to set content domain sid  cookie")
-        }
+        // Lightning domain cookies
+        setCookieValue("sid for lightning", lightningDomain, setDomain, sidCookieName, lightningSid)
+        setCookieValue(csrfTokenCookieName, lightningDomain, setDomain, csrfTokenCookieName, csrfToken)
 
-        setVfDomainCookies(vfDomain, isCommunity, sidCookieName, vfSid, clientSrc, sidClient, orgId)
+        // Content domain cookies
+        setCookieValue("sid for content", contentDomain, setDomain, sidCookieName, contentSid)
+
+        // Vf domain cookies
+        setCookieValue("sid for vf", vfDomain, setDomain, sidCookieName, vfSid)
+        setCookieValue(CLIENT_SRC, vfDomain, setDomain, CLIENT_SRC, clientSrc)
+        setCookieValue(SID_CLIENT, vfDomain, setDomain, SID_CLIENT, sidClient)
+        setCookieValue(ORG_ID, vfDomain, setDomain, ORG_ID, orgId)
 
         syncCookies()
     }
 
-    private fun setMainDomainCookies(
-        url: String,
-        domain: String?,
-        isCommunity: Boolean,
-        sidCookieName: String?,
-        accessToken: String?,
-        clientSrc: String?,
-        sidClient: String?,
-        csrfToken: String?,
-        orgId: String?
-    ) {
-        // set main sid cookie
-        if (!domain.isNullOrBlank()) {
-            if (!sidCookieName.isNullOrBlank() && !accessToken.isNullOrBlank()) {
-                setCookieValue(url, domain, isCommunity, sidCookieName, accessToken)
-            } else {
-                w(TAG, "setMainDomainCookies - Unable to set main sid cookie")
-            }
-            // set clientSrc cookie
-            setCookieValue(url, domain, isCommunity, CLIENT_SRC, clientSrc)
-            // set sid_Client cookie
-            setCookieValue(url, domain, isCommunity, SID_CLIENT, sidClient)
-            // set oid cookie
-            if (!orgId.isNullOrBlank()) {
-                setCookieValue(url, domain, isCommunity, ORG_ID, orgId.toString())
-            } else {
-                w(TAG, "setMainDomainCookies - Unable to set oid in main Domain")
-            }
-            // set csrf cookie
-            setCookieValue(url, domain, isCommunity, csrfTokenCookieName, csrfToken)
-            if (csrfToken.isNullOrBlank()) {
-                w(TAG, "setMainDomainCookies - csrfToken is empty or null when setting on main domain")
-            }
-        } else {
-            w(TAG, "setMainDomainCookies - Unable to set main domain cookies, domain is null or empty")
-        }
-    }
-
-    private fun setLightningDomainCookies(
-        domain: String?,
-        isCommunity: Boolean,
-        sidCookieName: String?,
-        lightningSid: String?,
-        csrfToken: String?
-    ) {
-        // set lightning domain cookies
-        if (!sidCookieName.isNullOrBlank() && !domain.isNullOrBlank() && !lightningSid.isNullOrBlank()) {
-            setCookieValue(getHttpsUrlFromDomain(domain), domain, isCommunity, sidCookieName, lightningSid)
-        } else {
-            w(TAG, "setLightningDomainCookies - Unable to set lightning sid cookie")
-        }
-
-        if (!csrfToken.isNullOrBlank() && !domain.isNullOrBlank()) {
-            setCookieValue(getHttpsUrlFromDomain(domain), domain, isCommunity, csrfTokenCookieName, csrfToken)
-        } else {
-            w(TAG, "setLightningDomainCookies - Unable to set csrfToken in Lightning Domain")
-        }
-    }
-
-    private fun setVfDomainCookies(
-        domain: String?,
-        isCommunity: Boolean,
-        sidCookieName: String?,
-        vfSid: String?,
-        clientSrc: String?,
-        sidClient: String?,
-        orgId: String?
-    ) {
-        // set visualforce domain cookies
-        if (!domain.isNullOrBlank()) {
-            val url = getHttpsUrlFromDomain(domain)
-            // set sid cookie
-            if (!sidCookieName.isNullOrBlank() && !vfSid.isNullOrBlank()) {
-                setCookieValue(url, domain, isCommunity, sidCookieName, vfSid)
-            } else {
-                w(TAG, "setVfDomainCookies - Unable to set vf sid cookie")
-            }
-            // set clientSrc cookie
-            setCookieValue(url, domain, isCommunity, CLIENT_SRC, clientSrc)
-            // set sid_Client cookie
-            setCookieValue(url, domain, isCommunity, SID_CLIENT, sidClient)
-            // set oid cookie
-            if (!orgId.isNullOrBlank()) {
-                setCookieValue(url, domain, isCommunity, ORG_ID, orgId.toString())
-            } else {
-                w(TAG, "setVfDomainCookies - Unable to set oid in vfDomain")
-            }
-        } else {
-            w(TAG, "setVfDomainCookies - Unable to set vf cookies, domain is null or empty")
-        }
-    }
-
     private fun setCookieValue(
-        url: String,
-        domain: String,
-        isCommunity: Boolean,
-        name: String,
-        value: String?,
-
+        cookieType: String, domain: String?, setDomain: Boolean, name: String?, value: String?
     ) {
-        if (!value.isNullOrBlank()) {
+        if (!domain.isNullOrBlank() && !name.isNullOrBlank() && !value.isNullOrBlank()) {
+            val url = getHttpsUrlFromDomain(domain)
 
             val builder = StringBuilder()
             builder.append("$name=$value")
 
-            // Setup domain for community to avoid dupe cookies
-            // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent
-            if (domain.isNotBlank() && isCommunity) {
+            if (setDomain) {
                 builder.append("$DOMAIN_PREFIX$domain")
             }
 
@@ -233,22 +105,20 @@ class SalesforceWebViewCookieManager {
             builder.append(SAME_SITE)
             cookieManager.setCookie(url, builder.toString())
 
+            d(TAG, "setCookieValue - Set $cookieType in domain:$domain with value:$value")
         } else {
-            w(TAG, "setCookieValue - Unable to set $name in $domain")
+            w(TAG, "setCookieValue - Unable to set $cookieType in domain:$domain")
         }
     }
 
     /** Syncs the cookies for webview  */
-    fun syncCookies() {
+    private fun syncCookies() {
         cookieManager.flush()
         // Give enough time to yield
         SystemClock.sleep(SLEEP_TIME_SYNC)
     }
 
     companion object {
-        const val COOKIE_CLIENT_SRC = "cookie-clientSrc"
-        const val COOKIE_SID_CLIENT = "cookie-sid_Client"
-        const val SID_COOKIE_NAME = "sidCookieName"
         const val CLIENT_SRC = "clientSrc"
         const val SID_CLIENT = "sid_Client"
         const val ORG_ID = "oid"
@@ -261,7 +131,7 @@ class SalesforceWebViewCookieManager {
         private const val csrfTokenCookieName = "eikoocnekotMob"
     }
 
-    fun getHttpsUrlFromDomain(domain: String): String {
+    private fun getHttpsUrlFromDomain(domain: String): String {
         // Prepend with https:// if it doesn't have a protocol
         var url = domain
         if (domain != null && !domain.contains("://")) {
@@ -271,7 +141,7 @@ class SalesforceWebViewCookieManager {
         return url
     }
 
-    fun getDomainFromUrl(url: String): String {
+    private fun getDomainFromUrl(url: String): String {
         val uri = URI(url)
         return uri.host
     }

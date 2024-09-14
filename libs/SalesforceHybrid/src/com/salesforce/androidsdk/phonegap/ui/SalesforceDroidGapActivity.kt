@@ -160,15 +160,18 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     public override fun onResume() {
         super.onResume()
 
+        // Register the BroadcastReceiver with the intent filter
+        val filter = IntentFilter().apply {
+            addAction(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
+            addAction(ClientManager.INSTANCE_URL_UPDATE_INTENT)
+        }
+        registerReceiver(tokenRefreshReceiver, filter, RECEIVER_NOT_EXPORTED)
+
         // Fetch authentication configuration if required
         lifecycleScope.launch {
             doAuthConfig()
         }
 
-
-        // Register the BroadcastReceiver with the intent filter
-        val filter = IntentFilter(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
-//        registerReceiver(tokenRefreshReceiver, filter, RECEIVER_NOT_EXPORTED)
 
         delegate?.onResume(false)
         // Will call this.onResume(RestClient client) with a null client
@@ -308,7 +311,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         super.onPause()
 
         // Unregister the BroadcastReceiver to avoid leaks
-//        unregisterReceiver(tokenRefreshReceiver);
+        unregisterReceiver(tokenRefreshReceiver);
 
         delegate?.onPause()
     }
@@ -451,23 +454,23 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                 ) {
                     i(TAG, "refresh callback - refresh succeeded")
 
-                    runOnUiThread {
-                        /*
-                         * The client instance being used here needs to be
-                         * refreshed, to ensure we use the new access token.
-                         * However, if the refresh token was revoked when the
-                         * app was in the background we need to catch that
-                         * exception and trigger a proper logout to reset the
-                         * state of this class
-                        */
-                        runCatching {
-                            restClient = clientManager?.peekRestClient()
+//                    runOnUiThread {
+//                        /*
+//                         * The client instance being used here needs to be
+//                         * refreshed, to ensure we use the new access token.
+//                         * However, if the refresh token was revoked when the
+//                         * app was in the background we need to catch that
+//                         * exception and trigger a proper logout to reset the
+//                         * state of this class
+//                        */
+//                        runCatching {
+//                            restClient = clientManager?.peekRestClient()
 //                            loadRemoteStartPage(url)
-                        }.onFailure {
-                            i(TAG, "User has been logged out.")
-                            logout(null)
-                        }
-                    }
+//                        }.onFailure {
+//                            i(TAG, "User has been logged out.")
+//                            logout(null)
+//                        }
+//                    }
                 }
 
                 override fun onError(exception: Exception) {
@@ -524,7 +527,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         }
 
         i(TAG, "loadRemoteStartPage called - loading!")
-
         loadUrl(url)
         webAppLoaded = true
     }
@@ -596,7 +598,8 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     inner class TokenRefreshReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
             // Check if the broadcast is for the right intent
-            if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT) {
+            if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT
+                || intent.action == ClientManager.INSTANCE_URL_UPDATE_INTENT) {
                 salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
             }
         }
