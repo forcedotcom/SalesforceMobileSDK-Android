@@ -59,10 +59,12 @@ public class UserAccountBuilder {
     private String contentDomain;
     private String contentSid;
     private String csrfToken;
-
     private Boolean nativeLogin = false;
     private String language;
     private String locale;
+    private String cookieClientSrc;
+    private String cookieSidClient;
+    private String sidCookieName;
     private Map<String, String> additionalOauthValues;
 
     /**
@@ -375,6 +377,41 @@ public class UserAccountBuilder {
         return this;
     }
 
+
+    /**
+     * Sets cookie client src
+     *
+     * @param cookieClientSrc cookie client src.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder cookieClientSrc(String cookieClientSrc) {
+        this.cookieClientSrc = cookieClientSrc;
+        return this;
+    }
+
+    /**
+     * Sets cookie sid client
+     *
+     * @param cookieSidClient cookie sid client.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder cookieSidClient(String cookieSidClient) {
+        this.cookieSidClient = cookieSidClient;
+        return this;
+    }
+
+    /**
+     * Sets sid cookie name
+     *
+     * @param sidCookieName sid cookie name.
+     * @return Instance of this class.
+     */
+    public UserAccountBuilder sidCookieName(String sidCookieName) {
+        this.sidCookieName = sidCookieName;
+        return this;
+    }
+
+
     /**
      * Sets additional OAuth values.
      *
@@ -386,6 +423,8 @@ public class UserAccountBuilder {
         return this;
     }
 
+
+
     /**
      * Builds and returns a UserAccount object.
      *
@@ -396,6 +435,7 @@ public class UserAccountBuilder {
                 userId, username, accountName, communityId, communityUrl, firstName, lastName,
                 displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
                 lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin,
-                language, locale);
+                language, locale, cookieClientSrc, cookieSidClient, sidCookieName);
     }
+
 }

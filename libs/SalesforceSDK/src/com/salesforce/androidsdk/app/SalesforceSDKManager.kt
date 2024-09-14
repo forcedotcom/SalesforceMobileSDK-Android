@@ -1790,7 +1790,7 @@ open class SalesforceSDKManager protected constructor(
         fun encrypt(
             data: String?,
             key: String?
-        ): String? = Encryptor.encrypt(data, key)
+        ): String? = if (data == null || key == null) null else Encryptor.encrypt(data, key)
 
         /** The active encryption key */
         @JvmStatic
@@ -1808,7 +1808,7 @@ open class SalesforceSDKManager protected constructor(
         fun decrypt(
             data: String?,
             key: String?
-        ): String? = Encryptor.decrypt(data, key)
+        ): String? = if (data == null || key == null) null else Encryptor.decrypt(data, key)
     }
 
     /**

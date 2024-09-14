@@ -445,113 +445,93 @@ public class UserAccountManager {
 		if (account == null) {
 			return null;
 		}
+
 		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-		final String authToken = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), encryptionKey);
-		final String refreshToken = SalesforceSDKManager.decrypt(accountManager.getPassword(account), encryptionKey);
-		final String loginServer = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), encryptionKey);
-		final String idUrl = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), encryptionKey);
-		final String instanceServer = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
-		final String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), encryptionKey);
-		final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), encryptionKey);
-		final String username = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), encryptionKey);
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
-		final String lastName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey);
-		final String email = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey);
-		final String language = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LANGUAGE), encryptionKey);
-		final String locale = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOCALE), encryptionKey);
-		final String encFirstName =  accountManager.getUserData(account, AuthenticatorService.KEY_FIRST_NAME);
-		final Boolean nativeLogin = Boolean.valueOf(SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-				AuthenticatorService.KEY_NATIVE_LOGIN), encryptionKey));
-		String firstName = null;
-		if (encFirstName != null) {
-			firstName = SalesforceSDKManager.decrypt(encFirstName, encryptionKey);
-		}
-		final String encDisplayName = accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
-		String displayName = null;
-		if (encDisplayName != null) {
-			displayName = SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), encryptionKey);
-		}
-		final String encPhotoUrl = accountManager.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
-		String photoUrl = null;
-		if (encPhotoUrl != null) {
-			photoUrl = SalesforceSDKManager.decrypt(encPhotoUrl, encryptionKey);
-		}
-		final String encThumbnailUrl = accountManager.getUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL);
-		String thumbnailUrl = null;
-		if (encThumbnailUrl != null) {
-			thumbnailUrl = SalesforceSDKManager.decrypt(encThumbnailUrl, encryptionKey);
-		}
+		final String refreshToken = SalesforceSDKManager.decrypt(accountManager.getPassword(account), encryptionKey);
+		final String authToken = decryptUserData(account, AccountManager.KEY_AUTHTOKEN, encryptionKey);
+		final String loginServer = decryptUserData(account, AuthenticatorService.KEY_LOGIN_URL, encryptionKey);
+		final String idUrl = decryptUserData(account, AuthenticatorService.KEY_ID_URL, encryptionKey);
+		final String instanceServer = decryptUserData(account, AuthenticatorService.KEY_INSTANCE_URL, encryptionKey);
+		final String orgId = decryptUserData(account, AuthenticatorService.KEY_ORG_ID, encryptionKey);
+		final String userId = decryptUserData(account, AuthenticatorService.KEY_USER_ID, encryptionKey);
+		final String username = decryptUserData(account, AuthenticatorService.KEY_USERNAME, encryptionKey);
+		final String lastName = decryptUserData(account, AuthenticatorService.KEY_LAST_NAME, encryptionKey);
+		final String email = decryptUserData(account, AuthenticatorService.KEY_EMAIL, encryptionKey);
+		final String language = decryptUserData(account, AuthenticatorService.KEY_LANGUAGE, encryptionKey);
+		final String locale = decryptUserData(account, AuthenticatorService.KEY_LOCALE, encryptionKey);
+		final Boolean nativeLogin = Boolean.valueOf(decryptUserData(account, AuthenticatorService.KEY_NATIVE_LOGIN, encryptionKey));
+		final String firstName = decryptUserData(account, AuthenticatorService.KEY_FIRST_NAME, encryptionKey);
+		final String displayName = decryptUserData(account, AuthenticatorService.KEY_DISPLAY_NAME, encryptionKey);
+		final String photoUrl = decryptUserData(account, AuthenticatorService.KEY_PHOTO_URL, encryptionKey);
+		final String thumbnailUrl = decryptUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL, encryptionKey);
+		final String communityId = decryptUserData(account, AuthenticatorService.KEY_COMMUNITY_ID, encryptionKey);
+		final String communityUrl = decryptUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, encryptionKey);
+		final String lightningDomain = decryptUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN, encryptionKey);
+		final String lightningSid = decryptUserData(account, AuthenticatorService.KEY_LIGHTNING_SID, encryptionKey);
+		final String vfDomain = decryptUserData(account, AuthenticatorService.KEY_VF_DOMAIN, encryptionKey);
+		final String vfSid = decryptUserData(account, AuthenticatorService.KEY_VF_SID, encryptionKey);
+		final String contentDomain = decryptUserData(account, AuthenticatorService.KEY_CONTENT_DOMAIN, encryptionKey);
+		final String contentSid = decryptUserData(account, AuthenticatorService.KEY_CONTENT_SID, encryptionKey);
+		final String csrfToken = decryptUserData(account, AuthenticatorService.KEY_CSRF_TOKEN, encryptionKey);
+		final String cookieClientSrc = decryptUserData(account, AuthenticatorService.KEY_COOKIE_CLIENT_SRC, encryptionKey);
+		final String cookieSidClient = decryptUserData(account, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
+		final String sidCookieName = decryptUserData(account, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
+
 		Map<String, String> additionalOauthValues = null;
-		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
 			additionalOauthValues = new HashMap<>();
-			for (final String key : additionalOauthKeys) {
+			for (String key : additionalOauthKeys) {
 				if (!TextUtils.isEmpty(key)) {
-					final String encValue = accountManager.getUserData(account, key);
-					String value = null;
-					if (encValue != null) {
-						value = SalesforceSDKManager.decrypt(encValue, encryptionKey);
-					}
+					String value = decryptUserData(account, key, encryptionKey);
 					additionalOauthValues.put(key, value);
 				}
 			}
 		}
-		final String encCommunityId = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
-		String communityId = null;
-		if (encCommunityId != null) {
-			communityId = SalesforceSDKManager.decrypt(encCommunityId, encryptionKey);
-		}
-		final String encCommunityUrl = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
-		String communityUrl = null;
-		if (encCommunityUrl != null) {
-			communityUrl = SalesforceSDKManager.decrypt(encCommunityUrl, encryptionKey);
-		}
-		final String encLightningDomain = accountManager.getUserData(account, AuthenticatorService.KEY_LIGHTNING_DOMAIN);
-		String lightningDomain = null;
-		if (encLightningDomain != null) {
-			lightningDomain = SalesforceSDKManager.decrypt(encLightningDomain, encryptionKey);
-		}
-		final String encLightningSid = accountManager.getUserData(account, AuthenticatorService.KEY_LIGHTNING_SID);
-		String lightningSid = null;
-		if (encLightningSid != null) {
-			lightningSid = SalesforceSDKManager.decrypt(encLightningSid, encryptionKey);
-		}
-		final String encVFDomain = accountManager.getUserData(account, AuthenticatorService.KEY_VF_DOMAIN);
-		String vfDomain = null;
-		if (encVFDomain != null) {
-			vfDomain = SalesforceSDKManager.decrypt(encVFDomain, encryptionKey);
-		}
-		final String encVFSid = accountManager.getUserData(account, AuthenticatorService.KEY_VF_SID);
-		String vfSid = null;
-		if (encVFSid != null) {
-			vfSid = SalesforceSDKManager.decrypt(encVFSid, encryptionKey);
-		}
-		final String encContentDomain = accountManager.getUserData(account, AuthenticatorService.KEY_CONTENT_DOMAIN);
-		String contentDomain = null;
-		if (encContentDomain != null) {
-			contentDomain = SalesforceSDKManager.decrypt(encContentDomain, encryptionKey);
-		}
-		final String encContentSid = accountManager.getUserData(account, AuthenticatorService.KEY_CONTENT_SID);
-		String contentSid = null;
-		if (encContentSid != null) {
-			contentSid = SalesforceSDKManager.decrypt(encContentSid, encryptionKey);
-		}
-		final String encCsrfToken = accountManager.getUserData(account, AuthenticatorService.KEY_CSRF_TOKEN);
-		String csrfToken = null;
-		if (encCsrfToken != null) {
-			csrfToken = SalesforceSDKManager.decrypt(encCsrfToken, encryptionKey);
-		}
+
+
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
+		} else {
+			return UserAccountBuilder.getInstance()
+					.authToken(authToken)
+					.refreshToken(refreshToken)
+					.loginServer(loginServer)
+					.idUrl(idUrl)
+					.instanceServer(instanceServer)
+					.orgId(orgId)
+					.userId(userId)
+					.username(username)
+					.accountName(accountName)
+					.communityId(communityId)
+					.communityUrl(communityUrl)
+					.firstName(firstName)
+					.lastName(lastName)
+					.displayName(displayName)
+					.email(email).photoUrl(photoUrl)
+					.thumbnailUrl(thumbnailUrl)
+					.lightningDomain(lightningDomain)
+					.lightningSid(lightningSid)
+					.vfDomain(vfDomain)
+					.vfSid(vfSid)
+					.contentDomain(contentDomain)
+					.contentSid(contentSid)
+					.csrfToken(csrfToken)
+					.nativeLogin(nativeLogin)
+					.language(language)
+					.locale(locale)
+					.cookieClientSrc(cookieClientSrc)
+					.cookieSidClient(cookieSidClient)
+					.sidCookieName(sidCookieName)
+					.additionalOauthValues(additionalOauthValues)
+					.build();
 		}
-		return UserAccountBuilder.getInstance().authToken(authToken).refreshToken(refreshToken).
-				loginServer(loginServer).idUrl(idUrl).instanceServer(instanceServer).orgId(orgId).
-				userId(userId).username(username).accountName(accountName).communityId(communityId).
-				communityUrl(communityUrl).firstName(firstName).lastName(lastName).displayName(displayName).
-				email(email).photoUrl(photoUrl).thumbnailUrl(thumbnailUrl).lightningDomain(lightningDomain).
-				lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid).contentDomain(contentDomain).
-				contentSid(contentSid).csrfToken(csrfToken).additionalOauthValues(additionalOauthValues).
-				nativeLogin(nativeLogin).language(language).locale(locale).build();
+	}
+
+	private String decryptUserData(Account account, String key, String encryptionKey) {
+		return  SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
 	}
 
 	/**
