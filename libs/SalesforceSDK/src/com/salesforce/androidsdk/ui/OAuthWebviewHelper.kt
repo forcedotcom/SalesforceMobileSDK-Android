@@ -110,6 +110,7 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.AccountOptions.Companion.fromBundle
 import com.salesforce.androidsdk.util.EventsObservable
@@ -1031,7 +1032,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             if (id?.screenLockTimeout?.compareTo(0) == 1) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
                 val timeoutInMills = (id?.screenLockTimeout ?: 0) * 1000 * 60
-                instance.screenLockManager?.storeMobilePolicy(
+                (instance.screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
                     account,
                     id?.screenLock ?: false,
                     timeoutInMills
@@ -1041,9 +1042,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // Biometric authorization required by mobile policy
             if (id?.biometricAuth == true) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
-                val bioAuthManager = instance.biometricAuthenticationManager as BiometricAuthenticationManager?
                 val timeoutInMills = (id?.biometricAuthTimeout ?: 0) * 60 * 1000
-                bioAuthManager?.storeMobilePolicy(
+                (instance.biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
                     account,
                     id?.biometricAuth ?: false,
                     timeoutInMills
