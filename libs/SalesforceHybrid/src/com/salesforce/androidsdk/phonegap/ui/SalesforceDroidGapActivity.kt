@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.getAppHomeUrl
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.hasCachedAppHome
+import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.d
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.i
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.w
 import com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER
@@ -425,13 +426,12 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     /**
      * If an action causes a redirect to the login page, this method will be
-     * called. It causes the session to be refreshed and reloads the URL through
-     * the front door.
+     * called. It causes the session to be refreshed and reloads the URL.
      *
      * @param url The page to load once the session has been refreshed
      */
     fun refresh(url: String) {
-        i(TAG, "refresh called")
+        i(TAG, "refresh called url:" + url)
 
         /*
          * If client is null at this point, authentication hasn't been performed
@@ -440,10 +440,19 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
          * cases involving hitting the back button when authentication is in
          * progress
          */
+
+        d(TAG, "refresh - 1")
+
         if (restClient == null) {
             clientManager?.getRestClient(this) { recreate() }
+            d(TAG, "refresh - 2")
             return
         }
+
+        webAppLoaded = false /* to force a reload */
+
+        d(TAG, "refresh - 3")
+
 
         restClient?.sendAsync(
             getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
@@ -453,6 +462,8 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     response: RestResponse
                 ) {
                     i(TAG, "refresh callback - refresh succeeded")
+                    // Get a fresh RestClient / set cookies and reload web view if needed
+                    onResume(null)
 
 //                    runOnUiThread {
 //                        /*
@@ -600,7 +611,9 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             // Check if the broadcast is for the right intent
             if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT
                 || intent.action == ClientManager.INSTANCE_URL_UPDATE_INTENT) {
-                salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
+                d(TAG, "TokenRefreshReceiver onReceive - calling onResume")
+                // Get a fresh RestClient / set cookies and reload web view if needed
+                onResume(null)
             }
         }
     }

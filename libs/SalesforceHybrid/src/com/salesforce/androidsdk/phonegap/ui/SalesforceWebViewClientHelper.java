@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.util.AuthConfigUtil;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import java.io.File;
@@ -75,10 +76,11 @@ public class SalesforceWebViewClientHelper {
      */
     public static boolean shouldOverrideUrlLoading(Context ctx,
     		WebView view, String url) {
+        SalesforceSDKLogger.d(TAG, "shouldOverrideUrlLoading url:" + url);
     	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(ctx, url);
         if (startURL != null && ctx instanceof SalesforceDroidGapActivity) {
             ((SalesforceDroidGapActivity) ctx).refresh(startURL);
-        	return true;
+            return true;
         } else {
         	return false;
         }
