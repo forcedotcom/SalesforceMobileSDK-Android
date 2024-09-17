@@ -66,7 +66,7 @@ public class UserAccountTest {
 
     public static final String TEST_ORG_ID = "test_org_id";
     public static final String TEST_USER_ID = "test_user_id";
-    public static final String TEST_ACCOUNT_NAME = "test_accountname";
+    public static final String TEST_ACCOUNT_NAME = "test_username (https://cs1.salesforce.com) (SalesforceSDKTest)";
     public static final String TEST_USERNAME = "test_username";
     public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
     public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
@@ -85,8 +85,18 @@ public class UserAccountTest {
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
     public static final String TEST_LANGUAGE = "en_US";
     public static final String TEST_LOCALE = "fr_FR";
-
-
+    public static final String TEST_LIGHTNING_DOMAIN = "lightning-domain-value";
+    public static final String TEST_LIGHTNING_SID = "lightning-sid-value";
+    public static final String TEST_VF_DOMAIN = "vf-domain-value";
+    public static final String TEST_VF_SID = "vf-sid-value";
+    public static final String TEST_CONTENT_DOMAIN = "content-domain-value";
+    public static final String TEST_CONTENT_SID = "content-sid-value";
+    public static final String TEST_CSRF_TOKEN = "csrf-token-value";
+    public static final Boolean TEST_NATIVE_LOGIN = false;
+    public static final String TEST_COOKIE_CLIENT_SRC = "cookie-client-src-value";
+    public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid-client-value";
+    private static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
+    
     private EventsListenerQueue eq;
 
     @Before
@@ -115,17 +125,38 @@ public class UserAccountTest {
      */
     @Test
     public void testConvertAccountToBundle() {
-        final UserAccount account = UserAccountBuilder.getInstance().authToken(TEST_AUTH_TOKEN).
-                refreshToken(TEST_REFRESH_TOKEN).loginServer(TEST_LOGIN_URL).
-                idUrl(TEST_IDENTITY_URL).instanceServer(TEST_INSTANCE_URL).
-                orgId(TEST_ORG_ID).userId(TEST_USER_ID).username(TEST_USERNAME).accountName(TEST_ACCOUNT_NAME).
-                communityId(TEST_COMMUNITY_ID).communityUrl(TEST_COMMUNITY_URL).firstName(TEST_FIRST_NAME).
-                lastName(TEST_LAST_NAME).displayName(TEST_DISPLAY_NAME).email(TEST_EMAIL).
-                photoUrl(TEST_PHOTO_URL).thumbnailUrl(TEST_THUMBNAIL_URL).
-                lightningDomain(null).lightningSid(null).vfDomain(null).vfSid(null).
-                contentDomain(null).contentSid(null).csrfToken(null).nativeLogin(false).
-                language(TEST_LANGUAGE).locale(TEST_LOCALE).
-                additionalOauthValues(createAdditionalOauthValues()).build();
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .authToken(TEST_AUTH_TOKEN)
+                .refreshToken(TEST_REFRESH_TOKEN)
+                .loginServer(TEST_LOGIN_URL)
+                .idUrl(TEST_IDENTITY_URL)
+                .instanceServer(TEST_INSTANCE_URL)
+                .orgId(TEST_ORG_ID)
+                .userId(TEST_USER_ID)
+                .username(TEST_USERNAME)
+                .accountName(TEST_ACCOUNT_NAME)
+                .communityId(TEST_COMMUNITY_ID)
+                .communityUrl(TEST_COMMUNITY_URL)
+                .firstName(TEST_FIRST_NAME)
+                .lastName(TEST_LAST_NAME)
+                .displayName(TEST_DISPLAY_NAME)
+                .email(TEST_EMAIL)
+                .photoUrl(TEST_PHOTO_URL)
+                .thumbnailUrl(TEST_THUMBNAIL_URL)
+                .lightningDomain(TEST_LIGHTNING_DOMAIN)
+                .lightningSid(TEST_LIGHTNING_SID)
+                .vfDomain(TEST_VF_DOMAIN)
+                .vfSid(TEST_VF_SID)
+                .contentDomain(TEST_CONTENT_DOMAIN)
+                .contentSid(TEST_CONTENT_SID)
+                .csrfToken(TEST_CSRF_TOKEN)
+                .nativeLogin(TEST_NATIVE_LOGIN)
+                .language(TEST_LANGUAGE)
+                .locale(TEST_LOCALE)
+                .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
+                .cookieSidClient(TEST_COOKIE_SID_CLIENT)
+                .sidCookieName(TEST_SID_COOKIE_NAME)
+                .additionalOauthValues(createAdditionalOauthValues()).build();
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
         Assert.assertTrue(equalBundles(bundle, expectedBundle));
@@ -138,26 +169,7 @@ public class UserAccountTest {
     public void testCreateAccountFromBundle() {
         final Bundle testBundle = createTestAccountBundle();
         final UserAccount account = new UserAccount(testBundle);
-        Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
-        Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
-        Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
-        Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
-        Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
-        Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
-        Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
-        Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        Assert.assertEquals("Account name should match", TEST_ACCOUNT_NAME, account.getAccountName());
-        Assert.assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
-        Assert.assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
-        Assert.assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
-        Assert.assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
-        Assert.assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
-        Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
-        Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
-        Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        Assert.assertEquals("Language should match", TEST_LANGUAGE, account.getLanguage());
-        Assert.assertEquals("Locale should match", TEST_LOCALE, account.getLocale());
-        Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
+        checkTestAccount(account);
     }
 
     /**
@@ -167,28 +179,7 @@ public class UserAccountTest {
     public void testCreateAccountFromJSON() throws JSONException {
         JSONObject testJSON = createTestAccountJSON();
         UserAccount account = new UserAccount(testJSON);
-        Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
-        Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
-        Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
-        Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
-        Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
-        Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
-        Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
-        Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
-        Assert.assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
-        Assert.assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
-        Assert.assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
-        Assert.assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
-        Assert.assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
-        Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
-        Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
-        Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        Assert.assertEquals("Language should match", TEST_LANGUAGE, account.getLanguage());
-        Assert.assertEquals("Locale should match", TEST_LOCALE, account.getLocale());
-        Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
-        Assert.assertEquals("Account name should match",
-                String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
-                account.getAccountName());
+        checkTestAccount(account);
     }
 
     /**
@@ -206,7 +197,6 @@ public class UserAccountTest {
         object.put(UserAccount.ORG_ID, TEST_ORG_ID);
         object.put(UserAccount.USER_ID, TEST_USER_ID);
         object.put(UserAccount.USERNAME, TEST_USERNAME);
-        object.put(UserAccount.ACCOUNT_NAME, TEST_ACCOUNT_NAME);
         object.put(UserAccount.COMMUNITY_ID, TEST_COMMUNITY_ID);
         object.put(UserAccount.COMMUNITY_URL, TEST_COMMUNITY_URL);
         object.put(UserAccount.FIRST_NAME, TEST_FIRST_NAME);
@@ -217,6 +207,17 @@ public class UserAccountTest {
         object.put(UserAccount.LOCALE, TEST_LOCALE);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        object.put(UserAccount.LIGHTNING_DOMAIN, TEST_LIGHTNING_DOMAIN);
+        object.put(UserAccount.LIGHTNING_SID, TEST_LIGHTNING_SID);
+        object.put(UserAccount.VF_DOMAIN, TEST_VF_DOMAIN);
+        object.put(UserAccount.VF_SID, TEST_VF_SID);
+        object.put(UserAccount.CONTENT_DOMAIN, TEST_CONTENT_DOMAIN);
+        object.put(UserAccount.CONTENT_SID, TEST_CONTENT_SID);
+        object.put(UserAccount.CSRF_TOKEN, TEST_CSRF_TOKEN);
+        object.put(UserAccount.NATIVE_LOGIN, TEST_NATIVE_LOGIN);
+        object.put(UserAccount.COOKIE_CLIENT_SRC, TEST_COOKIE_CLIENT_SRC);
+        object.put(UserAccount.COOKIE_SID_CLIENT, TEST_COOKIE_SID_CLIENT);
+        object.put(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -247,16 +248,56 @@ public class UserAccountTest {
         object.putString(UserAccount.LOCALE, TEST_LOCALE);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        object.putString(UserAccount.LIGHTNING_DOMAIN, null);
-        object.putString(UserAccount.LIGHTNING_SID, null);
-        object.putString(UserAccount.VF_DOMAIN, null);
-        object.putString(UserAccount.VF_SID, null);
-        object.putString(UserAccount.CONTENT_DOMAIN, null);
-        object.putString(UserAccount.CONTENT_SID, null);
-        object.putString(UserAccount.CSRF_TOKEN, null);
-        object.putBoolean(UserAccount.NATIVE_LOGIN, false);
+        object.putString(UserAccount.LIGHTNING_DOMAIN, TEST_LIGHTNING_DOMAIN);
+        object.putString(UserAccount.LIGHTNING_SID, TEST_LIGHTNING_SID);
+        object.putString(UserAccount.VF_DOMAIN, TEST_VF_DOMAIN);
+        object.putString(UserAccount.VF_SID, TEST_VF_SID);
+        object.putString(UserAccount.CONTENT_DOMAIN, TEST_CONTENT_DOMAIN);
+        object.putString(UserAccount.CONTENT_SID, TEST_CONTENT_SID);
+        object.putString(UserAccount.CSRF_TOKEN, TEST_CSRF_TOKEN);
+        object.putBoolean(UserAccount.NATIVE_LOGIN, TEST_NATIVE_LOGIN);
+        object.putString(UserAccount.COOKIE_CLIENT_SRC, TEST_COOKIE_CLIENT_SRC);
+        object.putString(UserAccount.COOKIE_SID_CLIENT, TEST_COOKIE_SID_CLIENT);
+        object.putString(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
+    }
+
+    /**
+     * Check the account passed
+     * @param account
+     */
+    void checkTestAccount(UserAccount account) {
+        Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
+        Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
+        Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
+        Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
+        Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
+        Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
+        Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
+        Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
+        Assert.assertEquals("Account name should match", TEST_ACCOUNT_NAME, account.getAccountName());
+        Assert.assertEquals("Community ID should match", TEST_COMMUNITY_ID, account.getCommunityId());
+        Assert.assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
+        Assert.assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
+        Assert.assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
+        Assert.assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
+        Assert.assertEquals("Email should match", TEST_EMAIL, account.getEmail());
+        Assert.assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
+        Assert.assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        Assert.assertEquals("Language should match", TEST_LANGUAGE, account.getLanguage());
+        Assert.assertEquals("Locale should match", TEST_LOCALE, account.getLocale());
+        Assert.assertEquals("Lightning domain should match", TEST_LIGHTNING_DOMAIN, account.getLightningDomain());
+        Assert.assertEquals("Lightning sid should match", TEST_LIGHTNING_SID, account.getLightningSid());
+        Assert.assertEquals("Content domain should match", TEST_CONTENT_DOMAIN, account.getContentDomain());
+        Assert.assertEquals("Content sid should match", TEST_CONTENT_SID, account.getContentSid());
+        Assert.assertEquals("Vf domain should match", TEST_VF_DOMAIN, account.getVFDomain());
+        Assert.assertEquals("Vf sid should match", TEST_VF_SID, account.getVFSid());
+        Assert.assertEquals("Native login should match", TEST_NATIVE_LOGIN, account.getNativeLogin());
+        Assert.assertEquals("Cookie client src should match", TEST_COOKIE_CLIENT_SRC, account.getCookieClientSrc());
+        Assert.assertEquals("Cookie sid client should match", TEST_COOKIE_SID_CLIENT, account.getCookieSidClient());
+        Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
+        Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
     /**
@@ -300,4 +341,5 @@ public class UserAccountTest {
         testOauthValues.add(TEST_CUSTOM_KEY);
         return testOauthValues;
     }
+
 }

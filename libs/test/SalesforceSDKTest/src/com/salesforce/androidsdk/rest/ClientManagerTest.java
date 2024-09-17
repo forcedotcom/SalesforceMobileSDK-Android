@@ -97,6 +97,18 @@ public class ClientManagerTest {
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
     public static final String TEST_LANGUAGE = "en_US";
     public static final String TEST_LOCALE = "en_US";
+    public static final String TEST_LIGHTNING_DOMAIN = "lightningDomain";
+    public static final String TEST_LIGHTNING_SID = "lightningSid";
+    public static final String TEST_VF_DOMAIN = "vfDomain";
+    public static final String TEST_VF_SID = "vfSid";
+    public static final String TEST_CONTENT_DOMAIN = "contentDomain";
+    public static final String TEST_CONTENT_SID = "contentSid";
+    public static final String TEST_CSRF_TOKEN = "csrfToken";
+    public static final Boolean TEST_NATIVE_LOGIN = false;
+    public static final String TEST_COOKIE_CLIENT_SRC = "cookie-clientSrc";
+    public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid_Client";
+    public static final String TEST_SID_COOKIE_NAME = "sidCookieName";
+
 
     private ClientManager clientManager;
     private AccountManager accountManager;
@@ -558,8 +570,8 @@ public class ClientManagerTest {
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
                 TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
                 TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
-                null, null, null, null, null,
-                null, null, false, TEST_LANGUAGE, TEST_LOCALE);
+                TEST_LIGHTNING_DOMAIN, TEST_LIGHTNING_SID, TEST_VF_DOMAIN, TEST_VF_SID, TEST_CONTENT_DOMAIN,
+                TEST_CONTENT_SID, TEST_CSRF_TOKEN, TEST_NATIVE_LOGIN, TEST_LANGUAGE, TEST_LOCALE);
     }
 
     /**
