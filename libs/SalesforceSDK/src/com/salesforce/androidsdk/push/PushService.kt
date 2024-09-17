@@ -26,10 +26,7 @@
  */
 package com.salesforce.androidsdk.push
 
-import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkInfo
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -43,7 +40,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_PUSH_NOTIFICATIONS
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.clearRegistrationInfo
@@ -406,7 +403,7 @@ open class PushService {
                     account.csrfToken
                 ),
                 account.authToken,
-                DEFAULT,
+                HttpAccess.DEFAULT,
                 AccMgrAuthTokenProvider(
                     clientManager,
                     account.instanceServer,
@@ -485,49 +482,49 @@ open class PushService {
                 .putString("ACTION", action.name)
                 .build()
 
-            when (pushNotificationsRegistrationType) {
-                ReRegistrationDisabled -> {
-                    /* Intentionally Blank */
-                }
-
-                ReRegistrationOnAppForeground -> OneTimeWorkRequest.Builder(
-                    workerClass = PushNotificationsRegistrationChangeWorker::class.java
-                ).setInputData(workData)
-                    .setConstraints(constraints)
-                    .build().also { workRequest ->
-                        workManager.enqueueUniqueWork(
-                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
-                            REPLACE,
-                            workRequest
-                        )
+            if (action == Register) {
+                when (pushNotificationsRegistrationType) {
+                    ReRegistrationDisabled -> {
+                        /* Intentionally Blank */
                     }
 
-                ReRegisterPeriodically -> PeriodicWorkRequest.Builder(
-                    workerClass = PushNotificationsRegistrationChangeWorker::class.java,
-                    repeatInterval = delayDays ?: 6,
-                    repeatIntervalTimeUnit = DAYS
-                ).setInputData(workData)
-                    .setConstraints(constraints)
-                    .build().also { workRequest ->
-                        workManager.enqueueUniquePeriodicWork(
-                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
-                            UPDATE,
-                            workRequest
-                        )
-                    }
-            }
-
-            if (action == Deregister) {
-                val workRequest: OneTimeWorkRequest =
-                    OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
-                        .setInputData(workData)
+                    ReRegistrationOnAppForeground -> OneTimeWorkRequest.Builder(
+                        workerClass = PushNotificationsRegistrationChangeWorker::class.java
+                    ).setInputData(workData)
                         .setConstraints(constraints)
-                        .build()
-                workManager.enqueue(workRequest)
+                        .build().also { workRequest ->
+                            workManager.enqueueUniqueWork(
+                                PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                                REPLACE,
+                                workRequest
+                            )
+                        }
+
+                    ReRegisterPeriodically -> PeriodicWorkRequest.Builder(
+                        workerClass = PushNotificationsRegistrationChangeWorker::class.java,
+                        repeatInterval = delayDays ?: 6,
+                        repeatIntervalTimeUnit = DAYS
+                    ).setInputData(workData)
+                        .setConstraints(constraints)
+                        .build().also { workRequest ->
+                            workManager.enqueueUniquePeriodicWork(
+                                PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                                UPDATE,
+                                workRequest
+                            )
+                        }
+                }
+            } else {
+                // Deregister
+                OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
+                    .setInputData(workData)
+                    .setConstraints(constraints)
+                    .build().also {  workRequest ->
+                        workManager.enqueue(workRequest)
+                    }
 
                 // Send broadcast now to finish logout if we are offline.
-                val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                if (connectivityManager.activeNetworkInfo?.isConnected != true) {
+                if (!HttpAccess.DEFAULT.hasNetwork()) {
                     context.sendBroadcast(
                         Intent(
                             UNREGISTERED_ATTEMPT_COMPLETE_EVENT

@@ -160,10 +160,9 @@ object PushMessaging {
                 FirebaseInstallations.getInstance(firebaseApp).delete()
                 firebaseApp.delete()
             }
+
             unregisterSFDCPush(context, account)
         }
-
-        unregisterSFDCPush(context, account)
     }
 
     /**
@@ -470,14 +469,7 @@ object PushMessaging {
         account: UserAccount?,
         action: PushNotificationsRegistrationAction,
     ) {
-        if (account == null) {
-            enqueuePushNotificationsRegistrationWork(
-                userAccount = null,
-                action = action,
-                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
-                delayDays = null
-            )
-        } else if (isRegistered(context, account)) {
+        if (account == null || isRegistered(context, account)) {
             enqueuePushNotificationsRegistrationWork(
                 userAccount = account,
                 action = action,
