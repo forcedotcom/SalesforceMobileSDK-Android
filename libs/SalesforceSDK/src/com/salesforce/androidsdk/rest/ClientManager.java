@@ -294,7 +294,7 @@ public class ClientManager {
      * @param additionalOauthValues Additional OAuth values.
      * @return Account info.
      *
-     * @Deprecated will be removed in MSDK 14.0 - please use createNewAccount(UserAccount userAccount)
+     * @Deprecated will be removed in Mobile SDK 14.0 - please use createNewAccount(UserAccount userAccount)
      */
     @Deprecated
     public Bundle createNewAccount(String accountName, String username, String refreshToken,

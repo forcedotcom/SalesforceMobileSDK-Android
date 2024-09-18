@@ -28,18 +28,33 @@ package com.salesforce.androidsdk.accounts;
 
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_AUTH_TOKEN;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_COMMUNITY_ID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_COMMUNITY_URL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CONTENT_DOMAIN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CONTENT_SID;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CSRF_TOKEN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_DISPLAY_NAME;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_EMAIL;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_FIRST_NAME;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_IDENTITY_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_INSTANCE_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LANGUAGE;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LAST_NAME;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LIGHTNING_DOMAIN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LIGHTNING_SID;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOCALE;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOGIN_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ORG_ID;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ORG_ID_2;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_OTHER_ACCOUNT_NAME;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_OTHER_USERNAME;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_PHOTO_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_REFRESH_TOKEN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_THUMBNAIL_URL;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USER_ID;
 import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USER_ID_2;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_VF_DOMAIN;
+import static com.salesforce.androidsdk.rest.ClientManagerTest.TEST_VF_SID;
 
 import android.accounts.AccountManager;
 import android.app.Application;
@@ -269,10 +284,10 @@ public class UserAccountManagerTest {
         		TEST_AUTH_TOKEN, TEST_INSTANCE_URL,
         		TEST_LOGIN_URL, TEST_IDENTITY_URL,
         		TEST_CLIENT_ID, TEST_ORG_ID,
-        		TEST_USER_ID, null, null, null,
-                null, null, null, null, null,
-                null, null, null, null, null,
-                null, null, null, false, TEST_LANGUAGE, TEST_LOCALE);
+        		TEST_USER_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
+                null, TEST_LIGHTNING_DOMAIN, TEST_LIGHTNING_SID, TEST_VF_DOMAIN, TEST_VF_SID,
+                TEST_CONTENT_DOMAIN, TEST_CONTENT_SID, TEST_CSRF_TOKEN, false, TEST_LANGUAGE, TEST_LOCALE);
     }
 
     /**
@@ -286,10 +301,9 @@ public class UserAccountManagerTest {
         		TEST_AUTH_TOKEN, TEST_INSTANCE_URL,
         		TEST_LOGIN_URL, TEST_IDENTITY_URL,
         		TEST_CLIENT_ID, TEST_ORG_ID_2,
-        		TEST_USER_ID_2, null, null, null,
-                null, null, null, null, null,
-                null, null, null, null, null,
-                null, null, null, false,
-                TEST_LANGUAGE, TEST_LOCALE);
+                TEST_USER_ID_2, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
+                null, TEST_LIGHTNING_DOMAIN, TEST_LIGHTNING_SID, TEST_VF_DOMAIN, TEST_VF_SID,
+                TEST_CONTENT_DOMAIN, TEST_CONTENT_SID, TEST_CSRF_TOKEN, false, TEST_LANGUAGE, TEST_LOCALE);
     }
 }

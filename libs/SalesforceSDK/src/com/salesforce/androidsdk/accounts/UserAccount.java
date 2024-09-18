@@ -46,6 +46,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -213,11 +214,13 @@ public class UserAccount {
 	}
 
 	/**
-	 * Parameterized constructor.
+	 * Construct UserAccount from JSON.
 	 *
 	 * @param object JSON object.
+	 * @param applicationName the application name.
+	 * @param additionalOauthKeys addtional auth keys.
 	 */
-	public UserAccount(JSONObject object) {
+	UserAccount(JSONObject object, String applicationName, List<String> additionalOauthKeys) {
 		if (object != null) {
 			authToken = object.optString(AUTH_TOKEN, null);
 			refreshToken = object.optString(REFRESH_TOKEN, null);
@@ -228,8 +231,7 @@ public class UserAccount {
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
 			if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(instanceServer)) {
-				accountName = String.format("%s (%s) (%s)", username, instanceServer,
-						SalesforceSDKManager.getInstance().getApplicationName());
+				accountName = String.format("%s (%s) (%s)", username, instanceServer, applicationName);
 			}
 			communityId = object.optString(COMMUNITY_ID, null);
 			communityUrl = object.optString(COMMUNITY_URL, null);
@@ -253,17 +255,25 @@ public class UserAccount {
 			cookieSidClient = object.optString(COOKIE_SID_CLIENT, null);
 			sidCookieName = object.optString(SID_COOKIE_NAME, null);
 			clientId = object.optString(CLIENT_ID, null);
-			additionalOauthValues = MapUtil.addJSONObjectToMap(object,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
 
 	/**
-	 * Parameterized constructor.
+	 * Construct UserAccount from JSON.
+	 * @param object
+	 */
+	public UserAccount(JSONObject object) {
+		this(object, SalesforceSDKManager.getInstance().getApplicationName(), SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
+	}
+
+	/**
+	 * Construct UserAccount from Bundle.
 	 *
 	 * @param bundle Bundle.
+	 * @param additionalOauthKeys additional oauth keys.
 	 */
-	public UserAccount(Bundle bundle) {
+	UserAccount(Bundle bundle, List<String> additionalOauthKeys) {
 		if (bundle != null) {
 			authToken = bundle.getString(AUTH_TOKEN);
 			refreshToken = bundle.getString(REFRESH_TOKEN);
@@ -296,9 +306,17 @@ public class UserAccount {
 			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
 			sidCookieName = bundle.getString(SID_COOKIE_NAME);
 			clientId = bundle.getString(CLIENT_ID);
-			additionalOauthValues = MapUtil.addBundleToMap(bundle,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			additionalOauthValues = MapUtil.addBundleToMap(bundle,additionalOauthKeys, additionalOauthValues);
 		}
+	}
+
+	/**
+	 * Construct UserAccount from Bundle
+	 *
+	 * @param bundle
+	 */
+	public UserAccount(Bundle bundle) {
+		this(bundle, SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
 	}
 
 	/**
@@ -813,9 +831,10 @@ public class UserAccount {
 	/**
 	 * Returns a JSON representation of this instance.
 	 *
+	 * @param additionalOauthKeys: values to pull from the additionalOauthValues
 	 * @return JSONObject instance.
 	 */
-	public JSONObject toJson() {
+	JSONObject toJson(List<String> additionalOauthKeys) {
 		JSONObject object = new JSONObject();
 		try {
 			object.put(AUTH_TOKEN, authToken);
@@ -847,8 +866,7 @@ public class UserAccount {
 			object.put(COOKIE_CLIENT_SRC, cookieClientSrc);
 			object.put(COOKIE_SID_CLIENT, cookieSidClient);
 			object.put(SID_COOKIE_NAME, sidCookieName);
-			object = MapUtil.addMapToJSONObject(additionalOauthValues,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
 		}
@@ -856,11 +874,21 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns a JSON representation of this instance.
+	 *
+	 * @return JSONObject instance.
+	 */
+	public JSONObject toJson() {
+		return toJson(SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
+	}
+
+	/**
 	 * Returns a representation of this instance in a bundle.
 	 *
+	 * @param additionalOauthKeys: values to pull from the additionalOauthValues
 	 * @return Bundle instance.
 	 */
-	public Bundle toBundle() {
+	Bundle toBundle(List<String> additionalOauthKeys) {
 		Bundle object = new Bundle();
 		object.putString(AUTH_TOKEN, authToken);
 		object.putString(REFRESH_TOKEN, refreshToken);
@@ -893,9 +921,17 @@ public class UserAccount {
 		object.putString(COOKIE_SID_CLIENT, cookieSidClient);
 		object.putString(SID_COOKIE_NAME, sidCookieName);
 		object.putString(CLIENT_ID, clientId);
-		object = MapUtil.addMapToBundle(additionalOauthValues,
-				SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
+	}
+
+	/**
+	 * Returns a representation of this instance in a bundle.
+	 *
+	 * @return Bundle instance.
+	 */
+	public Bundle toBundle() {
+		return toBundle(SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
 	}
 
 	private File getProfilePhotoFile() {

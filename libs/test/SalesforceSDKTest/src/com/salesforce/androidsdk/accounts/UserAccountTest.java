@@ -37,7 +37,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.BundleTestHelper;
 import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
@@ -53,7 +55,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Tests for {@link UserAccount}
@@ -95,7 +96,8 @@ public class UserAccountTest {
     public static final Boolean TEST_NATIVE_LOGIN = false;
     public static final String TEST_COOKIE_CLIENT_SRC = "cookie-client-src-value";
     public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid-client-value";
-    private static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
+    public static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
+    public static final String TEST_CLIENT_ID = "test-client-id";
     
     private EventsListenerQueue eq;
 
@@ -121,7 +123,7 @@ public class UserAccountTest {
     }
 
     /**
-     * Tests bundle creation.
+     * Tests user account to bundle conversion.
      */
     @Test
     public void testConvertAccountToBundle() {
@@ -156,11 +158,57 @@ public class UserAccountTest {
                 .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
                 .cookieSidClient(TEST_COOKIE_SID_CLIENT)
                 .sidCookieName(TEST_SID_COOKIE_NAME)
-                .additionalOauthValues(createAdditionalOauthValues()).build();
-        final Bundle bundle = account.toBundle();
-        final Bundle expectedBundle = createTestAccountBundle();
-        Assert.assertTrue(equalBundles(bundle, expectedBundle));
+                .clientId(TEST_CLIENT_ID)
+                .additionalOauthValues(createAdditionalOauthValues())
+                .build();
+        final Bundle actual = account.toBundle(createAdditionalOauthKeys());
+        final Bundle expected = createTestAccountBundle();
+        BundleTestHelper.checkSameBundle("UserAccount bundles do not match", expected, actual);
     }
+
+    /**
+     * Tests user account to json conversion.
+     */
+    @Test
+    public void testConvertAccountToJSON() throws JSONException {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .authToken(TEST_AUTH_TOKEN)
+                .refreshToken(TEST_REFRESH_TOKEN)
+                .loginServer(TEST_LOGIN_URL)
+                .idUrl(TEST_IDENTITY_URL)
+                .instanceServer(TEST_INSTANCE_URL)
+                .orgId(TEST_ORG_ID)
+                .userId(TEST_USER_ID)
+                .username(TEST_USERNAME)
+                .accountName(TEST_ACCOUNT_NAME)
+                .communityId(TEST_COMMUNITY_ID)
+                .communityUrl(TEST_COMMUNITY_URL)
+                .firstName(TEST_FIRST_NAME)
+                .lastName(TEST_LAST_NAME)
+                .displayName(TEST_DISPLAY_NAME)
+                .email(TEST_EMAIL)
+                .photoUrl(TEST_PHOTO_URL)
+                .thumbnailUrl(TEST_THUMBNAIL_URL)
+                .lightningDomain(TEST_LIGHTNING_DOMAIN)
+                .lightningSid(TEST_LIGHTNING_SID)
+                .vfDomain(TEST_VF_DOMAIN)
+                .vfSid(TEST_VF_SID)
+                .contentDomain(TEST_CONTENT_DOMAIN)
+                .contentSid(TEST_CONTENT_SID)
+                .csrfToken(TEST_CSRF_TOKEN)
+                .nativeLogin(TEST_NATIVE_LOGIN)
+                .language(TEST_LANGUAGE)
+                .locale(TEST_LOCALE)
+                .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
+                .cookieSidClient(TEST_COOKIE_SID_CLIENT)
+                .sidCookieName(TEST_SID_COOKIE_NAME)
+                .clientId(TEST_CLIENT_ID)
+                .additionalOauthValues(createAdditionalOauthValues()).build();
+        final JSONObject actual = account.toJson(createAdditionalOauthKeys());
+        final JSONObject expected = createTestAccountJSON();
+        JSONTestHelper.assertSameJSONObject("UserAccount JSONs do not match", expected, actual);
+    }
+
 
     /**
      * Tests creating an account from a bundle.
@@ -259,6 +307,7 @@ public class UserAccountTest {
         object.putString(UserAccount.COOKIE_CLIENT_SRC, TEST_COOKIE_CLIENT_SRC);
         object.putString(UserAccount.COOKIE_SID_CLIENT, TEST_COOKIE_SID_CLIENT);
         object.putString(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
+        object.putString(UserAccount.CLIENT_ID, TEST_CLIENT_ID);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -298,36 +347,6 @@ public class UserAccountTest {
         Assert.assertEquals("Cookie sid client should match", TEST_COOKIE_SID_CLIENT, account.getCookieSidClient());
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
-    }
-
-    /**
-     * Check for equality of two bundles.
-     *
-     * @param one the first bundle
-     * @param two the second bundle
-     * @return true if the keys/values match
-     *         false otherwise
-     */
-    public boolean equalBundles(Bundle one, Bundle two) {
-        if (one.size() != two.size()) {
-            return false;
-        }
-        Set<String> setOne = one.keySet();
-        Object valueOne;
-        Object valueTwo;
-        for (String key : setOne) {
-            valueOne = one.get(key);
-            valueTwo = two.get(key);
-            if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
-                    !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
-                return false;
-            } else if (valueOne == null) {
-                if (valueTwo != null || !two.containsKey(key))
-                    return false;
-            } else if (!valueOne.equals(valueTwo))
-                return false;
-        }
-        return true;
     }
 
     private Map<String, String> createAdditionalOauthValues() {

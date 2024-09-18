@@ -593,58 +593,6 @@ public class UserAccountManager {
 		}
 	}
 
-	private Bundle buildAuthBundle(UserAccount userAccount) {
-		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-		final Bundle extras = new Bundle();
-		extras.putString(AccountManager.KEY_ACCOUNT_NAME, userAccount.getAccountName());
-		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
-		extras.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encrypt(userAccount.getUsername(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(userAccount.getLoginServer(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encrypt(userAccount.getIdUrl(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getInstanceServer(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(userAccount.getClientId(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(userAccount.getOrgId(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userAccount.getUserId(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(userAccount.getCommunityId(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encrypt(userAccount.getCommunityUrl(), encryptionKey));
-		extras.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(userAccount.getAuthToken(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_FIRST_NAME, SalesforceSDKManager.encrypt(userAccount.getFirstName(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(userAccount.getLastName(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_DISPLAY_NAME, SalesforceSDKManager.encrypt(userAccount.getDisplayName(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(userAccount.getEmail(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LANGUAGE, SalesforceSDKManager.encrypt(userAccount.getLanguage(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LOCALE, SalesforceSDKManager.encrypt(userAccount.getLocale(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encrypt(userAccount.getPhotoUrl(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encrypt(userAccount.getThumbnailUrl(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LIGHTNING_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getLightningDomain(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_LIGHTNING_SID, SalesforceSDKManager.encrypt(userAccount.getLightningSid(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_VF_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getVFDomain(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_VF_SID, SalesforceSDKManager.encrypt(userAccount.getVFSid(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_CONTENT_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getContentDomain(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_CONTENT_SID, SalesforceSDKManager.encrypt(userAccount.getContentSid(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_CSRF_TOKEN, SalesforceSDKManager.encrypt(userAccount.getCSRFToken(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_NATIVE_LOGIN,  SalesforceSDKManager.encrypt(userAccount.getNativeLogin().toString(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_COOKIE_SID_CLIENT, SalesforceSDKManager.encrypt(userAccount.getCookieSidClient(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_COOKIE_CLIENT_SRC, SalesforceSDKManager.encrypt(userAccount.getCookieClientSrc(), encryptionKey));
-		extras.putString(AuthenticatorService.KEY_SID_COOKIE_NAME, SalesforceSDKManager.encrypt(userAccount.getSidCookieName(), encryptionKey));
-
-		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
-		if (userAccount.getAdditionalOauthValues() != null && !userAccount.getAdditionalOauthValues().isEmpty()) {
-			for (final String key : additionalOauthKeys) {
-				final String value = userAccount.getAdditionalOauthValues().get(key);
-				if (value != null) {
-					extras.putString(key, SalesforceSDKManager.encrypt(value, encryptionKey));
-				}
-			}
-		}
-
-		return extras;
-	}
-
-	private String decryptUserData(Account account, String key, String encryptionKey) {
-		return  SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
-	}
-
 	/**
 	 * Builds an Account object from the user account passed in.
 	 *
@@ -751,5 +699,57 @@ public class UserAccountManager {
 		i.putExtras(options);
 		reply.putParcelable(AccountManager.KEY_INTENT, i);
 		context.startActivity(i);
+	}
+
+	private Bundle buildAuthBundle(UserAccount userAccount) {
+		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+		final Bundle extras = new Bundle();
+		extras.putString(AccountManager.KEY_ACCOUNT_NAME, userAccount.getAccountName());
+		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, accountType);
+		extras.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encrypt(userAccount.getUsername(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(userAccount.getLoginServer(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encrypt(userAccount.getIdUrl(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getInstanceServer(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(userAccount.getClientId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(userAccount.getOrgId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userAccount.getUserId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(userAccount.getCommunityId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encrypt(userAccount.getCommunityUrl(), encryptionKey));
+		extras.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(userAccount.getAuthToken(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_FIRST_NAME, SalesforceSDKManager.encrypt(userAccount.getFirstName(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(userAccount.getLastName(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_DISPLAY_NAME, SalesforceSDKManager.encrypt(userAccount.getDisplayName(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(userAccount.getEmail(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LANGUAGE, SalesforceSDKManager.encrypt(userAccount.getLanguage(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LOCALE, SalesforceSDKManager.encrypt(userAccount.getLocale(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encrypt(userAccount.getPhotoUrl(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encrypt(userAccount.getThumbnailUrl(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LIGHTNING_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getLightningDomain(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_LIGHTNING_SID, SalesforceSDKManager.encrypt(userAccount.getLightningSid(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_VF_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getVFDomain(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_VF_SID, SalesforceSDKManager.encrypt(userAccount.getVFSid(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_CONTENT_DOMAIN, SalesforceSDKManager.encrypt(userAccount.getContentDomain(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_CONTENT_SID, SalesforceSDKManager.encrypt(userAccount.getContentSid(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_CSRF_TOKEN, SalesforceSDKManager.encrypt(userAccount.getCSRFToken(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_NATIVE_LOGIN,  SalesforceSDKManager.encrypt(userAccount.getNativeLogin().toString(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_COOKIE_SID_CLIENT, SalesforceSDKManager.encrypt(userAccount.getCookieSidClient(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_COOKIE_CLIENT_SRC, SalesforceSDKManager.encrypt(userAccount.getCookieClientSrc(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_SID_COOKIE_NAME, SalesforceSDKManager.encrypt(userAccount.getSidCookieName(), encryptionKey));
+
+		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+		if (userAccount.getAdditionalOauthValues() != null && !userAccount.getAdditionalOauthValues().isEmpty()) {
+			for (final String key : additionalOauthKeys) {
+				final String value = userAccount.getAdditionalOauthValues().get(key);
+				if (value != null) {
+					extras.putString(key, SalesforceSDKManager.encrypt(value, encryptionKey));
+				}
+			}
+		}
+
+		return extras;
+	}
+
+	private String decryptUserData(Account account, String key, String encryptionKey) {
+		return  SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
 	}
 }

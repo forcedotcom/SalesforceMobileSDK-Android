@@ -497,10 +497,12 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun additionalOauthValues(additionalOauthValues: Map<String, String>?): UserAccountBuilder {
-        if (!allowUnset  && this.additionalOauthValues != null && additionalOauthValues != null) {
+        if (!allowUnset && this.additionalOauthValues != null && additionalOauthValues != null) {
             var res = this.additionalOauthValues?.toMutableMap() ?: mutableMapOf()
             res.putAll(additionalOauthValues)
             this.additionalOauthValues = res
+        } else {
+            this.additionalOauthValues = additionalOauthValues
         }
         return this
     }

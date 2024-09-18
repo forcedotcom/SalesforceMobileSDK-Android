@@ -85,6 +85,8 @@ public class ClientManagerTest {
     public static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
     public static final String TEST_OTHER_USERNAME = "test_other_username";
     public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androidsdk.salesforcesdktest.login"; // must match authenticator.xml in SalesforceSDK project
+    public static final String TEST_COMMUNITY_ID = "test_community_id";
+    public static final String TEST_COMMUNITY_URL = "https://community.salesforce.com";
     public static final String[] TEST_SCOPES = new String[] {"web"};
     public static final String TEST_CALLBACK_URL = "test://callback";
     public static final String TEST_FIRST_NAME = "firstName";
