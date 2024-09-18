@@ -26,15 +26,10 @@
  */
 package com.salesforce.androidsdk.phonegap.ui
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.view.KeyEvent
 import android.webkit.URLUtil.isHttpsUrl
 import androidx.lifecycle.lifecycleScope
-import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException
 import com.salesforce.androidsdk.config.BootConfig
@@ -46,7 +41,6 @@ import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.getAppHomeUrl
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.hasCachedAppHome
-import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.d
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.i
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.w
 import com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER
@@ -62,7 +56,7 @@ import com.salesforce.androidsdk.util.AuthConfigUtil.MyDomainAuthConfig
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.GapWebViewCreateComplete
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.launch
@@ -73,7 +67,6 @@ import org.apache.cordova.CordovaActivity
 import org.apache.cordova.CordovaWebView
 import org.apache.cordova.CordovaWebViewEngine
 import org.apache.cordova.CordovaWebViewImpl.createEngine
-
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -106,12 +99,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     /** Indicates if the web app is loaded */
     private var webAppLoaded = false
 
-    /** Broadcast receiver notified when access token is refreshed */
-    private var tokenRefreshReceiver: TokenRefreshReceiver? = null
-
-    /** Manager for cookies in web view */
-    private val salesforceCookieManager: SalesforceWebViewCookieManager = SalesforceWebViewCookieManager()
-
     /**
      * Called when the activity is first created.
      */
@@ -131,9 +118,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             setupGlobalStoreFromDefaultConfig()
             setupGlobalSyncsFromDefaultConfig()
         }
-
-        // Set up token refresh receiver
-        tokenRefreshReceiver = TokenRefreshReceiver()
 
         // Create the delegate
         delegate?.onCreate()
@@ -161,20 +145,13 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     public override fun onResume() {
         super.onResume()
 
-        // Register the BroadcastReceiver with the intent filter
-        val filter = IntentFilter().apply {
-            addAction(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
-            addAction(ClientManager.INSTANCE_URL_UPDATE_INTENT)
-        }
-        registerReceiver(tokenRefreshReceiver, filter, RECEIVER_NOT_EXPORTED)
-
         // Fetch authentication configuration if required
         lifecycleScope.launch {
             doAuthConfig()
         }
 
-
         delegate?.onResume(false)
+
         // Will call this.onResume(RestClient client) with a null client
     }
 
@@ -188,17 +165,13 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
         when (this.restClient) {
             // When not logged in
-            null -> {
-                when {
-                    !webAppLoaded -> onResumeNotLoggedIn()
-                    else -> i(TAG, "onResume - unauthenticated web app already loaded")
-                }
+            null -> when {
+                !webAppLoaded -> onResumeNotLoggedIn()
+                else -> i(TAG, "onResume - unauthenticated web app already loaded")
             }
 
             // Logged in
-            else -> {
-                salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
-
+            else ->
                 when {
                     // Web app never loaded
                     !webAppLoaded -> onResumeLoggedInNotLoaded()
@@ -206,7 +179,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     // Web app already loaded
                     else -> i(TAG, "onResume - already logged in/web app already loaded")
                 }
-            }
         }
     }
 
@@ -250,7 +222,10 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                         else -> {
                             w(TAG, "onResumeNotLoggedIn - should not authenticate/remote start page - loading web app")
                             unauthenticatedStartPage?.let { unauthenticatedStartPage ->
-                                loadRemoteStartPage(unauthenticatedStartPage)
+                                loadRemoteStartPage(
+                                    unauthenticatedStartPage,
+                                    false
+                                )
                             }
                         }
                     }
@@ -287,7 +262,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                 SalesforceSDKManager.getInstance().hasNetwork() -> {
                     i(TAG, "onResumeLoggedInNotLoaded - remote start page/online - loading web app")
                     bootConfig?.startPage?.let { startPage ->
-                        loadRemoteStartPage(startPage)
+                        loadRemoteStartPage(startPage, true)
                     }
                 }
 
@@ -310,10 +285,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     public override fun onPause() {
         super.onPause()
-
-        // Unregister the BroadcastReceiver to avoid leaks
-        unregisterReceiver(tokenRefreshReceiver);
-
         delegate?.onPause()
     }
 
@@ -426,12 +397,13 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
     /**
      * If an action causes a redirect to the login page, this method will be
-     * called. It causes the session to be refreshed and reloads the URL.
+     * called. It causes the session to be refreshed and reloads the URL through
+     * the front door.
      *
      * @param url The page to load once the session has been refreshed
      */
-    fun refresh(url: String) {
-        i(TAG, "refresh called url:" + url)
+    fun refresh(url: String?) {
+        i(TAG, "refresh called")
 
         /*
          * If client is null at this point, authentication hasn't been performed
@@ -440,19 +412,10 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
          * cases involving hitting the back button when authentication is in
          * progress
          */
-
-        d(TAG, "refresh - 1")
-
         if (restClient == null) {
             clientManager?.getRestClient(this) { recreate() }
-            d(TAG, "refresh - 2")
             return
         }
-
-        webAppLoaded = false /* to force a reload */
-
-        d(TAG, "refresh - 3")
-
 
         restClient?.sendAsync(
             getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
@@ -462,26 +425,25 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     response: RestResponse
                 ) {
                     i(TAG, "refresh callback - refresh succeeded")
-                    // Get a fresh RestClient / set cookies and reload web view if needed
-                    onResume(null)
 
-//                    runOnUiThread {
-//                        /*
-//                         * The client instance being used here needs to be
-//                         * refreshed, to ensure we use the new access token.
-//                         * However, if the refresh token was revoked when the
-//                         * app was in the background we need to catch that
-//                         * exception and trigger a proper logout to reset the
-//                         * state of this class
-//                        */
-//                        runCatching {
-//                            restClient = clientManager?.peekRestClient()
-//                            loadRemoteStartPage(url)
-//                        }.onFailure {
-//                            i(TAG, "User has been logged out.")
-//                            logout(null)
-//                        }
-//                    }
+                    runOnUiThread {
+                        /*
+                         * The client instance being used here needs to be
+                         * refreshed, to ensure we use the new access token.
+                         * However, if the refresh token was revoked when the
+                         * app was in the background we need to catch that
+                         * exception and trigger a proper logout to reset the
+                         * state of this class
+                        */
+                        runCatching {
+                            restClient = clientManager?.peekRestClient()
+                            val frontDoorUrl = getFrontDoorUrl(url, isAbsoluteUrl(url))
+                            loadUrl(frontDoorUrl)
+                        }.onFailure {
+                            i(TAG, "User has been logged out.")
+                            logout(null)
+                        }
+                    }
                 }
 
                 override fun onError(exception: Exception) {
@@ -515,31 +477,69 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     @Suppress("unused")
     fun loadRemoteStartPage() =
         bootConfig?.startPage?.let { startPage ->
-            loadRemoteStartPage(startPage)
+            loadRemoteStartPage(startPage, true)
         }
 
     /**
      * Load the remote start page.
      * @param startPageUrl The start page to load
+     * @param loadThroughFrontDoor Whether or not to load through front-door
      */
     private fun loadRemoteStartPage(
-        startPageUrl: String
+        startPageUrl: String,
+        loadThroughFrontDoor: Boolean
     ) {
         assert(bootConfig?.isLocal != true)
 
-        val clientInfo = restClient?.clientInfo
-        val url = when {
-            isAbsoluteUrl(startPageUrl) && clientInfo != null -> {
-                startPageUrl
-            }
-            else -> {
-                clientInfo?.resolveUrl(startPageUrl).toString()
-            }
+        var url = startPageUrl
+        if (loadThroughFrontDoor) {
+            url = getFrontDoorUrl(url, isAbsoluteUrl(url)) ?: return
         }
 
         i(TAG, "loadRemoteStartPage called - loading!")
+
         loadUrl(url)
         webAppLoaded = true
+    }
+
+    /**
+     * Returns the front-doored URL of a URL passed in.
+     *
+     * @param providedUrl URL to be front-doored
+     * @param isAbsoluteUrl True if the URL should be used as is; false
+     * otherwise
+     * @return The front-doored URL
+     */
+    fun getFrontDoorUrl(
+        providedUrl: String?,
+        isAbsoluteUrl: Boolean
+    ): String? {
+
+        /*
+         * Use the absolute URL in some cases and the relative URL in some other
+         * cases because of differences between instance URL and community URL.
+         * Community URL can be custom and the logic of determining which URL to
+         * use is in the 'resolveUrl' method in 'ClientInfo'
+         */
+        val restClient = restClient ?: return null
+        return "${restClient.clientInfo.instanceUrlAsString}/secur/frontdoor.jsp?".toHttpUrlOrNull()
+            ?.newBuilder()
+            ?.addQueryParameter(
+                name = "sid",
+                value = restClient.authToken
+            )
+            ?.addQueryParameter(
+                name = "retURL",
+                value = when {
+                    isAbsoluteUrl -> providedUrl
+                    else -> restClient.clientInfo.resolveUrl(providedUrl).toString()
+                }
+            )
+            ?.addQueryParameter(
+                name = "display",
+                value = "touch"
+            )
+            ?.build().toString()
     }
 
     /**
@@ -601,29 +601,12 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     authConfig = getMyDomainAuthConfig(loginServer)
                 }
             }.onFailure { e ->
-                e(TAG, "Exception occurred while fetching authentication configuration", e)
+                SalesforceSDKLogger.e(TAG, "Exception occurred while fetching authentication configuration", e)
             }
         }
     }
-
-    inner class TokenRefreshReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent) {
-            // Check if the broadcast is for the right intent
-            if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT
-                || intent.action == ClientManager.INSTANCE_URL_UPDATE_INTENT) {
-                d(TAG, "TokenRefreshReceiver onReceive - calling onResume")
-                // Get a fresh RestClient / set cookies and reload web view if needed
-                onResume(null)
-            }
-        }
-    }
-
 
     companion object {
         private const val TAG = "SfDroidGapActivity"
     }
-
 }
-
-
-
