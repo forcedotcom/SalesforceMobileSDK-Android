@@ -487,7 +487,17 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
             makeText(context, "To log in, install Chrome.", LENGTH_LONG).show()
             callback.finish(null)
-            context.startActivity(Intent(activity, ServerPickerActivity::class.java))
+
+            /*
+             * Launch server picker again to prevent this error from happening in an infinite loop.  It is impossible to
+             * break out of this loop without uninstalling the app.
+             *
+             * Clear top to prevent multiple server pickers form being on the stack if the user hits back multiple times
+             * before selecting a different server.
+             */
+            val serverPickerIntent = Intent(activity, ServerPickerActivity::class.java)
+            serverPickerIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            context.startActivity(serverPickerIntent)
         }
     }
 
