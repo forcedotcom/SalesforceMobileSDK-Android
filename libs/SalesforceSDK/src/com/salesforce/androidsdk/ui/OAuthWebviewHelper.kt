@@ -233,9 +233,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             null -> clearCookies()
             else -> {
                 webView.restoreState(savedInstanceState)
-                accountOptions = fromBundle(
-                    savedInstanceState.getBundle(ACCOUNT_OPTIONS)
-                )
+                accountOptions = savedInstanceState.getBundle(ACCOUNT_OPTIONS)
             }
         }
     }
@@ -258,7 +256,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     val webView: WebView?
 
-    private var accountOptions: AccountOptions? = null
+    private var accountOptions: Bundle? = null
 
     protected val context: Context
 
@@ -285,7 +283,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // The authentication flow is complete but an account has not been created since a pin is needed
             outState.putBundle(
                 ACCOUNT_OPTIONS,
-                accountOptions.asBundle()
+                accountOptions
             )
         }
     }
@@ -895,74 +893,20 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 }
             }
 
-            // Put together all the information needed to create the new account
-            accountOptions = AccountOptions(
-                id?.username,
-                tr?.refreshToken,
-                tr?.authToken,
-                tr?.idUrl,
-                tr?.instanceUrl,
-                tr?.orgId,
-                tr?.userId,
-                tr?.communityId,
-                tr?.communityUrl,
-                id?.firstName,
-                id?.lastName,
-                id?.displayName,
-                id?.email,
-                id?.pictureUrl,
-                id?.thumbnailUrl,
-                tr?.additionalOauthValues ?: mapOf(),
-                tr?.lightningDomain,
-                tr?.lightningSid,
-                tr?.vfDomain,
-                tr?.vfSid,
-                tr?.contentDomain,
-                tr?.contentSid,
-                tr?.csrfToken,
-                nativeLogin,
-                id?.language,
-                id?.locale,
-            )
-
-            // Set additional administrator prefs if they exist
             val account = UserAccountBuilder.getInstance()
-                .authToken(accountOptions?.authToken)
-                .refreshToken(accountOptions?.refreshToken)
+                .populateFromTokenEndpointResponse(tr)
+                .populateFromIdServiceResponse(id)
+                .nativeLogin(nativeLogin)
+                .accountName(buildAccountName(id?.username, tr?.instanceUrl))
                 .loginServer(loginOptions.loginUrl)
-                .idUrl(accountOptions?.identityUrl)
-                .instanceServer(accountOptions?.instanceUrl)
-                .orgId(accountOptions?.orgId)
-                .userId(accountOptions?.userId)
-                .username(accountOptions?.username)
-                .accountName(
-                    buildAccountName(
-                        accountOptions?.username,
-                        accountOptions?.instanceUrl
-                    )
-                ).communityId(accountOptions?.communityId)
-                .communityUrl(accountOptions?.communityUrl)
-                .firstName(accountOptions?.firstName)
-                .lastName(accountOptions?.lastName)
-                .displayName(accountOptions?.displayName)
-                .email(accountOptions?.email)
-                .photoUrl(accountOptions?.photoUrl)
-                .thumbnailUrl(accountOptions?.thumbnailUrl)
-                .lightningDomain(accountOptions?.lightningDomain)
-                .lightningSid(accountOptions?.lightningSid)
-                .vfDomain(accountOptions?.vfDomain)
-                .vfSid(accountOptions?.vfSid)
-                .contentDomain(accountOptions?.contentDomain)
-                .contentSid(accountOptions?.contentSid)
-                .csrfToken(accountOptions?.csrfToken)
-                .additionalOauthValues(accountOptions?.additionalOauthValues)
-                .nativeLogin(accountOptions?.nativeLogin)
-                .language(accountOptions?.language)
-                .locale(accountOptions?.locale)
+                .clientId(loginOptions.oauthClientId)
                 .build()
+
+            accountOptions = account.toBundle()
 
             account.downloadProfilePhoto()
 
+            // Set additional administrator prefs if they exist
             id?.customAttributes?.let { customAttributes ->
                 instance.adminSettingsManager?.setPrefs(customAttributes, account)
             }
@@ -1155,44 +1099,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
         )
 
-        // Create account name (shown in Settings -> Accounts & sync)
-        val accountName = buildAccountName(
-            accountOptions?.username,
-            accountOptions?.instanceUrl
-        )
-
         // New account
-        val extras = clientManager.createNewAccount(
-            accountName,
-            accountOptions?.username,
-            accountOptions?.refreshToken,
-            accountOptions?.authToken,
-            accountOptions?.instanceUrl,
-            loginOptions.loginUrl,
-            accountOptions?.identityUrl,
-            oAuthClientId,
-            accountOptions?.orgId,
-            accountOptions?.userId,
-            accountOptions?.communityId,
-            accountOptions?.communityUrl,
-            accountOptions?.firstName,
-            accountOptions?.lastName,
-            accountOptions?.displayName,
-            accountOptions?.email,
-            accountOptions?.photoUrl,
-            accountOptions?.thumbnailUrl,
-            accountOptions?.additionalOauthValues,
-            accountOptions?.lightningDomain,
-            accountOptions?.lightningSid,
-            accountOptions?.vfDomain,
-            accountOptions?.vfSid,
-            accountOptions?.contentDomain,
-            accountOptions?.contentSid,
-            accountOptions?.csrfToken,
-            accountOptions?.nativeLogin,
-            accountOptions?.language,
-            accountOptions?.locale
-        )
+        val extras = clientManager.createNewAccount(account)
 
         /*
          * Registers for push notifications if setup by the app. This step needs

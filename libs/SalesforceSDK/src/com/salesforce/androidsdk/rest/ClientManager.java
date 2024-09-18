@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.os.Looper;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -351,6 +352,13 @@ public class ClientManager {
 
     /**
      * Creates a new account and returns the parameters as a Bundle.
+     */
+    public Bundle createNewAccount(UserAccount userAccount) {
+        return SalesforceSDKManager.getInstance().getUserAccountManager().createAccount(userAccount);
+    }
+
+    /**
+     * Creates a new account and returns the parameters as a Bundle.
      *
      * @param accountName Account name
      * @param username Username.
@@ -372,7 +380,10 @@ public class ClientManager {
      * @param thumbnailUrl Thumbnail URL.
      * @param additionalOauthValues Additional OAuth values.
      * @return Account info.
+     *
+     * @Deprecated will be removed in MSDK 13.0 - please use createNewAccount(UserAccount userAccount)
      */
+    @Deprecated
     public Bundle createNewAccount(String accountName, String username, String refreshToken,
     		String authToken, String instanceUrl, String loginUrl, String idUrl,
     		String clientId, String orgId, String userId, String communityId, String communityUrl,
@@ -381,80 +392,18 @@ public class ClientManager {
             String lightningDomain, String lightningSid, String vfDomain, String vfSid,
             String contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
             String language, String locale) {
-        final Bundle extras = new Bundle();
-        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-        extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
-        extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
-        extras.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encrypt(username, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(loginUrl, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encrypt(idUrl, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(instanceUrl, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(clientId, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(orgId, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userId, encryptionKey));
-        if (communityId != null) {
-            extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(communityId, encryptionKey));
-        }
-        if (communityUrl != null) {
-            extras.putString(AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encrypt(communityUrl, encryptionKey));
-        }
-        extras.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_FIRST_NAME, SalesforceSDKManager.encrypt(firstName, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encrypt(lastName, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_DISPLAY_NAME, SalesforceSDKManager.encrypt(displayName, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encrypt(email, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LANGUAGE, SalesforceSDKManager.encrypt(language, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LOCALE, SalesforceSDKManager.encrypt(locale, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encrypt(photoUrl, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encrypt(thumbnailUrl, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LIGHTNING_DOMAIN, SalesforceSDKManager.encrypt(lightningDomain, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_LIGHTNING_SID, SalesforceSDKManager.encrypt(lightningSid, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_VF_DOMAIN, SalesforceSDKManager.encrypt(vfDomain, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_VF_SID, SalesforceSDKManager.encrypt(vfSid, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_CONTENT_DOMAIN, SalesforceSDKManager.encrypt(contentDomain, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_CONTENT_SID, SalesforceSDKManager.encrypt(contentSid, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_CSRF_TOKEN, SalesforceSDKManager.encrypt(csrfToken, encryptionKey));
-        extras.putString(AuthenticatorService.KEY_NATIVE_LOGIN,  SalesforceSDKManager.encrypt(nativeLogin.toString(), encryptionKey));
-        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
-        if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
-            for (final String key : additionalOauthKeys) {
-                final String value = additionalOauthValues.get(key);
-                if (value != null) {
-                    final String encrValue = SalesforceSDKManager.encrypt(value, encryptionKey);
-                    extras.putString(key, encrValue);
-                }
-            }
-        }
-        Account acc = new Account(accountName, getAccountType());
-        String password = SalesforceSDKManager.encrypt(refreshToken, encryptionKey);
-        boolean success = accountManager.addAccountExplicitly(acc, password, new Bundle());
-        // Add account will fail if the account already exists, so update refresh token.
-        if (!success && acc != null) {
-            accountManager.setPassword(acc, password);
-        }
-        final Account[] accounts = getAccounts();
+        UserAccount userAccount = UserAccountBuilder.getInstance()
+                .accountName(accountName).username(username).refreshToken(refreshToken)
+                .authToken(authToken).instanceServer(instanceUrl).loginServer(loginUrl).idUrl(idUrl)
+                .clientId(clientId).orgId(orgId).userId(userId).communityId(communityId).communityUrl(communityUrl)
+                .firstName(firstName).lastName(lastName).displayName(displayName).email(email).photoUrl(photoUrl)
+                .thumbnailUrl(thumbnailUrl).additionalOauthValues(additionalOauthValues)
+                .lightningDomain(lightningDomain).lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid)
+                .contentDomain(contentDomain).contentSid(contentSid).csrfToken(csrfToken).nativeLogin(nativeLogin)
+                .language(language).locale(locale)
+                .build();
 
-        /*
-         * Caching auth token otherwise the first call to 'accountManager.getAuthToken()' will go
-         * to the AuthenticatorService which will do a refresh. That is problematic when the
-         * refresh token is set to expire immediately.
-         */
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encrypt(authToken, encryptionKey));
-
-        // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
-        // saved when the user data is passed in through that method. The work-around is to call setUserData()
-        // for all the user data manually after passing in empty user data into addAccountExplicitly().
-        for (final String key : extras.keySet()) {
-
-            // WARNING! This assumes all user data is a String!
-            accountManager.setUserData(acc, key, extras.getString(key));
-        }
-
-        /*
-         * Sets this user as the current user
-         */
-        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
-        return extras;
+        return createNewAccount(userAccount);
     }
 
     /**
@@ -585,49 +534,39 @@ public class ClientManager {
                 // Invalidate current auth token.
                 final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
                 clientManager.invalidateToken(cachedAuthToken);
-                final Bundle bundle = refreshStaleToken(acc);
-                if (bundle == null) {
-                    SalesforceSDKLogger.w(TAG, "Bundle was null while getting auth token");
-                } else {
-                    final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-                    final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                    if (encryptedAuthToken != null) {
-                        newAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken, encryptionKey);
-                    }
-                    final String encryptedInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
-                    if (encryptedInstanceUrl != null) {
-                        newInstanceUrl = SalesforceSDKManager.decrypt(encryptedInstanceUrl, encryptionKey);
-                    }
-                    Intent broadcastIntent;
-                    if (newAuthToken == null) {
-                        if (clientManager.revokedTokenShouldLogout) {
+                final UserAccount userAccount = refreshStaleToken(acc);
+                newAuthToken = userAccount.getAuthToken();
+                newInstanceUrl = userAccount.getInstanceServer();
 
-                        	// Check if a looper exists before trying to prepare another one.
-                        	if (Looper.myLooper() == null) {
-                                Looper.prepare();
-                        	}
-                            // Note: As of writing (2024) this call will never succeed because revoke API is an
-                            // authenticated endpoint.  However, there is no harm in attempting and the debug logs
-                            // produced may help developers better understand the state of their app.
-                            SalesforceSDKManager.getInstance()
-                                    .logout(null, null, false, OAuth2.LogoutReason.TOKEN_EXPIRED);
+                Intent broadcastIntent;
+                if (newAuthToken == null) {
+                    if (clientManager.revokedTokenShouldLogout) {
+
+                        // Check if a looper exists before trying to prepare another one.
+                        if (Looper.myLooper() == null) {
+                            Looper.prepare();
                         }
-
-                        // Broadcasts an intent that the access token has been revoked.
-                        broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
-                    } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
-
-                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
-                        broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
-                    } else {
-
-                        // Broadcasts an intent that the access token has been refreshed.
-                        broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
-                        EventBuilderHelper.createAndStoreEvent("tokenRefresh", null, TAG, null);
+                        // Note: As of writing (2024) this call will never succeed because revoke API is an
+                        // authenticated endpoint.  However, there is no harm in attempting and the debug logs
+                        // produced may help developers better understand the state of their app.
+                        SalesforceSDKManager.getInstance()
+                                .logout(null, null, false, OAuth2.LogoutReason.TOKEN_EXPIRED);
                     }
-                    broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
-                    SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
+
+                    // Broadcasts an intent that the access token has been revoked.
+                    broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
+
+                    // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
+                    broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
+                } else {
+
+                    // Broadcasts an intent that the access token has been refreshed.
+                    broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
+                    EventBuilderHelper.createAndStoreEvent("tokenRefresh", null, TAG, null);
                 }
+                broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
+                SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
             } finally {
@@ -655,105 +594,44 @@ public class ClientManager {
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
-        private Bundle refreshStaleToken(Account account) throws NetworkErrorException {
-            final Bundle resBundle = new Bundle();
-            final Context context = SalesforceSDKManager.getInstance().getAppContext();
-            final AccountManager mgr = AccountManager.get(context);
-            final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-            final String refreshToken = SalesforceSDKManager.decrypt(mgr.getPassword(account), encryptionKey);
-            final String loginServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_LOGIN_URL), encryptionKey);
-            final String clientId = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_CLIENT_ID), encryptionKey);
-            final String instServer = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_INSTANCE_URL), encryptionKey);
-            final String communityUrl = SalesforceSDKManager.decrypt(mgr.getUserData(account,
-                    AuthenticatorService.KEY_COMMUNITY_URL), encryptionKey);
-
-            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
-            Map<String, String> values = null;
-            if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                values = new HashMap<>();
-                for (final String key : additionalOauthKeys) {
-                    final String encValue = mgr.getUserData(account, key);
-                    if (encValue != null) {
-                        final String value = SalesforceSDKManager.decrypt(encValue, encryptionKey);
-                        values.put(key, value);
-                    }
-                }
-            }
+        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException {
+            UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
             final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(loginServer), clientId, refreshToken, addlParamsMap);
+                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), refreshToken, addlParamsMap);
 
-                encryptUserData(mgr, account, resBundle, tr.authToken, AccountManager.KEY_AUTHTOKEN, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.instanceUrl, AuthenticatorService.KEY_INSTANCE_URL, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.communityUrl, AuthenticatorService.KEY_COMMUNITY_URL, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.lightningDomain, AuthenticatorService.KEY_LIGHTNING_DOMAIN, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.lightningSid, AuthenticatorService.KEY_LIGHTNING_SID, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.vfDomain, AuthenticatorService.KEY_VF_DOMAIN, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.vfSid, AuthenticatorService.KEY_VF_SID, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.contentDomain, AuthenticatorService.KEY_CONTENT_DOMAIN, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.contentSid, AuthenticatorService.KEY_CONTENT_SID, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.csrfToken, AuthenticatorService.KEY_CSRF_TOKEN, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.cookieClientSrc, AuthenticatorService.KEY_COOKIE_CLIENT_SRC, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.cookieSidClient, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
-                encryptUserData(mgr, account, resBundle, tr.sidCookieName, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
+                UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
+                        .populateFromUserAccount(originalUserAccount)
+                        .populateFromTokenEndpointResponse(tr)
+                        .build();
 
-
-                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                    for (final String key : additionalOauthKeys) {
-                        if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
-                            final String newValue = tr.additionalOauthValues.get(key);
-                            if (newValue != null) {
-                                encryptUserData(mgr, account, resBundle, key, newValue, encryptionKey);
-                                final String encrNewValue = SalesforceSDKManager.encrypt(newValue, encryptionKey);
-                                resBundle.putString(key, encrNewValue);
-                                mgr.setUserData(account, key, encrNewValue);
-                            }
-                        } else if (values != null && values.containsKey(key)) {
-                            final String value = values.get(key);
-                            if (value != null) {
-                                final String encrValue = SalesforceSDKManager.encrypt(value, encryptionKey);
-                                resBundle.putString(key, encrValue);
-                            }
-                        }
-                    }
-                }
-                final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
-                userAccount.downloadProfilePhoto();
+                UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
+                updatedUserAccount.downloadProfilePhoto();
                 UserAccountManager.getInstance().clearCachedCurrentUser();
+
+                return updatedUserAccount;
             } catch (OAuth2.OAuthFailedException ofe) {
                 if (ofe.isRefreshTokenInvalid()) {
                     SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
                             ofe.getTokenErrorResponse().error + ", Status Code: " +
                             ofe.getHttpStatusCode() + ")", ofe);
-                    return makeAuthIntentBundle(context);
                 }
-                resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.getTokenErrorResponse().error);
-                resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.getTokenErrorResponse().errorDescription);
+                return null;
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
             }
-            return resBundle;
         }
 
-        private void encryptUserData(AccountManager mgr, Account account, Bundle resBundle, String data, String key, String encryptionKey) {
-            String encData = SalesforceSDKManager.encrypt(data, encryptionKey);
-            mgr.setUserData(account, key, SalesforceSDKManager.encrypt(data, encryptionKey));
-            resBundle.putString(key, encData);
+        private void encryptUserData(AccountManager mgr, Account account, String key, String value, String encryptionKey) {
+            mgr.setUserData(account, key, SalesforceSDKManager.encrypt(value, encryptionKey));
         }
 
-        private Bundle makeAuthIntentBundle(Context context) {
-            final Bundle reply = new Bundle();
-            final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
-            i.setPackage(context.getPackageName());
-            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            reply.putParcelable(AccountManager.KEY_INTENT, i);
-            return reply;
+        private String decryptUserData(AccountManager mgr, Account account, String key, String encryptionKey) {
+            return  SalesforceSDKManager.decrypt(mgr.getUserData(account, key), encryptionKey);
         }
+
     }
 
     /**

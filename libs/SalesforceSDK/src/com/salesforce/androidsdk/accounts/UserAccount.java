@@ -89,7 +89,8 @@ public class UserAccount {
 	public static final String COOKIE_CLIENT_SRC = "cookie-clientSrc";
 	public static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
 	public static final String SID_COOKIE_NAME = "sidCookieName";
-
+	public static final String CLIENT_ID = "clientId";
+;
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
@@ -128,6 +129,7 @@ public class UserAccount {
 	private String cookieClientSrc;
 	private String cookieSidClient;
 	private String sidCookieName;
+	private String clientId;
 	private Map<String, String> additionalOauthValues;
 
 	/**
@@ -163,6 +165,7 @@ public class UserAccount {
 	 * @param cookieClientSrc cookie client src
 	 * @param cookieSidClient cookie sid client
 	 * @param sidCookieName sid cookie name
+	 * @param clientId oauth client id
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -173,7 +176,7 @@ public class UserAccount {
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
-				String sidCookieName) {
+				String sidCookieName, String clientId) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -205,6 +208,7 @@ public class UserAccount {
 		this.cookieClientSrc = cookieClientSrc;
 		this.cookieSidClient = cookieSidClient;
 		this.sidCookieName = sidCookieName;
+		this.clientId = clientId;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -248,6 +252,7 @@ public class UserAccount {
 			cookieClientSrc = object.optString(COOKIE_CLIENT_SRC, null);
 			cookieSidClient = object.optString(COOKIE_SID_CLIENT, null);
 			sidCookieName = object.optString(SID_COOKIE_NAME, null);
+			clientId = object.optString(CLIENT_ID, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -290,6 +295,7 @@ public class UserAccount {
 			cookieClientSrc = bundle.getString(COOKIE_CLIENT_SRC);
 			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
 			sidCookieName = bundle.getString(SID_COOKIE_NAME);
+			clientId = bundle.getString(CLIENT_ID);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle,
 					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
@@ -564,6 +570,15 @@ public class UserAccount {
 	 */
 	public String getSidCookieName() {
 		return sidCookieName;
+	}
+
+	/**
+	 * Returns the oauth client id.
+	 *
+	 * @return client id.
+	 */
+	public String getClientId() {
+		return clientId;
 	}
 
 
@@ -877,6 +892,7 @@ public class UserAccount {
 		object.putString(COOKIE_CLIENT_SRC, cookieClientSrc);
 		object.putString(COOKIE_SID_CLIENT, cookieSidClient);
 		object.putString(SID_COOKIE_NAME, sidCookieName);
+		object.putString(CLIENT_ID, clientId);
 		object = MapUtil.addMapToBundle(additionalOauthValues,
 				SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
 		return object;
