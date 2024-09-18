@@ -40,7 +40,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_PUSH_NOTIFICATIONS
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.clearRegistrationInfo
@@ -80,7 +80,7 @@ import java.util.concurrent.TimeUnit.DAYS
 open class PushService {
     fun performRegistrationChange(
         register: Boolean,
-        userAccount: UserAccount
+        userAccount: UserAccount,
     ) {
         when {
             register ->
@@ -100,7 +100,7 @@ open class PushService {
 
     private fun onRegistered(
         registrationId: String,
-        account: UserAccount?
+        account: UserAccount?,
     ) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later")
@@ -166,6 +166,11 @@ open class PushService {
         clearRegistrationInfo(context, account)
         context.sendBroadcast(
             Intent(
+                UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+            ).setPackage(packageName)
+        )
+        context.sendBroadcast(
+            Intent(
                 UNREGISTERED_EVENT
             ).setPackage(packageName)
         )
@@ -187,7 +192,7 @@ open class PushService {
     @Throws(IOException::class)
     protected fun onSendRegisterPushNotificationRequest(
         requestBodyJsonFields: Map<String, Any?>?,
-        restClient: RestClient
+        restClient: RestClient,
     ): RestResponse = restClient.sendSync(
         RestRequest.getRequestForCreate(
             ApiVersionStrings.getVersionNumber(
@@ -214,14 +219,14 @@ open class PushService {
     )
     protected fun onPushNotificationRegistrationStatus(
         status: Int,
-        userAccount: UserAccount?
+        userAccount: UserAccount?,
     ) {
         // Intentionally Blank.
     }
 
     private fun registerSFDCPushNotification(
         registrationId: String,
-        account: UserAccount
+        account: UserAccount,
     ): String? {
 
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -319,7 +324,7 @@ open class PushService {
     @Throws(IOException::class)
     protected fun onSendUnregisterPushNotificationRequest(
         registeredId: String?,
-        restClient: RestClient
+        restClient: RestClient,
     ): RestResponse {
         return restClient.sendSync(
             RestRequest.getRequestForDelete(
@@ -334,7 +339,7 @@ open class PushService {
 
     private fun unregisterSFDCPushNotification(
         registeredId: String?,
-        account: UserAccount
+        account: UserAccount,
     ) {
         runCatching {
             getRestClient(account)?.let { restClient ->
@@ -361,7 +366,7 @@ open class PushService {
     }
 
     private fun getRestClient(
-        account: UserAccount
+        account: UserAccount,
     ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
 
         /*
@@ -398,7 +403,7 @@ open class PushService {
                     account.csrfToken
                 ),
                 account.authToken,
-                DEFAULT,
+                HttpAccess.DEFAULT,
                 AccMgrAuthTokenProvider(
                     clientManager,
                     account.instanceServer,
@@ -465,7 +470,7 @@ open class PushService {
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
             pushNotificationsRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
-            delayDays: Long?
+            delayDays: Long?,
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
             val workManager = WorkManager.getInstance(context)
@@ -477,53 +482,55 @@ open class PushService {
                 .putString("ACTION", action.name)
                 .build()
 
-            when (pushNotificationsRegistrationType) {
-                ReRegistrationDisabled -> {
-                    /* Intentionally Blank */
-                }
-
-                ReRegistrationOnAppForeground -> OneTimeWorkRequest.Builder(
-                    workerClass = PushNotificationsRegistrationChangeWorker::class.java
-                ).setInputData(workData)
-                    .setConstraints(constraints)
-                    .build().also { workRequest ->
-                        workManager.enqueueUniqueWork(
-                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
-                            REPLACE,
-                            workRequest
-                        )
+            if (action == Register) {
+                when (pushNotificationsRegistrationType) {
+                    ReRegistrationDisabled -> {
+                        /* Intentionally Blank */
                     }
 
-                ReRegisterPeriodically -> PeriodicWorkRequest.Builder(
-                    workerClass = PushNotificationsRegistrationChangeWorker::class.java,
-                    repeatInterval = delayDays ?: 6,
-                    repeatIntervalTimeUnit = DAYS
-                ).setInputData(workData)
-                    .setConstraints(constraints)
-                    .build().also { workRequest ->
-                        workManager.enqueueUniquePeriodicWork(
-                            PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
-                            UPDATE,
-                            workRequest
-                        )
-                    }
-            }
-
-            if (action == Deregister) {
-
-                val workRequest: OneTimeWorkRequest =
-                    OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
-                        .setInputData(workData)
+                    ReRegistrationOnAppForeground -> OneTimeWorkRequest.Builder(
+                        workerClass = PushNotificationsRegistrationChangeWorker::class.java
+                    ).setInputData(workData)
                         .setConstraints(constraints)
-                        .build()
-                workManager.enqueue(workRequest)
+                        .build().also { workRequest ->
+                            workManager.enqueueUniqueWork(
+                                PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                                REPLACE,
+                                workRequest
+                            )
+                        }
 
-                // Send broadcast now to finish logout in case we are offline.
-                context.sendBroadcast(
-                    Intent(
-                        UNREGISTERED_ATTEMPT_COMPLETE_EVENT
-                    ).setPackage(context.packageName)
-                )
+                    ReRegisterPeriodically -> PeriodicWorkRequest.Builder(
+                        workerClass = PushNotificationsRegistrationChangeWorker::class.java,
+                        repeatInterval = delayDays ?: 6,
+                        repeatIntervalTimeUnit = DAYS
+                    ).setInputData(workData)
+                        .setConstraints(constraints)
+                        .build().also { workRequest ->
+                            workManager.enqueueUniquePeriodicWork(
+                                PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME,
+                                UPDATE,
+                                workRequest
+                            )
+                        }
+                }
+            } else {
+                // Deregister
+                OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
+                    .setInputData(workData)
+                    .setConstraints(constraints)
+                    .build().also {  workRequest ->
+                        workManager.enqueue(workRequest)
+                    }
+
+                // Send broadcast now to finish logout if we are offline.
+                if (!HttpAccess.DEFAULT.hasNetwork()) {
+                    context.sendBroadcast(
+                        Intent(
+                            UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+                        ).setPackage(context.packageName)
+                    )
+                }
             }
         }
     }
