@@ -112,7 +112,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128Byt
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.AccountOptions.Companion.fromBundle
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.MapUtil

@@ -67,6 +67,12 @@ class UserAccountBuilder private constructor() {
     private var clientId: String? = null
     private var additionalOauthValues: Map<String, String>? = null
 
+    // If set allowUnset is false
+    // then doing builder.abc("some-value").abc(null) will cause abc field to remain at "some-value"
+    // If set allowUnset is true
+    // then doing builder.abc("some-value").abc(null) will cause abc field to end up null
+    private var allowUnset = true
+
     /**
      * Set fields from token end point response
      * @param tr token endpoint response
@@ -160,14 +166,26 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets the allow unset behavior
+     * When false:
+     * doing builder.abc("some-value").abc(null) will cause abc field to remain at "some-value"
+     * When true:
+     * doing builder.abc("some-value").abc(null) will cause abc field to end up null
+     * @param allowUnset new value for allowUnset
+     */
+    fun allowUnset(allowUnset: Boolean): UserAccountBuilder {
+       this.allowUnset = allowUnset
+        return this
+    }
+
+    /**
      * Sets auth token.
      *
      * @param authToken Auth token.
      * @return Instance of this class.
      */
     fun authToken(authToken: String?): UserAccountBuilder {
-        this.authToken = authToken
-        return this
+        return if (!allowUnset && authToken == null) this else apply { this.authToken = authToken }
     }
 
     /**
@@ -177,8 +195,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun refreshToken(refreshToken: String?): UserAccountBuilder {
-        this.refreshToken = refreshToken
-        return this
+        return if (!allowUnset && refreshToken == null) this else apply { this.refreshToken = refreshToken }
     }
 
     /**
@@ -188,8 +205,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun loginServer(loginServer: String?): UserAccountBuilder {
-        this.loginServer = loginServer
-        return this
+        return if (!allowUnset && loginServer == null) this else apply { this.loginServer = loginServer }
     }
 
     /**
@@ -199,8 +215,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun idUrl(idUrl: String?): UserAccountBuilder {
-        this.idUrl = idUrl
-        return this
+        return if (!allowUnset && idUrl == null) this else apply { this.idUrl = idUrl }
     }
 
     /**
@@ -210,8 +225,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun instanceServer(instanceServer: String?): UserAccountBuilder {
-        this.instanceServer = instanceServer
-        return this
+        return if (!allowUnset && instanceServer == null) this else apply { this.instanceServer = instanceServer }
     }
 
     /**
@@ -221,8 +235,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun orgId(orgId: String?): UserAccountBuilder {
-        this.orgId = orgId
-        return this
+        return if (!allowUnset && orgId == null) this else apply { this.orgId = orgId }
     }
 
     /**
@@ -232,8 +245,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun userId(userId: String?): UserAccountBuilder {
-        this.userId = userId
-        return this
+        return if (!allowUnset && userId == null) this else apply { this.userId = userId }
     }
 
     /**
@@ -243,8 +255,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun username(username: String?): UserAccountBuilder {
-        this.username = username
-        return this
+        return if (!allowUnset && username == null) this else apply { this.username = username }
     }
 
     /**
@@ -254,8 +265,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun accountName(accountName: String?): UserAccountBuilder {
-        this.accountName = accountName
-        return this
+        return if (!allowUnset && accountName == null) this else apply { this.accountName = accountName }
     }
 
     /**
@@ -265,8 +275,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun communityId(communityId: String?): UserAccountBuilder {
-        this.communityId = communityId
-        return this
+        return if (!allowUnset && communityId == null) this else apply { this.communityId = communityId }
     }
 
     /**
@@ -276,8 +285,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun communityUrl(communityUrl: String?): UserAccountBuilder {
-        this.communityUrl = communityUrl
-        return this
+        return if (!allowUnset && communityUrl == null) this else apply { this.communityUrl = communityUrl }
     }
 
     /**
@@ -287,8 +295,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun firstName(firstName: String?): UserAccountBuilder {
-        this.firstName = firstName
-        return this
+        return if (!allowUnset && firstName == null) this else apply { this.firstName = firstName }
     }
 
     /**
@@ -298,8 +305,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun lastName(lastName: String?): UserAccountBuilder {
-        this.lastName = lastName
-        return this
+        return if (!allowUnset && lastName == null) this else apply { this.lastName = lastName }
     }
 
     /**
@@ -309,8 +315,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun displayName(displayName: String?): UserAccountBuilder {
-        this.displayName = displayName
-        return this
+        return if (!allowUnset && displayName == null) this else apply { this.displayName = displayName }
     }
 
     /**
@@ -320,8 +325,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun email(email: String?): UserAccountBuilder {
-        this.email = email
-        return this
+        return if (!allowUnset && email == null) this else apply { this.email = email }
     }
 
     /**
@@ -331,8 +335,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun photoUrl(photoUrl: String?): UserAccountBuilder {
-        this.photoUrl = photoUrl
-        return this
+        return if (!allowUnset && photoUrl == null) this else apply { this.photoUrl = photoUrl }
     }
 
     /**
@@ -342,8 +345,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun thumbnailUrl(thumbnailUrl: String?): UserAccountBuilder {
-        this.thumbnailUrl = thumbnailUrl
-        return this
+        return if (!allowUnset && thumbnailUrl == null) this else apply { this.thumbnailUrl = thumbnailUrl }
     }
 
     /**
@@ -353,8 +355,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun lightningDomain(lightningDomain: String?): UserAccountBuilder {
-        this.lightningDomain = lightningDomain
-        return this
+        return if (!allowUnset && lightningDomain == null) this else apply { this.lightningDomain = lightningDomain }
     }
 
     /**
@@ -364,8 +365,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun lightningSid(lightningSid: String?): UserAccountBuilder {
-        this.lightningSid = lightningSid
-        return this
+        return if (!allowUnset && lightningSid == null) this else apply { this.lightningSid = lightningSid }
     }
 
     /**
@@ -375,8 +375,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun vfDomain(vfDomain: String?): UserAccountBuilder {
-        this.vfDomain = vfDomain
-        return this
+        return if (!allowUnset && vfDomain == null) this else apply { this.vfDomain = vfDomain }
     }
 
     /**
@@ -386,8 +385,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun vfSid(vfSid: String?): UserAccountBuilder {
-        this.vfSid = vfSid
-        return this
+        return if (!allowUnset && vfSid == null) this else apply { this.vfSid = vfSid }
     }
 
     /**
@@ -397,8 +395,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun contentDomain(contentDomain: String?): UserAccountBuilder {
-        this.contentDomain = contentDomain
-        return this
+        return if (!allowUnset && contentDomain == null) this else apply { this.contentDomain = contentDomain }
     }
 
     /**
@@ -408,8 +405,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun contentSid(contentSid: String?): UserAccountBuilder {
-        this.contentSid = contentSid
-        return this
+        return if (!allowUnset && contentSid == null) this else apply { this.contentSid = contentSid }
     }
 
     /**
@@ -419,8 +415,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun csrfToken(csrfToken: String?): UserAccountBuilder {
-        this.csrfToken = csrfToken
-        return this
+        return if (!allowUnset && csrfToken == null) this else apply { this.csrfToken = csrfToken }
     }
 
     /**
@@ -441,8 +436,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun language(language: String?): UserAccountBuilder {
-        this.language = language
-        return this
+        return if (!allowUnset && language == null) this else apply { this.language = language }
     }
 
     /**
@@ -452,8 +446,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun locale(locale: String?): UserAccountBuilder {
-        this.locale = locale
-        return this
+        return if (!allowUnset && locale == null) this else apply { this.locale = locale }
     }
 
 
@@ -464,8 +457,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun cookieClientSrc(cookieClientSrc: String?): UserAccountBuilder {
-        this.cookieClientSrc = cookieClientSrc
-        return this
+        return if (!allowUnset && cookieClientSrc == null) this else apply { this.cookieClientSrc = cookieClientSrc }
     }
 
     /**
@@ -475,8 +467,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun cookieSidClient(cookieSidClient: String?): UserAccountBuilder {
-        this.cookieSidClient = cookieSidClient
-        return this
+        return if (!allowUnset && cookieSidClient == null) this else apply { this.cookieSidClient = cookieSidClient }
     }
 
     /**
@@ -486,8 +477,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun sidCookieName(sidCookieName: String?): UserAccountBuilder {
-        this.sidCookieName = sidCookieName
-        return this
+        return if (!allowUnset && sidCookieName == null) this else apply { this.sidCookieName = sidCookieName }
     }
 
     /**
@@ -497,8 +487,7 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun clientId(clientId: String?): UserAccountBuilder {
-        this.clientId = clientId
-        return this
+        return if (!allowUnset && clientId == null) this else apply { this.clientId = clientId }
     }
 
     /**
@@ -508,7 +497,11 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun additionalOauthValues(additionalOauthValues: Map<String, String>?): UserAccountBuilder {
-        this.additionalOauthValues = additionalOauthValues
+        if (!allowUnset  && this.additionalOauthValues != null && additionalOauthValues != null) {
+            var res = this.additionalOauthValues?.toMutableMap() ?: mutableMapOf()
+            res.putAll(additionalOauthValues)
+            this.additionalOauthValues = res
+        }
         return this
     }
 

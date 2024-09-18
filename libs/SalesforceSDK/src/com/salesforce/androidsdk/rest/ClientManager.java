@@ -516,6 +516,7 @@ public class ClientManager {
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)
+                        .allowUnset(false)
                         .populateFromTokenEndpointResponse(tr)
                         .build();
 

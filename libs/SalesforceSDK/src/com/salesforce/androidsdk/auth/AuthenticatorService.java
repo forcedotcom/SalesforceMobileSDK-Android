@@ -144,6 +144,7 @@ public class AuthenticatorService extends Service {
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)
+                        .allowUnset(false)
                         .populateFromTokenEndpointResponse(tr)
                         .build();
 
