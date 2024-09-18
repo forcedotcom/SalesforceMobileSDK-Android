@@ -487,6 +487,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
             makeText(context, "To log in, install Chrome.", LENGTH_LONG).show()
             callback.finish(null)
+            context.startActivity(Intent(activity, ServerPickerActivity::class.java))
         }
     }
 
