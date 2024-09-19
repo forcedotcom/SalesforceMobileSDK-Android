@@ -744,11 +744,13 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_SID_COOKIE_NAME, SalesforceSDKManager.encrypt(userAccount.getSidCookieName(), encryptionKey));
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
-		if (userAccount.getAdditionalOauthValues() != null && !userAccount.getAdditionalOauthValues().isEmpty()) {
-			for (final String key : additionalOauthKeys) {
-				final String value = userAccount.getAdditionalOauthValues().get(key);
-				if (value != null) {
-					extras.putString(key, SalesforceSDKManager.encrypt(value, encryptionKey));
+		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+			if (userAccount.getAdditionalOauthValues() != null && !userAccount.getAdditionalOauthValues().isEmpty()) {
+				for (final String key : additionalOauthKeys) {
+					final String value = userAccount.getAdditionalOauthValues().get(key);
+					if (value != null) {
+						extras.putString(key, SalesforceSDKManager.encrypt(value, encryptionKey));
+					}
 				}
 			}
 		}
