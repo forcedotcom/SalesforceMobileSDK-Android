@@ -400,7 +400,7 @@ public class UserAccountTest {
     /**
      * Create test account
      */
-    static UserAccount createTestAccount() {
+    public static UserAccount createTestAccount() {
         return UserAccountBuilder.getInstance()
                 .authToken(TEST_AUTH_TOKEN)
                 .refreshToken(TEST_REFRESH_TOKEN)
@@ -440,7 +440,7 @@ public class UserAccountTest {
     /**
      * Create test account
      */
-    static UserAccount createOtherTestAccount() {
+    public static UserAccount createOtherTestAccount() {
         return UserAccountBuilder.getInstance()
                 .populateFromUserAccount(createTestAccount())
                 .userId(TEST_USER_ID_2)
@@ -581,4 +581,13 @@ public class UserAccountTest {
         return new OAuth2.IdServiceResponse(response);
     }
 
+    /**
+     * Check the user accounts are the same
+     * @param expected Expected UserAccount
+     * @param actual Actual UserAccount
+     */
+    public static void checkSameUserAccount(UserAccount expected, UserAccount actual) {
+        // NB We are comparing every fields (UserAccount's equals method only looks at userId and orgId)
+        BundleTestHelper.checkSameBundle("Not the expected user account", expected.toBundle(), actual.toBundle());
+    }
 }

@@ -31,6 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
+import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_AUTH_TOKEN
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_COMMUNITY_ID
@@ -51,8 +52,6 @@ import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_THUMBNAIL_URL
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USERNAME
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USER_ID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManagerTest
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.MOBILE_POLICY_PREF
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.SCREEN_LOCK
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.SCREEN_LOCK_TIMEOUT
@@ -184,18 +183,7 @@ class ScreenLockManagerTest {
 
     @Test
     fun testCleanUp() {
-        val loginOptions = ClientManager.LoginOptions(
-            TEST_LOGIN_URL, ClientManagerTest.TEST_CALLBACK_URL,
-            ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES
-        )
-        val clientManager = ClientManager(ctx, ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true)
-        clientManager.createNewAccount(userAccount.accountName, userAccount.username, userAccount.refreshToken, userAccount.authToken,
-            userAccount.instanceServer, userAccount.loginServer, userAccount.idUrl, userAccount.userId, userAccount.orgId,
-            userAccount.userId, userAccount.communityId, userAccount.communityId, userAccount.firstName, userAccount.lastName,
-            userAccount.displayName, userAccount.email, userAccount.photoUrl, userAccount.thumbnailUrl, userAccount.additionalOauthValues,
-            userAccount.lightningDomain, userAccount.lightningSid, userAccount.vfDomain, userAccount.vfSid, userAccount.contentDomain,
-            userAccount.contentSid, userAccount.csrfToken, userAccount.nativeLogin, userAccount.language, userAccount.locale
-        )
+        UserAccountManager.getInstance().createAccount(userAccount);
         val storedUser = SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers[0]
         val storedUserPrefs = ctx.getSharedPreferences(
             (MOBILE_POLICY_PREF

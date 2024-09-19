@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import static com.salesforce.androidsdk.accounts.UserAccountTest.checkSameUserAccount;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
@@ -35,8 +37,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.rest.ClientManagerTest;
-import com.salesforce.androidsdk.util.BundleTestHelper;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -54,6 +54,8 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class UserAccountManagerTest {
+
+    public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androidsdk.salesforcesdktest.login"; // must match authenticator.xml in SalesforceSDK project
 
     private UserAccountManager userAccMgr;
     private AccountManager accMgr;
@@ -74,16 +76,32 @@ public class UserAccountManagerTest {
     }
 
     /**
+     * Test creating an account from a UserAccount and vice versa
+     */
+    @Test
+    public void testUserAccountToAccountToUserAccount() {
+        UserAccount userAccount = UserAccountTest.createTestAccount();
+        // Save to account manager (encrypt fields)
+        userAccMgr.createAccount(userAccount);
+        // Get account from account manager
+        Account account = userAccMgr.getCurrentAccount();
+        // Build user account from account (decrypts fields)
+        UserAccount restoredUserAccount = userAccMgr.buildUserAccount(account);
+        // Make sure all the fields made it through and back
+        checkSameUserAccount(userAccount, restoredUserAccount);
+    }
+
+    /**
      * Test to get all authenticated users.
      */
     @Test
     public void testGetAllUserAccounts() {
-    	UserAccount firstUser = createTestAccountInAccountManager();
+        UserAccount firstUser = createTestAccountInAccountManager();
         List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
         checkSameUserAccount(firstUser, users.get(0));
-    	UserAccount secondUser = createOtherTestAccountInAccountManager();
-    	users = userAccMgr.getAuthenticatedUsers();
+        UserAccount secondUser = createOtherTestAccountInAccountManager();
+        users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
         checkSameUserAccount(secondUser, users.get(1));
     }
@@ -108,7 +126,7 @@ public class UserAccountManagerTest {
         UserAccount secondUser = createOtherTestAccountInAccountManager();
         checkSameUserAccount(secondUser, userAccMgr.getCurrentUser());
 
-    	userAccMgr.switchToUser(firstUser);
+        userAccMgr.switchToUser(firstUser);
         checkSameUserAccount(firstUser, userAccMgr.getCurrentUser());
 
         userAccMgr.switchToUser(secondUser);
@@ -145,7 +163,7 @@ public class UserAccountManagerTest {
     public void testSignoutCurrentUser() {
         createTestAccountInAccountManager();
         Assert.assertEquals("There should be 1 authenticated user", 1, userAccMgr.getAuthenticatedUsers().size());
-    	userAccMgr.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT);
+        userAccMgr.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT);
         Assert.assertNull("There should be no authenticated users", userAccMgr.getAuthenticatedUsers());
     }
 
@@ -165,7 +183,7 @@ public class UserAccountManagerTest {
      * Removes any existing accounts.
      */
     private void cleanupAccounts() throws Exception {
-        for (Account acc: accMgr.getAccountsByType(ClientManagerTest.TEST_ACCOUNT_TYPE)) {
+        for (Account acc : accMgr.getAccountsByType(TEST_ACCOUNT_TYPE)) {
             accMgr.removeAccountExplicitly(acc);
         }
     }
@@ -192,12 +210,4 @@ public class UserAccountManagerTest {
         return userAccount;
     }
 
-    /**
-     * Check the user accounts are the same
-     * @param expected Expected UserAccount
-     * @param actual Actual UserAccount
-     */
-    private void checkSameUserAccount(UserAccount expected, UserAccount actual) {
-        BundleTestHelper.checkSameBundle("Not the expected user account", expected.toBundle(), actual.toBundle());
-    }
 }
