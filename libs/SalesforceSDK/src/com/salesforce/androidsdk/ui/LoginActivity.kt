@@ -58,7 +58,7 @@ import android.webkit.WebView
 import android.widget.Button
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
-import android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -129,19 +129,12 @@ import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
  * OAuth web view helper class.
  */
 open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
-
     private var wasBackgrounded = false
-
     private var webviewHelper: OAuthWebviewHelper? = null
-
     private var authConfigReceiver: AuthConfigReceiver? = null
-
     private var receiverRegistered = false
-
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
-
     private var accountAuthenticatorResult: Bundle? = null
-
     private var biometricAuthenticationButton: Button? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -227,11 +220,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             receiverRegistered = true
         }
 
-        // TODO:  Remove this when min API > 33
-        if (SDK_INT >= TIRAMISU) {
-            onBackInvokedDispatcher.registerOnBackInvokedCallback(
-                PRIORITY_DEFAULT
-            ) { handleBackBehavior() }
+        // Take control of the back logic if the device is locked.
+        // TODO:  Remove SDK_INT check when min API > 33
+        if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
+            onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
         requestedOrientation = if (salesforceSDKManager.compactScreen(this))
@@ -244,6 +236,8 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             unregisterReceiver(authConfigReceiver)
             receiverRegistered = false
         }
+
+        handleBackBehavior()
         super.onDestroy()
     }
 
