@@ -642,7 +642,7 @@ public class OAuth2 {
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
-                final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                final JSONObject photos = parsedResponse.optJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
@@ -653,7 +653,7 @@ public class OAuth2 {
                 userId = parsedResponse.getString(USER_ID);
                 orgId = parsedResponse.getString(ORG_ID);
                 nickname = parsedResponse.getString(NICKNAME);
-                final JSONObject urls = parsedResponse.getJSONObject(URLS);
+                final JSONObject urls = parsedResponse.optJSONObject(URLS);
                 if (urls != null) {
                     enterpriseSoapUrl = urls.getString(ENTERPRISE_SOAP_URL);
                     metadataSoapUrl = urls.getString(METADATA_SOAP_URL);

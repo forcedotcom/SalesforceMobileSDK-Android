@@ -66,11 +66,6 @@ class UserAccountBuilder private constructor() {
     private var sidCookieName: String? = null
     private var clientId: String? = null
     private var additionalOauthValues: Map<String, String>? = null
-
-    // If set allowUnset is false
-    // then doing builder.abc("some-value").abc(null) will cause abc field to remain at "some-value"
-    // If set allowUnset is true
-    // then doing builder.abc("some-value").abc(null) will cause abc field to end up null
     private var allowUnset = true
 
     /**
@@ -116,6 +111,7 @@ class UserAccountBuilder private constructor() {
 
         return username(id.username)
             .firstName(id.firstName)
+            .lastName(id.lastName)
             .displayName(id.displayName)
             .email(id.email)
             .photoUrl(id.pictureUrl)
@@ -168,9 +164,8 @@ class UserAccountBuilder private constructor() {
     /**
      * Sets the allow unset behavior
      * When false:
-     * doing builder.abc("some-value").abc(null) will cause abc field to remain at "some-value"
-     * When true:
-     * doing builder.abc("some-value").abc(null) will cause abc field to end up null
+     * - passing null to a setter do not unset a value previously set
+     * - passing a map to additionAuthValues causes the new map and old map to be merged
      * @param allowUnset new value for allowUnset
      */
     fun allowUnset(allowUnset: Boolean): UserAccountBuilder {
@@ -497,13 +492,19 @@ class UserAccountBuilder private constructor() {
      * @return Instance of this class.
      */
     fun additionalOauthValues(additionalOauthValues: Map<String, String>?): UserAccountBuilder {
-        if (!allowUnset && this.additionalOauthValues != null && additionalOauthValues != null) {
-            var res = this.additionalOauthValues?.toMutableMap() ?: mutableMapOf()
-            res.putAll(additionalOauthValues)
-            this.additionalOauthValues = res
+        if (!allowUnset) {
+            if (additionalOauthValues == null) {
+                // do not unset previously value set
+            }
+
+            // merge maps if one is passed in
+            if (additionalOauthValues != null) {
+                this.additionalOauthValues = (this.additionalOauthValues?.toMutableMap() ?: mutableMapOf()).apply { putAll(additionalOauthValues) }
+            }
         } else {
             this.additionalOauthValues = additionalOauthValues
         }
+
         return this
     }
 

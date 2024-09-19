@@ -37,6 +37,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.util.BundleTestHelper;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.JSONTestHelper;
@@ -52,14 +53,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Tests for {@link UserAccount}
- *
- * @author aghoneim
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -71,14 +71,17 @@ public class UserAccountTest {
     public static final String TEST_USERNAME = "test_username";
     public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
     public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
-    public static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
+    public static final String TEST_IDENTITY_URL = "https://test.salesforce.com/" + TEST_ORG_ID + "/" + TEST_USER_ID;
     public static final String TEST_COMMUNITY_URL = "https://mobilesdk.cs1.my.salesforce.com";
     public static final String TEST_AUTH_TOKEN = "test_auth_token";
     public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     public static final String TEST_COMMUNITY_ID = "test_community_id";
-    public static final String TEST_FIRST_NAME = "firstName";
-    public static final String TEST_LAST_NAME = "lastName";
-    public static final String TEST_DISPLAY_NAME = "displayName";
+    public static final String TEST_FIRST_NAME = "test_first_name";
+    public static final String TEST_LAST_NAME = "test_last_name";
+    public static final String TEST_NICK_NAME = "test_nick_name";
+    public static final String TEST_DISPLAY_NAME = "test_display_name";
+    public static final String TEST_USER_TYPE = "test_user_type";
+    public static final String TEST_LAST_MODIFIED_DATE = "2024-09-18T10:11:12Z";
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
@@ -127,40 +130,7 @@ public class UserAccountTest {
      */
     @Test
     public void testConvertAccountToBundle() {
-        final UserAccount account = UserAccountBuilder.getInstance()
-                .authToken(TEST_AUTH_TOKEN)
-                .refreshToken(TEST_REFRESH_TOKEN)
-                .loginServer(TEST_LOGIN_URL)
-                .idUrl(TEST_IDENTITY_URL)
-                .instanceServer(TEST_INSTANCE_URL)
-                .orgId(TEST_ORG_ID)
-                .userId(TEST_USER_ID)
-                .username(TEST_USERNAME)
-                .accountName(TEST_ACCOUNT_NAME)
-                .communityId(TEST_COMMUNITY_ID)
-                .communityUrl(TEST_COMMUNITY_URL)
-                .firstName(TEST_FIRST_NAME)
-                .lastName(TEST_LAST_NAME)
-                .displayName(TEST_DISPLAY_NAME)
-                .email(TEST_EMAIL)
-                .photoUrl(TEST_PHOTO_URL)
-                .thumbnailUrl(TEST_THUMBNAIL_URL)
-                .lightningDomain(TEST_LIGHTNING_DOMAIN)
-                .lightningSid(TEST_LIGHTNING_SID)
-                .vfDomain(TEST_VF_DOMAIN)
-                .vfSid(TEST_VF_SID)
-                .contentDomain(TEST_CONTENT_DOMAIN)
-                .contentSid(TEST_CONTENT_SID)
-                .csrfToken(TEST_CSRF_TOKEN)
-                .nativeLogin(TEST_NATIVE_LOGIN)
-                .language(TEST_LANGUAGE)
-                .locale(TEST_LOCALE)
-                .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
-                .cookieSidClient(TEST_COOKIE_SID_CLIENT)
-                .sidCookieName(TEST_SID_COOKIE_NAME)
-                .clientId(TEST_CLIENT_ID)
-                .additionalOauthValues(createAdditionalOauthValues())
-                .build();
+        final UserAccount account = createTestAccount();
         final Bundle actual = account.toBundle(createAdditionalOauthKeys());
         final Bundle expected = createTestAccountBundle();
         BundleTestHelper.checkSameBundle("UserAccount bundles do not match", expected, actual);
@@ -171,44 +141,11 @@ public class UserAccountTest {
      */
     @Test
     public void testConvertAccountToJSON() throws JSONException {
-        final UserAccount account = UserAccountBuilder.getInstance()
-                .authToken(TEST_AUTH_TOKEN)
-                .refreshToken(TEST_REFRESH_TOKEN)
-                .loginServer(TEST_LOGIN_URL)
-                .idUrl(TEST_IDENTITY_URL)
-                .instanceServer(TEST_INSTANCE_URL)
-                .orgId(TEST_ORG_ID)
-                .userId(TEST_USER_ID)
-                .username(TEST_USERNAME)
-                .accountName(TEST_ACCOUNT_NAME)
-                .communityId(TEST_COMMUNITY_ID)
-                .communityUrl(TEST_COMMUNITY_URL)
-                .firstName(TEST_FIRST_NAME)
-                .lastName(TEST_LAST_NAME)
-                .displayName(TEST_DISPLAY_NAME)
-                .email(TEST_EMAIL)
-                .photoUrl(TEST_PHOTO_URL)
-                .thumbnailUrl(TEST_THUMBNAIL_URL)
-                .lightningDomain(TEST_LIGHTNING_DOMAIN)
-                .lightningSid(TEST_LIGHTNING_SID)
-                .vfDomain(TEST_VF_DOMAIN)
-                .vfSid(TEST_VF_SID)
-                .contentDomain(TEST_CONTENT_DOMAIN)
-                .contentSid(TEST_CONTENT_SID)
-                .csrfToken(TEST_CSRF_TOKEN)
-                .nativeLogin(TEST_NATIVE_LOGIN)
-                .language(TEST_LANGUAGE)
-                .locale(TEST_LOCALE)
-                .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
-                .cookieSidClient(TEST_COOKIE_SID_CLIENT)
-                .sidCookieName(TEST_SID_COOKIE_NAME)
-                .clientId(TEST_CLIENT_ID)
-                .additionalOauthValues(createAdditionalOauthValues()).build();
+        final UserAccount account = createTestAccount();
         final JSONObject actual = account.toJson(createAdditionalOauthKeys());
         final JSONObject expected = createTestAccountJSON();
         JSONTestHelper.assertSameJSONObject("UserAccount JSONs do not match", expected, actual);
     }
-
 
     /**
      * Tests creating an account from a bundle.
@@ -229,6 +166,161 @@ public class UserAccountTest {
         UserAccount account = new UserAccount(testJSON);
         checkTestAccount(account);
     }
+
+    /**
+     * Tests populating account from token end point response and id response
+     */
+    @Test
+    public void testPopulateFromTokenEndpointAndIdService() throws JSONException {
+        OAuth2.TokenEndpointResponse tr = createTokenEndpointResponse();
+        OAuth2.IdServiceResponse id = createIdServiceResponse();
+        UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromTokenEndpointResponse(tr)
+                .populateFromIdServiceResponse(id)
+                .accountName(TEST_ACCOUNT_NAME)
+                .loginServer(TEST_LOGIN_URL)
+                .nativeLogin(TEST_NATIVE_LOGIN)
+                .clientId(TEST_CLIENT_ID)
+                .build();
+        checkTestAccount(account);
+    }
+
+    /**
+     * Tests that allowUnset behaves as expected
+     */
+    @Test
+    public void testAllowUnset() {
+        // allow unset true (default)
+        Assert.assertEquals("login-server-1", UserAccountBuilder.getInstance()
+                .loginServer("login-server-1")
+                .build().getLoginServer());
+
+        Assert.assertEquals("login-server-2", UserAccountBuilder.getInstance()
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .build().getLoginServer());
+
+        Assert.assertEquals(null, UserAccountBuilder.getInstance()
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .loginServer(null)
+                .build().getLoginServer());
+
+        Assert.assertEquals("login-server-3", UserAccountBuilder.getInstance()
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .loginServer(null)
+                .loginServer("login-server-3")
+                .build().getLoginServer());
+
+        // allow unset false
+        Assert.assertEquals("login-server-1", UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .loginServer("login-server-1")
+                .build().getLoginServer());
+
+        Assert.assertEquals("login-server-2", UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .build().getLoginServer());
+
+        Assert.assertEquals("login-server-2", UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .loginServer(null)
+                .build().getLoginServer());
+
+        Assert.assertEquals("login-server-3", UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .loginServer("login-server-1")
+                .loginServer("login-server-2")
+                .loginServer(null)
+                .loginServer("login-server-3")
+                .build().getLoginServer());
+    }
+
+    /**
+     * Tests that allowUnset behaves as expected
+     */
+    @Test
+    public void testAllowUnsetForAdditionalOauthValues() {
+        Map<String, String> addtional1 = new HashMap<>() {{
+            put("custom-1", "value-1");
+        }};
+
+        Map<String, String> addtional1upd = new HashMap<>() {{
+            put("custom-1", "value-1-upd");
+        }};
+
+        Map<String, String> addtional2 = new HashMap<>() {{
+            put("custom-2", "value-2");
+        }};
+
+        Map<String, String> addtionalMerge = new HashMap<>() {{
+            put("custom-1", "value-1");
+            put("custom-2", "value-2");
+        }};
+
+        Map<String, String> addtionalMergeUpd = new HashMap<>() {{
+            put("custom-1", "value-1-upd");
+            put("custom-2", "value-2");
+        }};
+
+
+        // allow unset true (default)
+        Assert.assertEquals(addtional1, UserAccountBuilder.getInstance()
+                .additionalOauthValues(addtional1)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(addtional2, UserAccountBuilder.getInstance()
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(null, UserAccountBuilder.getInstance()
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .additionalOauthValues(null)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(addtional1upd, UserAccountBuilder.getInstance()
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .additionalOauthValues(null)
+                .additionalOauthValues(addtional1upd)
+                .build().getAdditionalOauthValues());
+
+        // allow unset false - null won't write over - maps are merged
+        Assert.assertEquals(addtional1, UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .additionalOauthValues(addtional1)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(addtionalMerge, UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(addtionalMerge, UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .additionalOauthValues(null)
+                .build().getAdditionalOauthValues());
+
+        Assert.assertEquals(addtionalMergeUpd, UserAccountBuilder.getInstance()
+                .allowUnset(false)
+                .additionalOauthValues(addtional1)
+                .additionalOauthValues(addtional2)
+                .additionalOauthValues(null)
+                .additionalOauthValues(addtional1upd)
+                .build().getAdditionalOauthValues());
+
+    }
+
 
     /**
      * Creates a test {@link JSONObject} with all {@link UserAccount} fields populated
@@ -313,6 +405,47 @@ public class UserAccountTest {
     }
 
     /**
+     * Create test account
+     */
+    UserAccount createTestAccount() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .authToken(TEST_AUTH_TOKEN)
+                .refreshToken(TEST_REFRESH_TOKEN)
+                .loginServer(TEST_LOGIN_URL)
+                .idUrl(TEST_IDENTITY_URL)
+                .instanceServer(TEST_INSTANCE_URL)
+                .orgId(TEST_ORG_ID)
+                .userId(TEST_USER_ID)
+                .username(TEST_USERNAME)
+                .accountName(TEST_ACCOUNT_NAME)
+                .communityId(TEST_COMMUNITY_ID)
+                .communityUrl(TEST_COMMUNITY_URL)
+                .firstName(TEST_FIRST_NAME)
+                .lastName(TEST_LAST_NAME)
+                .displayName(TEST_DISPLAY_NAME)
+                .email(TEST_EMAIL)
+                .photoUrl(TEST_PHOTO_URL)
+                .thumbnailUrl(TEST_THUMBNAIL_URL)
+                .lightningDomain(TEST_LIGHTNING_DOMAIN)
+                .lightningSid(TEST_LIGHTNING_SID)
+                .vfDomain(TEST_VF_DOMAIN)
+                .vfSid(TEST_VF_SID)
+                .contentDomain(TEST_CONTENT_DOMAIN)
+                .contentSid(TEST_CONTENT_SID)
+                .csrfToken(TEST_CSRF_TOKEN)
+                .nativeLogin(TEST_NATIVE_LOGIN)
+                .language(TEST_LANGUAGE)
+                .locale(TEST_LOCALE)
+                .cookieClientSrc(TEST_COOKIE_CLIENT_SRC)
+                .cookieSidClient(TEST_COOKIE_SID_CLIENT)
+                .sidCookieName(TEST_SID_COOKIE_NAME)
+                .clientId(TEST_CLIENT_ID)
+                .additionalOauthValues(createAdditionalOauthValues())
+                .build();
+        return account;
+    }
+
+    /**
      * Check the account passed
      * @param account
      */
@@ -350,15 +483,60 @@ public class UserAccountTest {
     }
 
     private Map<String, String> createAdditionalOauthValues() {
-        final Map<String, String> testOauthValues = new HashMap<>();
-        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
-        return testOauthValues;
+        return new HashMap<>() {{
+            put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        }};
     }
 
     private List<String> createAdditionalOauthKeys() {
-        final List<String> testOauthValues = new ArrayList<>();
-        testOauthValues.add(TEST_CUSTOM_KEY);
-        return testOauthValues;
+        return new ArrayList<>(Collections.singletonList(TEST_CUSTOM_KEY));
+    }
+
+    private OAuth2.TokenEndpointResponse createTokenEndpointResponse() {
+        Map<String, String> params = new HashMap<>();
+
+        params.put("access_token", TEST_AUTH_TOKEN);
+        params.put("refresh_token", TEST_REFRESH_TOKEN);
+        params.put("instance_url", TEST_INSTANCE_URL);
+        params.put("id", TEST_IDENTITY_URL);
+        params.put("sfdc_community_id", TEST_COMMUNITY_ID);
+        params.put("sfdc_community_url", TEST_COMMUNITY_URL);
+        params.putAll(createAdditionalOauthValues());
+        params.put("lightning_domain", TEST_LIGHTNING_DOMAIN);
+        params.put("lightning_sid", TEST_LIGHTNING_SID);
+        params.put("visualforce_domain", TEST_VF_DOMAIN);
+        params.put("visualforce_sid", TEST_VF_SID);
+        params.put("content_domain", TEST_CONTENT_DOMAIN);
+        params.put("content_sid", TEST_CONTENT_SID);
+        params.put("csrf_token", TEST_CSRF_TOKEN);
+        params.put("cookie-clientSrc", TEST_COOKIE_CLIENT_SRC);
+        params.put("cookie-sid_Client", TEST_COOKIE_SID_CLIENT);
+        params.put("sidCookieName", TEST_SID_COOKIE_NAME);
+
+        return new OAuth2.TokenEndpointResponse(params);
+    }
+
+    private OAuth2.IdServiceResponse createIdServiceResponse() throws JSONException {
+        JSONObject response = new JSONObject();
+
+        response.put("id", TEST_IDENTITY_URL);
+        response.put("username", TEST_USERNAME);
+        response.put("email", TEST_EMAIL);
+        response.put("first_name", TEST_FIRST_NAME);
+        response.put("last_name", TEST_LAST_NAME);
+        response.put("nick_name", TEST_NICK_NAME);
+        response.put("user_type", TEST_USER_TYPE);
+        response.put("display_name", TEST_DISPLAY_NAME);
+        response.put("last_modified_date", TEST_LAST_MODIFIED_DATE);
+        response.put("user_id", TEST_USER_ID);
+        response.put("organization_id", TEST_ORG_ID);
+        JSONObject photos = new JSONObject();
+        photos.put("picture", TEST_PHOTO_URL);
+        photos.put("thumbnail", TEST_THUMBNAIL_URL);
+        response.put("photos", photos);
+        response.put("language", TEST_LANGUAGE);
+        response.put("locale", TEST_LOCALE);
+        return new OAuth2.IdServiceResponse(response);
     }
 
 }
