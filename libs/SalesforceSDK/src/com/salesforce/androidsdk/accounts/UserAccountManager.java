@@ -701,6 +701,13 @@ public class UserAccountManager {
 		context.startActivity(i);
 	}
 
+	/**
+	 * Create bundle for authenticator service
+	 * - it uses keys understood by authenticator service
+	 * - it encrypts most values
+	 * @param userAccount
+	 * @return
+	 */
 	private Bundle buildAuthBundle(UserAccount userAccount) {
 		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 		final Bundle extras = new Bundle();

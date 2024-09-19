@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth;
 
 import android.net.Uri;
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 

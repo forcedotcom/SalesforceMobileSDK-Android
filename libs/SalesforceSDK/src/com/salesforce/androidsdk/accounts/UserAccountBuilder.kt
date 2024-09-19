@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.accounts
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.INSTANCE
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 
@@ -164,7 +163,7 @@ class UserAccountBuilder private constructor() {
     /**
      * Sets the allow unset behavior
      * When false:
-     * - passing null to a setter do not unset a value previously set
+     * - passing null to a setter does not unset a value previously set
      * - passing a map to additionAuthValues causes the new map and old map to be merged
      * @param allowUnset new value for allowUnset
      */
