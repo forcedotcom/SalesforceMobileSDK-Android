@@ -104,27 +104,6 @@ public class UserAccountTest {
     
     private EventsListenerQueue eq;
 
-    @Before
-    public void setUp() throws Exception {
-        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
-        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        eq = new EventsListenerQueue();
-        if (!SalesforceSDKManager.hasInstance()) {
-            eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
-        }
-        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(createAdditionalOauthKeys());
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        if (eq != null) {
-            eq.tearDown();
-            eq = null;
-        }
-        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
-    }
-
     /**
      * Tests user account to bundle conversion.
      */
@@ -153,7 +132,7 @@ public class UserAccountTest {
     @Test
     public void testCreateAccountFromBundle() {
         final Bundle testBundle = createTestAccountBundle();
-        final UserAccount account = new UserAccount(testBundle);
+        final UserAccount account = new UserAccount(testBundle, createAdditionalOauthKeys());
         checkTestAccount(account);
     }
 
@@ -163,7 +142,7 @@ public class UserAccountTest {
     @Test
     public void testCreateAccountFromJSON() throws JSONException {
         JSONObject testJSON = createTestAccountJSON();
-        UserAccount account = new UserAccount(testJSON);
+        UserAccount account = new UserAccount(testJSON, "SalesforceSDKTest", createAdditionalOauthKeys());
         checkTestAccount(account);
     }
 
@@ -513,7 +492,7 @@ public class UserAccountTest {
         params.put("cookie-sid_Client", TEST_COOKIE_SID_CLIENT);
         params.put("sidCookieName", TEST_SID_COOKIE_NAME);
 
-        return new OAuth2.TokenEndpointResponse(params);
+        return new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
     }
 
     private OAuth2.IdServiceResponse createIdServiceResponse() throws JSONException {

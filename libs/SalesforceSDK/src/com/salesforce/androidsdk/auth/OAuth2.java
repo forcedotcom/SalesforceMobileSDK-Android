@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -779,8 +780,10 @@ public class OAuth2 {
          * Parameterized constructor built during login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
+         * @param additionalOauthKeys Additional oauth keys.
          */
-        public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+        public TokenEndpointResponse(Map<String, String> callbackUrlParams, List<String> additionalOauthKeys) {
             try {
                 authToken = callbackUrlParams.get(ACCESS_TOKEN);
                 refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
@@ -790,15 +793,11 @@ public class OAuth2 {
                 computeOtherFields();
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
-                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
-                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                        additionalOauthValues = new HashMap<>();
-                        for (final String key : additionalOauthKeys) {
-                            if (!TextUtils.isEmpty(key)) {
-                                additionalOauthValues.put(key, callbackUrlParams.get(key));
-                            }
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    additionalOauthValues = new HashMap<>();
+                    for (final String key : additionalOauthKeys) {
+                        if (!TextUtils.isEmpty(key)) {
+                            additionalOauthValues.put(key, callbackUrlParams.get(key));
                         }
                     }
                 }
@@ -818,6 +817,18 @@ public class OAuth2 {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
+
+        /**
+         * Parameterized constructor built during login flow.
+         *
+         * @param callbackUrlParams Callback URL parameters.
+         */
+        public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+            this(callbackUrlParams, SalesforceSDKManager.getInstance() != null
+                    ? SalesforceSDKManager.getInstance() .getAdditionalOauthKeys()
+                    : null);
+        }
+
 
         /**
          * Parameterized constructor built from refresh flow response.

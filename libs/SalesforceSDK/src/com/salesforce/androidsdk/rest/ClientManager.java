@@ -537,15 +537,6 @@ public class ClientManager {
                 throw new NetworkErrorException(e);
             }
         }
-
-        private void encryptUserData(AccountManager mgr, Account account, String key, String value, String encryptionKey) {
-            mgr.setUserData(account, key, SalesforceSDKManager.encrypt(value, encryptionKey));
-        }
-
-        private String decryptUserData(AccountManager mgr, Account account, String key, String encryptionKey) {
-            return  SalesforceSDKManager.decrypt(mgr.getUserData(account, key), encryptionKey);
-        }
-
     }
 
     /**

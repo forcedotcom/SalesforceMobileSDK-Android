@@ -306,7 +306,7 @@ public class UserAccount {
 			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
 			sidCookieName = bundle.getString(SID_COOKIE_NAME);
 			clientId = bundle.getString(CLIENT_ID);
-			additionalOauthValues = MapUtil.addBundleToMap(bundle,additionalOauthKeys, additionalOauthValues);
+			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
 
