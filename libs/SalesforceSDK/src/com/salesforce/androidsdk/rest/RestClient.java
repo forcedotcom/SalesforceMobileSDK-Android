@@ -395,6 +395,8 @@ public class RestClient {
 
     /**
      * All immutable information for an authenticated client (e.g. username, org ID, etc.).
+     *
+     * TODO revisit this class - some of information is NOT immutable e.g. sids
      */
     public static class ClientInfo {
 

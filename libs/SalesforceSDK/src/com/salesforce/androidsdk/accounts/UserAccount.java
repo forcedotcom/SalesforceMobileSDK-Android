@@ -46,6 +46,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -86,7 +87,11 @@ public class UserAccount {
 	public static final String NATIVE_LOGIN = "native_login";
 	public static final String LANGUAGE = "language";
 	public static final String LOCALE = "locale";
-
+	public static final String COOKIE_CLIENT_SRC = "cookie-clientSrc";
+	public static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
+	public static final String SID_COOKIE_NAME = "sidCookieName";
+	public static final String CLIENT_ID = "clientId";
+;
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
@@ -122,6 +127,10 @@ public class UserAccount {
 	private Boolean nativeLogin;
 	private String language;
 	private String locale;
+	private String cookieClientSrc;
+	private String cookieSidClient;
+	private String sidCookieName;
+	private String clientId;
 	private Map<String, String> additionalOauthValues;
 
 	/**
@@ -154,6 +163,10 @@ public class UserAccount {
 	 * @param nativeLogin If the account was added with native auth.
 	 * @param language User's language,
 	 * @param locale User's locale,
+	 * @param cookieClientSrc cookie client src
+	 * @param cookieSidClient cookie sid client
+	 * @param sidCookieName sid cookie name
+	 * @param clientId oauth client id
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -163,7 +176,8 @@ public class UserAccount {
 				String thumbnailUrl, Map<String, String> additionalOauthValues,
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
-				String language, String locale) {
+				String language, String locale, String cookieClientSrc, String cookieSidClient,
+				String sidCookieName, String clientId) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -192,15 +206,21 @@ public class UserAccount {
 		this.nativeLogin = nativeLogin;
 		this.language = language;
 		this.locale = locale;
+		this.cookieClientSrc = cookieClientSrc;
+		this.cookieSidClient = cookieSidClient;
+		this.sidCookieName = sidCookieName;
+		this.clientId = clientId;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
 	/**
-	 * Parameterized constructor.
+	 * Construct UserAccount from JSON.
 	 *
 	 * @param object JSON object.
+	 * @param applicationName the application name.
+	 * @param additionalOauthKeys addtional auth keys.
 	 */
-	public UserAccount(JSONObject object) {
+	UserAccount(JSONObject object, String applicationName, List<String> additionalOauthKeys) {
 		if (object != null) {
 			authToken = object.optString(AUTH_TOKEN, null);
 			refreshToken = object.optString(REFRESH_TOKEN, null);
@@ -211,8 +231,7 @@ public class UserAccount {
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
 			if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(instanceServer)) {
-				accountName = String.format("%s (%s) (%s)", username, instanceServer,
-						SalesforceSDKManager.getInstance().getApplicationName());
+				accountName = String.format("%s (%s) (%s)", username, instanceServer, applicationName);
 			}
 			communityId = object.optString(COMMUNITY_ID, null);
 			communityUrl = object.optString(COMMUNITY_URL, null);
@@ -232,17 +251,29 @@ public class UserAccount {
 			nativeLogin = object.optBoolean(NATIVE_LOGIN);
 			language = object.optString(LANGUAGE, null);
 			locale = object.optString(LOCALE, null);
-			additionalOauthValues = MapUtil.addJSONObjectToMap(object,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			cookieClientSrc = object.optString(COOKIE_CLIENT_SRC, null);
+			cookieSidClient = object.optString(COOKIE_SID_CLIENT, null);
+			sidCookieName = object.optString(SID_COOKIE_NAME, null);
+			clientId = object.optString(CLIENT_ID, null);
+			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
 
 	/**
-	 * Parameterized constructor.
+	 * Construct UserAccount from JSON.
+	 * @param object
+	 */
+	public UserAccount(JSONObject object) {
+		this(object, SalesforceSDKManager.getInstance().getApplicationName(), SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
+	}
+
+	/**
+	 * Construct UserAccount from Bundle.
 	 *
 	 * @param bundle Bundle.
+	 * @param additionalOauthKeys additional oauth keys.
 	 */
-	public UserAccount(Bundle bundle) {
+	UserAccount(Bundle bundle, List<String> additionalOauthKeys) {
 		if (bundle != null) {
 			authToken = bundle.getString(AUTH_TOKEN);
 			refreshToken = bundle.getString(REFRESH_TOKEN);
@@ -271,9 +302,21 @@ public class UserAccount {
 			nativeLogin = bundle.getBoolean(NATIVE_LOGIN);
 			language = bundle.getString(LANGUAGE);
 			locale = bundle.getString(LOCALE);
-			additionalOauthValues = MapUtil.addBundleToMap(bundle,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
+			cookieClientSrc = bundle.getString(COOKIE_CLIENT_SRC);
+			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
+			sidCookieName = bundle.getString(SID_COOKIE_NAME);
+			clientId = bundle.getString(CLIENT_ID);
+			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
+	}
+
+	/**
+	 * Construct UserAccount from Bundle
+	 *
+	 * @param bundle
+	 */
+	public UserAccount(Bundle bundle) {
+		this(bundle, SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
 	}
 
 	/**
@@ -520,6 +563,42 @@ public class UserAccount {
 		return locale;
 	}
 
+	/**
+	 * Returns the cookie client src.
+	 *
+	 * @return cookie client src.
+	 */
+	public String getCookieClientSrc() {
+		return cookieClientSrc;
+	}
+
+	/**
+	 * Returns the cookie sid client.
+	 *
+	 * @return cookie sid client.
+	 */
+	public String getCookieSidClient() {
+		return cookieSidClient;
+	}
+
+	/**
+	 * Returns the sid cookie name.
+	 *
+	 * @return sid cookie name.
+	 */
+	public String getSidCookieName() {
+		return sidCookieName;
+	}
+
+	/**
+	 * Returns the oauth client id.
+	 *
+	 * @return client id.
+	 */
+	public String getClientId() {
+		return clientId;
+	}
+
 
 	/**
 	 * Returns the additional OAuth values for this user.
@@ -752,9 +831,10 @@ public class UserAccount {
 	/**
 	 * Returns a JSON representation of this instance.
 	 *
+	 * @param additionalOauthKeys: values to pull from the additionalOauthValues
 	 * @return JSONObject instance.
 	 */
-	public JSONObject toJson() {
+	JSONObject toJson(List<String> additionalOauthKeys) {
 		JSONObject object = new JSONObject();
 		try {
 			object.put(AUTH_TOKEN, authToken);
@@ -781,8 +861,12 @@ public class UserAccount {
 			object.put(CONTENT_SID, contentSid);
 			object.put(CSRF_TOKEN, csrfToken);
 			object.put(NATIVE_LOGIN, nativeLogin);
-			object = MapUtil.addMapToJSONObject(additionalOauthValues,
-					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+			object.put(LANGUAGE, language);
+			object.put(LOCALE, locale);
+			object.put(COOKIE_CLIENT_SRC, cookieClientSrc);
+			object.put(COOKIE_SID_CLIENT, cookieSidClient);
+			object.put(SID_COOKIE_NAME, sidCookieName);
+			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
 		}
@@ -790,11 +874,21 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns a JSON representation of this instance.
+	 *
+	 * @return JSONObject instance.
+	 */
+	public JSONObject toJson() {
+		return toJson(SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
+	}
+
+	/**
 	 * Returns a representation of this instance in a bundle.
 	 *
+	 * @param additionalOauthKeys: values to pull from the additionalOauthValues
 	 * @return Bundle instance.
 	 */
-	public Bundle toBundle() {
+	Bundle toBundle(List<String> additionalOauthKeys) {
 		Bundle object = new Bundle();
 		object.putString(AUTH_TOKEN, authToken);
 		object.putString(REFRESH_TOKEN, refreshToken);
@@ -823,9 +917,21 @@ public class UserAccount {
 		object.putString(CONTENT_SID, contentSid);
 		object.putString(CSRF_TOKEN, csrfToken);
 		object.putBoolean(NATIVE_LOGIN, nativeLogin);
-		object = MapUtil.addMapToBundle(additionalOauthValues,
-				SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
+		object.putString(COOKIE_CLIENT_SRC, cookieClientSrc);
+		object.putString(COOKIE_SID_CLIENT, cookieSidClient);
+		object.putString(SID_COOKIE_NAME, sidCookieName);
+		object.putString(CLIENT_ID, clientId);
+		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
+	}
+
+	/**
+	 * Returns a representation of this instance in a bundle.
+	 *
+	 * @return Bundle instance.
+	 */
+	public Bundle toBundle() {
+		return toBundle(SalesforceSDKManager.getInstance().getAdditionalOauthKeys());
 	}
 
 	private File getProfilePhotoFile() {
