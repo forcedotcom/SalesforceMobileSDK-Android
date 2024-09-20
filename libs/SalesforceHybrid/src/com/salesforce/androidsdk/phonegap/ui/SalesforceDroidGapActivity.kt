@@ -430,8 +430,8 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
      *
      * @param url The page to load once the session has been refreshed
      */
-    fun refresh(url: String) {
-        i(TAG, "refresh called url:$url")
+    fun reload(url: String) {
+        i(TAG, "reload called url:$url")
 
         /*
          * If client is null at this point, authentication hasn't been performed
@@ -441,18 +441,10 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
          * progress
          */
 
-        d(TAG, "refresh - 1")
-
         if (restClient == null) {
             clientManager?.getRestClient(this) { recreate() }
-            d(TAG, "refresh - 2")
             return
         }
-
-        webAppLoaded = false /* to force a reload */
-
-        d(TAG, "refresh - 3")
-
 
         restClient?.sendAsync(
             getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
@@ -461,27 +453,15 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     request: RestRequest,
                     response: RestResponse
                 ) {
-                    i(TAG, "refresh callback - refresh succeeded")
-                    // Get a fresh RestClient / set cookies and reload web view if needed
-                    onResume(null)
+                    // reload() is called when the web view attempted to navigate
+                    // to a remote page and got redirected to the login screen.
+                    // We intercept the redirect, refresh the auth token by doing
+                    // a cheap rest call which causes the cookies on the web view
+                    // to be rehydrated (though the TokenRefreshReceiver).
+                    // At this point, we can simply load the page we were trying to
+                    // go to initially.
 
-//                    runOnUiThread {
-//                        /*
-//                         * The client instance being used here needs to be
-//                         * refreshed, to ensure we use the new access token.
-//                         * However, if the refresh token was revoked when the
-//                         * app was in the background we need to catch that
-//                         * exception and trigger a proper logout to reset the
-//                         * state of this class
-//                        */
-//                        runCatching {
-//                            restClient = clientManager?.peekRestClient()
-//                            loadRemoteStartPage(url)
-//                        }.onFailure {
-//                            i(TAG, "User has been logged out.")
-//                            logout(null)
-//                        }
-//                    }
+                    loadRemoteStartPage(url)
                 }
 
                 override fun onError(exception: Exception) {
@@ -503,7 +483,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         assert(bootConfig?.isLocal == true)
         val startPage = bootConfig?.startPage ?: return
 
-        i(TAG, "loadLocalStartPage called - loading!")
+        i(TAG, "loadLocalStartPage called - loading! - $startPage")
 
         loadUrl("file:///android_asset/www/$startPage")
         webAppLoaded = true
@@ -526,7 +506,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         startPageUrl: String
     ) {
         assert(bootConfig?.isLocal != true)
-
         val clientInfo = restClient?.clientInfo
         val url = when {
             isAbsoluteUrl(startPageUrl) && clientInfo != null -> {
@@ -537,7 +516,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             }
         }
 
-        i(TAG, "loadRemoteStartPage called - loading!")
+        i(TAG, "loadRemoteStartPage called - loading! - $url")
         loadUrl(url)
         webAppLoaded = true
     }
@@ -611,9 +590,8 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             // Check if the broadcast is for the right intent
             if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT
                 || intent.action == ClientManager.INSTANCE_URL_UPDATE_INTENT) {
-                d(TAG, "TokenRefreshReceiver onReceive - calling onResume")
-                // Get a fresh RestClient / set cookies and reload web view if needed
-                onResume(null)
+                d(TAG, "TokenRefreshReceiver onReceive")
+                salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
             }
         }
     }
