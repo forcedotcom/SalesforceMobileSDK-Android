@@ -28,12 +28,10 @@ package com.salesforce.androidsdk.ui;
 
 import static com.salesforce.androidsdk.security.BiometricAuthenticationManager.SHOW_BIOMETRIC;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,7 +39,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
-import android.window.OnBackInvokedDispatcher;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -81,16 +78,6 @@ public class ServerPickerActivity extends AppCompatActivity implements
         urlEditDialog = new CustomServerUrlEditor();
     }
 
-    /**
-     * Sets the return value of the activity. Selection is stored in the
-     * shared prefs file, AuthActivity pulls from the file or a default value.
-     */
-    @SuppressLint("MissingSuperCall")
-    @Override
-    public void onBackPressed() {
-        reconfigureAuthorization();
-    }
-
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
     	if (group != null) {
@@ -105,18 +92,16 @@ public class ServerPickerActivity extends AppCompatActivity implements
     	}
     }
 
-    @Override
-    public boolean onNavigateUp() {
-        onBackPressed();
-        return true;
-    }
-
     /**
      * Called when the 'Reset' button is clicked. Clears custom URLs.
      *
      * @param v View that was clicked.
+     *
+     * @deprecated Unused.  Will be modified or removed in 13.0.
      */
+    @Deprecated
     public void onResetClick(View v) {
+        // TODO: in 13.0 we should drop the parameter and move the contents of clearCustomUrlSetting here.
         clearCustomUrlSetting();
     }
 
@@ -164,14 +149,6 @@ public class ServerPickerActivity extends AppCompatActivity implements
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
         }
-
-        // TODO:  Remove this when min API > 33
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                    this::onBackPressed
-            );
-        }
     }
 
     @Override
@@ -185,6 +162,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
         final RadioGroup radioGroup = findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(null);
         urlEditDialog = null;
+        reconfigureAuthorization();
         super.onDestroy();
     }
 
