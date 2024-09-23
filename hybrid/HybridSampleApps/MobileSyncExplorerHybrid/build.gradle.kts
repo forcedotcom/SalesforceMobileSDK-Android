@@ -13,10 +13,10 @@ dependencies {
 android {
     namespace = "com.salesforce.samples.mobilesyncexplorerhybrid"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
-        targetSdk = 34
+        targetSdk = 35
         minSdk = 26
     }
 
