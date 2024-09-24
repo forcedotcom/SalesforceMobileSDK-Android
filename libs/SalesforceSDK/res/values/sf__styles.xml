@@ -190,6 +190,7 @@
         <item name="android:navigationBarColor">@color/sf__background_dark</item>
         <item name="sfNegativeButtonTextColor">@color/sf__secondary_color_dark</item>
         <item name="sfNegativeButtonBorderColor">@color/sf__secondary_color_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="SalesforceSDK.ScreenLock.ErrorMessage">
