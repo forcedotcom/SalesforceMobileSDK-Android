@@ -77,7 +77,7 @@ public class SalesforceWebViewClientHelper {
                                                    WebView view, String url) {
         final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(ctx, url);
         if (startURL != null && ctx instanceof SalesforceDroidGapActivity) {
-            ((SalesforceDroidGapActivity) ctx).reload(startURL);
+            ((SalesforceDroidGapActivity) ctx).refresh(startURL);
             return true;
         } else {
             return false;
