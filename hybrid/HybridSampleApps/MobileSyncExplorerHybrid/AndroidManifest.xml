@@ -16,7 +16,7 @@
         android:name="com.salesforce.androidsdk.phonegap.app.HybridApp"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity"
 		android:icon="@drawable/sf__icon"
-        android:enableOnBackInvokedCallback="@bool/isGraterThan33"
+        android:enableOnBackInvokedCallback="@bool/isGreaterThan33"
         tools:ignore="UnusedAttribute">
 
         <!--  Main activity -->

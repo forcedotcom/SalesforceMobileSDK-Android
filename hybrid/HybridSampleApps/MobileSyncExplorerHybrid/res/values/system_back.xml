@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <bool name="isGraterThan33">false</bool>
+    <bool name="isGreaterThan33">false</bool>
 </resources>
