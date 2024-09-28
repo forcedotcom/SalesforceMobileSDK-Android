@@ -112,6 +112,7 @@
 
     <style name="SalesforceSDK_Dark.Login">
         <item name="android:navigationBarColor">@color/sf__background</item>
+        <item name="android:colorBackground">@color/sf__background</item>
     </style>
 
     <style name="SalesforceSDKActionBar" parent="@android:style/Widget.Material.ActionBar">
@@ -189,6 +190,7 @@
         <item name="android:navigationBarColor">@color/sf__background_dark</item>
         <item name="sfNegativeButtonTextColor">@color/sf__secondary_color_dark</item>
         <item name="sfNegativeButtonBorderColor">@color/sf__secondary_color_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="SalesforceSDK.ScreenLock.ErrorMessage">

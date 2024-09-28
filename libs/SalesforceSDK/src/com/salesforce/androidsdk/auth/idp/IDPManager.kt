@@ -119,7 +119,6 @@ internal class IDPManager(
                     spConfig,
                     codeChallenge
                 ) { result ->
-                    authCodeActivity.finish()
                     onResult(result)
                 }
             }
@@ -214,6 +213,7 @@ internal class IDPManager(
                 addCategory(Intent.CATEGORY_DEFAULT)
             }
             startActivity(activeFlow.context, launchIntent)
+            activeFlow.authCodeActivity?.finish()
         } else {
             activeFlow.onStatusUpdate(Status.ERROR_RECEIVED_FROM_SP)
         }

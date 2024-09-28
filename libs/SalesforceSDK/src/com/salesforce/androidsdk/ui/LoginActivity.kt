@@ -78,6 +78,7 @@ import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.content.ContextCompat.registerReceiver
+import com.salesforce.androidsdk.R.id.sf__auth_container_phone
 import com.salesforce.androidsdk.R.id.sf__bio_login_button
 import com.salesforce.androidsdk.R.id.sf__idp_login_button
 import com.salesforce.androidsdk.R.id.sf__menu_clear_cookies
@@ -229,6 +230,8 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         requestedOrientation = if (salesforceSDKManager.compactScreen(this))
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
             ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+
+        fixEdgeToEdge(findViewById(sf__auth_container_phone))
     }
 
     override fun onDestroy() {

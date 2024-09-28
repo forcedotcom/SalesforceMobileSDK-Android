@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.ui.EdgeToEdgeUtilKt.fixEdgeToEdge;
+
 import android.os.Bundle;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -63,6 +65,8 @@ public class DevInfoActivity extends AppCompatActivity {
         String[] from = new String[] {NAME, VALUE};
         int[] to = new int[] { android.R.id.text1, android.R.id.text2};
         ((ListView) findViewById(R.id.list)).setAdapter(new SimpleAdapter(this, listData, android.R.layout.simple_list_item_2, from, to));
+
+        fixEdgeToEdge(this, findViewById(R.id.sf__dev_menu_layout));
     }
 
     private List<Map<String, String>> prepareListData(List<String> rawData) {
