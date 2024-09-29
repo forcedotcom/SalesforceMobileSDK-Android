@@ -706,7 +706,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     @Suppress("MemberVisibilityCanBePrivate")
     fun loginWithFrontdoorBridgeUrl(
         frontdoorBridgeUrl: String,
-        pkceCodeVerifier: String
+        pkceCodeVerifier: String?
     ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     // endregion
@@ -767,7 +767,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     ) = JSONObject(uiBridgeApiParameterJsonString).let { uiBridgeApiParameterJson ->
         UiBridgeApiParameters(
             uiBridgeApiParameterJson.getString(FRONTDOOR_BRIDGE_URL_KEY),
-            uiBridgeApiParameterJson.optString(PKCE_CODE_VERIFIER_KEY, "")
+            when (uiBridgeApiParameterJson.has(PKCE_CODE_VERIFIER_KEY)) {
+                true -> uiBridgeApiParameterJson.optString(PKCE_CODE_VERIFIER_KEY)
+                else -> null
+            }
         )
     }
 
@@ -781,7 +784,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         val frontdoorBridgeUrl: String,
 
         /** The PKCE code verifier provided by the login QR code */
-        val pkceCodeVerifier: String
+        val pkceCodeVerifier: String?
     )
 
     // endregion
