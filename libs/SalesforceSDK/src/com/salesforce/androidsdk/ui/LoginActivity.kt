@@ -797,19 +797,19 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         // region QR Code Login Via UI Bridge API Constants
 
         /** The QR code login intent path */
-        const val LOGIN_QR_PATH = "/login/qr"
+        private const val LOGIN_QR_PATH = "/login/qr"
 
         /** The login QR code's UI Bridge API parameter's JSON frontdoor bridge URL key */
-        const val FRONTDOOR_BRIDGE_URL_KEY = "frontdoor_bridge_url"
+        private const val FRONTDOOR_BRIDGE_URL_KEY = "frontdoor_bridge_url"
 
         /** The login QR code's UI Bridge API parameter's JSON PKCE code verifier key */
-        const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
+        private const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
 
         /** A regular expression to extract the UI Bridge API parameter JSON from the intent's login QR code content */
-        val qrCodeBridgeJsonRegexExternal by lazy { """\?bridgeJson=(\{.*\})""".toRegex() }
+        private val qrCodeBridgeJsonRegexExternal by lazy { """\?bridgeJson=(\{.*\})""".toRegex() }
 
         /** A regular expression to extract the UI Bridge API parameter JSON from the app's login QR code content */
-        val qrCodeBridgeJsonRegexInternal by lazy { """\?bridgeJson=(%7B.*%7D)""".toRegex() }
+        private val qrCodeBridgeJsonRegexInternal by lazy { """\?bridgeJson=(%7B.*%7D)""".toRegex() }
 
         // endregion
     }
