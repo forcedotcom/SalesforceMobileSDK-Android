@@ -160,10 +160,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     private var codeVerifier: String? = null
 
     /** For Salesforce Identity UI Bridge API support, an overriding front door bridge URL to use in place of the default initial URL */
-    var isUsingFrontDoorBridgeUrl = false
+    private var isUsingFrontDoorBridge = false
 
     /** For Salesforce Identity UI Bridge API support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
-    var frontDoorBridgeCodeVerifier: String? = null
+    private var frontDoorBridgeCodeVerifier: String? = null
 
     /**
      * The host activity/fragment should pass in an implementation of this
@@ -669,7 +669,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
                     else -> {
                         // Determine if presence of override parameters require the user agent flow.
-                        val overrideWithUserAgentFlow = isUsingFrontDoorBridgeUrl && frontDoorBridgeCodeVerifier == null
+                        val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
                         when {
                             instance.useWebServerAuthentication && !overrideWithUserAgentFlow ->
                                 onWebServerFlowComplete(params["code"])
@@ -1422,7 +1422,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?
     ) {
-        isUsingFrontDoorBridgeUrl = true
+        isUsingFrontDoorBridge = true
 
         val uri = URI(frontdoorBridgeUrl)
         loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
