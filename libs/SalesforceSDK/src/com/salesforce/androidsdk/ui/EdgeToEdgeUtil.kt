@@ -1,6 +1,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.graphics.drawable.LayerDrawable
+import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 import android.view.View
 import androidx.activity.enableEdgeToEdge
@@ -14,7 +15,7 @@ import com.salesforce.androidsdk.R.id.sf__status_bar_background
 
 // TODO: Remove this in 13.0 after rewriting screens in compose.
 internal fun AppCompatActivity.fixEdgeToEdge(view: View) {
-    if (application.applicationInfo.targetSdkVersion > UPSIDE_DOWN_CAKE) {
+    if (application.applicationInfo.targetSdkVersion > UPSIDE_DOWN_CAKE && SDK_INT > UPSIDE_DOWN_CAKE) {
         enableEdgeToEdge()
         ViewCompat.setOnApplyWindowInsetsListener(view) { listenerView, windowInsets ->
             val insets = windowInsets.getInsets(
