@@ -146,7 +146,7 @@ import java.util.function.Consumer
  * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
  * is no longer necessary to extend or change LoginActivity's instance of this class
  * to support multi-factor authentication.  If there are other uses cases please
- * inform the team via Github or our Trailblazer community.  
+ * inform the team via Github or our Trailblazer community.
  */
 @Deprecated(
     "This class will no longer be public starting in Mobile SDK 13.0.",
@@ -154,7 +154,14 @@ import java.util.function.Consumer
 )
 open class OAuthWebviewHelper : KeyChainAliasCallback {
 
+    /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
+
+    /** For Salesforce Identity UI Bridge API support, an overriding front door bridge URL to use in place of the default initial URL */
+    private var isUsingFrontDoorBridge = false
+
+    /** For Salesforce Identity UI Bridge API support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
+    private var frontDoorBridgeCodeVerifier: String? = null
 
     /**
      * The host activity/fragment should pass in an implementation of this
@@ -321,6 +328,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         e: Throwable?
     ) {
         val instance = SalesforceSDKManager.getInstance()
+
+        // Reset state from previous log in attempt.
+        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        resetFrontDoorBridgeUrl()
 
         e(TAG, "$error: $errorDesc", e)
 
@@ -514,6 +525,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         useWebServerAuthentication: Boolean,
         useHybridAuthentication: Boolean
     ): URI {
+
+        // Reset log in state,
+        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        resetFrontDoorBridgeUrl()
+
         val loginOptions = loginOptions
         val oAuthClientId = oAuthClientId
         val authorizationDisplayType = authorizationDisplayType
@@ -671,9 +687,16 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         null
                     )
 
-                    else -> when {
-                        instance.useWebServerAuthentication -> onWebServerFlowComplete(params["code"])
-                        else -> onAuthFlowComplete(TokenEndpointResponse(params))
+                    else -> {
+                        // Determine if presence of override parameters require the user agent flow.
+                        val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
+                        when {
+                            instance.useWebServerAuthentication && !overrideWithUserAgentFlow ->
+                                onWebServerFlowComplete(params["code"])
+
+                            else ->
+                                onAuthFlowComplete(TokenEndpointResponse(params))
+                        }
                     }
                 }
             }
@@ -729,6 +752,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      */
     open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
         CoroutineScope(IO).launch {
+
+            // Reset log in state,
+            // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+            resetFrontDoorBridgeUrl()
+
             FinishAuthTask().execute(tr, nativeLogin)
         }
     }
@@ -748,7 +776,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 create(loginOptions.loginUrl),
                 loginOptions.oauthClientId,
                 code,
-                codeVerifier,
+                frontDoorBridgeCodeVerifier ?: codeVerifier,
                 loginOptions.oauthCallbackUrl
             )
         }.onFailure { throwable ->
@@ -1179,6 +1207,33 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         }.onFailure { throwable ->
             e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
         }
+    }
+
+    /**
+     * Automatically log in using the provided UI Bridge API parameters.
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
+     * @param pkceCodeVerifier The PKCE code verifier
+     */
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String?
+    ) {
+        isUsingFrontDoorBridge = true
+
+        val uri = URI(frontdoorBridgeUrl)
+        loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
+        frontDoorBridgeCodeVerifier = pkceCodeVerifier
+
+        webView?.loadUrl(frontdoorBridgeUrl)
+    }
+
+    /**
+     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
+     * its default inactive state.
+     */
+    private fun resetFrontDoorBridgeUrl() {
+        isUsingFrontDoorBridge = false
+        frontDoorBridgeCodeVerifier = null
     }
 
     companion object {
