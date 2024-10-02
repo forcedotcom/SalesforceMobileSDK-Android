@@ -1,6 +1,5 @@
 package com.salesforce.androidsdk.ui
 
-import android.graphics.drawable.LayerDrawable
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 import android.view.View
@@ -11,7 +10,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.salesforce.androidsdk.R.drawable.sf__fix_status_bar
-import com.salesforce.androidsdk.R.id.sf__status_bar_background
 
 // TODO: Remove this in 13.0 after rewriting screens in compose.
 internal fun AppCompatActivity.fixEdgeToEdge(view: View) {
@@ -26,10 +24,7 @@ internal fun AppCompatActivity.fixEdgeToEdge(view: View) {
             listenerView.updatePadding(insets.left, insets.top, insets.right, insets.bottom)
 
             // Fix transparent status bar not matching action bar
-            val background = ResourcesCompat.getDrawable(resources, sf__fix_status_bar, null)
-            val statusBarFiller = (background as LayerDrawable).findDrawableByLayerId(sf__status_bar_background)
-            statusBarFiller.setBounds(0, 0, insets.right, insets.bottom)
-            view.setBackgroundResource(sf__fix_status_bar)
+            view.background = ResourcesCompat.getDrawable(resources, sf__fix_status_bar, null)
 
             WindowInsetsCompat.CONSUMED
         }
