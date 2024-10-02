@@ -333,6 +333,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     ) {
         val instance = SalesforceSDKManager.getInstance()
 
+        // Reset state from previous log in attempt.
+        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        resetFrontDoorBridgeUrl()
+
         e(TAG, "$error: $errorDesc", e)
 
         // Broadcast a notification that the authentication flow failed
@@ -510,6 +514,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         useWebServerAuthentication: Boolean,
         useHybridAuthentication: Boolean
     ): URI {
+
+        // Reset log in state,
+        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        resetFrontDoorBridgeUrl()
+
         val loginOptions = loginOptions
         val oAuthClientId = oAuthClientId
         val authorizationDisplayType = authorizationDisplayType
@@ -733,6 +742,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
         d(TAG, "token response -> $tr")
         CoroutineScope(IO).launch {
+
+            // Reset log in state,
+            // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+            resetFrontDoorBridgeUrl()
+
             FinishAuthTask().execute(tr, nativeLogin)
         }
     }
@@ -1429,6 +1443,15 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         frontDoorBridgeCodeVerifier = pkceCodeVerifier
 
         webView?.loadUrl(frontdoorBridgeUrl)
+    }
+
+    /**
+     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
+     * its default inactive state.
+     */
+    private fun resetFrontDoorBridgeUrl() {
+        isUsingFrontDoorBridge = false
+        frontDoorBridgeCodeVerifier = null
     }
 
     companion object {
