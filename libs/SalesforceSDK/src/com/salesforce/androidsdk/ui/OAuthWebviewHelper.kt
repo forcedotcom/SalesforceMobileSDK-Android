@@ -157,10 +157,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
 
-    /** For Salesforce Identity UI Bridge API support, an overriding front door bridge URL to use in place of the default initial URL */
+    /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
     private var isUsingFrontDoorBridge = false
 
-    /** For Salesforce Identity UI Bridge API support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
+    /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
     private var frontDoorBridgeCodeVerifier: String? = null
 
     /**
@@ -757,13 +757,15 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // - Salesforce Identity UI Bridge API log in, such as QR code log in.
             resetFrontDoorBridgeUrl()
 
-            FinishAuthTask().execute(tr, nativeLogin)
+            // TODO: Determine if this is needed. ECJ20241003
+            FinishAuthTask().execute(tr ?: return@launch, nativeLogin)
         }
     }
 
     internal fun onWebServerFlowComplete(code: String?) =
         CoroutineScope(IO).launch {
-            doCodeExchangeEndpoint(code)
+            // TODO: Determine if this is needed. ECJ20241003
+            doCodeExchangeEndpoint(code ?: return@launch)
         }
 
     private suspend fun doCodeExchangeEndpoint(

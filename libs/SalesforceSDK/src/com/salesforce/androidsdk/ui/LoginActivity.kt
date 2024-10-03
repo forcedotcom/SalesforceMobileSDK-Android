@@ -117,8 +117,6 @@ import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.net.URLDecoder
 import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
 import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
 
@@ -145,8 +143,17 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         val salesforceSDKManager = SalesforceSDKManager.getInstance()
 
-        // Determine if the activity was created from a deep link intent with QR code log in via UI bridge API parameters.
-        val isDeepLinkedQrCodeLogin = isDeepLinkedQrCodeLogin(intent)
+        /*
+         * For Salesforce Identity API UI Bridge support, the overriding front door bridge URL to
+         * use in place of the default initial login URL plus the optional web server flow code
+         * verifier accompanying the front door bridge URL
+         */
+        val frontDoorBridgeUrl = salesforceSDKManager.frontDoorBridgeUrl
+        val frontDoorBridgeCodeVerifier = salesforceSDKManager.frontDoorBridgeCodeVerifier
+        val isUsingFrontDoorBridge = frontDoorBridgeUrl != null
+        // Reset the the Salesforce SDK manager's UI bridge support.
+        salesforceSDKManager.frontDoorBridgeUrl = null
+        salesforceSDKManager.frontDoorBridgeCodeVerifier = null
 
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
             KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
@@ -163,17 +170,21 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         salesforceSDKManager.setViewNavigationVisibility(this)
 
-        // Determine login options for QR code login or the app's usual login.
+        // Determine login options for Salesforce Identity API UI Bridge front door URL use or choose defaults.
         val loginOptions = when {
-            isDeepLinkedQrCodeLogin -> salesforceSDKManager.loginOptions
+            isUsingFrontDoorBridge -> salesforceSDKManager.loginOptions
             else -> fromBundleWithSafeLoginUrl(intent.extras)
         }
 
         // Protect against screenshots
         window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
-        // Fetch authentication configuration except for QR code login.
-        if (!isDeepLinkedQrCodeLogin) {
+        /*
+         * Fetch authentication configuration except when using Salesforce Identity API UI Bridge, since the front door URL may be for another login server.
+         *
+         * Support for adding new login servers from the front door bridge URL is not yet implemented.  Unknown login servers will fail login.
+         */
+        if (!isUsingFrontDoorBridge) {
             salesforceSDKManager.fetchAuthenticationConfiguration()
         }
 
@@ -219,9 +230,14 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             this
         )
 
-        // Prompt user with log in page or log in via other configurations such as QR code.
+        // Prompt user with the default login page or log in via other configurations such as using a Salesforce Identity API UI Bridge front door URL.
+        @Suppress("KotlinConstantConditions") // Note: This is a cosmetic suppress until the Android Studio inspector can smart cast the front door bridge URL as the compiler does.
         when {
-            isDeepLinkedQrCodeLogin -> loginFromQrCode("?" + intent.data?.query)
+            isUsingFrontDoorBridge && frontDoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
+                frontDoorBridgeUrl,
+                frontDoorBridgeCodeVerifier
+            )
+
             else -> certAuthOrLogin()
         }
 
@@ -675,31 +691,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     // region QR Code Login Via UI Bridge API Public Implementation
 
     /**
-     * Automatically log in with a UI Bridge API login QR code.
-     * @param loginQrCodeContent The login QR code content.  This should be
-     * either a URL or URL query containing the UI Bridge API JSON parameter.
-     * The UI Bridge API JSON parameter should contain URL-encoded JSON with two
-     * values:
-     * - frontdoor_bridge_url
-     * - pkce_code_verifier
-     *
-     * If pkce_code_verifier is not specified then the user agent flow is used
-     * @return Boolean true if a log in attempt is possible using the provided QR
-     * code content, false otherwise
-     */
-    fun loginFromQrCode(
-        loginQrCodeContent: String?
-    ) = uiBridgeApiParametersFromLoginQrCodeContent(
-        loginQrCodeContent
-    )?.let { uiBridgeApiParameters ->
-        loginWithFrontdoorBridgeUrl(
-            uiBridgeApiParameters.frontdoorBridgeUrl,
-            uiBridgeApiParameters.pkceCodeVerifier
-        )
-        true
-    } ?: false
-
-    /**
      * Automatically log in with a UI Bridge API front door bridge URL and PKCE
      * code verifier.
      * @param frontdoorBridgeUrl The UI Bridge API front door bridge URL
@@ -712,107 +703,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     // endregion
-    // region QR Code Login Via UI Bridge API Private Implementation
-
-    /**
-     * Determines if QR code login is enabled for the provided intent.
-     * @param intent The intent to determine QR code login enablement for
-     * @return Boolean true if QR code login is enabled for the the intent or
-     * false otherwise
-     */
-    private fun isDeepLinkedQrCodeLogin(
-        intent: Intent
-    ) = SalesforceSDKManager.getInstance().isQrCodeLoginEnabled
-            && intent.data?.path?.contains(LOGIN_QR_PATH) == true
-
-    /**
-     * Parses UI Bridge API parameters from the provided login QR code content.
-     * @param loginQrCodeContent The login QR code content string
-     * @return UiBridgeApiParameters: The UI Bridge API parameters or null if the QR code
-     * content cannot provide them for any reason
-     */
-    private fun uiBridgeApiParametersFromLoginQrCodeContent(
-        loginQrCodeContent: String?
-    ) = loginQrCodeContent?.let { loginQrCodeContentUnwrapped ->
-        uiBridgeApiJsonFromQrCodeContent(loginQrCodeContentUnwrapped)?.let { uiBridgeApiJson ->
-            uiBridgeApiParametersFromUiBridgeApiJson(uiBridgeApiJson)
-        }
-    }
-
-    /**
-     * Parses UI Bridge API parameters JSON from the provided string, which may
-     * be formatted to match either QR code content provided by the intent or
-     * the app's QR code library.
-     *
-     * 1. From intent (external QR reader): ?bridgeJson={...}
-     * 2. From the app's QR reader: ?bridgeJson=%7B...%7D
-     *
-     * @param qrCodeContent The QR code content string
-     * @return String: The UI Bridge API parameter JSON or null if the string
-     * cannot provide the JSON for any reason
-     */
-    private fun uiBridgeApiJsonFromQrCodeContent(
-        qrCodeContent: String
-    ) = qrCodeBridgeJsonRegexExternal.find(qrCodeContent)?.groups?.get(1)?.value
-        ?: qrCodeBridgeJsonRegexInternal.find(qrCodeContent)?.groups?.get(1)?.value?.let {
-            URLDecoder.decode(it, "UTF-8")
-        }
-
-    /**
-     * Creates UI Bridge API parameters from the provided JSON string.
-     * @param uiBridgeApiParameterJsonString The UI Bridge API parameters JSON
-     * string
-     * @return The UI Bridge API parameters
-     */
-    private fun uiBridgeApiParametersFromUiBridgeApiJson(
-        uiBridgeApiParameterJsonString: String
-    ) = JSONObject(uiBridgeApiParameterJsonString).let { uiBridgeApiParameterJson ->
-        UiBridgeApiParameters(
-            uiBridgeApiParameterJson.getString(FRONTDOOR_BRIDGE_URL_KEY),
-            when (uiBridgeApiParameterJson.has(PKCE_CODE_VERIFIER_KEY)) {
-                true -> uiBridgeApiParameterJson.optString(PKCE_CODE_VERIFIER_KEY)
-                else -> null
-            }
-        )
-    }
-
-    /**
-     * A data class representing UI Bridge API parameters provided by a login QR
-     * code.
-     */
-    private data class UiBridgeApiParameters(
-
-        /** The front door bridge URL provided by the login QR code */
-        val frontdoorBridgeUrl: String,
-
-        /** The PKCE code verifier provided by the login QR code */
-        val pkceCodeVerifier: String?
-    )
-
-    // endregion
 
     companion object {
         const val PICK_SERVER_REQUEST_CODE = 10
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
-
-        // region QR Code Login Via UI Bridge API Constants
-
-        /** The QR code login intent path */
-        private const val LOGIN_QR_PATH = "/login/qr"
-
-        /** The login QR code's UI Bridge API parameter's JSON frontdoor bridge URL key */
-        private const val FRONTDOOR_BRIDGE_URL_KEY = "frontdoor_bridge_url"
-
-        /** The login QR code's UI Bridge API parameter's JSON PKCE code verifier key */
-        private const val PKCE_CODE_VERIFIER_KEY = "pkce_code_verifier"
-
-        /** A regular expression to extract the UI Bridge API parameter JSON from the intent's login QR code content */
-        private val qrCodeBridgeJsonRegexExternal by lazy { """\?bridgeJson=(\{.*\})""".toRegex() }
-
-        /** A regular expression to extract the UI Bridge API parameter JSON from the app's login QR code content */
-        private val qrCodeBridgeJsonRegexInternal by lazy { """\?bridgeJson=(%7B.*%7D)""".toRegex() }
-
-        // endregion
     }
 }
