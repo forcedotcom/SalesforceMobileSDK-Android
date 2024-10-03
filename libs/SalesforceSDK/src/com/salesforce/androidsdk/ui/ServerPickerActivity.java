@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import static com.salesforce.androidsdk.security.BiometricAuthenticationManager.SHOW_BIOMETRIC;
+import static com.salesforce.androidsdk.ui.EdgeToEdgeUtilKt.fixEdgeToEdge;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -149,6 +150,8 @@ public class ServerPickerActivity extends AppCompatActivity implements
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
         }
+
+        fixEdgeToEdge(this, findViewById(R.id.sf__server_picker_layout));
     }
 
     @Override

@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.ui.EdgeToEdgeUtilKt.fixEdgeToEdge;
+
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
@@ -67,6 +69,8 @@ public class AccountSwitcherActivity extends AppCompatActivity {
 		} else {
 			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
 		}
+
+		fixEdgeToEdge(this, findViewById(R.id.sf__account_select_layout));
 	}
 
 	@Override
