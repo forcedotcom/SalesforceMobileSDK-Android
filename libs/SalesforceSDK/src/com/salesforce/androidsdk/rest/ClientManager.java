@@ -678,9 +678,6 @@ public class ClientManager {
          * @return
          */
         public static LoginOptions fromBundleWithSafeLoginUrl(Bundle options) {
-            // TODO: Verify this is needed. ECJ20241003
-            if (options == null) return null;
-
             LoginOptions loginOptions = fromBundle(options);
             LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
             if (loginServerManager.getLoginServerFromURL(loginOptions.getLoginUrl()) == null) {

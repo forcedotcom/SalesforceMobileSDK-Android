@@ -757,15 +757,13 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // - Salesforce Identity UI Bridge API log in, such as QR code log in.
             resetFrontDoorBridgeUrl()
 
-            // TODO: Determine if this is needed. ECJ20241003
-            FinishAuthTask().execute(tr ?: return@launch, nativeLogin)
+            FinishAuthTask().execute(tr, nativeLogin)
         }
     }
 
     internal fun onWebServerFlowComplete(code: String?) =
         CoroutineScope(IO).launch {
-            // TODO: Determine if this is needed. ECJ20241003
-            doCodeExchangeEndpoint(code ?: return@launch)
+            doCodeExchangeEndpoint(code)
         }
 
     private suspend fun doCodeExchangeEndpoint(

@@ -842,21 +842,8 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         /**
          * For QR code login URLs, a regular expression to extract the Salesforce Identity API UI
          * Bridge parameter JSON string.
-         *
-         * Apps may need to customize this if the format of the QR code login URL is customized.
          */
-        private val qrCodeLoginJsonRegexExternal by lazy {
-            """\?$qrCodeLoginUrlJsonParameterName=(\{.*\})""".toRegex()
-        }
-
-        /**
-         * For QR code login URLs, a regular expression to extract the Salesforce Identity API UI
-         * Bridge parameter JSON string.
-         *
-         * Apps may need to customize this if the format of the QR code login URL is customized.
-         */
-        // TODO: Determine if this is needed. ECJ20241003
-        private val qrCodeLoginJsonRegexInternal by lazy {
+        private val qrCodeLoginJsonRegex by lazy {
             """\?$qrCodeLoginUrlJsonParameterName=(%7B.*%7D)""".toRegex()
         }
 
@@ -870,10 +857,9 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
          */
         private fun uiBridgeApiJsonFromQrCodeLoginUrl(
             qrCodeLoginUrl: String
-        ) = qrCodeLoginJsonRegexExternal.find(qrCodeLoginUrl)?.groups?.get(1)?.value
-            ?: qrCodeLoginJsonRegexInternal.find(qrCodeLoginUrl)?.groups?.get(1)?.value?.let {
-                URLDecoder.decode(it, "UTF-8")
-            }
+        ) = qrCodeLoginJsonRegex.find(qrCodeLoginUrl)?.groups?.get(1)?.value?.let {
+            URLDecoder.decode(it, "UTF-8")
+        }
 
         /**
          * Creates Salesforce Identity API UI Bridge parameters from the provided JSON string.
