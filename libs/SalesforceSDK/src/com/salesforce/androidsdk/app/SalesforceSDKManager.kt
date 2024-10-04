@@ -963,6 +963,9 @@ open class SalesforceSDKManager protected constructor(
 
         val accountToLogout = account ?: clientMgr.account
 
+        frontDoorBridgeUrl = null
+        frontDoorBridgeCodeVerifier = null
+
         isLoggingOut = true
         val mgr = AccountManager.get(appContext)
         var refreshToken: String? = null
