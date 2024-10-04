@@ -141,7 +141,7 @@ task<Exec>("buildReactTestBundle") {
         )
     } else {
         commandLine(
-            "/usr/local/bin/node",
+            "/Users/johnson.eric/.nvm/versions/node/v18.19.0/bin/node",
             "node_modules/react-native/local-cli/cli.js",
             "bundle",
             "--platform",
