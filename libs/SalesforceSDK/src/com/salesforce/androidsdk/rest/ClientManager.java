@@ -103,7 +103,7 @@ public class ClientManager {
         Account acc = getAccount();
         Bundle options = loginOptions.asBundle();
 
-        // No account found - let's add one - the AuthenticatorService add account method will start the login activity
+        // No account found - let's add one - the AuthenticatorService add account method will start the login activity using either the default login URL or the Salesforce SDK manager's front door URL for Salesforce Identity API UI Bridge
         if (acc == null) {
             SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
             final Intent i = new Intent(activityContext,
