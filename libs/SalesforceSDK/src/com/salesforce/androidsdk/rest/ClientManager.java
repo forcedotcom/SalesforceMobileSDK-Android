@@ -463,7 +463,7 @@ public class ClientManager {
                         // authenticated endpoint.  However, there is no harm in attempting and the debug logs
                         // produced may help developers better understand the state of their app.
                         SalesforceSDKManager.getInstance()
-                                .logout(null, null, false, OAuth2.LogoutReason.TOKEN_EXPIRED);
+                                .logout(null, null, false, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED);
                     }
 
                     // Broadcasts an intent that the access token has been revoked.

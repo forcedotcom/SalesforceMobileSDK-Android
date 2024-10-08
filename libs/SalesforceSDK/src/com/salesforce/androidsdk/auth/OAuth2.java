@@ -203,7 +203,7 @@ public class OAuth2 {
 
     public enum LogoutReason {
         CORRUPT_STATE,           // "Corrupted client state"
-        TOKEN_EXPIRED,           // "Refresh token expired"
+        REFRESH_TOKEN_EXPIRED,   // "Refresh token expired"
         SSDK_LOGOUT_POLICY,      // "SSDK initiated logout for policy violation"
         TIMEOUT,                 // "Timeout while waiting for server response"
         UNEXPECTED,              // "Unexpected error or crash"
