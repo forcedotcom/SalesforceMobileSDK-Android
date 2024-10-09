@@ -18,4 +18,7 @@
     <color name="sf__hint_color_dark">#42D5B0B0</color>
     <color name="sf__accessibility_nav_color">#3e3e3c</color> <!-- SLDS grey 11 -->
     <color name="sf__subtext_color">#706E6B</color> <!-- SLDS grey 9 -->
+
+    <!-- TODO: Remove in 13.0 -->
+    <color name="sf__api_35_status_bar_color">#0070D2</color>
 </resources>

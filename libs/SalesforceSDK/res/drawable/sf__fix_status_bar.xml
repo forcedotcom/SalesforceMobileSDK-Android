@@ -3,7 +3,7 @@
     <item android:id="@+id/sf__status_bar_background" android:height="100dp" >
         <shape android:shape="rectangle">
             <size android:height="100dp" android:width="100dp"/>
-            <solid android:color="@color/sf__primary_color"/>
+            <solid android:color="@color/sf__api_35_status_bar_color"/>
         </shape>
     </item>
 
