@@ -38,6 +38,13 @@ public abstract class SalesforceActivity extends AppCompatActivity implements Sa
 
 	private final SalesforceActivityDelegate delegate;
 
+	/**
+	 * An option to build the REST client automatically on activity resume, which has the side
+	 * effect of displaying the default login activity when no user is logged in.
+	 */
+	@Deprecated
+	protected boolean buildRestClientOnResume = true;
+
 	public SalesforceActivity() {
 		super();
 		this.delegate = new SalesforceActivityDelegate(this);
@@ -52,7 +59,7 @@ public abstract class SalesforceActivity extends AppCompatActivity implements Sa
 	@Override
 	public void onResume() {
 		super.onResume();
-		delegate.onResume(true);
+		delegate.onResume(buildRestClientOnResume);
 	}
 
     @Override
