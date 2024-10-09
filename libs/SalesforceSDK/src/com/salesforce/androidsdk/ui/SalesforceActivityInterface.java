@@ -27,8 +27,6 @@
 package com.salesforce.androidsdk.ui;
 
 
-import androidx.annotation.Nullable;
-
 import com.salesforce.androidsdk.rest.RestClient;
 
 /**
@@ -42,7 +40,7 @@ public interface SalesforceActivityInterface {
      *
      * @param client RestClient instance.
      */
-    void onResume(@Nullable RestClient client);
+    void onResume(RestClient client);
 
     /**
      * Performs actions on logout complete.
