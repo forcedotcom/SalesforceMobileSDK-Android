@@ -152,14 +152,13 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
          * frontdoor bridge URL.
          */
         val isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
-        val uiBridgeApiParameters = when (isQrCodeLoginUrlIntent(intent)) {
-            true -> uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
-            else -> intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
-                UiBridgeApiParameters(
-                    frontdoorBridgeUrl,
-                    intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
-                )
-            }
+        val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
+            uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
+        } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
+            UiBridgeApiParameters(
+                frontdoorBridgeUrl,
+                intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
+            )
         }
 
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
