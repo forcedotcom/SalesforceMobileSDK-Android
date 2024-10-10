@@ -727,7 +727,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * [LoginActivity.loginWithFrontdoorBridgeUrl].
      *
      * @param qrCodeLoginUrl The QR code login URL
-     * @return Boolean true if a log in attempt is possible using the provided QR code log in URL,
+     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
      * false otherwise
      */
     fun loginWithFrontdoorBridgeUrlFromQrCode(
