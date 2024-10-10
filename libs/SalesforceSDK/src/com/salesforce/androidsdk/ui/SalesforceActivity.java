@@ -38,6 +38,22 @@ public abstract class SalesforceActivity extends AppCompatActivity implements Sa
 
 	private final SalesforceActivityDelegate delegate;
 
+    /**
+     * Determines if the Salesforce Mobile SDK (MSDK) REST Client is built when this activity
+     * resumes. This defaults to true.
+     * <p>
+     * The default is beneficial so apps using this activity as their main activity will create the
+     * MSDK networking client and start MSDK's default LoginActivity when no user is authenticated.
+     * This provides a lower-code path to implementing an app which automatically authenticates a
+     * user with Salesforce web login.
+     * <p>
+     * Whenever needed, an app may disable this feature.  Disabling this feature gives the app
+     * more control over when and which activities are presented to the user when this activity is
+	 * resumed.  However, that does require the app start MSDK's LoginActivity when required and
+     * with valid parameters for the app's authentication needs.
+     */
+    protected boolean isBuildRestClientOnResumeEnabled = true;
+
 	public SalesforceActivity() {
 		super();
 		this.delegate = new SalesforceActivityDelegate(this);
@@ -52,7 +68,7 @@ public abstract class SalesforceActivity extends AppCompatActivity implements Sa
 	@Override
 	public void onResume() {
 		super.onResume();
-		delegate.onResume(true);
+		delegate.onResume(isBuildRestClientOnResumeEnabled);
 	}
 
     @Override
