@@ -48,8 +48,8 @@ public abstract class SalesforceActivity extends AppCompatActivity implements Sa
      * user with Salesforce web login.
      * <p>
      * Whenever needed, an app may disable this feature.  Disabling this feature gives the app
-     * more control over when and which activities the are presented to the user when this activity
-     * is resumed.  However, that does require the app start MSDK's LoginActivity when required and
+     * more control over when and which activities are presented to the user when this activity is
+	 * resumed.  However, that does require the app start MSDK's LoginActivity when required and
      * with valid parameters for the app's authentication needs.
      */
     protected boolean isBuildRestClientOnResumeEnabled = true;
