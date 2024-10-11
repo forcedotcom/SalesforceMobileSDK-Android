@@ -330,7 +330,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         val instance = SalesforceSDKManager.getInstance()
 
         // Reset state from previous log in attempt.
-        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
         resetFrontDoorBridgeUrl()
 
         e(TAG, "$error: $errorDesc", e)
@@ -527,7 +527,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     ): URI {
 
         // Reset log in state,
-        // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
         resetFrontDoorBridgeUrl()
 
         val loginOptions = loginOptions
@@ -754,7 +754,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         CoroutineScope(IO).launch {
 
             // Reset log in state,
-            // - Salesforce Identity UI Bridge API log in, such as QR code log in.
+            // - Salesforce Identity UI Bridge API log in, such as QR code login.
             resetFrontDoorBridgeUrl()
 
             FinishAuthTask().execute(tr, nativeLogin)

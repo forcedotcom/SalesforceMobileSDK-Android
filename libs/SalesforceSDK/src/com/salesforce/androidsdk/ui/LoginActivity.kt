@@ -146,16 +146,20 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         val salesforceSDKManager = SalesforceSDKManager.getInstance()
 
         /*
-         * For Salesforce Identity API UI Bridge support, the overriding front door bridge URL to
-         * use in place of the default initial login URL plus the optional web server flow code
-         * verifier accompanying the front door bridge URL
+         * For Salesforce Identity API UI Bridge support, the overriding
+         * frontdoor bridge URL to use in place of the default initial login URL
+         * plus the optional web server flow code verifier accompanying the
+         * frontdoor bridge URL.
          */
-        val frontDoorBridgeUrl = salesforceSDKManager.frontDoorBridgeUrl
-        val frontDoorBridgeCodeVerifier = salesforceSDKManager.frontDoorBridgeCodeVerifier
-        val isUsingFrontDoorBridge = frontDoorBridgeUrl != null
-        // Reset the the Salesforce SDK manager's UI bridge support.
-        salesforceSDKManager.frontDoorBridgeUrl = null
-        salesforceSDKManager.frontDoorBridgeCodeVerifier = null
+        val isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
+        val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
+            uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
+        } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
+            UiBridgeApiParameters(
+                frontdoorBridgeUrl,
+                intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
+            )
+        }
 
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
             KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
@@ -233,11 +237,10 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         )
 
         // Prompt user with the default login page or log in via other configurations such as using a Salesforce Identity API UI Bridge front door URL.
-        @Suppress("KotlinConstantConditions") // Note: This is a cosmetic suppress until the Android Studio inspector can smart cast the front door bridge URL as the compiler does.
         when {
-            isUsingFrontDoorBridge && frontDoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
-                frontDoorBridgeUrl,
-                frontDoorBridgeCodeVerifier
+            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
             )
 
             else -> certAuthOrLogin()
@@ -723,7 +726,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
      * [LoginActivity.loginWithFrontdoorBridgeUrl].
      *
      * @param qrCodeLoginUrl The QR code login URL
-     * @return Boolean true if a log in attempt is possible using the provided QR code log in URL,
+     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
      * false otherwise
      */
     fun loginWithFrontdoorBridgeUrlFromQrCode(
@@ -799,15 +802,26 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         var qrCodeLoginUrlJsonPkceCodeVerifierKey = "pkce_code_verifier"
 
         /**
-         * When QR code log in is enabled, determines if the provided intent has QR code login
-         * parameters.
+         * Determines if the provided intent has QR code login parameters.
          * @param intent The intent to determine QR code login enablement for
-         * @return Boolean true if the intent has QR code login parameters or false otherwise
+         * @return Boolean true if the intent has QR code login parameters or
+         * false otherwise
          */
-        fun isQrCodeLoginIntent(
+        fun isQrCodeLoginUrlIntent(
             intent: Intent
-        ) = SalesforceSDKManager.getInstance().isQrCodeLoginEnabled
-                && intent.data?.path?.contains(qrCodeLoginUrlPath) == true
+        ) = intent.data?.path?.contains(qrCodeLoginUrlPath) == true
+
+        /**
+         * Determines if the provided intent has front door bridge URL
+         * parameters.
+         * @param intent The intent to determine front door bridge URL
+         * enablement for
+         * @return Boolean true if the intent has front door bridge URL
+         * parameters or false otherwise
+         */
+        private fun isFrontdoorBridgeUrlIntent(
+            intent: Intent
+        ) = intent.hasExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)
 
         /**
          * Parses Salesforce Identity API UI Bridge parameters from the provided login QR code login
@@ -838,6 +852,12 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
         // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Private Implementation
+
+        /** Extras key for the Salesforce Identity API UI Bridge front door URL */
+        const val EXTRA_KEY_FRONTDOOR_BRIDGE_URL = "frontdoor_bridge_url"
+
+        /** Extras key for the Salesforce Identity API UI PKCE code verifier */
+        const val EXTRA_KEY_PKCE_CODE_VERIFIER = "pkce_code_verifier"
 
         /**
          * For QR code login URLs, a regular expression to extract the Salesforce Identity API UI
