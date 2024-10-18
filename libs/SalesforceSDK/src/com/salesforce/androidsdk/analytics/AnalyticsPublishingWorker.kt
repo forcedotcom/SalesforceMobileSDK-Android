@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.analytics
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
+import androidx.work.ExistingWorkPolicy.REPLACE
 import androidx.work.ListenableWorker.Result.success
 import androidx.work.NetworkType.CONNECTED
 import androidx.work.OneTimeWorkRequest
@@ -127,7 +128,11 @@ internal class AnalyticsPublishingWorker(
             ).build().also { publishAnalyticsOneTimeWorkRequest ->
                 runCatching {
                     getInstance(context)
-                }.getOrNull()?.enqueue(publishAnalyticsOneTimeWorkRequest)
+                }.getOrNull()?.enqueueUniqueWork(
+                    PUBLISH_ANALYTICS_WORK_NAME,
+                    REPLACE,
+                    publishAnalyticsOneTimeWorkRequest
+                )
             }.id
 
             PublishPeriodically -> PeriodicWorkRequest.Builder(
