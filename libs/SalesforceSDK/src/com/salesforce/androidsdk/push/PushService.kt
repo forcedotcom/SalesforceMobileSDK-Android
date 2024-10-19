@@ -49,7 +49,6 @@ import com.salesforce.androidsdk.push.PushMessaging.getRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
-import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegisterPeriodically
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
@@ -449,6 +448,12 @@ open class PushService {
 
         /**
          * The Android background tasks name of the push notifications
+         * unregistration work request
+         */
+        private const val PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME = "SalesforcePushNotificationsUnregistrationWork"
+
+        /**
+         * The Android background tasks name of the push notifications
          * registration work request
          */
         private const val PUSH_NOTIFICATIONS_REGISTRATION_WORK_NAME = "SalesforcePushNotificationsRegistrationWork"
@@ -520,7 +525,11 @@ open class PushService {
                     .setInputData(workData)
                     .setConstraints(constraints)
                     .build().also {  workRequest ->
-                        workManager.enqueue(workRequest)
+                        workManager.enqueueUniqueWork(
+                            PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME,
+                            REPLACE,
+                            workRequest
+                        )
                     }
 
                 // Send broadcast now to finish logout if we are offline.
