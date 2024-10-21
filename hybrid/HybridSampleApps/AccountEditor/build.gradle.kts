@@ -13,10 +13,10 @@ dependencies {
 android {
     namespace = "com.salesforce.samples.accounteditor"
 
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
-        targetSdk = 35
+        targetSdk = 34
         minSdk = 26
     }
 

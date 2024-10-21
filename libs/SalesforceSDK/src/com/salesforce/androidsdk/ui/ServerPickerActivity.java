@@ -300,7 +300,9 @@ public class ServerPickerActivity extends AppCompatActivity implements
          * The only other way to do this is with the NO_HISTORY flag on the custom tab, however
          * this will cause it to always reload on background -- breaking MFA.
          */
-        startActivity(intent);
+        if (!SalesforceSDKManager.getInstance().getIsTestRun()) {
+            startActivity(intent);
+        }
         finish();
     }
 }
