@@ -26,7 +26,6 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu;
@@ -41,6 +40,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 
+import android.app.Dialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -90,20 +90,21 @@ public class ServerPickerActivityTest {
     private ServerPickerActivity serverPickerActivity;
 
     public ActivityScenario<ServerPickerActivity> activityScenario;
+    public static UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
     // Dismissing system dialog if shown
     // See https://stackoverflow.com/questions/39457305/android-testing-waited-for-the-root-of-the-view-hierarchy-to-have-window-focus
     @BeforeClass
     public static void dismissSystemDialog() throws UiObjectNotFoundException {
-        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         UiObject okButton = device.findObject(new UiSelector().textContains("OK"));
         if (okButton.exists()) {
             okButton.click();
         }
+        SalesforceSDKManager.getInstance().setIsTestRun(true);
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         eq = new EventsListenerQueue();
 
         // Waits for app initialization to complete.
@@ -118,7 +119,7 @@ public class ServerPickerActivityTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         if (eq != null) {
             eq.tearDown();
             eq = null;
@@ -129,11 +130,9 @@ public class ServerPickerActivityTest {
 
     /**
      * Test that the cancel button can be clicked and the URL not saved.
-     *
-     * @throws Throwable
      */
     @Test
-    public void testCancelButton() throws Throwable {
+    public void testCancelButton() {
         openCustomEditDialog();
         clickView(com.salesforce.androidsdk.R.id.sf__cancel_button);
         Assert.assertNull("Custom URL dialog should be closed",
@@ -142,11 +141,9 @@ public class ServerPickerActivityTest {
 
     /**
      * Test a valid URL can be entered and saved.
-     *
-     * @throws Throwable
      */
     @Test
-    public void testAddCustomInstance() throws Throwable {
+    public void testAddCustomInstance() {
         String label = "My Custom URL";
         String url = "https://valid.url.com";
         addCustomUrl(label, url);
@@ -155,16 +152,14 @@ public class ServerPickerActivityTest {
 
     /**
      * Test an invalid valid URL is not entered or saved.
-     *
-     * @throws Throwable
      */
     @Test
-    public void testInvalidUrl() throws Throwable {
+    public void testInvalidUrl() {
         String label = "Invalid URL";
         String url = "";
         addCustomUrl(label, url);
-        Assert.assertTrue("Custom URL dialog should not be closed",
-                serverPickerActivity.getCustomServerUrlEditor().getDialog().isShowing());
+        Dialog dialog = serverPickerActivity.getCustomServerUrlEditor().getDialog();
+        Assert.assertTrue("Custom URL dialog should not be closed", dialog != null && dialog.isShowing());
         try {
             onView(allOf(withText(label + "\n" + url), findUiElement())).check(doesNotExist());
         } catch (Throwable t) {
@@ -174,11 +169,9 @@ public class ServerPickerActivityTest {
 
     /**
      * Test that https is used if http is added.
-     *
-     * @throws Throwable
      */
     @Test
-    public void testAddHttpUrl() throws Throwable {
+    public void testAddHttpUrl() {
         String label = "My http URL";
         String httpUrl = "http://invalid.url.com";
         String httpsUrl = "https://invalid.url.com";
@@ -188,11 +181,9 @@ public class ServerPickerActivityTest {
 
     /**
      * Test that https is added is added on a url without it.
-     *
-     * @throws Throwable
      */
     @Test
-    public void testAddNoProtocolUrl() throws Throwable {
+    public void testAddNoProtocolUrl() {
         String label = "No Protocol URL";
         String url = "basic.url.com";
         String httpsUrl = "https://" + url;
@@ -202,8 +193,6 @@ public class ServerPickerActivityTest {
 
     /**
      * Test the reset button works.
-     *
-     * @throws Throwable
      */
     @Test
     public void testResetButton() throws Throwable {
@@ -239,16 +228,17 @@ public class ServerPickerActivityTest {
         }
     }
 
-    private void openCustomEditDialog() throws Throwable {
+    private void openCustomEditDialog() {
+
         clickView(com.salesforce.androidsdk.R.id.sf__show_custom_url_edit);
         final CustomServerUrlEditor dialog = serverPickerActivity.getCustomServerUrlEditor();
-        Thread.sleep(3000);
+        device.waitForIdle(3000);
         final View rootView = dialog.getRootView();
         Assert.assertNotNull("Root view should not be null", rootView);
         clickView(com.salesforce.androidsdk.R.id.sf__picker_custom_label);
     }
 
-    private void addCustomUrl(String label, String url) throws Throwable {
+    private void addCustomUrl(String label, String url) {
         if (!serverPickerActivity.getCustomServerUrlEditor().isVisible()) {
             openCustomEditDialog();
         }
@@ -268,6 +258,7 @@ public class ServerPickerActivityTest {
     }
 
     private void setText(final int viewId, final String text) {
+        device.waitForIdle(5000);
         try {
             onView(withId(viewId)).perform(replaceText(text), closeSoftKeyboard());
         } catch (Throwable t) {
@@ -276,6 +267,7 @@ public class ServerPickerActivityTest {
     }
 
     private void clickView(final int resId) {
+        device.waitForIdle(5000);
         try {
             onView(withId(resId)).perform(click());
         } catch (Throwable t) {
@@ -320,7 +312,7 @@ public class ServerPickerActivityTest {
     }
 
     private static void tapResetButton() {
-        openActionBarOverflowOrOptionsMenu(getInstrumentation().getTargetContext());
+        openActionBarOverflowOrOptionsMenu(InstrumentationRegistry.getInstrumentation().getTargetContext());
         try {
             onData(CoreMatchers.anything())
                     .inRoot(RootMatchers.isPlatformPopup())
