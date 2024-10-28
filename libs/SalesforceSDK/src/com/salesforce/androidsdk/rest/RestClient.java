@@ -55,76 +55,76 @@ import okhttp3.Response;
  */
 public class RestClient {
 
-	// Keys in credentials map
-	private static final String USER_AGENT = "userAgent";
-	private static final String INSTANCE_URL = "instanceUrl";
-	private static final String LOGIN_URL = "loginUrl";
-	private static final String IDENTITY_URL = "identityUrl";
-	private static final String ORG_ID = "orgId";
-	private static final String USER_ID = "userId";
-	private static final String REFRESH_TOKEN = "refreshToken";
-	private static final String ACCESS_TOKEN = "accessToken";
-	private static final String COMMUNITY_ID = "communityId";
-	private static final String COMMUNITY_URL = "communityUrl";
-	private static final String TAG = "RestClient";
+    // Keys in credentials map
+    private static final String USER_AGENT = "userAgent";
+    private static final String INSTANCE_URL = "instanceUrl";
+    private static final String LOGIN_URL = "loginUrl";
+    private static final String IDENTITY_URL = "identityUrl";
+    private static final String ORG_ID = "orgId";
+    private static final String USER_ID = "userId";
+    private static final String REFRESH_TOKEN = "refreshToken";
+    private static final String ACCESS_TOKEN = "accessToken";
+    private static final String COMMUNITY_ID = "communityId";
+    private static final String COMMUNITY_URL = "communityUrl";
+    private static final String TAG = "RestClient";
 
-	private static final Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
-	private static final Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
+    private static final Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
+    private static final Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
     private static final Map<String, OkHttpClient> OK_CLIENTS = new HashMap<>();
 
-	private final ClientInfo clientInfo;
+    private final ClientInfo clientInfo;
     private final HttpAccess httpAccessor;
-	private final AuthTokenProvider authTokenProvider;
+    private final AuthTokenProvider authTokenProvider;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
-	private OkHttpClient.Builder okHttpClientBuilder;
-	private OkHttpClient okHttpClient;
+    private OkHttpClient.Builder okHttpClientBuilder;
+    private OkHttpClient okHttpClient;
 
-	/**
-	 * AuthTokenProvider interface.
-	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
-	 */
-	public interface AuthTokenProvider {
-		String getInstanceUrl();
-		String getNewAuthToken();
-		String getRefreshToken();
-		long getLastRefreshTime();
-	}
-	
-	/**
-	 * AsyncRequestCallback interface.
-	 * Interface through which the result of an asynchronous request is handled.
-	 */
-	public interface AsyncRequestCallback {
+    /**
+     * AuthTokenProvider interface.
+     * RestClient will call its authTokenProvider to refresh its authToken once it has expired.
+     */
+    public interface AuthTokenProvider {
+        String getInstanceUrl();
+        String getNewAuthToken();
+        String getRefreshToken();
+        long getLastRefreshTime();
+    }
 
-		/**
-		 * NB: onSuccess runs on a network thread
-		 *     If you are making your call from an activity and need to make UI changes
-		 *     make sure to first consume the response and then call runOnUiThread
+    /**
+     * AsyncRequestCallback interface.
+     * Interface through which the result of an asynchronous request is handled.
+     */
+    public interface AsyncRequestCallback {
+
+        /**
+         * NB: onSuccess runs on a network thread
+         * If you are making your call from an activity and need to make UI changes
+         * make sure to first consume the response and then call runOnUiThread
 		 *
-		 *     result.consumeQuietly(); // consume before going back to main thread
-		 *     runOnUiThread(new Runnable() {
+         * result.consumeQuietly(); // consume before going back to main thread
+         * runOnUiThread(new Runnable() {
 		 *         @Override
 		 *         public void run() { ... }
 		 *     });
-		 * @param request
-		 * @param response
-		 */
-		void onSuccess(RestRequest request, RestResponse response);
+         * @param request
+         * @param response
+         */
+        void onSuccess(RestRequest request, RestResponse response);
 
-		/**
-		 * NB: onError runs on a network thread
-		 *     If you are making your call from an activity and need to make UI changes
-		 *     make sure to call runOnUiThread
+        /**
+         * NB: onError runs on a network thread
+         * If you are making your call from an activity and need to make UI changes
+         * make sure to call runOnUiThread
 		 *
-		 *     runOnUiThread(new Runnable() {
+         * runOnUiThread(new Runnable() {
 		 *         @Override
 		 *         public void run() { ... }
 		 *     });
-		 * @param exception
-		 */
-		void onError(Exception exception);
-	}
-	
+         * @param exception
+         */
+        void onError(Exception exception);
+    }
+
     /**
      * Constructs a RestClient with the given clientInfo, authToken, httpAccessor and authTokenProvider.
      * When it gets a 401 (not authorized) response from the server:
@@ -132,188 +132,188 @@ public class RestClient {
      * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
      * <li> Otherwise it will return the 401 response.</li>
      * </ul>
-	 * @param clientInfo
+     * @param clientInfo
      * @param authToken
      * @param httpAccessor
      * @param authTokenProvider
-	 */
-	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this.clientInfo = clientInfo;
+     */
+    public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+        this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
-		this.authTokenProvider = authTokenProvider;
-		setOAuthRefreshInterceptor(authToken);
-		setOkHttpClientBuilder();
-		setOkHttpClient(null);
-	}
-
-	/**
-	 * Remove cached OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor for the given user
-	 */
-	public synchronized static void clearCaches(UserAccount userAccount) {
-		String orgId = userAccount != null ? userAccount.getOrgId() : null;
-		String userId = userAccount != null ? userAccount.getUserId() : null;
-		String cacheKey = computeCacheKey(orgId, userId);
-		OAUTH_REFRESH_INTERCEPTORS.remove(cacheKey);
-		OK_CLIENT_BUILDERS.remove(cacheKey);
-		OkHttpClient client = OK_CLIENTS.remove(cacheKey);
-		if (client != null) {
-			client.dispatcher().cancelAll();
-		}
-	}
-
-	/**
-	 * Clear caches of org-id/user-id to OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor
-	 */
-	public synchronized static void clearCaches() {
-		OAUTH_REFRESH_INTERCEPTORS.clear();
-		OK_CLIENT_BUILDERS.clear();
-		OK_CLIENTS.clear();
+        this.authTokenProvider = authTokenProvider;
+        setOAuthRefreshInterceptor(authToken);
+        setOkHttpClientBuilder();
+        setOkHttpClient(null);
     }
 
-	private String getCacheKey() {
-		return computeCacheKey(clientInfo.orgId, clientInfo.userId);
-	}
+    /**
+     * Remove cached OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor for the given user
+     */
+    public synchronized static void clearCaches(UserAccount userAccount) {
+        String orgId = userAccount != null ? userAccount.getOrgId() : null;
+        String userId = userAccount != null ? userAccount.getUserId() : null;
+        String cacheKey = computeCacheKey(orgId, userId);
+        OAUTH_REFRESH_INTERCEPTORS.remove(cacheKey);
+        OK_CLIENT_BUILDERS.remove(cacheKey);
+        OkHttpClient client = OK_CLIENTS.remove(cacheKey);
+        if (client != null) {
+            client.dispatcher().cancelAll();
+        }
+    }
 
-	private static String computeCacheKey(String orgId, String userId) {
-		return orgId != null && userId != null ? orgId + "-" + userId : "unauthenticated";
-	}
+    /**
+     * Clear caches of org-id/user-id to OkHttpClient.Builder, OkHttpClient and OAuthRefreshInterceptor
+     */
+    public synchronized static void clearCaches() {
+        OAUTH_REFRESH_INTERCEPTORS.clear();
+        OK_CLIENT_BUILDERS.clear();
+        OK_CLIENTS.clear();
+    }
 
-	/**
-	 * Sets the OAuthRefreshInterceptor associated with this user account.
-	 */
+    private String getCacheKey() {
+        return computeCacheKey(clientInfo.orgId, clientInfo.userId);
+    }
+
+    private static String computeCacheKey(String orgId, String userId) {
+        return orgId != null && userId != null ? orgId + "-" + userId : "unauthenticated";
+    }
+
+    /**
+     * Sets the OAuthRefreshInterceptor associated with this user account.
+     */
     private synchronized void setOAuthRefreshInterceptor(String authToken) {
-		final String cacheKey = getCacheKey();
-		OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
+        final String cacheKey = getCacheKey();
+        OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
 
-		// If none cached, create new one
-		if (oAuthRefreshInterceptor == null) {
-			oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider);
-			OAUTH_REFRESH_INTERCEPTORS.put(cacheKey, oAuthRefreshInterceptor);
-		}
-		this.oAuthRefreshInterceptor = oAuthRefreshInterceptor;
-	}
+        // If none cached, create new one
+        if (oAuthRefreshInterceptor == null) {
+            oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider);
+            OAUTH_REFRESH_INTERCEPTORS.put(cacheKey, oAuthRefreshInterceptor);
+        }
+        this.oAuthRefreshInterceptor = oAuthRefreshInterceptor;
+    }
 
-	/**
-	 * Sets the OkHttpclient.Builder associated with this user account. The OkHttpclient.Builder
-	 * are cached in a map and reused as and when a user account
-	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
-	 */
-	private synchronized void setOkHttpClientBuilder() {
-		final String cacheKey = getCacheKey();
-		OkHttpClient.Builder okHttpClientBuilder = OK_CLIENT_BUILDERS.get(cacheKey);
+    /**
+     * Sets the OkHttpclient.Builder associated with this user account. The OkHttpclient.Builder
+     * are cached in a map and reused as and when a user account
+     * switch occurs, to prevent multiple threads being spawned unnecessarily.
+     */
+    private synchronized void setOkHttpClientBuilder() {
+        final String cacheKey = getCacheKey();
+        OkHttpClient.Builder okHttpClientBuilder = OK_CLIENT_BUILDERS.get(cacheKey);
 
-		// If none cached, create new one
-		if (okHttpClientBuilder == null) {
-			okHttpClientBuilder = httpAccessor.createNewClientBuilder();
-			if (!cacheKey.equals("unauthenticated")) {
-				okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
-			}
+        // If none cached, create new one
+        if (okHttpClientBuilder == null) {
+            okHttpClientBuilder = httpAccessor.createNewClientBuilder();
+            if (!cacheKey.equals("unauthenticated")) {
+                okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
+            }
 
-			OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
-		}
-		this.okHttpClientBuilder = okHttpClientBuilder;
-	}
+            OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
+        }
+        this.okHttpClientBuilder = okHttpClientBuilder;
+    }
 
-	/**
-	 * Sets the OkHttpclient associated with this user account. The OkHttpclient
-	 * are cached in a map and reused as and when a user account
-	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
-	 */
-	public synchronized void setOkHttpClient(OkHttpClient okHttpClient) {
-		final String cacheKey = getCacheKey();
+    /**
+     * Sets the OkHttpclient associated with this user account. The OkHttpclient
+     * are cached in a map and reused as and when a user account
+     * switch occurs, to prevent multiple threads being spawned unnecessarily.
+     */
+    public synchronized void setOkHttpClient(OkHttpClient okHttpClient) {
+        final String cacheKey = getCacheKey();
 
-		// If a valid client passed in, caches it.
-		if (okHttpClient != null) {
-			OK_CLIENTS.put(cacheKey, okHttpClient);
-		}
-		okHttpClient = OK_CLIENTS.get(cacheKey);
+        // If a valid client passed in, caches it.
+        if (okHttpClient != null) {
+            OK_CLIENTS.put(cacheKey, okHttpClient);
+        }
+        okHttpClient = OK_CLIENTS.get(cacheKey);
 
-		// If none cached, create new one
-		if (okHttpClient == null) {
-			okHttpClient = getOkHttpClientBuilder().build();
-			OK_CLIENTS.put(cacheKey, okHttpClient);
-		}
-		this.okHttpClient = okHttpClient;
-	}
+        // If none cached, create new one
+        if (okHttpClient == null) {
+            okHttpClient = getOkHttpClientBuilder().build();
+            OK_CLIENTS.put(cacheKey, okHttpClient);
+        }
+        this.okHttpClient = okHttpClient;
+    }
 
-	/**
-	 * Set the client info. Used by clients to implement Login As
-	 * @param clientInfo The new client info to set
-	 */
-	public void setClientInfo(final ClientInfo clientInfo) {
-		getOAuthRefreshInterceptor().setClientInfo(clientInfo);
-	}
+    /**
+     * Set the client info. Used by clients to implement Login As
+     * @param clientInfo The new client info to set
+     */
+    public void setClientInfo(final ClientInfo clientInfo) {
+        getOAuthRefreshInterceptor().setClientInfo(clientInfo);
+    }
 
-	/**
-	 * @return credentials as JSONObject
-	 */
-	public JSONObject getJSONCredentials() {
-		RestClient.ClientInfo clientInfo = getClientInfo();
-		Map<String, String> data = new HashMap<>();
-		data.put(ACCESS_TOKEN, getAuthToken());
-		data.put(REFRESH_TOKEN, getRefreshToken());
-		data.put(USER_ID, clientInfo.userId);
-		data.put(ORG_ID, clientInfo.orgId);
-		data.put(LOGIN_URL, clientInfo.loginUrl.toString());
-		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
-		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-		data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
-		data.put(COMMUNITY_ID, clientInfo.communityId);
-		data.put(COMMUNITY_URL, clientInfo.communityUrl);
-		return new JSONObject(data);
-	}
+    /**
+     * @return credentials as JSONObject
+     */
+    public JSONObject getJSONCredentials() {
+        ClientInfo clientInfo = getClientInfo();
+        Map<String, String> data = new HashMap<>();
+        data.put(ACCESS_TOKEN, getAuthToken());
+        data.put(REFRESH_TOKEN, getRefreshToken());
+        data.put(USER_ID, clientInfo.userId);
+        data.put(ORG_ID, clientInfo.orgId);
+        data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+        data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
+        data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
+        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+        data.put(COMMUNITY_ID, clientInfo.communityId);
+        data.put(COMMUNITY_URL, clientInfo.communityUrl);
+        return new JSONObject(data);
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("RestClient: {\n")
-		  .append(this.oAuthRefreshInterceptor.clientInfo.toString())
-		  .append("   timeSinceLastRefresh: ").append(oAuthRefreshInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
-		  .append("}\n");
-		return sb.toString();
-	}
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("RestClient: {\n")
+                .append(this.oAuthRefreshInterceptor.clientInfo.toString())
+                .append("   timeSinceLastRefresh: ").append(oAuthRefreshInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
+                .append("}\n");
+        return sb.toString();
+    }
 
-	/**
-	 * @return The authToken for this RestClient.
-	 */
-	public synchronized String getAuthToken() {
-		return oAuthRefreshInterceptor.getAuthToken();
-	}
-	
-	/**
-	 * @return The refresh token, if available.
-	 */
-	public String getRefreshToken() {
-		return oAuthRefreshInterceptor.getRefreshToken();
-	}
-	
-	/**
-	 * @return The client info.
-	 */
-	public ClientInfo getClientInfo() {
-		return oAuthRefreshInterceptor.clientInfo;
-	}
+    /**
+     * @return The authToken for this RestClient.
+     */
+    public synchronized String getAuthToken() {
+        return oAuthRefreshInterceptor.getAuthToken();
+    }
 
-	/**
-	 * @return underlying OAuthRefreshInterceptor
-	 */
-	public OAuthRefreshInterceptor getOAuthRefreshInterceptor() {
-		return oAuthRefreshInterceptor;
-	}
+    /**
+     * @return The refresh token, if available.
+     */
+    public String getRefreshToken() {
+        return oAuthRefreshInterceptor.getRefreshToken();
+    }
 
-	/**
-	 * @return underlying OkHttpClient.Builder
-	 */
-	public OkHttpClient.Builder getOkHttpClientBuilder() {
-		return okHttpClientBuilder;
-	}
+    /**
+     * @return The client info.
+     */
+    public ClientInfo getClientInfo() {
+        return oAuthRefreshInterceptor.clientInfo;
+    }
 
-	/**
-	 * @return underlying OkHttpClient
-	 */
-	public OkHttpClient getOkHttpClient() {
-		return okHttpClient;
-	}
+    /**
+     * @return underlying OAuthRefreshInterceptor
+     */
+    public OAuthRefreshInterceptor getOAuthRefreshInterceptor() {
+        return oAuthRefreshInterceptor;
+    }
+
+    /**
+     * @return underlying OkHttpClient.Builder
+     */
+    public OkHttpClient.Builder getOkHttpClientBuilder() {
+        return okHttpClientBuilder;
+    }
+
+    /**
+     * @return underlying OkHttpClient
+     */
+    public OkHttpClient getOkHttpClient() {
+        return okHttpClient;
+    }
 
     /**
      * Helper to build okHttp Request from RestRequest
@@ -321,7 +321,7 @@ public class RestClient {
      * @return
      */
     public Request buildRequest(RestRequest restRequest) {
-        final Request.Builder builder =  new Request.Builder()
+        final Request.Builder builder = new Request.Builder()
                 .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
@@ -335,43 +335,43 @@ public class RestClient {
         return builder.build();
     }
 
-	/**
-	 * Send the given restRequest and process the result asynchronously with the given callback.
-	 * Note: Intended to be used by code on the UI thread.
-	 * @param restRequest
-	 * @param callback
-	 * @return okHttp Call object (through which you can cancel the request or get the request back)
-	 */
+    /**
+     * Send the given restRequest and process the result asynchronously with the given callback.
+     * Note: Intended to be used by code on the UI thread.
+     * @param restRequest
+     * @param callback
+     * @return okHttp Call object (through which you can cancel the request or get the request back)
+     */
     public Call sendAsync(final RestRequest restRequest, final AsyncRequestCallback callback) {
-	    Request request = buildRequest(restRequest);
-		Call call = okHttpClient.newCall(request);
-		call.enqueue(new Callback() {
+        Request request = buildRequest(restRequest);
+        Call call = okHttpClient.newCall(request);
+        call.enqueue(new Callback() {
 
             @Override
-			public void onFailure(Call call, IOException e) {
-									 callback.onError(e);
-								 }
-
-			@Override
-			public void onResponse(Call call, Response response) throws IOException {
-			    callback.onSuccess(restRequest, new RestResponse(response));
+            public void onFailure(Call call, IOException e) {
+                callback.onError(e);
             }
-		});
-		return call;
-	}
 
-	/**
-	 * Send the given restRequest synchronously and return a RestResponse
-	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
-	 * @param restRequest
-	 * @return
-	 * @throws IOException 
-	 */
-	public RestResponse sendSync(RestRequest restRequest) throws IOException {
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                callback.onSuccess(restRequest, new RestResponse(response));
+            }
+        });
+        return call;
+    }
+
+    /**
+     * Send the given restRequest synchronously and return a RestResponse
+     * Note: Cannot be used by code on the UI thread (use sendAsync instead).
+     * @param restRequest
+     * @return
+     * @throws IOException
+     */
+    public RestResponse sendSync(RestRequest restRequest) throws IOException {
         Request request = buildRequest(restRequest);
         Response response = okHttpClient.newCall(request).execute();
         return new RestResponse(response);
-	}
+    }
 
     /**
      * Send the given restRequest synchronously and return a RestResponse
@@ -393,84 +393,86 @@ public class RestClient {
         return new RestResponse(response);
     }
 
-	/**
-	 * All immutable information for an authenticated client (e.g. username, org ID, etc.).
-	 */
-	public static class ClientInfo {
+    /**
+     * All immutable information for an authenticated client (e.g. username, org ID, etc.).
+     *
+     * TODO revisit this class - some of information is NOT immutable e.g. sids
+     */
+    public static class ClientInfo {
 
-		public final URI instanceUrl;
-		public final URI loginUrl;
-		public final URI identityUrl;
-		public final String accountName;
-		public final String username;
-		public final String userId;
-		public final String orgId;
-		public final String communityId;
-		public final String communityUrl;
-		public final String firstName;
-		public final String lastName;
-		public final String displayName;
-		public final String email;
-		public final String photoUrl;
-		public final String thumbnailUrl;
-		public final String lightningDomain;
-		public final String lightningSid;
-		public final String vfDomain;
-		public final String vfSid;
-		public final String contentDomain;
-		public final String contentSid;
-		public final String csrfToken;
-		public final Map<String, String> additionalOauthValues;
+        public final URI instanceUrl;
+        public final URI loginUrl;
+        public final URI identityUrl;
+        public final String accountName;
+        public final String username;
+        public final String userId;
+        public final String orgId;
+        public final String communityId;
+        public final String communityUrl;
+        public final String firstName;
+        public final String lastName;
+        public final String displayName;
+        public final String email;
+        public final String photoUrl;
+        public final String thumbnailUrl;
+        public final String lightningDomain;
+        public final String lightningSid;
+        public final String vfDomain;
+        public final String vfSid;
+        public final String contentDomain;
+        public final String contentSid;
+        public final String csrfToken;
+        public final Map<String, String> additionalOauthValues;
 
-		/**
-		 * Parameterized constructor.
-		 *
-		 * @param instanceUrl Instance URL.
-		 * @param loginUrl Login URL.
-		 * @param identityUrl Identity URL.
-		 * @param accountName Account name.
-		 * @param username User name.
-		 * @param userId User ID.
-		 * @param orgId Org ID.
-		 * @param communityId Community ID.
-		 * @param communityUrl Community URL.
-         * @param firstName First Name.
-         * @param lastName LastName.
-		 * @param displayName DisplayName.
-         * @param email Email.
-         * @param photoUrl Photo URL.
-         * @param thumbnailUrl Thumbnail URL.
+        /**
+         * Parameterized constructor.
+         *
+         * @param instanceUrl           Instance URL.
+         * @param loginUrl              Login URL.
+         * @param identityUrl           Identity URL.
+         * @param accountName           Account name.
+         * @param username              User name.
+         * @param userId                User ID.
+         * @param orgId                 Org ID.
+         * @param communityId           Community ID.
+         * @param communityUrl          Community URL.
+         * @param firstName             First Name.
+         * @param lastName              LastName.
+         * @param displayName           DisplayName.
+         * @param email                 Email.
+         * @param photoUrl              Photo URL.
+         * @param thumbnailUrl          Thumbnail URL.
          * @param additionalOauthValues Additional OAuth values.
-		 * @param lightningDomain Lightning domain.
-		 * @param lightningSid Lightning SID.
-		 * @param vfDomain VF domain.
-		 * @param vfSid VF SID.
-		 * @param contentDomain Content domain.
-		 * @param contentSid Content SID.
-		 * @param csrfToken CSRF token.
-		 */
-		public ClientInfo(URI instanceUrl, URI loginUrl,
-				URI identityUrl, String accountName, String username,
-				String userId, String orgId, String communityId, String communityUrl,
-				String firstName, String lastName, String displayName, String email,
-				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues,
-				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-				String contentDomain, String contentSid, String csrfToken) {
-			this.instanceUrl = instanceUrl;
-			this.loginUrl = loginUrl;
-			this.identityUrl = identityUrl;
-			this.accountName = accountName;
-			this.username = username;
-			this.userId = userId;
-			this.orgId = orgId;
-			this.communityId = communityId;
-			this.communityUrl = communityUrl;
-			this.firstName = firstName;
-			this.lastName = lastName;
-			this.displayName = displayName;
-			this.email = email;
-			this.photoUrl = photoUrl;
-			this.thumbnailUrl = thumbnailUrl;
+         * @param lightningDomain       Lightning domain.
+         * @param lightningSid          Lightning SID.
+         * @param vfDomain              VF domain.
+         * @param vfSid                 VF SID.
+         * @param contentDomain         Content domain.
+         * @param contentSid            Content SID.
+         * @param csrfToken             CSRF token.
+         */
+        public ClientInfo(URI instanceUrl, URI loginUrl,
+                          URI identityUrl, String accountName, String username,
+                          String userId, String orgId, String communityId, String communityUrl,
+                          String firstName, String lastName, String displayName, String email,
+                          String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues,
+                          String lightningDomain, String lightningSid, String vfDomain, String vfSid,
+                          String contentDomain, String contentSid, String csrfToken) {
+            this.instanceUrl = instanceUrl;
+            this.loginUrl = loginUrl;
+            this.identityUrl = identityUrl;
+            this.accountName = accountName;
+            this.username = username;
+            this.userId = userId;
+            this.orgId = orgId;
+            this.communityId = communityId;
+            this.communityUrl = communityUrl;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.displayName = displayName;
+            this.email = email;
+            this.photoUrl = photoUrl;
+            this.thumbnailUrl = thumbnailUrl;
             this.additionalOauthValues = additionalOauthValues;
             this.lightningDomain = lightningDomain;
             this.lightningSid = lightningSid;
@@ -479,7 +481,7 @@ public class RestClient {
             this.contentDomain = contentDomain;
             this.contentSid = contentSid;
             this.csrfToken = csrfToken;
-		}
+        }
 
         /**
          * @return unique id built from user id and org id
@@ -488,131 +490,131 @@ public class RestClient {
             return this.userId + this.orgId;
         }
 
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder();
-			sb.append("  ClientInfo: {\n")
-			  .append("     loginUrl: ").append(loginUrl.toString()).append("\n")
-			  .append("     identityUrl: ").append(identityUrl.toString()).append("\n")
-			  .append("     instanceUrl: ").append(instanceUrl.toString()).append("\n")
-			  .append("     accountName: ").append(accountName).append("\n")
-			  .append("     username: ").append(username).append("\n")
-			  .append("     userId: ").append(userId).append("\n")
-			  .append("     orgId: ").append(orgId).append("\n")
-			  .append("     communityId: ").append(communityId).append("\n")
-			  .append("     communityUrl: ").append(communityUrl).append("\n")
-              .append("     firstName: ").append(firstName).append("\n")
-              .append("     lastName: ").append(lastName).append("\n")
-			  .append("     displayName: ").append(displayName).append("\n")
-              .append("     email: ").append(email).append("\n")
-              .append("     photoUrl: ").append(photoUrl).append("\n")
-              .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
-			  .append("     lightningDomain: ").append(lightningDomain).append("\n")
-			  .append("     lightningSid: ").append(lightningSid).append("\n")
-			  .append("     vfDomain: ").append(vfDomain).append("\n")
-			  .append("     vfSid: ").append(vfSid).append("\n")
-			  .append("     contentDomain: ").append(contentDomain).append("\n")
-			  .append("     contentSid: ").append(contentSid).append("\n")
-			  .append("     csrfToken: ").append(csrfToken).append("\n")
-			  .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
-			  .append("  }\n");
-			return sb.toString();
-		}
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("  ClientInfo: {\n")
+                    .append("     loginUrl: ").append(loginUrl.toString()).append("\n")
+                    .append("     identityUrl: ").append(identityUrl.toString()).append("\n")
+                    .append("     instanceUrl: ").append(instanceUrl.toString()).append("\n")
+                    .append("     accountName: ").append(accountName).append("\n")
+                    .append("     username: ").append(username).append("\n")
+                    .append("     userId: ").append(userId).append("\n")
+                    .append("     orgId: ").append(orgId).append("\n")
+                    .append("     communityId: ").append(communityId).append("\n")
+                    .append("     communityUrl: ").append(communityUrl).append("\n")
+                    .append("     firstName: ").append(firstName).append("\n")
+                    .append("     lastName: ").append(lastName).append("\n")
+                    .append("     displayName: ").append(displayName).append("\n")
+                    .append("     email: ").append(email).append("\n")
+                    .append("     photoUrl: ").append(photoUrl).append("\n")
+                    .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
+                    .append("     lightningDomain: ").append(lightningDomain).append("\n")
+                    .append("     lightningSid: ").append(lightningSid).append("\n")
+                    .append("     vfDomain: ").append(vfDomain).append("\n")
+                    .append("     vfSid: ").append(vfSid).append("\n")
+                    .append("     contentDomain: ").append(contentDomain).append("\n")
+                    .append("     contentSid: ").append(contentSid).append("\n")
+                    .append("     csrfToken: ").append(csrfToken).append("\n")
+                    .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
+                    .append("  }\n");
+            return sb.toString();
+        }
 
-		/**
-		 * Returns a string representation of the instance URL. If this is a
-		 * community user, the community URL will be returned. If not, the
-		 * instance URL will be returned.
-		 *
-		 * @return Instance URL.
-		 */
-		public String getInstanceUrlAsString() {
-			if (communityUrl != null && !"".equals(communityUrl.trim())) {
-				return communityUrl;
-			}
-			return instanceUrl.toString();
-		}
+        /**
+         * Returns a string representation of the instance URL. If this is a
+         * community user, the community URL will be returned. If not, the
+         * instance URL will be returned.
+         *
+         * @return Instance URL.
+         */
+        public String getInstanceUrlAsString() {
+            if (communityUrl != null && !"".equals(communityUrl.trim())) {
+                return communityUrl;
+            }
+            return instanceUrl.toString();
+        }
 
-		/**
-		 * Returns a URI representation of the instance URL. If this is a
-		 * community user, the community URL will be returned. If not, the
-		 * instance URL will be returned.
-		 *
-		 * @return Instance URL.
-		 */
-		public URI getInstanceUrl() {
-			if (communityUrl != null && !communityUrl.trim().isEmpty()) {
-				URI uri = null;
-				try {
-					uri = new URI(communityUrl);
-				} catch (URISyntaxException e) {
+        /**
+         * Returns a URI representation of the instance URL. If this is a
+         * community user, the community URL will be returned. If not, the
+         * instance URL will be returned.
+         *
+         * @return Instance URL.
+         */
+        public URI getInstanceUrl() {
+            if (communityUrl != null && !communityUrl.trim().isEmpty()) {
+                URI uri = null;
+                try {
+                    uri = new URI(communityUrl);
+                } catch (URISyntaxException e) {
                     SalesforceSDKLogger.e(TAG, "Exception thrown while parsing URL: " + communityUrl, e);
-				}
-				return uri;
-			}
-			return instanceUrl;
-		}
+                }
+                return uri;
+            }
+            return instanceUrl;
+        }
 
-		/**
-		 * Resolves the given {@link RestRequest} to its URL.
-		 * @param request The Rest request to resolve.
-		 * @return The URI associated with the Rest request.
-		 */
-		public URI resolveUrl(RestRequest request) {
-			return resolveUrl(request.getPath(), request.getEndpoint());
-		}
+        /**
+         * Resolves the given {@link RestRequest} to its URL.
+         * @param request The Rest request to resolve.
+         * @return The URI associated with the Rest request.
+         */
+        public URI resolveUrl(RestRequest request) {
+            return resolveUrl(request.getPath(), request.getEndpoint());
+        }
 
-		/**
-		 * Resolves the given path against the community URL or the instance
-		 * URL, depending on whether the user is a community user or not.
-		 *
-		 * @param path Path.
-		 * @return Resolved URL.
-		 */
-		public URI resolveUrl(String path) {
-			return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
-		}
+        /**
+         * Resolves the given path against the community URL or the instance
+         * URL, depending on whether the user is a community user or not.
+         *
+         * @param path Path.
+         * @return Resolved URL.
+         */
+        public URI resolveUrl(String path) {
+            return resolveUrl(path, RestRequest.RestEndpoint.INSTANCE);
+        }
 
-		/**
-		 * Resolves the given path against the community URL, login URL, or instance
-		 * URL.  If the user is a community user, the community URL will be used.  Otherwise,
-		 * the URL will be built from the
-		 * {@link com.salesforce.androidsdk.rest.RestRequest.RestEndpoint} parameter.
-		 * @param path Path
-		 * @param endpoint The Rest endpoint of the URL.
-		 * @return Resolved URL.
-		 */
-		public URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
-			String resolvedPathStr = path;
+        /**
+         * Resolves the given path against the community URL, login URL, or instance
+         * URL.  If the user is a community user, the community URL will be used.  Otherwise,
+         * the URL will be built from the
+         * {@link RestRequest.RestEndpoint} parameter.
+         * @param path     Path
+         * @param endpoint The Rest endpoint of the URL.
+         * @return Resolved URL.
+         */
+        public URI resolveUrl(String path, RestRequest.RestEndpoint endpoint) {
+            String resolvedPathStr = path;
 
-			// Resolve URL only for a relative URL.
-			if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
-				final StringBuilder resolvedUrlBuilder = new StringBuilder();
-				if (communityUrl != null && !communityUrl.trim().isEmpty()) {
-					resolvedUrlBuilder.append(communityUrl);
-				} else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
-					resolvedUrlBuilder.append(instanceUrl.toString());
-				} else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
-					resolvedUrlBuilder.append(loginUrl.toString());
-				}
-				if (!resolvedUrlBuilder.toString().endsWith("/")) {
-					resolvedUrlBuilder.append("/");
-				}
-				if (path.startsWith("/")) {
-					path = path.substring(1);
-				}
-				resolvedUrlBuilder.append(path);
-				resolvedPathStr = resolvedUrlBuilder.toString();
-			}
-			URI uri = null;
-			try {
-				uri = new URI(resolvedPathStr);
-			} catch (URISyntaxException e) {
+            // Resolve URL only for a relative URL.
+            if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
+                final StringBuilder resolvedUrlBuilder = new StringBuilder();
+                if (communityUrl != null && !communityUrl.trim().isEmpty()) {
+                    resolvedUrlBuilder.append(communityUrl);
+                } else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
+                    resolvedUrlBuilder.append(instanceUrl.toString());
+                } else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
+                    resolvedUrlBuilder.append(loginUrl.toString());
+                }
+                if (!resolvedUrlBuilder.toString().endsWith("/")) {
+                    resolvedUrlBuilder.append("/");
+                }
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+                resolvedUrlBuilder.append(path);
+                resolvedPathStr = resolvedUrlBuilder.toString();
+            }
+            URI uri = null;
+            try {
+                uri = new URI(resolvedPathStr);
+            } catch (URISyntaxException e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while parsing URL: " + resolvedPathStr, e);
-			}
-			return uri;
-		}
-	}
+            }
+            return uri;
+        }
+    }
 
     /**
      * Use a unauthenticated client info when do not need authentication support (e.g.
@@ -627,8 +629,8 @@ public class RestClient {
             super(null, null, null, null, null,
                     null, null, null, null, null,
                     null, null, null, null, null,
-					null, null, null, null,
-					null, null, null, null);
+                    null, null, null, null,
+                    null, null, null, null);
         }
 
         @Override
@@ -646,8 +648,7 @@ public class RestClient {
             URI uri = null;
             try {
                 uri = new URI(path);
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while parsing URL: " + path, e);
             }
             return uri;
@@ -681,78 +682,100 @@ public class RestClient {
             this.authTokenProvider = authTokenProvider;
         }
 
+        private boolean shouldRefresh(Response response) throws IOException {
+            int responseCode = response.code();
+
+            // most calls return 401 if oauth access token is not valid
+            boolean isNotAuthorized = responseCode == HttpURLConnection.HTTP_UNAUTHORIZED;
+
+            // service/oauth2 calls return 403 with Bad_OAuth_Token response if oauth access is not valid
+            boolean hasBadOAuthToken = responseCode == HttpURLConnection.HTTP_FORBIDDEN
+                    && response.request().url().encodedPath().startsWith(RestRequest.SERVICES_OAUTH2)
+                    && (response.body() != null && response.body().string().equals("Bad_OAuth_Token"));
+
+            if (isNotAuthorized || hasBadOAuthToken) {
+                SalesforceSDKLogger.d(TAG, "response request url: " + response.request().url());
+                SalesforceSDKLogger.d(TAG, "response code: " + response.code());
+
+                // Is biometric enabled and locked?
+                BiometricAuthenticationManager bioAuthManager =
+                        (BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
+                return bioAuthManager == null || bioAuthManager.shouldAllowRefresh();
+            } else {
+                return false;
+            }
+        }
+
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request request = chain.request();
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
-			int responseCode = response.code();
-			BiometricAuthenticationManager bioAuthManager =
-					(BiometricAuthenticationManager) SalesforceSDKManager.getInstance().getBiometricAuthenticationManager();
 
-			/*
-			 * Standard access token expiry returns 401 as the error code.
-			 */
-            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED && bioAuthManager.shouldAllowRefresh()) {
+            /*
+             * Standard access token expiry returns 401 as the error code.
+             */
+            if (shouldRefresh(response)) {
+                SalesforceSDKLogger.d(TAG, "shouldRefresh() returned true");
 
-				final URI curInstanceUrl = clientInfo.getInstanceUrl();
-				if (curInstanceUrl != null) {
-					final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
-					if (currentInstanceUrl != null) {
+                final URI curInstanceUrl = clientInfo.getInstanceUrl();
+                if (curInstanceUrl != null) {
+                    final HttpUrl currentInstanceUrl = HttpUrl.get(curInstanceUrl);
+                    if (currentInstanceUrl != null) {
 
-						// Checks if the host of the request is the same as instance URL.
-						boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
-						refreshAccessToken();
-						if (getAuthToken() != null) {
-							request = buildAuthenticatedRequest(request);
+                        // Checks if the host of the request is the same as instance URL.
+                        boolean isHostInstanceUrl = currentInstanceUrl.host().equals(request.url().host());
+                        refreshAccessToken();
+                        if (getAuthToken() != null) {
+                            request = buildAuthenticatedRequest(request);
 
-							/*
-							 * During instance migration, the instance URL could change. Hence, the host
-							 * needs to be adjusted to replace the old instance URL with the new instance
-							 * URL before replaying this request. However, this adjustment should be applied
-							 * only if the host of the request was the old instance URL. This avoids
-							 * accidental manipulation of the host for requests where the caller has
-							 * passed in their own fully formed host URL that is not instance URL.
-							 *
-							 * We also need to cover the case where the host changes during refresh
-							 * because the replayed request will fail.
-							 */
-							final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
-							boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
-									!refreshInstanceUrl.getHost().equals(request.url().host());
-							if (isHostInstanceUrl && refreshUpdatedUrl) {
-								final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
-								if (updatedInstanceUrl != null) {
-									request = adjustHostInRequest(request, updatedInstanceUrl.host());
-								}
-							}
-							response.close();
-							response = chain.proceed(request);
-						}
-					}
-				}
+                            /*
+                             * During instance migration, the instance URL could change. Hence, the host
+                             * needs to be adjusted to replace the old instance URL with the new instance
+                             * URL before replaying this request. However, this adjustment should be applied
+                             * only if the host of the request was the old instance URL. This avoids
+                             * accidental manipulation of the host for requests where the caller has
+                             * passed in their own fully formed host URL that is not instance URL.
+                             *
+                             * We also need to cover the case where the host changes during refresh
+                             * because the replayed request will fail.
+                             */
+                            final URI refreshInstanceUrl = clientInfo.getInstanceUrl();
+                            boolean refreshUpdatedUrl = refreshInstanceUrl != null &&
+                                    !refreshInstanceUrl.getHost().equals(request.url().host());
+                            if (isHostInstanceUrl && refreshUpdatedUrl) {
+                                final HttpUrl updatedInstanceUrl = HttpUrl.get(refreshInstanceUrl);
+                                if (updatedInstanceUrl != null) {
+                                    request = adjustHostInRequest(request, updatedInstanceUrl.host());
+                                }
+                            }
+                            response.close();
+                            response = chain.proceed(request);
+                        }
+                    }
+                }
             }
             return response;
         }
 
-		/**
-		 * Build new request which has the new host. This is essential in case of instance migration
-		 *
-		 * @param request
-		 * @param host the host segment of the url to be placed
-		 * @return
-		 */
-		private Request adjustHostInRequest(Request request, final String host) {
-			HttpUrl.Builder urlBuilder = request.url().newBuilder();
+        /**
+         * Build new request which has the new host. This is essential in case of instance migration
+         *
+         * @param request
+         * @param host    the host segment of the url to be placed
+         * @return
+         */
+        private Request adjustHostInRequest(Request request, final String host) {
+            HttpUrl.Builder urlBuilder = request.url().newBuilder();
 
-			// Only replace the host
-			urlBuilder.host(host);
-			Request.Builder builder = request.newBuilder();
-			builder.url(urlBuilder.build());
-			return builder.build();
-		}
+            // Only replace the host
+            urlBuilder.host(host);
+            Request.Builder builder = request.newBuilder();
+            builder.url(urlBuilder.build());
+            return builder.build();
+        }
 
-		/**
+        /**
          * Build new request which has authentication header
          * @param request
          * @return
@@ -812,14 +835,14 @@ public class RestClient {
         /**
          * Swaps the existing access token for a new one.
          */
-		public void refreshAccessToken() throws IOException {
+        public void refreshAccessToken() throws IOException {
 
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken
             if (authTokenProvider != null) {
                 final String newAuthToken = authTokenProvider.getNewAuthToken();
 
-				if (newAuthToken == null || authTokenProvider.getInstanceUrl() == null) {
+                if (newAuthToken == null || authTokenProvider.getInstanceUrl() == null) {
                     throw new RefreshTokenRevokedException("Could not refresh token");
                 }
 
@@ -839,9 +862,9 @@ public class RestClient {
                                 clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
                                 clientInfo.displayName, clientInfo.email, clientInfo.photoUrl,
                                 clientInfo.thumbnailUrl, clientInfo.additionalOauthValues,
-								clientInfo.lightningDomain, clientInfo.lightningSid,
-								clientInfo.vfDomain, clientInfo.vfSid,
-								clientInfo.contentDomain, clientInfo.contentSid, clientInfo.csrfToken);
+                                clientInfo.lightningDomain, clientInfo.lightningSid,
+                                clientInfo.vfDomain, clientInfo.vfSid,
+                                clientInfo.contentDomain, clientInfo.contentSid, clientInfo.csrfToken);
                     } catch (URISyntaxException ex) {
                         SalesforceSDKLogger.w(TAG, "Invalid server URL", ex);
                     }
@@ -854,19 +877,19 @@ public class RestClient {
         }
     }
 
-	/**
-	 * Exception thrown when refresh token was found to be revoked
-	 */
-	public static class RefreshTokenRevokedException extends IOException {
+    /**
+     * Exception thrown when refresh token was found to be revoked
+     */
+    public static class RefreshTokenRevokedException extends IOException {
 
-		private static final long serialVersionUID = 2L;
+        private static final long serialVersionUID = 2L;
 
-		RefreshTokenRevokedException(String msg) {
-			super(msg);
-		}
+        RefreshTokenRevokedException(String msg) {
+            super(msg);
+        }
 
-		public RefreshTokenRevokedException(String msg, Throwable cause) {
-			super(msg, cause);
-		}
-	}
+        public RefreshTokenRevokedException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+    }
 }

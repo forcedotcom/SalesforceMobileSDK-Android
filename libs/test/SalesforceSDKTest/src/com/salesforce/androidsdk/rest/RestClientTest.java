@@ -335,6 +335,17 @@ public class RestClientTest {
     }
 
     /**
+     * Testing a get single access call to the server - check response
+     * @throws Exception
+     */
+    @Test
+    public void testGetSingleAccess() throws Exception {
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSingleAccess("abc/def"));
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
+        checkKeys(response.asJSONObject(), "frontdoor_uri");
+    }
+
+    /**
      * Testing a get versions call to the server - check response
      * @throws Exception
      */
@@ -757,7 +768,7 @@ public class RestClientTest {
      * @throws Exception
      */
     @Test
-    public void testRestClientUnauthenticatedlientInfo() throws Exception {
+    public void testRestClientUnauthenticatedClientInfo() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = unauthenticatedRestClient.sendSync(request);
@@ -774,7 +785,7 @@ public class RestClientTest {
      * @throws Exception
      */
     @Test
-    public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
+    public void testRestClientUnauthenticatedClientInfoAsync() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://na1.salesforce.com/services/data");
         RestResponse response = sendAsync(unauthenticatedRestClient, request);

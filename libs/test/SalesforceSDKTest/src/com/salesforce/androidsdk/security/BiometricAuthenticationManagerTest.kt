@@ -31,12 +31,10 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.accounts.UserAccountTest
+import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManagerTest
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_TIMEOUT
 import org.junit.After
 import org.junit.Assert
@@ -60,19 +58,7 @@ class BiometricAuthenticationManagerTest {
             BIO_AUTH_POLICY
                 + userAccount.userLevelFilenameSuffix, Context.MODE_PRIVATE
         )
-
-        val loginOptions = ClientManager.LoginOptions(
-            UserAccountTest.TEST_LOGIN_URL, ClientManagerTest.TEST_CALLBACK_URL,
-            ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES
-        )
-        val clientManager = ClientManager(ctx, ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true)
-        clientManager.createNewAccount(userAccount.accountName, userAccount.username, userAccount.refreshToken, userAccount.authToken,
-            userAccount.instanceServer, userAccount.loginServer, userAccount.idUrl, userAccount.userId, userAccount.orgId,
-            userAccount.userId, userAccount.communityId, userAccount.communityId, userAccount.firstName, userAccount.lastName,
-            userAccount.displayName, userAccount.email, userAccount.photoUrl, userAccount.thumbnailUrl, userAccount.additionalOauthValues,
-            userAccount.lightningDomain, userAccount.lightningSid, userAccount.vfDomain, userAccount.vfSid, userAccount.contentDomain,
-            userAccount.contentSid, userAccount.csrfToken, userAccount.nativeLogin, userAccount.language, userAccount.locale
-        )
+        UserAccountManager.getInstance().createAccount(userAccount);
     }
 
     @After

@@ -26,12 +26,22 @@
  */
 package com.salesforce.samples.configuredapp.ui;
 
+import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static com.salesforce.androidsdk.R.style.SalesforceSDK;
 import static com.salesforce.androidsdk.R.style.SalesforceSDK_Dark;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.View;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.OnApplyWindowInsetsListener;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -62,6 +72,27 @@ public class MainActivity extends SalesforceActivity {
             Log.e("MainActivity.onCreate", "Could not serialize bootconfig", e);
         }
         ((TextView) findViewById(R.id.bootconfig)).setText(bootconfig);
+
+		// Fix UI being drawn behind status and navigation bars on Android 15+
+		if (SDK_INT > UPSIDE_DOWN_CAKE) {
+			ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), new OnApplyWindowInsetsListener() {
+				@NonNull
+				@Override
+				public WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+					Insets mInsets = insets.getInsets(
+							WindowInsetsCompat.Type.systemBars()
+									& WindowInsetsCompat.Type.displayCutout()
+									| WindowInsetsCompat.Type.displayCutout()
+					);
+
+					TypedValue outValue = new TypedValue();
+					getTheme().resolveAttribute(android.R.attr.actionBarSize, outValue, true);
+					int actionBarHeight = TypedValue.complexToDimensionPixelSize(outValue.data, getResources().getDisplayMetrics());
+					v.setPadding(mInsets.left, mInsets.top + actionBarHeight, mInsets.right, mInsets.bottom);
+					return WindowInsetsCompat.CONSUMED;
+				}
+			});
+		}
 	}
 
 	@Override

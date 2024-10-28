@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -189,6 +190,9 @@ public class OAuth2 {
     private static final String UTC_OFFSET = "utcOffset";
     private static final String LAST_MODIFIED_DATE = "last_modified_date";
     private static final String NATIVE_LOGIN = "nativeLogin";
+    private static final String COOKIE_CLIENT_SRC = "cookie-clientSrc";
+    private static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
+    private static final String SID_COOKIE_NAME = "sidCookieName";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -199,7 +203,7 @@ public class OAuth2 {
 
     public enum LogoutReason {
         CORRUPT_STATE,           // "Corrupted client state"
-        TOKEN_EXPIRED,           // "Refresh token expired"
+        REFRESH_TOKEN_EXPIRED,   // "Refresh token expired"
         SSDK_LOGOUT_POLICY,      // "SSDK initiated logout for policy violation"
         TIMEOUT,                 // "Timeout while waiting for server response"
         UNEXPECTED,              // "Unexpected error or crash"
@@ -292,7 +296,9 @@ public class OAuth2 {
      * @param addlParams additional paramaters
      *
      * @return 'frontdoor'ed URL (or the original url if access token or instance url are null)
+     * @deprecated Use {@link com.salesforce.androidsdk.rest.RestRequest#getRequestForSingleAccess(String)} instead
      */
+    @Deprecated
     public static URI getFrontdoorUrl(URI url,
                                       String accessToken,
                                       String instanceURL,
@@ -636,7 +642,7 @@ public class OAuth2 {
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
-                final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                final JSONObject photos = parsedResponse.optJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
@@ -647,7 +653,7 @@ public class OAuth2 {
                 userId = parsedResponse.getString(USER_ID);
                 orgId = parsedResponse.getString(ORG_ID);
                 nickname = parsedResponse.getString(NICKNAME);
-                final JSONObject urls = parsedResponse.getJSONObject(URLS);
+                final JSONObject urls = parsedResponse.optJSONObject(URLS);
                 if (urls != null) {
                     enterpriseSoapUrl = urls.getString(ENTERPRISE_SOAP_URL);
                     metadataSoapUrl = urls.getString(METADATA_SOAP_URL);
@@ -766,13 +772,18 @@ public class OAuth2 {
         public String contentDomain;
         public String contentSid;
         public String csrfToken;
+        public String cookieClientSrc;
+        public String cookieSidClient;
+        public String sidCookieName;
 
         /**
          * Parameterized constructor built during login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
+         * @param additionalOauthKeys Additional oauth keys.
          */
-        public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+        public TokenEndpointResponse(Map<String, String> callbackUrlParams, List<String> additionalOauthKeys) {
             try {
                 authToken = callbackUrlParams.get(ACCESS_TOKEN);
                 refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
@@ -782,15 +793,11 @@ public class OAuth2 {
                 computeOtherFields();
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
-                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
-                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
-                        additionalOauthValues = new HashMap<>();
-                        for (final String key : additionalOauthKeys) {
-                            if (!TextUtils.isEmpty(key)) {
-                                additionalOauthValues.put(key, callbackUrlParams.get(key));
-                            }
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    additionalOauthValues = new HashMap<>();
+                    for (final String key : additionalOauthKeys) {
+                        if (!TextUtils.isEmpty(key)) {
+                            additionalOauthValues.put(key, callbackUrlParams.get(key));
                         }
                     }
                 }
@@ -802,10 +809,26 @@ public class OAuth2 {
                 contentDomain = callbackUrlParams.get(CONTENT_DOMAIN);
                 contentSid = callbackUrlParams.get(CONTENT_SID);
                 csrfToken = callbackUrlParams.get(CSRF_TOKEN);
+                cookieClientSrc = callbackUrlParams.get(COOKIE_CLIENT_SRC);
+                cookieSidClient = callbackUrlParams.get(COOKIE_SID_CLIENT);
+                sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
+
+        /**
+         * Parameterized constructor built during login flow.
+         *
+         * @param callbackUrlParams Callback URL parameters.
+         */
+        public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+            this(callbackUrlParams, SalesforceSDKManager.getInstance() != null
+                    ? SalesforceSDKManager.getInstance() .getAdditionalOauthKeys()
+                    : null);
+        }
+
 
         /**
          * Parameterized constructor built from refresh flow response.
@@ -847,6 +870,10 @@ public class OAuth2 {
                 contentDomain = parsedResponse.optString(CONTENT_DOMAIN);
                 contentSid = parsedResponse.optString(CONTENT_SID);
                 csrfToken = parsedResponse.optString(CSRF_TOKEN);
+                cookieClientSrc = parsedResponse.optString(COOKIE_CLIENT_SRC);
+                cookieSidClient = parsedResponse.optString(COOKIE_SID_CLIENT);
+                sidCookieName = parsedResponse.optString(SID_COOKIE_NAME);
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }

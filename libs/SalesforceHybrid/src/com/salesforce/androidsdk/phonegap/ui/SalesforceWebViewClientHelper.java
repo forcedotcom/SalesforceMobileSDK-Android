@@ -51,7 +51,7 @@ import java.util.Map;
  */
 public class SalesforceWebViewClientHelper {
 
-	private static final String TAG = "SalesforceWebViewClientHelper";
+    private static final String TAG = "SalesforceWebViewClientHelper";
     private static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
     private static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
     private static final String HYBRID_SESSION_REDIRECT = "/services/identity/mobileauthredirect";
@@ -74,13 +74,13 @@ public class SalesforceWebViewClientHelper {
      * @return              True if url loading should be overridden, false otherwise.
      */
     public static boolean shouldOverrideUrlLoading(Context ctx,
-    		WebView view, String url) {
-    	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(ctx, url);
+                                                   WebView view, String url) {
+        final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(ctx, url);
         if (startURL != null && ctx instanceof SalesforceDroidGapActivity) {
             ((SalesforceDroidGapActivity) ctx).refresh(startURL);
-        	return true;
+            return true;
         } else {
-        	return false;
+            return false;
         }
     }
 
@@ -103,7 +103,7 @@ public class SalesforceWebViewClientHelper {
             EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished, url);
             return true;
         } else {
-        	return false;
+            return false;
         }
     }
 
@@ -120,8 +120,8 @@ public class SalesforceWebViewClientHelper {
      * @return      true if there is a cached version of the app's home page
      */
     public static boolean hasCachedAppHome(Context ctx) {
-    	String cachedAppHomeUrl = getAppHomeUrl(ctx);
-    	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
+        String cachedAppHomeUrl = getAppHomeUrl(ctx);
+        return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
     }
 
     private static boolean isReservedUrl(String url) {
@@ -164,15 +164,15 @@ public class SalesforceWebViewClientHelper {
                 }
                 final List<String> ssoUrls = authConfig.getSsoUrls();
                 if (ssoUrls != null && ssoUrls.size() > 0) {
-                   for (String ssoUrl : ssoUrls) {
-                       int paramsIndex = ssoUrl.indexOf(QUESTION_MARK);
-                       if (paramsIndex != -1) {
-                           ssoUrl = ssoUrl.substring(0, paramsIndex);
-                       }
-                       if (url.contains(ssoUrl)) {
-                           return true;
-                       }
-                   }
+                    for (String ssoUrl : ssoUrls) {
+                        int paramsIndex = ssoUrl.indexOf(QUESTION_MARK);
+                        if (paramsIndex != -1) {
+                            ssoUrl = ssoUrl.substring(0, paramsIndex);
+                        }
+                        if (url.contains(ssoUrl)) {
+                            return true;
+                        }
+                    }
                 }
             }
         }

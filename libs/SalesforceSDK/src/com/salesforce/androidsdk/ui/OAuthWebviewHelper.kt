@@ -110,12 +110,10 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.AccountOptions.Companion.fromBundle
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
-import com.salesforce.androidsdk.util.MapUtil
-import com.salesforce.androidsdk.util.MapUtil.addBundleToMap
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
@@ -148,7 +146,7 @@ import java.util.function.Consumer
  * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
  * is no longer necessary to extend or change LoginActivity's instance of this class
  * to support multi-factor authentication.  If there are other uses cases please
- * inform the team via Github or our Trailblazer community.  
+ * inform the team via Github or our Trailblazer community.
  */
 @Deprecated(
     "This class will no longer be public starting in Mobile SDK 13.0.",
@@ -156,7 +154,14 @@ import java.util.function.Consumer
 )
 open class OAuthWebviewHelper : KeyChainAliasCallback {
 
+    /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
+
+    /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
+    private var isUsingFrontDoorBridge = false
+
+    /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
+    private var frontDoorBridgeCodeVerifier: String? = null
 
     /**
      * The host activity/fragment should pass in an implementation of this
@@ -232,9 +237,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             null -> clearCookies()
             else -> {
                 webView.restoreState(savedInstanceState)
-                accountOptions = fromBundle(
-                    savedInstanceState.getBundle(ACCOUNT_OPTIONS)
-                )
+                accountOptions = savedInstanceState.getBundle(ACCOUNT_OPTIONS)
             }
         }
     }
@@ -257,7 +260,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     val webView: WebView?
 
-    private var accountOptions: AccountOptions? = null
+    private var accountOptions: Bundle? = null
 
     protected val context: Context
 
@@ -284,7 +287,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // The authentication flow is complete but an account has not been created since a pin is needed
             outState.putBundle(
                 ACCOUNT_OPTIONS,
-                accountOptions.asBundle()
+                accountOptions
             )
         }
     }
@@ -292,8 +295,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
-    internal fun clearView() =
-        webView?.loadUrl("about:blank")
+    private fun clearView() =
+        activity?.runOnUiThread { webView?.loadUrl("about:blank") }
 
     /**
      * A factory method for the web view client. This can be overridden as
@@ -325,6 +328,10 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         e: Throwable?
     ) {
         val instance = SalesforceSDKManager.getInstance()
+
+        // Reset state from previous log in attempt.
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
+        resetFrontDoorBridgeUrl()
 
         e(TAG, "$error: $errorDesc", e)
 
@@ -367,14 +374,16 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
 
     @Suppress("MemberVisibilityCanBePrivate")
     protected open fun showError(exception: Throwable) {
-        makeText(
-            context,
-            context.getString(
-                sf__generic_error,
-                exception.toString()
-            ),
-            LENGTH_LONG
-        ).show()
+        activity?.runOnUiThread {
+            makeText(
+                context,
+                context.getString(
+                    sf__generic_error,
+                    exception.toString()
+                ),
+                LENGTH_LONG
+            ).show()
+        }
     }
 
     /**
@@ -478,10 +487,23 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 activity,
                 parse(uri.toString())
             )
+            // Making the webview blank gives custom tab login a cleaner appearance.
+            clearView()
         }.onFailure { throwable ->
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
             makeText(context, "To log in, install Chrome.", LENGTH_LONG).show()
             callback.finish(null)
+
+            /*
+             * Launch server picker again to prevent this error from happening in an infinite loop.  It is impossible to
+             * break out of this loop without uninstalling the app.
+             *
+             * Clear top to prevent multiple server pickers form being on the stack if the user hits back multiple times
+             * before selecting a different server.
+             */
+            val serverPickerIntent = Intent(activity, ServerPickerActivity::class.java)
+            serverPickerIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            context.startActivity(serverPickerIntent)
         }
     }
 
@@ -503,6 +525,11 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         useWebServerAuthentication: Boolean,
         useHybridAuthentication: Boolean
     ): URI {
+
+        // Reset log in state,
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
+        resetFrontDoorBridgeUrl()
+
         val loginOptions = loginOptions
         val oAuthClientId = oAuthClientId
         val authorizationDisplayType = authorizationDisplayType
@@ -660,9 +687,16 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                         null
                     )
 
-                    else -> when {
-                        instance.useWebServerAuthentication -> onWebServerFlowComplete(params["code"])
-                        else -> onAuthFlowComplete(TokenEndpointResponse(params))
+                    else -> {
+                        // Determine if presence of override parameters require the user agent flow.
+                        val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
+                        when {
+                            instance.useWebServerAuthentication && !overrideWithUserAgentFlow ->
+                                onWebServerFlowComplete(params["code"])
+
+                            else ->
+                                onAuthFlowComplete(TokenEndpointResponse(params))
+                        }
                     }
                 }
             }
@@ -717,8 +751,12 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * username.
      */
     open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
-        d(TAG, "token response -> $tr")
         CoroutineScope(IO).launch {
+
+            // Reset log in state,
+            // - Salesforce Identity UI Bridge API log in, such as QR code login.
+            resetFrontDoorBridgeUrl()
+
             FinishAuthTask().execute(tr, nativeLogin)
         }
     }
@@ -738,7 +776,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 create(loginOptions.loginUrl),
                 loginOptions.oauthClientId,
                 code,
-                codeVerifier,
+                frontDoorBridgeCodeVerifier ?: codeVerifier,
                 loginOptions.oauthCallbackUrl
             )
         }.onFailure { throwable ->
@@ -891,74 +929,20 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                 }
             }
 
-            // Put together all the information needed to create the new account
-            accountOptions = AccountOptions(
-                id?.username,
-                tr?.refreshToken,
-                tr?.authToken,
-                tr?.idUrl,
-                tr?.instanceUrl,
-                tr?.orgId,
-                tr?.userId,
-                tr?.communityId,
-                tr?.communityUrl,
-                id?.firstName,
-                id?.lastName,
-                id?.displayName,
-                id?.email,
-                id?.pictureUrl,
-                id?.thumbnailUrl,
-                tr?.additionalOauthValues ?: mapOf(),
-                tr?.lightningDomain,
-                tr?.lightningSid,
-                tr?.vfDomain,
-                tr?.vfSid,
-                tr?.contentDomain,
-                tr?.contentSid,
-                tr?.csrfToken,
-                nativeLogin,
-                id?.language,
-                id?.locale,
-            )
-
-            // Set additional administrator prefs if they exist
             val account = UserAccountBuilder.getInstance()
-                .authToken(accountOptions?.authToken)
-                .refreshToken(accountOptions?.refreshToken)
+                .populateFromTokenEndpointResponse(tr)
+                .populateFromIdServiceResponse(id)
+                .nativeLogin(nativeLogin)
+                .accountName(buildAccountName(id?.username, tr?.instanceUrl))
                 .loginServer(loginOptions.loginUrl)
-                .idUrl(accountOptions?.identityUrl)
-                .instanceServer(accountOptions?.instanceUrl)
-                .orgId(accountOptions?.orgId)
-                .userId(accountOptions?.userId)
-                .username(accountOptions?.username)
-                .accountName(
-                    buildAccountName(
-                        accountOptions?.username,
-                        accountOptions?.instanceUrl
-                    )
-                ).communityId(accountOptions?.communityId)
-                .communityUrl(accountOptions?.communityUrl)
-                .firstName(accountOptions?.firstName)
-                .lastName(accountOptions?.lastName)
-                .displayName(accountOptions?.displayName)
-                .email(accountOptions?.email)
-                .photoUrl(accountOptions?.photoUrl)
-                .thumbnailUrl(accountOptions?.thumbnailUrl)
-                .lightningDomain(accountOptions?.lightningDomain)
-                .lightningSid(accountOptions?.lightningSid)
-                .vfDomain(accountOptions?.vfDomain)
-                .vfSid(accountOptions?.vfSid)
-                .contentDomain(accountOptions?.contentDomain)
-                .contentSid(accountOptions?.contentSid)
-                .csrfToken(accountOptions?.csrfToken)
-                .additionalOauthValues(accountOptions?.additionalOauthValues)
-                .nativeLogin(accountOptions?.nativeLogin)
-                .language(accountOptions?.language)
-                .locale(accountOptions?.locale)
+                .clientId(loginOptions.oauthClientId)
                 .build()
+
+            accountOptions = account.toBundle()
 
             account.downloadProfilePhoto()
 
+            // Set additional administrator prefs if they exist
             id?.customAttributes?.let { customAttributes ->
                 instance.adminSettingsManager?.setPrefs(customAttributes, account)
             }
@@ -1028,7 +1012,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             if (id?.screenLockTimeout?.compareTo(0) == 1) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
                 val timeoutInMills = (id?.screenLockTimeout ?: 0) * 1000 * 60
-                instance.screenLockManager?.storeMobilePolicy(
+                (instance.screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
                     account,
                     id?.screenLock ?: false,
                     timeoutInMills
@@ -1038,9 +1022,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             // Biometric authorization required by mobile policy
             if (id?.biometricAuth == true) {
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
-                val bioAuthManager = instance.biometricAuthenticationManager as BiometricAuthenticationManager?
                 val timeoutInMills = (id?.biometricAuthTimeout ?: 0) * 60 * 1000
-                bioAuthManager?.storeMobilePolicy(
+                (instance.biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
                     account,
                     id?.biometricAuth ?: false,
                     timeoutInMills
@@ -1152,44 +1135,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
             SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
         )
 
-        // Create account name (shown in Settings -> Accounts & sync)
-        val accountName = buildAccountName(
-            accountOptions?.username,
-            accountOptions?.instanceUrl
-        )
-
         // New account
-        val extras = clientManager.createNewAccount(
-            accountName,
-            accountOptions?.username,
-            accountOptions?.refreshToken,
-            accountOptions?.authToken,
-            accountOptions?.instanceUrl,
-            loginOptions.loginUrl,
-            accountOptions?.identityUrl,
-            oAuthClientId,
-            accountOptions?.orgId,
-            accountOptions?.userId,
-            accountOptions?.communityId,
-            accountOptions?.communityUrl,
-            accountOptions?.firstName,
-            accountOptions?.lastName,
-            accountOptions?.displayName,
-            accountOptions?.email,
-            accountOptions?.photoUrl,
-            accountOptions?.thumbnailUrl,
-            accountOptions?.additionalOauthValues,
-            accountOptions?.lightningDomain,
-            accountOptions?.lightningSid,
-            accountOptions?.vfDomain,
-            accountOptions?.vfSid,
-            accountOptions?.contentDomain,
-            accountOptions?.contentSid,
-            accountOptions?.csrfToken,
-            accountOptions?.nativeLogin,
-            accountOptions?.language,
-            accountOptions?.locale
-        )
+        val extras = clientManager.createNewAccount(account)
 
         /*
          * Registers for push notifications if setup by the app. This step needs
@@ -1247,143 +1194,6 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         SalesforceSDKManager.getInstance().applicationName
     )
 
-    /**
-     * Class encapsulating the parameters required to create a new account.
-     */
-    class AccountOptions(
-        val username: String?,
-        val refreshToken: String?,
-        val authToken: String?,
-        val identityUrl: String?,
-        val instanceUrl: String?,
-        val orgId: String?,
-        val userId: String?,
-        val communityId: String?,
-        val communityUrl: String?,
-        val firstName: String?,
-        val lastName: String?,
-        val displayName: String?,
-        val email: String?,
-        val photoUrl: String?,
-        val thumbnailUrl: String?,
-        val additionalOauthValues: Map<String, String>?,
-        val lightningDomain: String?,
-        val lightningSid: String?,
-        val vfDomain: String?,
-        val vfSid: String?,
-        val contentDomain: String?,
-        val contentSid: String?,
-        val csrfToken: String?,
-        val nativeLogin: Boolean = false,
-        val language: String?,
-        val locale: String?
-    ) {
-        private var bundle: Bundle = Bundle()
-
-        init {
-            bundle.putString(USERNAME, username)
-            bundle.putString(REFRESH_TOKEN, refreshToken)
-            bundle.putString(AUTH_TOKEN, authToken)
-            bundle.putString(IDENTITY_URL, identityUrl)
-            bundle.putString(INSTANCE_URL, instanceUrl)
-            bundle.putString(ORG_ID, orgId)
-            bundle.putString(USER_ID, userId)
-            bundle.putString(COMMUNITY_ID, communityId)
-            bundle.putString(COMMUNITY_URL, communityUrl)
-            bundle.putString(FIRST_NAME, firstName)
-            bundle.putString(LAST_NAME, lastName)
-            bundle.putString(DISPLAY_NAME, displayName)
-            bundle.putString(EMAIL, email)
-            bundle.putString(PHOTO_URL, photoUrl)
-            bundle.putString(THUMBNAIL_URL, thumbnailUrl)
-            bundle.putString(LIGHTNING_DOMAIN, lightningDomain)
-            bundle.putString(LIGHTNING_SID, lightningSid)
-            bundle.putString(VF_DOMAIN, vfDomain)
-            bundle.putString(VF_SID, vfSid)
-            bundle.putString(CONTENT_DOMAIN, contentDomain)
-            bundle.putString(CONTENT_SID, contentSid)
-            bundle.putString(CSRF_TOKEN, csrfToken)
-            bundle.putBoolean(NATIVE_LOGIN, nativeLogin)
-            bundle.putString(LANGUAGE, language)
-            bundle.putString(LOCALE, locale)
-            bundle = MapUtil.addMapToBundle(
-                additionalOauthValues,
-                SalesforceSDKManager.getInstance().additionalOauthKeys, bundle
-            )
-        }
-
-        fun asBundle(): Bundle {
-            return bundle
-        }
-
-        companion object {
-            private const val USER_ID = "userId"
-            private const val ORG_ID = "orgId"
-            private const val IDENTITY_URL = "identityUrl"
-            private const val INSTANCE_URL = "instanceUrl"
-            private const val AUTH_TOKEN = "authToken"
-            private const val REFRESH_TOKEN = "refreshToken"
-            private const val USERNAME = "username"
-            private const val COMMUNITY_ID = "communityId"
-            private const val COMMUNITY_URL = "communityUrl"
-            private const val FIRST_NAME = "firstName"
-            private const val LAST_NAME = "lastName"
-            private const val DISPLAY_NAME = "displayName"
-            private const val EMAIL = "email"
-            private const val PHOTO_URL = "photoUrl"
-            private const val THUMBNAIL_URL = "thumbnailUrl"
-            private const val LIGHTNING_DOMAIN = "lightning_domain"
-            private const val LIGHTNING_SID = "lightning_sid"
-            private const val VF_DOMAIN = "visualforce_domain"
-            private const val VF_SID = "visualforce_sid"
-            private const val CONTENT_DOMAIN = "content_domain"
-            private const val CONTENT_SID = "content_sid"
-            private const val CSRF_TOKEN = "csrf_token"
-            private const val NATIVE_LOGIN = "native_login"
-            private const val LANGUAGE = "language"
-            private const val LOCALE = "locale"
-
-            fun fromBundle(options: Bundle?): AccountOptions? =
-                options?.run {
-                    AccountOptions(
-                        getString(USERNAME),
-                        getString(REFRESH_TOKEN),
-                        getString(AUTH_TOKEN),
-                        getString(IDENTITY_URL),
-                        getString(INSTANCE_URL),
-                        getString(ORG_ID),
-                        getString(USER_ID),
-                        getString(COMMUNITY_ID),
-                        getString(COMMUNITY_URL),
-                        getString(FIRST_NAME),
-                        getString(LAST_NAME),
-                        getString(DISPLAY_NAME),
-                        getString(EMAIL),
-                        getString(PHOTO_URL),
-                        getString(THUMBNAIL_URL),
-                        getAdditionalOauthValues(this),
-                        getString(LIGHTNING_DOMAIN),
-                        getString(LIGHTNING_SID),
-                        getString(VF_DOMAIN),
-                        getString(VF_SID),
-                        getString(CONTENT_DOMAIN),
-                        getString(CONTENT_SID),
-                        getString(CSRF_TOKEN),
-                        getBoolean(NATIVE_LOGIN, false),
-                        getString(LANGUAGE),
-                        getString(LOCALE)
-                    )
-                }
-
-            private fun getAdditionalOauthValues(options: Bundle) =
-                addBundleToMap(
-                    options,
-                    SalesforceSDKManager.getInstance().additionalOauthKeys,
-                    null
-                )
-        }
-    }
-
     override fun alias(alias: String?) {
         runCatching {
             activity?.let { activity ->
@@ -1397,6 +1207,33 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
         }.onFailure { throwable ->
             e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
         }
+    }
+
+    /**
+     * Automatically log in using the provided UI Bridge API parameters.
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
+     * @param pkceCodeVerifier The PKCE code verifier
+     */
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String?
+    ) {
+        isUsingFrontDoorBridge = true
+
+        val uri = URI(frontdoorBridgeUrl)
+        loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
+        frontDoorBridgeCodeVerifier = pkceCodeVerifier
+
+        webView?.loadUrl(frontdoorBridgeUrl)
+    }
+
+    /**
+     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
+     * its default inactive state.
+     */
+    private fun resetFrontDoorBridgeUrl() {
+        isUsingFrontDoorBridge = false
+        frontDoorBridgeCodeVerifier = null
     }
 
     companion object {

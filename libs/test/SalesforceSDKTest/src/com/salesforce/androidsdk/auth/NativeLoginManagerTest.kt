@@ -2,24 +2,9 @@ package com.salesforce.androidsdk.auth
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import androidx.test.platform.app.InstrumentationRegistry
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManagerTest
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ACCOUNT_NAME
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_AUTH_TOKEN
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CALLBACK_URL
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_CLIENT_ID
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_IDENTITY_URL
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_INSTANCE_URL
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LANGUAGE
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOCALE
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_LOGIN_URL
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_ORG_ID
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_REFRESH_TOKEN
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_SCOPES
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USERNAME
-import com.salesforce.androidsdk.rest.ClientManagerTest.TEST_USER_ID
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import org.junit.After
 import org.junit.Assert
@@ -105,28 +90,6 @@ class NativeLoginManagerTest {
 
 
     private fun addUserAccount() {
-        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val loginOptions = ClientManager.LoginOptions(
-            TEST_LOGIN_URL,
-            TEST_CALLBACK_URL,
-            TEST_CLIENT_ID,
-            TEST_SCOPES,
-        )
-        val clientManager = ClientManager(
-            targetContext,
-            ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true,
-        )
-        clientManager.createNewAccount(
-            TEST_ACCOUNT_NAME,
-            TEST_USERNAME, TEST_REFRESH_TOKEN,
-            TEST_AUTH_TOKEN, TEST_INSTANCE_URL,
-            TEST_LOGIN_URL, TEST_IDENTITY_URL,
-            TEST_CLIENT_ID, TEST_ORG_ID,
-            TEST_USER_ID, null, null, null,
-            null, null, null, null, null,
-            null, null, null, null, null,
-            null, null, null, true,
-            TEST_LANGUAGE, TEST_LOCALE
-        )
+        UserAccountManager.getInstance().createAccount(UserAccountTest.createTestAccount());
     }
 }

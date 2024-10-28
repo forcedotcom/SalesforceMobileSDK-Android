@@ -26,6 +26,16 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import static com.salesforce.androidsdk.accounts.UserAccountManagerTest.TEST_ACCOUNT_TYPE;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME_2;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_AUTH_TOKEN;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CLIENT_ID;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_KEY;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_VALUE;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_INSTANCE_URL;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LOGIN_URL;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Application;
@@ -38,8 +48,10 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.accounts.UserAccountTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -70,36 +82,12 @@ import java.util.concurrent.TimeUnit;
 @MediumTest
 public class ClientManagerTest {
 
-    public static final String TEST_ORG_ID = "test_org_id";
-    public static final String TEST_USER_ID = "test_user_id";
-    public static final String TEST_ORG_ID_2 = "test_org_id_2";
-    public static final String TEST_USER_ID_2 = "test_user_id_2";
-    public static final String TEST_ACCOUNT_NAME = "test_accountname";
-    public static final String TEST_USERNAME = "test_username";
-    public static final String TEST_CLIENT_ID = "test_client_d";
-    public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
-    public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
-    public static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
-    public static final String TEST_AUTH_TOKEN = "test_auth_token";
-    public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
-    public static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
-    public static final String TEST_OTHER_USERNAME = "test_other_username";
-    public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androidsdk.salesforcesdktest.login"; // must match authenticator.xml in SalesforceSDK project
     public static final String[] TEST_SCOPES = new String[] {"web"};
     public static final String TEST_CALLBACK_URL = "test://callback";
-    public static final String TEST_FIRST_NAME = "firstName";
-    public static final String TEST_LAST_NAME = "lastName";
-    public static final String TEST_DISPLAY_NAME = "displayName";
-    public static final String TEST_EMAIL = "test@email.com";
-    public static final String TEST_PHOTO_URL = "http://some.photo.url";
-    public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
-    public static final String TEST_CUSTOM_KEY = "test_custom_key";
-    public static final String TEST_CUSTOM_VALUE = "test_custom_value";
-    public static final String TEST_LANGUAGE = "en_US";
-    public static final String TEST_LOCALE = "en_US";
 
     private ClientManager clientManager;
     private AccountManager accountManager;
+    private UserAccountManager userAccountManager;
     private EventsListenerQueue eq;
     private List<String> testOauthKeys;
     private Map<String, String> testOauthValues;
@@ -110,15 +98,14 @@ public class ClientManagerTest {
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
-        final LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL,
-                TEST_CLIENT_ID, TEST_SCOPES);
-        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
-                loginOptions, true);
+        final LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
+        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
+        userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
         testOauthKeys = new ArrayList<>();
         testOauthKeys.add(TEST_CUSTOM_KEY);
         testOauthValues = new HashMap<>();
@@ -144,16 +131,15 @@ public class ClientManagerTest {
      */
     @Test
     public void testGetAccountType() {
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE,
-                clientManager.getAccountType());
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, clientManager.getAccountType());
     }
 
     /**
-     * Test setting/get of Login Optionsas a bundle
+     * Test setting/get of Login Options as a bundle
      */
     @Test
-    public void testLoginOptionsWithAddlParams() {
-        Map<String,String> additionalParams = new HashMap<String,String>();
+    public void testLoginOptionsWithAdditionalParams() {
+        Map<String,String> additionalParams = new HashMap<>();
         additionalParams.put("p1","v1");
         additionalParams.put("p2","v2");
         additionalParams.put("p3",null);
@@ -163,7 +149,7 @@ public class ClientManagerTest {
         Assert.assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
         Assert.assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
         Assert.assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
-        additionalParams = new HashMap<String, String>();
+        additionalParams = new HashMap<>();
         additionalParams.put("p4","v1");
         additionalParams.put("p5","v2");
         loginOptions.setAdditionalParameters(additionalParams);
@@ -188,7 +174,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Call createNewAccount
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Check that the account did get created
         Account[] accounts = clientManager.getAccounts();
@@ -203,34 +189,19 @@ public class ClientManagerTest {
     @Test
     public void testGetAccount() {
 
-        // Make sure we have no accounts initially
-        assertNoAccounts();
+        UserAccount userAccount = UserAccountTest.createTestAccount();
 
-        // Call createNewAccount
-        createTestAccount();
+        // Save to account manager (encrypt fields)
+        clientManager.createNewAccount(userAccount);
 
-        // Call getAccount
+        // Get account from account manager
         Account account = clientManager.getAccount();
-        Assert.assertNotNull("Account should have been returned", account);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
-        final String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-        final String decryptedAuthToken = SalesforceSDKManager.decrypt(encryptedAuthToken, encryptionKey);
-        Assert.assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
-        final String encryptedRefreshToken = accountManager.getPassword(account);
-        final String decryptedRefreshToken = SalesforceSDKManager.decrypt(encryptedRefreshToken, encryptionKey);
-        Assert.assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
-        Assert.assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), encryptionKey));
-        Assert.assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), encryptionKey));
-        Assert.assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), encryptionKey));
-        Assert.assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), encryptionKey));
-        Assert.assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), encryptionKey));
-        Assert.assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), encryptionKey));
-        Assert.assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), encryptionKey));
-        Assert.assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), encryptionKey));
-        Assert.assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decrypt(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), encryptionKey));
-        Assert.assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decrypt(accountManager.getUserData(account, TEST_CUSTOM_KEY), encryptionKey));
+
+        // Build user account from account (decrypts fields)
+        UserAccount restoredUserAccount = userAccountManager.buildUserAccount(account);
+
+        // Make sure all the fields made it through and back
+        UserAccountTest.checkSameUserAccount(userAccount, restoredUserAccount);
     }
 
     /**
@@ -243,7 +214,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Call createNewAccount
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Call getAccounts
         Account[] accounts = clientManager.getAccounts();
@@ -262,8 +233,8 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Call two accounts
-        createTestAccount();
-        createOtherTestAccount();
+        createTestAccountInAccountManager();
+        createOtherTestAccountInAccountManager();
 
         // Call getAccounts
         Account[] accounts = clientManager.getAccounts();
@@ -276,8 +247,9 @@ public class ClientManagerTest {
                 return account1.name.compareTo(account2.name);
             }
         });
+
         Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        Assert.assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, accounts[1].name);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME_2, accounts[1].name);
     }
 
     /**
@@ -290,8 +262,8 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create two accounts
-        createTestAccount();
-        createOtherTestAccount();
+        createTestAccountInAccountManager();
+        createOtherTestAccountInAccountManager();
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
@@ -304,9 +276,9 @@ public class ClientManagerTest {
         Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 
         // Get the second one by name
-        account = clientManager.getAccountByName(TEST_OTHER_ACCOUNT_NAME);
+        account = clientManager.getAccountByName(TEST_ACCOUNT_NAME_2);
         Assert.assertNotNull("An account should have been returned", account);
-        Assert.assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, account.name);
+        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME_2, account.name);
         Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
     }
 
@@ -321,7 +293,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create an account
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Check that the account did get created
         Account[] accounts = clientManager.getAccounts();
@@ -345,8 +317,8 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create two accounts
-        createTestAccount();
-        createOtherTestAccount();
+        createTestAccountInAccountManager();
+        createOtherTestAccountInAccountManager();
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
@@ -371,8 +343,8 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create two accounts
-        createTestAccount();
-        createOtherTestAccount();
+        createTestAccountInAccountManager();
+        createOtherTestAccountInAccountManager();
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
@@ -414,7 +386,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create account
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Call peekRestClient - expect restClient
         try {
@@ -438,7 +410,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create account
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Call getRestClient - expect restClient
         final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
@@ -470,7 +442,7 @@ public class ClientManagerTest {
         assertNoAccounts();
 
         // Create account
-        createTestAccount();
+        createTestAccountInAccountManager();
 
         // Check that the accounts did get created
         Account[] accounts = clientManager.getAccounts();
@@ -484,7 +456,7 @@ public class ClientManagerTest {
     }
 
     @Test
-    public void testToFromBundle() {
+    public void testLoginOptionsToFromBundle() {
         Bundle options = new Bundle();
         options.putString("loginUrl", "some-login-url");
         options.putString("oauthCallbackUrl", "some-oauth-callback-url");
@@ -504,7 +476,7 @@ public class ClientManagerTest {
     }
 
     @Test
-    public void testFromBundleWithSafeLoginUrl() {
+    public void testLoginOptionsFromBundleWithSafeLoginUrl() {
         // First using a bundle with a known login url (test.salesforce.com)
         Bundle options = new Bundle();
         options.putString("loginUrl", "https://test.salesforce.com");
@@ -553,26 +525,19 @@ public class ClientManagerTest {
      * Create test account
      * @return
      */
-    private Bundle createTestAccount() {
-        return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
-                TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, null, null, TEST_FIRST_NAME, TEST_LAST_NAME,
-                TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
-                null, null, null, null, null,
-                null, null, false, TEST_LANGUAGE, TEST_LOCALE);
+    private UserAccount createTestAccountInAccountManager() {
+        UserAccount userAccount = UserAccountTest.createTestAccount();
+        clientManager.createNewAccount(userAccount);
+        return userAccount;
     }
 
     /**
      * Create other test account
      * @return
      */
-    private Bundle createOtherTestAccount() {
-        return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
-                TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
-                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2,
-                null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME,
-                TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues,
-                null, null, null, null, null,
-                null, null, false, TEST_LANGUAGE, TEST_LOCALE);
+    private UserAccount createOtherTestAccountInAccountManager() {
+        UserAccount userAccount = UserAccountTest.createOtherTestAccount();
+        clientManager.createNewAccount(userAccount);
+        return userAccount;
     }
 }

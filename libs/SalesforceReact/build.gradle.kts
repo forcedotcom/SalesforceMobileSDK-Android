@@ -12,7 +12,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 val useIntlJsc = false
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.1.1"
+rootProject.ext["PUBLISH_VERSION"] = "12.2.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceReact"
 
 plugins {
@@ -24,7 +24,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.74.3")
+    api("com.facebook.react:react-android:0.74.5")
     implementation("androidx.core:core-ktx:1.13.1")
     androidTestImplementation("androidx.test:runner:1.6.0")
     androidTestImplementation("androidx.test:rules:1.6.0")

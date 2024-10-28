@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static com.salesforce.androidsdk.ui.EdgeToEdgeUtilKt.fixEdgeToEdge;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -53,6 +55,7 @@ public class ManageSpaceActivity extends AppCompatActivity {
 		manageSpaceDialog = buildManageSpaceDialog();
 		manageSpaceDialog.setCanceledOnTouchOutside(false);
 		manageSpaceDialog.show();
+		fixEdgeToEdge(this, findViewById(R.id.manage_space_layout));
 	}
 
 	@Override
