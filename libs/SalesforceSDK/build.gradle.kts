@@ -9,6 +9,7 @@ plugins {
     `kotlin-android`
     `publish-module`
     jacoco
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 dependencies {
@@ -23,6 +24,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.window:window:1.3.0")
     implementation("androidx.window:window-core:1.3.0")
     androidTestImplementation("androidx.test:runner:1.6.0")
