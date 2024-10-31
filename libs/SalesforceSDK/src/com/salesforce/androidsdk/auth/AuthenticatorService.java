@@ -84,6 +84,8 @@ public class AuthenticatorService extends Service {
     public static final String KEY_COOKIE_CLIENT_SRC = "cookie-clientSrc";
     public static final String KEY_COOKIE_SID_CLIENT = "cookie-sid_Client";
     public static final String KEY_SID_COOKIE_NAME = "sidCookieName";
+    public static final String KEY_PARENT_SID = "parentSid";
+    public static final String KEY_TOKEN_FORMAT = "tokenFormat";
 
     private static final String TAG = "AuthenticatorService";
 

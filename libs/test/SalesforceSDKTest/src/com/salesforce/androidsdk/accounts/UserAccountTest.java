@@ -93,6 +93,8 @@ public class UserAccountTest {
     public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid-client-value";
     public static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
     public static final String TEST_CLIENT_ID = "test-client-id";
+    public static final String TEST_PARENT_SID = "test-parent-sid";
+    public static final String TEST_TOKEN_FORMAT = "test-token-format";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -351,6 +353,8 @@ public class UserAccountTest {
         object.put(UserAccount.COOKIE_CLIENT_SRC, TEST_COOKIE_CLIENT_SRC);
         object.put(UserAccount.COOKIE_SID_CLIENT, TEST_COOKIE_SID_CLIENT);
         object.put(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
+        object.put(UserAccount.PARENT_SID, TEST_PARENT_SID);
+        object.put(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -393,6 +397,8 @@ public class UserAccountTest {
         object.putString(UserAccount.COOKIE_SID_CLIENT, TEST_COOKIE_SID_CLIENT);
         object.putString(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
         object.putString(UserAccount.CLIENT_ID, TEST_CLIENT_ID);
+        object.putString(UserAccount.PARENT_SID, TEST_PARENT_SID);
+        object.putString(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -433,6 +439,8 @@ public class UserAccountTest {
                 .cookieSidClient(TEST_COOKIE_SID_CLIENT)
                 .sidCookieName(TEST_SID_COOKIE_NAME)
                 .clientId(TEST_CLIENT_ID)
+                .parentSid(TEST_PARENT_SID)
+                .tokenFormat(TEST_TOKEN_FORMAT)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }
@@ -484,6 +492,9 @@ public class UserAccountTest {
         Assert.assertEquals("Cookie client src should match", TEST_COOKIE_CLIENT_SRC, account.getCookieClientSrc());
         Assert.assertEquals("Cookie sid client should match", TEST_COOKIE_SID_CLIENT, account.getCookieSidClient());
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
+        Assert.assertEquals("Parent sid should match", TEST_PARENT_SID, account.getParentSid());
+        Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
+
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -521,6 +532,8 @@ public class UserAccountTest {
         Assert.assertEquals("Cookie client src should match", TEST_COOKIE_CLIENT_SRC, account.getCookieClientSrc());
         Assert.assertEquals("Cookie sid client should match", TEST_COOKIE_SID_CLIENT, account.getCookieSidClient());
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
+        Assert.assertEquals("Parent sid should match", TEST_PARENT_SID, account.getParentSid());
+        Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -554,6 +567,8 @@ public class UserAccountTest {
         params.put("cookie-clientSrc", TEST_COOKIE_CLIENT_SRC);
         params.put("cookie-sid_Client", TEST_COOKIE_SID_CLIENT);
         params.put("sidCookieName", TEST_SID_COOKIE_NAME);
+        params.put("parent_sid", TEST_PARENT_SID);
+        params.put("token_format", TEST_TOKEN_FORMAT);
 
         return new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
     }

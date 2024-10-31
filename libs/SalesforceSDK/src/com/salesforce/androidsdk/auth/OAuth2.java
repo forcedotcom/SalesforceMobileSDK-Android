@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth;
 
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -193,6 +194,8 @@ public class OAuth2 {
     private static final String COOKIE_CLIENT_SRC = "cookie-clientSrc";
     private static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
     private static final String SID_COOKIE_NAME = "sidCookieName";
+    private static final String PARENT_SID = "parent_sid";
+    private static final String TOKEN_FORMAT = "token_format";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -775,6 +778,8 @@ public class OAuth2 {
         public String cookieClientSrc;
         public String cookieSidClient;
         public String sidCookieName;
+        public String parentSid;
+        public String tokenFormat;
 
         /**
          * Parameterized constructor built during login flow.
@@ -812,6 +817,8 @@ public class OAuth2 {
                 cookieClientSrc = callbackUrlParams.get(COOKIE_CLIENT_SRC);
                 cookieSidClient = callbackUrlParams.get(COOKIE_SID_CLIENT);
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
+                parentSid = callbackUrlParams.get(PARENT_SID);
+                tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
@@ -838,6 +845,7 @@ public class OAuth2 {
         public TokenEndpointResponse(Response response) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -873,6 +881,8 @@ public class OAuth2 {
                 cookieClientSrc = parsedResponse.optString(COOKIE_CLIENT_SRC);
                 cookieSidClient = parsedResponse.optString(COOKIE_SID_CLIENT);
                 sidCookieName = parsedResponse.optString(SID_COOKIE_NAME);
+                parentSid = parsedResponse.optString(PARENT_SID);
+                tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
