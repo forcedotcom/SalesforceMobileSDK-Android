@@ -47,7 +47,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -71,7 +72,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * <p>
 	 * Replace this use of java.uti.concurrent with Kotlin Concurrent's Lock.withLock
 	 */
-	private static final AtomicBoolean isSqlCipherLibraryLoaded = new AtomicBoolean(false);
+	private static final Lock isSqlCipherLibraryLoaded = new ReentrantLock();
 
 	/*
 	 * Cache for the helper instances
@@ -198,10 +199,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	protected static void loadNativeLibrariesIfNeeded() {
-		// Synchronize through the finish of `System.loadLibrary`.
-		synchronized (isSqlCipherLibraryLoaded) {
-			if (!isSqlCipherLibraryLoaded.get()) System.loadLibrary("sqlcipher");
-			isSqlCipherLibraryLoaded.set(true); // It's important this be set only after the library load method finishes.
+		isSqlCipherLibraryLoaded.lock();
+		try {
+			System.loadLibrary("sqlcipher");
+		} finally {
+			isSqlCipherLibraryLoaded.unlock();
 		}
 	}
 
