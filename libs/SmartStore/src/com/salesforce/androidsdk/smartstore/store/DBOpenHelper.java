@@ -47,7 +47,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -65,7 +66,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final String DATABASES = "databases";
 	private String dbName;
 
-	private static AtomicBoolean libsLoaded = new AtomicBoolean(false);
+	/**
+	 * Indicates if the SQLCipher native library is loaded. This is used as an object monitor for
+	 * concurrency critical sections and as an atomic variable.
+	 * <p>
+	 * Replace this use of java.uti.concurrent with Kotlin Concurrent's Lock.withLock
+	 */
+	private static final Lock isSqlCipherLibraryLoaded = new ReentrantLock();
 
 	/*
 	 * Cache for the helper instances
@@ -179,7 +186,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                 SmartStoreLogger.e(TAG, "Error occurred while creating JSON", e);
 			}
 			EventBuilderHelper.createAndStoreEvent(eventName, account, TAG, storeAttributes);
-			loadLibsIfNeeded(ctx);
+			loadNativeLibrariesIfNeeded();
 			helper = new DBOpenHelper(encryptionKey, ctx, fullDBName);
 			openHelpers.put(fullDBName, helper);
 		}
@@ -191,9 +198,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		this.dbName = dbName;
 	}
 
-	protected static void loadLibsIfNeeded(Context context) {
-		if (libsLoaded.compareAndSet(false, true)) {
-			 System.loadLibrary("sqlcipher");
+	protected static void loadNativeLibrariesIfNeeded() {
+		isSqlCipherLibraryLoaded.lock();
+		try {
+			System.loadLibrary("sqlcipher");
+		} finally {
+			isSqlCipherLibraryLoaded.unlock();
 		}
 	}
 
