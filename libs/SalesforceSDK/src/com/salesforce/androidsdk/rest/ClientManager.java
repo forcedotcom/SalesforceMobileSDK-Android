@@ -658,6 +658,9 @@ public class ClientManager {
          * @return
          */
         public static LoginOptions fromBundle(Bundle options) {
+            if (options == null) {
+                return new LoginOptions(null, null, null, null, null, null); // To prevent crash if null Bundle is passed
+            }
             Map<String, String> additionalParameters = null;
             final Serializable serializable = options.getSerializable(KEY_ADDL_PARAMS);
             if (serializable != null) {
