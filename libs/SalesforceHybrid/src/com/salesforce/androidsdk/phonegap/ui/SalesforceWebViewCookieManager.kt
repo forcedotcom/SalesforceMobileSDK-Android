@@ -45,7 +45,7 @@ class SalesforceWebViewCookieManager {
         val lightningSid = userAccount.lightningSid
         val contentDomain = userAccount.contentDomain
         val contentSid = userAccount.contentSid
-        val accessToken = userAccount.authToken
+        val mainSid = if (userAccount.tokenFormat == "jwt") userAccount.parentSid else userAccount.authToken
         val vfDomain = userAccount.vfDomain
         val vfSid = userAccount.vfSid
         val clientSrc = userAccount.cookieClientSrc
@@ -61,7 +61,7 @@ class SalesforceWebViewCookieManager {
         val setDomain = !communityUrl.isNullOrBlank()
 
         // Main domain cookies
-        setCookieValue("sid for main", mainDomain, setDomain, sidCookieName, accessToken)
+        setCookieValue("sid for main", mainDomain, setDomain, sidCookieName, mainSid)
         setCookieValue(CLIENT_SRC, mainDomain, setDomain, CLIENT_SRC, clientSrc)
         setCookieValue(SID_CLIENT, mainDomain, setDomain, SID_CLIENT, sidClient)
         setCookieValue(ORG_ID, mainDomain, setDomain, ORG_ID, orgId)

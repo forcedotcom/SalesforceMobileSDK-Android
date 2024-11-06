@@ -91,6 +91,8 @@ public class UserAccount {
 	public static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
 	public static final String SID_COOKIE_NAME = "sidCookieName";
 	public static final String CLIENT_ID = "clientId";
+	public static final String PARENT_SID = "parentSid";
+	public static final String TOKEN_FORMAT = "tokenFormat";
 ;
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -131,6 +133,8 @@ public class UserAccount {
 	private String cookieSidClient;
 	private String sidCookieName;
 	private String clientId;
+	private String parentSid;
+	private String tokenFormat;
 	private Map<String, String> additionalOauthValues;
 
 	/**
@@ -167,6 +171,8 @@ public class UserAccount {
 	 * @param cookieSidClient cookie sid client
 	 * @param sidCookieName sid cookie name
 	 * @param clientId oauth client id
+	 * @param parentSid parent sid
+	 * @param tokenFormat token format
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -177,7 +183,7 @@ public class UserAccount {
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
-				String sidCookieName, String clientId) {
+				String sidCookieName, String clientId, String parentSid, String tokenFormat) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -210,6 +216,8 @@ public class UserAccount {
 		this.cookieSidClient = cookieSidClient;
 		this.sidCookieName = sidCookieName;
 		this.clientId = clientId;
+		this.parentSid = parentSid;
+		this.tokenFormat = tokenFormat;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -255,6 +263,8 @@ public class UserAccount {
 			cookieSidClient = object.optString(COOKIE_SID_CLIENT, null);
 			sidCookieName = object.optString(SID_COOKIE_NAME, null);
 			clientId = object.optString(CLIENT_ID, null);
+			parentSid = object.optString(PARENT_SID, null);
+			tokenFormat = object.optString(TOKEN_FORMAT, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -306,6 +316,8 @@ public class UserAccount {
 			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
 			sidCookieName = bundle.getString(SID_COOKIE_NAME);
 			clientId = bundle.getString(CLIENT_ID);
+			parentSid = bundle.getString(PARENT_SID);
+			tokenFormat = bundle.getString(TOKEN_FORMAT);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -599,6 +611,23 @@ public class UserAccount {
 		return clientId;
 	}
 
+	/**
+	 * Returns the parent sid.
+	 *
+	 * @return parent sid.
+	 */
+	public String getParentSid() {
+		return parentSid;
+	}
+
+	/**
+	 * Returns the token format.
+	 *
+	 * @return token format.
+	 */
+	public String getTokenFormat() {
+		return tokenFormat;
+	}
 
 	/**
 	 * Returns the additional OAuth values for this user.
@@ -866,6 +895,8 @@ public class UserAccount {
 			object.put(COOKIE_CLIENT_SRC, cookieClientSrc);
 			object.put(COOKIE_SID_CLIENT, cookieSidClient);
 			object.put(SID_COOKIE_NAME, sidCookieName);
+			object.put(PARENT_SID, parentSid);
+			object.put(TOKEN_FORMAT, tokenFormat);
 			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
@@ -921,6 +952,8 @@ public class UserAccount {
 		object.putString(COOKIE_SID_CLIENT, cookieSidClient);
 		object.putString(SID_COOKIE_NAME, sidCookieName);
 		object.putString(CLIENT_ID, clientId);
+		object.putString(PARENT_SID, parentSid);
+		object.putString(TOKEN_FORMAT, tokenFormat);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}
