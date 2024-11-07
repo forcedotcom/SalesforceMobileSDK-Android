@@ -56,7 +56,7 @@ public class SalesforceLogger {
     /**
      * The factory for Salesforce log receivers.  Defaults to null
      */
-    public static SalesforceLogReceiverFactory logReceiverFactory;
+    private static SalesforceLogReceiverFactory logReceiverFactory;
 
     private static final String TAG = "SalesforceLogger";
     private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
@@ -94,6 +94,18 @@ public class SalesforceLogger {
     private final SalesforceLogReceiver logReceiver;
 
     private Level logLevel;
+
+    /**
+     * Sets the factory for Salesforce log receivers.
+     *
+     * @param logReceiverFactory The factory for Salesforce log receivers
+     * @noinspection unused
+     */
+    public synchronized static void setLogReceiverFactory(
+            SalesforceLogReceiverFactory logReceiverFactory
+    ) {
+        SalesforceLogger.logReceiverFactory = logReceiverFactory;
+    }
 
     /**
      * Returns the Salesforce logger instance associated with the named component.  The logger will
