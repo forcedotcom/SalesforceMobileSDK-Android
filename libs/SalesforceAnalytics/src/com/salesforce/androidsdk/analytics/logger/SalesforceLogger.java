@@ -31,6 +31,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.util.Log;
 
 import java.io.IOException;
@@ -52,6 +53,11 @@ import java.util.concurrent.Executors;
  */
 public class SalesforceLogger {
 
+    /**
+     * The factory for Salesforce log receivers.  Defaults to null
+     */
+    private static SalesforceLogReceiverFactory logReceiverFactory;
+
     private static final String TAG = "SalesforceLogger";
     private static final String LOG_LINE_FORMAT = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s";
     private static final String LOG_LINE_FORMAT_WITH_EXCEPTION = "TIME: %s, LEVEL: %s, TAG: %s, MESSAGE: %s, EXCEPTION: %s";
@@ -71,7 +77,7 @@ public class SalesforceLogger {
         DEBUG(2),
         VERBOSE(1);
 
-        private Integer severity;
+        private final Integer severity;
 
         Level(int severity) {
             this.severity = severity;
@@ -79,23 +85,69 @@ public class SalesforceLogger {
     }
 
     private FileLogger fileLogger;
-    private Context context;
-    private String componentName;
+    private final Context context;
+    private final String componentName;
+
+    /**
+     * The Salesforce log receiver to receive all logs issued by this Salesforce logger
+     */
+    private final SalesforceLogReceiver logReceiver;
+
     private Level logLevel;
 
     /**
-     * Returns a logger instance associated with a named component.
+     * Sets the factory for Salesforce log receivers.
      *
-     * @param componentName Component name.
-     * @param context Context.
-     * @return Logger instance.
+     * @param logReceiverFactory The factory for Salesforce log receivers
+     * @noinspection unused
      */
-    public synchronized static SalesforceLogger getLogger(String componentName, Context context) {
+    public synchronized static void setLogReceiverFactory(
+            SalesforceLogReceiverFactory logReceiverFactory
+    ) {
+        SalesforceLogger.logReceiverFactory = logReceiverFactory;
+    }
+
+    /**
+     * Returns the Salesforce logger instance associated with the named component.  The logger will
+     * be created if needed and without any additional Salesforce log receiver.
+     *
+     * @param componentName The component name
+     * @param context       The Android context
+     * @return Either a new or existing Salesforce logger for the named component
+     */
+    public synchronized static SalesforceLogger getLogger(String componentName,
+                                                          Context context) {
+        return getLogger(componentName, context, null);
+    }
+
+    /**
+     * Returns the Salesforce logger instance associated with the named component.  The logger will
+     * be created if needed and with the specified Salesforce log receiver.
+     *
+     * @param componentName         The component name
+     * @param context               The Android context
+     * @param salesforceLogReceiver The Salesforce log receiver to receive all logs issued by the
+     *                              Salesforce logger
+     * @return Either a new or existing Salesforce logger for the named component
+     */
+    public synchronized static SalesforceLogger getLogger(String componentName,
+                                                          Context context,
+                                                          SalesforceLogReceiver salesforceLogReceiver) {
         if (LOGGERS == null) {
             LOGGERS = new ConcurrentHashMap<>();
         }
+
+        // Resolve the log receiver from parameters or the factory.
+        SalesforceLogReceiver salesforceLogReceiverResolved = salesforceLogReceiver;
+        if (salesforceLogReceiverResolved == null && logReceiverFactory != null) {
+            salesforceLogReceiverResolved = logReceiverFactory.create(componentName);
+        }
+
         if (!LOGGERS.containsKey(componentName)) {
-            final SalesforceLogger logger = new SalesforceLogger(componentName, context);
+            final SalesforceLogger logger = new SalesforceLogger(
+                    componentName,
+                    context,
+                    salesforceLogReceiverResolved);
             LOGGERS.put(componentName, logger);
         }
         return LOGGERS.get(componentName);
@@ -107,11 +159,11 @@ public class SalesforceLogger {
      * @return Set of components being logged.
      */
     public synchronized static Set<String> getComponents() {
-        if (LOGGERS == null || LOGGERS.size() == 0) {
+        if (LOGGERS == null || LOGGERS.isEmpty()) {
             return null;
         }
         Set<String> components = LOGGERS.keySet();
-        if (components.size() == 0) {
+        if (components.isEmpty()) {
             components = null;
         }
         return components;
@@ -124,9 +176,21 @@ public class SalesforceLogger {
         LOGGERS = null;
     }
 
-    private SalesforceLogger(String componentName, Context context) {
+    /**
+     * Creates a new Salesforce logger.
+     *
+     * @param componentName         The named component the logger will be associated with
+     * @param context               The Android context
+     * @param salesforceLogReceiver The Salesforce log receiver to receive all logs issued by the
+     *                              Salesforce logger
+     */
+    private SalesforceLogger(
+            String componentName,
+            Context context,
+            SalesforceLogReceiver salesforceLogReceiver) {
         this.context = context;
         this.componentName = componentName;
+        this.logReceiver = salesforceLogReceiver;
         readLoggerPrefs();
         try {
             fileLogger = new FileLogger(context, componentName);
@@ -148,8 +212,8 @@ public class SalesforceLogger {
                     }
                 }
             }
-        } catch (PackageManager.NameNotFoundException e) {
-            debugMode = true;
+        } catch (NameNotFoundException e) {
+            /* Intentionally blank */
         }
         return debugMode;
     }
@@ -158,6 +222,7 @@ public class SalesforceLogger {
      * Returns the instance of FileLogger associated with this component.
      *
      * @return FileLogger instance.
+     * @noinspection unused
      */
     public FileLogger getFileLogger() {
         return fileLogger;
@@ -183,6 +248,8 @@ public class SalesforceLogger {
 
     /**
      * Disables file logging.
+     *
+     * @noinspection unused
      */
     public synchronized void disableFileLogging() {
         if (fileLogger != null) {
@@ -194,6 +261,7 @@ public class SalesforceLogger {
      * Enables file logging.
      *
      * @param maxSize Maximum number of log lines allowed to be stored at a time.
+     * @noinspection unused
      */
     public synchronized void enableFileLogging(int maxSize) {
         if (fileLogger != null) {
@@ -205,6 +273,7 @@ public class SalesforceLogger {
      * Returns if file logging is enabled or not.
      *
      * @return True - if enabled, False - otherwise.
+     * @noinspection unused
      */
     public boolean isFileLoggingEnabled() {
         int maxSize = 0;
@@ -217,7 +286,7 @@ public class SalesforceLogger {
     /**
      * Logs an error log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void e(String tag, String message) {
@@ -227,9 +296,9 @@ public class SalesforceLogger {
     /**
      * Logs an error log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
-     * @param e Exception to be logged.
+     * @param e       Exception to be logged.
      */
     public void e(String tag, String message, Throwable e) {
         log(Level.ERROR, tag, message, e);
@@ -238,7 +307,7 @@ public class SalesforceLogger {
     /**
      * Logs a warning log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void w(String tag, String message) {
@@ -248,9 +317,9 @@ public class SalesforceLogger {
     /**
      * Logs a warning log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
-     * @param e Exception to be logged.
+     * @param e       Exception to be logged.
      */
     public void w(String tag, String message, Throwable e) {
         log(Level.WARN, tag, message, e);
@@ -259,7 +328,7 @@ public class SalesforceLogger {
     /**
      * Logs an info log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void i(String tag, String message) {
@@ -269,9 +338,9 @@ public class SalesforceLogger {
     /**
      * Logs an info log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
-     * @param e Exception to be logged.
+     * @param e       Exception to be logged.
      */
     public void i(String tag, String message, Throwable e) {
         log(Level.INFO, tag, message, e);
@@ -280,7 +349,7 @@ public class SalesforceLogger {
     /**
      * Logs a debug log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void d(String tag, String message) {
@@ -290,9 +359,9 @@ public class SalesforceLogger {
     /**
      * Logs a debug log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
-     * @param e Exception to be logged.
+     * @param e       Exception to be logged.
      */
     public void d(String tag, String message, Throwable e) {
         log(Level.DEBUG, tag, message, e);
@@ -301,7 +370,7 @@ public class SalesforceLogger {
     /**
      * Logs a verbose log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void v(String tag, String message) {
@@ -311,9 +380,9 @@ public class SalesforceLogger {
     /**
      * Logs a verbose log line.
      *
-     * @param tag Log tag.
+     * @param tag     Log tag.
      * @param message Log message.
-     * @param e Exception to be logged.
+     * @param e       Exception to be logged.
      */
     public void v(String tag, String message, Throwable e) {
         log(Level.VERBOSE, tag, message, e);
@@ -322,8 +391,8 @@ public class SalesforceLogger {
     /**
      * Logs a log line of the specified level.
      *
-     * @param level Log level.
-     * @param tag Log tag.
+     * @param level   Log level.
+     * @param tag     Log tag.
      * @param message Log message.
      */
     public void log(Level level, String tag, String message) {
@@ -346,64 +415,60 @@ public class SalesforceLogger {
                 case VERBOSE:
                     Log.v(tag, message);
                     break;
-                default:
-                    Log.d(tag, message);
             }
             logToFile(getTimeFromUTC(), level, tag, message, null);
+
+            if (logReceiver != null) logReceiver.receive(level, tag, message);
         }
     }
 
-  /**
-   * Logs a log line of the specified level.
-   *
-   * @param level Log level.
-   * @param tag Log tag.
-   * @param message Log message.
-   * @param e Exception to be logged.
-   */
-  public void log(Level level, String tag, String message, Throwable e) {
-      if (level.severity >= logLevel.severity) {
-          switch (level) {
-              case OFF:
-                break;
-            case ERROR:
-                Log.e(tag, message, e);
-                break;
-            case WARN:
-                Log.w(tag, message, e);
-                break;
-            case INFO:
-                Log.i(tag, message, e);
-                break;
-            case DEBUG:
-                Log.d(tag, message, e);
-                break;
-            case VERBOSE:
-                Log.v(tag, message, e);
-                break;
-            default:
-                Log.d(tag, message, e);
-          }
-          logToFile(getTimeFromUTC(), level, tag, message, e);
-      }
+    /**
+     * Logs a log line of the specified level.
+     *
+     * @param level   Log level.
+     * @param tag     Log tag.
+     * @param message Log message.
+     * @param e       Exception to be logged.
+     */
+    public void log(Level level, String tag, String message, Throwable e) {
+        if (level.severity >= logLevel.severity) {
+            switch (level) {
+                case OFF:
+                    break;
+                case ERROR:
+                    Log.e(tag, message, e);
+                    break;
+                case WARN:
+                    Log.w(tag, message, e);
+                    break;
+                case INFO:
+                    Log.i(tag, message, e);
+                    break;
+                case DEBUG:
+                    Log.d(tag, message, e);
+                    break;
+                case VERBOSE:
+                    Log.v(tag, message, e);
+                    break;
+            }
+            logToFile(getTimeFromUTC(), level, tag, message, e);
+
+            if (logReceiver != null) logReceiver.receive(level, tag, message, e);
+        }
     }
 
     private void logToFile(final String curTime, final Level level, final String tag,
                            final String message, final Throwable e) {
-        THREAD_POOL.execute(new Runnable() {
-
-            @Override
-            public void run() {
-                if (fileLogger != null) {
-                    String logLine;
-                    if (e != null) {
-                        logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level,
-                                tag, message, Log.getStackTraceString(e));
-                    } else {
-                        logLine = String.format(LOG_LINE_FORMAT, curTime, level, tag, message);
-                    }
-                    fileLogger.addLogLine(logLine);
+        THREAD_POOL.execute(() -> {
+            if (fileLogger != null) {
+                String logLine;
+                if (e != null) {
+                    logLine = String.format(LOG_LINE_FORMAT_WITH_EXCEPTION, curTime, level,
+                            tag, message, Log.getStackTraceString(e));
+                } else {
+                    logLine = String.format(LOG_LINE_FORMAT, curTime, level, tag, message);
                 }
+                fileLogger.addLogLine(logLine);
             }
         });
     }
@@ -419,7 +484,7 @@ public class SalesforceLogger {
         final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
         final SharedPreferences.Editor e = sp.edit();
         e.putString(componentName, level.toString());
-        e.commit();
+        e.apply();
         logLevel = level;
     }
 
@@ -445,6 +510,6 @@ public class SalesforceLogger {
         final SharedPreferences sp = context.getSharedPreferences(SF_LOGGER_PREFS, Context.MODE_PRIVATE);
         final SharedPreferences.Editor e = sp.edit();
         e.clear();
-        e.commit();
+        e.apply();
     }
 }
