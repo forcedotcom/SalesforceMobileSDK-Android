@@ -165,6 +165,15 @@ public class ClientManagerTest {
     }
 
     /**
+     * Test setting/get of Login Options as a null bundle
+     */
+    @Test
+    public void testLoginOptionsWithNullBundle() {
+        LoginOptions loginOptions = LoginOptions.fromBundle(null);
+        Assert.assertNotNull("LoginOptions from bundle must not be null", loginOptions);
+    }
+
+    /**
      * Test createNewAccount
      */
     @Test
@@ -505,6 +514,13 @@ public class ClientManagerTest {
         Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
         Assert.assertEquals("some-jwt", loginOptions.getJwt());
 
+    }
+
+    @Test
+    public void testLoginOptionsNullFromBundleWithSafeLoginUrl() {
+        // Expect the LoginOptions to have the same login url
+        LoginOptions loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(null);
+        Assert.assertNotNull(loginOptions.getLoginUrl());
     }
 
     /**

@@ -655,7 +655,6 @@ public class ClientManager {
         /**
          * Build a LoginOptions from the given bundle
          * @param options - bundle
-         * @return
          */
         public static LoginOptions fromBundle(Bundle options) {
             if (options == null) {
