@@ -82,6 +82,7 @@ import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
@@ -582,6 +583,7 @@ open class SalesforceSDKManager protected constructor(
         googleCloudProjectId: String? = null,
         isReCaptchaEnterprise: Boolean = false
     ): NativeLoginManagerInterface {
+        registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
         nativeLoginManager = NativeLoginManager(
             consumerKey,
             callbackUrl,
