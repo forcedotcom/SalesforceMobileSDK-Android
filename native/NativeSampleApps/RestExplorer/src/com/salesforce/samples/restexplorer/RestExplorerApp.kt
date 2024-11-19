@@ -24,106 +24,183 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.samples.restexplorer
 
-import android.app.Activity;
-import android.app.Application;
-import android.content.Context;
-
-import androidx.annotation.NonNull;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.LoginActivity;
-
-import java.util.Map;
+import android.app.Activity
+import android.app.Application
+import android.content.Context
+import android.util.Log
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogReceiver
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogReceiverFactory
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.DEBUG
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.ERROR
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.INFO
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.OFF
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.VERBOSE
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger.Level.WARN
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
+import com.salesforce.androidsdk.ui.LoginActivity
 
 /**
- * Application class for the rest explorer app.
+ * Application class for the REST Explorer Salesforce Mobile SDK sample app.
  */
-public class RestExplorerApp extends Application {
+internal class RestExplorerApp : Application() {
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		/*
-		 * Extend SalesforceSDKManager to add custom dev menu options to the app.
+    // region REST Explorer App Implementation
+
+    /** The map of custom Salesforce Log Receivers by their component name */
+    private val logReceiversByComponentName = mutableMapOf<String, SalesforceLogReceiver>()
+
+    // endregion
+    // region Application Implementation
+
+    override fun onCreate() {
+        super.onCreate()
+
+        /*
+		 * Extend Salesforce SDK Manager to add custom developer menu options to the app.
 		 *
-		 * Normal use would be: SalesforceSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
+		 * Normal use would be: SalesforceSDKManager.initNative(applicationContext, ExplorerActivity::class.java)
 		 */
-		RestExplorerSDKManager.initNative(getApplicationContext(), ExplorerActivity.class);
+        RestExplorerSDKManager.initNative(applicationContext, ExplorerActivity::class.java)
 
-		/*
-		 * Let's use the default browser for advanced authentication
-		 */
-		RestExplorerSDKManager.getInstance().setCustomTabBrowser(null);
+        // Use the default browser for advanced authentication.
+        getInstance().customTabBrowser = null
 
-		/*
-         * Uncomment the following line to enable IDP login flow. This will allow the user to
+        /*
+         * Uncomment the following line to enable the IDP login flow. This will allow the user to
          * either authenticate using the current app or use the designated IDP app for login.
-         * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name
-         * of the IDP app meant to be used.
+         * Replace 'com.salesforce.samples.salesforceandroididptemplateapp' with the package name of
+         * the IDP app meant to be used.
          */
-         SalesforceSDKManager.getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp");
+        getInstance().setIDPAppPackageName("com.salesforce.samples.salesforceandroididptemplateapp")
 
-		/*
-		 * Un-comment the line below to enable push notifications in this app.
-		 * Replace 'pnInterface' with your implementation of 'PushNotificationInterface'.
-		 * Add your Firebase 'google-services.json' file to the 'app' folder of your project.
+        SalesforceLogger.setLogReceiverFactory(object : SalesforceLogReceiverFactory {
+            override fun create(componentName: String): SalesforceLogReceiver = logReceiversByComponentName[componentName] ?: object : SalesforceLogReceiver {
+                override fun receive(
+                    level: Level,
+                    tag: String,
+                    message: String
+                ) {
+                    val resolvedMessage = "$componentName - $message"
+                    when (level) {
+                        OFF -> {}
+                        ERROR -> Log.e("RestExplorerApp", resolvedMessage)
+                        WARN -> Log.e("RestExplorerApp", resolvedMessage)
+                        INFO -> Log.e("RestExplorerApp", resolvedMessage)
+                        DEBUG -> Log.e("RestExplorerApp", resolvedMessage)
+                        VERBOSE -> Log.e("RestExplorerApp", resolvedMessage)
+                    }
+                }
+
+                override fun receive(
+                    level: Level,
+                    tag: String,
+                    message: String,
+                    throwable: Throwable?
+                ) {
+                    val resolvedMessage = "$componentName - $message"
+                    when (level) {
+                        OFF -> {}
+                        ERROR -> Log.e("RestExplorerApp", resolvedMessage, throwable)
+                        WARN -> Log.e("RestExplorerApp", resolvedMessage, throwable)
+                        INFO -> Log.e("RestExplorerApp", resolvedMessage, throwable)
+                        DEBUG -> Log.e("RestExplorerApp", resolvedMessage, throwable)
+                        VERBOSE -> Log.e("RestExplorerApp", resolvedMessage, throwable)
+                    }
+                }
+            }
+        })
+
+        /*
+		 * Uncomment the following lines to enable push notifications in this app. Either implement
+		 * the methods of the anonymous object or replace it with an instance of another class
+		 * implementing 'PushNotificationInterface'. Add your Firebase 'google-services.json' file
+		 * to the 'app' folder of your project.
 		 */
-		// SalesforceSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
-	}
+//        getInstance().pushNotificationReceiver = object : PushNotificationInterface {
+//            override fun onPushMessageReceived(data: Map<String?, String?>?) {
+//            }
+//
+//            override fun supplyFirebaseMessaging(): FirebaseMessaging? = null
+//        }
+    }
 
-	static class RestExplorerSDKManager extends SalesforceSDKManager {
-		Activity frontActivityForDevActions;
-		Map<String, DevActionHandler> devActions;
+    // endregion
+    // region REST Explorer Salesforce SDK Manager
 
-		/**
-		 * Protected constructor.
-		 *
-		 * @param context       Application context.
-		 * @param mainActivity  Activity that should be launched after the login flow.
-		 * @param loginActivity Login activity.
-		 */
-		private RestExplorerSDKManager(Context context, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-			super(context, mainActivity, loginActivity);
-		}
+    internal class RestExplorerSDKManager
 
-		/**
-		 * Initializes required components. Native apps must call one overload of
-		 * this method before using the Salesforce Mobile SDK.
-		 *
-		 * @param context Application context.
-		 * @param mainActivity Activity that should be launched after the login flow.
-		 */
-		public static void initNative(
-				@NonNull Context context,
-				@NonNull Class<? extends Activity> mainActivity
-		) {
-			if (SalesforceSDKManager.INSTANCE == null) {
-				SalesforceSDKManager.INSTANCE = new RestExplorerSDKManager(context, mainActivity, LoginActivity.class);
-			}
-			initInternal(context);
-		}
+    /**
+     * A protected constructor.
+     *
+     * @param context The application context
+     * @param mainActivity The activity to be launched after the login flow
+     * @param loginActivity The login activity
+     */
+    private constructor(
+        context: Context,
+        mainActivity: Class<out Activity?>,
+        loginActivity: Class<out Activity?>
+    ) : SalesforceSDKManager(
+        context,
+        mainActivity,
+        loginActivity
+    ) {
 
-		@NonNull
-		@Override
-		public Map<String, DevActionHandler> getDevActions(
-				@NonNull Activity frontActivity
-		) {
-			if (frontActivityForDevActions != frontActivity) {
-				devActions = null;
-				frontActivityForDevActions = frontActivity;
-			}
+        private var frontActivityForDevActions: Activity? = null
+        private var devActions: Map<String, DevActionHandler>? = null
 
-			if (devActions == null) {
-				devActions = super.getDevActions(frontActivity);
-			}
+        public override fun getDevActions(
+            frontActivity: Activity
+        ): Map<String, DevActionHandler> {
+            var result: Map<String, DevActionHandler>? = devActions
+            if (frontActivityForDevActions !== frontActivity) {
+                frontActivityForDevActions = frontActivity
+                result = null
+            }
 
-			return devActions;
-		}
+            if (result == null) {
+                result = super.getDevActions(frontActivity)
+            }
 
-		public void addDevAction(Activity frontActivity, String name, DevActionHandler handler) {
-			getDevActions(frontActivity).put(name, handler);
-		}
-	}
+            devActions = result
+            return result
+        }
+
+        fun addDevAction(
+            frontActivity: Activity,
+            name: String,
+            handler: DevActionHandler
+        ) {
+            val updatedDevActions = getDevActions(frontActivity).toMutableMap()
+            updatedDevActions[name] = handler
+            devActions = updatedDevActions
+        }
+
+        companion object {
+
+            /**
+             * Initializes required components. Native apps must call one overload of this method
+             * before using the Salesforce Mobile SDK.
+             *
+             * @param context Application context
+             * @param mainActivity Activity that should be launched after the login flow
+             */
+            fun initNative(
+                context: Context,
+                mainActivity: Class<out Activity?>
+            ) {
+                if (!hasInstance()) {
+                    setInstance(RestExplorerSDKManager(context, mainActivity, LoginActivity::class.java))
+                }
+                initInternal(context)
+            }
+        }
+    }
+
+    // endregion
 }
