@@ -57,10 +57,8 @@ import android.webkit.URLUtil.isHttpsUrl
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import androidx.lifecycle.Lifecycle.Event.ON_START
-import androidx.lifecycle.Lifecycle.Event.ON_STOP
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
@@ -169,7 +167,7 @@ open class SalesforceSDKManager protected constructor(
     mainActivity: Class<out Activity>,
     private val loginActivity: Class<out Activity>? = null,
     internal val nativeLoginActivity: Class<out Activity>? = null,
-) : LifecycleObserver {
+) : DefaultLifecycleObserver {
 
     constructor(
         context: Context,
@@ -1461,9 +1459,9 @@ open class SalesforceSDKManager protected constructor(
                 windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
     }
 
-    @Suppress("unused")
-    @OnLifecycleEvent(ON_STOP)
-    protected open fun onAppBackgrounded() {
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
+
         (screenLockManager as ScreenLockManager?)?.onAppBackgrounded()
 
         // Publish analytics one-time on app background, if enabled.
@@ -1481,9 +1479,9 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
-    @Suppress("unused")
-    @OnLifecycleEvent(ON_START)
-    protected open fun onAppForegrounded() {
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
+
         (screenLockManager as ScreenLockManager?)?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
