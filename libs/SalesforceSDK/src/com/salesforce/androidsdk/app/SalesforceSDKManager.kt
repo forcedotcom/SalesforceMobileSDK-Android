@@ -87,6 +87,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -138,6 +139,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.Locale.US
 import java.util.SortedSet
 import java.util.UUID.randomUUID
@@ -1254,6 +1257,7 @@ open class SalesforceSDKManager protected constructor(
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
             "Current User", usersToString(userAccountManager.cachedCurrentUser),
+            "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
             addAll(
@@ -1278,6 +1282,23 @@ open class SalesforceSDKManager protected constructor(
                 )
             }
         }
+
+    private fun accessTokenExpiration(): String {
+        val currentUSer = userAccountManager.cachedCurrentUser
+        var expiration = "Unknown"
+
+        if (currentUSer.tokenFormat == "jwt") {
+            val jwtAccessToken = JwtAccessToken(currentUSer.authToken)
+            val expirationDate = jwtAccessToken.expirationDate()
+            if (expirationDate != null) {
+                val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                expiration = dateFormatter.format(expirationDate)
+            }
+        }
+
+        return expiration
+    }
+
 
     /**
      * Information to display in the developer support dialog for a specified

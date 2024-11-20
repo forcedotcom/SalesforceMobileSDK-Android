@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.Base64
+import java.util.Date
 
 @Serializable
 data class JwtHeader(
@@ -40,6 +41,11 @@ data class JwtAccessToken(
         header = parseJwtHeader(jwt),
         payload = parseJwtPayload(jwt)
     )
+
+    fun expirationDate(): Date? {
+        val expirationTime = payload.expirationTime ?: return null
+        return Date(expirationTime.toLong() * 1000) // Convert seconds to milliseconds
+    }
 
     companion object {
         private val json = Json { ignoreUnknownKeys = true }  // Ignore unknown keys
