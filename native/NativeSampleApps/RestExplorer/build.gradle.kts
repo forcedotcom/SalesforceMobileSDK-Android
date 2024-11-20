@@ -84,4 +84,8 @@ android {
         aidl = true
         buildConfig = true
     }
+
+    kotlin {
+        jvmToolchain(17)
+    }
 }
