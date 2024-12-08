@@ -113,6 +113,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewCrea
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -179,7 +180,11 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         // Determine login options for Salesforce Identity API UI Bridge front door URL use or choose defaults.
         val loginOptions = when {
             isUsingFrontDoorBridge -> salesforceSDKManager.loginOptions
-            else -> fromBundleWithSafeLoginUrl(intent.extras)
+            else -> fromBundleWithSafeLoginUrl(intent.extras ?:
+                SalesforceSDKManager.getInstance().loginOptions.asBundle().also {
+                    w(TAG, "intent.extras was null, but should contain LoginOptions bundle.")
+                }
+            )
         }
 
         // Protect against screenshots
