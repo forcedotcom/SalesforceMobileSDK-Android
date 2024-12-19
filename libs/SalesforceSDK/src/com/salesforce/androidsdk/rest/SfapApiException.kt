@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth
+package com.salesforce.androidsdk.rest
 
 /**
  * An exception derived from an `sfap_api` endpoint failure response.

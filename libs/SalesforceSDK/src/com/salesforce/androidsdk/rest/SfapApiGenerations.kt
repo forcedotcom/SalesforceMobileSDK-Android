@@ -24,11 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth
+package com.salesforce.androidsdk.rest
 
-import com.salesforce.androidsdk.auth.SfapApiGenerationsResponseBody.Companion.fromJson
-import com.salesforce.androidsdk.rest.RestClient
-import com.salesforce.androidsdk.rest.RestRequest
+import com.salesforce.androidsdk.rest.SfapApiGenerationsResponseBody.Companion.fromJson
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
