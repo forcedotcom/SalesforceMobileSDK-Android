@@ -20,7 +20,7 @@ import java.io.IOException
  * @param restClient The REST client to use
  */
 class SfapApiGenerations(
-    private val apiHostName: String = API_HOST_NAME_PROD,
+    private val apiHostName: String,
     private val modelName: String,
     private val restClient: RestClient
 ) {
@@ -62,18 +62,4 @@ class SfapApiGenerations(
             throw SfapApiException(responseBodyString)
         }
     }
-
-    // region Companion
-
-    companion object {
-
-        /** The Salesforce `sfap_api` development host name */
-        @Suppress("unused")
-        const val API_HOST_NAME_DEV = "dev.api.salesforce.com"
-
-        /** The Salesforce `sfap_api` production host name */
-        const val API_HOST_NAME_PROD = "api.salesforce.com"
-    }
-
-    // endregion
 }
