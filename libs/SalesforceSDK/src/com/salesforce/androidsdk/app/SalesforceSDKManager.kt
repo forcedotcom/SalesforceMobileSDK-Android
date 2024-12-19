@@ -50,6 +50,7 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
+import android.util.Log
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
@@ -209,7 +210,10 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+//    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+// TODO: test passing in login class
+    val loginActivityInstance = LoginActivity()
+    val webviewLoginActivityClass = loginActivityInstance::class.java
 
     /**
      * The class of the activity used to perform the login process and create
@@ -1454,6 +1458,9 @@ open class SalesforceSDKManager protected constructor(
      * and OS dark theme states.
      *
      * @param activity The activity used to set style attributes
+     *
+     *
+     * TODO: remove this????
      */
     open fun setViewNavigationVisibility(activity: Activity) {
         if (!isDarkTheme || activity.javaClass.name == loginActivityClass.name) {

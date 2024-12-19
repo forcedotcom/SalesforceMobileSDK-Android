@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.Serializable;

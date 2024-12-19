@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -43,23 +43,23 @@ import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.security.KeyChain.choosePrivateKeyAlias
+import android.text.TextUtils.isEmpty
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
-import android.view.View.VISIBLE
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
-import android.webkit.WebSettings.LayoutAlgorithm
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
+import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
@@ -75,28 +75,23 @@ import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationCallback
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
-import androidx.core.content.ContextCompat.registerReceiver
-import com.salesforce.androidsdk.R.id.sf__auth_container_phone
-import com.salesforce.androidsdk.R.id.sf__bio_login_button
-import com.salesforce.androidsdk.R.id.sf__idp_login_button
-import com.salesforce.androidsdk.R.id.sf__menu_clear_cookies
-import com.salesforce.androidsdk.R.id.sf__menu_pick_server
-import com.salesforce.androidsdk.R.id.sf__menu_reload
-import com.salesforce.androidsdk.R.id.sf__oauth_webview
+import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
-import com.salesforce.androidsdk.R.style.SalesforceSDK
-import com.salesforce.androidsdk.R.style.SalesforceSDK_Dark_Login
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
@@ -107,9 +102,10 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions.fromBundleWithS
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
+import com.salesforce.androidsdk.ui.components.LoginView
+import com.salesforce.androidsdk.ui.theme.WebviewTheme
 import com.salesforce.androidsdk.util.AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION
 import com.salesforce.androidsdk.util.EventsObservable
-import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewCreateComplete
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
@@ -119,21 +115,13 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URLDecoder
-import com.salesforce.androidsdk.R.layout.sf__login as sf__login_layout
-import com.salesforce.androidsdk.R.menu.sf__login as sf__login_menu
 
-/**
- * Login activity authenticates a user. Authorization happens inside a web view.
- * Once an authorization code is obtained, it is exchanged for access and
- * refresh tokens to create an account via the account manager which stores
- * them.
- *
- * Note, the majority of the work for authorization is actually managed by the
- * OAuth web view helper class.
- */
-open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
+open class LoginActivity: FragmentActivity() {
+    protected open val viewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
+    internal lateinit var loginOptions: LoginOptions
+//    internal lateinit var webviewHelper: OAuthWebviewHelper
+
     private var wasBackgrounded = false
-    private var webviewHelper: OAuthWebviewHelper? = null
     private var authConfigReceiver: AuthConfigReceiver? = null
     private var receiverRegistered = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
@@ -142,8 +130,9 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-        val salesforceSDKManager = SalesforceSDKManager.getInstance()
+//        viewModel.loading.value = true
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -167,23 +156,29 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             onRequestContinued()
         }
 
-        setTheme(
-            when (salesforceSDKManager.isDarkTheme) {
-                true -> SalesforceSDK_Dark_Login
-                else -> SalesforceSDK
-            }
-        )
+        // TODO: migrate to compose theme?
+//        setTheme(
+//            when (salesforceSDKManager.isDarkTheme) {
+//                true -> SalesforceSDK_Dark_Login
+//                else -> SalesforceSDK
+//            }
+//        )
 
-        salesforceSDKManager.setViewNavigationVisibility(this)
+//        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)  // TODO: this should probably be removed
 
         // Determine login options for Salesforce Identity API UI Bridge front door URL use or choose defaults.
-        val loginOptions = when {
-            isUsingFrontDoorBridge -> salesforceSDKManager.loginOptions
+        loginOptions = when {
+            isUsingFrontDoorBridge -> SalesforceSDKManager.getInstance().loginOptions
             else -> fromBundleWithSafeLoginUrl(intent.extras)
         }
 
+//        webviewHelper = OAuthWebviewHelper(baseContext, this@LoginActivity, loginOptions)
+
+        // Create Webview Client
+//        webviewClient = LoginWebviewClient(viewModel, loginOptions)
+
         // Protect against screenshots
-        window.setFlags(FLAG_SECURE, FLAG_SECURE)
+//        window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
         /*
          * Fetch authentication configuration except when using Salesforce Identity API UI Bridge, since the front door URL may be for another login server.
@@ -191,64 +186,45 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
          * Support for adding new login servers from the front door bridge URL is not yet implemented.  Unknown login servers will fail login.
          */
         if (!isUsingFrontDoorBridge) {
-            salesforceSDKManager.fetchAuthenticationConfiguration()
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration()
         }
 
-        // Setup content view
-        setContentView(sf__login_layout)
-        if (salesforceSDKManager.isIDPLoginFlowEnabled) {
-            findViewById<Button>(sf__idp_login_button).visibility = VISIBLE
-        }
+        // TODO: Do I need to create webview client here and pass it to LoginView?
 
-        val biometricAuthenticationManager = (salesforceSDKManager.biometricAuthenticationManager as? BiometricAuthenticationManager)
-        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn()) {
-            if (biometricAuthenticationManager.isNativeBiometricLoginButtonEnabled()) {
-                biometricAuthenticationButton = findViewById<Button>(sf__bio_login_button)?.apply {
-                    visibility = VISIBLE
+        // Set content
+        setContentView(
+            ComposeView(this).apply {
+                setContent {
+                    // TODO: apply theme here
+                    WebviewTheme {
+                        LoginView(this@LoginActivity)
+                    }
                 }
             }
-            if (intent.extras?.getBoolean(SHOW_BIOMETRIC) == true) {
+        )
+
+        // Present Biometric Prompt if necessary.
+        val biometricAuthenticationManager =
+            SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
+        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn() &&
+            intent.extras?.getBoolean(SHOW_BIOMETRIC) == true) {
                 presentBiometric()
             }
-        }
 
-        // Set up the web view
-        val webView = findViewById<WebView>(sf__oauth_webview)
-        webView.settings.apply {
-            useWideViewPort = true
-            layoutAlgorithm = LayoutAlgorithm.NORMAL
-            javaScriptEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
-            databaseEnabled = true
-            domStorageEnabled = true
-        }
-        EventsObservable.get().notifyEvent(AuthWebViewCreateComplete, webView)
-        webviewHelper = getOAuthWebviewHelper(
-            this,
-            loginOptions,
-            webView,
-            savedInstanceState
-        )
-
-        // Let observers know
-        EventsObservable.get().notifyEvent(
-            LoginActivityCreateComplete,
-            this
-        )
-
-        // Prompt user with the default login page or log in via other configurations such as using a Salesforce Identity API UI Bridge front door URL.
-        when {
-            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
-                uiBridgeApiParameters.frontdoorBridgeUrl,
-                uiBridgeApiParameters.pkceCodeVerifier
-            )
-
-            else -> certAuthOrLogin()
-        }
+        // Prompt user with the default login page or log in via other configurations such as using
+        // a Salesforce Identity API UI Bridge front door URL.
+//        when {
+//            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
+//                uiBridgeApiParameters.frontdoorBridgeUrl,
+//                uiBridgeApiParameters.pkceCodeVerifier
+//            )
+//
+//            else -> certAuthOrLogin()
+//        }
 
         if (!receiverRegistered) {
             authConfigReceiver = AuthConfigReceiver().also { changeServerReceiver ->
-                registerReceiver(
+                ContextCompat.registerReceiver(
                     this,
                     changeServerReceiver,
                     IntentFilter(AUTH_CONFIG_COMPLETE_INTENT_ACTION),
@@ -264,11 +240,13 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
-        requestedOrientation = if (salesforceSDKManager.compactScreen(this))
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
-            ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+        // TODO:  is this required?
+//        requestedOrientation = if (SalesforceSDKManager.getInstance().compactScreen(this))
+//            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
+//            ActivityInfo.SCREEN_ORIENTATION_FULL_USER
 
-        fixEdgeToEdge(findViewById(sf__auth_container_phone))
+        // Let observers know onCreate is complete.
+        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
     }
 
     override fun onDestroy() {
@@ -280,6 +258,23 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         handleBackBehavior()
         super.onDestroy()
     }
+
+    override fun onResume() {
+        super.onResume()
+        wasBackgrounded = false
+    }
+
+    public override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+//        webviewHelper?.saveState(outState)  // TODO: savedSatateHandle in viewModel?
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent) =
+        // This allows sub classes to override the behavior by returning false
+        when {
+            fixBackButtonBehavior(keyCode) -> true
+            else -> super.onKeyDown(keyCode, event)
+        }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -293,12 +288,14 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         /*
          * It is important to not reload if we have a custom tab displayed because that also generates
          * a new code verifier which will break PKCE.
+         *
+         * TODO:  move this to LoginWebviewClient??? shouldn't need to manually call load here
          */
         if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
             // Reload the login page to ensure the correct login server is displayed in the webview.
-            webviewHelper?.run {
-                loadLoginPage()
-            }
+//            webviewHelper?.run {
+//                loadLoginPage()
+//            }
         }
     }
 
@@ -319,43 +316,121 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         super.finish()
     }
 
-    protected open fun certAuthOrLogin() {
-        when {
-            shouldUseCertBasedAuth() -> {
-                val alias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
-                d(TAG, "Cert based login flow being triggered with alias: $alias")
-                choosePrivateKeyAlias(
-                    this,
-                    webviewHelper ?: return,
-                    null,
-                    null,
-                    null,
-                    -1,
-                    alias
-                )
-            }
 
-            else -> {
-                d(TAG, "Web server or user agent login flow triggered")
-                webviewHelper?.loadLoginPage()
-            }
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        /*
+         * Present authentication again after the user has come back from
+         * security settings to ensure they actually set up a secure lock screen
+         * (pin/pattern/password/etc) instead of swipe or none.
+         */
+        if (requestCode == SETUP_REQUEST_CODE) {
+            biometricAuthenticationButton?.setText(sf__login_with_biometric)
+            presentBiometric()
         }
     }
 
-    private fun isChromeCallback(intent: Intent?): Boolean {
-        if (intent == null) {
-            return false
-        }
-        return intent.data != null
-    }
+//    override fun finish(userAccount: UserAccount?) {
+//        initAnalyticsManager(userAccount)
+//        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+//        val authenticatedUsers = userAccountManager.authenticatedUsers
+//        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
+//        val userSwitchType = when {
+//            // We've already authenticated the first user, so there should be one
+//            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+//
+//            // Otherwise we're logging in with an additional user
+//            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+//
+//            // This should never happen but if it does, pass in the "unknown" value
+//            else -> USER_SWITCH_TYPE_DEFAULT
+//        }
+//        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+//        setResult(Activity.RESULT_OK)
+//        finish()
+//    }
 
-    private fun completeAuthFlow(intent: Intent) {
-        val params = parse(intent.data)
-        params["error"]?.let { error ->
-            val errorDesc = params["error_description"]
-            webviewHelper?.onAuthFlowError(error, errorDesc, null)
-        } ?: webviewHelper?.onWebServerFlowComplete(params["code"])
-    }
+    // region QR Code Login Via UI Bridge API Public Implementation
+
+    /**
+     * Automatically log in with a UI Bridge API front door bridge URL and PKCE code verifier.
+     *
+     * This method is the intended entry point to Salesforce Mobile SDK when using the Salesforce
+     * Identity API UI Bridge front door URL.  Usable, default implementations of methods are
+     * provided for parsing the UI Bridge parameters from the reference JSON and log in URLs used
+     * by the reference QR Code Log In implementation.  However, the URL and JSON structure in the
+     * reference implementation is not required.  An app may use a custom structure so long as this
+     * entry point is used to log in with the front door URL and optional PKCE code verifier.
+     *
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge URL
+     * @param pkceCodeVerifier The optional PKCE code verifier, which is not required for User Agent
+     * Authorization Flow but is required for Web Server Authorization Flow
+     */
+//    @Suppress("MemberVisibilityCanBePrivate")
+//    fun loginWithFrontdoorBridgeUrl(
+//        frontdoorBridgeUrl: String,
+//        pkceCodeVerifier: String?
+//    ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
+
+    /**
+     * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
+     *
+     * This method is the intended entry point for login using the reference QR Code Login URL and
+     * JSON format.  It will parse the UI Bridge parameters from the login QR code URL and call
+     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON structure in the
+     * reference implementation is not required.  An app may use a custom structure so long as UI
+     * Bridge front door URL and optional PKCE code verifier are provided to
+     * [LoginActivity.loginWithFrontdoorBridgeUrl].
+     *
+     * @param qrCodeLoginUrl The QR code login URL
+     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
+     * false otherwise
+     */
+//    fun loginWithFrontdoorBridgeUrlFromQrCode(
+//        qrCodeLoginUrl: String?
+//    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
+//        qrCodeLoginUrl
+//    )?.let { uiBridgeApiParameters ->
+//        loginWithFrontdoorBridgeUrl(
+//            uiBridgeApiParameters.frontdoorBridgeUrl,
+//            uiBridgeApiParameters.pkceCodeVerifier
+//        )
+//        true
+//    } ?: false
+
+    // endregion
+
+    // End of Public Functions
+
+    // TODO: add cert auth back
+//    protected open fun certAuthOrLogin() {
+//        when {
+//            shouldUseCertBasedAuth() -> {
+//                val alias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
+//                d(TAG, "Cert based login flow being triggered with alias: $alias")
+//                choosePrivateKeyAlias(
+//                    this,
+//                    webviewHelper ?: return,
+//                    null,
+//                    null,
+//                    null,
+//                    -1,
+//                    alias
+//                )
+//            }
+//
+//            else -> {
+//                d(TAG, "Web server or user agent login flow triggered")
+//                webviewHelper.loadLoginPage()
+//            }
+//        }
+//    }
 
     /**
      * Indicates if the certificate based authentication flow should be used.
@@ -366,35 +441,18 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     protected open fun shouldUseCertBasedAuth(): Boolean =
         getRuntimeConfig(this).getBoolean(RequireCertAuth)
 
-    protected open fun getOAuthWebviewHelper(
-        callback: OAuthWebviewHelperEvents,
-        loginOptions: LoginOptions,
-        webView: WebView,
-        savedInstanceState: Bundle?
-    ) = OAuthWebviewHelper(
-        this,
-        callback,
-        loginOptions,
-        webView,
-        savedInstanceState
-    )
-
-    override fun onResume() {
-        super.onResume()
-        wasBackgrounded = false
-    }
-
-    public override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        webviewHelper?.saveState(outState)
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent) =
-        // This allows sub classes to override the behavior by returning false
-        when {
-            fixBackButtonBehavior(keyCode) -> true
-            else -> super.onKeyDown(keyCode, event)
-        }
+//    protected open fun getOAuthWebviewHelper(
+//        callback: OAuthWebviewHelperEvents,
+//        loginOptions: LoginOptions,
+//        webView: WebView,
+//        savedInstanceState: Bundle?
+//    ) = OAuthWebviewHelper(
+//        this,
+//        callback,
+//        loginOptions,
+//        webView,
+//        savedInstanceState
+//    )
 
     /**
      * A fix for the back button's behavior.
@@ -413,6 +471,25 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
 
             else -> false
         }
+
+
+    // End of Public API (protected)
+
+    private fun isChromeCallback(intent: Intent?): Boolean {
+        if (intent == null) {
+            return false
+        }
+        return intent.data != null
+    }
+
+    private fun completeAuthFlow(intent: Intent) {
+        val params = parse(intent.data)
+        // TODO: parse errors
+//        params["error"]?.let { error ->
+//            val errorDesc = params["error_description"]
+//            webviewHelper?.onAuthFlowError(error, errorDesc, null)
+//        } ?: webviewHelper?.onWebServerFlowComplete(params["code"])
+    }
 
     private fun handleBackBehavior() {
         // If app is using Native Login this activity is a fallback and can be dismissed.
@@ -438,131 +515,6 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
-    /**
-     * Actions (Changer server / Clear cookies etc) are available through a menu
-     */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(sf__login_menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem) =
-        when (item.itemId) {
-            sf__menu_clear_cookies -> {
-                onClearCookiesClick(null)
-                true
-            }
-
-            sf__menu_pick_server -> {
-                onPickServerClick(null)
-                true
-            }
-
-            sf__menu_reload -> {
-                onReloadClick(null)
-                true
-            }
-
-            else -> super.onOptionsItemSelected(item)
-        }
-
-    /**
-     * Callbacks from the OAuth web view helper
-     */
-    override fun loadingLoginPage(loginUrl: String) {
-        this@LoginActivity.runOnUiThread { supportActionBar?.title = loginUrl }
-    }
-
-    /**
-     * Callbacks from the OAuth web view helper
-     */
-    override fun onAccountAuthenticatorResult(authResult: Bundle) {
-        accountAuthenticatorResult = authResult
-    }
-
-    /**
-     * Called when the "clear cookies" button is clicked to clear cookies and
-     * reload the login page.
-     * @param v The view that was clicked
-     */
-    open fun onClearCookiesClick(v: View?) {
-        webviewHelper?.clearCookies()
-        webviewHelper?.loadLoginPage()
-    }
-
-    /**
-     * Called when the IDP login button is clicked.
-     *
-     * @param v IDP login button
-     */
-    open fun onIDPLoginClick(v: View?) {
-        SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
-            this,
-            SPStatusCallback()
-        )
-    }
-
-    /**
-     * Called when the "reload" button is clicked to reloads the login page.
-     * @param v The reload button
-     */
-    private fun onReloadClick(@Suppress("UNUSED_PARAMETER") v: View?) {
-        webviewHelper?.loadLoginPage()
-    }
-
-    /**
-     * Called when "pick server" button is clicked to start the server picker
-     * activity.
-     * @param v The pick server button
-     */
-    open fun onPickServerClick(v: View?) {
-        Intent(this, ServerPickerActivity::class.java).also { intent ->
-            startActivityForResult(
-                intent,
-                PICK_SERVER_REQUEST_CODE
-            )
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        /*
-         * Present authentication again after the user has come back from
-         * security settings to ensure they actually set up a secure lock screen
-         * (pin/pattern/password/etc) instead of swipe or none.
-         */
-        if (requestCode == SETUP_REQUEST_CODE) {
-            biometricAuthenticationButton?.setText(sf__login_with_biometric)
-            presentBiometric()
-        }
-    }
-
-    override fun finish(userAccount: UserAccount?) {
-        initAnalyticsManager(userAccount)
-        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-        val authenticatedUsers = userAccountManager.authenticatedUsers
-        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
-        val userSwitchType = when {
-            // We've already authenticated the first user, so there should be one
-            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-            // Otherwise we're logging in with an additional user
-            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-            // This should never happen but if it does, pass in the "unknown" value
-            else -> USER_SWITCH_TYPE_DEFAULT
-        }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-        setResult(Activity.RESULT_OK)
-        finish()
-    }
-
     private fun initAnalyticsManager(account: UserAccount?) =
         SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
 
@@ -578,14 +530,17 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         }
     }
 
+    // TODO: move this to LoginWebviewClient
     inner class AuthConfigReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
             if (intent?.action == AUTH_CONFIG_COMPLETE_INTENT_ACTION) {
-                webviewHelper?.loadLoginPage()
+                // TODO: do we need this?
+//                webviewHelper?.loadLoginPage()
             }
         }
     }
 
+    // Biometric Authentication Code
     internal fun presentBiometric() {
         val biometricPrompt = biometricPrompt
         val biometricManager = BiometricManager.from(this)
@@ -691,58 +646,28 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
                 .build()
         }
 
+    // TODO: move this up?
     open fun onBioAuthClick(view: View?) = presentBiometric()
 
-    // region QR Code Login Via UI Bridge API Public Implementation
-
-    /**
-     * Automatically log in with a UI Bridge API front door bridge URL and PKCE code verifier.
-     *
-     * This method is the intended entry point to Salesforce Mobile SDK when using the Salesforce
-     * Identity API UI Bridge front door URL.  Usable, default implementations of methods are
-     * provided for parsing the UI Bridge parameters from the reference JSON and log in URLs used
-     * by the reference QR Code Log In implementation.  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as this
-     * entry point is used to log in with the front door URL and optional PKCE code verifier.
-     *
-     * @param frontdoorBridgeUrl The UI Bridge API front door bridge URL
-     * @param pkceCodeVerifier The optional PKCE code verifier, which is not required for User Agent
-     * Authorization Flow but is required for Web Server Authorization Flow
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun loginWithFrontdoorBridgeUrl(
-        frontdoorBridgeUrl: String,
-        pkceCodeVerifier: String?
-    ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
-
-    /**
-     * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
-     *
-     * This method is the intended entry point for login using the reference QR Code Login URL and
-     * JSON format.  It will parse the UI Bridge parameters from the login QR code URL and call
-     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as UI
-     * Bridge front door URL and optional PKCE code verifier are provided to
-     * [LoginActivity.loginWithFrontdoorBridgeUrl].
-     *
-     * @param qrCodeLoginUrl The QR code login URL
-     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
-     * false otherwise
-     */
-    fun loginWithFrontdoorBridgeUrlFromQrCode(
-        qrCodeLoginUrl: String?
-    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
-        qrCodeLoginUrl
-    )?.let { uiBridgeApiParameters ->
-        loginWithFrontdoorBridgeUrl(
-            uiBridgeApiParameters.frontdoorBridgeUrl,
-            uiBridgeApiParameters.pkceCodeVerifier
-        )
-        true
-    } ?: false
-
     // endregion
-    // region Companion
+
+    /**
+     * Reloads the authorization page in the web view.  Also, updates the window
+     * title so it's easier to identify the login system.
+     */
+//    private fun loadLoginPage() = loginOptions.let { loginOptions ->
+//        when {
+//            isEmpty(loginOptions.jwt) -> {
+//                loginOptions.loginUrl = viewModel.loginUrl
+//                doLoadPage()
+//            }
+//
+//            else -> CoroutineScope(IO).launch {
+//                SwapJWTForAccessTokenTask().execute(loginOptions)
+//            }
+//        }
+//    }
+
 
     companion object {
 
@@ -901,5 +826,63 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
         // endregion
     }
 
-    // endregion
+    internal fun finishAuth(tr: TokenEndpointResponse?) {
+        CoroutineScope(IO).launch {
+            FinishAuthTask().execute(tr)
+        }
+    }
+
+    private inner class FinishAuthTask: TestBaseFinishAuthFlowTask<TokenEndpointResponse?>() {
+        override fun finish(userAccount: UserAccount?) {
+            initAnalyticsManager(userAccount)
+            val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+            val authenticatedUsers = userAccountManager.authenticatedUsers
+            val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
+            val userSwitchType = when {
+                // We've already authenticated the first user, so there should be one
+                numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+
+                // Otherwise we're logging in with an additional user
+                numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+
+                // This should never happen but if it does, pass in the "unknown" value
+                else -> USER_SWITCH_TYPE_DEFAULT
+            }
+            userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+            setResult(Activity.RESULT_OK)
+            finish()
+        }
+
+        override fun onAuthFlowError(error: String, errorDesc: String?, e: Throwable?) {
+            // TODO: do something
+        }
+
+        override fun onAccountAuthenticatorResult(authResult: Bundle) {
+            accountAuthenticatorResult = authResult
+        }
+
+        override fun performRequest(param: TokenEndpointResponse?): TokenEndpointResponse? {
+            runCatching {
+                id = callIdentityService(
+                    DEFAULT,
+                    param?.idUrlWithInstance,
+                    param?.authToken
+                )
+
+                // Request the authenticated user's information to determine if it is a Salesforce integration user.
+                // This is a synchronous network request, so it must be performed here in the background stage.
+                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance()
+                    .shouldBlockSalesforceIntegrationUser // TODO: add this back && fetchIsSalesforceIntegrationUser(param)
+            }.onFailure { throwable ->
+                backgroundException = throwable
+            }
+            return param
+        }
+
+    }
+
+//    override fun loadingLoginPage(loginUrl: String) {
+//        // TODO: do nothing here?
+////        viewModel.loginUrl = loginUrl
+//    }
 }

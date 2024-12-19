@@ -142,17 +142,8 @@ import java.util.function.Consumer
  * c) Navigate to the authentication completion URL and token fetch
  * d) Call the id service to obtain additional info about the user
  * e) Create a local account and return an authentication result bundle
- *
- * @Deprecated This class will no longer be public starting in Mobile SDK 13.0.  It
- * is no longer necessary to extend or change LoginActivity's instance of this class
- * to support multi-factor authentication.  If there are other uses cases please
- * inform the team via Github or our Trailblazer community.
  */
-@Deprecated(
-    "This class will no longer be public starting in Mobile SDK 13.0.",
-    level = DeprecationLevel.WARNING,
-)
-open class OAuthWebviewHelper : KeyChainAliasCallback {
+internal class OAuthWebviewHelper : KeyChainAliasCallback {
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
@@ -168,7 +159,7 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
      * interface so that it can notify it of things it needs to do as part of
      * the oauth process.
      */
-    interface OAuthWebviewHelperEvents {
+    internal interface OAuthWebviewHelperEvents {
 
         /** Called when web view starts loading the login page */
         fun loadingLoginPage(loginUrl: String)
@@ -217,8 +208,8 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
                     userAgentString ?: ""
                 )
             }
-            webViewClient = makeWebViewClient()
-            webChromeClient = makeWebChromeClient()
+//            webViewClient = makeWebViewClient()
+//            webChromeClient = makeWebChromeClient()
         }
 
         activity.setTheme(
@@ -298,19 +289,19 @@ open class OAuthWebviewHelper : KeyChainAliasCallback {
     private fun clearView() =
         activity?.runOnUiThread { webView?.loadUrl("about:blank") }
 
-    /**
-     * A factory method for the web view client. This can be overridden as
-     * needed.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun makeWebViewClient() = AuthWebViewClient()
+//    /**
+//     * A factory method for the web view client. This can be overridden as
+//     * needed.
+//     */
+//    @Suppress("MemberVisibilityCanBePrivate")
+//    protected open fun makeWebViewClient() = AuthWebViewClient()
 
-    /**
-     * A factory method for the web Chrome client. This can be overridden as
-     * needed
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun makeWebChromeClient() = WebChromeClient()
+//    /**
+//     * A factory method for the web Chrome client. This can be overridden as
+//     * needed
+//     */
+//    @Suppress("MemberVisibilityCanBePrivate")
+//    protected open fun makeWebChromeClient() = WebChromeClient()
 
     /**
      * A callback when the user facing part of the authentication flow completed

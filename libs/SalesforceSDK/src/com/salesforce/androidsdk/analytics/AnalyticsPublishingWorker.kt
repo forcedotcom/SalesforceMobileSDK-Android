@@ -34,7 +34,7 @@ import androidx.work.ListenableWorker.Result.success
 import androidx.work.NetworkType.CONNECTED
 import androidx.work.OneTimeWorkRequest
 import androidx.work.PeriodicWorkRequest
-import androidx.work.WorkManager.getInstance
+import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -127,7 +127,7 @@ internal class AnalyticsPublishingWorker(
                 Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
             ).build().also { publishAnalyticsOneTimeWorkRequest ->
                 runCatching {
-                    getInstance(context)
+                    WorkManager.getInstance(context)
                 }.getOrNull()?.enqueueUniqueWork(
                     PUBLISH_ANALYTICS_WORK_NAME,
                     REPLACE,
@@ -143,7 +143,7 @@ internal class AnalyticsPublishingWorker(
                 Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
             ).build().also { publishAnalyticsPeriodicWorkRequest ->
                 runCatching {
-                    getInstance(context)
+                    WorkManager.getInstance(context)
                 }.getOrNull()?.enqueueUniquePeriodicWork(
                     PUBLISH_ANALYTICS_WORK_NAME,
                     CANCEL_AND_REENQUEUE,
