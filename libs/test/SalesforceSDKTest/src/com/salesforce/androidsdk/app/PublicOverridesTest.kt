@@ -6,10 +6,10 @@ import android.accounts.Account
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
-import android.view.Menu
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
+import androidx.lifecycle.LifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -87,6 +87,7 @@ internal class PublicOverridesTest {
         }
     }
 
+    @Suppress("unused")
     @Test
     fun overrideSalesforceSDKManager() {
         class Override(context: Context, mainActivity: Class<out Activity>) : SalesforceSDKManager(context, mainActivity) {
@@ -106,9 +107,9 @@ internal class PublicOverridesTest {
             override fun logout(frontActivity: Activity?, showLoginPage: Boolean) { }
             override fun logout(account: Account?, frontActivity: Activity?, showLoginPage: Boolean) { }
             override val loginServerManager: LoginServerManager get() = super.loginServerManager
+            override fun onPause(owner: LifecycleOwner) {}
+            override fun onResume(owner: LifecycleOwner) {}
             override fun setViewNavigationVisibility(activity: Activity) { }
-            override fun onAppBackgrounded() { }
-            override fun onAppForegrounded() { }
         }
 
         // Instantiate to ensure this compiles.
