@@ -1,10 +1,11 @@
 package com.salesforce.androidsdk.auth
 
-import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.SfapApiGenerationsResponseBody.Companion.fromJson
+import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestRequest
+import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import kotlinx.serialization.json.Json.Default.encodeToString
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
@@ -16,54 +17,47 @@ import java.io.IOException
  * @param apiHostName The Salesforce `sfap_api` hostname
  * @param modelName The model name to request generations from.  For possible
  * values, see https://developer.salesforce.com/docs/einstein/genai/guide/api-names.html
+ * @param restClient The REST client to use
  */
 class SfapApiGenerations(
     private val apiHostName: String = API_HOST_NAME_PROD,
-    private val modelName: String
+    private val modelName: String,
+    private val restClient: RestClient
 ) {
 
     /**
      * Fetches generated text from the `sfap_api` "generations" endpoint.
      * @param prompt The prompt request parameter value
-     * @param accessToken The request's access token
      * @return The endpoint's response
      */
     @Throws(
         IOException::class,
-        OAuth2InvalidTokenException::class,
         SfapApiException::class
     )
     fun fetch(
-        prompt: String,
-        accessToken: String
+        prompt: String
     ): SfapApiGenerationsResponseBody {
 
         // Request the generated text.
-        val response = DEFAULT.okHttpClient.newCall(
-            Request.Builder().url(
-                "https://$apiHostName/einstein/platform/v1/models/$modelName/generations"
+        val restRequest = RestRequest(
+            POST,
+            "https://$apiHostName/einstein/platform/v1/models/$modelName/generations",
+            encodeToString(
+                SfapApiGenerationsRequestBody.serializer(),
+                SfapApiGenerationsRequestBody(prompt)
+            ).toRequestBody(
+                "application/json; charset=utf-8".toMediaTypeOrNull()
+            ),
+            mutableMapOf(
+                "x-sfdc-app-context" to "EinsteinGPT",
+                "x-client-feature-id" to "ai-platform-models-connected-app"
             )
-                .header(
-                    "Authorization",
-                    "Bearer $accessToken"
-                )
-                .header("Content-Type", "application/json")
-                .header("x-sfdc-app-context", "EinsteinGPT")
-                .header("x-client-feature-id", "ai-platform-models-connected-app")
-                .post(
-                    encodeToString(
-                        SfapApiGenerationsRequestBody.serializer(),
-                        SfapApiGenerationsRequestBody(prompt = prompt)
-                    ).toRequestBody(
-                        "application/json; charset=utf-8".toMediaTypeOrNull()
-                    )
-                ).build()
-        ).execute()
-        val responseBodyString = response.body?.string()
-        return if (response.isSuccessful && responseBodyString != null) {
+        )
+        val restResponse = restClient.sendSync(restRequest)
+
+        val responseBodyString = restResponse.asString()
+        return if (restResponse.isSuccess && responseBodyString != null) {
             fromJson(responseBodyString)
-        } else if (response.code == 401 && responseBodyString == "Error: Invalid token") {
-            throw OAuth2InvalidTokenException(responseBodyString)
         } else {
             throw SfapApiException(responseBodyString)
         }
