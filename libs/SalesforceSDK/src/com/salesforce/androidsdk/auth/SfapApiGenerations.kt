@@ -1,7 +1,6 @@
 package com.salesforce.androidsdk.auth
 
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
-import com.salesforce.androidsdk.auth.OAuth2ClientCredentialsJwt.OAuth2InvalidTokenException
 import com.salesforce.androidsdk.auth.SfapApiGenerationsResponseBody.Companion.fromJson
 import kotlinx.serialization.json.Json.Default.encodeToString
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -23,6 +22,12 @@ class SfapApiGenerations(
     private val modelName: String
 ) {
 
+    /**
+     * Fetches generated text from the `sfap_api` "generations" endpoint.
+     * @param prompt The prompt request parameter value
+     * @param accessToken The request's access token
+     * @return The endpoint's response
+     */
     @Throws(
         IOException::class,
         OAuth2InvalidTokenException::class,
@@ -30,7 +35,7 @@ class SfapApiGenerations(
     )
     fun fetch(
         prompt: String,
-        clientCredentialsJwt: OAuth2ClientCredentialsJwt
+        accessToken: String
     ): SfapApiGenerationsResponseBody {
 
         // Request the generated text.
@@ -40,7 +45,7 @@ class SfapApiGenerations(
             )
                 .header(
                     "Authorization",
-                    "Bearer ${clientCredentialsJwt.token}"
+                    "Bearer $accessToken"
                 )
                 .header("Content-Type", "application/json")
                 .header("x-sfdc-app-context", "EinsteinGPT")
