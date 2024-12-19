@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.ui
 
+import android.text.TextUtils.isEmpty
 import android.view.View
 import android.webkit.WebChromeClient
 import androidx.compose.runtime.derivedStateOf
@@ -15,7 +16,21 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
+import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginWebviewClient.Companion
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URI
 
 open class LoginViewModel(
     var loginOptions: LoginOptions,
@@ -31,8 +46,15 @@ open class LoginViewModel(
 //    open val selectedServer: String?
 //        get() = "login.salesforce.com"
     open val loginUrl: MutableLiveData<String> by lazy {
-        MutableLiveData<String>(tempSelectedServer.value)
+//        MutableLiveData<String>(tempSelectedServer.value)
+        MutableLiveData<String>(getAuthorizationUrl())
     }
+
+//    getAuthorizationUrl(
+//    useWebServerAuthentication = SalesforceSDKManager.getInstance().isBrowserLoginEnabled
+//    || SalesforceSDKManager.getInstance().useWebServerAuthentication,
+//    useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
+//    )
 
     internal open var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
     internal open val oAuthClientId: String
@@ -46,6 +68,9 @@ open class LoginViewModel(
     internal val tempSelectedServer = mutableStateOf("login.salesforce.com")
     internal var showBottomSheet = mutableStateOf(false)
     internal var loading = mutableStateOf(false)
+
+    /** The default, locally generated code verifier */
+    private var codeVerifier: String? = null
 
 
 // TODO: get bio auth mgr and show button if necessary.  Also do the same for IDP
@@ -253,41 +278,37 @@ open class LoginViewModel(
 
 //    open fun clearCookies() =
 //        CookieManager.getInstance().removeAllCookies(null)
-//    @Suppress("MemberVisibilityCanBePrivate")
-//    protected open fun getAuthorizationUrl(
-//        useWebServerAuthentication: Boolean,
-//        useHybridAuthentication: Boolean
-//    ): URI {
-//
-//        // Reset log in state,
-//        // - Salesforce Identity UI Bridge API log in, such as QR code login.
+
+
+    @Suppress("MemberVisibilityCanBePrivate")
+    internal fun getAuthorizationUrl(): String {
+
+        // Reset log in state,
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
 //        resetFrontDoorBridgeUrl()
-//
-//        val loginOptions = loginOptions
-//        val oAuthClientId = oAuthClientId
-//        val authorizationDisplayType = authorizationDisplayType
-//
-//        val jwtFlow = !isEmpty(loginOptions.jwt)
-//        val additionalParams = when {
-//            jwtFlow -> null
-//            else -> loginOptions.additionalParameters
-//        }
-//
-//        // NB code verifier / code challenge are only used when useWebServerAuthentication is true
-//        val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
-//        val codeChallenge = getSHA256Hash(codeVerifier)
-//        val authorizationUrl = OAuth2.getAuthorizationUrl(
-//            useWebServerAuthentication,
-//            useHybridAuthentication,
+
+        val jwtFlow = !isEmpty(loginOptions.jwt)
+        val additionalParams = when {
+            jwtFlow -> null
+            else -> loginOptions.additionalParameters
+        }
+
+        // NB code verifier / code challenge are only used when useWebServerAuthentication is true
+        val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
+        val codeChallenge = getSHA256Hash(codeVerifier)
+        val authorizationUrl = OAuth2.getAuthorizationUrl(
+            SalesforceSDKManager.getInstance().useWebServerAuthentication,
+            SalesforceSDKManager.getInstance().useHybridAuthentication,
 //            URI(loginOptions.loginUrl),
-//            oAuthClientId,
-//            loginOptions.oauthCallbackUrl,
-//            loginOptions.oauthScopes,
-//            authorizationDisplayType,
-//            codeChallenge,
-//            additionalParams
-//        )
-//
+            URI(selectedServer),
+            oAuthClientId,
+            loginOptions.oauthCallbackUrl,
+            loginOptions.oauthScopes,
+            authorizationDisplayType,
+            codeChallenge,
+            additionalParams
+        )
+
 //        return when {
 //            jwtFlow -> getFrontdoorUrl(
 //                authorizationUrl,
@@ -298,7 +319,42 @@ open class LoginViewModel(
 //
 //            else -> authorizationUrl
 //        }
-//    }
+
+        return authorizationUrl.toString()
+    }
+
+    internal fun onWebServerFlowComplete(
+        code: String?,
+        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+        onAuthFlowComplete: (tr: TokenEndpointResponse?) -> Unit,
+    ) =
+        CoroutineScope(IO).launch {
+            doCodeExchangeEndpoint(code, onAuthFlowError, onAuthFlowComplete)
+        }
+
+    private suspend fun doCodeExchangeEndpoint(
+        code: String?,
+        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+        onAuthFlowComplete: (tr: TokenEndpointResponse?) -> Unit,
+    ) = withContext(IO) {
+        var tokenResponse: TokenEndpointResponse? = null
+        runCatching {
+            tokenResponse = exchangeCode(
+                HttpAccess.DEFAULT,
+                URI.create(selectedServer),
+//                URI.create(activity.loginOptions.loginUrl),
+                loginOptions.oauthClientId,
+                code,
+                // frontDoorBridgeCodeVerifier
+                codeVerifier,
+                loginOptions.oauthCallbackUrl
+            )
+        }.onFailure { throwable ->
+            e(TAG, "Exception occurred while making token request", throwable)
+            onAuthFlowError("Token Request Error", throwable.message, throwable)
+        }
+        onAuthFlowComplete(tokenResponse)
+    }
 
     /**
      * The name to be shown for account in Settings -> Accounts & Sync

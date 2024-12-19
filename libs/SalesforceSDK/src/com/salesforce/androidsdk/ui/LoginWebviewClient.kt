@@ -53,10 +53,10 @@ open class LoginWebviewClient(
     /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
     private var frontDoorBridgeCodeVerifier: String? = null
 
-    init {
-        // equivilent to OAuthWebviewHelper's loadLoginPage
-        loadLoginPage()
-    }
+//    init {
+//        // equivilent to OAuthWebviewHelper's loadLoginPage
+//        loadLoginPage()
+//    }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
 //        val loginOptions = loginOptions
@@ -126,7 +126,12 @@ open class LoginWebviewClient(
                     val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
                     when {
                         SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
-                            onWebServerFlowComplete(params["code"])
+//                            onWebServerFlowComplete(params["code"])
+                            viewModel.onWebServerFlowComplete(
+                                params["code"],
+                                onAuthFlowError =  ::onAuthFlowError,
+                                onAuthFlowComplete = ::onAuthFlowComplete,
+                            )
 
                         else ->
                             onAuthFlowComplete(TokenEndpointResponse(params))
@@ -218,7 +223,7 @@ open class LoginWebviewClient(
     internal fun onAuthFlowError(
         error: String,
         errorDesc: String?,
-        e: Throwable?
+        e: Throwable?,
     ) {
         val instance = SalesforceSDKManager.getInstance()
 
@@ -327,10 +332,10 @@ open class LoginWebviewClient(
         }
     }
 
-    internal fun onWebServerFlowComplete(code: String?) =
-        CoroutineScope(IO).launch {
-            doCodeExchangeEndpoint(code)
-        }
+//    internal fun onWebServerFlowComplete(code: String?) =
+//        CoroutineScope(IO).launch {
+//            doCodeExchangeEndpoint(code)
+//        }
 
 
     private suspend fun doCodeExchangeEndpoint(
