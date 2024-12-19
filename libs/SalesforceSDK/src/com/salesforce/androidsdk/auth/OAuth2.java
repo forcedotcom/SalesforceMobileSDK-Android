@@ -91,7 +91,6 @@ public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
     protected static final String CLIENT_ID = "client_id"; // OAuth 2.0 token endpoint request body parameter names
-    protected static final String CLIENT_SECRET = "client_secret"; // OAuth 2.0 token endpoint request body parameter names
     protected static final String GRANT_TYPE = "grant_type"; // OAuth 2.0 token endpoint request body parameter names
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
@@ -104,7 +103,6 @@ public class OAuth2 {
     private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
     private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
-    protected static final String CLIENT_CREDENTIALS = "client_credentials"; // Grant Type Values
     private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
     protected static final String RESPONSE_TYPE = "response_type";
