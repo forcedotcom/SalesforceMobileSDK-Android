@@ -30,7 +30,6 @@ import com.salesforce.androidsdk.auth.SfapApiGenerationsResponseBody.Companion.f
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
-import kotlinx.serialization.json.Json.Default.encodeToString
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
@@ -68,12 +67,11 @@ class SfapApiGenerations(
         val restRequest = RestRequest(
             POST,
             "https://$apiHostName/einstein/platform/v1/models/$modelName/generations",
-            encodeToString(
-                SfapApiGenerationsRequestBody.serializer(),
-                SfapApiGenerationsRequestBody(prompt)
-            ).toRequestBody(
-                "application/json; charset=utf-8".toMediaTypeOrNull()
-            ),
+            SfapApiGenerationsRequestBody(prompt)
+                .toJson()
+                .toRequestBody(
+                    "application/json; charset=utf-8".toMediaTypeOrNull()
+                ),
             mutableMapOf(
                 "x-sfdc-app-context" to "EinsteinGPT",
                 "x-client-feature-id" to "ai-platform-models-connected-app"

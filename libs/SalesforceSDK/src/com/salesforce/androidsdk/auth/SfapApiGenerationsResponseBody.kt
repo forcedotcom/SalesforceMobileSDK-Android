@@ -35,12 +35,23 @@ import kotlinx.serialization.json.Json
  */
 @Serializable
 data class SfapApiGenerationsResponseBody(
-    val id: String? = null, val generation: Generation? = null, val moreGenerations: String? = null, val prompt: String? = null, val parameters: Parameters? = null
+    val id: String? = null,
+    val generation: Generation? = null,
+    val moreGenerations: String? = null,
+    val prompt: String? = null,
+    val parameters: Parameters? = null
 ) {
+
+    /** The original JSON used to initialize this response body */
+    var sourceJson: String? = null
+        private set
 
     @Serializable
     data class Generation(
-        val id: String? = null, val generatedText: String? = null, val contentQuality: ContentQuality? = null, val parameters: Parameters? = null
+        val id: String? = null,
+        val generatedText: String? = null,
+        val contentQuality: ContentQuality? = null,
+        val parameters: Parameters? = null
     ) {
 
         @Serializable
@@ -50,7 +61,8 @@ data class SfapApiGenerationsResponseBody(
 
             @Serializable
             data class ScanToxicity(
-                val isDetected: Boolean = false, val categories: Array<Category>? = null
+                val isDetected: Boolean = false,
+                val categories: Array<Category>? = null
             ) {
 
                 @Serializable
@@ -83,13 +95,18 @@ data class SfapApiGenerationsResponseBody(
 
         @Serializable
         data class Parameters(
-            @SerialName("finish_reason") val finishReason: String? = null, val refusal: String? = null, val index: Int = 0, val logprobs: String? = null
+            @SerialName("finish_reason") val finishReason: String? = null,
+            val refusal: String? = null,
+            val index: Int = 0,
+            val logprobs: String? = null
         )
     }
 
     @Serializable
     data class Parameters(
-        val created: Int = 0, val usage: Usage? = null, val model: String? = null
+        val created: Int = 0,
+        val usage: Usage? = null,
+        val model: String? = null
     ) {
 
         @SerialName("system_fingerprint")
@@ -99,31 +116,23 @@ data class SfapApiGenerationsResponseBody(
         @Serializable
         data class Usage(
             @SerialName("completion_tokens") val completionTokens: Int = 0,
-
             @SerialName("prompt_tokens") val promptTokens: Int = 0,
-
             @SerialName("completion_tokens_details") val completionTokensDetails: CompletionTokensDetails? = null,
-
             @SerialName("prompt_tokens_details") val promptTokensDetails: PromptTokensDetails? = null,
-
             @SerialName("total_tokens") val totalTokens: Int = 0
         ) {
 
             @Serializable
             data class CompletionTokensDetails(
                 @SerialName("reasoning_tokens") val reasoningTokens: Int = 0,
-
                 @SerialName("audio_tokens") val audioTokens: Int = 0,
-
                 @SerialName("accepted_prediction_tokens") val acceptedPredictionTokens: Int = 0,
-
                 @SerialName("rejected_prediction_tokens") val rejectedPredictionTokens: Int = 0
             )
 
             @Serializable
             data class PromptTokensDetails(
                 @SerialName("cached_tokens") val cachedTokens: Int = 0,
-
                 @SerialName("audio_tokens") val audiTokens: Int = 0
             )
         }
@@ -140,7 +149,12 @@ data class SfapApiGenerationsResponseBody(
          * @param json The JSON text
          * @return The `sfap_api` "generations" endpoint response
          */
-        fun fromJson(json: String) = Json.decodeFromString<SfapApiGenerationsResponseBody>(json)
+        fun fromJson(json: String): SfapApiGenerationsResponseBody {
+
+            val result = Json.decodeFromString<SfapApiGenerationsResponseBody>(json)
+            result.sourceJson = json
+            return result
+        }
     }
 
     // endregion

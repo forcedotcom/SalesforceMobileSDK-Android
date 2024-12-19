@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` "generations" endpoint request.
@@ -35,4 +36,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SfapApiGenerationsRequestBody(
     val prompt: String
-)
+) {
+
+    /**
+     * Encodes this request body to JSON text.
+     * @return This request body as JSON text
+     */
+    fun toJson() = Json.encodeToString(serializer(), this)
+}
