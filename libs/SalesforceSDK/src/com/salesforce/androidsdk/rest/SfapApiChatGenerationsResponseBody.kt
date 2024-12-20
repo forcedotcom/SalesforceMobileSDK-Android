@@ -31,15 +31,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Models a `sfap_api` "generations" endpoint response.
+ * Models a `sfap_api` "chat-generations" endpoint response.
  */
 @Serializable
-data class SfapApiGenerationsResponseBody(
+data class SfapApiChatGenerationsResponseBody(
     val id: String? = null,
-    val generation: Generation? = null,
-    val moreGenerations: String? = null,
-    val parameters: Parameters? = null,
-    val prompt: String? = null
+    val generationDetails: GenerationDetails? = null
 ) {
 
     /** The original JSON used to initialize this response body */
@@ -47,57 +44,84 @@ data class SfapApiGenerationsResponseBody(
         private set
 
     @Serializable
-    data class Generation(
-        val id: String? = null,
-        val contentQuality: ContentQuality? = null,
-        val generatedText: String? = null,
+    data class GenerationDetails(
+        val generations: Array<Generation>? = null,
         val parameters: Parameters? = null
     ) {
 
-        @Serializable
-        data class Parameters(
-            @SerialName("finish_reason") val finishReason: String? = null,
-            val refusal: String? = null,
-            val index: Int? = null,
-            val logprobs: String? = null
-        )
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as GenerationDetails
+
+            if (!generations.contentEquals(other.generations)) return false
+            if (parameters != other.parameters) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = generations.contentHashCode()
+            result = 31 * result + parameters.hashCode()
+            return result
+        }
 
         @Serializable
-        data class ContentQuality(
-            val scanToxicity: ScanToxicity? = null
+        data class Generation(
+            val id: String? = null,
+            val content: String? = null,
+            val contentQuality: ContentQuality? = null,
+            val parameters: Parameters? = null,
+            val role: String? = null,
+            val timestamp: Long? = null
         ) {
 
             @Serializable
-            data class ScanToxicity(
-                val isDetected: Boolean? = null,
-                val categories: Array<Category>? = null
+            data class Parameters(
+                @SerialName("finish_reason") val finishReason: String? = null,
+                val refusal: String? = null,
+                val index: Int? = null,
+                val logprobs: String? = null
+            )
+
+            @Serializable
+            data class ContentQuality(
+                val scanToxicity: ScanToxicity? = null
             ) {
 
                 @Serializable
-                data class Category(
-                    val categoryName: String? = null,
-                    val score: Double? = null
-                )
+                data class ScanToxicity(
+                    val isDetected: Boolean? = null,
+                    val categories: Array<Category>? = null
+                ) {
 
-                override fun equals(other: Any?): Boolean {
-                    if (this === other) return true
-                    if (javaClass != other?.javaClass) return false
+                    @Serializable
+                    data class Category(
+                        val categoryName: String? = null,
+                        val score: Double? = null
+                    )
 
-                    other as ScanToxicity
+                    override fun equals(other: Any?): Boolean {
+                        if (this === other) return true
+                        if (javaClass != other?.javaClass) return false
 
-                    if (isDetected != other.isDetected) return false
-                    if (categories != null) {
-                        if (other.categories == null) return false
-                        if (!categories.contentEquals(other.categories)) return false
-                    } else if (other.categories != null) return false
+                        other as ScanToxicity
 
-                    return true
-                }
+                        if (isDetected != other.isDetected) return false
+                        if (categories != null) {
+                            if (other.categories == null) return false
+                            if (!categories.contentEquals(other.categories)) return false
+                        } else if (other.categories != null) return false
 
-                override fun hashCode(): Int {
-                    var result = isDetected.hashCode()
-                    result = 31 * result + (categories?.contentHashCode() ?: 0)
-                    return result
+                        return true
+                    }
+
+                    override fun hashCode(): Int {
+                        var result = isDetected.hashCode()
+                        result = 31 * result + (categories?.contentHashCode() ?: 0)
+                        return result
+                    }
                 }
             }
         }
@@ -143,14 +167,14 @@ data class SfapApiGenerationsResponseBody(
     companion object {
 
         /**
-         * Returns an `sfap_api` "generations" endpoint response from the JSON
-         * text.
+         * Returns an `sfap_api` "chat-generations" endpoint response from the
+         * JSON text.
          * @param json The JSON text
-         * @return The `sfap_api` "generations" endpoint response
+         * @return The `sfap_api` "chat-generations" endpoint response
          */
-        fun fromJson(json: String): SfapApiGenerationsResponseBody {
+        fun fromJson(json: String): SfapApiChatGenerationsResponseBody {
 
-            val result = Json.decodeFromString<SfapApiGenerationsResponseBody>(json)
+            val result = Json.decodeFromString<SfapApiChatGenerationsResponseBody>(json)
             result.sourceJson = json
             return result
         }

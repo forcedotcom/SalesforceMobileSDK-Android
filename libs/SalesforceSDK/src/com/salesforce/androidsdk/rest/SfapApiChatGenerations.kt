@@ -27,12 +27,12 @@
 package com.salesforce.androidsdk.rest
 
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
-import com.salesforce.androidsdk.rest.SfapApiGenerationsResponseBody.Companion.fromJson
+import com.salesforce.androidsdk.rest.SfapApiChatGenerationsResponseBody.Companion.fromJson
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
- * Provides generated text from the `sfap_api` "generations" endpoint.
+ * Provides generated text from the `sfap_api` "chat-generations" endpoint.
  *
  * See https://developer.salesforce.com/docs/einstein/genai/guide/access-models-api-with-rest.html
  *
@@ -41,28 +41,28 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * values, see https://developer.salesforce.com/docs/einstein/genai/guide/api-names.html
  * @param restClient The REST client to use
  */
-class SfapApiGenerations(
+class SfapApiChatGenerations(
     private val apiHostName: String,
     private val modelName: String,
     private val restClient: RestClient
 ) {
 
     /**
-     * Fetches generated text from the `sfap_api` "generations" endpoint.
-     * @param prompt The prompt request parameter value
+     * Fetches generated chat responses from the `sfap_api` "chat-generations"
+     * endpoint.
+     * @param requestBody The chat-generations request body
      * @return The endpoint's response
      */
     @Throws(SfapApiException::class)
     fun fetch(
-        prompt: String
-    ): SfapApiGenerationsResponseBody {
+        requestBody: SfapApiChatGenerationsRequestBody
+    ): SfapApiChatGenerationsResponseBody {
 
-        // Request the generated text.
+        // Request the generated chat responses.
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/einstein/platform/v1/models/$modelName/generations",
-            SfapApiGenerationsRequestBody(prompt)
-                .toJson()
+            "https://$apiHostName/einstein/platform/v1/models/$modelName/chat-generations",
+            requestBody.toJson()
                 .toRequestBody(
                     "application/json; charset=utf-8".toMediaTypeOrNull()
                 ),

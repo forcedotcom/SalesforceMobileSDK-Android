@@ -31,6 +31,8 @@ import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` "generations" endpoint request.
+ * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
+ *
  * @param prompt The request prompt parameter value
  */
 @Serializable
