@@ -78,7 +78,13 @@ class SfapApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             SfapApiEmbeddingsResponseBody.fromJson(responseBodyString)
         } else {
-            throw SfapApiException(responseBodyString)
+            val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
+            throw SfapApiException(
+                errorCode = errorResponseBody.errorCode,
+                message = responseBodyString,
+                messageCode = errorResponseBody.messageCode,
+                source = responseBodyString
+            )
         }
     }
 
@@ -107,7 +113,13 @@ class SfapApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             SfapApiChatGenerationsResponseBody.fromJson(responseBodyString)
         } else {
-            throw SfapApiException(responseBodyString)
+            val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
+            throw SfapApiException(
+                errorCode = errorResponseBody.errorCode,
+                message = responseBodyString,
+                messageCode = errorResponseBody.messageCode,
+                source = responseBodyString
+            )
         }
     }
 
@@ -136,7 +148,13 @@ class SfapApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             fromJson(responseBodyString)
         } else {
-            throw SfapApiException(responseBodyString)
+            val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
+            throw SfapApiException(
+                errorCode = errorResponseBody.errorCode,
+                message = responseBodyString,
+                messageCode = errorResponseBody.messageCode,
+                source = responseBodyString
+            )
         }
     }
 
@@ -166,7 +184,13 @@ class SfapApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             SfapApiFeedbackResponseBody.fromJson(responseBodyString)
         } else {
-            throw SfapApiException(responseBodyString)
+            val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
+            throw SfapApiException(
+                errorCode = errorResponseBody.errorCode,
+                message = responseBodyString,
+                messageCode = errorResponseBody.messageCode,
+                source = responseBodyString
+            )
         }
     }
 

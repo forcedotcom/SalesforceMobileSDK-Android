@@ -26,18 +26,37 @@
  */
 package com.salesforce.androidsdk.rest
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
 /**
- * An exception derived from an `sfap_api` endpoint failure response.
- * See https://developer.salesforce.com/docs/einstein/genai/guide/access-models-api-with-rest.html#step-3-use-models-rest-api
- *
- * @param errorCode The `sfap_api` error code
- * @param message The `sfap_api` error message
- * @param messageCode The `sfap_api` error code
- * @param source The original `sfap_api` error response body
+ * Models a `sfap_api` endpoint's `error` response.
+ * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
  */
-class SfapApiException(
+@Serializable
+data class SfapApiErrorResponseBody(
     val errorCode: String? = null,
-    message: String? = null,
-    val messageCode: String? = null,
-    val source: String? = null
-) : Exception(message)
+    val message: String? = null,
+    val messageCode: String? = null
+) {
+
+    /** The original JSON used to initialize this response body */
+    var sourceJson: String? = null
+        private set
+
+    companion object {
+        private val jsonIgnoreUnknownKeys = Json { ignoreUnknownKeys = true }
+
+        /**
+         * Returns an `sfap_api` endpoint's error response from the JSON text.
+         * @param json The JSON text
+         * @return The `sfap_api` endpoint error response
+         */
+        fun fromJson(json: String): SfapApiErrorResponseBody {
+
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiErrorResponseBody>(json)
+            result.sourceJson = json
+            return result
+        }
+    }
+}
