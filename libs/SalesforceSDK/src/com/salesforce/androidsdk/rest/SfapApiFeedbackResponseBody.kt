@@ -30,19 +30,34 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Models a `sfap_api` `generations` endpoint request.
- * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
- *
- * @param prompt The request prompt parameter value
+ * Models a `sfap_api` `feedback` endpoint response.
  */
 @Serializable
-data class SfapApiGenerationsRequestBody(
-    val prompt: String
+data class SfapApiFeedbackResponseBody(
+    val message: String? = null
 ) {
 
-    /**
-     * Encodes this request body to JSON text.
-     * @return This request body as JSON text
-     */
-    fun toJson() = Json.encodeToString(serializer(), this)
+    /** The original JSON used to initialize this response body */
+    var sourceJson: String? = null
+        private set
+
+    // region Companion
+
+    companion object {
+
+        /**
+         * Returns an `sfap_api` `feedback` endpoint response from the JSON
+         * text.
+         * @param json The JSON text
+         * @return The `sfap_api` `feedback` endpoint response
+         */
+        fun fromJson(json: String): SfapApiFeedbackResponseBody {
+
+            val result = Json.decodeFromString<SfapApiFeedbackResponseBody>(json)
+            result.sourceJson = json
+            return result
+        }
+    }
+
+    // endregion
 }

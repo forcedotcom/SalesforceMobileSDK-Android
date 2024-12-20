@@ -30,7 +30,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Models a `sfap_api` "chat-generations" endpoint request.
+ * Models a `sfap_api` `chat-generations` endpoint request.
  * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateChat
  *
  * @param messages The request messages parameter value

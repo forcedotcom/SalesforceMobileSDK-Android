@@ -27,42 +27,43 @@
 package com.salesforce.androidsdk.rest
 
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
-import com.salesforce.androidsdk.rest.SfapApiChatGenerationsResponseBody.Companion.fromJson
+import com.salesforce.androidsdk.rest.SfapApiFeedbackResponseBody.Companion.fromJson
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
- * Provides generated text from the `sfap_api` `chat-generations` endpoint.
+ * Submits feedback for previous responses from the "Generate Chat"
+ * (`chat-generations`) and "Generate Text" (`generations`) `sfap_api`
+ * endpoints.
  *
  * See https://developer.salesforce.com/docs/einstein/genai/guide/access-models-api-with-rest.html
  *
  * @param apiHostName The Salesforce `sfap_api` hostname
- * @param modelName The model name to request generations from.  For possible
  * values, see https://developer.salesforce.com/docs/einstein/genai/guide/api-names.html
  * @param restClient The REST client to use
  */
-class SfapApiChatGenerations(
+class SfapApiFeedback(
     private val apiHostName: String,
-    private val modelName: String,
     private val restClient: RestClient
 ) {
 
     /**
-     * Fetches generated chat responses from the `sfap_api` `chat-generations`
-     * endpoint.
-     * @param requestBody The `chat-generations` request body
+     * Submits feedback for previously generated text from the `sfap_api`
+     * endpoints to the `sfap_api` `feedback` endpoint.
+     * @param requestBody The `feedback` request body
      * @return The endpoint's response
      */
     @Throws(SfapApiException::class)
     fun fetch(
-        requestBody: SfapApiChatGenerationsRequestBody
-    ): SfapApiChatGenerationsResponseBody {
+        requestBody: SfapApiFeedbackRequestBody
+    ): SfapApiFeedbackResponseBody {
 
-        // Request the generated chat responses.
+        // Submit the feedback.
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/einstein/platform/v1/models/$modelName/chat-generations",
-            requestBody.toJson()
+            "https://$apiHostName/einstein/platform/v1/feedback",
+            requestBody
+                .toJson()
                 .toRequestBody(
                     "application/json; charset=utf-8".toMediaTypeOrNull()
                 ),
