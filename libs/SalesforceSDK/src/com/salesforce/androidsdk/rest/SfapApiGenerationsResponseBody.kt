@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` "generations" endpoint response.
@@ -150,7 +150,7 @@ data class SfapApiGenerationsResponseBody(
          */
         fun fromJson(json: String): SfapApiGenerationsResponseBody {
 
-            val result = Json.decodeFromString<SfapApiGenerationsResponseBody>(json)
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiGenerationsResponseBody>(json)
             result.sourceJson = json
             return result
         }

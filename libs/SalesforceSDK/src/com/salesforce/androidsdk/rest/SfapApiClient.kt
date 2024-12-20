@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.rest
 
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import com.salesforce.androidsdk.rest.SfapApiGenerationsResponseBody.Companion.fromJson
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -195,6 +196,8 @@ class SfapApiClient(
     }
 
     companion object {
+
+        internal val jsonIgnoreUnknownKeys = Json { ignoreUnknownKeys = true }
 
         private const val CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON = "application/json; charset=utf-8"
 

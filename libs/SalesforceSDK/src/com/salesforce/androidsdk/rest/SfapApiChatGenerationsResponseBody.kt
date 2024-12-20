@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` "chat-generations" endpoint response.
@@ -174,7 +174,7 @@ data class SfapApiChatGenerationsResponseBody(
          */
         fun fromJson(json: String): SfapApiChatGenerationsResponseBody {
 
-            val result = Json.decodeFromString<SfapApiChatGenerationsResponseBody>(json)
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiChatGenerationsResponseBody>(json)
             result.sourceJson = json
             return result
         }

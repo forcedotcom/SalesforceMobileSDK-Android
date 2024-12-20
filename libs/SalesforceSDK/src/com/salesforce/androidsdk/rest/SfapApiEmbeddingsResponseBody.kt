@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` `embeddings` endpoint response.
@@ -120,7 +120,7 @@ data class SfapApiEmbeddingsResponseBody(
          */
         fun fromJson(json: String): SfapApiEmbeddingsResponseBody {
 
-            val result = Json.decodeFromString<SfapApiEmbeddingsResponseBody>(json)
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiEmbeddingsResponseBody>(json)
             result.sourceJson = json
             return result
         }

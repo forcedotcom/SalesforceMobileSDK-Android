@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` `feedback` endpoint response.
@@ -53,7 +53,7 @@ data class SfapApiFeedbackResponseBody(
          */
         fun fromJson(json: String): SfapApiFeedbackResponseBody {
 
-            val result = Json.decodeFromString<SfapApiFeedbackResponseBody>(json)
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiFeedbackResponseBody>(json)
             result.sourceJson = json
             return result
         }

@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` endpoint's `error` response.
@@ -45,7 +45,6 @@ data class SfapApiErrorResponseBody(
         private set
 
     companion object {
-        private val jsonIgnoreUnknownKeys = Json { ignoreUnknownKeys = true }
 
         /**
          * Returns an `sfap_api` endpoint's error response from the JSON text.
