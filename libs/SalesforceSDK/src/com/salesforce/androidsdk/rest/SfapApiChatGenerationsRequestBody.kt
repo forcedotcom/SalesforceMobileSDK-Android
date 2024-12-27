@@ -33,15 +33,18 @@ import kotlinx.serialization.json.Json
  * Models a `sfap_api` `chat-generations` endpoint request.
  * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateChat
  *
+ * The endpoint accepts a `tags` object in addition to `messages` and
+ * `localization`.  To provide `tags`, subclass and introduce a new parameter
+ * of any object type named `tags`.  Also, override the `toJson` method to use
+ * the subclass serializer instead of the the serializer provided by this class.
+ *
  * @param messages The request messages parameter value
  * @param localization The request localization parameter value
- * @param tags The request tags parameter value
  */
 @Serializable
-data class SfapApiChatGenerationsRequestBody(
+open class SfapApiChatGenerationsRequestBody(
     val messages: Array<Message>,
-    val localization: Localization,
-    val tags: Tags
+    val localization: Localization
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -52,7 +55,6 @@ data class SfapApiChatGenerationsRequestBody(
 
         if (!messages.contentEquals(other.messages)) return false
         if (localization != other.localization) return false
-        if (tags != other.tags) return false
 
         return true
     }
@@ -60,7 +62,6 @@ data class SfapApiChatGenerationsRequestBody(
     override fun hashCode(): Int {
         var result = messages.contentHashCode()
         result = 31 * result + localization.hashCode()
-        result = 31 * result + tags.hashCode()
         return result
     }
 
@@ -69,7 +70,7 @@ data class SfapApiChatGenerationsRequestBody(
      * Encodes this request body to JSON text.
      * @return This request body as JSON text
      */
-    fun toJson() = Json.encodeToString(serializer(), this)
+    open fun toJson() = Json.encodeToString(serializer(), this)
 
     @Serializable
     data class Message(
@@ -109,7 +110,4 @@ data class SfapApiChatGenerationsRequestBody(
         val locale: String,
         val probability: Double
     )
-
-    @Serializable
-    class Tags
 }
