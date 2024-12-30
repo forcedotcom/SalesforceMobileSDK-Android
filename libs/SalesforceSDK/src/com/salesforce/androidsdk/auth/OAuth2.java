@@ -90,21 +90,21 @@ import okhttp3.Response;
 public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
-    protected static final String CLIENT_ID = "client_id";
+    protected static final String CLIENT_ID = "client_id"; // OAuth 2.0 token endpoint request body parameter names
+    protected static final String GRANT_TYPE = "grant_type"; // OAuth 2.0 token endpoint request body parameter names
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
-    private static final String FORMAT = "format";
-    protected static final String GRANT_TYPE = "grant_type";
+    protected static final String FORMAT = "format";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
-    private static final String JSON = "json";
+    protected static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
     private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
     private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
-    private static final String REFRESH_TOKEN = "refresh_token";
-    private static final String HYBRID_REFRESH = "hybrid_refresh";
+    private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
+    private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     protected static final String REDIRECT_URI = "redirect_uri";
