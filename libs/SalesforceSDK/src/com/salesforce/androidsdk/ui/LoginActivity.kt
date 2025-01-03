@@ -718,10 +718,7 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     fun loginWithFrontdoorBridgeUrl(
         frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?
-    ) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_QR_CODE_LOGIN)
-        webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
-    }
+    ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
      * Automatically log in using a QR code login URL and Salesforce Identity
@@ -743,15 +740,18 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     @Suppress("unused")
     fun loginWithFrontdoorBridgeUrlFromQrCode(
         qrCodeLoginUrl: String?
-    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
-        qrCodeLoginUrl
-    )?.let { uiBridgeApiParameters ->
-        loginWithFrontdoorBridgeUrl(
-            uiBridgeApiParameters.frontdoorBridgeUrl,
-            uiBridgeApiParameters.pkceCodeVerifier
-        )
-        true
-    } ?: false
+    ): Boolean {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_QR_CODE_LOGIN)
+        return uiBridgeApiParametersFromQrCodeLoginUrl(
+            qrCodeLoginUrl
+        )?.let { uiBridgeApiParameters ->
+            loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
+            )
+            true
+        } ?: false
+    }
 
     // endregion
     // region Companion
