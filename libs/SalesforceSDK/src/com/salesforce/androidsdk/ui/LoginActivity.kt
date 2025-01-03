@@ -96,6 +96,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DE
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
@@ -696,17 +697,21 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     // region QR Code Login Via UI Bridge API Public Implementation
 
     /**
-     * Automatically log in with a UI Bridge API front door bridge URL and PKCE code verifier.
+     * Automatically log in with a UI Bridge API front door bridge URL and PKCE
+     * code verifier.
      *
-     * This method is the intended entry point to Salesforce Mobile SDK when using the Salesforce
-     * Identity API UI Bridge front door URL.  Usable, default implementations of methods are
-     * provided for parsing the UI Bridge parameters from the reference JSON and log in URLs used
-     * by the reference QR Code Log In implementation.  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as this
-     * entry point is used to log in with the front door URL and optional PKCE code verifier.
+     * This method is the intended entry point to Salesforce Mobile SDK when
+     * using the Salesforce Identity API UI Bridge front door URL.  Usable,
+     * default implementations of methods are provided for parsing the UI Bridge
+     * parameters from the reference JSON and log in URLs used by the reference
+     * QR Code Log In implementation.  However, the URL and JSON structure in
+     * the reference implementation is not required.  An app may use a custom
+     * structure so long as this entry point is used to log in with the front
+     * door URL and optional PKCE code verifier.
      *
      * @param frontdoorBridgeUrl The UI Bridge API front door bridge URL
-     * @param pkceCodeVerifier The optional PKCE code verifier, which is not required for User Agent
+     * @param pkceCodeVerifier The optional PKCE code verifier, which is not
+     * required for User Agent
      * Authorization Flow but is required for Web Server Authorization Flow
      */
     @Suppress("MemberVisibilityCanBePrivate")
@@ -716,30 +721,37 @@ open class LoginActivity : AppCompatActivity(), OAuthWebviewHelperEvents {
     ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
-     * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
+     * Automatically log in using a QR code login URL and Salesforce Identity
+     * API UI Bridge.
      *
-     * This method is the intended entry point for login using the reference QR Code Login URL and
-     * JSON format.  It will parse the UI Bridge parameters from the login QR code URL and call
-     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as UI
-     * Bridge front door URL and optional PKCE code verifier are provided to
+     * This method is the intended entry point for login using the reference
+     * QR Code Login URL and JSON format.  It will parse the UI Bridge
+     * parameters from the login QR code URL and call
+     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON
+     * structure in the reference implementation is not required.  An app may
+     * use a custom structure so long as UI Bridge front door URL and optional
+     * PKCE code verifier are provided to
      * [LoginActivity.loginWithFrontdoorBridgeUrl].
      *
      * @param qrCodeLoginUrl The QR code login URL
-     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
-     * false otherwise
+     * @return Boolean true if a log in attempt is possible using the provided
+     * QR code login URL, false otherwise
      */
+    @Suppress("unused")
     fun loginWithFrontdoorBridgeUrlFromQrCode(
         qrCodeLoginUrl: String?
-    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
-        qrCodeLoginUrl
-    )?.let { uiBridgeApiParameters ->
-        loginWithFrontdoorBridgeUrl(
-            uiBridgeApiParameters.frontdoorBridgeUrl,
-            uiBridgeApiParameters.pkceCodeVerifier
-        )
-        true
-    } ?: false
+    ): Boolean {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_QR_CODE_LOGIN)
+        return uiBridgeApiParametersFromQrCodeLoginUrl(
+            qrCodeLoginUrl
+        )?.let { uiBridgeApiParameters ->
+            loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
+            )
+            true
+        } ?: false
+    }
 
     // endregion
     // region Companion
