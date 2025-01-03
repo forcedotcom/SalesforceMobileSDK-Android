@@ -33,8 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
-import com.salesforce.androidsdk.ui.LoginViewModel
-import com.salesforce.androidsdk.ui.LoginWebviewClient
+import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.auth.LoginWebviewClient
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.ui.LoginActivity
 
@@ -180,6 +180,7 @@ fun LoginView(
             )
 
             LoginServerBottomSheet(viewModel, loginServers)
+//            LoginServerBottomSheet(viewModel)
         }
     }
 }

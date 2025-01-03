@@ -35,7 +35,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.os.Build.VERSION.SDK_INT
@@ -43,20 +42,15 @@ import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
-import android.security.KeyChain.choosePrivateKeyAlias
-import android.text.TextUtils.isEmpty
+import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
-import android.view.WindowManager.LayoutParams.FLAG_SECURE
-import android.webkit.WebView
 import android.widget.Button
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
-import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -84,30 +78,22 @@ import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
-import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
+import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
-import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions.fromBundleWithSafeLoginUrl
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.ui.components.LoginView
-import com.salesforce.androidsdk.ui.theme.WebviewTheme
+import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 import com.salesforce.androidsdk.util.AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
@@ -131,8 +117,6 @@ open class LoginActivity: FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-//        viewModel.loading.value = true
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -172,13 +156,10 @@ open class LoginActivity: FragmentActivity() {
             else -> fromBundleWithSafeLoginUrl(intent.extras)
         }
 
-//        webviewHelper = OAuthWebviewHelper(baseContext, this@LoginActivity, loginOptions)
-
-        // Create Webview Client
-//        webviewClient = LoginWebviewClient(viewModel, loginOptions)
-
         // Protect against screenshots
-//        window.setFlags(FLAG_SECURE, FLAG_SECURE)
+        if (!SalesforceSDKManager.getInstance().isDebugBuild) {
+            window.setFlags(FLAG_SECURE, FLAG_SECURE)
+        }
 
         /*
          * Fetch authentication configuration except when using Salesforce Identity API UI Bridge, since the front door URL may be for another login server.
@@ -189,14 +170,11 @@ open class LoginActivity: FragmentActivity() {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration()
         }
 
-        // TODO: Do I need to create webview client here and pass it to LoginView?
-
         // Set content
         setContentView(
             ComposeView(this).apply {
                 setContent {
-                    // TODO: apply theme here
-                    WebviewTheme {
+                    LoginWebviewTheme {
                         LoginView(this@LoginActivity)
                     }
                 }
@@ -825,64 +803,4 @@ open class LoginActivity: FragmentActivity() {
 
         // endregion
     }
-
-    internal fun finishAuth(tr: TokenEndpointResponse?) {
-        CoroutineScope(IO).launch {
-            FinishAuthTask().execute(tr)
-        }
-    }
-
-    private inner class FinishAuthTask: TestBaseFinishAuthFlowTask<TokenEndpointResponse?>() {
-        override fun finish(userAccount: UserAccount?) {
-            initAnalyticsManager(userAccount)
-            val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-            val authenticatedUsers = userAccountManager.authenticatedUsers
-            val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
-            val userSwitchType = when {
-                // We've already authenticated the first user, so there should be one
-                numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-                // Otherwise we're logging in with an additional user
-                numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-                // This should never happen but if it does, pass in the "unknown" value
-                else -> USER_SWITCH_TYPE_DEFAULT
-            }
-            userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-            setResult(Activity.RESULT_OK)
-            finish()
-        }
-
-        override fun onAuthFlowError(error: String, errorDesc: String?, e: Throwable?) {
-            // TODO: do something
-        }
-
-        override fun onAccountAuthenticatorResult(authResult: Bundle) {
-            accountAuthenticatorResult = authResult
-        }
-
-        override fun performRequest(param: TokenEndpointResponse?): TokenEndpointResponse? {
-            runCatching {
-                id = callIdentityService(
-                    DEFAULT,
-                    param?.idUrlWithInstance,
-                    param?.authToken
-                )
-
-                // Request the authenticated user's information to determine if it is a Salesforce integration user.
-                // This is a synchronous network request, so it must be performed here in the background stage.
-                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance()
-                    .shouldBlockSalesforceIntegrationUser // TODO: add this back && fetchIsSalesforceIntegrationUser(param)
-            }.onFailure { throwable ->
-                backgroundException = throwable
-            }
-            return param
-        }
-
-    }
-
-//    override fun loadingLoginPage(loginUrl: String) {
-//        // TODO: do nothing here?
-////        viewModel.loginUrl = loginUrl
-//    }
 }

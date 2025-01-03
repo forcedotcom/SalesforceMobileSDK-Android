@@ -1,31 +1,22 @@
-package com.salesforce.androidsdk.ui
+package com.salesforce.androidsdk.auth
 
 import android.content.Intent
 import android.text.TextUtils.isEmpty
-import android.view.View.INVISIBLE
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.makeText
 import androidx.compose.ui.graphics.Color
-import com.salesforce.androidsdk.R.id.sf__bio_login_button
-import com.salesforce.androidsdk.R.id.sf__idp_login_button
 import com.salesforce.androidsdk.R.string.sf__generic_error
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess
-import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
-import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
@@ -37,7 +28,6 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.net.URI
 
 open class LoginWebviewClient(
@@ -53,14 +43,7 @@ open class LoginWebviewClient(
     /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
     private var frontDoorBridgeCodeVerifier: String? = null
 
-//    init {
-//        // equivilent to OAuthWebviewHelper's loadLoginPage
-//        loadLoginPage()
-//    }
-
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-//        val loginOptions = loginOptions
-//        val loginUrl = viewModel.loginUrl
 
         // The login web view's embedded button has sent the signal to show the biometric prompt
         if (request.url.toString() == BIOMETRIC_PROMPT) {
@@ -134,7 +117,8 @@ open class LoginWebviewClient(
                             )
 
                         else ->
-                            onAuthFlowComplete(TokenEndpointResponse(params))
+//                            onAuthFlowComplete(TokenEndpointResponse(params))
+                            viewModel.onAuthFlowComplete(TokenEndpointResponse(params), ::onAuthFlowError)
                     }
                 }
             }
@@ -272,10 +256,9 @@ open class LoginWebviewClient(
 
     /**
      * Called when the user facing part of the authentication flow completed
-     * successfully. The last step is to call the identity service to get the
-     * username.
+     * successfully.
      */
-    open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
+    open fun onAuthFlowComplete() {
         CoroutineScope(IO).launch {
 
             // Reset log in state,
@@ -283,7 +266,8 @@ open class LoginWebviewClient(
             resetFrontDoorBridgeUrl()
 
 //            FinishAuthTask().execute(tr, nativeLogin)
-            activity.finishAuth(tr)
+//            activity.finishAuth(tr)
+            activity.finish()
         }
     }
 
@@ -332,33 +316,6 @@ open class LoginWebviewClient(
         }
     }
 
-//    internal fun onWebServerFlowComplete(code: String?) =
-//        CoroutineScope(IO).launch {
-//            doCodeExchangeEndpoint(code)
-//        }
-
-
-    private suspend fun doCodeExchangeEndpoint(
-        code: String?
-    ) = withContext(IO) {
-        var tokenResponse: TokenEndpointResponse? = null
-        runCatching {
-            tokenResponse = exchangeCode(
-                HttpAccess.DEFAULT,
-                URI.create("https://login.salesforce.com"),
-//                URI.create(activity.loginOptions.loginUrl),
-                activity.loginOptions.oauthClientId,
-                code,
-                frontDoorBridgeCodeVerifier ?: codeVerifier,
-                activity.loginOptions.oauthCallbackUrl
-            )
-        }.onFailure { throwable ->
-            e(TAG, "Exception occurred while making token request", throwable)
-            onAuthFlowError("Token Request Error", throwable.message, throwable)
-        }
-        onAuthFlowComplete(tokenResponse)
-    }
-
     /**
      * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
      * its default inactive state.
@@ -367,32 +324,6 @@ open class LoginWebviewClient(
         isUsingFrontDoorBridge = false
         frontDoorBridgeCodeVerifier = null
     }
-
-    /**
-     * A background process that will call the identity service to get the info
-     * needed from the Identity service and finally wrap up and create the account.
-     */
-//    private inner class FinishAuthTask : BaseFinishAuthFlowTask<TokenEndpointResponse?>() {
-//
-//        @Suppress("unused")
-//        override fun performRequest(param: TokenEndpointResponse?): TokenEndpointResponse? {
-//            runCatching {
-//                id = callIdentityService(
-//                    DEFAULT,
-//                    param?.idUrlWithInstance,
-//                    param?.authToken
-//                )
-//
-//                // Request the authenticated user's information to determine if it is a Salesforce integration user.
-//                // This is a synchronous network request, so it must be performed here in the background stage.
-//                shouldBlockSalesforceIntegrationUser = SalesforceSDKManager.getInstance()
-//                    .shouldBlockSalesforceIntegrationUser && fetchIsSalesforceIntegrationUser(param)
-//            }.onFailure { throwable ->
-//                backgroundException = throwable
-//            }
-//            return param
-//        }
-//    }
 
     private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
         // This parses the expected "rgb(x, x, x)" string.

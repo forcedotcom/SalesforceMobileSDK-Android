@@ -11,7 +11,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun WebviewTheme(
+fun LoginWebviewTheme(
     darkTheme: Boolean = SalesforceSDKManager.getInstance().isDarkTheme,
     content: @Composable () -> Unit,
 ) {

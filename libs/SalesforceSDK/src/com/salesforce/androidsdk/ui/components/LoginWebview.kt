@@ -6,15 +6,14 @@ import android.webkit.WebView
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Observer
-import com.salesforce.androidsdk.ui.LoginViewModel
-import com.salesforce.androidsdk.ui.LoginWebviewClient
+import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.auth.LoginWebviewClient
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.ui.LoginActivity
 

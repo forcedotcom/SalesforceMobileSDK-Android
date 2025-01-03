@@ -1407,7 +1407,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this is a debug build */
-    private val isDebugBuild
+    internal val isDebugBuild
         get() = getBuildConfigValue(
             appContext,
             "DEBUG"
