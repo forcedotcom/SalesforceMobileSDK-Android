@@ -56,7 +56,7 @@ open class LoginWebviewClient(
         }
 
         // Check if user entered a custom domain
-        val loginContainsHost = request.url.host?.let { viewModel.selectedServer?.contains(it) } ?: false
+        val loginContainsHost = request.url.host?.let { viewModel.selectedServer.value?.contains(it) } ?: false
         val customDomainPatternMatch = SalesforceSDKManager.getInstance()
                 .customDomainInferencePattern?.matcher(request.url.toString())?.find() ?: false
         if (loginContainsHost && customDomainPatternMatch) {

@@ -233,7 +233,7 @@ open class LoginActivity: FragmentActivity() {
             receiverRegistered = false
         }
 
-        handleBackBehavior()
+//        handleBackBehavior()
         super.onDestroy()
     }
 

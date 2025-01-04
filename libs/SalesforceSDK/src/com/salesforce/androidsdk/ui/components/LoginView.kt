@@ -55,16 +55,7 @@ fun LoginView(
     },
     showTopAppBar: Boolean = true,
 ) {
-
     var showMenu by remember { mutableStateOf(false) }
-
-    // Temp data
-    val servers = listOf(
-        Pair("login.salesforce.com", "Production"),
-        Pair("test.salesforce.com", "Sandbox"),
-        Pair("msdk-enhanced-dev-ed.my.salesforce.com", "Site"),
-        Pair("https://msdk-enhanced-dev-ed.my.site.com/headless/login", "Community"),
-    )
 
     Scaffold(
         topBar = {
