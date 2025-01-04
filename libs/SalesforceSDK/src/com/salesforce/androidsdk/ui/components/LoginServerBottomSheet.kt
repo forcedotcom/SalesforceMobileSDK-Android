@@ -1,9 +1,12 @@
 package com.salesforce.androidsdk.ui.components
 
+import android.widget.ScrollView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -28,15 +31,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginServerBottomSheet(
     viewModel: LoginViewModel,
-    servers: List<@Composable ()-> Unit>,
+//    servers: List<@Composable ()-> Unit>,
     ) {
     val sheetState = rememberModalBottomSheetState()
+    val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -73,7 +78,11 @@ fun LoginServerBottomSheet(
                     .fillMaxWidth(),
             )
             Button(
-                onClick = { /* Save new server */ },
+                onClick = {
+                    // TODO: validate input
+                    loginServerManager.addCustomLoginServer(name, url)
+                    editing = false
+                },
                 modifier = Modifier
                     .padding(20.dp)
                     .fillMaxWidth(),
@@ -87,7 +96,7 @@ fun LoginServerBottomSheet(
                 Text(text = "Save", color = Color.White)
             }
         } else {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
                     text = "Change Server",
                     color = Color.Black,
@@ -97,10 +106,9 @@ fun LoginServerBottomSheet(
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.padding(10.dp))
-                servers.forEach { server ->
+                loginServerManager.loginServers.forEach { server ->
                     HorizontalDivider(thickness = 1.dp)
-                    server()
-//                    LoginServer(it.first, it.second, viewModel)
+                    LoginServerCard(viewModel, server)
                 }
 
                 TextButton(

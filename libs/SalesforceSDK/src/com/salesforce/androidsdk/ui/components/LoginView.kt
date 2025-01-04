@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.LoginWebviewClient
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,7 +46,7 @@ fun LoginView(
     activity: LoginActivity,
     viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
     topAppBarColor: Color = viewModel.dynamicBackgroundColor.value,
-    titleText: String = viewModel.tempSelectedServer.value,
+    titleText: String = viewModel.selectedServer.value.toString(),
     titleComposable: @Composable () -> Unit =
         { Text(text = titleText, color = viewModel.dynamicHeaderTextColor.value, fontWeight = FontWeight.Bold) },
     webviewClient: LoginWebviewClient = LoginWebviewClient(viewModel, activity),
@@ -166,21 +165,7 @@ fun LoginView(
         webviewComposable(innerPadding)
 
         if (viewModel.showBottomSheet.value) {
-            // TODO: wire this up for real
-//            val loginServers = listOf(
-//                { LoginServerComposable(viewModel, LoginServer("Production", "login.salesforce.com",  false)) },
-//                { LoginServerComposable(viewModel, LoginServer("Sandbox", "test.salesforce.com", false)) },
-//                { LoginServerComposable(viewModel, LoginServer("Site", "msdk-enhanced-dev-ed.my.salesforce.com", true)) },
-//                { LoginServerComposable(viewModel, LoginServer("Community", "https://msdk-enhanced-dev-ed.my.site.com/headless/login", true)) },
-//            )
-
-            val serverComposable = @Composable { LoginServerCard(viewModel, LoginServer("Production", "login.salesforce.com",  false)) }
-            val loginServers = listOf(
-                serverComposable,
-            )
-
-            LoginServerBottomSheet(viewModel, loginServers)
-//            LoginServerBottomSheet(viewModel)
+            LoginServerBottomSheet(viewModel)
         }
     }
 }

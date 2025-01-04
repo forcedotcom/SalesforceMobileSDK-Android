@@ -13,8 +13,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.auth.LoginViewModel
 
 //    @Preview
 @Composable
@@ -24,10 +25,12 @@ fun LoginServerCard(viewModel: LoginViewModel, server: LoginServerManager.LoginS
             .padding(top = 10.dp, bottom = 10.dp)
             .fillMaxWidth()
             .clickable {
-                viewModel.tempSelectedServer.value = server.url
                 viewModel.showBottomSheet.value = false
                 viewModel.loading.value = true
                 viewModel.dynamicBackgroundColor.value = Color.White
+                SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = server
+                // TODO: derive this from loginServerManager?
+                viewModel.selectedServer.value = server.url
             },
         colors = CardColors(
             containerColor = Color.White,

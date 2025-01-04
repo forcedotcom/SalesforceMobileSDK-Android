@@ -1,11 +1,14 @@
 package com.salesforce.androidsdk.auth
 
+import android.content.SharedPreferences
 import android.text.TextUtils.isEmpty
 import android.webkit.WebChromeClient
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -58,23 +61,10 @@ open class LoginViewModel(
     savedStateHandle: SavedStateHandle, // I assume this is needed to save state (url?) between app runs
 ) : ViewModel() {
 
-    /** Override to customize the login url */
-    open val selectedServer: String?
-        get() = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.run {
-            trim { it <= ' ' }
-        }
-//    open val selectedServer: String?
-//        get() = "login.salesforce.com"
-    open val loginUrl: MutableLiveData<String> by lazy {
-//        MutableLiveData<String>(tempSelectedServer.value)
-        MutableLiveData<String>(getAuthorizationUrl())
-    }
-
-//    getAuthorizationUrl(
-//    useWebServerAuthentication = SalesforceSDKManager.getInstance().isBrowserLoginEnabled
-//    || SalesforceSDKManager.getInstance().useWebServerAuthentication,
-//    useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
-//    )
+    var selectedServer: MutableLiveData<String> =
+        MutableLiveData<String>(SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer.url.run { trim { it <= ' ' } })
+        private set
+    val loginUrl: MediatorLiveData<String> = MediatorLiveData<String>()
 
     internal open var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
     internal open val oAuthClientId: String
@@ -90,8 +80,15 @@ open class LoginViewModel(
     internal var loading = mutableStateOf(false)
 
     /** The default, locally generated code verifier */
+    // TODO: rotate this after login attempt?
     private var codeVerifier: String? = null
 
+    init {
+        // Update loginUrl when selectedServer updates so webview automatically reloads
+        loginUrl.addSource(selectedServer) { newServer ->
+            loginUrl.value = getAuthorizationUrl(newServer)
+        }
+    }
 
 // TODO: get bio auth mgr and show button if necessary.  Also do the same for IDP
 //    private bioAuthMgr =
@@ -107,7 +104,7 @@ open class LoginViewModel(
 
 
     @Suppress("MemberVisibilityCanBePrivate")
-    internal fun getAuthorizationUrl(): String {
+    internal fun getAuthorizationUrl(server: String): String {
 
         // Reset log in state,
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
@@ -126,7 +123,7 @@ open class LoginViewModel(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
 //            URI(loginOptions.loginUrl),
-            URI(selectedServer),
+            URI(server),
             oAuthClientId,
             loginOptions.oauthCallbackUrl,
             loginOptions.oauthScopes,
@@ -167,7 +164,7 @@ open class LoginViewModel(
         runCatching {
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
-                URI.create(selectedServer),
+                URI.create(selectedServer.value),
 //                URI.create(activity.loginOptions.loginUrl),
                 loginOptions.oauthClientId,
                 code,
