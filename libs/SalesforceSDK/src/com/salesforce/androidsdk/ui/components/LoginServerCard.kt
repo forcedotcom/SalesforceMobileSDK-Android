@@ -25,7 +25,7 @@ fun LoginServerCard(viewModel: LoginViewModel, server: LoginServerManager.LoginS
             .padding(top = 10.dp, bottom = 10.dp)
             .fillMaxWidth()
             .clickable {
-                viewModel.showBottomSheet.value = false
+                viewModel.showServerPicker.value = false
                 viewModel.loading.value = true
                 viewModel.dynamicBackgroundColor.value = Color.White
                 SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = server

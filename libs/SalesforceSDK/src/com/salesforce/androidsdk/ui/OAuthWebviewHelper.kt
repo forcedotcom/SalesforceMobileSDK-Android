@@ -111,7 +111,7 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.security.ScreenLockManager
-import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
+//import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
@@ -454,7 +454,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
                 activity.getString(sf__pick_server),
                 getActivity(
                     activity,
-                    PICK_SERVER_REQUEST_CODE,
+                    0,
                     Intent(activity, ServerPickerActivity::class.java),
                     FLAG_CANCEL_CURRENT or FLAG_IMMUTABLE
                 )

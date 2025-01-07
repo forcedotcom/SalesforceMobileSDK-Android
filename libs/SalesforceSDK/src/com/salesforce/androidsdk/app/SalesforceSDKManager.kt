@@ -601,9 +601,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Optionally enables browser based login instead of web view login. This
-     * should NOT be used directly by apps as this is meant for internal use
-     * based on the value configured on the server.
+     * Optionally enables browser based login instead of web view login.
      *
      * @param browserLoginEnabled True if Chrome should be used for login; false
      * otherwise
@@ -611,9 +609,9 @@ open class SalesforceSDKManager protected constructor(
      * false otherwise
      */
     @Synchronized
-    fun setBrowserLoginEnabled(
+    internal fun setBrowserLoginEnabled(
         browserLoginEnabled: Boolean,
-        shareBrowserSessionEnabled: Boolean
+        shareBrowserSessionEnabled: Boolean,
     ) {
         isBrowserLoginEnabled = browserLoginEnabled
         isShareBrowserSessionEnabled = shareBrowserSessionEnabled
@@ -1844,15 +1842,13 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
-     * If this takes more than five seconds it can cause Android's application
-     * not responding report.
-     *
      * @param completion An optional function to invoke at the end of the action
      */
     fun fetchAuthenticationConfiguration(
         completion: (() -> Unit)? = null
     ) = CoroutineScope(Default).launch {
         runCatching {
+            // If this takes more than five seconds it can cause Android's application not responding report.
             withTimeout(5000L) {
                 val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
 

@@ -1,10 +1,8 @@
 package com.salesforce.androidsdk.auth
 
-import android.content.SharedPreferences
 import android.text.TextUtils.isEmpty
 import android.webkit.WebChromeClient
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -72,11 +70,7 @@ open class LoginViewModel(
 
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
-//    internal var dynamicHeaderTextColor = derivedStateOf { Color.White }
-
-//    internal var selectedSever = mutableStateOf("https://msdk-enhanced-dev-ed.my.site.com/headless/login")
-    internal val tempSelectedServer = mutableStateOf("login.salesforce.com")
-    internal var showBottomSheet = mutableStateOf(false)
+    internal var showServerPicker = mutableStateOf(false)
     internal var loading = mutableStateOf(false)
 
     /** The default, locally generated code verifier */
@@ -105,7 +99,6 @@ open class LoginViewModel(
 
     @Suppress("MemberVisibilityCanBePrivate")
     internal fun getAuthorizationUrl(server: String): String {
-
         // Reset log in state,
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
 //        resetFrontDoorBridgeUrl()
@@ -119,7 +112,7 @@ open class LoginViewModel(
         // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
-        val authorizationUrl = OAuth2.getAuthorizationUrl(
+        var authorizationUrl = OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
 //            URI(loginOptions.loginUrl),
@@ -130,7 +123,7 @@ open class LoginViewModel(
             authorizationDisplayType,
             codeChallenge,
             additionalParams
-        )
+        ).toString()
 
 //        return when {
 //            jwtFlow -> getFrontdoorUrl(
@@ -143,7 +136,7 @@ open class LoginViewModel(
 //            else -> authorizationUrl
 //        }
 
-        return authorizationUrl.toString()
+        return authorizationUrl
     }
 
     internal fun onWebServerFlowComplete(

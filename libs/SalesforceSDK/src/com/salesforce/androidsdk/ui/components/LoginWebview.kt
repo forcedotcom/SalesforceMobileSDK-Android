@@ -6,6 +6,8 @@ import android.webkit.WebView
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -25,7 +27,7 @@ fun LoginWebview(
     viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
     webviewClient: LoginWebviewClient = LoginWebviewClient(viewModel, activity),
 ) {
-//    val loginUrl = viewModel.loginUrl.observeAsState().toString()
+    val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
 
     AndroidView(
         modifier = Modifier
@@ -43,16 +45,8 @@ fun LoginWebview(
             }
             webView.setBackgroundColor(Color.Transparent.toArgb())
             webView.settings.javaScriptEnabled = true
-
-            // Set LiveData observer
-            val loginUrlObserver = Observer<String> { newLoginUrl ->
-                webView.loadUrl(newLoginUrl)
-            }
-            viewModel.loginUrl.observe(activity, loginUrlObserver)
-
             webView
+        }, update = {
+            it.loadUrl(loginUrl)
         })
-//        }, update = {
-//            it.loadUrl("")
-//        })
 }

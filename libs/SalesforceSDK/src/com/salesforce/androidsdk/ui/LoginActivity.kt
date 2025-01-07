@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.R.anim.slide_in_left
+import android.R.anim.slide_out_right
 import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.app.Activity
+import android.app.PendingIntent.FLAG_CANCEL_CURRENT
+import android.app.PendingIntent.FLAG_IMMUTABLE
+import android.app.PendingIntent.getActivity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -37,6 +42,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.graphics.BitmapFactory.decodeResource
+import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
@@ -49,10 +56,14 @@ import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
 import android.widget.Button
+import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -69,18 +80,23 @@ import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationCallback
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.fragment.app.FragmentActivity
+import com.salesforce.androidsdk.R.color.sf__primary_color
+import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
+import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
@@ -89,12 +105,17 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions.fromBundleWithSafeLoginUrl
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
 import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 import com.salesforce.androidsdk.util.AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -102,10 +123,10 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URLDecoder
 
+
 open class LoginActivity: FragmentActivity() {
     protected open val viewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
     internal lateinit var loginOptions: LoginOptions
-//    internal lateinit var webviewHelper: OAuthWebviewHelper
 
     private var wasBackgrounded = false
     private var authConfigReceiver: AuthConfigReceiver? = null
@@ -208,6 +229,12 @@ open class LoginActivity: FragmentActivity() {
                     IntentFilter(AUTH_CONFIG_COMPLETE_INTENT_ACTION),
                     ContextCompat.RECEIVER_NOT_EXPORTED
                 )
+//                ContextCompat.registerReceiver(
+//                    this,
+//                    changeServerReceiver,
+//                    IntentFilter(PICK_SERVER_INTENT_ACTION),
+//                    ContextCompat.RECEIVER_NOT_EXPORTED
+//                )
             }
             receiverRegistered = true
         }
@@ -218,13 +245,23 @@ open class LoginActivity: FragmentActivity() {
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
-        // TODO:  is this required?
-//        requestedOrientation = if (SalesforceSDKManager.getInstance().compactScreen(this))
-//            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else
-//            ActivityInfo.SCREEN_ORIENTATION_FULL_USER
-
         // Let observers know onCreate is complete.
         EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
+
+        val customTabLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result: ActivityResult ->
+            if (result.resultCode == Activity.RESULT_CANCELED) {
+                clearWebviewAndShowServerPicker()
+            }
+        }
+        viewModel.selectedServer.observe(this) {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration {
+                if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
+                    viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -258,23 +295,15 @@ open class LoginActivity: FragmentActivity() {
         super.onNewIntent(intent)
 
         // If the intent is a callback from Chrome, process it and do nothing else
-        if (isChromeCallback(intent)) {
-            completeAuthFlow(intent)
+        if (isCustomTabAuthFinishedCallback(intent)) {
+            completeAdvAuthFlow(intent)
             return
         }
+    }
 
-        /*
-         * It is important to not reload if we have a custom tab displayed because that also generates
-         * a new code verifier which will break PKCE.
-         *
-         * TODO:  move this to LoginWebviewClient??? shouldn't need to manually call load here
-         */
-        if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
-            // Reload the login page to ensure the correct login server is displayed in the webview.
-//            webviewHelper?.run {
-//                loadLoginPage()
-//            }
-        }
+    private fun clearWebviewAndShowServerPicker() {
+        viewModel.loginUrl.value = "about:blank"
+        viewModel.showServerPicker.value = true
     }
 
     // The code in this override was taken from the deprecated
@@ -299,7 +328,7 @@ open class LoginActivity: FragmentActivity() {
     override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
-        data: Intent?
+        data: Intent?,
     ) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -313,26 +342,6 @@ open class LoginActivity: FragmentActivity() {
             presentBiometric()
         }
     }
-
-//    override fun finish(userAccount: UserAccount?) {
-//        initAnalyticsManager(userAccount)
-//        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-//        val authenticatedUsers = userAccountManager.authenticatedUsers
-//        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
-//        val userSwitchType = when {
-//            // We've already authenticated the first user, so there should be one
-//            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-//
-//            // Otherwise we're logging in with an additional user
-//            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-//
-//            // This should never happen but if it does, pass in the "unknown" value
-//            else -> USER_SWITCH_TYPE_DEFAULT
-//        }
-//        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-//        setResult(Activity.RESULT_OK)
-//        finish()
-//    }
 
     // region QR Code Login Via UI Bridge API Public Implementation
 
@@ -419,19 +428,6 @@ open class LoginActivity: FragmentActivity() {
     protected open fun shouldUseCertBasedAuth(): Boolean =
         getRuntimeConfig(this).getBoolean(RequireCertAuth)
 
-//    protected open fun getOAuthWebviewHelper(
-//        callback: OAuthWebviewHelperEvents,
-//        loginOptions: LoginOptions,
-//        webView: WebView,
-//        savedInstanceState: Bundle?
-//    ) = OAuthWebviewHelper(
-//        this,
-//        callback,
-//        loginOptions,
-//        webView,
-//        savedInstanceState
-//    )
-
     /**
      * A fix for the back button's behavior.
      *
@@ -451,28 +447,83 @@ open class LoginActivity: FragmentActivity() {
         }
 
 
+    /**
+     * A callback when the user facing part of the authentication flow completed
+     * with an error.
+     *
+     * Show the user an error and end the activity.
+     *
+     * @param error The error
+     * @param errorDesc The error description
+     * @param e The exception
+     */
+    protected fun onAuthFlowError(
+        error: String,
+        errorDesc: String?,
+        e: Throwable? = null,
+    ) {
+        // Reset state from previous log in attempt.
+        // - Salesforce Identity UI Bridge API log in, such as QR code login.
+//        resetFrontDoorBridgeUrl()
+
+        e(TAG, "$error: $errorDesc", e)
+
+        // Broadcast a notification that the authentication flow failed
+        SalesforceSDKManager.getInstance().appContext.sendBroadcast(
+            Intent(AUTHENTICATION_FAILED_INTENT).apply {
+                if (e is OAuthFailedException) {
+                    putExtra(
+                        HTTP_ERROR_RESPONSE_CODE_INTENT,
+                        e.httpStatusCode
+                    )
+                    putExtra(
+                        RESPONSE_ERROR_INTENT,
+                        e.tokenErrorResponse.error
+                    )
+                    putExtra(
+                        RESPONSE_ERROR_DESCRIPTION_INTENT,
+                        e.tokenErrorResponse.errorDescription
+                    )
+                }
+            })
+
+//        clearCookies()
+
+        // Displays the error in a toast, clears cookies and reloads the login page
+        runOnUiThread {
+            makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
+        }
+    }
+
     // End of Public API (protected)
 
-    private fun isChromeCallback(intent: Intent?): Boolean {
-        if (intent == null) {
-            return false
-        }
+    private fun isCustomTabAuthFinishedCallback(intent: Intent): Boolean {
         return intent.data != null
     }
 
-    private fun completeAuthFlow(intent: Intent) {
+    private fun completeAdvAuthFlow(intent: Intent) {
         val params = parse(intent.data)
-        // TODO: parse errors
-//        params["error"]?.let { error ->
-//            val errorDesc = params["error_description"]
-//            webviewHelper?.onAuthFlowError(error, errorDesc, null)
-//        } ?: webviewHelper?.onWebServerFlowComplete(params["code"])
+        val error = params["error"]
+        // Did we fail?
+        when {
+            error != null -> onAuthFlowError(error, params["error_description"])
+
+            else -> {
+                viewModel.showServerPicker.value = false
+                viewModel.loading.value = true
+                viewModel.onWebServerFlowComplete(
+                    params["code"],
+                    onAuthFlowError =  ::onAuthFlowError,
+                    onAuthFlowComplete = ::finish,
+                )
+            }
+        }
     }
 
     private fun handleBackBehavior() {
         // If app is using Native Login this activity is a fallback and can be dismissed.
         if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
-            setResult(Activity.RESULT_CANCELED)
+            setResult(RESULT_CANCELED)
             finish()
             return // If we don't call return here moveTaskToBack can also be called below.
         }
@@ -627,6 +678,78 @@ open class LoginActivity: FragmentActivity() {
     // TODO: move this up?
     open fun onBioAuthClick(view: View?) = presentBiometric()
 
+    private fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+        val customTabsIntent = CustomTabsIntent.Builder().apply {
+            /*
+             * Set a custom animation to slide in and out for Chrome custom tab
+             * so it doesn't look like a swizzle out of the app and back in
+             */
+            setStartAnimations(
+                this@LoginActivity,
+                slide_in_left,
+                slide_out_right
+            )
+            setExitAnimations(
+                this@LoginActivity,
+                slide_in_left,
+                slide_out_right
+            )
+
+            // Replace the default 'Close Tab' button with a custom back arrow instead of 'x'
+            setCloseButtonIcon(decodeResource(resources, sf__action_back))
+
+            // TODO: use setColorSchemeParams instead
+            setToolbarColor(getColor(sf__primary_color))
+//            setColorSchemeParams()
+
+            // Add a menu item to change the server
+            val intent = Intent(this@LoginActivity, SalesforceSDKManager.getInstance().loginActivityClass)
+            addMenuItem(getString(sf__pick_server),
+                getActivity(
+                    this@LoginActivity,
+                    0,
+                    intent,
+                    FLAG_CANCEL_CURRENT or FLAG_IMMUTABLE,
+                )
+            )
+        }.build()
+
+        /*
+         * Set the package explicitly to the browser configured by the
+         * application if any.
+         * NB: The default browser on the device is used:
+         * - If getCustomTabBrowser() returns null
+         * - Or if the specified browser is not installed
+         */
+        val customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
+        if (doesBrowserExist(customTabBrowser)) {
+            customTabsIntent.intent.setPackage(customTabBrowser)
+        }
+
+        runCatching {
+            // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
+            val uri = if (SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled) loginUrl else loginUrl + PROMPT_LOGIN
+            customTabsIntent.intent.setData(Uri.parse(uri))
+            customTabLauncher.launch(customTabsIntent.intent)
+        }.onFailure { throwable ->
+            e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
+            runOnUiThread {
+                makeText(this@LoginActivity, "To log in, install Chrome.", LENGTH_LONG).show()
+            }
+            clearWebviewAndShowServerPicker()
+        }
+    }
+
+    private fun doesBrowserExist(customTabBrowser: String?) =
+        when (customTabBrowser) {
+            null -> false
+            else -> runCatching {
+                packageManager?.getApplicationInfo(customTabBrowser, 0) != null
+            }.onFailure { throwable ->
+                w(TAG, "$customTabBrowser does not exist on this device", throwable)
+            }.getOrDefault(false)
+        }
+
     // endregion
 
     /**
@@ -650,10 +773,9 @@ open class LoginActivity: FragmentActivity() {
     companion object {
 
         // region General Constants
-
-        const val PICK_SERVER_REQUEST_CODE = 10
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
+        private const val PROMPT_LOGIN = "&prompt=login"
 
         // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation
@@ -711,7 +833,7 @@ open class LoginActivity: FragmentActivity() {
          * false otherwise
          */
         fun isQrCodeLoginUrlIntent(
-            intent: Intent
+            intent: Intent,
         ) = intent.data?.path?.contains(qrCodeLoginUrlPath) == true
 
         /**
@@ -723,7 +845,7 @@ open class LoginActivity: FragmentActivity() {
          * parameters or false otherwise
          */
         private fun isFrontdoorBridgeUrlIntent(
-            intent: Intent
+            intent: Intent,
         ) = intent.hasExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)
 
         /**
@@ -734,7 +856,7 @@ open class LoginActivity: FragmentActivity() {
          * for any reason
          */
         fun uiBridgeApiParametersFromQrCodeLoginUrl(
-            qrCodeLoginUrl: String?
+            qrCodeLoginUrl: String?,
         ) = qrCodeLoginUrl?.let { qrCodeLoginUrlUnwrapped ->
             uiBridgeApiJsonFromQrCodeLoginUrl(qrCodeLoginUrlUnwrapped)?.let { uiBridgeApiJson ->
                 uiBridgeApiParametersFromUiBridgeApiJson(uiBridgeApiJson)
@@ -750,7 +872,7 @@ open class LoginActivity: FragmentActivity() {
             val frontdoorBridgeUrl: String,
 
             /** The PKCE code verifier */
-            val pkceCodeVerifier: String?
+            val pkceCodeVerifier: String?,
         )
 
         // endregion
@@ -779,7 +901,7 @@ open class LoginActivity: FragmentActivity() {
          * provide the JSON for any reason
          */
         private fun uiBridgeApiJsonFromQrCodeLoginUrl(
-            qrCodeLoginUrl: String
+            qrCodeLoginUrl: String,
         ) = qrCodeLoginJsonRegex.find(qrCodeLoginUrl)?.groups?.get(1)?.value?.let {
             URLDecoder.decode(it, "UTF-8")
         }
@@ -790,7 +912,7 @@ open class LoginActivity: FragmentActivity() {
          * @return The UI Bridge API parameters
          */
         private fun uiBridgeApiParametersFromUiBridgeApiJson(
-            uiBridgeApiParameterJsonString: String
+            uiBridgeApiParameterJsonString: String,
         ) = JSONObject(uiBridgeApiParameterJsonString).let { uiBridgeApiParameterJson ->
             UiBridgeApiParameters(
                 uiBridgeApiParameterJson.getString(qrCodeLoginUrlJsonFrontdoorBridgeUrlKey),

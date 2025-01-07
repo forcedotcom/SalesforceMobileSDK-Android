@@ -98,7 +98,7 @@ open class LoginWebviewClient(
             val error = params["error"]
             // Did we fail?
             when {
-                error != null -> onAuthFlowError(
+                error != null -> onAuthFlowError(   // TODO: use this method in LoginActivity -- get invocation of error method, don't use activity itself!
                     error,
                     params["error_description"],
                     null
@@ -109,7 +109,6 @@ open class LoginWebviewClient(
                     val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
                     when {
                         SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
-//                            onWebServerFlowComplete(params["code"])
                             viewModel.onWebServerFlowComplete(
                                 params["code"],
                                 onAuthFlowError =  ::onAuthFlowError,
@@ -117,7 +116,6 @@ open class LoginWebviewClient(
                             )
 
                         else ->
-//                            onAuthFlowComplete(TokenEndpointResponse(params))
                             viewModel.onAuthFlowComplete(TokenEndpointResponse(params), ::onAuthFlowError)
                     }
                 }
@@ -127,18 +125,16 @@ open class LoginWebviewClient(
         return authFlowFinished
     }
 
-//    override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-//        return url != null && url.startsWith("https://google.com")
-//    }
-
-
     override fun onPageFinished(view: WebView?, url: String?) {
         view?.evaluateJavascript(backgroundColorJavascript) { result ->
             viewModel.loading.value = false
+            if (url == "about:blank") {
+                viewModel.dynamicBackgroundColor.value = Color.White
+                return@evaluateJavascript
+            }
+
             viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result) ?: return@evaluateJavascript
         }
-
-//        viewModel.loading.value = false
 
         // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
         if (url?.contains(ALLOW_SCREEN_INDICATOR) == true) {
@@ -150,49 +146,6 @@ open class LoginWebviewClient(
     }
 
     open fun clearCookies() = CookieManager.getInstance().removeAllCookies(null)
-
-    /**
-     * Reloads the authorization page in the web view.  Also, updates the window
-     * title so it's easier to identify the login system.
-     */
-    internal fun loadLoginPage() = activity.loginOptions.let { loginOptions ->
-        when {
-            isEmpty(loginOptions.jwt) -> {
-//                loginOptions.loginUrl = viewModel.loginUrl
-                doLoadPage()
-            }
-
-//            else -> CoroutineScope(IO).launch {
-//                SwapJWTForAccessTokenTask().execute(loginOptions)
-//            }
-        }
-    }
-
-    private fun doLoadPage() {
-        runCatching {
-            var uri = getAuthorizationUrl(
-                useWebServerAuthentication = SalesforceSDKManager.getInstance().isBrowserLoginEnabled
-                        || SalesforceSDKManager.getInstance().useWebServerAuthentication,
-                useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
-            )
-
-//            callback.loadingLoginPage(loginOptions.loginUrl)
-
-            when {
-                SalesforceSDKManager.getInstance().isBrowserLoginEnabled -> {
-                    if (!SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled) {
-                        uri = URI("$uri$PROMPT_LOGIN")
-                    }
-//                    loadLoginPageInCustomTab(uri)  // TODO: implement this
-                }
-
-                else -> viewModel.loginUrl.value = uri.toString()
-            }
-        }.onFailure { throwable ->
-            showError(throwable)
-        }
-    }
-
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -237,7 +190,6 @@ open class LoginWebviewClient(
             })
 
         clearCookies()
-        loadLoginPage()
 
         // Displays the error in a toast, clears cookies and reloads the login page
         activity.runOnUiThread {
@@ -260,59 +212,10 @@ open class LoginWebviewClient(
      */
     open fun onAuthFlowComplete() {
         CoroutineScope(IO).launch {
-
             // Reset log in state,
             // - Salesforce Identity UI Bridge API log in, such as QR code login.
             resetFrontDoorBridgeUrl()
-
-//            FinishAuthTask().execute(tr, nativeLogin)
-//            activity.finishAuth(tr)
             activity.finish()
-        }
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun getAuthorizationUrl(
-        useWebServerAuthentication: Boolean,
-        useHybridAuthentication: Boolean
-    ): URI {
-
-        // Reset log in state,
-        // - Salesforce Identity UI Bridge API log in, such as QR code login.
-        resetFrontDoorBridgeUrl()
-
-        with(viewModel) {
-            val jwtFlow = !isEmpty(loginOptions.jwt)
-            val additionalParams = when {
-                jwtFlow -> null
-                else -> loginOptions.additionalParameters ?: emptyMap<String, String>()
-            }
-
-            // NB code verifier / code challenge are only used when useWebServerAuthentication is true
-            val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
-            val codeChallenge = getSHA256Hash(codeVerifier)
-            val authorizationUrl = OAuth2.getAuthorizationUrl(
-                useWebServerAuthentication,
-                useHybridAuthentication,
-                URI(viewModel.loginUrl.value),
-                oAuthClientId,
-                loginOptions.oauthCallbackUrl,
-                loginOptions.oauthScopes,
-                authorizationDisplayType,
-                codeChallenge,
-                additionalParams
-            )
-
-            return when {
-                jwtFlow -> getFrontdoorUrl(
-                    authorizationUrl,
-                    loginOptions.jwt,
-                    loginOptions.loginUrl,
-                    loginOptions.additionalParameters
-                )
-
-                else -> authorizationUrl
-            }
         }
     }
 
@@ -342,7 +245,7 @@ open class LoginWebviewClient(
     companion object {
         const val BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt"
 
-        private const val PROMPT_LOGIN = "&prompt=login"
+//        private const val PROMPT_LOGIN = "&prompt=login"
         private const val ALLOW_SCREEN_INDICATOR = "frontdoor.jsp"
         private const val TAG = "LoginWebviewClient"
         private const val backgroundColorJavascript =

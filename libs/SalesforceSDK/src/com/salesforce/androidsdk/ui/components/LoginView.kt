@@ -43,7 +43,7 @@ import com.salesforce.androidsdk.ui.LoginActivity
 //@Preview
 @Composable
 fun LoginView(
-    activity: LoginActivity,
+    activity: LoginActivity, // TODO: if I can remove activity reference in LoginWebviewClient it can also be removed from WebviewComposable and LoginView!
     viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
     topAppBarColor: Color = viewModel.dynamicBackgroundColor.value,
     titleText: String = viewModel.selectedServer.value.toString(),
@@ -83,7 +83,7 @@ fun LoginView(
                         DropdownMenuItem(
                             text = { Text("Change Server", color = Color.Gray) },
                             onClick = {
-                                viewModel.showBottomSheet.value = true
+                                viewModel.showServerPicker.value = true
                                 showMenu = false
                             },
                         )
@@ -155,7 +155,7 @@ fun LoginView(
 
         webviewComposable(innerPadding)
 
-        if (viewModel.showBottomSheet.value) {
+        if (viewModel.showServerPicker.value) {
             LoginServerBottomSheet(viewModel)
         }
     }

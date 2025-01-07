@@ -1,6 +1,5 @@
 package com.salesforce.androidsdk.ui.components
 
-import android.widget.ScrollView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,7 +44,7 @@ fun LoginServerBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            viewModel.showBottomSheet.value = false
+            viewModel.showServerPicker.value = false
         },
         sheetState = sheetState,
         containerColor = Color.White,
