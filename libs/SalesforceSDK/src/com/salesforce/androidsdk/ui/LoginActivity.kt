@@ -129,8 +129,6 @@ open class LoginActivity: FragmentActivity() {
     internal lateinit var loginOptions: LoginOptions
 
     private var wasBackgrounded = false
-    private var authConfigReceiver: AuthConfigReceiver? = null
-    private var receiverRegistered = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var biometricAuthenticationButton: Button? = null
@@ -221,24 +219,6 @@ open class LoginActivity: FragmentActivity() {
 //            else -> certAuthOrLogin()
 //        }
 
-        if (!receiverRegistered) {
-            authConfigReceiver = AuthConfigReceiver().also { changeServerReceiver ->
-                ContextCompat.registerReceiver(
-                    this,
-                    changeServerReceiver,
-                    IntentFilter(AUTH_CONFIG_COMPLETE_INTENT_ACTION),
-                    ContextCompat.RECEIVER_NOT_EXPORTED
-                )
-//                ContextCompat.registerReceiver(
-//                    this,
-//                    changeServerReceiver,
-//                    IntentFilter(PICK_SERVER_INTENT_ACTION),
-//                    ContextCompat.RECEIVER_NOT_EXPORTED
-//                )
-            }
-            receiverRegistered = true
-        }
-
         // Take control of the back logic if the device is locked.
         // TODO:  Remove SDK_INT check when min API > 33
         if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
@@ -265,11 +245,6 @@ open class LoginActivity: FragmentActivity() {
     }
 
     override fun onDestroy() {
-        if (receiverRegistered) {
-            unregisterReceiver(authConfigReceiver)
-            receiverRegistered = false
-        }
-
 //        handleBackBehavior()
         super.onDestroy()
     }
@@ -555,16 +530,6 @@ open class LoginActivity: FragmentActivity() {
                     getString(status.resIdForDescription),
                     LENGTH_SHORT
                 ).show()
-            }
-        }
-    }
-
-    // TODO: move this to LoginWebviewClient
-    inner class AuthConfigReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent?) {
-            if (intent?.action == AUTH_CONFIG_COMPLETE_INTENT_ACTION) {
-                // TODO: do we need this?
-//                webviewHelper?.loadLoginPage()
             }
         }
     }
