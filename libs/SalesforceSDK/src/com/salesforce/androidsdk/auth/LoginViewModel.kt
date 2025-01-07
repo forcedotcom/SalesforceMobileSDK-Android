@@ -59,23 +59,28 @@ open class LoginViewModel(
     savedStateHandle: SavedStateHandle, // I assume this is needed to save state (url?) between app runs
 ) : ViewModel() {
 
+    // LiveData
     var selectedServer: MutableLiveData<String> =
         MutableLiveData<String>(SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer.url.run { trim { it <= ' ' } })
         private set
     val loginUrl: MediatorLiveData<String> = MediatorLiveData<String>()
-
-    internal open var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
-    internal open val oAuthClientId: String
-        get() = loginOptions.oauthClientId
-
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
     internal var loading = mutableStateOf(false)
 
+    internal open var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+    internal open val oAuthClientId: String
+        get() = loginOptions.oauthClientId
+
     /** The default, locally generated code verifier */
-    // TODO: rotate this after login attempt?
     private var codeVerifier: String? = null
+
+    /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
+    internal var isUsingFrontDoorBridge = false
+
+    /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
+    internal var frontDoorBridgeCodeVerifier: String? = null
 
     init {
         // Update loginUrl when selectedServer updates so webview automatically reloads
@@ -95,6 +100,23 @@ open class LoginViewModel(
 
 //    open fun clearCookies() =
 //        CookieManager.getInstance().removeAllCookies(null)
+
+    /**
+     * Automatically log in using the provided UI Bridge API parameters.
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
+     * @param pkceCodeVerifier The PKCE code verifier
+     */
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String?,
+    ) {
+        isUsingFrontDoorBridge = true
+
+        val uri = URI(frontdoorBridgeUrl)
+        loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
+        frontDoorBridgeCodeVerifier = pkceCodeVerifier
+        loginUrl.value = frontdoorBridgeUrl
+    }
 
 
     @Suppress("MemberVisibilityCanBePrivate")
@@ -172,9 +194,6 @@ open class LoginViewModel(
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
         }
-
-        // TODO: move all of the activity on auth flow complete to this viewmodel
-//        onAuthFlowComplete(tokenResponse)
     }
 
     /**
@@ -452,6 +471,15 @@ open class LoginViewModel(
             )
         }
 
+    }
+
+    /**
+     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
+     * its default inactive state.
+     */
+    internal fun resetFrontDoorBridgeUrl() {
+        isUsingFrontDoorBridge = false
+        frontDoorBridgeCodeVerifier = null
     }
 
     companion object {

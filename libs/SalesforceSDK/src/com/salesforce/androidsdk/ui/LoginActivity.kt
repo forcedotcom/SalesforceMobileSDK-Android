@@ -36,10 +36,7 @@ import android.app.PendingIntent.FLAG_CANCEL_CURRENT
 import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.getActivity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.BitmapFactory.decodeResource
@@ -51,6 +48,9 @@ import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
+import android.security.KeyChain.choosePrivateKeyAlias
+import android.security.KeyChain.getCertificateChain
+import android.security.KeyChain.getPrivateKey
 import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
@@ -82,7 +82,6 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.platform.ComposeView
-import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.color.sf__primary_color
@@ -99,6 +98,7 @@ import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
@@ -111,9 +111,9 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
 import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
-import com.salesforce.androidsdk.util.AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser.parse
@@ -122,6 +122,8 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URLDecoder
+import java.security.PrivateKey
+import java.security.cert.X509Certificate
 
 
 open class LoginActivity: FragmentActivity() {
@@ -132,6 +134,9 @@ open class LoginActivity: FragmentActivity() {
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var biometricAuthenticationButton: Button? = null
+
+    private var key: PrivateKey? = null
+    private var certChain: Array<X509Certificate>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -210,14 +215,14 @@ open class LoginActivity: FragmentActivity() {
 
         // Prompt user with the default login page or log in via other configurations such as using
         // a Salesforce Identity API UI Bridge front door URL.
-//        when {
-//            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
-//                uiBridgeApiParameters.frontdoorBridgeUrl,
-//                uiBridgeApiParameters.pkceCodeVerifier
-//            )
-//
-//            else -> certAuthOrLogin()
-//        }
+        when {
+            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
+            )
+
+            else -> certAuthOrLogin()
+        }
 
         // Take control of the back logic if the device is locked.
         // TODO:  Remove SDK_INT check when min API > 33
@@ -242,11 +247,6 @@ open class LoginActivity: FragmentActivity() {
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-//        handleBackBehavior()
-        super.onDestroy()
     }
 
     override fun onResume() {
@@ -334,11 +334,11 @@ open class LoginActivity: FragmentActivity() {
      * @param pkceCodeVerifier The optional PKCE code verifier, which is not required for User Agent
      * Authorization Flow but is required for Web Server Authorization Flow
      */
-//    @Suppress("MemberVisibilityCanBePrivate")
-//    fun loginWithFrontdoorBridgeUrl(
-//        frontdoorBridgeUrl: String,
-//        pkceCodeVerifier: String?
-//    ) = webviewHelper?.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun loginWithFrontdoorBridgeUrl(
+        frontdoorBridgeUrl: String,
+        pkceCodeVerifier: String?
+    ) = viewModel.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
      * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
@@ -354,45 +354,55 @@ open class LoginActivity: FragmentActivity() {
      * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
      * false otherwise
      */
-//    fun loginWithFrontdoorBridgeUrlFromQrCode(
-//        qrCodeLoginUrl: String?
-//    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
-//        qrCodeLoginUrl
-//    )?.let { uiBridgeApiParameters ->
-//        loginWithFrontdoorBridgeUrl(
-//            uiBridgeApiParameters.frontdoorBridgeUrl,
-//            uiBridgeApiParameters.pkceCodeVerifier
-//        )
-//        true
-//    } ?: false
+    fun loginWithFrontdoorBridgeUrlFromQrCode(
+        qrCodeLoginUrl: String?
+    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
+        qrCodeLoginUrl
+    )?.let { uiBridgeApiParameters ->
+        loginWithFrontdoorBridgeUrl(
+            uiBridgeApiParameters.frontdoorBridgeUrl,
+            uiBridgeApiParameters.pkceCodeVerifier
+        )
+        true
+    } ?: false
 
     // endregion
 
     // End of Public Functions
 
-    // TODO: add cert auth back
-//    protected open fun certAuthOrLogin() {
-//        when {
-//            shouldUseCertBasedAuth() -> {
-//                val alias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
-//                d(TAG, "Cert based login flow being triggered with alias: $alias")
-//                choosePrivateKeyAlias(
-//                    this,
-//                    webviewHelper ?: return,
-//                    null,
-//                    null,
-//                    null,
-//                    -1,
-//                    alias
-//                )
-//            }
-//
-//            else -> {
-//                d(TAG, "Web server or user agent login flow triggered")
+    protected open fun certAuthOrLogin() {
+        when {
+            shouldUseCertBasedAuth() -> {
+                val managedAppAlias = getRuntimeConfig(this).getString(ManagedAppCertAlias)
+                d(TAG, "Cert based login flow being triggered with alias: $managedAppAlias")
+                choosePrivateKeyAlias(
+                    this,
+                    { alias ->
+                        runCatching {
+                            d(TAG, "Keychain alias callback received")
+                            alias?.let { alias ->
+                                certChain = getCertificateChain(this, alias)
+                                key = getPrivateKey(this, alias)
+                            }
+//                            runOnUiThread { loadLoginPage() }
+                        }.onFailure { throwable ->
+                            e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
+                        }
+                    },
+                    null,
+                    null,
+                    null,
+                    -1,
+                    managedAppAlias,
+                )
+            }
+
+            else -> {
+                d(TAG, "Web server or user agent login flow triggered")
 //                webviewHelper.loadLoginPage()
-//            }
-//        }
-//    }
+            }
+        }
+    }
 
     /**
      * Indicates if the certificate based authentication flow should be used.

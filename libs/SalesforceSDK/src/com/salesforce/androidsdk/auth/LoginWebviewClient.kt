@@ -34,14 +34,6 @@ open class LoginWebviewClient(
     private val viewModel: LoginViewModel,
     private val activity: LoginActivity,
 ): WebViewClient() {
-    /** The default, locally generated code verifier */
-    private var codeVerifier: String? = null
-
-    /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
-    private var isUsingFrontDoorBridge = false
-
-    /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
-    private var frontDoorBridgeCodeVerifier: String? = null
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
 
@@ -106,7 +98,7 @@ open class LoginWebviewClient(
 
                 else -> {
                     // Determine if presence of override parameters require the user agent flow.
-                    val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
+                    val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge && viewModel.frontDoorBridgeCodeVerifier == null
                     when {
                         SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
                             viewModel.onWebServerFlowComplete(
@@ -166,7 +158,7 @@ open class LoginWebviewClient(
 
         // Reset state from previous log in attempt.
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
-        resetFrontDoorBridgeUrl()
+        viewModel.resetFrontDoorBridgeUrl()
 
         e(TAG, "$error: $errorDesc", e)
 
@@ -214,18 +206,9 @@ open class LoginWebviewClient(
         CoroutineScope(IO).launch {
             // Reset log in state,
             // - Salesforce Identity UI Bridge API log in, such as QR code login.
-            resetFrontDoorBridgeUrl()
+            viewModel.resetFrontDoorBridgeUrl()
             activity.finish()
         }
-    }
-
-    /**
-     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
-     * its default inactive state.
-     */
-    private fun resetFrontDoorBridgeUrl() {
-        isUsingFrontDoorBridge = false
-        frontDoorBridgeCodeVerifier = null
     }
 
     private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
