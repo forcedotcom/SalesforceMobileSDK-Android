@@ -1,6 +1,9 @@
 package com.salesforce.androidsdk.auth
 
+import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.text.TextUtils.isEmpty
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
@@ -49,6 +53,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.push.PushMessaging.register
+import com.salesforce.androidsdk.rest.ClientManager
 import org.json.JSONArray
 import java.util.function.Consumer
 
@@ -84,6 +89,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             // prevent emitting a change in selected server if the value isn't actually new
             if (selectedServer.value == trimmedServer) {
                 // reload webview!
+                reloadWebview()
             } else {
                 selectedServer.value = trimmedServer
             }
@@ -95,6 +101,13 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         }
     }
 
+    open fun reloadWebview() {
+        loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
+    }
+
+    open fun clearCookies() =
+        CookieManager.getInstance().removeAllCookies(null)
+
 // TODO: get bio auth mgr and show button if necessary.  Also do the same for IDP
 //    private bioAuthMgr =
 
@@ -103,9 +116,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
 
     // from OAuthWebviewHelper
-
-//    open fun clearCookies() =
-//        CookieManager.getInstance().removeAllCookies(null)
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
@@ -127,9 +137,11 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     @Suppress("MemberVisibilityCanBePrivate")
     internal fun getAuthorizationUrl(server: String): String {
+        clearCookies()
+
         // Reset log in state,
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
-        resetFrontDoorBridgeUrl()
+//        resetFrontDoorBridgeUrl()
 
         val jwtFlow = !isEmpty(jwt)
         val additionalParams = when {
@@ -169,16 +181,16 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal fun onWebServerFlowComplete(
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-        onAuthFlowComplete: () -> Unit,
+        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) =
         CoroutineScope(IO).launch {
-            doCodeExchange(code, onAuthFlowError, onAuthFlowComplete)
+            doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess)
         }
 
     private suspend fun doCodeExchange(
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-        onAuthFlowComplete: () -> Unit,
+        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) = withContext(IO) {
         runCatching {
             val tokenResponse = exchangeCode(
@@ -190,8 +202,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
                 bootConfig.oauthRedirectURI,
             )
 
-            onAuthFlowComplete(tokenResponse, onAuthFlowError)
-            onAuthFlowComplete()
+            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
@@ -308,6 +319,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal fun onAuthFlowComplete(
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val blockIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
@@ -435,6 +447,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             )
         }
 
+        onAuthFlowSuccess(account)
     }
 
     /**

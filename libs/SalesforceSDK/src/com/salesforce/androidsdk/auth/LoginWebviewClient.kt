@@ -4,6 +4,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.ui.graphics.Color
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.util.EventsObservable
@@ -14,7 +15,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 open class LoginWebviewClient(
     private val viewModel: LoginViewModel,
     private val onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-    private val onAuthFlowComplete: () -> Unit,
+    private val onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
 ): WebViewClient() {
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -49,7 +50,7 @@ open class LoginWebviewClient(
             val error = params["error"]
             // Did we fail?
             when {
-                error != null -> onAuthFlowError(   // TODO: use this method in LoginActivity -- get invocation of error method, don't use activity itself!
+                error != null -> onAuthFlowError(
                     error,
                     params["error_description"],
                     null
@@ -60,14 +61,10 @@ open class LoginWebviewClient(
                     val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge && viewModel.frontDoorBridgeCodeVerifier == null
                     when {
                         SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
-                            viewModel.onWebServerFlowComplete(
-                                params["code"],
-                                onAuthFlowError =  onAuthFlowError,
-                                onAuthFlowComplete = onAuthFlowComplete,
-                            )
+                            viewModel.onWebServerFlowComplete(params["code"], onAuthFlowError, onAuthFlowSuccess)
 
                         else ->
-                            viewModel.onAuthFlowComplete(TokenEndpointResponse(params), onAuthFlowError)
+                            viewModel.onAuthFlowComplete(TokenEndpointResponse(params), onAuthFlowError, onAuthFlowSuccess)
                     }
                 }
             }

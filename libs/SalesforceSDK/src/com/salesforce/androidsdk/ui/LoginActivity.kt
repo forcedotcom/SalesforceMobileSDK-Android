@@ -37,6 +37,7 @@ import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.getActivity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.BitmapFactory.decodeResource
@@ -92,6 +93,9 @@ import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
@@ -174,7 +178,7 @@ open class LoginActivity: FragmentActivity() {
             ComposeView(this).apply {
                 setContent {
                     LoginWebviewTheme {
-                        LoginView(webviewClient = LoginWebviewClient(viewModel, ::onAuthFlowError, ::finish))
+                        LoginView(webviewClient = LoginWebviewClient(viewModel, ::onAuthFlowError, ::onAuthFlowSuccess))
                     }
                 }
             }
@@ -183,10 +187,9 @@ open class LoginActivity: FragmentActivity() {
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
-        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn() &&
-            intent.extras?.getBoolean(SHOW_BIOMETRIC) == true) {
-                presentBiometric()
-            }
+        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn()) {
+            presentBiometric()
+        }
 
         // Prompt user with the default login page or log in via other configurations such as using
         // a Salesforce Identity API UI Bridge front door URL.
@@ -256,10 +259,10 @@ open class LoginActivity: FragmentActivity() {
         viewModel.showServerPicker.value = true
     }
 
+    // The code in this block was taken from the deprecated
+    // AccountAuthenticatorActivity class to replicate its functionality per the
+    // deprecation message
     override fun finish() {
-        // The code in this block was taken from the deprecated
-        // AccountAuthenticatorActivity class to replicate its functionality per the
-        // deprecation message
         accountAuthenticatorResponse?.let { accountAuthenticatorResponse ->
             // Send the result bundle back if set, otherwise send an error
             accountAuthenticatorResult?.let { accountAuthenticatorResult ->
@@ -270,8 +273,6 @@ open class LoginActivity: FragmentActivity() {
             )
             this.accountAuthenticatorResponse = null
         }
-
-        viewModel.resetFrontDoorBridgeUrl()
         super.finish()
     }
 
@@ -473,13 +474,41 @@ open class LoginActivity: FragmentActivity() {
             else -> {
                 viewModel.showServerPicker.value = false
                 viewModel.loading.value = true
-                viewModel.onWebServerFlowComplete(
-                    params["code"],
-                    onAuthFlowError =  ::onAuthFlowError,
-                    onAuthFlowComplete = ::finish,
-                )
+                viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
             }
         }
+    }
+
+    protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
+        initAnalyticsManager(userAccount)
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val authenticatedUsers = userAccountManager.authenticatedUsers
+        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
+        val userSwitchType = when {
+            // We've already authenticated the first user, so there should be one
+            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+
+            // Otherwise we're logging in with an additional user
+            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+
+            // This should never happen but if it does, pass in the "unknown" value
+            else -> USER_SWITCH_TYPE_DEFAULT
+        }
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+        setResult(Activity.RESULT_OK)
+
+        // Create account and save result before switching to new user
+        accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
+
+        userAccountManager.switchToUser(userAccount)
+        with(SalesforceSDKManager.getInstance()) {
+            appContext.startActivity(Intent(appContext, mainActivityClass).apply {
+                setPackage(packageName)
+                flags = FLAG_ACTIVITY_NEW_TASK
+            })
+        }
+
+        finish()
     }
 
     private fun handleBackBehavior() {
