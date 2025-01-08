@@ -70,7 +70,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LoginOptions values
     var jwt: String? = null
     var additionalParameters = hashMapOf<String, String>()
-
+    val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
+        !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
+    }
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null

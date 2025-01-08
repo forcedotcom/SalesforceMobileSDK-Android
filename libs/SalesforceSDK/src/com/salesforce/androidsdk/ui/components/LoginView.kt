@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -86,32 +87,36 @@ fun LoginView(
                             },
                         )
                         DropdownMenuItem(
-                            onClick = { /* */ },
+                            onClick = {
+                                viewModel.clearCookies()
+                                viewModel.reloadWebview()
+                            },
                             text = { Text("Clear Cookies", color = Color.Gray) },
                         )
                         DropdownMenuItem(
-                            onClick = { /* */ },
+                            onClick = { viewModel.reloadWebview() },
                             text = { Text("Reload", color = Color.Gray) },
                         )
                     }
                 },
-                // conditionally show this when we need a back button
-//                    navigationIcon = {
-//                        IconButton(
-//                            onClick = { this@JetpackLoginActivity.finish() },
-//                            colors = IconButtonColors(
-//                                containerColor = Color.Transparent,
-//                                contentColor = viewModel.headerTextColor.value,
-//                                disabledContainerColor = Color.Transparent,
-//                                disabledContentColor = Color.Transparent,
-//                            ),
-//                        ) {
-//                            Icon(
-//                                Icons.AutoMirrored.Filled.ArrowBack,
-//                                contentDescription = "Back",
-//                            )
-//                        }
-//                    }
+                navigationIcon = {
+                    if (viewModel.shouldShowBackButton) {
+                        IconButton(
+                            onClick = { /* get back function form LoginActivity */ },
+                            colors = IconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = Color.Black,  // TODO: fix color
+                                disabledContainerColor = Color.Transparent,
+                                disabledContentColor = Color.Transparent,
+                            ),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
+                    }
+                }
             )
         },
         bottomBar = {
