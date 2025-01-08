@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -29,7 +27,6 @@ import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
@@ -50,31 +47,29 @@ import org.json.JSONObject
 import java.net.URI
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.push.PushMessaging.register
-import com.salesforce.androidsdk.rest.ClientManager
 import org.json.JSONArray
+import java.util.function.Consumer
 
-open class LoginViewModel(
-    var loginOptions: LoginOptions,
-    savedStateHandle: SavedStateHandle, // I assume this is needed to save state (url?) between app runs
-) : ViewModel() {
+open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     // LiveData
-    var selectedServer: MutableLiveData<String> =
-        MutableLiveData<String>(SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer.url.run { trim { it <= ' ' } })
-        private set
-    val loginUrl: MediatorLiveData<String> = MediatorLiveData<String>()
+    val selectedServer = MediatorLiveData<String>()
+    val loginUrl = MediatorLiveData<String>()
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
     internal var loading = mutableStateOf(false)
 
-    internal open var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
-    internal open val oAuthClientId: String
-        get() = loginOptions.oauthClientId
+    // LoginOptions values
+    var jwt: String? = null
+    var additionalParameters = hashMapOf<String, String>()
+
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
+    private var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
     internal var isUsingFrontDoorBridge = false
@@ -83,6 +78,17 @@ open class LoginViewModel(
     internal var frontDoorBridgeCodeVerifier: String? = null
 
     init {
+        // Update selectedServer when the LoginServerManager value changes
+        selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
+            val trimmedServer = newServer.url.run { trim { it <= ' ' } }
+            // prevent emitting a change in selected server if the value isn't actually new
+            if (selectedServer.value == trimmedServer) {
+                // reload webview!
+            } else {
+                selectedServer.value = trimmedServer
+            }
+        }
+
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
             loginUrl.value = getAuthorizationUrl(newServer)
@@ -113,7 +119,7 @@ open class LoginViewModel(
         isUsingFrontDoorBridge = true
 
         val uri = URI(frontdoorBridgeUrl)
-        loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
+        SalesforceSDKManager.getInstance().loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
         frontDoorBridgeCodeVerifier = pkceCodeVerifier
         loginUrl.value = frontdoorBridgeUrl
     }
@@ -123,25 +129,24 @@ open class LoginViewModel(
     internal fun getAuthorizationUrl(server: String): String {
         // Reset log in state,
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
-//        resetFrontDoorBridgeUrl()
+        resetFrontDoorBridgeUrl()
 
-        val jwtFlow = !isEmpty(loginOptions.jwt)
+        val jwtFlow = !isEmpty(jwt)
         val additionalParams = when {
             jwtFlow -> null
-            else -> loginOptions.additionalParameters
+            else -> additionalParameters
         }
 
         // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
-        var authorizationUrl = OAuth2.getAuthorizationUrl(
+        val authorizationUrl = OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
-//            URI(loginOptions.loginUrl),
             URI(server),
-            oAuthClientId,
-            loginOptions.oauthCallbackUrl,
-            loginOptions.oauthScopes,
+            bootConfig.remoteAccessConsumerKey,
+            bootConfig.oauthRedirectURI,
+            bootConfig.oauthScopes,
             authorizationDisplayType,
             codeChallenge,
             additionalParams
@@ -175,17 +180,14 @@ open class LoginViewModel(
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowComplete: () -> Unit,
     ) = withContext(IO) {
-//        var tokenResponse: TokenEndpointResponse? = null
         runCatching {
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
                 URI.create(selectedServer.value),
-//                URI.create(activity.loginOptions.loginUrl),
-                loginOptions.oauthClientId,
+                bootConfig.remoteAccessConsumerKey,
                 code,
-                // frontDoorBridgeCodeVerifier
-                codeVerifier,
-                loginOptions.oauthCallbackUrl
+                frontDoorBridgeCodeVerifier ?: codeVerifier,
+                bootConfig.oauthRedirectURI,
             )
 
             onAuthFlowComplete(tokenResponse, onAuthFlowError)
@@ -207,16 +209,6 @@ open class LoginViewModel(
         "%s (%s) (%s)", username, instanceServer,
         SalesforceSDKManager.getInstance().applicationName
     )
-
-    /**
-     * A factory method for the web Chrome client. This can be overridden as
-     * needed
-     *
-     * TODO: deprecate and rename this to `makeBrowserClient`? (since it is not chrome specific)
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun makeWebChromeClient() = WebChromeClient()
-
 
     /**
      * Requests the user's information from the network and returns the user's
@@ -269,24 +261,12 @@ open class LoginViewModel(
     }
 
     private fun addAccount(account: UserAccount?) {
-        val clientManager = ClientManager(
-            SalesforceSDKManager.getInstance().appContext,
-            SalesforceSDKManager.getInstance().accountType,
-            loginOptions,
-            SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked(),
-        )
-
-        // New account
-        val extras = clientManager.createNewAccount(account)
-
         /*
          * Registers for push notifications if setup by the app. This step needs
          * to happen after the account has been added by client manager, so that
          * the push service has all the account info it needs.
          */
         register(SalesforceSDKManager.getInstance().appContext, account)
-
-//        callback.onAccountAuthenticatorResult(extras)
 
         when {
             SalesforceSDKManager.getInstance().isTestRun -> logAddAccount(account)
@@ -368,17 +348,13 @@ open class LoginViewModel(
             return
         }
 
-        // TODO:  loginOptions was used for loginUrl and clientId
         val account = UserAccountBuilder.getInstance()
             .populateFromTokenEndpointResponse(tr)
             .populateFromIdServiceResponse(userIdentity)
             .accountName(buildAccountName(userIdentity?.username, tr.instanceUrl))
-            .loginServer("login.salesforce.com")
-            .clientId("")
+            .loginServer(selectedServer.value)
+            .clientId(bootConfig.remoteAccessConsumerKey)
             .build()
-
-//        accountOptions = account.toBundle()
-
         account.downloadProfilePhoto()
 
         // Set additional administrator prefs if they exist
@@ -422,28 +398,16 @@ open class LoginViewModel(
             }
 
             // If this account has biometric authentication enabled remove any others that also have it
-//            if (userIdentity?.biometricAuth == true) {
-//                existingUsers.forEach(Consumer { existingUser ->
-//                    if (isBiometricAuthenticationEnabled(existingUser)) {
-//
-//                        // TODO: test this
-//                        (context as Activity).runOnUiThread {
-//                            makeText(
-//                                context,
-//                                context.getString(
-//                                    sf__biometric_signout_user,
-//                                    existingUser.username
-//                                ),
-//                                LENGTH_LONG
-//                            ).show()
-//                        }
-//                        // This is an unexpected logout(s) because we only support one Bio Auth user.
-//                        SalesforceSDKManager.getInstance().userAccountManager.signoutUser(
-//                            existingUser, activity, false, OAuth2.LogoutReason.UNEXPECTED
-//                        )
-//                    }
-//                })
-//            }
+            if (userIdentity?.biometricAuth == true) {
+                existingUsers.forEach(Consumer { existingUser ->
+                    if (isBiometricAuthenticationEnabled(existingUser)) {
+                        // This is an unexpected logout(s) because we only support one Bio Auth user.
+                        SalesforceSDKManager.getInstance().userAccountManager.signoutUser(
+                            existingUser, null, false, OAuth2.LogoutReason.UNEXPECTED
+                        )
+                    }
+                })
+            }
         }
 
         // Save the user account
@@ -495,15 +459,7 @@ open class LoginViewModel(
                 // Create a SavedStateHandle for this ViewModel from extras
                 val savedStateHandle = extras.createSavedStateHandle()
 
-                // Determine login options for Salesforce Identity API UI Bridge front door URL use or choose defaults.
-                val loginOptions = SalesforceSDKManager.getInstance().loginOptions
-// TODO:  update this to account for frontdoor/QR Code login
-//                    when {
-//                    isUsingFrontDoorBridge -> salesforceSDKManager.loginOptions
-//                    else -> fromBundleWithSafeLoginUrl(intent.extras)
-//                }
-
-                return LoginViewModel(loginOptions, savedStateHandle) as T
+                return LoginViewModel(BootConfig.getBootConfig(application.baseContext)) as T
             }
         }
 

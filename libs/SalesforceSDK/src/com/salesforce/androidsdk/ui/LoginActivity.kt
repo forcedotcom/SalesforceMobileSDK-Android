@@ -95,6 +95,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.auth.LoginWebviewClient
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
@@ -128,7 +129,6 @@ import java.security.cert.X509Certificate
 
 open class LoginActivity: FragmentActivity() {
     protected open val viewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
-    internal lateinit var loginOptions: LoginOptions
 
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
@@ -148,7 +148,7 @@ open class LoginActivity: FragmentActivity() {
          * plus the optional web server flow code verifier accompanying the
          * frontdoor bridge URL.
          */
-        val isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
+        viewModel.isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
         val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
             uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
         } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
@@ -164,34 +164,9 @@ open class LoginActivity: FragmentActivity() {
             onRequestContinued()
         }
 
-        // TODO: migrate to compose theme?
-//        setTheme(
-//            when (salesforceSDKManager.isDarkTheme) {
-//                true -> SalesforceSDK_Dark_Login
-//                else -> SalesforceSDK
-//            }
-//        )
-
-//        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)  // TODO: this should probably be removed
-
-        // Determine login options for Salesforce Identity API UI Bridge front door URL use or choose defaults.
-        loginOptions = when {
-            isUsingFrontDoorBridge -> SalesforceSDKManager.getInstance().loginOptions
-            else -> fromBundleWithSafeLoginUrl(intent.extras)
-        }
-
         // Protect against screenshots
         if (!SalesforceSDKManager.getInstance().isDebugBuild) {
             window.setFlags(FLAG_SECURE, FLAG_SECURE)
-        }
-
-        /*
-         * Fetch authentication configuration except when using Salesforce Identity API UI Bridge, since the front door URL may be for another login server.
-         *
-         * Support for adding new login servers from the front door bridge URL is not yet implemented.  Unknown login servers will fail login.
-         */
-        if (!isUsingFrontDoorBridge) {
-            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration()
         }
 
         // Set content
@@ -199,7 +174,7 @@ open class LoginActivity: FragmentActivity() {
             ComposeView(this).apply {
                 setContent {
                     LoginWebviewTheme {
-                        LoginView(this@LoginActivity)
+                        LoginView(webviewClient = LoginWebviewClient(viewModel, ::onAuthFlowError, ::finish))
                     }
                 }
             }
@@ -216,7 +191,7 @@ open class LoginActivity: FragmentActivity() {
         // Prompt user with the default login page or log in via other configurations such as using
         // a Salesforce Identity API UI Bridge front door URL.
         when {
-            isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
+            viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
                 uiBridgeApiParameters.frontdoorBridgeUrl,
                 uiBridgeApiParameters.pkceCodeVerifier
             )
@@ -281,10 +256,10 @@ open class LoginActivity: FragmentActivity() {
         viewModel.showServerPicker.value = true
     }
 
-    // The code in this override was taken from the deprecated
-    // AccountAuthenticatorActivity class to replicate its functionality per the
-    // deprecation message
     override fun finish() {
+        // The code in this block was taken from the deprecated
+        // AccountAuthenticatorActivity class to replicate its functionality per the
+        // deprecation message
         accountAuthenticatorResponse?.let { accountAuthenticatorResponse ->
             // Send the result bundle back if set, otherwise send an error
             accountAuthenticatorResult?.let { accountAuthenticatorResult ->
@@ -295,6 +270,8 @@ open class LoginActivity: FragmentActivity() {
             )
             this.accountAuthenticatorResponse = null
         }
+
+        viewModel.resetFrontDoorBridgeUrl()
         super.finish()
     }
 
@@ -449,7 +426,7 @@ open class LoginActivity: FragmentActivity() {
     ) {
         // Reset state from previous log in attempt.
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
-//        resetFrontDoorBridgeUrl()
+        viewModel.resetFrontDoorBridgeUrl()
 
         e(TAG, "$error: $errorDesc", e)
 

@@ -32,10 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.LoginWebviewClient
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salesforce.androidsdk.ui.LoginActivity
 
 // TODO: split this into multiple components
 
@@ -43,15 +42,14 @@ import com.salesforce.androidsdk.ui.LoginActivity
 //@Preview
 @Composable
 fun LoginView(
-    activity: LoginActivity, // TODO: if I can remove activity reference in LoginWebviewClient it can also be removed from WebviewComposable and LoginView!
+    webviewClient: LoginWebviewClient,
     viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
     topAppBarColor: Color = viewModel.dynamicBackgroundColor.value,
     titleText: String = viewModel.selectedServer.value.toString(),
     titleComposable: @Composable () -> Unit =
         { Text(text = titleText, color = viewModel.dynamicHeaderTextColor.value, fontWeight = FontWeight.Bold) },
-    webviewClient: LoginWebviewClient = LoginWebviewClient(viewModel, activity),
     webviewComposable: @Composable (PaddingValues) -> Unit = {
-        innerPadding: PaddingValues -> LoginWebview(innerPadding, activity, viewModel, webviewClient)
+        innerPadding: PaddingValues -> LoginWebview(innerPadding, webviewClient, viewModel)
     },
     showTopAppBar: Boolean = true,
 ) {

@@ -210,10 +210,7 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-//    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
-// TODO: test passing in login class
-    val loginActivityInstance = LoginActivity()
-    val webviewLoginActivityClass = loginActivityInstance::class.java
+    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
 
     /**
      * The class of the activity used to perform the login process and create

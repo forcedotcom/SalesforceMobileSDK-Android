@@ -29,8 +29,6 @@ fun LoginServerCard(viewModel: LoginViewModel, server: LoginServerManager.LoginS
                 viewModel.loading.value = true
                 viewModel.dynamicBackgroundColor.value = Color.White
                 SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = server
-                // TODO: derive this from loginServerManager?
-                viewModel.selectedServer.value = server.url
             },
         colors = CardColors(
             containerColor = Color.White,

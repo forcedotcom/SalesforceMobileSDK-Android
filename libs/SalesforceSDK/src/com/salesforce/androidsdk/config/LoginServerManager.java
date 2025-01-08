@@ -30,9 +30,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.MutableLiveData;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -52,6 +52,9 @@ import java.util.Map;
  * @author bhariharan
  */
 public class LoginServerManager {
+	// LiveData representation of the users current selected server.
+	public MutableLiveData<LoginServer> selectedServer
+			= new MutableLiveData<>(new LoginServer("Production", PRODUCTION_LOGIN_URL, false));
 
 	private static final String TAG = "LoginServerManager";
 
@@ -69,7 +72,6 @@ public class LoginServerManager {
 	private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
 	private final Context ctx;
-	private LoginServer selectedServer;
 	private final SharedPreferences settings;
 	private final SharedPreferences runtimePrefs;
 
@@ -85,7 +87,7 @@ public class LoginServerManager {
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
 				Context.MODE_PRIVATE);
 		initSharedPrefFile();
-		selectedServer = getSelectedLoginServer();
+		getSelectedLoginServer();
 	}
 
 	/**
@@ -123,7 +125,7 @@ public class LoginServerManager {
 
 		// Selection has been saved before.
 		if (name != null && url != null) {
-			selectedServer = new LoginServer(name, url, isCustom);
+			selectedServer.postValue(new LoginServer(name, url, isCustom));
 		} else {
 
 			// First time selection defaults to the first server on the list.
@@ -131,19 +133,14 @@ public class LoginServerManager {
 			if (allServers != null) {
 				final LoginServer server = allServers.get(0);
 				if (server != null) {
-					selectedServer = server;
+					selectedServer.postValue(server);
 				}
 			}
 
-			// For some reason, if it's still not set, sets it to the default.
-			if (selectedServer == null) {
-				selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
-			}
-
 			// Stores the selection for the future.
-			setSelectedLoginServer(selectedServer);
+			setSelectedLoginServer(selectedServer.getValue());
 		}
-		return selectedServer;
+		return selectedServer.getValue();
 	}
 
 	/**
@@ -163,7 +160,7 @@ public class LoginServerManager {
 		edit.putString(SERVER_URL, server.url);
 		edit.putBoolean(IS_CUSTOM, server.isCustom);
 		edit.apply();
-		selectedServer = server;
+		selectedServer.postValue(server);
 	}
 
 	/**
@@ -394,7 +391,7 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
-		return (allServers.size() > 0 ? allServers : null);
+		return (!allServers.isEmpty() ? allServers : null);
 	}
 
 	/**

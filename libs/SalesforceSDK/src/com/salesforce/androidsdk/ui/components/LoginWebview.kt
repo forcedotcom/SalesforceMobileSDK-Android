@@ -6,26 +6,22 @@ import android.webkit.WebView
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Observer
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.LoginWebviewClient
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salesforce.androidsdk.ui.LoginActivity
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun LoginWebview(
     paddingValues: PaddingValues,
-    activity: LoginActivity,
+    webviewClient: LoginWebviewClient,
     viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
-    webviewClient: LoginWebviewClient = LoginWebviewClient(viewModel, activity),
 ) {
     val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
 
@@ -48,5 +44,6 @@ fun LoginWebview(
             webView
         }, update = {
             it.loadUrl(loginUrl)
-        })
+        }
+    )
 }
