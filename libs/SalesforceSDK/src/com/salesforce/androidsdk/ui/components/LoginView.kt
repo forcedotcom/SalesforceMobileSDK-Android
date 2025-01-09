@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
@@ -43,14 +44,10 @@ import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.ui.LoginActivity
 
 @Composable
+@Preview
 fun LoginView(
-    webViewClient: WebViewClient,
-    webChromeClient: WebChromeClient = WebChromeClient(),
     viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
-    webViewComposable: @Composable (PaddingValues) -> Unit = {
-        innerPadding: PaddingValues -> LoginWebview(innerPadding, webViewClient, webChromeClient, viewModelFactory)
-    },
-
+    webViewComposable: (@Composable (PaddingValues) -> Unit)? = null,
 ) {
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
     var showMenu by remember { mutableStateOf(false) }
@@ -148,7 +145,10 @@ fun LoginView(
             }
         }
 
-        webViewComposable(innerPadding)
+        webViewComposable?.invoke(innerPadding) ?: run {
+            // Use our default webview if one was not passed in.
+            LoginWebview(innerPadding, activity.webViewClient, activity.webChromeClient, viewModelFactory)
+        }
 
         if (viewModel.showServerPicker.value) {
             LoginServerBottomSheet(viewModel)

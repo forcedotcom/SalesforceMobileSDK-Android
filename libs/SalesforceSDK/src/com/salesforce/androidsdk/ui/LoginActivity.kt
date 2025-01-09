@@ -53,6 +53,7 @@ import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -131,15 +132,21 @@ import java.security.cert.X509Certificate
 
 
 open class LoginActivity: FragmentActivity() {
+    // Webview Clients
+    open val webViewClient = AuthWebViewClient()
+    open val webChromeClient = WebChromeClient()
+
+    // View Model
     protected open val viewModel: LoginViewModel
         by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
-    protected open val webViewClient = AuthWebViewClient()
 
+    // Private variables
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var biometricAuthenticationButton: Button? = null
 
+    // KeychainAliasCallback variables
     private var key: PrivateKey? = null
     private var certChain: Array<X509Certificate>? = null
 
@@ -179,7 +186,7 @@ open class LoginActivity: FragmentActivity() {
             ComposeView(this).apply {
                 setContent {
                     LoginWebviewTheme {
-                        LoginView(webViewClient)
+                        LoginView()
                     }
                 }
             }
@@ -754,7 +761,7 @@ open class LoginActivity: FragmentActivity() {
      * AuthWebViewClient is an inner class of LoginActivity because it makes extensive use of the LoginViewModel,
      * which is only available to Activity classes (and composable functions).
      */
-    protected open inner class AuthWebViewClient: WebViewClient() {
+    open inner class AuthWebViewClient: WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             // Check if user entered a custom domain
             val customDomainPatternMatch = SalesforceSDKManager.getInstance()
