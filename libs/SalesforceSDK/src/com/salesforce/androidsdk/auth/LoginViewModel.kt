@@ -72,7 +72,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
 
-    open protected val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+    protected open val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -413,6 +413,10 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         // Save the user account
         addAccount(account)
 
+        // Kickoff the end of the flow before storing mobile policy to prevent launching
+        // the main activity over/after the screen lock.
+        onAuthFlowSuccess(account)
+
         // Screen lock required by mobile policy
         if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
             SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
@@ -434,8 +438,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
                 timeoutInMills
             )
         }
-
-        onAuthFlowSuccess(account)
     }
 
     /**
