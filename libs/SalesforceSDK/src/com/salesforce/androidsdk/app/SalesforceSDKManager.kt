@@ -210,13 +210,13 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+    val webViewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
 
     /**
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
+    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
 
     /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for

@@ -137,7 +137,7 @@ import java.security.cert.X509Certificate
 open class LoginActivity: FragmentActivity() {
     protected open val viewModel: LoginViewModel
         by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
-    protected open val webviewClient = LoginWebviewClient()
+    protected open val webViewClient = AuthWebViewClient()
 
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
@@ -183,7 +183,7 @@ open class LoginActivity: FragmentActivity() {
             ComposeView(this).apply {
                 setContent {
                     LoginWebviewTheme {
-                        LoginView(webviewClient)
+                        LoginView(webViewClient)
                     }
                 }
             }
@@ -382,7 +382,6 @@ open class LoginActivity: FragmentActivity() {
 
             else -> {
                 d(TAG, "Web server or user agent login flow triggered")
-//                webviewHelper.loadLoginPage()
             }
         }
     }
@@ -750,10 +749,13 @@ open class LoginActivity: FragmentActivity() {
     // endregion
 
     /**
-     * LoginWebviewClient is an inner class of LoginActivity because it makes extensive use of the LoginViewModel,
+     * A web view client which intercepts the redirect to the OAuth callback URL.  That redirect marks the end of
+     * the user facing portion of the authentication flow.
+     *
+     * AuthWebViewClient is an inner class of LoginActivity because it makes extensive use of the LoginViewModel,
      * which is only available to Activity classes (and composable functions).
      */
-    open inner class LoginWebviewClient: WebViewClient() {
+    protected open inner class AuthWebViewClient: WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             // Check if user entered a custom domain
             val customDomainPatternMatch = SalesforceSDKManager.getInstance()

@@ -1,32 +1,26 @@
 package com.salesforce.androidsdk.auth
 
-import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
-import android.webkit.WebChromeClient
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__managed_app_error
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -35,7 +29,9 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
+import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
@@ -52,13 +48,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Request.Builder
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
-import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
-import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.push.PushMessaging.register
-import org.json.JSONArray
 import java.util.function.Consumer
 
 open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
@@ -77,6 +69,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
 
+    open protected val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+
     // LoginOptions values
     var jwt: String? = null
     var additionalParameters = hashMapOf<String, String>()
@@ -92,7 +86,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
-    private var authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
     internal var isUsingFrontDoorBridge = false
@@ -141,9 +134,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         loginUrl.value = frontdoorBridgeUrl
     }
 
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    internal fun getAuthorizationUrl(server: String): String {
+    private fun getAuthorizationUrl(server: String): String {
         clearCookies()
 
         val jwtFlow = !isEmpty(jwt)
@@ -155,7 +146,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
-        val authorizationUrl = OAuth2.getAuthorizationUrl(
+
+        return OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
             URI(server),
@@ -166,19 +158,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             codeChallenge,
             additionalParams
         ).toString()
-
-//        return when {
-//            jwtFlow -> getFrontdoorUrl(
-//                authorizationUrl,
-//                loginOptions.jwt,
-//                loginOptions.loginUrl,
-//                loginOptions.additionalParameters
-//            )
-//
-//            else -> authorizationUrl
-//        }
-
-        return authorizationUrl
     }
 
     internal fun onWebServerFlowComplete(

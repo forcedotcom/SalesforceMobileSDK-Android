@@ -1,18 +1,15 @@
 package com.salesforce.androidsdk.ui.components
 
+import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -42,10 +39,11 @@ import com.salesforce.androidsdk.auth.LoginViewModel
 
 @Composable
 fun LoginView(
-    webviewClient: WebViewClient,
+    webViewClient: WebViewClient,
+    webChromeClient: WebChromeClient = WebChromeClient(),
     viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
-    webviewComposable: @Composable (PaddingValues) -> Unit = {
-        innerPadding: PaddingValues -> LoginWebview(innerPadding, webviewClient, viewModelFactory)
+    webViewComposable: @Composable (PaddingValues) -> Unit = {
+        innerPadding: PaddingValues -> LoginWebview(innerPadding, webViewClient, webChromeClient, viewModelFactory)
     },
 ) {
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
@@ -144,7 +142,7 @@ fun LoginView(
             }
         }
 
-        webviewComposable(innerPadding)
+        webViewComposable(innerPadding)
 
         if (viewModel.showServerPicker.value) {
             LoginServerBottomSheet(viewModel)

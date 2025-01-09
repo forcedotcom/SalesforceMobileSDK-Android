@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.ui.components
 
 import android.annotation.SuppressLint
 import android.view.ViewGroup
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,7 +23,8 @@ import com.salesforce.androidsdk.auth.LoginViewModel
 @Composable
 fun LoginWebview(
     paddingValues: PaddingValues,
-    webviewClient: WebViewClient,
+    webViewClient: WebViewClient,
+    webChromeClient: WebChromeClient,
     viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
 ) {
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
@@ -40,7 +42,8 @@ fun LoginWebview(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
-                this.webViewClient = webviewClient
+                this.webViewClient = webViewClient
+                this.webChromeClient = webChromeClient
             }
             webView.setBackgroundColor(Color.Transparent.toArgb())
             webView.settings.javaScriptEnabled = true

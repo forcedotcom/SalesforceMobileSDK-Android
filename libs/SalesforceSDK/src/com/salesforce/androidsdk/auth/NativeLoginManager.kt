@@ -168,7 +168,7 @@ internal class NativeLoginManager(
 
     override fun getFallbackWebAuthenticationIntent(): Intent {
         val context = SalesforceSDKManager.getInstance().appContext
-        val intent = Intent(context, SalesforceSDKManager.getInstance().webviewLoginActivityClass)
+        val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
         val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
         options.putBoolean(SHOW_BIOMETRIC, bioAuthLocked)

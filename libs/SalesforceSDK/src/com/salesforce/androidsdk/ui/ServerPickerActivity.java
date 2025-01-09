@@ -282,7 +282,7 @@ public class ServerPickerActivity extends AppCompatActivity implements
         Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
         Intent intent = new Intent(
                 this,
-                SalesforceSDKManager.getInstance().getWebviewLoginActivityClass()
+                SalesforceSDKManager.getInstance().getWebViewLoginActivityClass()
         );
 
         BiometricAuthenticationManager bioAuthManager =
