@@ -650,7 +650,7 @@ open class LoginActivity: FragmentActivity() {
                     FEATURE_IRIS
                 )
             }
-            val subtitle = SalesforceSDKManager.getInstance().userAccountManager.currentUser.username
+            val subtitle = SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username ?: ""
 
             return PromptInfo.Builder()
                 .setTitle(resources.getString(sf__biometric_opt_in_title))

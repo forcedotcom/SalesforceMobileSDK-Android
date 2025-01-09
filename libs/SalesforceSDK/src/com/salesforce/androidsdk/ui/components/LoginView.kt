@@ -1,5 +1,7 @@
 package com.salesforce.androidsdk.ui.components
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
@@ -30,12 +32,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.ui.LoginActivity
 
 @Composable
 fun LoginView(
@@ -45,11 +50,13 @@ fun LoginView(
     webViewComposable: @Composable (PaddingValues) -> Unit = {
         innerPadding: PaddingValues -> LoginWebview(innerPadding, webViewClient, webChromeClient, viewModelFactory)
     },
+
 ) {
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
     var showMenu by remember { mutableStateOf(false) }
     val titleText: String = viewModel.selectedServer.observeAsState().value ?: ""
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
+    val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
 
     Scaffold(
         topBar = {
@@ -148,4 +155,10 @@ fun LoginView(
             LoginServerBottomSheet(viewModel)
         }
     }
+}
+
+private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
+    is FragmentActivity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
 }
