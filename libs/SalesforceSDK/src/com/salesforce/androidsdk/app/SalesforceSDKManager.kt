@@ -50,7 +50,6 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
-import android.util.Log
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
@@ -88,6 +87,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -217,6 +217,12 @@ open class SalesforceSDKManager protected constructor(
      * the account.
      */
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
+
+    /**
+     * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
+     * visual customization without overriding LoginActivity.
+     */
+    var loginViewModelFactory = LoginViewModel.Factory
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java

@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.ui.components
 
+import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,35 +35,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
-import com.salesforce.androidsdk.auth.LoginWebviewClient
 
-// TODO: split this into multiple components
-
-@OptIn(ExperimentalMaterial3Api::class)
-//@Preview
 @Composable
 fun LoginView(
-    webviewClient: LoginWebviewClient,
-    viewModel: LoginViewModel = viewModel(factory = LoginViewModel.Factory),
-    topAppBarColor: Color = viewModel.dynamicBackgroundColor.value,
-    titleText: String = viewModel.selectedServer.value.toString(),
-    titleComposable: @Composable () -> Unit =
-        { Text(text = titleText, color = viewModel.dynamicHeaderTextColor.value, fontWeight = FontWeight.Bold) },
+    webviewClient: WebViewClient,
+    viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
     webviewComposable: @Composable (PaddingValues) -> Unit = {
-        innerPadding: PaddingValues -> LoginWebview(innerPadding, webviewClient, viewModel)
+        innerPadding: PaddingValues -> LoginWebview(innerPadding, webviewClient, viewModelFactory)
     },
-    showTopAppBar: Boolean = true,
 ) {
+    val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
     var showMenu by remember { mutableStateOf(false) }
+    val titleText: String = viewModel.selectedServer.observeAsState().value ?: ""
+    val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
 
     Scaffold(
         topBar = {
+            @OptIn(ExperimentalMaterial3Api::class)
             CenterAlignedTopAppBar(
-                expandedHeight = if (showTopAppBar) TopAppBarDefaults.TopAppBarExpandedHeight else 0.dp,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topAppBarColor),
-                title = titleComposable,
+                expandedHeight = if (viewModel.showTopBar) TopAppBarDefaults.TopAppBarExpandedHeight else 0.dp,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor),
+                title = viewModel.titleComposable ?:
+                    {
+                        Text(
+                            text = viewModel.titleText ?: titleText,
+                            color = viewModel.dynamicHeaderTextColor.value,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    },
                 actions = @Composable {
                     IconButton(
                         onClick = { showMenu = !showMenu },
@@ -120,25 +125,8 @@ fun LoginView(
             )
         },
         bottomBar = {
-            val showBottomAppBar = false
             BottomAppBar(containerColor = viewModel.dynamicBackgroundColor.value) {
                 // IDP and Bio Auth buttons here
-                if (showBottomAppBar) {
-                    Button(
-                        onClick = { /* Save new server */ },
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
-                        colors = ButtonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.Black,
-                            disabledContainerColor = Color.Black,
-                            disabledContentColor = Color.Black
-                        )
-                    ) {
-                        Text(text = "Save", color = Color.White)
-                    }
-                }
             }
         },
     ) { innerPadding ->

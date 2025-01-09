@@ -5,10 +5,15 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -53,7 +58,6 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.push.PushMessaging.register
-import com.salesforce.androidsdk.rest.ClientManager
 import org.json.JSONArray
 import java.util.function.Consumer
 
@@ -65,14 +69,26 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
-    internal var loading = mutableStateOf(false)
+
+    // Public Overrideable LiveData
+    open var showTopBar = true
+    open var topBarColor: Color? = null
+    open var titleText: String? = null
+    open var titleComposable: (@Composable () -> Unit)? = null
+    open var loading = mutableStateOf(false)
 
     // LoginOptions values
     var jwt: String? = null
     var additionalParameters = hashMapOf<String, String>()
+
+
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
+    val shouldShowBiometricPromptButton = with(SalesforceSDKManager.getInstance().biometricAuthenticationManager) {
+        this?.let { locked && hasBiometricOptedIn() } ?: false
+    }
+    // todo: add shouldShowIDPButton
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
@@ -88,9 +104,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         // Update selectedServer when the LoginServerManager value changes
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer.url.run { trim { it <= ' ' } }
-            // prevent emitting a change in selected server if the value isn't actually new
             if (selectedServer.value == trimmedServer) {
-                // reload webview!
                 reloadWebview()
             } else {
                 selectedServer.value = trimmedServer
@@ -109,15 +123,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
-
-// TODO: get bio auth mgr and show button if necessary.  Also do the same for IDP
-//    private bioAuthMgr =
-
-
-    // endregion
-
-
-    // from OAuthWebviewHelper
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
@@ -140,10 +145,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     @Suppress("MemberVisibilityCanBePrivate")
     internal fun getAuthorizationUrl(server: String): String {
         clearCookies()
-
-        // Reset log in state,
-        // - Salesforce Identity UI Bridge API log in, such as QR code login.
-//        resetFrontDoorBridgeUrl()
 
         val jwtFlow = !isEmpty(jwt)
         val additionalParams = when {
@@ -184,8 +185,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
-    ) =
-        CoroutineScope(IO).launch {
+    ) = CoroutineScope(IO).launch {
             doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess)
         }
 
@@ -316,8 +316,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         }
     }
 
-    // end of from OAuthWebviewHelper
-
     internal fun onAuthFlowComplete(
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
@@ -343,7 +341,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             return
         }
 
-        // do we need to suspend?
         var userIdentity: IdServiceResponse? = null
         runCatching {
             userIdentity = OAuth2.callIdentityService(
