@@ -32,9 +32,6 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.app.Activity
-import android.app.PendingIntent.FLAG_CANCEL_CURRENT
-import android.app.PendingIntent.FLAG_IMMUTABLE
-import android.app.PendingIntent.getActivity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
@@ -93,7 +90,6 @@ import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
-import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -219,14 +215,28 @@ open class LoginActivity: FragmentActivity() {
         val customTabLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
+            // Check if the user backed out of the custom tab.
             if (result.resultCode == Activity.RESULT_CANCELED) {
-                clearWebviewAndShowServerPicker()
+                if (viewModel.singleServerCustomTabActivity) {
+                    finish()
+                } else {
+                    clearWebviewAndShowServerPicker()
+                }
             }
         }
         viewModel.selectedServer.observe(this) {
-            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration {
-                if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
-                    viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+            if (viewModel.singleServerCustomTabActivity) {
+                // Skip fetching authorization and show custom tab immediately.
+                viewModel.reloadWebview()
+                viewModel.loginUrl.value?.let { url ->
+                    loadLoginPageInCustomTab(url, customTabLauncher)
+                }
+            } else {
+                // Fetch well known config and load in custom tab if required.
+                SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration {
+                    if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
+                        viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                    }
                 }
             }
         }
@@ -260,7 +270,7 @@ open class LoginActivity: FragmentActivity() {
     }
 
     private fun clearWebviewAndShowServerPicker() {
-        viewModel.loginUrl.value = "about:blank"
+        viewModel.loginUrl.value = ABOUT_BLANK
         viewModel.showServerPicker.value = true
     }
 
@@ -697,17 +707,6 @@ open class LoginActivity: FragmentActivity() {
             // TODO: use setColorSchemeParams instead
             setToolbarColor(getColor(sf__primary_color))
 //            setColorSchemeParams()
-
-            // Add a menu item to change the server
-            val intent = Intent(this@LoginActivity, SalesforceSDKManager.getInstance().loginActivityClass)
-            addMenuItem(getString(sf__pick_server),
-                getActivity(
-                    this@LoginActivity,
-                    0,
-                    intent,
-                    FLAG_CANCEL_CURRENT or FLAG_IMMUTABLE,
-                )
-            )
         }.build()
 
         /*
@@ -857,7 +856,7 @@ open class LoginActivity: FragmentActivity() {
         // endregion
 
         // region LoginWebviewClient Constants
-        private const val ABOUT_BLANK = "about:blank"
+        internal const val ABOUT_BLANK = "about:blank"
         private const val ALLOW_SCREEN_INDICATOR = "frontdoor.jsp"
         private const val backgroundColorJavascript =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"

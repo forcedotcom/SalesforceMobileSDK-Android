@@ -4,6 +4,7 @@ import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -61,6 +62,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
+    internal val defaultTitleText: String
+        get() = if (loginUrl.value == "about:blank") "" else selectedServer.value ?: ""
 
     // Public Overrideable LiveData
     open var showTopBar = true
@@ -70,6 +73,13 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     open var loading = mutableStateOf(false)
 
     open protected val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+
+    /**
+     * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
+     * launched in a custom tab immediately and the user will not be able to switch servers.  The LoginActivity is
+     * ended if the user attempts to back out of the custom tab.
+     */
+    open val singleServerCustomTabActivity = false
 
     // LoginOptions values
     var jwt: String? = null

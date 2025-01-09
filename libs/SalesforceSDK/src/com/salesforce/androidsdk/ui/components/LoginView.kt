@@ -54,7 +54,6 @@ fun LoginView(
 ) {
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
     var showMenu by remember { mutableStateOf(false) }
-    val titleText: String = viewModel.selectedServer.observeAsState().value ?: ""
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
 
@@ -67,7 +66,7 @@ fun LoginView(
                 title = viewModel.titleComposable ?:
                     {
                         Text(
-                            text = viewModel.titleText ?: titleText,
+                            text = viewModel.titleText ?: viewModel.defaultTitleText,
                             color = viewModel.dynamicHeaderTextColor.value,
                             fontWeight = FontWeight.Bold,
                         )
@@ -112,7 +111,7 @@ fun LoginView(
                 navigationIcon = {
                     if (viewModel.shouldShowBackButton) {
                         IconButton(
-                            onClick = { /* get back function form LoginActivity */ },
+                            onClick = { activity.finish() },
                             colors = IconButtonColors(
                                 containerColor = Color.Transparent,
                                 contentColor = Color.Black,  // TODO: fix color
