@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,16 +23,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -138,7 +142,12 @@ fun LoginView() {
         }
 
         // Load the webview composable
-        LoginWebview(innerPadding)
+        val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
+        AndroidView(
+            modifier = Modifier.padding(innerPadding).alpha(if (viewModel.loading.value) 0.0f else 100.0f),
+            factory = { activity.webView },
+            update = { it.loadUrl(loginUrl) },
+        )
 
         if (viewModel.showServerPicker.value) {
             LoginServerBottomSheet(viewModel)
@@ -146,7 +155,8 @@ fun LoginView() {
     }
 }
 
-internal tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
+// Get access to host activity from within Compose.  tailrec makes this safe.
+private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     is FragmentActivity -> this
     is ContextWrapper -> baseContext.getActivity()
     else -> null
