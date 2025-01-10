@@ -2,8 +2,6 @@ package com.salesforce.androidsdk.ui.components
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.webkit.WebChromeClient
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,8 +40,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.ui.LoginActivity
 
-@Composable
 @Preview
+@Composable
 fun LoginView(
     viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
     webViewComposable: (@Composable (PaddingValues) -> Unit)? = null,
@@ -145,8 +142,8 @@ fun LoginView(
             }
         }
 
+        // Use our default webview if one was not passed in.
         webViewComposable?.invoke(innerPadding) ?: run {
-            // Use our default webview if one was not passed in.
             LoginWebview(innerPadding, activity.webViewClient, activity.webChromeClient, viewModelFactory)
         }
 
