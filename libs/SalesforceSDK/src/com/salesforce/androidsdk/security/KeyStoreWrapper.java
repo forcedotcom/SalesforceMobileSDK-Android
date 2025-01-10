@@ -239,18 +239,12 @@ public class KeyStoreWrapper {
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1, KeyProperties.ENCRYPTION_PADDING_RSA_OAEP);
 
                 /*
-                 * TODO: Remove this check once minVersion > 28.
+                 * Disabling StrongBox based on Google's recommendation - it's not a good
+                 * fit for this use case, since the key will need to be retrieved multiple
+                 * times. Besides, StrongBox Keymaster is available only on a few devices,
+                 * such as the Pixel 3 and Pixel 3 XL at this time.
                  */
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-
-                    /*
-                     * Disabling StrongBox based on Google's recommendation - it's not a good
-                     * fit for this use case, since the key will need to be retrieved multiple
-                     * times. Besides, StrongBox Keymaster is available only on a few devices,
-                     * such as the Pixel 3 and Pixel 3 XL at this time.
-                     */
-                    keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-                }
+                keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
                 kpg.initialize(keyGenParameterSpecBuilder.build());
                 kpg.generateKeyPair();
             }
@@ -273,18 +267,12 @@ public class KeyStoreWrapper {
                         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1);
 
                 /*
-                 * TODO: Remove this check once minVersion > 28.
+                 * Disabling StrongBox based on Google's recommendation - it's not a good
+                 * fit for this use case, since the key will need to be retrieved multiple
+                 * times. Besides, StrongBox Keymaster is available only on a few devices,
+                 * such as the Pixel 3 and Pixel 3 XL at this time.
                  */
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-
-                    /*
-                     * Disabling StrongBox based on Google's recommendation - it's not a good
-                     * fit for this use case, since the key will need to be retrieved multiple
-                     * times. Besides, StrongBox Keymaster is available only on a few devices,
-                     * such as the Pixel 3 and Pixel 3 XL at this time.
-                     */
-                    keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
-                }
+                keyGenParameterSpecBuilder.setIsStrongBoxBacked(false);
                 kpg.initialize(keyGenParameterSpecBuilder.build());
                 kpg.generateKeyPair();
             }
