@@ -102,7 +102,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FI
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.LoginViewModel
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status

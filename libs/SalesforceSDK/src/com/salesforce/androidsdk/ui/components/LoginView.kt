@@ -39,7 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.LoginActivity
 
 @Preview

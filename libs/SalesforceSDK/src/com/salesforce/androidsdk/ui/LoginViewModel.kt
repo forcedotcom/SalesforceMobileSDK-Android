@@ -1,4 +1,4 @@
-package com.salesforce.androidsdk.auth
+package com.salesforce.androidsdk.ui
 
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
@@ -16,6 +16,8 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.config.BootConfig
@@ -191,7 +193,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) {
-        onAuthFlowComplete(
+        com.salesforce.androidsdk.auth.onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "",
             consumerKey = bootConfig.remoteAccessConsumerKey,

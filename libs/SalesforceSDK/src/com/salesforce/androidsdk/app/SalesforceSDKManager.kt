@@ -87,7 +87,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.JwtAccessToken
-import com.salesforce.androidsdk.auth.LoginViewModel
+import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
