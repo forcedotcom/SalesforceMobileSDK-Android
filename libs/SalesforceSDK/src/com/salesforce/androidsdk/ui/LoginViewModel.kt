@@ -48,6 +48,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
 
+    // Additional Auth Values
+    protected open var clientId: String = bootConfig.remoteAccessConsumerKey
     protected open val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /**
@@ -70,13 +72,15 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     }
     // todo: add shouldShowIDPButton
 
-    /** The default, locally generated code verifier */
+    // The default, locally generated code verifier
     private var codeVerifier: String? = null
 
-    /** For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL in place of the default initial URL */
+    // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL
+    // in place of the default initial URL
     internal var isUsingFrontDoorBridge = false
 
-    /** For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl` */
+    // For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying
+    // the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl`
     internal var frontDoorBridgeCodeVerifier: String? = null
 
     init {
@@ -137,7 +141,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
             URI(server),
-            bootConfig.remoteAccessConsumerKey,
+            clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
             authorizationDisplayType,
@@ -175,7 +179,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
                 URI.create(selectedServer.value),
-                bootConfig.remoteAccessConsumerKey,
+                clientId,
                 code,
                 frontDoorBridgeCodeVerifier ?: codeVerifier,
                 bootConfig.oauthRedirectURI,
@@ -196,7 +200,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         com.salesforce.androidsdk.auth.onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "",
-            consumerKey = bootConfig.remoteAccessConsumerKey,
+            consumerKey = clientId,
             buildAccountName = ::buildAccountName,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
