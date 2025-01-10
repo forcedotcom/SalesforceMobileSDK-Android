@@ -3,7 +3,6 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -34,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.LoginViewModel
@@ -42,11 +40,8 @@ import com.salesforce.androidsdk.ui.LoginActivity
 
 @Preview
 @Composable
-fun LoginView(
-    viewModelFactory: ViewModelProvider.Factory = SalesforceSDKManager.getInstance().loginViewModelFactory,
-    webViewComposable: (@Composable (PaddingValues) -> Unit)? = null,
-) {
-    val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
+fun LoginView() {
+    val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     var showMenu by remember { mutableStateOf(false) }
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
@@ -142,10 +137,8 @@ fun LoginView(
             }
         }
 
-        // Use our default webview if one was not passed in.
-        webViewComposable?.invoke(innerPadding) ?: run {
-            LoginWebview(innerPadding, activity.webViewClient, activity.webChromeClient, viewModelFactory)
-        }
+        // Load the webview composable
+        LoginWebview(innerPadding)
 
         if (viewModel.showServerPicker.value) {
             LoginServerBottomSheet(viewModel)
@@ -153,7 +146,7 @@ fun LoginView(
     }
 }
 
-private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
+internal tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     is FragmentActivity -> this
     is ContextWrapper -> baseContext.getActivity()
     else -> null

@@ -33,6 +33,7 @@ import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
+import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
@@ -113,6 +114,7 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESP
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
+import com.salesforce.androidsdk.ui.components.loginWebViewFactory
 import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
@@ -135,6 +137,8 @@ open class LoginActivity: FragmentActivity() {
     // Webview Clients
     open val webViewClient = AuthWebViewClient()
     open val webChromeClient = WebChromeClient()
+    open val webViewFactory: WebView
+        get() = loginWebViewFactory(this.baseContext, webViewClient, webChromeClient)
 
     // View Model
     protected open val viewModel: LoginViewModel
