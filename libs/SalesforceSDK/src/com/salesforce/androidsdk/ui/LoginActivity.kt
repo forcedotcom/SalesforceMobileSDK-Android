@@ -31,9 +31,9 @@ import android.R.anim.slide_out_right
 import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
-import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
@@ -54,6 +54,7 @@ import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -85,6 +86,7 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.fragment.app.FragmentActivity
@@ -114,7 +116,6 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESP
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
-import com.salesforce.androidsdk.ui.components.loginWebViewFactory
 import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
@@ -134,15 +135,25 @@ import java.security.cert.X509Certificate
 
 
 open class LoginActivity: FragmentActivity() {
-    // Webview Clients
-    open val webViewClient = AuthWebViewClient()
-    open val webChromeClient = WebChromeClient()
-    open val webViewFactory: WebView
-        get() = loginWebViewFactory(this.baseContext, webViewClient, webChromeClient)
-
     // View Model
     protected open val viewModel: LoginViewModel
-        by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
+            by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
+
+    // Webview and Clients
+    protected open val webViewClient = AuthWebViewClient()
+    protected open val webChromeClient = WebChromeClient()
+    open val webView: WebView
+        @SuppressLint("SetJavaScriptEnabled")
+        get() = WebView(this.baseContext).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            webViewClient = this@LoginActivity.webViewClient
+            webChromeClient = this@LoginActivity.webChromeClient
+            setBackgroundColor(Color.Transparent.toArgb())
+            settings.javaScriptEnabled = true
+        }
 
     // Private variables
     private var wasBackgrounded = false
@@ -855,7 +866,6 @@ open class LoginActivity: FragmentActivity() {
             return Color(red, green, blue)
         }
     }
-
 
     companion object {
 
