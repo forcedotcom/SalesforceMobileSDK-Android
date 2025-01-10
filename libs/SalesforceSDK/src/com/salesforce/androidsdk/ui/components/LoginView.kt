@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.ui.LoginActivity
 @Composable
 fun LoginView() {
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
+    val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
     var showMenu by remember { mutableStateOf(false) }
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
@@ -141,10 +142,11 @@ fun LoginView() {
             }
         }
 
-        // Load the webview composable
-        val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
+        // Load the webview as a composable
         AndroidView(
-            modifier = Modifier.padding(innerPadding).alpha(if (viewModel.loading.value) 0.0f else 100.0f),
+            modifier = Modifier
+                .padding(innerPadding)
+                .alpha(if (viewModel.loading.value) 0.0f else 100.0f),
             factory = { activity.webView },
             update = { it.loadUrl(loginUrl) },
         )
