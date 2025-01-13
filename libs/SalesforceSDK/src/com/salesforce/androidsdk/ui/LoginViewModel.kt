@@ -56,6 +56,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
      * launched in a custom tab immediately and the user will not be able to switch servers.  The LoginActivity is
      * ended if the user attempts to back out of the custom tab.
+     *
+     * Since browser based authentication requires PKCE (and therefore the Web Server flow) the User Agent flow
+     * cannot be used while in this mode.
      */
     open val singleServerCustomTabActivity = false
 
@@ -109,19 +112,19 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
-     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
+     * @param frontDoorBridgeUrl The UI Bridge API front door bridge API
      * @param pkceCodeVerifier The PKCE code verifier
      */
-    fun loginWithFrontdoorBridgeUrl(
-        frontdoorBridgeUrl: String,
+    fun loginWithFrontDoorBridgeUrl(
+        frontDoorBridgeUrl: String,
         pkceCodeVerifier: String?,
     ) {
         isUsingFrontDoorBridge = true
 
-        val uri = URI(frontdoorBridgeUrl)
+        val uri = URI(frontDoorBridgeUrl)
         SalesforceSDKManager.getInstance().loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
         frontDoorBridgeCodeVerifier = pkceCodeVerifier
-        loginUrl.value = frontdoorBridgeUrl
+        loginUrl.value = frontDoorBridgeUrl
     }
 
     private fun getAuthorizationUrl(server: String): String {

@@ -245,6 +245,8 @@ open class LoginActivity: FragmentActivity() {
                 }
             }
         }
+
+        // Take action on server change.
         viewModel.selectedServer.observe(this) {
             if (viewModel.singleServerCustomTabActivity) {
                 // Skip fetching authorization and show custom tab immediately.
@@ -253,10 +255,14 @@ open class LoginActivity: FragmentActivity() {
                     loadLoginPageInCustomTab(url, customTabLauncher)
                 }
             } else {
-                // Fetch well known config and load in custom tab if required.
-                SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration {
-                    if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
-                        viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                with(SalesforceSDKManager.getInstance()) {
+                    if (useWebServerAuthentication) {
+                        // Fetch well known config and load in custom tab if required.
+                        fetchAuthenticationConfiguration {
+                            if (isBrowserLoginEnabled) {
+                                viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                            }
+                        }
                     }
                 }
             }
@@ -352,7 +358,7 @@ open class LoginActivity: FragmentActivity() {
     fun loginWithFrontdoorBridgeUrl(
         frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?
-    ) = viewModel.loginWithFrontdoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
+    ) = viewModel.loginWithFrontDoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
      * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
@@ -711,16 +717,8 @@ open class LoginActivity: FragmentActivity() {
              * Set a custom animation to slide in and out for Chrome custom tab
              * so it doesn't look like a swizzle out of the app and back in
              */
-            setStartAnimations(
-                this@LoginActivity,
-                slide_in_left,
-                slide_out_right
-            )
-            setExitAnimations(
-                this@LoginActivity,
-                slide_in_left,
-                slide_out_right
-            )
+            setStartAnimations(this@LoginActivity, slide_in_left, slide_out_right)
+            setExitAnimations(this@LoginActivity, slide_in_left, slide_out_right)
 
             // Replace the default 'Close Tab' button with a custom back arrow instead of 'x'
             setCloseButtonIcon(decodeResource(resources, sf__action_back))
