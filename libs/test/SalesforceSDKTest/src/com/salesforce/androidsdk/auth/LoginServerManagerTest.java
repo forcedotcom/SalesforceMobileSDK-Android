@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.auth;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
+
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -43,6 +45,7 @@ import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -66,6 +69,9 @@ public class LoginServerManagerTest {
 	private LoginServerManager loginServerManager;
 	private EventsListenerQueue eq;
 	private Context targetContext;
+
+	@Rule
+	public InstantTaskExecutorRule instantExecutorRule = new InstantTaskExecutorRule();
 
 	@Before
 	public void setUp() throws Exception {
