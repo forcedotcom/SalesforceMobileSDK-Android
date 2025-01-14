@@ -863,20 +863,6 @@ open class LoginActivity: FragmentActivity() {
             super.onPageFinished(view, url)
         }
 
-        private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
-            // This parses the expected "rgb(x, x, x)" string.
-            val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
-            val rgbMatch = rgbTextPattern.find(javaScriptResult)
-
-            // groupValues[0] is the entire match.  [1] is red, [2] is green, [3] is green.
-            rgbMatch?.groupValues?.get(3) ?: return null
-            val red = rgbMatch.groupValues[1].toIntOrNull() ?: return null
-            val green = rgbMatch.groupValues[2].toIntOrNull() ?: return null
-            val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
-
-            return Color(red, green, blue)
-        }
-
         override fun onReceivedSslError(
             view: WebView,
             handler: SslErrorHandler,
@@ -906,6 +892,18 @@ open class LoginActivity: FragmentActivity() {
             d(TAG, "Received client certificate request from server")
             request.proceed(key, certChain)
         }
+
+        private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
+            val rgbMatch = rgbTextPattern.find(javaScriptResult)
+
+            // groupValues[0] is the entire match.  [1] is red, [2] is green, [3] is green.
+            rgbMatch?.groupValues?.get(3) ?: return null
+            val red = rgbMatch.groupValues[1].toIntOrNull() ?: return null
+            val green = rgbMatch.groupValues[2].toIntOrNull() ?: return null
+            val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
+
+            return Color(red, green, blue)
+        }
     }
 
     companion object {
@@ -914,6 +912,8 @@ open class LoginActivity: FragmentActivity() {
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
+        // This parses the expected "rgb(x, x, x)" string.
+        private val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
 
         // endregion
 
