@@ -63,8 +63,6 @@ import android.widget.Toast.makeText
 import androidx.browser.customtabs.CustomTabsIntent
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
-import com.salesforce.androidsdk.R.id.sf__bio_login_button
-import com.salesforce.androidsdk.R.id.sf__idp_login_button
 import com.salesforce.androidsdk.R.id.sf__loading_spinner
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__biometric_signout_user
@@ -403,98 +401,9 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
             )
 
             callback.loadingLoginPage(loginOptions.loginUrl)
-
-            when {
-                instance.isBrowserLoginEnabled -> {
-                    if (!instance.isShareBrowserSessionEnabled) {
-                        uri = URI("$uri$PROMPT_LOGIN")
-                    }
-                    loadLoginPageInCustomTab(uri)
-                }
-
-                else -> webView?.loadUrl(uri.toString())
-            }
+            webView?.loadUrl(uri.toString())
         }.onFailure { throwable ->
             showError(throwable)
-        }
-    }
-
-    private fun loadLoginPageInCustomTab(uri: URI) {
-        val activity = activity ?: return
-
-        val customTabsIntent = CustomTabsIntent.Builder().apply {
-            /*
-             * Set a custom animation to slide in and out for Chrome custom tab
-             * so it doesn't look like a swizzle out of the app and back in
-             */
-            activity.let { activity ->
-                setStartAnimations(
-                    activity,
-                    slide_in_left,
-                    slide_out_right
-                )
-                setExitAnimations(
-                    activity,
-                    slide_in_left,
-                    slide_out_right
-                )
-            }
-
-            // Replace the default 'Close Tab' button with a custom back arrow instead of 'x'
-            setCloseButtonIcon(
-                decodeResource(
-                    activity.resources,
-                    sf__action_back
-                )
-            )
-            setToolbarColor(context.getColor(sf__primary_color))
-
-            // Add a menu item to change the server
-            addMenuItem(
-                activity.getString(sf__pick_server),
-                getActivity(
-                    activity,
-                    0,
-                    Intent(activity, ServerPickerActivity::class.java),
-                    FLAG_CANCEL_CURRENT or FLAG_IMMUTABLE
-                )
-            )
-        }.build()
-
-        /*
-         * Set the package explicitly to the browser configured by the
-         * application if any.
-         * NB: The default browser on the device is used:
-         * - If getCustomTabBrowser() returns null
-         * - Or if the specified browser is not installed
-         */
-        val customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
-        if (doesBrowserExist(customTabBrowser)) {
-            customTabsIntent.intent.setPackage(customTabBrowser)
-        }
-
-        runCatching {
-            customTabsIntent.launchUrl(
-                activity,
-                parse(uri.toString())
-            )
-            // Making the webview blank gives custom tab login a cleaner appearance.
-            clearView()
-        }.onFailure { throwable ->
-            e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
-            makeText(context, "To log in, install Chrome.", LENGTH_LONG).show()
-            callback.finish(null)
-
-            /*
-             * Launch server picker again to prevent this error from happening in an infinite loop.  It is impossible to
-             * break out of this loop without uninstalling the app.
-             *
-             * Clear top to prevent multiple server pickers form being on the stack if the user hits back multiple times
-             * before selecting a different server.
-             */
-            val serverPickerIntent = Intent(activity, ServerPickerActivity::class.java)
-            serverPickerIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            context.startActivity(serverPickerIntent)
         }
     }
 
@@ -597,19 +506,6 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
                 )?.visibility = INVISIBLE
             }
             view.visibility = VISIBLE
-
-            // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
-            if (url.contains("frontdoor.jsp")) {
-                parentView?.run {
-                    findViewById<Button>(
-                        sf__idp_login_button
-                    )?.visibility = INVISIBLE
-                    findViewById<Button>(
-                        sf__bio_login_button
-                    )?.visibility = INVISIBLE
-
-                }
-            }
             EventsObservable.get().notifyEvent(AuthWebViewPageFinished, url)
             super.onPageFinished(view, url)
         }

@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.ui
 
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
+import android.webkit.URLUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
 
 open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
@@ -217,6 +219,17 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal fun resetFrontDoorBridgeUrl() {
         isUsingFrontDoorBridge = false
         frontDoorBridgeCodeVerifier = null
+    }
+
+    // returns a valid https server url or null if the users input is invalid.
+    internal fun getValidServerUrl(url: String): String? {
+        if (!url.contains(".")) return null
+
+        return when {
+            URLUtil.isHttpsUrl(url) -> url
+            URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
+            else -> "https://$url".toHttpUrlOrNull()?.toString()
+        }
     }
 
     companion object {

@@ -40,6 +40,11 @@ import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.BitmapFactory.decodeResource
 import android.net.Uri
+import android.net.http.SslError
+import android.net.http.SslError.SSL_EXPIRED
+import android.net.http.SslError.SSL_IDMISMATCH
+import android.net.http.SslError.SSL_NOTYETVALID
+import android.net.http.SslError.SSL_UNTRUSTED
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
@@ -55,6 +60,8 @@ import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.ClientCertRequest
+import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -96,6 +103,12 @@ import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
+import com.salesforce.androidsdk.R.string.sf__ssl_error
+import com.salesforce.androidsdk.R.string.sf__ssl_expired
+import com.salesforce.androidsdk.R.string.sf__ssl_id_mismatch
+import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
+import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
+import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
@@ -110,6 +123,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAl
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
@@ -861,6 +875,36 @@ open class LoginActivity: FragmentActivity() {
             val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
 
             return Color(red, green, blue)
+        }
+
+        override fun onReceivedSslError(
+            view: WebView,
+            handler: SslErrorHandler,
+            error: SslError
+        ) {
+            val primErrorStringId = when (error.primaryError) {
+                SSL_EXPIRED -> sf__ssl_expired
+                SSL_IDMISMATCH -> sf__ssl_id_mismatch
+                SSL_NOTYETVALID -> sf__ssl_not_yet_valid
+                SSL_UNTRUSTED -> sf__ssl_untrusted
+                else -> sf__ssl_unknown_error
+            }
+
+            // Build the text message
+            val text = getString(sf__ssl_error, getString(primErrorStringId))
+            e(TAG, "Received SSL error for server: $text")
+
+            // Show the toast
+            makeText(baseContext, text, LENGTH_LONG).show()
+            handler.cancel()
+        }
+
+        override fun onReceivedClientCertRequest(
+            view: WebView,
+            request: ClientCertRequest
+        ) {
+            d(TAG, "Received client certificate request from server")
+            request.proceed(key, certChain)
         }
     }
 

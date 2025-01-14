@@ -54,12 +54,6 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
-        <!-- Choose server activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
-            android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
-            android:exported="false" />
-
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"

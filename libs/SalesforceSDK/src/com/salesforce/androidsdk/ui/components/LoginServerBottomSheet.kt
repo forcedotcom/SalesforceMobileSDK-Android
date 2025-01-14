@@ -78,9 +78,17 @@ fun LoginServerBottomSheet(
             )
             Button(
                 onClick = {
-                    // TODO: validate input
-                    loginServerManager.addCustomLoginServer(name, url)
-                    editing = false
+                    if (name.isNotBlank()) {
+                        val serverUrl = viewModel.getValidServerUrl(url)
+                        if (serverUrl == null) {
+                            // TODO: error invalid url
+                        } else {
+                            loginServerManager.addCustomLoginServer(serverUrl, url)
+                            editing = false
+                        }
+                    } else {
+                        // TODO: error invalid label
+                    }
                 },
                 modifier = Modifier
                     .padding(20.dp)

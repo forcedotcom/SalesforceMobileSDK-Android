@@ -62,7 +62,6 @@ import androidx.test.uiautomator.UiSelector;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
-import com.salesforce.androidsdk.ui.ServerPickerActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
