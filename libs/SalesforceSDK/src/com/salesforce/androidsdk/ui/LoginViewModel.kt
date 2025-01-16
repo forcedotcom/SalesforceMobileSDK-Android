@@ -3,6 +3,7 @@ package com.salesforce.androidsdk.ui
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +79,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // todo: add shouldShowIDPButton
 
     // The default, locally generated code verifier
-    private var codeVerifier: String? = null
+    @VisibleForTesting
+    internal var codeVerifier: String? = null
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL
     // in place of the default initial URL
@@ -130,8 +132,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     }
 
     private fun getAuthorizationUrl(server: String): String {
-        clearCookies()
-
         val jwtFlow = !isEmpty(jwt)
         val additionalParams = when {
             jwtFlow -> null
@@ -229,7 +229,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             URLUtil.isHttpsUrl(url) -> url
             URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
             else -> "https://$url".toHttpUrlOrNull()?.toString()
-        }
+        }?.removeSuffix("/")
     }
 
     companion object {
