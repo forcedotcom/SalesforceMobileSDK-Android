@@ -31,7 +31,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` `feedback` endpoint request.
- * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
+ * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=submitFeedback
  *
  * The endpoint accepts a `appFeedback` object as well.  To provide
  * `appFeedback`, subclass and introduce a new parameter of any object type
