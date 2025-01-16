@@ -129,7 +129,7 @@ public class SmartStore  {
 	 * @param licenseKey
 	 */
 	public static void setLicenseKey(String licenseKey) {
-        LICENSE_KEY = licenseKey;
+		LICENSE_KEY = licenseKey;
 	}
 
 	/**
