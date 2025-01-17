@@ -114,7 +114,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     // For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying
     // the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl`
-    internal var frontDoorBridgeCodeVerifier: String? = null
+    internal var frontdoorBridgeCodeVerifier: String? = null
 
     init {
         // Update selectedServer when the LoginServerManager value changes
@@ -142,19 +142,19 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
-     * @param frontDoorBridgeUrl The UI Bridge API front door bridge API
+     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
      * @param pkceCodeVerifier The PKCE code verifier
      */
     fun loginWithFrontDoorBridgeUrl(
-        frontDoorBridgeUrl: String,
+        frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?,
     ) {
         isUsingFrontDoorBridge = true
 
-        val uri = URI(frontDoorBridgeUrl)
+        val uri = URI(frontdoorBridgeUrl)
         SalesforceSDKManager.getInstance().loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
-        frontDoorBridgeCodeVerifier = pkceCodeVerifier
-        loginUrl.value = frontDoorBridgeUrl
+        frontdoorBridgeCodeVerifier = pkceCodeVerifier
+        loginUrl.value = frontdoorBridgeUrl
     }
 
     /**
@@ -206,7 +206,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
      */
     internal fun resetFrontDoorBridgeUrl() {
         isUsingFrontDoorBridge = false
-        frontDoorBridgeCodeVerifier = null
+        frontdoorBridgeCodeVerifier = null
     }
 
     // returns a valid https server url or null if the users input is invalid.
@@ -255,7 +255,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
                 URI.create(selectedServer.value),
                 clientId,
                 code,
-                frontDoorBridgeCodeVerifier ?: codeVerifier,
+                frontdoorBridgeCodeVerifier ?: codeVerifier,
                 bootConfig.oauthRedirectURI,
             )
 
@@ -263,6 +263,8 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
+            clearCookies()
+            reloadWebview()
         }
     }
 

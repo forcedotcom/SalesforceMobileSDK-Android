@@ -838,7 +838,8 @@ open class LoginActivity: FragmentActivity() {
 
                     else -> {
                         // Determine if presence of override parameters require the user agent flow.
-                        val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge && viewModel.frontDoorBridgeCodeVerifier == null
+                        val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge
+                                && viewModel.frontdoorBridgeCodeVerifier == null
                         when {
                             SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
                                 viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
