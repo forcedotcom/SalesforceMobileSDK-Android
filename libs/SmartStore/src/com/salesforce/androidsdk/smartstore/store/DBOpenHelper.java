@@ -370,6 +370,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteConnection connection) {
+			if (SmartStore.LICENSE_KEY != null) {
+				connection.executeForString(String.format("PRAGMA cipher_license = '%s'", SmartStore.LICENSE_KEY), new Object[]{}, null);
+			}
 		}
 
 		/**
