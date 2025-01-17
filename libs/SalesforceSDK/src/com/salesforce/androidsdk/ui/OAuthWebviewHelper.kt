@@ -26,44 +26,18 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.R.anim.slide_in_left
-import android.R.anim.slide_out_right
 import android.app.Activity
-import android.app.PendingIntent.FLAG_CANCEL_CURRENT
-import android.app.PendingIntent.FLAG_IMMUTABLE
-import android.app.PendingIntent.getActivity
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory.decodeResource
-import android.net.Uri.parse
-import android.net.http.SslError
-import android.net.http.SslError.SSL_EXPIRED
-import android.net.http.SslError.SSL_IDMISMATCH
-import android.net.http.SslError.SSL_NOTYETVALID
-import android.net.http.SslError.SSL_UNTRUSTED
 import android.os.Bundle
 import android.security.KeyChain.getCertificateChain
 import android.security.KeyChain.getPrivateKey
 import android.security.KeyChainAliasCallback
 import android.text.TextUtils.isEmpty
-import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
-import android.webkit.ClientCertRequest
 import android.webkit.CookieManager
-import android.webkit.SslErrorHandler
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.makeText
-import androidx.browser.customtabs.CustomTabsIntent
-import com.salesforce.androidsdk.R.color.sf__primary_color
-import com.salesforce.androidsdk.R.drawable.sf__action_back
-import com.salesforce.androidsdk.R.id.sf__loading_spinner
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__biometric_signout_user
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
@@ -71,15 +45,6 @@ import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__generic_error
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
 import com.salesforce.androidsdk.R.string.sf__managed_app_error
-import com.salesforce.androidsdk.R.string.sf__pick_server
-import com.salesforce.androidsdk.R.string.sf__ssl_error
-import com.salesforce.androidsdk.R.string.sf__ssl_expired
-import com.salesforce.androidsdk.R.string.sf__ssl_id_mismatch
-import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
-import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
-import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
-import com.salesforce.androidsdk.R.style.SalesforceSDK
-import com.salesforce.androidsdk.R.style.SalesforceSDK_Dark_Login
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -94,7 +59,6 @@ import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
-import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
@@ -109,13 +73,9 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.security.ScreenLockManager
-//import com.salesforce.androidsdk.ui.LoginActivity.Companion.PICK_SERVER_REQUEST_CODE
-import com.salesforce.androidsdk.util.EventsObservable
-import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
-import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -125,9 +85,7 @@ import okhttp3.Interceptor
 import okhttp3.Request.Builder
 import org.json.JSONArray
 import org.json.JSONObject
-import java.lang.String.format
 import java.net.URI
-import java.net.URI.create
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 import java.util.function.Consumer
@@ -141,7 +99,11 @@ import java.util.function.Consumer
  * d) Call the id service to obtain additional info about the user
  * e) Create a local account and return an authentication result bundle
  */
-internal class OAuthWebviewHelper : KeyChainAliasCallback {
+internal class OAuthWebviewHelper(
+    val context: Context,
+    private val callback: OAuthWebviewHelperEvents,
+    val loginOptions: LoginOptions,
+) : KeyChainAliasCallback {
 
     /** The default, locally generated code verifier */
     private var codeVerifier: String? = null
@@ -172,134 +134,18 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
         fun finish(userAccount: UserAccount?)
     }
 
-    /**
-     * Construct a new instance and performs initial configuration of the web
-     * view.
-     *
-     * @param activity The activity using this instance
-     * @param callback The callbacks for key events
-     * @param loginOptions The log in options
-     * @param webView The web view
-     * @param savedInstanceState The saved instance state
-     */
-    @JvmOverloads
-    constructor(
-        activity: Activity,
-        callback: OAuthWebviewHelperEvents,
-        loginOptions: LoginOptions,
-        webView: WebView,
-        savedInstanceState: Bundle?,
-        shouldReloadPage: Boolean = false,
-    ) {
-        this.activity = activity
-        this.callback = callback
-        this.context = webView.context
-        this.webView = webView
-        this.loginOptions = loginOptions
-
-        webView.apply {
-            webView.settings.apply {
-                javaScriptEnabled = true
-                userAgentString = format(
-                    "%s %s",
-                    SalesforceSDKManager.getInstance().userAgent,
-                    userAgentString ?: ""
-                )
-            }
-//            webViewClient = makeWebViewClient()
-//            webChromeClient = makeWebChromeClient()
-        }
-
-        activity.setTheme(
-            when {
-                SalesforceSDKManager.getInstance().isDarkTheme -> SalesforceSDK_Dark_Login
-                else -> SalesforceSDK
-            }
-        )
-
-        /*
-         * Restore web view state if available. This ensures the user is not
-         * forced to type in credentials again once the authentication process
-         * kicks off.
-         */
-        when (savedInstanceState) {
-            null -> clearCookies()
-            else -> {
-                webView.restoreState(savedInstanceState)
-                accountOptions = savedInstanceState.getBundle(ACCOUNT_OPTIONS)
-            }
-        }
-    }
-
-    constructor(
-        context: Context,
-        callback: OAuthWebviewHelperEvents,
-        loginOptions: LoginOptions
-    ) {
-        this.context = context
-        this.callback = callback
-        this.loginOptions = loginOptions
-        this.webView = null
-        this.activity = null
-    }
-
-    private val callback: OAuthWebviewHelperEvents
-
-    protected val loginOptions: LoginOptions
-
-    val webView: WebView?
+    val webView: WebView? = null
 
     private var accountOptions: Bundle? = null
 
-    protected val context: Context
-
-    private val activity: Activity?
+    private val activity: Activity? = null
 
     private var key: PrivateKey? = null
 
     private var certChain: Array<X509Certificate>? = null
 
-    /**
-     * This value is no longer needed to support Multi-Factor Authentication via
-     * standard or advanced authentication flows.
-     *
-     * @Deprecated This value is no longer used.
-     */
-    var shouldReloadPage: Boolean = false
-        private set
-
-    internal fun saveState(outState: Bundle) {
-        val accountOptions = accountOptions
-
-        webView?.saveState(outState)
-        if (accountOptions != null) {
-            // The authentication flow is complete but an account has not been created since a pin is needed
-            outState.putBundle(
-                ACCOUNT_OPTIONS,
-                accountOptions
-            )
-        }
-    }
-
-    open fun clearCookies() =
+    private fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
-
-    private fun clearView() =
-        activity?.runOnUiThread { webView?.loadUrl("about:blank") }
-
-//    /**
-//     * A factory method for the web view client. This can be overridden as
-//     * needed.
-//     */
-//    @Suppress("MemberVisibilityCanBePrivate")
-//    protected open fun makeWebViewClient() = AuthWebViewClient()
-
-//    /**
-//     * A factory method for the web Chrome client. This can be overridden as
-//     * needed
-//     */
-//    @Suppress("MemberVisibilityCanBePrivate")
-//    protected open fun makeWebChromeClient() = WebChromeClient()
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -362,7 +208,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun showError(exception: Throwable) {
+    fun showError(exception: Throwable) {
         activity?.runOnUiThread {
             makeText(
                 context,
@@ -379,7 +225,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
      * Reloads the authorization page in the web view.  Also, updates the window
      * title so it's easier to identify the login system.
      */
-    internal fun loadLoginPage() = loginOptions.let { loginOptions ->
+    private fun loadLoginPage() = loginOptions.let { loginOptions ->
         when {
             isEmpty(loginOptions.jwt) -> {
                 loginOptions.loginUrl = this@OAuthWebviewHelper.loginUrl
@@ -395,7 +241,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
     private fun doLoadPage() {
         val instance = SalesforceSDKManager.getInstance()
         runCatching {
-            var uri = getAuthorizationUrl(
+            val uri = getAuthorizationUrl(
                 useWebServerAuthentication = instance.isBrowserLoginEnabled || instance.useWebServerAuthentication,
                 useHybridAuthentication = instance.useHybridAuthentication
             )
@@ -407,21 +253,10 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
         }
     }
 
-    private fun doesBrowserExist(customTabBrowser: String?) =
-        when (customTabBrowser) {
-            null -> false
-            else -> runCatching {
-                activity?.packageManager?.getApplicationInfo(customTabBrowser, 0) != null
-            }.onFailure { throwable ->
-                w(TAG, "$customTabBrowser does not exist on this device", throwable)
-            }.getOrDefault(false)
-        }
-
-    protected open val oAuthClientId: String
+    private val oAuthClientId: String
         get() = loginOptions.oauthClientId
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open fun getAuthorizationUrl(
+    private fun getAuthorizationUrl(
         useWebServerAuthentication: Boolean,
         useHybridAuthentication: Boolean
     ): URI {
@@ -477,167 +312,21 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
      *
      * See the OAuth docs for the complete list of valid values
      */
-    @Suppress("MemberVisibilityCanBePrivate")
-    protected open val authorizationDisplayType
+    private val authorizationDisplayType
         get() = context.getString(oauth_display_type)
 
     /** Override to customize the login url */
-    protected open val loginUrl: String?
+    val loginUrl: String?
         get() = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.run {
             trim { it <= ' ' }
         }
-
-    /**
-     * A web view client which intercepts the redirect to the OAuth callback
-     * URL.  That redirect marks the end of the user facing portion of the
-     * authentication flow.
-     */
-    protected open inner class AuthWebViewClient : WebViewClient() {
-
-        override fun onPageFinished(
-            view: WebView,
-            url: String
-        ) {
-            // Hide spinner / show web view
-            val parentView = view.parent as? RelativeLayout
-            parentView?.run {
-                findViewById<ProgressBar>(
-                    sf__loading_spinner
-                )?.visibility = INVISIBLE
-            }
-            view.visibility = VISIBLE
-            EventsObservable.get().notifyEvent(AuthWebViewPageFinished, url)
-            super.onPageFinished(view, url)
-        }
-
-        override fun shouldOverrideUrlLoading(
-            view: WebView,
-            request: WebResourceRequest
-        ): Boolean {
-            val activity = activity
-            val instance = SalesforceSDKManager.getInstance()
-            val loginOptions = loginOptions
-            val loginUrl = loginUrl
-
-            // The login web view's embedded button has sent the signal to show the biometric prompt
-            if (request.url.toString() == BIOMETRIC_PROMPT) {
-                instance.biometricAuthenticationManager?.run {
-                    if (hasBiometricOptedIn() && hasBiometricOptedIn()) {
-                        (activity as? LoginActivity)?.presentBiometric()
-                    }
-                }
-                return true
-            }
-
-            // Check if user entered a custom domain
-            val host = request.url.host
-            val customDomainPattern = instance.customDomainInferencePattern
-            if (host != null && loginUrl?.contains(host) != true && customDomainPattern != null && customDomainPattern.matcher(request.url.toString()).find()) {
-                runCatching {
-                    val baseUrl = "https://${request.url.host}"
-                    val serverManager = instance.loginServerManager
-
-                    // Check if the URL is already in the server list
-                    when (val loginServer = serverManager.getLoginServerFromURL(baseUrl)) {
-                        null ->
-                            // Add also sets as selected
-                            serverManager.addCustomLoginServer("Custom Domain", baseUrl)
-
-                        else ->
-                            serverManager.selectedLoginServer = loginServer
-                    }
-
-                    // Set title to the new login URL
-                    loginOptions.loginUrl = baseUrl
-
-                    // Check the configuration for the selected login server
-                    instance.fetchAuthenticationConfiguration {
-                        onAuthConfigFetched()
-                    }
-                }.onFailure { throwable ->
-                    e(TAG, "Unable to retrieve auth config.", throwable)
-                }
-            }
-
-            val formattedUrl = request.url.toString().replace("///", "/").lowercase()
-            val callbackUrl = loginOptions.oauthCallbackUrl.replace("///", "/").lowercase()
-            val authFlowFinished = formattedUrl.startsWith(callbackUrl)
-
-            if (authFlowFinished) {
-                val params = UriFragmentParser.parse(request.url)
-                val error = params["error"]
-                // Did we fail?
-                when {
-                    error != null -> onAuthFlowError(
-                        error,
-                        params["error_description"],
-                        null
-                    )
-
-                    else -> {
-                        // Determine if presence of override parameters require the user agent flow.
-                        val overrideWithUserAgentFlow = isUsingFrontDoorBridge && frontDoorBridgeCodeVerifier == null
-                        when {
-                            instance.useWebServerAuthentication && !overrideWithUserAgentFlow ->
-                                onWebServerFlowComplete(params["code"])
-
-                            else ->
-                                onAuthFlowComplete(TokenEndpointResponse(params))
-                        }
-                    }
-                }
-            }
-            return authFlowFinished
-        }
-
-        override fun onReceivedSslError(
-            view: WebView,
-            handler: SslErrorHandler,
-            error: SslError
-        ) {
-            val primErrorStringId = when (error.primaryError) {
-                SSL_EXPIRED -> sf__ssl_expired
-                SSL_IDMISMATCH -> sf__ssl_id_mismatch
-                SSL_NOTYETVALID -> sf__ssl_not_yet_valid
-                SSL_UNTRUSTED -> sf__ssl_untrusted
-                else -> sf__ssl_unknown_error
-            }
-
-            // Build the text message
-            val text = context.getString(
-                sf__ssl_error,
-                context.getString(primErrorStringId)
-            )
-            e(TAG, "Received SSL error for server: $text")
-
-            // Show the toast
-            makeText(context, text, LENGTH_LONG).show()
-            handler.cancel()
-        }
-
-        override fun onReceivedClientCertRequest(
-            view: WebView,
-            request: ClientCertRequest
-        ) {
-            d(TAG, "Received client certificate request from server")
-            request.proceed(key, certChain)
-        }
-
-        @Suppress("MemberVisibilityCanBePrivate")
-        fun onAuthConfigFetched() {
-            if (SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
-                // This load will trigger advanced auth and do all necessary setup
-                doLoadPage()
-            }
-        }
-    }
 
     /**
      * Called when the user facing part of the authentication flow completed
      * successfully. The last step is to call the identity service to get the
      * username.
      */
-    open fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
+    fun onAuthFlowComplete(tr: TokenEndpointResponse?, nativeLogin: Boolean = false) {
         CoroutineScope(IO).launch {
 
             // Reset log in state,
@@ -646,31 +335,6 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
 
             FinishAuthTask().execute(tr, nativeLogin)
         }
-    }
-
-    internal fun onWebServerFlowComplete(code: String?) =
-        CoroutineScope(IO).launch {
-            doCodeExchangeEndpoint(code)
-        }
-
-    private suspend fun doCodeExchangeEndpoint(
-        code: String?
-    ) = withContext(IO) {
-        var tokenResponse: TokenEndpointResponse? = null
-        runCatching {
-            tokenResponse = exchangeCode(
-                DEFAULT,
-                create(loginOptions.loginUrl),
-                loginOptions.oauthClientId,
-                code,
-                frontDoorBridgeCodeVerifier ?: codeVerifier,
-                loginOptions.oauthCallbackUrl
-            )
-        }.onFailure { throwable ->
-            e(TAG, "Exception occurred while making token request", throwable)
-            onAuthFlowError("Token Request Error", throwable.message, throwable)
-        }
-        onAuthFlowComplete(tokenResponse)
     }
 
     private inner class SwapJWTForAccessTokenTask : BaseFinishAuthFlowTask<LoginOptions?>() {
@@ -738,7 +402,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
      * structure remains very similar to that provided by earlier versions, for
      * compatibility and ease of adoption.
      */
-    protected abstract inner class BaseFinishAuthFlowTask<Parameter> {
+    abstract inner class BaseFinishAuthFlowTask<Parameter> {
 
         /**
          * Finishes the authentication flow.
@@ -1011,7 +675,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
         // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
         val salesforceHosts = listOf(".salesforce.com", ".force.com", ".sfdcopens.com", ".site.com", ".lightning.com",
             ".salesforce-sites.com", ".force-user-content.com", ".salesforce-experience.com", ".salesforce-scrt.com")
-        return salesforceHosts.map { host.endsWith(it) }.any() { it }
+        return salesforceHosts.map { host.endsWith(it) }.any { it }
     }
 
     private fun addAccount(account: UserAccount?) {
@@ -1073,7 +737,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
      * The name to be shown for account in Settings -> Accounts & Sync
      * @return name to be shown for account in Settings -> Accounts & Sync
      */
-    protected open fun buildAccountName(
+    fun buildAccountName(
         username: String?,
         instanceServer: String?
     ) = String.format(
@@ -1094,24 +758,6 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
         }.onFailure { throwable ->
             e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
         }
-    }
-
-    /**
-     * Automatically log in using the provided UI Bridge API parameters.
-     * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
-     * @param pkceCodeVerifier The PKCE code verifier
-     */
-    fun loginWithFrontdoorBridgeUrl(
-        frontdoorBridgeUrl: String,
-        pkceCodeVerifier: String?
-    ) {
-        isUsingFrontDoorBridge = true
-
-        val uri = URI(frontdoorBridgeUrl)
-        loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
-        frontDoorBridgeCodeVerifier = pkceCodeVerifier
-
-        webView?.loadUrl(frontdoorBridgeUrl)
     }
 
     /**
@@ -1139,12 +785,7 @@ internal class OAuthWebviewHelper : KeyChainAliasCallback {
 
         const val RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION"
 
-        const val BIOMETRIC_PROMPT = "mobilesdk://biometric/authentication/prompt"
 
         private const val TAG = "OAuthWebViewHelper"
-
-        private const val ACCOUNT_OPTIONS = "accountOptions"
-
-        private const val PROMPT_LOGIN = "&prompt=login"
     }
 }

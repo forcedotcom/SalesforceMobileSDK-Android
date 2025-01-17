@@ -47,7 +47,11 @@ internal class PublicOverridesTest {
             override fun certAuthOrLogin() { }
             override fun onAuthFlowSuccess(userAccount: UserAccount) { }
 
-            private inner class OverrideWebViewClient: AuthWebViewClient() { }
+            private inner class OverrideWebViewClient: AuthWebViewClient() {
+                override fun toString(): String {
+                    return "non-redundant override"
+                }
+            }
         }
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {

@@ -32,6 +32,7 @@
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="true" />
 
         <!-- Screen Lock Activity-->

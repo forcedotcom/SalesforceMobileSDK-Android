@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2025-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.androidsdk.ui
 
 import android.text.TextUtils.isEmpty
@@ -13,7 +39,6 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -22,6 +47,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
+import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -131,6 +157,66 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         loginUrl.value = frontDoorBridgeUrl
     }
 
+    /**
+     * The name to be shown for account in Settings -> Accounts & Sync
+     * @return name to be shown for account in Settings -> Accounts & Sync
+     */
+    protected open fun buildAccountName(
+        username: String?,
+        instanceServer: String?,
+    ) = defaultBuildAccountName(username, instanceServer)
+
+    /**
+     * Called when the webview portion of the Web Server flow is finished.  Code exchange
+     * passes the result to [onAuthFlowComplete] on success, which handles user creation.
+     */
+    internal fun onWebServerFlowComplete(
+        code: String?,
+        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
+    ) = CoroutineScope(IO).launch {
+        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess)
+    }
+
+    /**
+     * Called when the webview portion of the User Agent flow or the code exchange
+     * portion of the Web Server is finished to create and the user.
+     */
+    internal fun onAuthFlowComplete(
+        tr: TokenEndpointResponse,
+        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
+    ) {
+        com.salesforce.androidsdk.auth.onAuthFlowComplete(
+            tokenResponse = tr,
+            loginServer = selectedServer.value ?: "", // This will never actually be null.
+            consumerKey = clientId,
+            onAuthFlowError = onAuthFlowError,
+            onAuthFlowSuccess = onAuthFlowSuccess,
+            buildAccountName = ::buildAccountName,
+        )
+    }
+
+    /**
+     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
+     * its default inactive state.
+     */
+    internal fun resetFrontDoorBridgeUrl() {
+        isUsingFrontDoorBridge = false
+        frontDoorBridgeCodeVerifier = null
+    }
+
+    // returns a valid https server url or null if the users input is invalid.
+    internal fun getValidServerUrl(url: String): String? {
+        if (!url.contains(".")) return null
+
+        return when {
+            URLUtil.isHttpsUrl(url) -> url
+            URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
+            else -> "https://$url".toHttpUrlOrNull()?.toString()
+        }?.removeSuffix("/")
+    }
+
     private fun getAuthorizationUrl(server: String): String {
         val jwtFlow = !isEmpty(jwt)
         val additionalParams = when {
@@ -155,26 +241,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         ).toString()
     }
 
-    /**
-     * The name to be shown for account in Settings -> Accounts & Sync
-     * @return name to be shown for account in Settings -> Accounts & Sync
-     */
-    protected open fun buildAccountName(
-        username: String?,
-        instanceServer: String?,
-    ) = String.format(
-        "%s (%s) (%s)", username, instanceServer,
-        SalesforceSDKManager.getInstance().applicationName
-    )
-
-    internal fun onWebServerFlowComplete(
-        code: String?,
-        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
-    ) = CoroutineScope(IO).launch {
-        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess)
-    }
-
     private suspend fun doCodeExchange(
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
@@ -197,54 +263,16 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         }
     }
 
-    internal fun onAuthFlowComplete(
-        tr: TokenEndpointResponse,
-        onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-        onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
-    ) {
-        com.salesforce.androidsdk.auth.onAuthFlowComplete(
-            tokenResponse = tr,
-            loginServer = selectedServer.value ?: "",
-            consumerKey = clientId,
-            buildAccountName = ::buildAccountName,
-            onAuthFlowError = onAuthFlowError,
-            onAuthFlowSuccess = onAuthFlowSuccess,
-        )
-    }
-
-    /**
-     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
-     * its default inactive state.
-     */
-    internal fun resetFrontDoorBridgeUrl() {
-        isUsingFrontDoorBridge = false
-        frontDoorBridgeCodeVerifier = null
-    }
-
-    // returns a valid https server url or null if the users input is invalid.
-    internal fun getValidServerUrl(url: String): String? {
-        if (!url.contains(".")) return null
-
-        return when {
-            URLUtil.isHttpsUrl(url) -> url
-            URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
-            else -> "https://$url".toHttpUrlOrNull()?.toString()
-        }?.removeSuffix("/")
-    }
-
     companion object {
 
         val Factory: ViewModelProvider.Factory = object  : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(
                 modelClass: Class<T>,
-                extras: CreationExtras
+                extras: CreationExtras,
             ): T {
                 // Get the Application object from extras
                 val application = checkNotNull(extras[APPLICATION_KEY])
-                // Create a SavedStateHandle for this ViewModel from extras
-                val savedStateHandle = extras.createSavedStateHandle()
-
                 return LoginViewModel(BootConfig.getBootConfig(application.baseContext)) as T
             }
         }

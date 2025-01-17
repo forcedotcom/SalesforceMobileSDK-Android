@@ -124,7 +124,6 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAl
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
@@ -294,11 +293,6 @@ open class LoginActivity: FragmentActivity() {
     override fun onResume() {
         super.onResume()
         wasBackgrounded = false
-    }
-
-    public override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-//        webviewHelper?.saveState(outState)  // TODO: savedSatateHandle in viewModel?
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent) =

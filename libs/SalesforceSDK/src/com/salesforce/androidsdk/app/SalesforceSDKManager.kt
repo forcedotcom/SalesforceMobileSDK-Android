@@ -1459,9 +1459,6 @@ open class SalesforceSDKManager protected constructor(
      * and OS dark theme states.
      *
      * @param activity The activity used to set style attributes
-     *
-     *
-     * TODO: remove this????
      */
     open fun setViewNavigationVisibility(activity: Activity) {
         if (!isDarkTheme || activity.javaClass.name == loginActivityClass.name) {
