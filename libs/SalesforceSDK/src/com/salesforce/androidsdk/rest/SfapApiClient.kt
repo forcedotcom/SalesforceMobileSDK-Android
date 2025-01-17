@@ -60,15 +60,19 @@ class SfapApiClient(
      * @param requestBody The `embeddings` request body
      * @return The endpoint's response
      */
+    @Suppress("unused")
     @Throws(SfapApiException::class)
     fun fetchGeneratedEmbeddings(
         requestBody: SfapApiEmbeddingsRequestBody
     ): SfapApiEmbeddingsResponseBody {
 
+        // Guards.
+        val modelNameUnwrapped = modelName ?: throw SfapApiException("Cannot fetch generated embeddings without specifying a model name.")
+
         // Submit the request.
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/einstein/platform/v1/models/$modelName/embeddings",
+            "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/embeddings",
             requestBody
                 .toJson()
                 .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
@@ -95,15 +99,19 @@ class SfapApiClient(
      * @param requestBody The `chat-generations` request body
      * @return The endpoint's response
      */
+    @Suppress("unused")
     @Throws(SfapApiException::class)
     fun fetchGeneratedChat(
         requestBody: SfapApiChatGenerationsRequestBody
     ): SfapApiChatGenerationsResponseBody {
 
+        // Guards.
+        val modelNameUnwrapped = modelName ?: throw SfapApiException("Cannot fetch generated chat responses without specifying a model name.")
+
         // Request the generated chat responses.
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/einstein/platform/v1/models/$modelName/chat-generations",
+            "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/chat-generations",
             requestBody.toJson()
                 .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
             generateSfapApiHeaders()
@@ -129,15 +137,19 @@ class SfapApiClient(
      * @param prompt The prompt request parameter value
      * @return The endpoint's response
      */
+    @Suppress("unused")
     @Throws(SfapApiException::class)
     fun fetchGeneratedText(
         prompt: String
     ): SfapApiGenerationsResponseBody {
 
+        // Guards.
+        val modelNameUnwrapped = modelName ?: throw SfapApiException("Cannot fetch generated text without specifying a model name.")
+
         // Request the generated text.
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/einstein/platform/v1/models/$modelName/generations",
+            "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/generations",
             SfapApiGenerationsRequestBody(prompt)
                 .toJson()
                 .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
@@ -165,6 +177,7 @@ class SfapApiClient(
      * @param requestBody The `feedback` request body
      * @return The endpoint's response
      */
+    @Suppress("unused")
     @Throws(SfapApiException::class)
     fun submitGeneratedTextFeedback(
         requestBody: SfapApiFeedbackRequestBody
