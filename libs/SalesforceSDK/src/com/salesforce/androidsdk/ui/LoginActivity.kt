@@ -91,6 +91,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.AuthenticationCallback
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
+import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -137,7 +138,6 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.d
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
-import com.salesforce.androidsdk.util.UriFragmentParser.parse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -530,7 +530,7 @@ open class LoginActivity: FragmentActivity() {
     }
 
     private fun completeAdvAuthFlow(intent: Intent) {
-        val params = parse(intent.data)
+        val params = UriFragmentParser.parse(intent.data)
         val error = params["error"]
         // Did we fail?
         when {
@@ -616,7 +616,7 @@ open class LoginActivity: FragmentActivity() {
     }
 
     // Biometric Authentication Code
-    internal fun presentBiometric() {
+    private fun presentBiometric() {
         val biometricPrompt = biometricPrompt
         val biometricManager = BiometricManager.from(this)
         when (biometricManager.canAuthenticate(authenticators)) {
@@ -746,10 +746,10 @@ open class LoginActivity: FragmentActivity() {
 
             // Replace the default 'Close Tab' button with a custom back arrow instead of 'x'
             setCloseButtonIcon(decodeResource(resources, sf__action_back))
-
-            // TODO: use setColorSchemeParams instead
-            setToolbarColor(getColor(sf__primary_color))
-//            setColorSchemeParams()
+            setShareState(CustomTabsIntent.SHARE_STATE_OFF)
+            setDefaultColorSchemeParams(
+                CustomTabColorSchemeParams.Builder().setToolbarColor(getColor(sf__primary_color)).build()
+            )
         }.build()
 
         /*
@@ -855,7 +855,7 @@ open class LoginActivity: FragmentActivity() {
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
-            view?.evaluateJavascript(backgroundColorJavascript) { result ->
+            view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
                 viewModel.loading.value = false
                 if (url == ABOUT_BLANK) {
                     viewModel.dynamicBackgroundColor.value = Color.White
@@ -920,6 +920,7 @@ open class LoginActivity: FragmentActivity() {
     companion object {
 
         // region General Constants
+
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
@@ -927,14 +928,14 @@ open class LoginActivity: FragmentActivity() {
         private val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
 
         // endregion
-
         // region LoginWebviewClient Constants
+
         internal const val ABOUT_BLANK = "about:blank"
         private const val ALLOW_SCREEN_INDICATOR = "frontdoor.jsp"
-        private const val backgroundColorJavascript =
+        private const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
-        // endregion
 
+        // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation
 
         /**
