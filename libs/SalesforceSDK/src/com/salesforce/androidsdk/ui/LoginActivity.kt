@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-present, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -114,6 +114,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DE
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -146,7 +147,13 @@ import java.net.URLDecoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
-
+/**
+ * Login activity authenticates a user. Authorization happens inside a web view.
+ *
+ * Once an authorization code is obtained, it is exchanged for access and
+ * refresh tokens to create an account via the account manager which stores
+ * them.
+ */
 open class LoginActivity: FragmentActivity() {
     // View Model
     protected open val viewModel: LoginViewModel
@@ -230,10 +237,11 @@ open class LoginActivity: FragmentActivity() {
         // Prompt user with the default login page or log in via other configurations such as using
         // a Salesforce Identity API UI Bridge front door URL.
         when {
-            viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null -> loginWithFrontdoorBridgeUrl(
-                uiBridgeApiParameters.frontdoorBridgeUrl,
-                uiBridgeApiParameters.pkceCodeVerifier
-            )
+            viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null ->
+                loginWithFrontdoorBridgeUrl(
+                    uiBridgeApiParameters.frontdoorBridgeUrl,
+                    uiBridgeApiParameters.pkceCodeVerifier
+                )
 
             else -> certAuthOrLogin()
         }
@@ -243,9 +251,6 @@ open class LoginActivity: FragmentActivity() {
         if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
-
-        // Let observers know onCreate is complete.
-        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
 
         val customTabLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -281,6 +286,9 @@ open class LoginActivity: FragmentActivity() {
                 }
             }
         }
+
+        // Let observers know onCreate is complete.
+        EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
     }
 
     override fun onResume() {
@@ -355,17 +363,21 @@ open class LoginActivity: FragmentActivity() {
     // region QR Code Login Via UI Bridge API Public Implementation
 
     /**
-     * Automatically log in with a UI Bridge API front door bridge URL and PKCE code verifier.
+     * Automatically log in with a UI Bridge API front door bridge URL and PKCE
+     * code verifier.
      *
-     * This method is the intended entry point to Salesforce Mobile SDK when using the Salesforce
-     * Identity API UI Bridge front door URL.  Usable, default implementations of methods are
-     * provided for parsing the UI Bridge parameters from the reference JSON and log in URLs used
-     * by the reference QR Code Log In implementation.  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as this
-     * entry point is used to log in with the front door URL and optional PKCE code verifier.
+     * This method is the intended entry point to Salesforce Mobile SDK when
+     * using the Salesforce Identity API UI Bridge front door URL.  Usable,
+     * default implementations of methods are provided for parsing the UI Bridge
+     * parameters from the reference JSON and log in URLs used by the reference
+     * QR Code Log In implementation.  However, the URL and JSON structure in
+     * the reference implementation is not required.  An app may use a custom
+     * structure so long as this entry point is used to log in with the front
+     * door URL and optional PKCE code verifier.
      *
      * @param frontdoorBridgeUrl The UI Bridge API front door bridge URL
-     * @param pkceCodeVerifier The optional PKCE code verifier, which is not required for User Agent
+     * @param pkceCodeVerifier The optional PKCE code verifier, which is not
+     * required for User Agent
      * Authorization Flow but is required for Web Server Authorization Flow
      */
     @Suppress("MemberVisibilityCanBePrivate")
@@ -375,30 +387,35 @@ open class LoginActivity: FragmentActivity() {
     ) = viewModel.loginWithFrontDoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
-     * Automatically log in using a QR code login URL and Salesforce Identity API UI Bridge.
+     * Automatically log in using a QR code login URL and Salesforce Identity
+     * API UI Bridge.
      *
-     * This method is the intended entry point for login using the reference QR Code Login URL and
-     * JSON format.  It will parse the UI Bridge parameters from the login QR code URL and call
-     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON structure in the
-     * reference implementation is not required.  An app may use a custom structure so long as UI
-     * Bridge front door URL and optional PKCE code verifier are provided to
+     * This method is the intended entry point for login using the reference
+     * QR Code Login URL and JSON format.  It will parse the UI Bridge
+     * parameters from the login QR code URL and call
+     * [LoginActivity.loginWithFrontdoorBridgeUrl].  However, the URL and JSON
+     * structure in the reference implementation is not required.  An app may
+     * use a custom structure so long as UI Bridge front door URL and optional
+     * PKCE code verifier are provided to
      * [LoginActivity.loginWithFrontdoorBridgeUrl].
      *
      * @param qrCodeLoginUrl The QR code login URL
-     * @return Boolean true if a log in attempt is possible using the provided QR code login URL,
-     * false otherwise
+     * @return Boolean true if a log in attempt is possible using the provided
+     * QR code login URL, false otherwise
      */
-    fun loginWithFrontdoorBridgeUrlFromQrCode(
-        qrCodeLoginUrl: String?
-    ) = uiBridgeApiParametersFromQrCodeLoginUrl(
-        qrCodeLoginUrl
-    )?.let { uiBridgeApiParameters ->
-        loginWithFrontdoorBridgeUrl(
-            uiBridgeApiParameters.frontdoorBridgeUrl,
-            uiBridgeApiParameters.pkceCodeVerifier
-        )
-        true
-    } ?: false
+    @Suppress("unused")
+    fun loginWithFrontdoorBridgeUrlFromQrCode(qrCodeLoginUrl: String?): Boolean {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_QR_CODE_LOGIN)
+        return uiBridgeApiParametersFromQrCodeLoginUrl(
+            qrCodeLoginUrl
+        )?.let { uiBridgeApiParameters ->
+            loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
+            )
+            true
+        } ?: false
+    }
 
     // endregion
 
@@ -483,7 +500,6 @@ open class LoginActivity: FragmentActivity() {
         // Reset state from previous log in attempt.
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
         viewModel.resetFrontDoorBridgeUrl()
-
         e(TAG, "$error: $errorDesc", e)
 
         // Broadcast a notification that the authentication flow failed
@@ -503,10 +519,10 @@ open class LoginActivity: FragmentActivity() {
                         e.tokenErrorResponse.errorDescription
                     )
                 }
-            })
+            }
+        )
 
-//        clearCookies()
-
+        viewModel.clearCookies()
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
             makeText(this, "$error : $errorDesc", LENGTH_LONG).show()

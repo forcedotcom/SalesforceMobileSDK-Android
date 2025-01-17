@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.app;
+package com.salesforce.androidsdk.rest
+
+import com.salesforce.androidsdk.rest.SfapApiClient.Companion.jsonIgnoreUnknownKeys
+import kotlinx.serialization.Serializable
 
 /**
- * Flags for ftr_ field in user agent
+ * Models a `sfap_api` endpoint's `error` response.
+ * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
  */
-public class Features {
-    public static final String FEATURE_AILTN_ENABLED = "AI";
-    public static final String FEATURE_APP_IS_IDP = "IP";
-    public static final String FEATURE_APP_IS_SP = "SP";
-    public static final String FEATURE_BROWSER_LOGIN = "BW";
-    public static final String FEATURE_CERT_AUTH = "CT";
-    public static final String FEATURE_LOCALHOST = "LH";
-    public static final String FEATURE_MDM = "MM";
-    public static final String FEATURE_MULTI_USERS = "MU";
-    public static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
-    public static final String FEATURE_USER_AUTH = "UA";
-    public static final String FEATURE_SCREEN_LOCK = "SL";
-    public static final String FEATURE_BIOMETRIC_AUTH = "BA";
-    public static final String FEATURE_NATIVE_LOGIN = "NL";
-    public static final String FEATURE_QR_CODE_LOGIN = "QR";
+@Serializable
+data class SfapApiErrorResponseBody(
+    val errorCode: String? = null,
+    val message: String? = null,
+    val messageCode: String? = null
+) {
+
+    /** The original JSON used to initialize this response body */
+    var sourceJson: String? = null
+        private set
+
+    companion object {
+
+        /**
+         * Returns an `sfap_api` endpoint's error response from the JSON text.
+         * @param json The JSON text
+         * @return The `sfap_api` endpoint error response
+         */
+        fun fromJson(json: String): SfapApiErrorResponseBody {
+
+            val result = jsonIgnoreUnknownKeys.decodeFromString<SfapApiErrorResponseBody>(json)
+            result.sourceJson = json
+            return result
+        }
+    }
 }

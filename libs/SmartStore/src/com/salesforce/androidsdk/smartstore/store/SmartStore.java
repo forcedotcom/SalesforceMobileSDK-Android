@@ -119,6 +119,19 @@ public class SmartStore  {
 	// background executor
 	private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
+	// Needed when using commercial or enterprise editions of SQLCipher
+	protected static String LICENSE_KEY = null;
+
+	/**
+	 * Set license key for SQLCipher
+	 * Needed when using commercial or enterprise editions of SQLCipher
+	 * Should be called before using SmartStore
+	 * @param licenseKey
+	 */
+	public static void setLicenseKey(String licenseKey) {
+		LICENSE_KEY = licenseKey;
+	}
+
 	/**
      * Changes the encryption key on the smartstore.
      *

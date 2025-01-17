@@ -3,7 +3,7 @@ orbs:
 
 aliases:
   # Docker image tags can be found here: https://circleci.com/developer/images/image/cimg/android
-  - &cimg cimg/android:2024.04.1-node
+  - &cimg cimg/android:2025.01.1-node
   # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
   - &default-api-level 34
 
@@ -302,15 +302,14 @@ workflows:
               pr: [ true ]
 
   # GUI Driven "Triggers" Schedule
-  # Monday    8 PM - API 26
   # Monday    9 PM - API 28
   # Monday   10 PM - API 30
   # Monday   11 PM - API 32
   # Tuesday  12 AM - API 34
-  # Friday    8 PM - API 27
   # Friday    9 PM - API 29
   # Friday   10 PM - API 31
   # Friday   11 PM - API 33
+  # Saturday 12 AM - API 35
   nightly-tests:
     when:
       not:

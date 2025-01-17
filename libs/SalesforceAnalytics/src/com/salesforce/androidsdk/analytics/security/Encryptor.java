@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.analytics.security;
 
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -45,14 +44,10 @@ import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.MGF1ParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -373,14 +368,7 @@ public class Encryptor {
             byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             Mac sha;
 
-            /*
-             * TODO: Remove this check once minAPI >= 28.
-             */
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                sha = Mac.getInstance(MAC_TRANSFORMATION);
-            } else {
-                sha = Mac.getInstance(MAC_TRANSFORMATION, getLegacyEncryptionProvider());
-            }
+            sha = Mac.getInstance(MAC_TRANSFORMATION);
             final SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte[] sig = sha.doFinal(dataBytes);
@@ -638,19 +626,12 @@ public class Encryptor {
             } else if (CipherMode.RSA_OAEP_SHA256 == cipherMode) {
                 cipher = Cipher.getInstance(cipherMode.fullName, BOUNCY_CASTLE_WORKAROUND);
             } else if (CipherMode.AES_CBC_CIPHER == cipherMode) {
-                cipher = Cipher.getInstance(cipherMode.fullName, getLegacyEncryptionProvider());
+                cipher = Cipher.getInstance(cipherMode.fullName);
             }
         } catch (Exception e) {
             SalesforceAnalyticsLogger.e(null, TAG,
                     "No cipher transformation available", e);
         }
         return cipher;
-    }
-
-    /*
-     * TODO: Remove this method and its usages once minAPI >= 28.
-     */
-    private static String getLegacyEncryptionProvider() {
-        return BOUNCY_CASTLE;
     }
 }
