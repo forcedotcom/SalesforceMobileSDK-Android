@@ -187,6 +187,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) {
+        // Clear cookies when we finish auth to prevent automatic re-login
+        // if the user tries to add another user right away.
+        clearCookies()
         com.salesforce.androidsdk.auth.onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "", // This will never actually be null.
