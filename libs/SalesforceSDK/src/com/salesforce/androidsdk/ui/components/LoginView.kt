@@ -178,7 +178,7 @@ fun LoginView() {
         )
 
         if (viewModel.showServerPicker.value) {
-            LoginServerBottomSheet(viewModel)
+            LoginServerBottomSheet()
         }
     }
 }

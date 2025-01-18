@@ -39,12 +39,14 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.ui.LoginViewModel
 
 @Composable
-fun LoginServerCard(viewModel: LoginViewModel, server: LoginServerManager.LoginServer) {
+fun LoginServerCard(server: LoginServerManager.LoginServer) {
+    val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     Card(
         modifier = Modifier
             .padding(top = 10.dp, bottom = 10.dp)

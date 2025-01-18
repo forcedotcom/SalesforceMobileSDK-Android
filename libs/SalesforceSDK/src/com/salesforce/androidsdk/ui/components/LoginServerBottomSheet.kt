@@ -56,12 +56,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginServerBottomSheet(viewModel: LoginViewModel) {
+fun LoginServerBottomSheet() {
+    val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     val sheetState = rememberModalBottomSheetState()
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
 
@@ -138,7 +140,7 @@ fun LoginServerBottomSheet(viewModel: LoginViewModel) {
                 Spacer(modifier = Modifier.padding(10.dp))
                 loginServerManager.loginServers.forEach { server ->
                     HorizontalDivider(thickness = 1.dp)
-                    LoginServerCard(viewModel, server)
+                    LoginServerCard(server)
                 }
 
                 TextButton(
