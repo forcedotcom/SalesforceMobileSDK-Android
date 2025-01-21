@@ -126,7 +126,7 @@ public class SmartStore  {
 	 * Set license key for SQLCipher
 	 * Needed when using commercial or enterprise editions of SQLCipher
 	 * Should be called before using SmartStore
-	 * @param licenseKey
+	 * @param licenseKey The license key string provided by Zetetic
 	 */
 	public static void setLicenseKey(String licenseKey) {
 		LICENSE_KEY = licenseKey;
@@ -1645,6 +1645,24 @@ public class SmartStore  {
 	 */
 	public String getSQLCipherVersion() {
 		return TextUtils.join(" ", queryPragma("cipher_version"));
+	}
+
+	/**
+	 * Get SQLCipher provider version
+	 *
+	 * @return SQLCipher provider version
+	 */
+	public String getCipherProviderVersion() {
+		return TextUtils.join(" ", queryPragma("cipher_provider_version"));
+	}
+
+	/**
+	 * Get SQLCipher FIPS status
+	 *
+	 * @return "0" when using the community edition or the commercial edition and "1" when using the FIPS enabled enterprise edition
+	 */
+	public String getCipherFIPSStatus() {
+		return TextUtils.join(" ", queryPragma("cipher_fips_status"));
 	}
 
 	@NonNull
