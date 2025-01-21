@@ -29,7 +29,7 @@ android {
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
