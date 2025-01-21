@@ -124,7 +124,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testCipherProviderVersion() {
-		Assert.assertEquals("Wrong sqlcipher provider version", "4.6.1 community", store.getCipherProviderVersion());
+		Assert.assertEquals("Wrong sqlcipher provider version", "OpenSSL 3.0.14 4 Jun 2024", store.getCipherProviderVersion());
 	}
 
 	/**
@@ -132,7 +132,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testCipherFIPSStatus() {
-		Assert.assertEquals("Wrong sqlcipher FIPS status", "4.6.1 community", store.getCipherFIPSStatus());
+		Assert.assertEquals("Wrong sqlcipher FIPS status", "0", store.getCipherFIPSStatus());
 	}
 
 
