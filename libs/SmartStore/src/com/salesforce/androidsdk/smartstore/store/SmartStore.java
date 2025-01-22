@@ -1659,10 +1659,10 @@ public class SmartStore  {
 	/**
 	 * Get SQLCipher FIPS status
 	 *
-	 * @return "0" when using the community edition or the commercial edition and "1" when using the FIPS enabled enterprise edition
+	 * @return true if using a FIPS enabled SQLCipher edition
 	 */
-	public String getCipherFIPSStatus() {
-		return TextUtils.join(" ", queryPragma("cipher_fips_status"));
+	public boolean getCipherFIPSStatus() {
+		return TextUtils.join(" ", queryPragma("cipher_fips_status")).equals("1");
 	}
 
 	@NonNull

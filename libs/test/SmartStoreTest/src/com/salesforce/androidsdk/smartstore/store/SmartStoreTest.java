@@ -132,7 +132,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testCipherFIPSStatus() {
-		Assert.assertEquals("Wrong sqlcipher FIPS status", "0", store.getCipherFIPSStatus());
+		Assert.assertFalse("Wrong sqlcipher FIPS status", store.getCipherFIPSStatus());
 	}
 
 
