@@ -120,6 +120,23 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
+	 * Checking sqlcipher provider version
+	 */
+	@Test
+	public void testCipherProviderVersion() {
+		Assert.assertEquals("Wrong sqlcipher provider version", "OpenSSL 3.0.14 4 Jun 2024", store.getCipherProviderVersion());
+	}
+
+	/**
+	 * Checking sqlcipher FIPS status
+	 */
+	@Test
+	public void testCipherFIPSStatus() {
+		Assert.assertFalse("Wrong sqlcipher FIPS status", store.getCipherFIPSStatus());
+	}
+
+
+	/**
 	 * Method to check soup blob with one stored by db. Can be overridden to check external storage if necessary.
 	 */
 	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupName, Long id) throws JSONException {
