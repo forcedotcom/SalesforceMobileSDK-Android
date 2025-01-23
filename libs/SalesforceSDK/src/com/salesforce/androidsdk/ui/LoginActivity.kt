@@ -184,6 +184,9 @@ open class LoginActivity: FragmentActivity() {
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var biometricAuthenticationButton: Button? = null
+    private var newUserIntent = false
+    private val sharedBrowserSession: Boolean
+        get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
 
     // KeychainAliasCallback variables
     private var key: PrivateKey? = null
@@ -207,6 +210,11 @@ open class LoginActivity: FragmentActivity() {
                 frontdoorBridgeUrl,
                 intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
             )
+        }
+
+        // Don't let sharedBrowserSession org setting stop a new user from logging in.
+        if (intent.extras?.getBoolean(NEW_USER) == true) {
+            newUserIntent = true
         }
 
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
@@ -234,7 +242,10 @@ open class LoginActivity: FragmentActivity() {
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
-        if (biometricAuthenticationManager?.locked == true && biometricAuthenticationManager.hasBiometricOptedIn()) {
+        if (biometricAuthenticationManager?.locked == true
+            && biometricAuthenticationManager.hasBiometricOptedIn()
+            && intent.extras?.getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC) != false
+        ) {
             presentBiometric()
         }
 
@@ -265,7 +276,7 @@ open class LoginActivity: FragmentActivity() {
                     finish()
                 } else {
                     // Don't show server picker if we are re-authenticating with cookie.
-                    clearWebView(showServerPicker = !SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+                    clearWebView(showServerPicker = !sharedBrowserSession)
                 }
             }
         }
@@ -364,7 +375,7 @@ open class LoginActivity: FragmentActivity() {
          * (pin/pattern/password/etc) instead of swipe or none.
          */
         if (requestCode == SETUP_REQUEST_CODE) {
-            biometricAuthenticationButton?.setText(sf__login_with_biometric)
+            // TODO: set button text to sf__login_with_biometric
             presentBiometric()
         }
     }
@@ -647,6 +658,7 @@ open class LoginActivity: FragmentActivity() {
             }
 
             BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED ->
+                // TODO: implement this button in compose.
                 biometricAuthenticationButton?.let { biometricAuthenticationButton ->
                     /*
                      * Prompts the user to setup OS screen lock and biometric
@@ -785,7 +797,7 @@ open class LoginActivity: FragmentActivity() {
         }
 
         // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
-        val urlString = if (SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled) loginUrl else loginUrl + PROMPT_LOGIN
+        val urlString = if (sharedBrowserSession) loginUrl else loginUrl + PROMPT_LOGIN
 
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
@@ -973,6 +985,7 @@ open class LoginActivity: FragmentActivity() {
 
         // region General Constants
 
+        internal const val NEW_USER = "new_user"
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
