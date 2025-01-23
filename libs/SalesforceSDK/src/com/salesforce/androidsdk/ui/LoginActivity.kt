@@ -39,7 +39,6 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.BitmapFactory.decodeResource
-import android.net.Uri
 import android.net.http.SslError
 import android.net.http.SslError.SSL_EXPIRED
 import android.net.http.SslError.SSL_IDMISMATCH
@@ -150,6 +149,7 @@ import java.net.URI
 import java.net.URLDecoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
+import androidx.core.net.toUri
 
 /**
  * Login activity authenticates a user. Authorization happens inside a web view.
@@ -264,7 +264,8 @@ open class LoginActivity: FragmentActivity() {
                 if (viewModel.singleServerCustomTabActivity) {
                     finish()
                 } else {
-                    clearWebviewAndShowServerPicker()
+                    // Don't show server picker if we are re-authenticating with cookie.
+                    clearWebView(showServerPicker = !SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
                 }
             }
         }
@@ -322,9 +323,13 @@ open class LoginActivity: FragmentActivity() {
         }
     }
 
-    private fun clearWebviewAndShowServerPicker() {
-        viewModel.loginUrl.value = ABOUT_BLANK
-        viewModel.showServerPicker.value = true
+    private fun clearWebView(showServerPicker: Boolean = true) {
+        runOnUiThread {
+            viewModel.loginUrl.value = ABOUT_BLANK
+            if (showServerPicker) {
+                viewModel.showServerPicker.value = true
+            }
+        }
     }
 
     // The code in this block was taken from the deprecated
@@ -387,7 +392,7 @@ open class LoginActivity: FragmentActivity() {
     @Suppress("MemberVisibilityCanBePrivate")
     fun loginWithFrontdoorBridgeUrl(
         frontdoorBridgeUrl: String,
-        pkceCodeVerifier: String?
+        pkceCodeVerifier: String?,
     ) = viewModel.loginWithFrontDoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
     /**
@@ -779,17 +784,18 @@ open class LoginActivity: FragmentActivity() {
             customTabsIntent.intent.setPackage(customTabBrowser)
         }
 
+        // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
+        val urlString = if (SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled) loginUrl else loginUrl + PROMPT_LOGIN
+
         runCatching {
-            // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
-            val uri = if (SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled) loginUrl else loginUrl + PROMPT_LOGIN
-            customTabsIntent.intent.setData(Uri.parse(uri))
+            customTabsIntent.intent.setData(urlString.toUri())
             customTabLauncher.launch(customTabsIntent.intent)
         }.onFailure { throwable ->
             e(TAG, "Unable to launch Advanced Authentication, Chrome browser not installed.", throwable)
             runOnUiThread {
                 makeText(this@LoginActivity, "To log in, install Chrome.", LENGTH_LONG).show()
             }
-            clearWebviewAndShowServerPicker()
+            clearWebView()
         }
     }
 
@@ -923,7 +929,7 @@ open class LoginActivity: FragmentActivity() {
         override fun onReceivedSslError(
             view: WebView,
             handler: SslErrorHandler,
-            error: SslError
+            error: SslError,
         ) {
             val primErrorStringId = when (error.primaryError) {
                 SSL_EXPIRED -> sf__ssl_expired
@@ -944,7 +950,7 @@ open class LoginActivity: FragmentActivity() {
 
         override fun onReceivedClientCertRequest(
             view: WebView,
-            request: ClientCertRequest
+            request: ClientCertRequest,
         ) {
             d(TAG, "Received client certificate request from server")
             request.proceed(key, certChain)

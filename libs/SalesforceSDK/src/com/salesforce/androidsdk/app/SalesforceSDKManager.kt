@@ -347,6 +347,8 @@ open class SalesforceSDKManager protected constructor(
      * - Or, if the specified browser is not installed
      *
      * Defaults to Chrome.
+     *
+     * Note: the App is responsible for [package visibility](https://developer.android.com/training/package-visibility).
      */
     @get:Synchronized
     @set:Synchronized
