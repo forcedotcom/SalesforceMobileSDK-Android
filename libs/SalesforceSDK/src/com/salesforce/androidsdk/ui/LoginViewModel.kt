@@ -134,7 +134,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
-            loginUrl.value = getAuthorizationUrl(newServer)
+            if (loginUrl.value?.startsWith(newServer) != true) {
+                loginUrl.value = getAuthorizationUrl(newServer)
+            }
         }
     }
 
@@ -274,8 +276,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
-            clearCookies()
-            reloadWebview()
         }
     }
 

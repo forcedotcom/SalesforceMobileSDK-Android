@@ -53,8 +53,7 @@ import java.util.Map;
  */
 public class LoginServerManager {
 	// LiveData representation of the users current selected server.
-	public MutableLiveData<LoginServer> selectedServer
-			= new MutableLiveData<>(new LoginServer("Production", PRODUCTION_LOGIN_URL, false));
+	public MutableLiveData<LoginServer> selectedServer = new MutableLiveData<>();
 
 	private static final String TAG = "LoginServerManager";
 
