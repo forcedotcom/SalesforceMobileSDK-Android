@@ -250,7 +250,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         )
 
         return when {
-            jwtFlow -> getFrontdoorUrl(authorizationUrl, authCodeForJwtFlow, loginUrl.value, mapOf<String, String>())
+            jwtFlow -> getFrontdoorUrl(authorizationUrl, authCodeForJwtFlow, selectedServer.value, mapOf<String, String>())
             else -> authorizationUrl
         }.toString()
     }

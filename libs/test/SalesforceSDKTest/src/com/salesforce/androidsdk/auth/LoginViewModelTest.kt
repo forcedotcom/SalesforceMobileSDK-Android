@@ -31,6 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -48,6 +49,8 @@ class LoginViewModelTest {
     val instantExecutorRule: InstantTaskExecutorRule = InstantTaskExecutorRule()
 
     private val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
+    private val FAKE_JWT = "1234"
+    private val FAKE_JWT_FLOW_AUTH =  "5678"
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val bootConfig = BootConfig.getBootConfig(context)
     private val viewModel = LoginViewModel(bootConfig)
@@ -111,6 +114,24 @@ class LoginViewModelTest {
         Assert.assertNotNull(newCodeChallenge)
         Assert.assertNotEquals(originalCodeChallenge, newCodeChallenge)
         Assert.assertTrue(viewModel.loginUrl.value!!.contains(newCodeChallenge))
+    }
+
+    @Test
+    fun jwtFlow_Changes_loginUrl() {
+        val server = viewModel.selectedServer.value!!
+        var codeChallenge = getSHA256Hash(viewModel.codeVerifier)
+        val expectedUrl = generateExpectedAuthorizationUrl(server, codeChallenge)
+        Assert.assertEquals(expectedUrl, viewModel.loginUrl.value)
+
+        viewModel.jwt = FAKE_JWT
+        viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
+        viewModel.reloadWebview()
+        Assert.assertNotEquals(expectedUrl, viewModel.loginUrl.value)
+
+        codeChallenge = getSHA256Hash(viewModel.codeVerifier)
+        val authUrl = generateExpectedAuthorizationUrl(server, codeChallenge)
+        val expectedJwtFlowUrl = getFrontdoorUrl(URI(authUrl), FAKE_JWT_FLOW_AUTH, server, mapOf<String, String>()).toString()
+        Assert.assertEquals(expectedJwtFlowUrl, viewModel.loginUrl.value)
     }
 
     @Test
