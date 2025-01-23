@@ -101,6 +101,8 @@ import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
+import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
@@ -117,8 +119,10 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LO
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
@@ -142,6 +146,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.net.URI
 import java.net.URLDecoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
@@ -284,6 +289,11 @@ open class LoginActivity: FragmentActivity() {
                     }
                 }
             }
+        }
+
+        // Support magic links
+        if (viewModel.jwt != null) {
+            swapJWTForAccessToken()
         }
 
         // Let observers know onCreate is complete.
@@ -429,7 +439,8 @@ open class LoginActivity: FragmentActivity() {
                                 certChain = getCertificateChain(this, alias)
                                 key = getPrivateKey(this, alias)
                             }
-//                            runOnUiThread { loadLoginPage() }
+
+                            viewModel.reloadWebview()
                         }.onFailure { throwable ->
                             e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
                         }
@@ -475,6 +486,42 @@ open class LoginActivity: FragmentActivity() {
             else -> false
         }
 
+    /**
+     * A callback when the user facing part of the authentication flow completed successfully.
+     *
+     * @param userAccount The newly created user account.
+     */
+    protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
+        initAnalyticsManager(userAccount)
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val authenticatedUsers = userAccountManager.authenticatedUsers
+        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
+        val userSwitchType = when {
+            // We've already authenticated the first user, so there should be one
+            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+
+            // Otherwise we're logging in with an additional user
+            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+
+            // This should never happen but if it does, pass in the "unknown" value
+            else -> USER_SWITCH_TYPE_DEFAULT
+        }
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+        setResult(Activity.RESULT_OK)
+
+        // Create account and save result before switching to new user
+        accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
+
+        userAccountManager.switchToUser(userAccount)
+        with(SalesforceSDKManager.getInstance()) {
+            appContext.startActivity(Intent(appContext, mainActivityClass).apply {
+                setPackage(packageName)
+                flags = FLAG_ACTIVITY_NEW_TASK
+            })
+        }
+
+        finish()
+    }
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -542,38 +589,6 @@ open class LoginActivity: FragmentActivity() {
                 viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
             }
         }
-    }
-
-    protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
-        initAnalyticsManager(userAccount)
-        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-        val authenticatedUsers = userAccountManager.authenticatedUsers
-        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
-        val userSwitchType = when {
-            // We've already authenticated the first user, so there should be one
-            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-            // Otherwise we're logging in with an additional user
-            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-            // This should never happen but if it does, pass in the "unknown" value
-            else -> USER_SWITCH_TYPE_DEFAULT
-        }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-        setResult(Activity.RESULT_OK)
-
-        // Create account and save result before switching to new user
-        accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
-
-        userAccountManager.switchToUser(userAccount)
-        with(SalesforceSDKManager.getInstance()) {
-            appContext.startActivity(Intent(appContext, mainActivityClass).apply {
-                setPackage(packageName)
-                flags = FLAG_ACTIVITY_NEW_TASK
-            })
-        }
-
-        finish()
     }
 
     private fun handleBackBehavior() {
@@ -788,7 +803,38 @@ open class LoginActivity: FragmentActivity() {
             }.getOrDefault(false)
         }
 
-    // endregion
+    private fun swapJWTForAccessToken() {
+        CoroutineScope(IO).launch {
+            runCatching {
+                if (viewModel.jwt.isNullOrBlank()) {
+                    return@launch
+                } else {
+                    swapJWTForTokens(HttpAccess.DEFAULT, URI(viewModel.loginUrl.value), viewModel.jwt)
+                }
+            }.onFailure { throwable: Throwable ->
+                jwtFlowError(throwable)
+            }.onSuccess { tokenResponse: TokenEndpointResponse? ->
+                if (tokenResponse?.authToken != null) {
+                    if (tokenResponse.tokenFormat == "jwt") {
+                        e(TAG, "Frontdoor cannot be used with a JWT access tokens.")
+                        jwtFlowError()
+                    } else {
+                        viewModel.authCodeForJwtFlow = tokenResponse.authToken
+                        viewModel.reloadWebview()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun jwtFlowError(throwable: Throwable? = null) {
+        viewModel.jwt = null
+        onAuthFlowError(
+            error = getString(sf__generic_authentication_error_title),
+            errorDesc = getString(sf__jwt_authentication_error),
+            e = throwable,
+        )
+    }
 
     /**
      * A web view client which intercepts the redirect to the OAuth callback URL.  That redirect marks the end of

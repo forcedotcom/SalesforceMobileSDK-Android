@@ -47,8 +47,10 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
+import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
@@ -107,6 +109,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // The default, locally generated code verifier
     @VisibleForTesting
     internal var codeVerifier: String? = null
+
+    // Auth code we receive from the JWT swap for magic links.
+    internal var authCodeForJwtFlow: String? = null
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL
     // in place of the default initial URL
@@ -190,6 +195,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         // Clear cookies when we finish auth to prevent automatic re-login
         // if the user tries to add another user right away.
         clearCookies()
+        authCodeForJwtFlow = null
         com.salesforce.androidsdk.auth.onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "", // This will never actually be null.
@@ -221,7 +227,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     }
 
     private fun getAuthorizationUrl(server: String): String {
-        val jwtFlow = !isEmpty(jwt)
+        val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
         val additionalParams = when {
             jwtFlow -> null
             else -> additionalParameters
@@ -231,7 +237,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
-        return OAuth2.getAuthorizationUrl(
+        val authorizationUrl = OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
             URI(server),
@@ -241,7 +247,12 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
             authorizationDisplayType,
             codeChallenge,
             additionalParams
-        ).toString()
+        )
+
+        return when {
+            jwtFlow -> getFrontdoorUrl(authorizationUrl, authCodeForJwtFlow, loginUrl.value, mapOf<String, String>())
+            else -> authorizationUrl
+        }.toString()
     }
 
     private suspend fun doCodeExchange(
