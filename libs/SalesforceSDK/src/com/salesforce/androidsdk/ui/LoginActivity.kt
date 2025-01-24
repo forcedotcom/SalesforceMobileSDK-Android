@@ -580,10 +580,10 @@ open class LoginActivity: FragmentActivity() {
         )
 
         viewModel.clearCookies()
+        viewModel.resetFrontDoorBridgeUrl()
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
             makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
-            viewModel.clearCookies()
             viewModel.reloadWebview()
         }
     }

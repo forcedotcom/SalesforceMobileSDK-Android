@@ -76,6 +76,11 @@ fun LoginView() {
     var showMenu by remember { mutableStateOf(false) }
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
+    val titleText = if (viewModel.isUsingFrontDoorBridge) {
+        viewModel.frontdoorBridgeServer ?: ""
+    } else {
+        viewModel.titleText ?: viewModel.defaultTitleText
+    }
 
     Scaffold(
         topBar = {
@@ -86,7 +91,7 @@ fun LoginView() {
                 title = viewModel.titleComposable ?:
                     {
                         Text(
-                            text = viewModel.titleText ?: viewModel.defaultTitleText,
+                            text = titleText,
                             color = viewModel.dynamicHeaderTextColor.value,
                             fontWeight = FontWeight.Bold,
                         )

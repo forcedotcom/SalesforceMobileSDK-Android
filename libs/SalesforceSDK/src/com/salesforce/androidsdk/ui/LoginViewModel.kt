@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -70,7 +71,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
     internal val defaultTitleText: String
-        get() = if (loginUrl.value == "about:blank") "" else selectedServer.value ?: ""
+        get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
 
     // Public Overrideable LiveData
     open var showTopBar = true
@@ -113,13 +114,13 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
 
-    // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL
-    // in place of the default initial URL
+    // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
     internal var isUsingFrontDoorBridge = false
-
-    // For Salesforce Identity API UI Bridge support, the optional web server flow code verifier accompanying
-    // the front door bridge URL.  This can only be used with `overrideWithFrontDoorBridgeUrl`
+    // The optional server used for code exchange.
+    internal var frontdoorBridgeServer: String? = null
+    // The optional web server flow code verifier accompanying the front door bridge server.
     internal var frontdoorBridgeCodeVerifier: String? = null
+
 
     init {
         // Update selectedServer when the LoginServerManager value changes
@@ -134,14 +135,17 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
-            if (loginUrl.value?.startsWith(newServer) != true) {
+            val isNewServer = loginUrl.value?.startsWith(newServer) != true
+            if (isNewServer && !isUsingFrontDoorBridge) {
                 loginUrl.value = getAuthorizationUrl(newServer)
             }
         }
     }
 
     open fun reloadWebview() {
-        loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
+        if (!isUsingFrontDoorBridge) {
+            loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
+        }
     }
 
     open fun clearCookies() =
@@ -157,9 +161,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         pkceCodeVerifier: String?,
     ) {
         isUsingFrontDoorBridge = true
-
-        val uri = URI(frontdoorBridgeUrl)
-        SalesforceSDKManager.getInstance().loginOptions.loginUrl = "${uri.scheme}://${uri.host}"
+        frontdoorBridgeServer = with(URI(frontdoorBridgeUrl)) { "${scheme}://${host}" }
         frontdoorBridgeCodeVerifier = pkceCodeVerifier
         loginUrl.value = frontdoorBridgeUrl
     }
@@ -214,6 +216,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
      */
     internal fun resetFrontDoorBridgeUrl() {
         isUsingFrontDoorBridge = false
+        frontdoorBridgeServer = null
         frontdoorBridgeCodeVerifier = null
     }
 
@@ -263,12 +266,15 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) = withContext(IO) {
         runCatching {
+            val server = if (isUsingFrontDoorBridge) frontdoorBridgeServer else selectedServer.value
+            val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
+
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
-                URI.create(selectedServer.value),
+                URI.create(server),
                 clientId,
                 code,
-                frontdoorBridgeCodeVerifier ?: codeVerifier,
+                verifier,
                 bootConfig.oauthRedirectURI,
             )
 
