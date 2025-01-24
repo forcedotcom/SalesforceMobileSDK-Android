@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.auth;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
+
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -43,6 +45,7 @@ import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,11 +68,13 @@ public class LoginServerManagerTest {
 
 	private LoginServerManager loginServerManager;
 	private EventsListenerQueue eq;
-	private Context targetContext;
+
+    @Rule
+	public final InstantTaskExecutorRule instantExecutorRule = new InstantTaskExecutorRule();
 
 	@Before
 	public void setUp() throws Exception {
-		targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
@@ -236,33 +241,52 @@ public class LoginServerManagerTest {
 		assertProduction(loginServerManager.getSelectedLoginServer());
 	}
 
+	/**
+	 * Test selectedServer LiveData
+	 */
+	@Test
+	public void testLiveData() {
+		// Assert the method returns the same result as the backing LiveData.
+		assertLiveData();
+
+		loginServerManager.addCustomLoginServer("live data", PRODUCTION_URL);
+		assertLiveData();
+
+		loginServerManager.selectedServer.postValue(new LoginServer("Live Data 2", PRODUCTION_URL, false));
+		assertLiveData();
+	}
+
 	private void assertProduction(LoginServer server) {
         Assert.assertEquals("Expected production's name", "Production", server.name);
         Assert.assertEquals("Expected production's url", PRODUCTION_URL, server.url);
-        Assert.assertEquals("Expected production to be marked as not custom", false, server.isCustom);
+        Assert.assertFalse("Expected production to be marked as not custom", server.isCustom);
 	}
 
 	private void assertSandbox(LoginServer server) {
         Assert.assertEquals("Expected sandbox's name", "Sandbox", server.name);
         Assert.assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
-        Assert.assertEquals("Expected sandbox to be marked as not custom", false, server.isCustom);
+        Assert.assertFalse("Expected sandbox to be marked as not custom", server.isCustom);
 	}
 
 	private void assertOther(LoginServer server) {
         Assert.assertEquals("Expected other's name", "Other", server.name);
         Assert.assertEquals("Expected other's url", OTHER_URL, server.url);
-        Assert.assertEquals("Expected other to be marked as not custom", false, server.isCustom);
+        Assert.assertFalse("Expected other to be marked as not custom", server.isCustom);
 	}
 
 	private void assertCustom(LoginServer server) {
         Assert.assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
         Assert.assertEquals("Expected custom's url", CUSTOM_URL, server.url);
-        Assert.assertEquals("Expected custom to be marked as not custom", true, server.isCustom);
+        Assert.assertTrue("Expected custom to be marked as not custom", server.isCustom);
 	}
 
 	private void assertCustom2(LoginServer server) {
         Assert.assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
         Assert.assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
-        Assert.assertEquals("Expected custom2 to be marked as not custom", true, server.isCustom);
+        Assert.assertTrue("Expected custom2 to be marked as not custom", server.isCustom);
+	}
+
+	private void assertLiveData() {
+		Assert.assertEquals(loginServerManager.getSelectedLoginServer(), loginServerManager.selectedServer.getValue());
 	}
 }

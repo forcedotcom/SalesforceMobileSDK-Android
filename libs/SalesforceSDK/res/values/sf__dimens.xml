@@ -1,19 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
-
-    <!-- Dimensions used in sf__custom_server_url.xml -->
-    <dimen name="sf__server_layout_padding">0dp</dimen>
-    <dimen name="sf__server_picker_margin_top">7dp</dimen>
-    <dimen name="sf__server_picker_margin_left">3dp</dimen>
-    <dimen name="sf__server_picker_margin_right">3dp</dimen>
-    <dimen name="sf__server_picker_margin_bottom">3dp</dimen>
-
-    <!-- Dimensions used in sf__server_picker.xml -->
-    <dimen name="sf__custom_url_margin_top">7dp</dimen>
-    <dimen name="sf__custom_url_layout_padding">0dp</dimen>
-    <dimen name="sf__button_margin">2dp</dimen>
-
     <!-- Dimensions used in sf__account_switcher.xml -->
     <dimen name="sf__title_bar_height">48dp</dimen>
     <dimen name="sf__title_bar_padding_left">12dp</dimen>
@@ -43,4 +30,7 @@
     <dimen name="sf__screenlock_error_margin_top">10dp</dimen>
     <dimen name="sf__screenlock_error_margin_left">20dp</dimen>
     <dimen name="sf__screenlock_error_margin_right">20dp</dimen>
+
+    <!-- Biometric Enrollment Prompt -->
+    <dimen name="sf__dialog_layout_padding">0dp</dimen>
 </resources>

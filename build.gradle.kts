@@ -24,6 +24,7 @@ allprojects {
     // apps that do not target the latest version of Kotlin.
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         kotlinOptions {
+            freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
             apiVersion = "1.6"
             languageVersion = "1.6"
         }

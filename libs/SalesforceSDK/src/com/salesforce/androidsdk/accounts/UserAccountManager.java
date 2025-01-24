@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
@@ -701,6 +702,7 @@ public class UserAccountManager {
 		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
+		options.putBoolean(LoginActivity.NEW_USER, true);
 		i.putExtras(options);
 		reply.putParcelable(AccountManager.KEY_INTENT, i);
 		context.startActivity(i);

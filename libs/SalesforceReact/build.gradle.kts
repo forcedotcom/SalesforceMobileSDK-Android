@@ -44,7 +44,7 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28

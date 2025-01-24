@@ -13,30 +13,50 @@ plugins {
 }
 
 dependencies {
+    val composeVersion = "1.7.6"
+    val livecycleVersion = "2.8.7"
+
     api(project(":libs:SalesforceAnalytics"))
-    api("com.squareup.okhttp3:okhttp:4.10.0")
-    api("com.google.firebase:firebase-messaging:24.0.0")
-    api("androidx.core:core:1.13.1")
+    api("com.squareup.okhttp3:okhttp:4.12.0")
+    api("com.google.firebase:firebase-messaging:24.1.0")
+    api("androidx.core:core:1.15.0")
     api("androidx.browser:browser:1.8.0")
-    api("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("com.google.android.material:material:1.12.0")
+    api("androidx.work:work-runtime-ktx:2.10.0")
+
+    implementation("com.google.android.material:material:1.12.0")  // remove this when all xml is gone
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$livecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$livecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-service:$livecycleVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.window:window:1.3.0")
     implementation("androidx.window:window-core:1.3.0")
-    androidTestImplementation("androidx.test:runner:1.6.0")
-    androidTestImplementation("androidx.test:rules:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    implementation("androidx.compose.material3:material3-android:1.3.1")
+    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    implementation("androidx.compose.foundation:foundation-android:$composeVersion")
+    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
+    implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
+
+    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
 }
 
 android {
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
@@ -64,6 +84,7 @@ android {
             java.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
             resources.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
             res.srcDirs(arrayOf("../test/SalesforceSDKTest/res"))
+            assets.directories.add("../../shared/test")
         }
     }
 
@@ -87,6 +108,11 @@ android {
         renderScript = true
         aidl = true
         buildConfig = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {

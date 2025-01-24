@@ -32,6 +32,7 @@
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="true" />
 
         <!-- Screen Lock Activity-->
@@ -42,12 +43,6 @@
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
-            android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
-            android:exported="false" />
-
-        <!-- Choose server activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
             android:exported="false" />

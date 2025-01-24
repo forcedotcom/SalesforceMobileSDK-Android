@@ -87,6 +87,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -209,13 +210,19 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+    val webViewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
 
     /**
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
+    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
+
+    /**
+     * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
+     * visual customization without overriding LoginActivity.
+     */
+    var loginViewModelFactory = LoginViewModel.Factory
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -340,6 +347,8 @@ open class SalesforceSDKManager protected constructor(
      * - Or, if the specified browser is not installed
      *
      * Defaults to Chrome.
+     *
+     * Note: the App is responsible for [package visibility](https://developer.android.com/training/package-visibility).
      */
     @get:Synchronized
     @set:Synchronized
@@ -397,9 +406,9 @@ open class SalesforceSDKManager protected constructor(
                 val packageInfo = appContext.packageManager.getPackageInfo(
                     appContext.packageName, 0
                 )
-                appName = appContext.getString(
-                    packageInfo.applicationInfo.labelRes
-                )
+                appName = packageInfo.applicationInfo?.labelRes?.let {
+                    appContext.getString(it)
+                }
             }
             field
         }.onFailure { e ->
@@ -474,7 +483,7 @@ open class SalesforceSDKManager protected constructor(
             var ailtnAppName: String? = null
             runCatching {
                 val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-                ailtnAppName = appContext.getString(packageInfo.applicationInfo.labelRes)
+                ailtnAppName = packageInfo.applicationInfo?.labelRes?.let { appContext.getString(it) }
             }.onFailure { e ->
                 e(TAG, "Package not found", e)
             }
@@ -597,9 +606,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Optionally enables browser based login instead of web view login. This
-     * should NOT be used directly by apps as this is meant for internal use
-     * based on the value configured on the server.
+     * Optionally enables browser based login instead of web view login.
      *
      * @param browserLoginEnabled True if Chrome should be used for login; false
      * otherwise
@@ -607,9 +614,9 @@ open class SalesforceSDKManager protected constructor(
      * false otherwise
      */
     @Synchronized
-    fun setBrowserLoginEnabled(
+    internal fun setBrowserLoginEnabled(
         browserLoginEnabled: Boolean,
-        shareBrowserSessionEnabled: Boolean
+        shareBrowserSessionEnabled: Boolean,
     ) {
         isBrowserLoginEnabled = browserLoginEnabled
         isShareBrowserSessionEnabled = shareBrowserSessionEnabled
@@ -1112,7 +1119,7 @@ open class SalesforceSDKManager protected constructor(
             result
         }.onFailure { e ->
             w(TAG, "Package info could not be retrieved", e)
-        }.getOrDefault("")
+        }.getOrDefault("").toString()
 
     /**
      * Adds an app feature code for reporting in the user agent header
@@ -1403,7 +1410,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this is a debug build */
-    private val isDebugBuild
+    internal val isDebugBuild
         get() = getBuildConfigValue(
             appContext,
             "DEBUG"
@@ -1837,15 +1844,13 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
-     * If this takes more than five seconds it can cause Android's application
-     * not responding report.
-     *
      * @param completion An optional function to invoke at the end of the action
      */
     fun fetchAuthenticationConfiguration(
         completion: (() -> Unit)? = null
     ) = CoroutineScope(Default).launch {
         runCatching {
+            // If this takes more than five seconds it can cause Android's application not responding report.
             withTimeout(5000L) {
                 val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
 
