@@ -160,19 +160,22 @@ public class SalesforceKeyGenerator {
         // Checks if we have a unique identifier stored.
         if (id != null) {
             final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
-            uniqueId = Encryptor.decryptWithRSA(privateKey, id, Encryptor.CipherMode.RSA_PKCS1);
-            if (uniqueId == null) {
-                SalesforceSDKLogger.e(TAG, "Unable to decrpyt unique identifier stored");
+            final byte[] decryptedBytes = Encryptor.decryptWithRSAMultiCipherNodes(privateKey, id);
+            if (decryptedBytes == null) {
+                SalesforceSDKLogger.e(TAG, "Unable to decrypt unique identifier stored");
+            } else {
+                uniqueId = new String(decryptedBytes, StandardCharsets.UTF_8);
             }
         }
 
-        // Other create a new one and store it
+        // Otherwise create a new one and store it
         if (uniqueId == null) {
             uniqueId = createUniqueId(length);
             final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
-            final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId, Encryptor.CipherMode.RSA_PKCS1);
+            final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
             storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
         }
+
         return uniqueId;
     }
 
