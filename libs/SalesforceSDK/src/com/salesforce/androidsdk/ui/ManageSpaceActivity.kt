@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2025-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,59 +24,157 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui;
+package com.salesforce.androidsdk.ui
 
-import static com.salesforce.androidsdk.ui.EdgeToEdgeUtilKt.fixEdgeToEdge;
-
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.os.Bundle;
-
-import androidx.appcompat.app.AppCompatActivity;
-
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.OAuth2;
+import android.annotation.SuppressLint
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.material.icons.Icons.Default
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
+import com.salesforce.androidsdk.R.color.sf__primary_color
+import com.salesforce.androidsdk.R.string.app_name
+import com.salesforce.androidsdk.R.string.sf__manage_space_confirmation
+import com.salesforce.androidsdk.R.string.sf__manage_space_logout_no
+import com.salesforce.androidsdk.R.string.sf__manage_space_logout_yes
+import com.salesforce.androidsdk.R.string.sf__manage_space_title
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 
 /**
- * Displays an activity that gives the user the option to clear app data
- * and log out, or cancel the clear user data option.
+ * An activity which prompts the user to clear storage and informs the user that
+ * this will log out all users.
  *
- * @author bhariharan
+ * @author Johnson.Eric@Salesforce.com
  */
-public class ManageSpaceActivity extends AppCompatActivity {
+open class ManageSpaceActivity : ComponentActivity() {
 
-	private AlertDialog manageSpaceDialog;
+    // region Activity Implementation
 
-	@Override
-	public void onCreate(Bundle savedState) {
-		super.onCreate(savedState);
-		setContentView(R.layout.sf__manage_space);
-		manageSpaceDialog = buildManageSpaceDialog();
-		manageSpaceDialog.setCanceledOnTouchOutside(false);
-		manageSpaceDialog.show();
-		fixEdgeToEdge(this, findViewById(R.id.manage_space_layout));
-	}
+    public override fun onCreate(savedInstanceState: Bundle?) {
 
-	@Override
-	public void onDestroy() {
-		manageSpaceDialog.dismiss();
-		super.onDestroy();
-	}
+        enableEdgeToEdge()
 
-	/**
-	 * Builds the manage space alert dialog. Subclasses can
-	 * override this method to provide their own implementation
-	 * or a custom dialog.
-	 *
-	 * @return Manage space alert dialog.
-	 */
-    protected AlertDialog buildManageSpaceDialog() {
-        return new AlertDialog.Builder(this)
-        .setMessage(R.string.sf__manage_space_confirmation)
-        .setPositiveButton(getString(R.string.sf__manage_space_logout_yes),
-                (dialog, which) -> SalesforceSDKManager.getInstance()
-                        .logout(null, ManageSpaceActivity.this, false, OAuth2.LogoutReason.USER_LOGOUT))
-						.setNegativeButton(getString(R.string.sf__manage_space_logout_no), (dialog, which) -> finish()).create();
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            MaterialTheme(
+                darkColorScheme(
+                    background = White,
+                    primary = White,
+                    primaryContainer = colorResource(sf__primary_color),
+                )
+            ) {
+                ManageSpaceView()
+            }
+        }
+    }
+
+    // endregion
+    // region Manage Space Activity Composable Functions
+
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun ManageSpaceView() {
+
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    colors = centerAlignedTopAppBarColors(
+                        containerColor = colorScheme.primaryContainer,
+                        titleContentColor = colorScheme.primary,
+                    ), title = {
+                        Text(
+                            getString(app_name),
+                            maxLines = 1,
+                            overflow = Ellipsis
+                        )
+                    }
+                )
+            },
+        ) {}
+
+        ClearStoragePromptAlertDialog(
+            onDismiss = {
+                finish()
+            },
+            onConfirm = {
+                getInstance().logout(
+                    account = null,
+                    frontActivity = this@ManageSpaceActivity,
+                    showLoginPage = false,
+                    reason = USER_LOGOUT
+                )
+            },
+            titleText = getString(sf__manage_space_title),
+            textText = getString(sf__manage_space_confirmation),
+            confirmButtonText = getString(sf__manage_space_logout_yes),
+            dismissButtonText = getString(sf__manage_space_logout_no),
+            icon = Default.Info
+        )
+    }
+
+    /**
+     * The clear storage prompt alert dialog.
+     *
+     * TODO: See how this will be subclassed. ECJ20250124
+     * @param onDismiss An action when the dialog is dismissed
+     * @param onConfirm An action when the dialog is confirmed
+     * @param titleText The dialog title text
+     * @param textText The dialog body text
+     * @param confirmButtonText The confirmation button text
+     * @param dismissButtonText The dismiss button text
+     * @param icon The dialog's hero icon
+     */
+    @Composable
+    fun ClearStoragePromptAlertDialog(
+        onDismiss: () -> Unit,
+        onConfirm: () -> Unit,
+        titleText: String,
+        textText: String,
+        confirmButtonText: String,
+        dismissButtonText: String,
+        icon: ImageVector
+    ) {
+        AlertDialog(
+            icon = {
+                Icon(icon, contentDescription = "Icon")
+            }, title = {
+                Text(text = titleText)
+            }, text = {
+                Text(text = textText)
+            }, onDismissRequest = {
+                onDismiss()
+            }, confirmButton = {
+                TextButton(onClick = {
+                    onConfirm()
+                }) {
+                    Text(confirmButtonText)
+                }
+            }, dismissButton = {
+                TextButton(onClick = {
+                    onDismiss()
+                }) {
+                    Text(dismissButtonText)
+                }
+            })
     }
 }
