@@ -48,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.R.color.sf__primary_color
@@ -84,7 +85,7 @@ open class ManageSpaceActivity : ComponentActivity() {
                     primaryContainer = colorResource(sf__primary_color),
                 )
             ) {
-                ManageSpaceView(false)
+                ManageSpaceView()
             }
         }
     }
@@ -94,10 +95,11 @@ open class ManageSpaceActivity : ComponentActivity() {
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun ManageSpaceView(isPreview: Boolean = false) {
+    @Preview
+    fun ManageSpaceView() {
 
         Scaffold(
-            topBar = { ManageSpaceTopBar(isPreview) }
+            topBar = { ManageSpaceTopBar() }
         ) {}
 
         ClearStoragePromptAlertDialog(
@@ -112,24 +114,24 @@ open class ManageSpaceActivity : ComponentActivity() {
                     reason = USER_LOGOUT
                 )
             },
-            titleText = if (isPreview) "Clear User Data?" else getString(sf__manage_space_title),
-            textText = if (isPreview) "Clearing user data will log the current user out. Are you sure you want to perform this action?" else getString(sf__manage_space_confirmation),
-            confirmButtonText = if (isPreview) "Yes" else getString(sf__manage_space_logout_yes),
-            dismissButtonText = if (isPreview) "No" else getString(sf__manage_space_logout_no),
+            titleText = stringResource(sf__manage_space_title),
+            textText = stringResource(sf__manage_space_confirmation),
+            confirmButtonText = stringResource(sf__manage_space_logout_yes),
+            dismissButtonText = stringResource(sf__manage_space_logout_no),
             icon = Default.Info
         )
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    open fun ManageSpaceTopBar(isPreview: Boolean) {
+    open fun ManageSpaceTopBar() {
         CenterAlignedTopAppBar(
             colors = centerAlignedTopAppBarColors(
                 containerColor = colorScheme.primaryContainer,
                 titleContentColor = colorScheme.primary,
             ), title = {
                 Text(
-                    if (isPreview) "App Name" else getString(app_name),
+                    stringResource(app_name),
                     maxLines = 1,
                     overflow = Ellipsis
                 )
@@ -180,11 +182,5 @@ open class ManageSpaceActivity : ComponentActivity() {
                     Text(dismissButtonText)
                 }
             })
-    }
-
-    @Preview
-    @Composable
-    fun LoginView() {
-        ManageSpaceView(isPreview = true)
     }
 }
