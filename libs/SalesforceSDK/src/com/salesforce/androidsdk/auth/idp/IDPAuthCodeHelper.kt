@@ -69,7 +69,7 @@ internal class IDPAuthCodeHelper private constructor(
 
     init {
         webView.settings.javaScriptEnabled = true
-        webView.webViewClient = IDPWebViewClient()
+        webView.webViewClient = IDPWebViewClient(webView.webViewClient)
     }
 
     /**
@@ -165,7 +165,7 @@ internal class IDPAuthCodeHelper private constructor(
      * Web view client used to monitor redirects to determine login flow is complete
      * It also parses the last redirect to extract code
      */
-    inner class IDPWebViewClient : WebViewClient() {
+    inner class IDPWebViewClient(private val wrappedWebViewContent: WebViewClient) : WebViewClient() {
 
         fun sanitizeUrl(url: String):String {
             return url.replace("///", "/").lowercase()
@@ -208,15 +208,7 @@ internal class IDPAuthCodeHelper private constructor(
         }
 
         override fun onPageFinished(webView: WebView?, url: String?) {
-            super.onPageFinished(webView, url)
-            if (webView != null) {
-                (webView.parent as? RelativeLayout)?.let { parentView ->
-                    parentView.findViewById<ProgressBar>(R.id.sf__loading_spinner)?.let { spinner ->
-                        spinner.visibility = View.INVISIBLE
-                    }
-                }
-                webView.visibility = View.VISIBLE
-            }
+            wrappedWebViewContent.onPageFinished(webView, url)
         }
     }
 
