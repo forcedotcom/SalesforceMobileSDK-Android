@@ -26,10 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.idp.IDPAuthCodeHelper.IDPWebViewClient
-import com.salesforce.androidsdk.ui.theme.SalesforceTheme
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPAuthCodeActivityInterface
@@ -40,21 +37,22 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
         private val TAG: String = IDPAuthCodeActivity::class.java.simpleName
     }
 
+    private lateinit var _webView: WebView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Protects against screenshots.
         window.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
 
-        // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
-        setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK)
-        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+        // TODO fix theming
+//        // Set theme
+//        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+//        setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK)
+//        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
 
         setContent {
-            SalesforceTheme(darkTheme = isDarkTheme) {
-                IDPAuthCodeScreen(intent = intent)
-            }
+            IDPAuthCodeScreen(intent = intent)
         }
     }
 
@@ -75,7 +73,10 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
             AndroidView(
                 factory = { ctx ->
                     WebView(ctx).apply {
+                        _webView = this
+
                         settings.apply {
+                            javaScriptEnabled = true
                             useWideViewPort = true
                             layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
                         }
@@ -87,7 +88,7 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
                                 // Hide the spinner when the page finishes loading
                                 isLoading = false
                                 // Show web view
-                                webView.visibility = View.VISIBLE
+                                view?.visibility = View.VISIBLE
                             }
                         }
 
@@ -113,5 +114,5 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
     }
 
     override val webView: WebView
-        get() = throw UnsupportedOperationException("WebView access should be handled via Compose!")
+        get() = _webView
 }

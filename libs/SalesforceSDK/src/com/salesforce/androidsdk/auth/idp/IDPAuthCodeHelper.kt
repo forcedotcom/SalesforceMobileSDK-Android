@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.net.Uri
-import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -68,7 +65,6 @@ internal class IDPAuthCodeHelper private constructor(
     )
 
     init {
-        webView.settings.javaScriptEnabled = true
         webView.webViewClient = IDPWebViewClient(webView.webViewClient)
     }
 
