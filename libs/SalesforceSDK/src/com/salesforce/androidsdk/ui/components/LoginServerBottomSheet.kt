@@ -140,7 +140,7 @@ fun LoginServerBottomSheet() {
                 Spacer(modifier = Modifier.padding(10.dp))
                 loginServerManager.loginServers.forEach { server ->
                     HorizontalDivider(thickness = 1.dp)
-                    LoginServerCard(server)
+                    LoginServerListItem(server)
                 }
 
                 TextButton(
