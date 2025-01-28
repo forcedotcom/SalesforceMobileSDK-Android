@@ -75,6 +75,7 @@ open class ManageSpaceActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            /* TODO: Update with support for light, dark and system themes: W-17687751 */
             MaterialTheme(
                 darkColorScheme(
                     background = White,
@@ -91,25 +92,11 @@ open class ManageSpaceActivity : ComponentActivity() {
     // region Manage Space Activity Composable Functions
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ManageSpaceView() {
 
         Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    colors = centerAlignedTopAppBarColors(
-                        containerColor = colorScheme.primaryContainer,
-                        titleContentColor = colorScheme.primary,
-                    ), title = {
-                        Text(
-                            getString(app_name),
-                            maxLines = 1,
-                            overflow = Ellipsis
-                        )
-                    }
-                )
-            },
+            topBar = { ManageSpaceTopBar() }
         ) {}
 
         ClearStoragePromptAlertDialog(
@@ -132,10 +119,26 @@ open class ManageSpaceActivity : ComponentActivity() {
         )
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    open fun ManageSpaceTopBar() {
+        CenterAlignedTopAppBar(
+            colors = centerAlignedTopAppBarColors(
+                containerColor = colorScheme.primaryContainer,
+                titleContentColor = colorScheme.primary,
+            ), title = {
+                Text(
+                    getString(app_name),
+                    maxLines = 1,
+                    overflow = Ellipsis
+                )
+            }
+        )
+    }
+
     /**
      * The clear storage prompt alert dialog.
      *
-     * TODO: See how this will be subclassed. ECJ20250124
      * @param onDismiss An action when the dialog is dismissed
      * @param onConfirm An action when the dialog is confirmed
      * @param titleText The dialog title text
@@ -145,7 +148,7 @@ open class ManageSpaceActivity : ComponentActivity() {
      * @param icon The dialog's hero icon
      */
     @Composable
-    fun ClearStoragePromptAlertDialog(
+    open fun ClearStoragePromptAlertDialog(
         onDismiss: () -> Unit,
         onConfirm: () -> Unit,
         titleText: String,

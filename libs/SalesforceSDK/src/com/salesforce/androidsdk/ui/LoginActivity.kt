@@ -229,6 +229,7 @@ open class LoginActivity: FragmentActivity() {
 
         // Set content
         setContent {
+            /* TODO: Update with support for light, dark and system themes: W-17687751 */
             LoginWebviewTheme {
                 LoginView()
             }
