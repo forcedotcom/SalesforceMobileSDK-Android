@@ -11,11 +11,14 @@ import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +70,11 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
             contentAlignment = Alignment.Center
         ) {
             if (isLoading) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    modifier = Modifier.width(64.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
             }
 
             AndroidView(
@@ -80,6 +87,13 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
                             useWideViewPort = true
                             layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
                         }
+
+                        // Initially invisible
+                        visibility = View.INVISIBLE
+
+                        // Don't draw scrollbars
+                        isHorizontalScrollBarEnabled = false
+                        isVerticalScrollBarEnabled = false
 
                         // Set WebViewClient and pass `isLoading` state
                         webViewClient = object : android.webkit.WebViewClient() {
@@ -102,12 +116,11 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
                                 "No IDP manager to handle ${LogUtil.intentToString(intent)}"
                             )
                         }
-                        isLoading = false
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
+                    .fillMaxHeight()
                     .padding(16.dp)
             )
         }
