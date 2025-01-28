@@ -67,6 +67,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
+    internal var isIDPLoginFlowEnabled = mutableStateOf(false)
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
@@ -123,6 +124,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
 
     init {
+        // Get isIDPLoginFlowEnabled from SDK manager
+        isIDPLoginFlowEnabled.value = SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
+
         // Update selectedServer when the LoginServerManager value changes
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer.url.run { trim { it <= ' ' } }

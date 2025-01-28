@@ -762,7 +762,7 @@ open class LoginActivity: FragmentActivity() {
      *
      * @param v IDP login button
      */
-    open fun onIDPLoginClick(v: View?) {
+    open fun onIDPLoginClick() {
         SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
             this,
             SPStatusCallback()
