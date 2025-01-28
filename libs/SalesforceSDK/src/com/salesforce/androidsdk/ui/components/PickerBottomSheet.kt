@@ -38,7 +38,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,6 +49,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
@@ -53,11 +57,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -66,6 +76,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
@@ -92,9 +103,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
         }
     }
-    val onLoginServerCancel = {
-        viewModel.showServerPicker.value = false
-    }
+    val onLoginServerCancel = { viewModel.showServerPicker.value = false }
     val onUserAccountSelected = { userAccount: Any? ->
         if (userAccount != null && userAccount is UserAccount) {
             userAccountManager.switchToUser(userAccount)
@@ -105,6 +114,12 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
             userAccountManager.switchToUser(userAccountManager.authenticatedUsers.first())
         }
     }
+    val addNewLoginServer = { name: String, url: String ->
+        loginServerManager.addCustomLoginServer(name, url)
+        viewModel.showServerPicker.value = false
+        viewModel.loading.value = true
+        viewModel.dynamicBackgroundColor.value = Color.White
+    }
 
     when(pickerStyle) {
         PickerStyle.LoginServerPicker ->
@@ -114,7 +129,10 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
                 list = loginServerManager.loginServers,
                 selectedListItem = loginServerManager.selectedLoginServer,
                 onItemSelected = onNewLoginServerSelected,
-                onCancel = onLoginServerCancel
+                onCancel = onLoginServerCancel,
+                getValidServer = { serverUrl: String -> viewModel.getValidServerUrl(serverUrl) },
+                addNewLoginServer = addNewLoginServer,
+                removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) }
             )
 
         PickerStyle.UserAccountPicker ->
@@ -124,7 +142,8 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
                 list = userAccountManager.authenticatedUsers,
                 selectedListItem = userAccountManager.currentAccount,
                 onItemSelected = onUserAccountSelected,
-                onCancel = onUserSwitchCancel
+                onCancel = onUserSwitchCancel,
+                addNewAccount = { userAccountManager.switchToNewUser() },
             )
     }
 
@@ -139,8 +158,11 @@ private fun PickerBottomSheet(
     selectedListItem: Any?,
     onItemSelected: (Any?) -> Unit,
     onCancel: () -> Unit,
-    ) {
-
+    getValidServer: ((String) -> String?)? = null,
+    addNewLoginServer: ((String, String) -> Unit)? = null,
+    removeLoginServer: ((LoginServer) -> Unit)? = null,
+    addNewAccount: (() -> Unit)? = null,
+) {
     ModalBottomSheet(
         onDismissRequest = { onCancel() },
         sheetState = sheetState,
@@ -148,24 +170,57 @@ private fun PickerBottomSheet(
         shape = RoundedCornerShape(10.dp),
         containerColor = Color.White
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        var addingNewServer by remember { mutableStateOf(false) }
 
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (addingNewServer) {
+                    // Add Connection Back Arrow
+                    IconButton(
+                        onClick = {
+                            addingNewServer = false
+                            onCancel()
+                        },
+                        colors = IconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = Color(0xFF747474),  // TODO: fix color
+                            disabledContainerColor = Color.Transparent,
+                            disabledContentColor = Color.Transparent,
+                        ),
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                }
+                // Picker Title Text
                 Text(
-                    text = when(pickerStyle) {
-                        PickerStyle.LoginServerPicker -> "Change Server"
+                    text = when (pickerStyle) {
+                        PickerStyle.LoginServerPicker -> {
+                            if (addingNewServer) {
+                                stringResource(R.string.sf__server_url_add_title)
+                            } else {
+                                stringResource(R.string.sf__pick_server)
+                            }
+                        }
                         PickerStyle.UserAccountPicker -> "Organizations"
                     },
                     color = Color.Black,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
+                // Close Button
                 IconButton(
-                    onClick = { onCancel() },
+                    onClick = {
+                        addingNewServer = false
+                        onCancel()
+                  },
                     colors = IconButtonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color(0xFF747474),  // TODO: fix color
@@ -182,72 +237,131 @@ private fun PickerBottomSheet(
             }
             HorizontalDivider(thickness = 1.dp)
 
-            list.forEach { listItem ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable(
-                        onClickLabel = "Login server selected.",
-                        onClick = { onItemSelected(listItem) },
-                    )
-                ) {
-                    RadioButton(
-                        selected = (listItem == selectedListItem),
-                        onClick = { onItemSelected(listItem) },
-                    )
+            // Add Connection Name, Url, and Save button.
+            if (pickerStyle == PickerStyle.LoginServerPicker && addingNewServer) {
+                var name by remember { mutableStateOf("") }
+                var url by remember { mutableStateOf("") }
 
-                    when(pickerStyle) {
-                        PickerStyle.LoginServerPicker ->
-                            if (listItem is LoginServer) {
-                                LoginServerListItem(server =  listItem)
+                // Name input field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+                    modifier =  Modifier
+                        .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+                        .fillMaxWidth(),
+                )
+                // Url input field
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+                    modifier =  Modifier
+                        .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+                        .fillMaxWidth(),
+                )
+
+                val serverUrl = getValidServer?.let { it(url) }
+                val validInput = name.isNotBlank() && serverUrl != null
+                Button(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonColors(
+                        containerColor = Color(0xFF0176D3),
+                        contentColor = Color(0xFF0176D3),
+                        disabledContainerColor = Color(0xFFE5E5E5),
+                        disabledContentColor = Color(0xFFE5E5E5),
+                    ),
+                    enabled = validInput,
+                    onClick = {
+                        addNewLoginServer?.let { it(name, url) }
+                        addingNewServer = false
+                    },
+                ) {
+                    Text(
+                        text = "Save",
+                        fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+                        color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
+                    )
+                }
+            } else {
+                // List of Login Servers or User Accounts
+                val mutableList = remember { list.toMutableStateList() }
+                mutableList.forEach { listItem ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(
+                            onClickLabel = "Login server selected.",
+                            onClick = { onItemSelected(listItem) },
+                        )
+                    ) {
+                        RadioButton(
+                            selected = (listItem == selectedListItem),
+                            onClick = { onItemSelected(listItem) },
+                        )
+
+                        when (pickerStyle) {
+                            PickerStyle.LoginServerPicker ->
+                                if (listItem is LoginServer) {
+                                    LoginServerListItem(
+                                        server = listItem,
+                                        removeServer = { server: LoginServer ->
+                                            mutableList.remove(listItem)
+                                            removeLoginServer?.let { it(server) }
+                                        }
+                                    )
+                                }
+
+                            PickerStyle.UserAccountPicker -> {
+                                if (listItem is UserAccount) {
+                                    UserAccountListItem(
+                                        displayName = listItem .displayName,
+                                        loginServer = listItem.loginServer,
+                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                    )
+                                }
+                                else if (listItem is UserAccountMock) {
+                                    UserAccountListItem(
+                                        displayName = listItem .displayName,
+                                        loginServer = listItem.loginServer,
+                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                    )
+                                }
                             }
-                        PickerStyle.UserAccountPicker -> {
-                            if (listItem is UserAccount || listItem is UserAccountMock) {
-                                UserAccountListItem(
-                                    displayName = (listItem as UserAccountMock).displayName, // TODO: does this crash for user account?
-                                    loginServer = listItem.loginServer,
-                                    profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                )
-                            }
-//                            if (listItem is UserAccount) {
-//                                UserAccountListItem(
-//                                    displayName = listItem .displayName,
-//                                    loginServer = listItem.loginServer,
-//                                    profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-//                                )
-//                            } else if (listItem is UserAccountMock) {
-//                                UserAccountListItem(
-//                                    displayName = listItem .displayName,
-//                                    loginServer = listItem.loginServer,
-//                                    profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-//                                )
-//                            }
                         }
                     }
+                    HorizontalDivider(
+                        thickness = Dp.Hairline,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
                 }
-                HorizontalDivider(
-                    thickness = Dp.Hairline,
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
 
-            OutlinedButton(
-                onClick = {  },
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-
-                ) {
-                Text(
-                    text = when(pickerStyle) {
-                        PickerStyle.LoginServerPicker -> "Add New Connection"
-                        PickerStyle.UserAccountPicker -> "Add New Account"
+                OutlinedButton(
+                    onClick = {
+                        when(pickerStyle) {
+                            PickerStyle.LoginServerPicker -> addingNewServer = true
+                            PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
+                        }
                     },
-                    color = Color(0xFF0B5CAB),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(0.dp),
-                )
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+
+                    ) {
+                    Text(
+                        text = when (pickerStyle) {
+                            PickerStyle.LoginServerPicker -> "Add New Connection"
+                            PickerStyle.UserAccountPicker -> "Add New Account"
+                        },
+                        color = Color(0xFF0B5CAB),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(0.dp),
+                    )
+                }
             }
         }
     }
@@ -255,6 +369,7 @@ private fun PickerBottomSheet(
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+//@PreviewScreenSizes
 @Preview
 @Composable
 private fun PickerBottomSheetPreview(

@@ -204,6 +204,31 @@ public class LoginServerManager {
 	}
 
 	/**
+	 * Removes a login serer from the list.
+	 *
+	 * @param server the server to remove
+	 */
+	public void removeServer(LoginServer server) {
+		int index = getLoginServers().indexOf(server);
+
+		if (server.isCustom && index != -1) {
+			int serverNumber = index + 1;
+			int numServers = runtimePrefs.getInt(NUMBER_OF_ENTRIES, 0);
+			final Editor edit = runtimePrefs.edit();
+			edit.remove(String.format(Locale.US, SERVER_NAME, serverNumber));
+			edit.remove(String.format(Locale.US, SERVER_URL, serverNumber));
+			edit.remove(String.format(Locale.US, IS_CUSTOM, serverNumber));
+
+			for (int i = index + 1; i < numServers; i++) {
+				// TODO: adjust remaining entries?
+			}
+
+			edit.putInt(NUMBER_OF_ENTRIES, --numServers);
+			edit.apply();
+		}
+	}
+
+	/**
 	 * Returns the list of login servers.
 	 * Checks run time configuration first.
 	 * Reads from preferences if no runtime configuration found.

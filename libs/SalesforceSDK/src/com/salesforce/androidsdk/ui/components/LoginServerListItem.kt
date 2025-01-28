@@ -44,10 +44,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.salesforce.androidsdk.config.LoginServerManager
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 
 @Composable
-fun LoginServerListItem(server: LoginServerManager.LoginServer) {
+fun LoginServerListItem(
+    server: LoginServer,
+    removeServer: (LoginServer) -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,11 +78,14 @@ fun LoginServerListItem(server: LoginServerManager.LoginServer) {
         ) {
             if (server.isCustom) {
                 IconButton(
-                    onClick = { },
+                    onClick = {
+                        // TODO: implement final UX
+                        removeServer(server)
+                    },
                 ) {
                     Icon(
                         Icons.Outlined.Delete,
-                        contentDescription = "Delete Server",
+                        contentDescription = "Remove Server",
                     )
                 }
             }
@@ -90,13 +96,13 @@ fun LoginServerListItem(server: LoginServerManager.LoginServer) {
 @Preview("Default Server", showBackground = true)
 @Composable
 private fun DefaultServerPreview() {
-    LoginServerListItem(LoginServerManager.LoginServer("Production", "https://login.salesforce.com", false))
+    LoginServerListItem(LoginServer("Production", "https://login.salesforce.com", false)) {}
 }
 
 @Preview("Custom Server", showBackground = true)
 @Composable
 private fun CustomServerPreview() {
-    LoginServerListItem(LoginServerManager.LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),)
+    LoginServerListItem(LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true)) {}
 
 }
 
@@ -104,12 +110,12 @@ private fun CustomServerPreview() {
 @Composable
 private fun LongServerPreview() {
     LoginServerListItem(
-        LoginServerManager.LoginServer(
-        "Custom Long Custom Long Custom Long Custom Long Custom Long ",
-        "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
-        true
+        LoginServer(
+            "Custom Long Custom Long Custom Long Custom Long Custom Long ",
+            "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
+            true,
         )
-    )
+    ) {}
 
 }
 
