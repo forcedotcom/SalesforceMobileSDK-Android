@@ -70,6 +70,7 @@ import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
 import androidx.activity.addCallback
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -94,15 +95,14 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat.getMainExecutor
+import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
-import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.R.string.sf__ssl_error
@@ -149,7 +149,6 @@ import java.net.URI
 import java.net.URLDecoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
-import androidx.core.net.toUri
 
 /**
  * Login activity authenticates a user. Authorization happens inside a web view.
@@ -229,15 +228,12 @@ open class LoginActivity: FragmentActivity() {
         }
 
         // Set content
-        setContentView(
-            ComposeView(this).apply {
-                setContent {
-                    LoginWebviewTheme {
-                        LoginView()
-                    }
-                }
+        setContent {
+            /* TODO: Update with support for light, dark and system themes: W-17687751 */
+            LoginWebviewTheme {
+                LoginView()
             }
-        )
+        }
 
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
