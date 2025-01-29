@@ -1,0 +1,127 @@
+on:
+    workflow_dispatch:
+    workflow_call:
+      inputs:
+        lib:
+          required: true
+          type: string
+    
+jobs:
+  test-android:
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
+          fetch-depth: 100
+      - name: Install Dependencies
+        env: 
+          TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+        run: |
+          ./install.sh
+          echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
+      - name: Hybrid Dependencies
+        if: ${{ inputs.lib == 'SalesforceHybrid' }}
+        run: |
+          npm install -g cordova
+          cordova telemetry off
+      - name: React Native Dependencies
+        if: ${{ inputs.lib  == 'SalesforceReact' }}
+        run: |
+          npm install -g typescript
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - name: Run Lint
+        if: ${{ github.event_name }} == 'pull_request'
+        run: |
+          ./gradlew libs:${{ inputs.lib }}:lint
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Report Static Analysis
+        if: ${{ github.event_name }} == 'pull_request'
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIB: ${{ inputs.lib }}
+        run: bundle exec danger --dangerfile=.github/DangerFiles/StaticAnalysis.rb --danger_id="${{ inputs.lib }}"
+      - name: Build for Testing
+        if: success() || failure()
+        run: |
+          ./gradlew libs:${{ inputs.lib }}:assembleAndroidTest
+          ./gradlew native:NativeSampleApps:RestExplorer:assembleDebug
+      - uses: 'google-github-actions/auth@v2'
+        if: success() || failure()
+        with:
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        if: success() || failure()
+      - name: Run Tests
+        if: success() || failure()
+        run: |
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          DEFAULT_API_VERSION="34" 
+          FULL_API_RANGE="28 29 30 31 32 33 34 35"
+
+          DEVICES=""
+          if [[ ${{ github.event_name == 'pull_request' }} ]]; then
+            DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
+          else
+            for LEVEL in $FULL_API_RANGE
+            do
+                DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
+            done
+          fi
+
+          COMMAND="gcloud firebase test android run "
+          COMMAND+="--project mobile-apps-firebase-test "
+          COMMAND+="--type instrumentation "
+          COMMAND+="--app \"native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk\" "
+          COMMAND+="--test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk "
+          COMMAND+="${DEVICES}"
+          COMMAND+="--environment-variables coverage=true,coverageFile=\"/sdcard/coverage.ec\" "
+          COMMAND+="--directories-to-pull=/sdcard  "
+          COMMAND+="--results-dir=${{ inputs.lib }}-${{github.run_number}} "
+          COMMAND+="--results-history-name=${{ inputs.lib }} "
+          COMMAND+="--timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1"
+
+          eval "$COMMAND"
+      - name: Copy Test Results
+        if: success() || failure()
+        run: |
+          gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
+          if [ $? == 0 ]
+          then
+            mkdir -p firebase/results
+            gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} | tail -1`*" ./firebase/
+            mv firebase/test_result_1.xml firebase/results
+          else
+            echo "No test results found"
+            exit 1
+          fi
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: ${{ inputs.lib }} Test Results
+          path: firebase/results/*.xml    
+          reporter: java-junit
+      - name: Convert Code Coverage
+        if: success() || failure()
+        run: |
+          ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
+      - uses: codecov/codecov-action@v4
+        if: success() || failure()
+        with:
+          flags: ${{ inputs.lib }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
