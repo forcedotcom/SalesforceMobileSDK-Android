@@ -173,9 +173,9 @@ fun LoginView() {
                     Button(
                         onClick = { activity.onIDPLoginClick() },
                         modifier = Modifier
-                            .padding(20.dp, 0.dp, 20.dp, 0.dp)
                             .fillMaxWidth()
-                            .height(50.dp),
+                            .height(50.dp)
+                            .padding(start = 20.dp, end = 20.dp),
                         shape = (RoundedCornerShape(5.dp)),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorResource(id = sf__primary_color),
