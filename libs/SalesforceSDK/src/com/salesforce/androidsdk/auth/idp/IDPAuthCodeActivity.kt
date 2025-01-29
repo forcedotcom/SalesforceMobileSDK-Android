@@ -101,6 +101,7 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.width(64.dp),
+                    // TODO fix theming
                     color = MaterialTheme.colorScheme.secondary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
@@ -124,7 +125,7 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
                         isHorizontalScrollBarEnabled = false
                         isVerticalScrollBarEnabled = false
 
-                        // Set WebViewClient and pass `isLoading` state
+                        // Set WebViewClient
                         webViewClient = object : android.webkit.WebViewClient() {
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 super.onPageFinished(view, url)
