@@ -3,8 +3,7 @@ name: Pull Request
 on:
   # Dangerious without Member Check setup!
   pull_request_target:
-    branches:
-      - dev
+    branches: [dev, master]
 
 jobs:
   test-orchestrator:
@@ -38,7 +37,7 @@ jobs:
           # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
           fetch-depth: 100
           # This is dangerous without the member check
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
@@ -58,4 +57,5 @@ jobs:
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
+      is_pr: true
     secrets: inherit
