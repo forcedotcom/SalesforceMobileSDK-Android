@@ -3,8 +3,7 @@ name: Pull Request
 on:
   # Dangerious without Member Check setup!
   pull_request_target:
-    branches:
-      - dev
+    branches: [dev, master]
 
 jobs:
   test-orchestrator:
@@ -58,4 +57,5 @@ jobs:
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
+      is_pr: true
     secrets: inherit
