@@ -12,47 +12,35 @@ coverage:
     project:
       default: false  # disable the default status that measures entire project
       SalesforceAnalytics:
-        target: auto
         paths:
           - "libs/SalesforceAnalytics/src/"
         flags:
           - SalesforceAnalytics
       SalesforceSDK:
-        target: auto
         paths:
           - "libs/SalesforceSDK/src/"
         flags:
           - SalesforceSDK
       SalesforceHybrid:
-        target: auto
         paths:
           - "libs/SalesforceHybrid/src/"
         flags:
           - SalesforceHybrid
       SmartStore:
-        target: auto
         paths:
           - "libs/SmartStore/src/"
         flags:
           - SmartStore
       MobileSync:
-        target: auto
         paths: 
           - "libs/MobileSync/src/"
         flags: 
           - MobileSync
       SalesforceReact:
-        target: auto
         paths:
           - "libs/SalesforceReact/src/"
         flags:
           - SalesforceReact
-      RestExplorer:
-        target: auto
-        paths: 
-          - "native/NativeSampleApps/RestExplorer/src/"
-        flags:
-          - RestExplorer
 
 ignore:
   - "hybrid"
@@ -65,6 +53,30 @@ flag_management:
     carryforward: true
 
 comment:
-  layout: "diff, flags, files"
+  layout: "diff, components, files"
   behavior: default
   require_changes: true
+
+component_management:
+  individual_components:
+    - component_id: SalesforceAnalytics  # this is an identifier that should not be changed
+      name: Analytics  # this is a display name, and can be changed freely
+      paths: 
+        - "libs/SalesforceAnalytics/src/"
+    - component_id: SalesforceSDK
+      paths: 
+        - "libs/SalesforceSDK/src/"
+    - component_id: SalesforceHybrid
+      name: Hybrid
+      paths: 
+        - "libs/SalesforceHybrid/src/"
+    - component_id: SmartStore
+      paths: 
+        - "libs/SmartStore/src/"
+    - component_id: MobileSync
+      paths: 
+        - "libs/MobileSync/src/"
+    - component_id: SalesforceReact
+      name: React
+      paths: 
+        - "libs/SalesforceReact/src/"
