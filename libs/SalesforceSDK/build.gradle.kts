@@ -15,6 +15,7 @@ plugins {
 dependencies {
     val composeVersion = "1.7.6"
     val livecycleVersion = "2.8.7"
+    val androidXActivityVersion = "1.10.0"
 
     api(project(":libs:SalesforceAnalytics"))
     api("com.squareup.okhttp3:okhttp:4.12.0")
@@ -29,8 +30,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.activity:activity-compose:1.10.0")
-    implementation("androidx.activity:activity-ktx:1.9.3")
-    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
+    implementation("androidx.activity:activity-compose:$androidXActivityVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$livecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$livecycleVersion")
