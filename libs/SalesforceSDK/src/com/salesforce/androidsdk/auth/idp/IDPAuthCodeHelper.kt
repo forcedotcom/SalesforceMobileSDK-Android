@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.net.Uri
-import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -68,8 +65,7 @@ internal class IDPAuthCodeHelper private constructor(
     )
 
     init {
-        webView.settings.javaScriptEnabled = true
-        webView.webViewClient = IDPWebViewClient()
+        webView.webViewClient = IDPWebViewClient(webView.webViewClient)
     }
 
     /**
@@ -165,7 +161,7 @@ internal class IDPAuthCodeHelper private constructor(
      * Web view client used to monitor redirects to determine login flow is complete
      * It also parses the last redirect to extract code
      */
-    inner class IDPWebViewClient : WebViewClient() {
+    inner class IDPWebViewClient(private val wrappedWebViewContent: WebViewClient) : WebViewClient() {
 
         fun sanitizeUrl(url: String):String {
             return url.replace("///", "/").lowercase()
@@ -208,15 +204,7 @@ internal class IDPAuthCodeHelper private constructor(
         }
 
         override fun onPageFinished(webView: WebView?, url: String?) {
-            super.onPageFinished(webView, url)
-            if (webView != null) {
-                (webView.parent as? RelativeLayout)?.let { parentView ->
-                    parentView.findViewById<ProgressBar>(R.id.sf__loading_spinner)?.let { spinner ->
-                        spinner.visibility = View.INVISIBLE
-                    }
-                }
-                webView.visibility = View.VISIBLE
-            }
+            wrappedWebViewContent.onPageFinished(webView, url)
         }
     }
 

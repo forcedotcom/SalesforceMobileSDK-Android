@@ -41,7 +41,7 @@ internal class PublicOverridesTest {
             override val webViewClient = OverrideWebViewClient()
 
             override fun shouldUseCertBasedAuth(): Boolean { return  true }
-            override fun onIDPLoginClick(v: View?) { }
+            override fun onIDPLoginClick() { }
             override fun onBioAuthClick(view: View?) { }
             override fun fixBackButtonBehavior(keyCode: Int): Boolean { return false }
             override fun certAuthOrLogin() { }

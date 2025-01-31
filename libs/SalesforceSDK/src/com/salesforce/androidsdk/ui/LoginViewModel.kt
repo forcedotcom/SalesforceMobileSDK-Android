@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import androidx.annotation.VisibleForTesting
@@ -50,7 +49,6 @@ import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -67,6 +65,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
+    internal var isIDPLoginFlowEnabled = derivedStateOf { SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled }
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
@@ -97,7 +96,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LoginOptions values
     var jwt: String? = null
     var additionalParameters = hashMapOf<String, String>()
-
 
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
