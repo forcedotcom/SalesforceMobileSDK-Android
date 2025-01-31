@@ -40,7 +40,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,7 +61,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -74,13 +72,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.color.sf__secondary_color
 import com.salesforce.androidsdk.R.string.sf__launch_idp
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginViewModel
 
 @Preview
 @Composable
@@ -183,7 +180,7 @@ fun LoginView() {
                         )
                     ) {
                         Text(
-                            text = stringResource(id = R.string.sf__launch_idp),
+                            text = stringResource(id = sf__launch_idp),
                             fontSize = 14.sp
                         )
                     }
