@@ -75,55 +75,74 @@ jobs:
       - uses: 'google-github-actions/setup-gcloud@v2'
         if: success() || failure()
       - name: Run Tests
+        continue-on-error: true
         if: success() || failure()
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          DEFAULT_API_VERSION: "34" 
+          PR_API_VERSION: "34" 
           FULL_API_RANGE: "28 29 30 31 32 33 34 35"
           IS_PR: ${{ inputs.is_pr }}
         run: |
-          DEVICES=""
+          LEVELS_TO_TEST=$FULL_API_RANGE
+
           if $IS_PR ; then
-            DEVICES="--device model=MediumPhone.arm,version=${DEFAULT_API_VERSION},locale=en,orientation=portrait "
-          else
-            for LEVEL in $FULL_API_RANGE
+            LEVELS_TO_TEST=$PR_API_VERSION
+          fi
+
+          mkdir firebase_results
+          for LEVEL in $LEVELS_TO_TEST
             do
-                DEVICES+="--device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait "
+              GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
+
+              gcloud firebase test android run \
+                --project mobile-apps-firebase-test \
+                --type instrumentation \
+                --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
+                --test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk \
+                --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
+                --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec" \
+                --directories-to-pull=/sdcard \
+                --results-dir=${GCLOUD_RESULTS_DIR} \
+                --results-history-name=${{ inputs.lib }} \
+                --timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1 || true
             done
-          fi
-
-          COMMAND="gcloud firebase test android run "
-          COMMAND+="--project mobile-apps-firebase-test "
-          COMMAND+="--type instrumentation "
-          COMMAND+="--app \"native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk\" "
-          COMMAND+="--test=libs/${{ inputs.lib }}/build/outputs/apk/androidTest/debug/${{ inputs.lib }}-debug-androidTest.apk "
-          COMMAND+="${DEVICES}"
-          COMMAND+="--environment-variables coverage=true,coverageFile=\"/sdcard/coverage.ec\" "
-          COMMAND+="--directories-to-pull=/sdcard  "
-          COMMAND+="--results-dir=${{ inputs.lib }}-${{github.run_number}} "
-          COMMAND+="--results-history-name=${{ inputs.lib }} "
-          COMMAND+="--timeout=20m --no-auto-google-login --no-record-video --no-performance-metrics --num-flaky-test-attempts=1"
-
-          eval "$COMMAND"
       - name: Copy Test Results
+        continue-on-error: true
         if: success() || failure()
+        env:
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          PR_API_VERSION: "34" 
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
+          IS_PR: ${{ inputs.is_pr }}
         run: |
-          gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} > /dev/null 2>&1
-          if [ $? == 0 ]
-          then
-            mkdir -p firebase/results
-            gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${{ inputs.lib }}-${{github.run_number}} | tail -1`*" ./firebase/
-            mv firebase/test_result_1.xml firebase/results
-          else
-            echo "No test results found"
-            exit 1
+          LEVELS_TO_TEST=$FULL_API_RANGE
+
+          if $IS_PR ; then
+            LEVELS_TO_TEST=$PR_API_VERSION
           fi
+
+          for LEVEL in $LEVELS_TO_TEST
+            do
+              GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
+
+              gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} > /dev/null 2>&1
+              if [ $? == 0 ] ; then
+                mkdir firebase_${LEVEL}
+                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} | tail -1`*" ./firebase_${LEVEL}/
+                mv firebase_${LEVEL}/test_result_1.xml firebase_results/api_${LEVEL}_test_result.xml
+              else
+                if $IS_PR ; then
+                  echo "No test results found"
+                  exit 1
+                fi
+              fi
+            done
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
           name: ${{ inputs.lib }} Test Results
-          path: firebase/results/*.xml    
+          path: firebase_results/**.xml    
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
