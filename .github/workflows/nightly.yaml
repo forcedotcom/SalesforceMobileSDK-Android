@@ -2,7 +2,7 @@ name: Nightly Tests
 
 on: 
   schedule:
-    - cron: "0 5 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
+    - cron: "0 6 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
 
