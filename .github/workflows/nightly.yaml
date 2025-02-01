@@ -12,7 +12,6 @@ jobs:
       fail-fast: false
       matrix:
         lib: [SalesforceAnalytics, SalesforceSDK, SmartStore, MobileSync, SalesforceHybrid, SalesforceReact]
-
     uses: ./.github/workflows/reusable-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
