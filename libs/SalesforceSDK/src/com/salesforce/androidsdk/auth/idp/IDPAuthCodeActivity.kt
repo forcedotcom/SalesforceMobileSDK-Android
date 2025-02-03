@@ -57,6 +57,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.theme.SalesforceTheme
+import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPAuthCodeActivityInterface
@@ -77,14 +79,17 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
         // Protects against screenshots.
         window.setFlags(LayoutParams.FLAG_SECURE, LayoutParams.FLAG_SECURE)
 
-        // TODO fix theming
-//        // Set theme
-//        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
-//        setTheme(if (isDarkTheme) R.style.SalesforceSDK_Dark_Login else R.style.SalesforceSDK)
-//        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+        // Make navigation and status visible always
+        SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+
+        // Set theme
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        val themeType:SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.DarkLogin else SalesforceThemeType.Light
 
         setContent {
-            IDPAuthCodeScreen(intent = intent)
+            SalesforceTheme(themeType = themeType) {
+                IDPAuthCodeScreen(intent = intent)
+            }
         }
     }
 

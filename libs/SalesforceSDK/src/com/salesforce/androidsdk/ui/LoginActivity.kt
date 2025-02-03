@@ -133,7 +133,8 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESP
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
-import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
+import com.salesforce.androidsdk.ui.theme.SalesforceTheme
+import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
@@ -227,10 +228,13 @@ open class LoginActivity: FragmentActivity() {
             window.setFlags(FLAG_SECURE, FLAG_SECURE)
         }
 
+        // Set theme
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        val themeType: SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.DarkLogin else SalesforceThemeType.Light
+
         // Set content
         setContent {
-            /* TODO: Update with support for light, dark and system themes: W-17687751 */
-            LoginWebviewTheme {
+            SalesforceTheme(themeType = themeType) {
                 LoginView()
             }
         }

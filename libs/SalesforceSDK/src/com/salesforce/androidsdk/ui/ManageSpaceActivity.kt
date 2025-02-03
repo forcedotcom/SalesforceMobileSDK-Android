@@ -37,28 +37,26 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.tooling.preview.Preview
-import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.string.app_name
 import com.salesforce.androidsdk.R.string.sf__manage_space_confirmation
 import com.salesforce.androidsdk.R.string.sf__manage_space_logout_no
 import com.salesforce.androidsdk.R.string.sf__manage_space_logout_yes
 import com.salesforce.androidsdk.R.string.sf__manage_space_title
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
+import com.salesforce.androidsdk.ui.theme.SalesforceTheme
+import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 
 /**
  * An activity which prompts the user to clear storage and informs the user that
@@ -76,15 +74,13 @@ open class ManageSpaceActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
+        // Set theme
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        val themeType: SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.Dark else SalesforceThemeType.Light
+
+        // Set content
         setContent {
-            /* TODO: Update with support for light, dark and system themes: W-17687751 */
-            MaterialTheme(
-                darkColorScheme(
-                    background = White,
-                    primary = White,
-                    primaryContainer = colorResource(sf__primary_color),
-                )
-            ) {
+            SalesforceTheme(themeType = themeType) {
                 ManageSpaceView()
             }
         }
