@@ -31,12 +31,17 @@ import kotlinx.serialization.json.Json
 
 /**
  * Models a `sfap_api` `feedback` endpoint request.
- * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=generateText
+ * See https://developer.salesforce.com/docs/einstein/genai/references/models-api?meta=submitFeedback
+ *
+ * The endpoint accepts a `appFeedback` object as well.  To provide
+ * `appFeedback`, subclass and introduce a new parameter of any object type
+ * named `appFeedback`.  Also, override the `toJson` method to use the subclass
+ * serializer instead of the the serializer provided by this class.
  */
 @Serializable
-data class SfapApiFeedbackRequestBody(
+@Suppress("unused")
+open class SfapApiFeedbackRequestBody(
     val id: String? = null,
-    val appFeedback: AppFeedback? = null,
     val appGeneration: String? = null,
     val appGenerationId: String? = null,
     val feedback: String? = null,
@@ -49,8 +54,5 @@ data class SfapApiFeedbackRequestBody(
      * Encodes this request body to JSON text.
      * @return This request body as JSON text
      */
-    fun toJson() = Json.encodeToString(serializer(), this)
-
-    @Serializable
-    class AppFeedback
+    open fun toJson() = Json.encodeToString(serializer(), this)
 }

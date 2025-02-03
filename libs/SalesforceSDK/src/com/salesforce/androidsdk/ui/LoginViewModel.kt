@@ -67,6 +67,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
+    internal var isIDPLoginFlowEnabled = derivedStateOf { SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled }
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
@@ -97,7 +98,6 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // LoginOptions values
     var jwt: String? = null
     var additionalParameters = hashMapOf<String, String>()
-
 
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)

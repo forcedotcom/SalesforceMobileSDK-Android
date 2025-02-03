@@ -1,0 +1,61 @@
+name: Pull Request
+
+on:
+  # Dangerious without Member Check setup!
+  pull_request_target:
+    branches: [dev, master]
+
+jobs:
+  test-orchestrator:
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+    outputs:
+      libs: ${{ steps.test-orchestrator.outputs.libs }}
+    steps:
+      - name: Check Write Permission
+        uses: octokit/request-action@v2.x
+        id: check_permissions
+        with:
+          route: GET /repos/${{ github.repository }}/collaborators/${{ github.triggering_actor }}/permission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug Permission Response
+        run: |
+          echo "Permission raw response: ${{ steps.check_permissions.outputs.data }}"
+      - name: Validate Write Permission
+        run: |
+          permission=$(echo "${{ fromJson(steps.check_permissions.outputs.data).permission }}")
+          echo "User ${{ github.triggering_actor }} has permission: $permission"
+          if [[ "$permission" != "write" && "$permission" != "admin" ]]; then
+            echo "User ${{ github.triggering_actor }} does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
+            exit 1
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
+          fetch-depth: 100
+          # This is dangerous without the member check
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Determine Tests to Run
+        id: test-orchestrator
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bundle exec danger --dangerfile=.github/DangerFiles/TestOrchestrator.rb --danger_id="TestOrchestrator"
+
+  android-pr:
+    needs: [test-orchestrator]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: ${{ fromJson(needs.test-orchestrator.outputs.libs) }}
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+      is_pr: true
+    secrets: inherit

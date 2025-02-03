@@ -133,7 +133,7 @@ data class SfapApiGenerationsResponseBody(
             @Serializable
             data class PromptTokensDetails(
                 @SerialName("cached_tokens") val cachedTokens: Int = 0,
-                @SerialName("audio_tokens") val audiTokens: Int = 0
+                @SerialName("audio_tokens") val audioTokens: Int = 0
             )
         }
     }
