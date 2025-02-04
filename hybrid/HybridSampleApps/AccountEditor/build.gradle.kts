@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 plugins {
     android
     `kotlin-android`
@@ -7,7 +5,7 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceHybrid"))
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.15.0")
 }
 
 android {

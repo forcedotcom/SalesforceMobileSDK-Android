@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
 rootProject.ext["PUBLISH_VERSION"] = "13.0.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceSDK"
@@ -88,6 +86,7 @@ android {
             java.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
             resources.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
             res.srcDirs(arrayOf("../test/SalesforceSDKTest/res"))
+            @Suppress("UnstableApiUsage")
             assets.directories.add("../../shared/test")
         }
     }

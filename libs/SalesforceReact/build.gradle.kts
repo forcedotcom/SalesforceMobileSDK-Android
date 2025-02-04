@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 import org.apache.tools.ant.taskdefs.condition.Os
 
 /**
