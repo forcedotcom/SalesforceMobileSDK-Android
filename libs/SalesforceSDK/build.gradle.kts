@@ -11,7 +11,7 @@ plugins {
 }
 
 dependencies {
-    val composeVersion = "1.7.6"
+    val composeVersion = "1.7.7"
     val livecycleVersion = "2.8.7"
     val androidXActivityVersion = "1.10.0"
 
@@ -38,7 +38,7 @@ dependencies {
     implementation("androidx.window:window:1.3.0")
     implementation("androidx.window:window-core:1.3.0")
     implementation("androidx.compose.material3:material3-android:1.3.1")
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    implementation(platform("androidx.compose:compose-bom:2025.01.01"))
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")

@@ -12,10 +12,10 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.13.1")
-    androidTestImplementation("androidx.test:runner:1.6.0")
-    androidTestImplementation("androidx.test:rules:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    implementation("androidx.core:core-ktx:1.15.0")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
 
 android {
