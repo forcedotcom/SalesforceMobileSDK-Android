@@ -51,6 +51,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.theme.SalesforceTheme
+import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 
 class DevInfoActivity : ComponentActivity() {
 
@@ -61,9 +63,14 @@ class DevInfoActivity : ComponentActivity() {
 
         val devInfoList = prepareListData(SalesforceSDKManager.getInstance().devSupportInfos)
 
-        // TODO fix theming
+        // Set theme
+        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
+        val themeType: SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.Dark else SalesforceThemeType.Light
+
         setContent {
-            DevInfoScreen(devInfoList)
+            SalesforceTheme(themeType = themeType) {
+                DevInfoScreen(devInfoList)
+            }
         }
     }
 
