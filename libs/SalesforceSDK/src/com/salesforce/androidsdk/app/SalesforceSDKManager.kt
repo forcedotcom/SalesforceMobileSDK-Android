@@ -55,8 +55,6 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
@@ -90,7 +88,6 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.JwtAccessToken
-import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -127,6 +124,9 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AppCreateComplete
@@ -399,14 +399,14 @@ open class SalesforceSDKManager protected constructor(
      * Defaults to androidx.compose.Material3.lightColorScheme()
      */
     @set:Synchronized
-    var lightColorScheme = lightColorScheme()
+    var lightColorScheme = sfLightColors()
 
     /**
      * The dark color scheme to use in Mobile SDK screens
      * Defaults to androidx.compose.Material3.darkColorScheme()
      */
     @set:Synchronized
-    var darkColorScheme = lightColorScheme()
+    var darkColorScheme = sfDarkColors()
 
     /**
      * The app name to use in [.getUserAgent]. This string must only contain

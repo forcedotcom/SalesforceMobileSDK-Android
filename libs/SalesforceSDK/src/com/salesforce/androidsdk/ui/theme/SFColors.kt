@@ -28,6 +28,12 @@ package com.salesforce.androidsdk.ui.theme
 
 import android.content.Context
 import androidx.annotation.ColorInt
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.salesforce.androidsdk.R
 
@@ -88,4 +94,58 @@ object SFColors {
 
     @ColorInt
     fun api35StatusBarColor(context: Context) = ContextCompat.getColor(context, R.color.sf__api_35_status_bar_color)
+}
+
+@Composable
+fun sfLightColors(): ColorScheme {
+    val context = LocalContext.current
+    return lightColorScheme(
+        primary = Color(SFColors.primaryColor(context)),
+        primaryContainer = Color(SFColors.primaryColorDark(context)),
+        secondary = Color(SFColors.secondaryColor(context)),
+        background = Color(SFColors.background(context)),
+        surface = Color(SFColors.layoutBackground(context)),
+        onPrimary = Color(SFColors.secondaryColor(context)),
+        onSecondary = Color(SFColors.textColor(context)),
+        onBackground = Color(SFColors.textColor(context)),
+        onSurface = Color(SFColors.textColor(context)),
+        inverseSurface = Color(SFColors.background(context)), // Login background
+        inverseOnSurface = Color(SFColors.background(context)) // Login navigation bar
+    )
+}
+
+@Composable
+fun sfDarkColors(): ColorScheme {
+    val context = LocalContext.current
+    return darkColorScheme(
+        primary = Color(SFColors.primaryColor(context)),
+        primaryContainer = Color(SFColors.primaryColorDark(context)),
+        secondary = Color(SFColors.secondaryColorDark(context)),
+        background = Color(SFColors.backgroundDark(context)),
+        surface = Color(SFColors.layoutBackgroundDark(context)),
+        onPrimary = Color(SFColors.secondaryColorDark(context)),
+        onSecondary = Color(SFColors.textColorDark(context)),
+        onBackground = Color(SFColors.textColorDark(context)),
+        onSurface = Color(SFColors.textColorDark(context)),
+        inverseSurface = Color(SFColors.backgroundDark(context)), // Default dark background
+        inverseOnSurface = Color(SFColors.backgroundDark(context)) // Default dark navigation bar
+    )
+}
+
+@Composable
+fun sfDarkLoginColors(): ColorScheme {
+    val context = LocalContext.current
+    return darkColorScheme(
+        primary = Color(SFColors.primaryColor(context)),
+        primaryContainer = Color(SFColors.primaryColorDark(context)),
+        secondary = Color(SFColors.secondaryColorDark(context)),
+        background = Color(SFColors.background(context)), // Overriding with light mode background
+        surface = Color(SFColors.layoutBackground(context)), // Overriding with light mode layout
+        onPrimary = Color(SFColors.secondaryColorDark(context)),
+        onSecondary = Color(SFColors.textColorDark(context)),
+        onBackground = Color(SFColors.textColorDark(context)),
+        onSurface = Color(SFColors.textColorDark(context)),
+        inverseSurface = Color(SFColors.background(context)), // Login-specific background
+        inverseOnSurface = Color(SFColors.background(context)) // Login-specific navigation bar
+    )
 }
