@@ -30,9 +30,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,7 +54,8 @@ fun UserAccountListItem(
     profilePhoto: Painter?,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(12.dp),
+        modifier = Modifier.fillMaxWidth()
+            .padding(start = 0.dp, top =  12.dp, bottom = 12.dp, end = 12.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -63,7 +65,7 @@ fun UserAccountListItem(
             Image(
                 profilePhoto ?: painterResource(R.drawable.sf__android_astro),
                 contentDescription = "Profile Photo",
-                modifier = Modifier.size(32.dp).padding(end = 12.dp)
+                modifier = Modifier.requiredHeight(32.dp).padding(end = 12.dp)
             )
         }
         Column {
@@ -85,7 +87,7 @@ fun UserAccountListItem(
     }
 }
 
-@Preview("", showBackground = true)
+@Preview("", showBackground = true, heightDp = 60)
 @Composable
 private fun UserAccountPreview() {
     UserAccountListItem(
@@ -95,17 +97,17 @@ private fun UserAccountPreview() {
     )
 }
 
-@Preview ("User account without provided profile picture.", showBackground = true)
+@Preview (name = "User account without provided profile picture.", showBackground = true, heightDp = 60)
 @Composable
 private fun UserAccountPreviewNoPic() {
     UserAccountListItem(
-        "Anther Test User",
+        "Another Test User",
         "https://mobilesdk.my.salesforce.com",
         null,
     )
 }
 
-@Preview ("User Account with very long username and server url.", showBackground = true)
+@Preview ("User Account with very long username and server url.", showBackground = true, heightDp = 60)
 @Composable
 private fun UserAccountPreviewLong() {
     UserAccountListItem(

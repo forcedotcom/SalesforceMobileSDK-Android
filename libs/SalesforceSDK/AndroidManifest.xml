@@ -50,7 +50,7 @@
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
+            android:theme="@style/AccountSwitcher"
             android:exported="false" />
 
         <!-- IDP auth code activity -->

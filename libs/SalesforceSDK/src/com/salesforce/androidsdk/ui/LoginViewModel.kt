@@ -223,6 +223,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     // returns a valid https server url or null if the users input is invalid.
     internal fun getValidServerUrl(url: String): String? {
         if (!url.contains(".")) return null
+        if (url.substringAfterLast(".").isEmpty()) return null
 
         return when {
             URLUtil.isHttpsUrl(url) -> url

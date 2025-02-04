@@ -52,7 +52,8 @@ fun LoginServerListItem(
     removeServer: (LoginServer) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(12.dp),
+        modifier = Modifier.fillMaxWidth()
+            .padding(start = 0.dp, top =  12.dp, bottom = 12.dp, end = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

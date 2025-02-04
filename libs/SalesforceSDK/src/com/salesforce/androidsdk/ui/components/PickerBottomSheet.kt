@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui.components
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,30 +53,37 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -95,6 +104,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val sheetState = rememberModalBottomSheetState()
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+    val activity = LocalContext.current.getActivity()
     val onNewLoginServerSelected = { newSelectedServer: Any? ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = false
@@ -106,10 +116,12 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val onLoginServerCancel = { viewModel.showServerPicker.value = false }
     val onUserAccountSelected = { userAccount: Any? ->
         if (userAccount != null && userAccount is UserAccount) {
+            activity?.finish()
             userAccountManager.switchToUser(userAccount)
         }
     }
     val onUserSwitchCancel = {
+        activity?.finish()
         if (userAccountManager.currentUser == null) {
             userAccountManager.switchToUser(userAccountManager.authenticatedUsers.first())
         }
@@ -140,10 +152,13 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
                 pickerStyle,
                 sheetState,
                 list = userAccountManager.authenticatedUsers,
-                selectedListItem = userAccountManager.currentAccount,
+                selectedListItem = userAccountManager.currentUser,
                 onItemSelected = onUserAccountSelected,
                 onCancel = onUserSwitchCancel,
-                addNewAccount = { userAccountManager.switchToNewUser() },
+                addNewAccount = {
+                    userAccountManager.switchToNewUser()
+                    activity?.finish()
+                },
             )
     }
 
@@ -181,10 +196,7 @@ private fun PickerBottomSheet(
                 if (addingNewServer) {
                     // Add Connection Back Arrow
                     IconButton(
-                        onClick = {
-                            addingNewServer = false
-                            onCancel()
-                        },
+                        onClick = { addingNewServer = false },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
                             contentColor = Color(0xFF747474),  // TODO: fix color
@@ -239,53 +251,13 @@ private fun PickerBottomSheet(
 
             // Add Connection Name, Url, and Save button.
             if (pickerStyle == PickerStyle.LoginServerPicker && addingNewServer) {
-                var name by remember { mutableStateOf("") }
-                var url by remember { mutableStateOf("") }
-
-                // Name input field
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
-                    modifier =  Modifier
-                        .padding(start = 12.dp, end = 12.dp, top = 6.dp)
-                        .fillMaxWidth(),
+                AddConnection(
+                    getValidServer = getValidServer,
+                    addNewLoginServer = { newServerName: String, newServerUrl: String ->
+                        addingNewServer  = false
+                        addNewLoginServer?.invoke(newServerName, newServerUrl)
+                    }
                 )
-                // Url input field
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
-                    modifier =  Modifier
-                        .padding(start = 12.dp, end = 12.dp, top = 6.dp)
-                        .fillMaxWidth(),
-                )
-
-                val serverUrl = getValidServer?.let { it(url) }
-                val validInput = name.isNotBlank() && serverUrl != null
-                Button(
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonColors(
-                        containerColor = Color(0xFF0176D3),
-                        contentColor = Color(0xFF0176D3),
-                        disabledContainerColor = Color(0xFFE5E5E5),
-                        disabledContentColor = Color(0xFFE5E5E5),
-                    ),
-                    enabled = validInput,
-                    onClick = {
-                        addNewLoginServer?.let { it(name, url) }
-                        addingNewServer = false
-                    },
-                ) {
-                    Text(
-                        text = "Save",
-                        fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
-                        color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
-                    )
-                }
             } else {
                 // List of Login Servers or User Accounts
                 val mutableList = remember { list.toMutableStateList() }
@@ -300,6 +272,10 @@ private fun PickerBottomSheet(
                         RadioButton(
                             selected = (listItem == selectedListItem),
                             onClick = { onItemSelected(listItem) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF0176D3),
+                                unselectedColor = Color(0xFF747474)
+                            ),
                         )
 
                         when (pickerStyle) {
@@ -367,6 +343,85 @@ private fun PickerBottomSheet(
     }
 }
 
+@Composable
+private fun AddConnection(
+    getValidServer: ((String) -> String?)? = null,
+    addNewLoginServer: ((String, String) -> Unit)? = null,
+    previewName: String = "",
+    previewUrl: String = "",
+) {
+    var name by remember { mutableStateOf(previewName) }
+    var url by remember { mutableStateOf(previewUrl) }
+    val focusRequester = remember { FocusRequester() }
+
+    // Name input field
+    OutlinedTextField(
+        value = name,
+        onValueChange = { name = it },
+        label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+        singleLine = true,
+        modifier =  Modifier.fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+            .focusRequester(focusRequester),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color(0xFF0176D3),
+            focusedLabelColor = Color(0xFF0176D3),
+            focusedContainerColor = Color.Transparent,
+            unfocusedIndicatorColor = Color(0xFF939393),
+            unfocusedLabelColor = Color(0xFF939393),
+            unfocusedContainerColor = Color.Transparent,
+        ),
+    )
+    // Url input field
+    OutlinedTextField(
+        value = url,
+        onValueChange = { url = it },
+        label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+        singleLine = true,
+        modifier =  Modifier.fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color(0xFF0176D3),
+            focusedLabelColor = Color(0xFF0176D3),
+            focusedContainerColor = Color.Transparent,
+            unfocusedIndicatorColor = Color(0xFF939393),
+            unfocusedLabelColor = Color(0xFF939393),
+            unfocusedContainerColor = Color.Transparent,
+        ),
+    )
+
+    val serverUrl = getValidServer?.let { it(url) }
+    val validInput = name.isNotBlank() && serverUrl != null
+    Button(
+        modifier = Modifier
+            .padding(12.dp)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = ButtonColors(
+            containerColor = Color(0xFF0176D3),
+            contentColor = Color(0xFF0176D3),
+            disabledContainerColor = Color(0xFFE5E5E5),
+            disabledContentColor = Color(0xFFE5E5E5),
+        ),
+        enabled = validInput,
+        onClick = { addNewLoginServer?.let { it(name, url) } },
+    ) {
+        Text(
+            text = "Save",
+            fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+            color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
+        )
+    }
+
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+}
+
+// Get access to host activity from within Compose.  tailrec makes this safe.
+private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
+    is FragmentActivity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 //@PreviewScreenSizes
@@ -405,6 +460,28 @@ private fun PickerBottomSheetPreview(
                 onItemSelected = {},
                 onCancel = {},
             )
+    }
+}
+
+//@PreviewScreenSizes
+@Preview("Default", showBackground = true)
+@Composable
+private fun AddConnectionPreview() {
+    Column {
+        AddConnection()
+    }
+}
+
+//@PreviewScreenSizes
+@Preview("Values", showBackground = true)
+@Composable
+private fun AddConnectionValuesPreview() {
+    Column {
+        AddConnection(
+            getValidServer = { server: String -> server },
+            previewName = "New Server",
+            previewUrl = "https://login.salesforce.com"
+        )
     }
 }
 
