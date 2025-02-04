@@ -45,6 +45,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,8 +58,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.ui.theme.SalesforceTheme
-import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPAuthCodeActivityInterface
@@ -82,12 +81,9 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
         // Make navigation and status visible always
         SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
 
-        // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
-        val themeType:SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.DarkLogin else SalesforceThemeType.Light
-
+        // Set content
         setContent {
-            SalesforceTheme(themeType = themeType) {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme) {
                 IDPAuthCodeScreen(intent = intent)
             }
         }

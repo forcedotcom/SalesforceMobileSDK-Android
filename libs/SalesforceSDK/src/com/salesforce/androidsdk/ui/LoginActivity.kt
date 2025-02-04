@@ -93,6 +93,7 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat.getMainExecutor
@@ -133,8 +134,6 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESP
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
-import com.salesforce.androidsdk.ui.theme.SalesforceTheme
-import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
@@ -228,13 +227,9 @@ open class LoginActivity: FragmentActivity() {
             window.setFlags(FLAG_SECURE, FLAG_SECURE)
         }
 
-        // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
-        val themeType: SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.DarkLogin else SalesforceThemeType.Light
-
         // Set content
         setContent {
-            SalesforceTheme(themeType = themeType) {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme) {
                 LoginView()
             }
         }

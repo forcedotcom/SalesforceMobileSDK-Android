@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -51,8 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.ui.theme.SalesforceTheme
-import com.salesforce.androidsdk.ui.theme.SalesforceThemeType
 
 class DevInfoActivity : ComponentActivity() {
 
@@ -63,12 +62,8 @@ class DevInfoActivity : ComponentActivity() {
 
         val devInfoList = prepareListData(SalesforceSDKManager.getInstance().devSupportInfos)
 
-        // Set theme
-        val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
-        val themeType: SalesforceThemeType = if (isDarkTheme) SalesforceThemeType.Dark else SalesforceThemeType.Light
-
         setContent {
-            SalesforceTheme(themeType = themeType) {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme) {
                 DevInfoScreen(devInfoList)
             }
         }
