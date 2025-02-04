@@ -73,7 +73,6 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
-import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
 import com.salesforce.androidsdk.analytics.security.Encryptor
@@ -87,7 +86,6 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.JwtAccessToken
-import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -124,6 +122,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AppCreateComplete
@@ -947,7 +946,6 @@ open class SalesforceSDKManager protected constructor(
         showLoginPage: Boolean = true,
         reason: LogoutReason = UNKNOWN,
     ) {
-        createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
             appContext,
             accountType,
