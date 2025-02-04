@@ -171,6 +171,7 @@ fun LoginView() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
+                    // TODO: Restore Biometric Authentication button here.
                     if (viewModel.isIDPLoginFlowEnabled.value) {
                         Button(
                             onClick = { activity.onIDPLoginClick() },
