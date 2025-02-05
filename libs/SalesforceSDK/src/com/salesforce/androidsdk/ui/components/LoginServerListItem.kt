@@ -81,7 +81,7 @@ fun LoginServerListItem(
     val deleteButtonPixels = with(LocalDensity.current) { DELETE_BUTTON_SIZE.dp.roundToPx() }
     val offset by animateIntOffsetAsState(
         targetValue = if (deleting) {
-            IntOffset(-DELETE_BUTTON_SIZE, IntOffset.Zero.y)
+            IntOffset(-deleteButtonPixels, IntOffset.Zero.y)
         } else {
             IntOffset.Zero
         },

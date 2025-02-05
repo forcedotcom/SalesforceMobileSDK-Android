@@ -385,10 +385,13 @@ private fun AddConnection(
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color(0xFF0176D3),
             focusedLabelColor = Color(0xFF0176D3),
+            focusedTextColor = Color(0xFF181818),
             focusedContainerColor = Color.Transparent,
             unfocusedIndicatorColor = Color(0xFF939393),
             unfocusedLabelColor = Color(0xFF939393),
             unfocusedContainerColor = Color.Transparent,
+            unfocusedTextColor = Color(0xFF747474),
+            cursorColor = Color(0xFF0176D3),
         ),
     )
     // Url input field
@@ -402,10 +405,13 @@ private fun AddConnection(
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color(0xFF0176D3),
             focusedLabelColor = Color(0xFF0176D3),
+            focusedTextColor = Color(0xFF181818),
             focusedContainerColor = Color.Transparent,
             unfocusedIndicatorColor = Color(0xFF939393),
             unfocusedLabelColor = Color(0xFF939393),
             unfocusedContainerColor = Color.Transparent,
+            unfocusedTextColor = Color(0xFF747474),
+            cursorColor = Color(0xFF0176D3),
         ),
     )
 
