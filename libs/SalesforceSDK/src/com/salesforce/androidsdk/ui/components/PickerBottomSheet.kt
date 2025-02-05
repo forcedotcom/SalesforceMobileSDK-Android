@@ -43,6 +43,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -79,10 +82,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -195,9 +198,7 @@ private fun PickerBottomSheet(
         val scope = rememberCoroutineScope()
         val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
 
-        Column(
-//            modifier = Modifier.verticalScroll(rememberScrollState())
-        ) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -320,7 +321,7 @@ private fun PickerBottomSheet(
                                         /*
                                     TODO: Remove this mock when a UserAccount can be created in without
                                      SalesforceSDKManger (for previews).  This would be trivial with an
-                                     internal constructor if the class was converted to Koltin.
+                                     internal constructor if the class was converted to Kotlin.
                                      */
                                     } else if (listItem is UserAccountMock) {
                                         UserAccountListItem(
@@ -383,48 +384,55 @@ private fun AddConnection(
     var name by remember { mutableStateOf(previewName) }
     var url by remember { mutableStateOf(previewUrl) }
     val focusRequester = remember { FocusRequester() }
+    val sfTextSection = TextSelectionColors(
+        handleColor = Color(0xFF0176D3),
+        backgroundColor = Color(0xFF0176D3).copy(alpha = 0.2f),
+    )
 
-    // Name input field
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = it },
-        label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
-        singleLine = true,
-        modifier =  Modifier.fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 6.dp)
-            .focusRequester(focusRequester),
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Color(0xFF0176D3),
-            focusedLabelColor = Color(0xFF0176D3),
-            focusedTextColor = Color(0xFF181818),
-            focusedContainerColor = Color.Transparent,
-            unfocusedIndicatorColor = Color(0xFF939393),
-            unfocusedLabelColor = Color(0xFF939393),
-            unfocusedContainerColor = Color.Transparent,
-            unfocusedTextColor = Color(0xFF747474),
-            cursorColor = Color(0xFF0176D3),
-        ),
-    )
-    // Url input field
-    OutlinedTextField(
-        value = url,
-        onValueChange = { url = it },
-        label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
-        singleLine = true,
-        modifier =  Modifier.fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 6.dp),
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Color(0xFF0176D3),
-            focusedLabelColor = Color(0xFF0176D3),
-            focusedTextColor = Color(0xFF181818),
-            focusedContainerColor = Color.Transparent,
-            unfocusedIndicatorColor = Color(0xFF939393),
-            unfocusedLabelColor = Color(0xFF939393),
-            unfocusedContainerColor = Color.Transparent,
-            unfocusedTextColor = Color(0xFF747474),
-            cursorColor = Color(0xFF0176D3),
-        ),
-    )
+    CompositionLocalProvider(LocalTextSelectionColors provides sfTextSection) {
+        // Name input field
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+                .focusRequester(focusRequester),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color(0xFF0176D3),
+                focusedLabelColor = Color(0xFF0176D3),
+                focusedTextColor = Color(0xFF181818),
+                focusedContainerColor = Color.Transparent,
+                unfocusedIndicatorColor = Color(0xFF939393),
+                unfocusedLabelColor = Color(0xFF939393),
+                unfocusedContainerColor = Color.Transparent,
+                unfocusedTextColor = Color(0xFF747474),
+                cursorColor = Color(0xFF0176D3),
+            ),
+        )
+        // Url input field
+        OutlinedTextField(
+            value = url,
+            onValueChange = { url = it },
+            label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier.fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color(0xFF0176D3),
+                focusedLabelColor = Color(0xFF0176D3),
+                focusedTextColor = Color(0xFF181818),
+                focusedContainerColor = Color.Transparent,
+                unfocusedIndicatorColor = Color(0xFF939393),
+                unfocusedLabelColor = Color(0xFF939393),
+                unfocusedContainerColor = Color.Transparent,
+                unfocusedTextColor = Color(0xFF747474),
+                cursorColor = Color(0xFF0176D3),
+            ),
+        )
+    }
 
     val serverUrl = getValidServer?.let { it(url) }
     val validInput = name.isNotBlank() && serverUrl != null
