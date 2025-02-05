@@ -30,10 +30,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -51,6 +52,8 @@ import com.salesforce.androidsdk.R
 fun UserAccountListItem(
     displayName: String,
     loginServer: String,
+    selected: Boolean,
+    onItemSelected: () -> Unit,
     profilePhoto: Painter?,
 ) {
     Row(
@@ -59,6 +62,14 @@ fun UserAccountListItem(
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        RadioButton(
+            selected = selected,
+            onClick = { onItemSelected() },
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFF0176D3),
+                unselectedColor = Color(0xFF747474)
+            ),
+        )
         Column(
             horizontalAlignment = Alignment.Start,
         ) {
@@ -93,6 +104,20 @@ private fun UserAccountPreview() {
     UserAccountListItem(
         "Test User",
         "https://login.salesforce.com",
+        selected = false,
+        onItemSelected = { },
+        painterResource(R.drawable.sf__salesforce_logo),
+    )
+}
+
+@Preview("Selected", showBackground = true, heightDp = 60)
+@Composable
+private fun UserAccountSelectedPreview() {
+    UserAccountListItem(
+        "Test User",
+        "https://login.salesforce.com",
+        selected = true,
+        onItemSelected = { },
         painterResource(R.drawable.sf__salesforce_logo),
     )
 }
@@ -103,7 +128,9 @@ private fun UserAccountPreviewNoPic() {
     UserAccountListItem(
         "Another Test User",
         "https://mobilesdk.my.salesforce.com",
-        null,
+        selected = false,
+        onItemSelected = { },
+        profilePhoto = null,
     )
 }
 
@@ -113,7 +140,9 @@ private fun UserAccountPreviewLong() {
     UserAccountListItem(
         "Looooooooooooooong Naaaaaaaaaaaaaaaaaaaammmmmmeeeee",
         "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
-        null,
+        selected = false,
+        onItemSelected = { },
+        profilePhoto = null,
     )
 }
 

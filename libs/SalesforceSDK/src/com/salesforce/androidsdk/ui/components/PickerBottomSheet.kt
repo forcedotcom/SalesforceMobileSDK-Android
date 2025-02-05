@@ -29,6 +29,9 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,8 +55,6 @@ import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -65,6 +66,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -79,7 +81,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,6 +91,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.LoginViewModel
+import kotlinx.coroutines.launch
 
 enum class PickerStyle {
     LoginServerPicker,
@@ -183,9 +185,10 @@ private fun PickerBottomSheet(
         sheetState = sheetState,
         dragHandle = null,
         shape = RoundedCornerShape(10.dp),
-        containerColor = Color.White
+        containerColor = Color(0xFFFFFFFF),
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row(
@@ -193,8 +196,12 @@ private fun PickerBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (addingNewServer) {
-                    // Add Connection Back Arrow
+                // Add Connection Back Arrow
+                AnimatedVisibility(
+                    visible = addingNewServer,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                ) {
                     IconButton(
                         onClick = { addingNewServer = false },
                         colors = IconButtonColors(
@@ -230,8 +237,9 @@ private fun PickerBottomSheet(
                 // Close Button
                 IconButton(
                     onClick = {
-                        addingNewServer = false
-                        onCancel()
+                        scope.launch {
+                            sheetState.hide().also { onCancel() }
+                        }
                   },
                     colors = IconButtonColors(
                         containerColor = Color.Transparent,
@@ -250,39 +258,42 @@ private fun PickerBottomSheet(
             HorizontalDivider(thickness = 1.dp)
 
             // Add Connection Name, Url, and Save button.
-            if (pickerStyle == PickerStyle.LoginServerPicker && addingNewServer) {
-                AddConnection(
-                    getValidServer = getValidServer,
-                    addNewLoginServer = { newServerName: String, newServerUrl: String ->
-                        addingNewServer  = false
-                        addNewLoginServer?.invoke(newServerName, newServerUrl)
-                    }
-                )
-            } else {
-                // List of Login Servers or User Accounts
+            AnimatedVisibility(
+                visible = addingNewServer,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Column {
+                    AddConnection(
+                        getValidServer = getValidServer,
+                        addNewLoginServer = { newServerName: String, newServerUrl: String ->
+                            addingNewServer = false
+                            addNewLoginServer?.invoke(newServerName, newServerUrl)
+                        }
+                    )
+                }
+            }
+
+            // List of Login Servers or User Accounts
+            if (!addingNewServer) {
                 val mutableList = remember { list.toMutableStateList() }
                 mutableList.forEach { listItem ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth().clickable(
                             onClickLabel = "Login server selected.",
+                            enabled = true,
                             onClick = { onItemSelected(listItem) },
                         )
                     ) {
-                        RadioButton(
-                            selected = (listItem == selectedListItem),
-                            onClick = { onItemSelected(listItem) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF0176D3),
-                                unselectedColor = Color(0xFF747474)
-                            ),
-                        )
-
                         when (pickerStyle) {
                             PickerStyle.LoginServerPicker ->
                                 if (listItem is LoginServer) {
                                     LoginServerListItem(
                                         server = listItem,
+                                        selected = (listItem == selectedListItem),
+                                        onItemSelected = onItemSelected,
                                         removeServer = { server: LoginServer ->
                                             mutableList.remove(listItem)
                                             removeLoginServer?.let { it(server) }
@@ -293,15 +304,23 @@ private fun PickerBottomSheet(
                             PickerStyle.UserAccountPicker -> {
                                 if (listItem is UserAccount) {
                                     UserAccountListItem(
-                                        displayName = listItem .displayName,
+                                        displayName = listItem.displayName,
                                         loginServer = listItem.loginServer,
+                                        selected = (listItem == selectedListItem),
+                                        onItemSelected = { onItemSelected(listItem) },
                                         profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                     )
-                                }
-                                else if (listItem is UserAccountMock) {
+                                    /*
+                                    TODO: Remove this mock when a UserAccount can be created in without
+                                     SalesforceSDKManger (for previews).  This would be trivial with an
+                                     internal constructor if the class was converted to Koltin.
+                                     */
+                                } else if (listItem is UserAccountMock) {
                                     UserAccountListItem(
-                                        displayName = listItem .displayName,
+                                        displayName = listItem.displayName,
                                         loginServer = listItem.loginServer,
+                                        selected = (listItem == selectedListItem),
+                                        onItemSelected = { },
                                         profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                     )
                                 }
@@ -316,7 +335,7 @@ private fun PickerBottomSheet(
 
                 OutlinedButton(
                     onClick = {
-                        when(pickerStyle) {
+                        when (pickerStyle) {
                             PickerStyle.LoginServerPicker -> addingNewServer = true
                             PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
                         }
@@ -335,7 +354,7 @@ private fun PickerBottomSheet(
                         color = Color(0xFF0B5CAB),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(0.dp),
+                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
                     )
                 }
             }
@@ -410,13 +429,14 @@ private fun AddConnection(
             text = "Save",
             fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
             color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
+            modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
         )
     }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 }
 
-// Get access to host activity from within Compose.  tailrec makes this safe.
+// Get access to host activity from within Compose.  tail rec makes this safe.
 private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     is FragmentActivity -> this
     is ContextWrapper -> baseContext.getActivity()

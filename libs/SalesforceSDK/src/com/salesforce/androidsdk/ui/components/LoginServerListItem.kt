@@ -26,38 +26,91 @@
  */
 package com.salesforce.androidsdk.ui.components
 
+import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateIntOffsetAsState
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 
+const val DELETE_BUTTON_SIZE = 80
+
+@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun LoginServerListItem(
     server: LoginServer,
+    selected: Boolean,
+    onItemSelected: (Any?) -> Unit,
+    previewDeleting: Boolean = false,
     removeServer: (LoginServer) -> Unit,
 ) {
+    var deleting by remember { mutableStateOf(previewDeleting) }
+    val deleteButtonPixels = with(LocalDensity.current) { DELETE_BUTTON_SIZE.dp.roundToPx() }
+    val offset by animateIntOffsetAsState(
+        targetValue = if (deleting) {
+            IntOffset(-DELETE_BUTTON_SIZE, IntOffset.Zero.y)
+        } else {
+            IntOffset.Zero
+        },
+        label = "offset"
+    )
+
     Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(start = 0.dp, top =  12.dp, bottom = 12.dp, end = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .height(intrinsicSize = IntrinsicSize.Max)
+            .clickable {
+                if (deleting) {
+                    deleting = false
+                } else {
+                    onItemSelected(server)
+                }
+            }
     ) {
-        Column(modifier = Modifier.weight(10f)) {
+        RadioButton(
+            selected = selected,
+            onClick = { onItemSelected(server) },
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFF0176D3),
+                unselectedColor = Color(0xFF747474)
+            ),
+            modifier = Modifier.offset{ offset }
+        )
+        Column(modifier = Modifier.weight(1f).padding(top = 12.dp, bottom = 12.dp).offset{ offset }) {
             Text(
                 server.name,
                 fontSize = 16.sp,
@@ -73,20 +126,34 @@ fun LoginServerListItem(
             )
         }
 
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.weight(1f),
-        ) {
-            if (server.isCustom) {
+        if (server.isCustom) {
+            if (!deleting) {
                 IconButton(
-                    onClick = {
-                        // TODO: implement final UX
-                        removeServer(server)
-                    },
+                    onClick = { deleting = true },
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                        .offset(x = offset.x.dp * -1)
                 ) {
                     Icon(
                         Icons.Outlined.Delete,
                         contentDescription = "Remove Server",
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = deleting,
+                enter =  slideInHorizontally { deleteButtonPixels },
+                exit = shrinkHorizontally { -deleteButtonPixels }
+            ) {
+                Box(
+                    modifier = Modifier.background(Color(0xFFBA0517))
+                        .size(80.dp)
+                        .clickable { removeServer(server) }
+                ) {
+                    Text(
+                        text = "Delete",
+                        color = Color(0xFFFFFFFF),
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
@@ -97,13 +164,23 @@ fun LoginServerListItem(
 @Preview("Default Server", showBackground = true)
 @Composable
 private fun DefaultServerPreview() {
-    LoginServerListItem(LoginServer("Production", "https://login.salesforce.com", false)) {}
+    LoginServerListItem(
+        server = LoginServer("Production", "https://login.salesforce.com", false),
+        selected = true,
+        onItemSelected = { },
+        removeServer = { },
+    )
 }
 
 @Preview("Custom Server", showBackground = true)
 @Composable
 private fun CustomServerPreview() {
-    LoginServerListItem(LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true)) {}
+    LoginServerListItem(
+        server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
+        selected = false,
+        onItemSelected = { },
+        removeServer = { },
+    )
 
 }
 
@@ -111,12 +188,25 @@ private fun CustomServerPreview() {
 @Composable
 private fun LongServerPreview() {
     LoginServerListItem(
-        LoginServer(
+        server = LoginServer(
             "Custom Long Custom Long Custom Long Custom Long Custom Long ",
             "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
             true,
-        )
-    ) {}
-
+        ),
+        selected = false,
+        onItemSelected = { },
+        removeServer = { },
+    )
 }
 
+@Preview("Deleting", showBackground = true, heightDp = 70)
+@Composable
+private fun DeletingLoginServer() {
+    LoginServerListItem(
+        server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
+        selected = false,
+        previewDeleting = true,
+        onItemSelected = { },
+        removeServer = { },
+    )
+}
