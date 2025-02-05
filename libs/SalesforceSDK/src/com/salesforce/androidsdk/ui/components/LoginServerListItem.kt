@@ -33,6 +33,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +45,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -93,13 +95,18 @@ fun LoginServerListItem(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Max)
-            .clickable {
-                if (deleting) {
-                    deleting = false
-                } else {
-                    onItemSelected(server)
-                }
-            }
+            .clickable(
+                onClickLabel = "Login server selected.",
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = Color(0xFF0B5CAB)),
+                onClick = {
+                    if (deleting) {
+                        deleting = false
+                    } else {
+                        onItemSelected(server)
+                    }
+                },
+            )
     ) {
         RadioButton(
             selected = selected,
@@ -134,8 +141,9 @@ fun LoginServerListItem(
                         .offset(x = offset.x.dp * -1)
                 ) {
                     Icon(
-                        Icons.Outlined.Delete,
+                        Icons.TwoTone.Delete,
                         contentDescription = "Remove Server",
+                        tint = Color(0xFF747474)
                     )
                 }
             }

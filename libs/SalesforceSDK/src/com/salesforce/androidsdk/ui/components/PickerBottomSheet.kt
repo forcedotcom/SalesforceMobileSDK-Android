@@ -32,7 +32,7 @@ import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,9 +52,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -62,6 +64,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,7 +84,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
@@ -184,11 +186,12 @@ private fun PickerBottomSheet(
         onDismissRequest = { onCancel() },
         sheetState = sheetState,
         dragHandle = null,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(9.dp),
         containerColor = Color(0xFFFFFFFF),
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+        val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row(
@@ -255,7 +258,7 @@ private fun PickerBottomSheet(
                     )
                 }
             }
-            HorizontalDivider(thickness = 1.dp)
+            HorizontalDivider(thickness = 1.dp, color = Color(0xFFE5E5E5))
 
             // Add Connection Name, Url, and Save button.
             AnimatedVisibility(
@@ -281,11 +284,6 @@ private fun PickerBottomSheet(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().clickable(
-                            onClickLabel = "Login server selected.",
-                            enabled = true,
-                            onClick = { onItemSelected(listItem) },
-                        )
                     ) {
                         when (pickerStyle) {
                             PickerStyle.LoginServerPicker ->
@@ -328,34 +326,37 @@ private fun PickerBottomSheet(
                         }
                     }
                     HorizontalDivider(
-                        thickness = Dp.Hairline,
+                        thickness = 1.dp,
                         modifier = Modifier.padding(horizontal = 12.dp),
+                        color = Color(0xFFE5E5E5),
                     )
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        when (pickerStyle) {
-                            PickerStyle.LoginServerPicker -> addingNewServer = true
-                            PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
-                        }
-                    },
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-
-                    ) {
-                    Text(
-                        text = when (pickerStyle) {
-                            PickerStyle.LoginServerPicker -> "Add New Connection"
-                            PickerStyle.UserAccountPicker -> "Add New Account"
+                CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
+                    OutlinedButton(
+                        onClick = {
+                            when (pickerStyle) {
+                                PickerStyle.LoginServerPicker -> addingNewServer = true
+                                PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
+                            }
                         },
-                        color = Color(0xFF0B5CAB),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
-                    )
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(9.dp),
+                        border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
+                    ) {
+                        Text(
+                            text = when (pickerStyle) {
+                                PickerStyle.LoginServerPicker -> "Add New Connection"
+                                PickerStyle.UserAccountPicker -> "Add New Account"
+                            },
+                            color = Color(0xFF0B5CAB),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                        )
+                    }
                 }
             }
         }
@@ -421,7 +422,7 @@ private fun AddConnection(
         modifier = Modifier
             .padding(12.dp)
             .fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(9.dp),
         colors = ButtonColors(
             containerColor = Color(0xFF0176D3),
             contentColor = Color(0xFF0176D3),
