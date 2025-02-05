@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,7 +38,9 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,10 +61,16 @@ fun UserAccountListItem(
     profilePhoto: Painter?,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
-            .padding(start = 0.dp, top =  12.dp, bottom = 12.dp, end = 12.dp),
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .clickable(
+                onClickLabel = "Login server selected.",
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = Color(0xFF181818)),
+            ) {
+                onItemSelected()
+            },
     ) {
         RadioButton(
             selected = selected,
@@ -76,10 +86,10 @@ fun UserAccountListItem(
             Image(
                 profilePhoto ?: painterResource(R.drawable.sf__android_astro),
                 contentDescription = "Profile Photo",
-                modifier = Modifier.requiredHeight(32.dp).padding(end = 12.dp)
+                modifier = Modifier.requiredHeight(32.dp)
             )
         }
-        Column {
+        Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 displayName,
                 fontSize = 16.sp,

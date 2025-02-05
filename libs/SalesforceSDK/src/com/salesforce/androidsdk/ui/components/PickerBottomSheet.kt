@@ -288,8 +288,6 @@ private fun PickerBottomSheet(
                 LazyColumn {
                     items(mutableList) { listItem ->
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.animateItem(
                                 placementSpec = tween(),
                                 fadeOutSpec = tween(500),
