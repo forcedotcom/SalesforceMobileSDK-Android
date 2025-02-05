@@ -30,6 +30,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -39,9 +40,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -78,6 +79,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -193,7 +195,9 @@ private fun PickerBottomSheet(
         val scope = rememberCoroutineScope()
         val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
 
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(
+//            modifier = Modifier.verticalScroll(rememberScrollState())
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -279,57 +283,63 @@ private fun PickerBottomSheet(
 
             // List of Login Servers or User Accounts
             if (!addingNewServer) {
-                val mutableList = remember { list.toMutableStateList() }
-                mutableList.forEach { listItem ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        when (pickerStyle) {
-                            PickerStyle.LoginServerPicker ->
-                                if (listItem is LoginServer) {
-                                    LoginServerListItem(
-                                        server = listItem,
-                                        selected = (listItem == selectedListItem),
-                                        onItemSelected = onItemSelected,
-                                        removeServer = { server: LoginServer ->
-                                            mutableList.remove(listItem)
-                                            removeLoginServer?.let { it(server) }
-                                        }
-                                    )
-                                }
+                val mutableList = list.toMutableStateList()
+                LazyColumn {
+                    items(mutableList) { listItem ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.animateItem(
+                                placementSpec = tween(),
+                                fadeOutSpec = tween(500),
+                            )
+                        ) {
+                            when (pickerStyle) {
+                                PickerStyle.LoginServerPicker ->
+                                    if (listItem is LoginServer) {
+                                        LoginServerListItem(
+                                            server = listItem,
+                                            selected = (listItem == selectedListItem),
+                                            onItemSelected = onItemSelected,
+                                            removeServer = { server: LoginServer ->
+                                                mutableList.remove(listItem)
+                                                removeLoginServer?.let { it(server) }
+                                            }
+                                        )
+                                    }
 
-                            PickerStyle.UserAccountPicker -> {
-                                if (listItem is UserAccount) {
-                                    UserAccountListItem(
-                                        displayName = listItem.displayName,
-                                        loginServer = listItem.loginServer,
-                                        selected = (listItem == selectedListItem),
-                                        onItemSelected = { onItemSelected(listItem) },
-                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                    )
-                                    /*
+                                PickerStyle.UserAccountPicker -> {
+                                    if (listItem is UserAccount) {
+                                        UserAccountListItem(
+                                            displayName = listItem.displayName,
+                                            loginServer = listItem.loginServer,
+                                            selected = (listItem == selectedListItem),
+                                            onItemSelected = { onItemSelected(listItem) },
+                                            profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                        )
+                                        /*
                                     TODO: Remove this mock when a UserAccount can be created in without
                                      SalesforceSDKManger (for previews).  This would be trivial with an
                                      internal constructor if the class was converted to Koltin.
                                      */
-                                } else if (listItem is UserAccountMock) {
-                                    UserAccountListItem(
-                                        displayName = listItem.displayName,
-                                        loginServer = listItem.loginServer,
-                                        selected = (listItem == selectedListItem),
-                                        onItemSelected = { },
-                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                    )
+                                    } else if (listItem is UserAccountMock) {
+                                        UserAccountListItem(
+                                            displayName = listItem.displayName,
+                                            loginServer = listItem.loginServer,
+                                            selected = (listItem == selectedListItem),
+                                            onItemSelected = { },
+                                            profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                        )
+                                    }
                                 }
                             }
                         }
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            color = Color(0xFFE5E5E5),
+                        )
                     }
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                        color = Color(0xFFE5E5E5),
-                    )
                 }
 
                 CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
