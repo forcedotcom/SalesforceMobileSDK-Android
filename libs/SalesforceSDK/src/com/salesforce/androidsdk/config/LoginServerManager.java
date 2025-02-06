@@ -41,7 +41,9 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -209,22 +211,30 @@ public class LoginServerManager {
 	 * @param server the server to remove
 	 */
 	public void removeServer(LoginServer server) {
-		int index = getLoginServers().indexOf(server);
+		List<LoginServer> servers = getLoginServers();
+		int index = servers.indexOf(server);
 
 		if (server.isCustom && index != -1) {
-			int serverNumber = index + 1;
-			int numServers = runtimePrefs.getInt(NUMBER_OF_ENTRIES, 0);
-			final Editor edit = runtimePrefs.edit();
-			edit.remove(String.format(Locale.US, SERVER_NAME, serverNumber));
-			edit.remove(String.format(Locale.US, SERVER_URL, serverNumber));
-			edit.remove(String.format(Locale.US, IS_CUSTOM, serverNumber));
+			int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
+			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index+1, numServers));
 
-			for (int i = index + 1; i < numServers; i++) {
-				// TODO: adjust remaining entries?
+			final Editor edit = settings.edit();
+			edit.remove(String.format(Locale.US, SERVER_NAME, index))
+				.remove(String.format(Locale.US, SERVER_URL, index))
+				.remove(String.format(Locale.US, IS_CUSTOM, index));
+
+			// Re-index servers after the one removed from the list.
+			for (int i = (index + 1); i < numServers; i++) {
+				LoginServer reIndexServer = stack.pop();
+				edit.remove(String.format(Locale.US, SERVER_NAME, i))
+					.remove(String.format(Locale.US, SERVER_URL, i))
+					.remove(String.format(Locale.US, IS_CUSTOM, i))
+					.putString(String.format(Locale.US, SERVER_NAME, i-1), reIndexServer.name)
+					.putString(String.format(Locale.US, SERVER_URL, i-1), reIndexServer.url)
+					.putBoolean(String.format(Locale.US, IS_CUSTOM, i-1), reIndexServer.isCustom);
 			}
 
-			edit.putInt(NUMBER_OF_ENTRIES, --numServers);
-			edit.apply();
+			edit.putInt(NUMBER_OF_ENTRIES, --numServers).apply();
 		}
 	}
 

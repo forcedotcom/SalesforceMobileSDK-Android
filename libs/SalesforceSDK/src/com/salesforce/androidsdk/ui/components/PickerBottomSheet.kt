@@ -110,7 +110,7 @@ enum class PickerStyle {
 @Composable
 fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
@@ -286,7 +286,7 @@ private fun PickerBottomSheet(
             if (!addingNewServer) {
                 val mutableList = list.toMutableStateList()
                 LazyColumn {
-                    items(mutableList) { listItem ->
+                    items(items = mutableList, key = { it.toString() }) { listItem ->
                         Row(
                             modifier = Modifier.animateItem(
                                 placementSpec = tween(),
@@ -473,7 +473,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 private fun PickerBottomSheetPreview(
     @PreviewParameter(PickerStylePreviewParameterProvider::class) pickerStyle: PickerStyle,
 ) {
-    val sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.PartiallyExpanded, skipHiddenState = true)
+    val sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.Expanded, skipHiddenState = true)
     val serverList = listOf(
         LoginServer("Production", "https://login.salesforce.com", false),
         LoginServer("Sandbox", "https://test.salesforce.com", false),
