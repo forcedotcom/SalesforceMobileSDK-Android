@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import android.graphics.Bitmap
+import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -176,7 +177,8 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PickerBottomSheet(
+@VisibleForTesting
+internal fun PickerBottomSheet(
     pickerStyle: PickerStyle,
     sheetState: SheetState,
     list: List<Any>,
@@ -324,8 +326,8 @@ private fun PickerBottomSheet(
                                             onItemSelected = { onItemSelected(listItem, true) },
                                             profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                         )
-                                        /*
-                                    TODO: Remove this mock when a UserAccount can be created in without
+                                    /*
+                                     TODO: Remove this mock when a UserAccount can be created in without
                                      SalesforceSDKManger (for previews).  This would be trivial with an
                                      internal constructor if the class was converted to Kotlin.
                                      */
@@ -381,7 +383,8 @@ private fun PickerBottomSheet(
 }
 
 @Composable
-private fun AddConnection(
+@VisibleForTesting
+internal fun AddConnection(
     getValidServer: ((String) -> String?)? = null,
     addNewLoginServer: ((String, String) -> Unit)? = null,
     previewName: String = "",
@@ -514,7 +517,6 @@ private fun PickerBottomSheetPreview(
     }
 }
 
-//@PreviewScreenSizes
 @Preview("Default", showBackground = true)
 @Composable
 private fun AddConnectionPreview() {
@@ -523,7 +525,6 @@ private fun AddConnectionPreview() {
     }
 }
 
-//@PreviewScreenSizes
 @Preview("Values", showBackground = true)
 @Composable
 private fun AddConnectionValuesPreview() {

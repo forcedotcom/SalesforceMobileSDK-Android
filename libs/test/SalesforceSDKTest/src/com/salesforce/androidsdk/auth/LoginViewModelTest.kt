@@ -33,8 +33,8 @@ import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginViewModel
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -43,14 +43,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URI
 
+private const val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
+private const val FAKE_JWT = "1234"
+private const val FAKE_JWT_FLOW_AUTH =  "5678"
+
 @RunWith(AndroidJUnit4::class)
 class LoginViewModelTest {
     @get:Rule
     val instantExecutorRule: InstantTaskExecutorRule = InstantTaskExecutorRule()
 
-    private val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
-    private val FAKE_JWT = "1234"
-    private val FAKE_JWT_FLOW_AUTH =  "5678"
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val bootConfig = BootConfig.getBootConfig(context)
     private val viewModel = LoginViewModel(bootConfig)
@@ -105,7 +106,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun codeVerifier_UpdatesOn_WebviewRefresh() {
+    fun codeVerifier_UpdatesOn_WebViewRefresh() {
         val originalCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         Assert.assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
@@ -137,8 +138,9 @@ class LoginViewModelTest {
     @Test
     fun testGetValidSeverUrl() {
         Assert.assertNull(viewModel.getValidServerUrl(""))
-        Assert.assertNull(viewModel.getValidServerUrl("notaurlatall"))
+        Assert.assertNull(viewModel.getValidServerUrl("not_a_url_at_all"))
         Assert.assertNull(viewModel.getValidServerUrl("https://stillnotaurl"))
+        Assert.assertNull(viewModel.getValidServerUrl("a.com."))
         Assert.assertEquals("https://a.com", viewModel.getValidServerUrl("a.com"))
         Assert.assertEquals("https://a.b", viewModel.getValidServerUrl("http://a.b"))
         val unchangedUrl = "https://login.salesforce.com"
