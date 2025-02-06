@@ -242,7 +242,7 @@ public class LoginServerManagerTest {
 	}
 
 	/**
-	 * Test selectedServer LiveData
+	 * Test selectedServer LiveData.
 	 */
 	@Test
 	public void testLiveData() {
@@ -254,6 +254,65 @@ public class LoginServerManagerTest {
 
 		loginServerManager.selectedServer.postValue(new LoginServer("Live Data 2", PRODUCTION_URL, false));
 		assertLiveData();
+	}
+
+	/**
+	 * Test removing the last server.
+	 */
+	@Test
+	public void testRemoveServer() {
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		int originalServerSize = 4; // 3 default servers + 1 custom
+		List<LoginServer> servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+		LoginServer lastServer = servers.getLast();
+
+		// Remove
+		loginServerManager.removeServer(lastServer);
+		servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("", (originalServerSize - 1), servers.size());
+		Assert.assertFalse("List should not contain removed server.", servers.contains(lastServer));
+	}
+
+	/**
+	 * Test removing a server in the middle reorders the rest.
+	 */
+	@Test
+	public void testRemoveReordersServers() {
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
+		int originalServerSize = 5; // 3 default servers + 2 custom
+		List<LoginServer> servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+		LoginServer serverToDelete = servers.get(3);
+
+		// Remove
+		loginServerManager.removeServer(serverToDelete);
+		servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("No servers removed.", (originalServerSize - 1), servers.size());
+		Assert.assertFalse("List should not contain removed server.", servers.contains(serverToDelete));
+
+		// Assert Reorder
+		assertProduction(servers.get(0));
+		assertSandbox(servers.get(1));
+		assertOther(servers.get(2));
+		assertCustom2(servers.get(3));
+	}
+
+	/**
+	 * Test attempting to remove a non-custom server.
+	 */
+	@Test
+	public void testRemoveNonCustomServer() {
+		int originalServerSize = 3; // 3 default servers
+		List<LoginServer> servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+		LoginServer serverToDelete = servers.get(0);
+
+		// Remove
+		loginServerManager.removeServer(serverToDelete);
+		servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("Servers should not be removed.", originalServerSize, servers.size());
 	}
 
 	private void assertProduction(LoginServer server) {
