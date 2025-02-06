@@ -83,7 +83,7 @@ class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
 
         // Set content
         setContent {
-            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme) {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
                 IDPAuthCodeScreen(intent = intent)
             }
         }

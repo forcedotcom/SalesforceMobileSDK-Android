@@ -55,6 +55,7 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
@@ -394,18 +395,43 @@ open class SalesforceSDKManager protected constructor(
     var theme = SYSTEM_DEFAULT
 
     /**
-     * The light color scheme to use in Mobile SDK screens
-     * Defaults to androidx.compose.Material3.lightColorScheme()
+     * @return the color scheme to use for Mobile SDK screens
      */
-    @set:Synchronized
-    var lightColorScheme = sfLightColors()
+    @Composable
+    fun colorScheme(): ColorScheme {
+        return if (isDarkTheme) darkColorScheme() else lightColorScheme()
+    }
+
+    /**
+     * The light color scheme to use in Mobile SDK screens
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfLightColors
+     */
+    private var _lightColorScheme: ColorScheme? = null
+
+    @Composable
+    fun lightColorScheme(): ColorScheme {
+        return _lightColorScheme ?: sfLightColors().also { _lightColorScheme = it }
+    }
+
+    fun setLightColorScheme(value: ColorScheme) {
+        _lightColorScheme = value
+    }
+
 
     /**
      * The dark color scheme to use in Mobile SDK screens
-     * Defaults to androidx.compose.Material3.darkColorScheme()
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfDarkColors
      */
-    @set:Synchronized
-    var darkColorScheme = sfDarkColors()
+    private var _darkColorScheme: ColorScheme? = null
+
+    @Composable
+    fun darkColorScheme(): ColorScheme {
+        return _darkColorScheme ?: sfDarkColors().also { _darkColorScheme = it }
+    }
+
+    fun setDarkColorScheme(value: ColorScheme) {
+        _darkColorScheme = value
+    }
 
     /**
      * The app name to use in [.getUserAgent]. This string must only contain
@@ -1470,12 +1496,6 @@ open class SalesforceSDKManager protected constructor(
 
             else -> theme == DARK
         }
-
-    /**
-     * @return the color scheme to use for Mobile SDK screens
-     */
-    val colorScheme: ColorScheme
-        get() = if(isDarkTheme) darkColorScheme else lightColorScheme
 
     /**
      * Sets the system status and navigation bars as visible regardless of style

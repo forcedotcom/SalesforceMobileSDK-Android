@@ -63,7 +63,7 @@ class DevInfoActivity : ComponentActivity() {
         val devInfoList = prepareListData(SalesforceSDKManager.getInstance().devSupportInfos)
 
         setContent {
-            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme) {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
                 DevInfoScreen(devInfoList)
             }
         }

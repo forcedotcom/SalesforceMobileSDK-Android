@@ -74,7 +74,7 @@ open class ManageSpaceActivity : ComponentActivity() {
 
         // Set content
         setContent {
-            MaterialTheme(colorScheme = getInstance().colorScheme) {
+            MaterialTheme(colorScheme = getInstance().colorScheme()) {
                 ManageSpaceView()
             }
         }
