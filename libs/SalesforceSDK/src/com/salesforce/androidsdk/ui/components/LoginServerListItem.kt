@@ -84,7 +84,7 @@ const val DELETE_BUTTON_SIZE = 80
 fun LoginServerListItem(
     server: LoginServer,
     selected: Boolean,
-    onItemSelected: (Any?) -> Unit,
+    onItemSelected: (Any?, Boolean) -> Unit,
     previewDeleting: Boolean = false,
     removeServer: (LoginServer) -> Unit,
 ) {
@@ -119,14 +119,14 @@ fun LoginServerListItem(
                         if (deleting) {
                             deleting = false
                         } else {
-                            onItemSelected(server)
+                            onItemSelected(server, true)
                         }
                     },
                 ),
         ) {
             RadioButton(
                 selected = selected,
-                onClick = { onItemSelected(server) },
+                onClick = { onItemSelected(server, true) },
                 colors = RadioButtonDefaults.colors(
                     selectedColor = Color(0xFF0176D3),
                     unselectedColor = Color(0xFF747474)
@@ -203,7 +203,7 @@ private fun DefaultServerPreview() {
     LoginServerListItem(
         server = LoginServer("Production", "https://login.salesforce.com", false),
         selected = true,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 }
@@ -217,7 +217,7 @@ private fun LongDefaultServerPreview() {
             "https://login.salesforce.comhttps://login.salesforce.comhttps://login.salesforce.comr",
             false),
         selected = true,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 }
@@ -228,7 +228,7 @@ private fun CustomServerPreview() {
     LoginServerListItem(
         server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
         selected = false,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 
@@ -241,7 +241,7 @@ private fun DeletingLoginServer() {
         server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
         selected = false,
         previewDeleting = true,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 }
@@ -256,7 +256,7 @@ private fun LongServerPreview() {
             true,
         ),
         selected = false,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 }
@@ -272,7 +272,7 @@ private fun LongServerDeletingPreview() {
         ),
         selected = false,
         previewDeleting = true,
-        onItemSelected = { },
+        onItemSelected = { _,_ -> },
         removeServer = { },
     )
 }

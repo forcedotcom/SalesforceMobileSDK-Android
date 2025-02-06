@@ -89,6 +89,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
@@ -114,16 +115,16 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
-    val onNewLoginServerSelected = { newSelectedServer: Any? ->
+    val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
-            viewModel.showServerPicker.value = false
+            viewModel.showServerPicker.value = !closePicker
             viewModel.loading.value = true
             viewModel.dynamicBackgroundColor.value = Color.White
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
         }
     }
     val onLoginServerCancel = { viewModel.showServerPicker.value = false }
-    val onUserAccountSelected = { userAccount: Any? ->
+    val onUserAccountSelected = { userAccount: Any?, _: Boolean ->
         if (userAccount != null && userAccount is UserAccount) {
             activity?.finish()
             userAccountManager.switchToUser(userAccount)
@@ -180,7 +181,7 @@ private fun PickerBottomSheet(
     sheetState: SheetState,
     list: List<Any>,
     selectedListItem: Any?,
-    onItemSelected: (Any?) -> Unit,
+    onItemSelected: (Any?, Boolean) -> Unit,
     onCancel: () -> Unit,
     getValidServer: ((String) -> String?)? = null,
     addNewLoginServer: ((String, String) -> Unit)? = null,
@@ -197,6 +198,7 @@ private fun PickerBottomSheet(
         var addingNewServer by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
+        var mutableSelectedListItem = selectedListItem
 
         Column {
             Row(
@@ -287,6 +289,7 @@ private fun PickerBottomSheet(
                 val mutableList = list.toMutableStateList()
                 LazyColumn {
                     items(items = mutableList, key = { it.toString() }) { listItem ->
+                        val selected = listItem == mutableSelectedListItem
                         Row(
                             modifier = Modifier.animateItem(
                                 placementSpec = tween(),
@@ -298,9 +301,14 @@ private fun PickerBottomSheet(
                                     if (listItem is LoginServer) {
                                         LoginServerListItem(
                                             server = listItem,
-                                            selected = (listItem == selectedListItem),
+                                            selected = selected,
                                             onItemSelected = onItemSelected,
                                             removeServer = { server: LoginServer ->
+                                                if (selected) {
+                                                    mutableSelectedListItem = list.first()
+                                                    onItemSelected(list.first(), false)
+                                                }
+
                                                 mutableList.remove(listItem)
                                                 removeLoginServer?.let { it(server) }
                                             }
@@ -312,8 +320,8 @@ private fun PickerBottomSheet(
                                         UserAccountListItem(
                                             displayName = listItem.displayName,
                                             loginServer = listItem.loginServer,
-                                            selected = (listItem == selectedListItem),
-                                            onItemSelected = { onItemSelected(listItem) },
+                                            selected = selected,
+                                            onItemSelected = { onItemSelected(listItem, true) },
                                             profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                         )
                                         /*
@@ -325,7 +333,7 @@ private fun PickerBottomSheet(
                                         UserAccountListItem(
                                             displayName = listItem.displayName,
                                             loginServer = listItem.loginServer,
-                                            selected = (listItem == selectedListItem),
+                                            selected = selected,
                                             onItemSelected = { },
                                             profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                         )
@@ -446,7 +454,7 @@ private fun AddConnection(
             disabledContentColor = Color(0xFFE5E5E5),
         ),
         enabled = validInput,
-        onClick = { addNewLoginServer?.let { it(name, url) } },
+        onClick = { addNewLoginServer?.let { it(name, serverUrl!!) } },
     ) {
         Text(
             text = "Save",
@@ -467,7 +475,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-//@PreviewScreenSizes
+@PreviewScreenSizes
 @Preview
 @Composable
 private fun PickerBottomSheetPreview(
@@ -491,8 +499,8 @@ private fun PickerBottomSheetPreview(
                 sheetState = sheetState,
                 list = serverList,
                 selectedListItem = serverList[1],
-                onItemSelected = {},
-                onCancel = {},
+                onItemSelected = { _,_ -> },
+                onCancel = { },
             )
         PickerStyle.UserAccountPicker ->
             PickerBottomSheet(
@@ -500,8 +508,8 @@ private fun PickerBottomSheetPreview(
                 sheetState = sheetState,
                 list = userAccountList,
                 selectedListItem = userAccountList.first(),
-                onItemSelected = {},
-                onCancel = {},
+                onItemSelected = { _,_ -> },
+                onCancel = { },
             )
     }
 }
