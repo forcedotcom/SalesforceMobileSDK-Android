@@ -16,12 +16,12 @@ dependencies {
     api("org.apache.cordova:framework:13.0.0")
     api("androidx.appcompat:appcompat:1.7.0")
     api("androidx.appcompat:appcompat-resources:1.7.0")
-    api("androidx.webkit:webkit:1.11.0")
+    api("androidx.webkit:webkit:1.12.1")
     api("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.core:core-ktx:1.13.1")
-    androidTestImplementation("androidx.test:runner:1.6.0")
-    androidTestImplementation("androidx.test:rules:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    implementation("androidx.core:core-ktx:1.15.0")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
 
 android {

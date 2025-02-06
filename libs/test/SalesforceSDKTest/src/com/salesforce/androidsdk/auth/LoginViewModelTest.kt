@@ -30,11 +30,12 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
+import com.salesforce.androidsdk.R.string.sf__login_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginViewModel
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -50,7 +51,7 @@ class LoginViewModelTest {
 
     private val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
     private val FAKE_JWT = "1234"
-    private val FAKE_JWT_FLOW_AUTH =  "5678"
+    private val FAKE_JWT_FLOW_AUTH = "5678"
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val bootConfig = BootConfig.getBootConfig(context)
     private val viewModel = LoginViewModel(bootConfig)
@@ -147,16 +148,26 @@ class LoginViewModelTest {
         Assert.assertEquals(unchangedUrl, viewModel.getValidServerUrl(endingSlash))
     }
 
-    private fun generateExpectedAuthorizationUrl(server: String, codeChallenge: String): String
-        = OAuth2.getAuthorizationUrl(
-            true,
-            true,
-            URI(server),
-            bootConfig.remoteAccessConsumerKey,
-            bootConfig.oauthRedirectURI,
-            bootConfig.oauthScopes,
-            SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type),
-            codeChallenge,
-            hashMapOf<String, String>()
-        ).toString()
+    @Test
+    fun additionalBottomBarButtons_Updatable() {
+        Assert.assertTrue(viewModel.additionalBottomBarButtons.value.isEmpty())
+
+        viewModel.additionalBottomBarButtons.value = viewModel.additionalBottomBarButtons.value.toMutableList().apply {
+            add(LoginViewModel.LoginAdditionalButton(sf__login_title) {})
+        }
+
+        Assert.assertTrue(viewModel.additionalBottomBarButtons.value.filter { it.title == sf__login_title }.size == 1)
+    }
+
+    private fun generateExpectedAuthorizationUrl(server: String, codeChallenge: String): String = OAuth2.getAuthorizationUrl(
+        true,
+        true,
+        URI(server),
+        bootConfig.remoteAccessConsumerKey,
+        bootConfig.oauthRedirectURI,
+        bootConfig.oauthScopes,
+        SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type),
+        codeChallenge,
+        hashMapOf<String, String>()
+    ).toString()
 }

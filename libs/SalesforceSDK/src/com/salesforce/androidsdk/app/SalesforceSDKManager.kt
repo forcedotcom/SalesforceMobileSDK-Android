@@ -74,7 +74,6 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
-import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
 import com.salesforce.androidsdk.analytics.security.Encryptor
@@ -964,7 +963,6 @@ open class SalesforceSDKManager protected constructor(
         showLoginPage: Boolean = true,
         reason: LogoutReason = UNKNOWN,
     ) {
-        createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
             appContext,
             accountType,
