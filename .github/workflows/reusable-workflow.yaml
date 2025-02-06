@@ -7,7 +7,7 @@ on:
       is_pr:
         type: boolean
         default: false
-  
+
 jobs:
   test-android:
     runs-on: ubuntu-latest
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
-        env: 
+        env:
           TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
         run: |
           ./install.sh
@@ -47,7 +47,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7
+          gradle-version: 8.10.2
       - name: Run Lint
         if: ${{ inputs.is_pr }}
         run: |
@@ -79,7 +79,7 @@ jobs:
         if: success() || failure()
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "34" 
+          PR_API_VERSION: "34"
           FULL_API_RANGE: "28 29 30 31 32 33 34 35"
           IS_PR: ${{ inputs.is_pr }}
         run: |
@@ -114,7 +114,7 @@ jobs:
         if: success() || failure()
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "34" 
+          PR_API_VERSION: "34"
           FULL_API_RANGE: "28 29 30 31 32 33 34 35"
           IS_PR: ${{ inputs.is_pr }}
         run: |
@@ -157,7 +157,7 @@ jobs:
         if: ${{ ! inputs.is_pr }}
         with:
           name: ${{ inputs.lib }} Test Results
-          path: firebase_results/**.xml    
+          path: firebase_results/**.xml
           reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
