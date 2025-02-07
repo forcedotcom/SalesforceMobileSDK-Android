@@ -316,7 +316,7 @@ internal fun PickerBottomSheet(
                             modifier = Modifier.scrollable(
                                 state = rememberScrollState(),
                                 orientation = Orientation.Vertical,
-                            )
+                            ),
                         ) {
                             LazyColumn(modifier = Modifier.animateContentSize()) {
                                 items(items = mutableList, key = { it.toString() }) { listItem ->
@@ -377,35 +377,37 @@ internal fun PickerBottomSheet(
                                         modifier = Modifier.padding(horizontal = 12.dp),
                                         color = Color(0xFFE5E5E5),
                                     )
-                                }
-                            }
 
-                            // Add New Connection/Account Button
-                            CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
-                                OutlinedButton(
-                                    onClick = {
-                                        when (pickerStyle) {
-                                            PickerStyle.LoginServerPicker -> addingNewServer = true
-                                            PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
+                                    // Add New Connection/Account Button
+                                    if (listItem == mutableList.last()) {
+                                        CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    when (pickerStyle) {
+                                                        PickerStyle.LoginServerPicker -> addingNewServer = true
+                                                        PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .padding(12.dp)
+                                                    .fillMaxWidth()
+                                                    .semantics { contentDescription = ADD_NEW_BUTTON_CD },
+                                                shape = RoundedCornerShape(9.dp),
+                                                border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
+                                            ) {
+                                                Text(
+                                                    text = when (pickerStyle) {
+                                                        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
+                                                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
+                                                    },
+                                                    color = Color(0xFF0B5CAB),
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                                                )
+                                            }
                                         }
-                                    },
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .fillMaxWidth()
-                                        .semantics { contentDescription = ADD_NEW_BUTTON_CD },
-                                    shape = RoundedCornerShape(9.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
-                                ) {
-                                    Text(
-                                        text = when (pickerStyle) {
-                                            PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
-                                            PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
-                                        },
-                                        color = Color(0xFF0B5CAB),
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -515,6 +517,75 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     else -> null
 }
 
+@Preview("Default", showBackground = true)
+@Composable
+private fun AddConnectionPreview() {
+    Column {
+        AddConnection()
+    }
+}
+
+@Preview("Values", showBackground = true)
+@Composable
+private fun AddConnectionValuesPreview() {
+    Column {
+        AddConnection(
+            getValidServer = { server: String -> server },
+            previewName = "New Server",
+            previewUrl = "https://login.salesforce.com"
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun PickerBottomSheetLongListPreview(
+    @PreviewParameter(PickerStylePreviewParameterProvider::class) pickerStyle: PickerStyle,
+) {
+    val sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.Expanded, skipHiddenState = true)
+    val serverList = listOf(
+        LoginServer("Production", "https://login.salesforce.com", false),
+        LoginServer("Sandbox", "https://test.salesforce.com", false),
+        LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
+        LoginServer("Production2", "https://login.salesforce.com", false),
+        LoginServer("Sandbox2", "https://test.salesforce.com", false),
+        LoginServer("Custom2", "https://mobilesdk.my.salesforce.com", true),
+        LoginServer("Production3", "https://login.salesforce.com", false),
+        LoginServer("Sandbox3", "https://test.salesforce.com", false),
+        LoginServer("Custom3", "https://mobilesdk.my.salesforce.com", true),
+    )
+    val userAccountList = listOf(
+        UserAccountMock("Test User", "https://login.salesforce.com", null),
+        UserAccountMock("Second User", "https://mobilesdk.my.salesforce.com", null),
+        UserAccountMock("Third User", "https://login.salesforce.com", null),
+        UserAccountMock("Forth User", "https://mobilesdk.my.salesforce.com", null),
+        UserAccountMock("Fifth User", "https://login.salesforce.com", null),
+        UserAccountMock("Sixth User", "https://mobilesdk.my.salesforce.com", null),
+        UserAccountMock("Seventh User", "https://login.salesforce.com", null),
+        UserAccountMock("Eighth User", "https://mobilesdk.my.salesforce.com", null),
+    )
+
+    when(pickerStyle) {
+        PickerStyle.LoginServerPicker ->
+            PickerBottomSheet(
+                pickerStyle = pickerStyle,
+                sheetState = sheetState,
+                list = serverList,
+                selectedListItem = serverList[1],
+                onItemSelected = { _,_ -> },
+            )
+        PickerStyle.UserAccountPicker ->
+            PickerBottomSheet(
+                pickerStyle = pickerStyle,
+                sheetState = sheetState,
+                list = userAccountList,
+                selectedListItem = userAccountList.first(),
+                onItemSelected = { _,_ -> },
+            )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @PreviewScreenSizes
 @Preview
@@ -550,26 +621,6 @@ private fun PickerBottomSheetPreview(
                 selectedListItem = userAccountList.first(),
                 onItemSelected = { _,_ -> },
             )
-    }
-}
-
-@Preview("Default", showBackground = true)
-@Composable
-private fun AddConnectionPreview() {
-    Column {
-        AddConnection()
-    }
-}
-
-@Preview("Values", showBackground = true)
-@Composable
-private fun AddConnectionValuesPreview() {
-    Column {
-        AddConnection(
-            getValidServer = { server: String -> server },
-            previewName = "New Server",
-            previewUrl = "https://login.salesforce.com"
-        )
     }
 }
 
