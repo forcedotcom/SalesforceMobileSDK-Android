@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui
 import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -62,7 +63,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
 
-open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
+open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     // LiveData
     val selectedServer = MediatorLiveData<String>()
@@ -80,6 +81,9 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
     open var titleText: String? = null
     open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
+
+    /** The list of additional buttons to display on the login view bottom app bar */
+    open val additionalBottomBarButtons = mutableStateOf(listOf<LoginAdditionalButton>())
 
     // Additional Auth Values
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
@@ -116,8 +120,10 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
     internal var isUsingFrontDoorBridge = false
+
     // The optional server used for code exchange.
     internal var frontdoorBridgeServer: String? = null
+
     // The optional web server flow code verifier accompanying the front door bridge server.
     internal var frontdoorBridgeCodeVerifier: String? = null
 
@@ -288,7 +294,7 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
     companion object {
 
-        val Factory: ViewModelProvider.Factory = object  : ViewModelProvider.Factory {
+        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(
                 modelClass: Class<T>,
@@ -302,4 +308,15 @@ open class LoginViewModel(val bootConfig: BootConfig): ViewModel() {
 
         private const val TAG = "LoginViewModel"
     }
+
+    /**
+     * Models an additional bottom bar button the login view can display.
+     * @param title The button's displayable title
+     * @param onClick The button's on-click action
+     */
+    data class LoginAdditionalButton(
+        @StringRes
+        val title: Int,
+        val onClick: () -> Unit
+    )
 }

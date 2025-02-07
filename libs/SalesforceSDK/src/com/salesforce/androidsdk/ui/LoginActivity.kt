@@ -93,6 +93,7 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat.getMainExecutor
@@ -133,7 +134,6 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESP
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_INTENT
 import com.salesforce.androidsdk.ui.components.LoginView
-import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LoginActivityCreateComplete
@@ -229,8 +229,7 @@ open class LoginActivity: FragmentActivity() {
 
         // Set content
         setContent {
-            /* TODO: Update with support for light, dark and system themes: W-17687751 */
-            LoginWebviewTheme {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
                 LoginView()
             }
         }
