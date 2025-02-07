@@ -31,10 +31,15 @@ import android.content.ContextWrapper
 import android.graphics.Bitmap
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +48,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
@@ -102,6 +108,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.LoginViewModel
+import kotlinx.coroutines.launch
 
 enum class PickerStyle {
     LoginServerPicker,
@@ -122,7 +129,6 @@ internal const val ADD_NEW_BUTTON_CD = "Add"
 @Composable
 fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
@@ -147,6 +153,19 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
             userAccountManager.switchToUser(userAccountManager.authenticatedUsers.first())
         }
     }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { sheetValue ->
+            if (sheetValue == SheetValue.Hidden) {
+                when (pickerStyle) {
+                    PickerStyle.LoginServerPicker -> onLoginServerCancel()
+                    PickerStyle.UserAccountPicker -> onUserSwitchCancel()
+                }
+            }
+
+            true
+        }
+    )
     val addNewLoginServer = { name: String, url: String ->
         loginServerManager.addCustomLoginServer(name, url)
         viewModel.showServerPicker.value = false
@@ -162,7 +181,6 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
                 list = loginServerManager.loginServers,
                 selectedListItem = loginServerManager.selectedLoginServer,
                 onItemSelected = onNewLoginServerSelected,
-                onCancel = onLoginServerCancel,
                 getValidServer = { serverUrl: String -> viewModel.getValidServerUrl(serverUrl) },
                 addNewLoginServer = addNewLoginServer,
                 removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) }
@@ -175,7 +193,6 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
                 list = userAccountManager.authenticatedUsers,
                 selectedListItem = userAccountManager.currentUser,
                 onItemSelected = onUserAccountSelected,
-                onCancel = onUserSwitchCancel,
                 addNewAccount = {
                     userAccountManager.switchToNewUser()
                     activity?.finish()
@@ -194,25 +211,24 @@ internal fun PickerBottomSheet(
     list: List<Any>,
     selectedListItem: Any?,
     onItemSelected: (Any?, Boolean) -> Unit,
-    onCancel: () -> Unit,
     getValidServer: ((String) -> String?)? = null,
     addNewLoginServer: ((String, String) -> Unit)? = null,
     removeLoginServer: ((LoginServer) -> Unit)? = null,
     addNewAccount: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(
-        onDismissRequest = { onCancel() },
+        onDismissRequest = { /* Do nothing */ },
         sheetState = sheetState,
         dragHandle = null,
         shape = RoundedCornerShape(9.dp),
         containerColor = Color(0xFFFFFFFF),
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
         val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
+        val mutableList = remember { list.toMutableStateList() }
         var mutableSelectedListItem = selectedListItem
 
-        Column(modifier = Modifier.semantics { contentDescription = PICKER_CD }) {
+        Column(modifier = Modifier.animateContentSize().semantics { contentDescription = PICKER_CD }) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -257,11 +273,12 @@ internal fun PickerBottomSheet(
                     fontWeight = FontWeight.SemiBold,
                 )
                 // Close Button
+                val coroutineScope = rememberCoroutineScope()
                 IconButton(
-                    onClick = { onCancel() },
+                    onClick = { coroutineScope.launch { sheetState.hide() } },
                     colors = IconButtonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color(0xFF747474),  // TODO: fix color
+                        contentColor = Color(0xFF747474),
                         disabledContainerColor = Color.Transparent,
                         disabledContentColor = Color.Transparent,
                     ),
@@ -275,113 +292,123 @@ internal fun PickerBottomSheet(
             }
             HorizontalDivider(thickness = 1.dp, color = Color(0xFFE5E5E5))
 
-            // Add Connection Name, Url, and Save button.
-            AnimatedVisibility(
-                visible = addingNewServer,
-                enter = fadeIn(),
-                exit = fadeOut(),
-            ) {
-                Column {
-                    AddConnection(
-                        getValidServer = getValidServer,
-                        addNewLoginServer = { newServerName: String, newServerUrl: String ->
-                            addingNewServer = false
-                            addNewLoginServer?.invoke(newServerName, newServerUrl)
-                        }
-                    )
-                }
-            }
-
-            // List of Login Servers or User Accounts
-            if (!addingNewServer) {
-                val mutableList = list.toMutableStateList()
-                LazyColumn {
-                    items(items = mutableList, key = { it.toString() }) { listItem ->
-                        val selected = listItem == mutableSelectedListItem
-                        Row(
-                            modifier = Modifier.animateItem(
-                                placementSpec = tween(),
-                                fadeOutSpec = tween(500),
+            Crossfade(
+                targetState = addingNewServer,
+                animationSpec = tween(
+                    durationMillis = 500,
+                    easing = LinearEasing
+                ),
+            ) { showAddConnection ->
+                when(showAddConnection) {
+                    // Login Server Add Connection
+                    true -> {
+                        AddConnection(
+                            getValidServer = getValidServer,
+                            addNewLoginServer = { newServerName: String, newServerUrl: String ->
+                                addingNewServer = false
+                                addNewLoginServer?.invoke(newServerName, newServerUrl)
+                            }
+                        )
+                    }
+                    // Login Server or User Account List
+                    false -> {
+                        Column(
+                            modifier = Modifier.scrollable(
+                                state = rememberScrollState(),
+                                orientation = Orientation.Vertical,
                             )
                         ) {
-                            when (pickerStyle) {
-                                PickerStyle.LoginServerPicker ->
-                                    if (listItem is LoginServer) {
-                                        LoginServerListItem(
-                                            server = listItem,
-                                            selected = selected,
-                                            onItemSelected = onItemSelected,
-                                            removeServer = { server: LoginServer ->
-                                                if (selected) {
-                                                    mutableSelectedListItem = list.first()
-                                                    onItemSelected(list.first(), false)
+                            LazyColumn(modifier = Modifier.animateContentSize()) {
+                                items(items = mutableList, key = { it.toString() }) { listItem ->
+                                    val selected = (listItem == mutableSelectedListItem)
+                                    Row(
+                                        modifier = Modifier.animateItem(
+                                            placementSpec = tween(),
+                                            fadeOutSpec = tween(500),
+                                        )
+                                    ) {
+                                        when (pickerStyle) {
+                                            PickerStyle.LoginServerPicker ->
+                                                if (listItem is LoginServer) {
+                                                    LoginServerListItem(
+                                                        server = listItem,
+                                                        selected = selected,
+                                                        onItemSelected = onItemSelected,
+                                                        removeServer = { server: LoginServer ->
+                                                            if (selected) {
+                                                                mutableSelectedListItem = list.first()
+                                                                onItemSelected(list.first(), false)
+                                                            }
+
+                                                            mutableList.remove(listItem)
+                                                            removeLoginServer?.let { it(server) }
+                                                        }
+                                                    )
                                                 }
 
-                                                mutableList.remove(listItem)
-                                                removeLoginServer?.let { it(server) }
+                                            PickerStyle.UserAccountPicker -> {
+                                                if (listItem is UserAccount) {
+                                                    UserAccountListItem(
+                                                        displayName = listItem.displayName,
+                                                        loginServer = listItem.loginServer,
+                                                        selected = selected,
+                                                        onItemSelected = { onItemSelected(listItem, true) },
+                                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                                    )
+                                                /*
+                                                 TODO: Remove this mock when a UserAccount can be created in without
+                                                 SalesforceSDKManger (for previews).  This would be trivial with an
+                                                 internal constructor if the class was converted to Kotlin.
+                                                */
+                                                } else if (listItem is UserAccountMock) {
+                                                    UserAccountListItem(
+                                                        displayName = listItem.displayName,
+                                                        loginServer = listItem.loginServer,
+                                                        selected = selected,
+                                                        onItemSelected = { onItemSelected(listItem, true) },
+                                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
+                                                    )
+                                                }
                                             }
-                                        )
+                                        }
                                     }
+                                    HorizontalDivider(
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                        color = Color(0xFFE5E5E5),
+                                    )
+                                }
+                            }
 
-                                PickerStyle.UserAccountPicker -> {
-                                    if (listItem is UserAccount) {
-                                        UserAccountListItem(
-                                            displayName = listItem.displayName,
-                                            loginServer = listItem.loginServer,
-                                            selected = selected,
-                                            onItemSelected = { onItemSelected(listItem, true) },
-                                            profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                        )
-                                    /*
-                                     TODO: Remove this mock when a UserAccount can be created in without
-                                     SalesforceSDKManger (for previews).  This would be trivial with an
-                                     internal constructor if the class was converted to Kotlin.
-                                     */
-                                    } else if (listItem is UserAccountMock) {
-                                        UserAccountListItem(
-                                            displayName = listItem.displayName,
-                                            loginServer = listItem.loginServer,
-                                            selected = selected,
-                                            onItemSelected = { onItemSelected(listItem, true) },
-                                            profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                        )
-                                    }
+                            // Add New Connection/Account Button
+                            CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
+                                OutlinedButton(
+                                    onClick = {
+                                        when (pickerStyle) {
+                                            PickerStyle.LoginServerPicker -> addingNewServer = true
+                                            PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .padding(12.dp)
+                                        .fillMaxWidth()
+                                        .semantics { contentDescription = ADD_NEW_BUTTON_CD },
+                                    shape = RoundedCornerShape(9.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
+                                ) {
+                                    Text(
+                                        text = when (pickerStyle) {
+                                            PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
+                                            PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
+                                        },
+                                        color = Color(0xFF0B5CAB),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                                    )
                                 }
                             }
                         }
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            color = Color(0xFFE5E5E5),
-                        )
-                    }
-                }
-
-                CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
-                    OutlinedButton(
-                        onClick = {
-                            when (pickerStyle) {
-                                PickerStyle.LoginServerPicker -> addingNewServer = true
-                                PickerStyle.UserAccountPicker -> addNewAccount?.invoke()
-                            }
-                        },
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .fillMaxWidth()
-                            .semantics { contentDescription = ADD_NEW_BUTTON_CD },
-                        shape = RoundedCornerShape(9.dp),
-                        border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
-                    ) {
-                        Text(
-                            text = when (pickerStyle) {
-                                PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
-                                PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
-                            },
-                            color = Color(0xFF0B5CAB),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
-                        )
                     }
                 }
             }
@@ -405,73 +432,77 @@ internal fun AddConnection(
         backgroundColor = Color(0xFF0176D3).copy(alpha = 0.2f),
     )
 
-    CompositionLocalProvider(LocalTextSelectionColors provides sfTextSection) {
-        // Name input field
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 6.dp)
-                .focusRequester(focusRequester),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color(0xFF0176D3),
-                focusedLabelColor = Color(0xFF0176D3),
-                focusedTextColor = Color(0xFF181818),
-                focusedContainerColor = Color.Transparent,
-                unfocusedIndicatorColor = Color(0xFF939393),
-                unfocusedLabelColor = Color(0xFF939393),
-                unfocusedContainerColor = Color.Transparent,
-                unfocusedTextColor = Color(0xFF747474),
-                cursorColor = Color(0xFF0176D3),
-            ),
-        )
-        // Url input field
-        OutlinedTextField(
-            value = url,
-            onValueChange = { url = it },
-            label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-            modifier = Modifier.fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 6.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color(0xFF0176D3),
-                focusedLabelColor = Color(0xFF0176D3),
-                focusedTextColor = Color(0xFF181818),
-                focusedContainerColor = Color.Transparent,
-                unfocusedIndicatorColor = Color(0xFF939393),
-                unfocusedLabelColor = Color(0xFF939393),
-                unfocusedContainerColor = Color.Transparent,
-                unfocusedTextColor = Color(0xFF747474),
-                cursorColor = Color(0xFF0176D3),
-            ),
-        )
-    }
+    Column {
+        CompositionLocalProvider(LocalTextSelectionColors provides sfTextSection) {
+            // Name input field
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+                    .focusRequester(focusRequester),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color(0xFF0176D3),
+                    focusedLabelColor = Color(0xFF0176D3),
+                    focusedTextColor = Color(0xFF181818),
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color(0xFF939393),
+                    unfocusedLabelColor = Color(0xFF939393),
+                    unfocusedContainerColor = Color.Transparent,
+                    unfocusedTextColor = Color(0xFF747474),
+                    cursorColor = Color(0xFF0176D3),
+                ),
+            )
+            // Url input field
+            OutlinedTextField(
+                value = url,
+                onValueChange = { url = it },
+                label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color(0xFF0176D3),
+                    focusedLabelColor = Color(0xFF0176D3),
+                    focusedTextColor = Color(0xFF181818),
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color(0xFF939393),
+                    unfocusedLabelColor = Color(0xFF939393),
+                    unfocusedContainerColor = Color.Transparent,
+                    unfocusedTextColor = Color(0xFF747474),
+                    cursorColor = Color(0xFF0176D3),
+                ),
+            )
+        }
 
-    val serverUrl = getValidServer?.let { it(url) }
-    val validInput = name.isNotBlank() && serverUrl != null
-    Button(
-        modifier = Modifier
-            .padding(12.dp)
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(9.dp),
-        colors = ButtonColors(
-            containerColor = Color(0xFF0176D3),
-            contentColor = Color(0xFF0176D3),
-            disabledContainerColor = Color(0xFFE5E5E5),
-            disabledContentColor = Color(0xFFE5E5E5),
-        ),
-        enabled = validInput,
-        onClick = { addNewLoginServer?.let { it(name, serverUrl!!) } },
-    ) {
-        Text(
-            text = stringResource(R.string.sf__server_url_save),
-            fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
-            color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
-            modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
-        )
+        val trimmedName = name.trim()
+        val trimmedUrl = url.trim()
+        val serverUrl = getValidServer?.let { it(trimmedUrl) }
+        val validInput = trimmedName.isNotBlank() && serverUrl != null
+        Button(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(9.dp),
+            colors = ButtonColors(
+                containerColor = Color(0xFF0176D3),
+                contentColor = Color(0xFF0176D3),
+                disabledContainerColor = Color(0xFFE5E5E5),
+                disabledContentColor = Color(0xFFE5E5E5),
+            ),
+            enabled = validInput,
+            onClick = { addNewLoginServer?.let { it(trimmedName, serverUrl!!) } },
+        ) {
+            Text(
+                text = stringResource(R.string.sf__server_url_save),
+                fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+                color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
+                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+            )
+        }
     }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
@@ -510,7 +541,6 @@ private fun PickerBottomSheetPreview(
                 list = serverList,
                 selectedListItem = serverList[1],
                 onItemSelected = { _,_ -> },
-                onCancel = { },
             )
         PickerStyle.UserAccountPicker ->
             PickerBottomSheet(
@@ -519,7 +549,6 @@ private fun PickerBottomSheetPreview(
                 list = userAccountList,
                 selectedListItem = userAccountList.first(),
                 onItemSelected = { _,_ -> },
-                onCancel = { },
             )
     }
 }

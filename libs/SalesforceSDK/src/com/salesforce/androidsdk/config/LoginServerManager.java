@@ -179,6 +179,14 @@ public class LoginServerManager {
 	 * @param url Server URL.
 	 */
 	public void addCustomLoginServer(String name, String url) {
+		// Prevent duplicate servers.
+		for (LoginServer existingServer : getLoginServers()) {
+			if (name.equals(existingServer.name) && url.equals(existingServer.url)) {
+				setSelectedLoginServer(existingServer);
+				return;
+			}
+		}
+
 		if (getLoginServersFromRuntimeConfig() == null) {
 			persistLoginServer(name, url, true, settings);
 		} else {

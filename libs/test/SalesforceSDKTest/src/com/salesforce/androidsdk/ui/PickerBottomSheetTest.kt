@@ -174,26 +174,6 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
-    fun serverPicker_CloseButtonClick_CallsCancel() {
-        var cancelCalled = false
-        composeTestRule.setContent {
-            PickerBottomSheetTestWrapper(
-                pickerStyle = PickerStyle.LoginServerPicker,
-                onCancel = { cancelCalled = true },
-            )
-        }
-
-        val closeButton = composeTestRule.onNode(closeButtonCd)
-
-        // Close Picker
-        closeButton.performClick()
-
-        // Assert Cancel Called
-        Assert.assertTrue("onCancel not called.", cancelCalled)
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Test
     fun serverList_Displays_FirstServerSelected() {
         composeTestRule.setContent {
             PickerBottomSheetTestWrapper(
@@ -203,11 +183,13 @@ class PickerBottomSheetTest {
         }
 
         val picker = composeTestRule.onNode(pickerCd)
+        val closeButton = composeTestRule.onNode(closeButtonCd)
         val prodListItem = composeTestRule.onNode(prodRowCd)
         val sandboxListItem = composeTestRule.onNode(sandboxRowCd)
         val customListItem = composeTestRule.onNode(customsRowCd)
 
         picker.assertIsDisplayed()
+        closeButton.assertIsDisplayed()
         prodListItem.assertIsDisplayed()
         prodListItem.onChild().assertIsSelectable()
         prodListItem.onChild().assertIsSelected()
@@ -485,10 +467,12 @@ class PickerBottomSheetTest {
         }
 
         val picker = composeTestRule.onNode(pickerCd)
+        val closeButton = composeTestRule.onNode(closeButtonCd)
         val user1ListItem = composeTestRule.onNode(user1RowCd)
         val user2ListItem = composeTestRule.onNode(user2RowCd)
 
         picker.assertIsDisplayed()
+        closeButton.assertIsDisplayed()
         user1ListItem.assertIsDisplayed()
         user1ListItem.onChild().assertIsSelectable()
         user1ListItem.onChild().assertIsSelected()
@@ -556,26 +540,6 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
-    fun userPicker_CloseButtonClick_CallsCancel() {
-        var cancelCalled = false
-        composeTestRule.setContent {
-            PickerBottomSheetTestWrapper(
-                pickerStyle = PickerStyle.UserAccountPicker,
-                onCancel = { cancelCalled = true },
-            )
-        }
-
-        val closeButton = composeTestRule.onNode(closeButtonCd)
-
-        // Close Picker
-        closeButton.performClick()
-
-        // Assert Cancel Called
-        Assert.assertTrue("onCancel not called.", cancelCalled)
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Test
     fun userPicker_NewAccountButtonClick_CallsAddNewAccount() {
         var addAccountCalled = false
         composeTestRule.setContent {
@@ -614,12 +578,11 @@ internal fun PickerBottomSheetTestWrapper(
     },
     selectedListItem: Any = list.first(),
     onItemSelected: (Any?, Boolean) -> Unit = { _,_ -> },
-    onCancel: () -> Unit = { },
     getValidServer: ((String) -> String?)? = { _ -> "" },
     addNewLoginServer: ((String, String) -> Unit)? = { _,_ -> },
     removeLoginServer: ((LoginServer) -> Unit)? = { },
     addNewAccount: (() -> Unit)? = { },
 ) {
-    PickerBottomSheet(pickerStyle, sheetState, list, selectedListItem, onItemSelected, onCancel, getValidServer,
+    PickerBottomSheet(pickerStyle, sheetState, list, selectedListItem, onItemSelected, getValidServer,
         addNewLoginServer, removeLoginServer, addNewAccount)
 }
