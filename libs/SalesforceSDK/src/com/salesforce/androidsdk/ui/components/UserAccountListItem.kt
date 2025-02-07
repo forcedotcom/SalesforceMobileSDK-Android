@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui.components
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -46,11 +47,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
+
+@VisibleForTesting
+internal const val USER_ACCOUNT_CD = "User Account List Item"
 
 @Composable
 fun UserAccountListItem(
@@ -64,6 +70,7 @@ fun UserAccountListItem(
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
+            .semantics { contentDescription = USER_ACCOUNT_CD }
             .clickable(
                 onClickLabel = "Login server selected.",
                 interactionSource = remember { MutableInteractionSource() },
@@ -79,6 +86,7 @@ fun UserAccountListItem(
                 selectedColor = Color(0xFF0176D3),
                 unselectedColor = Color(0xFF747474)
             ),
+            modifier = Modifier.semantics { contentDescription = RADIO_BUTTON_CD },
         )
         Column(
             horizontalAlignment = Alignment.Start,

@@ -72,7 +72,7 @@ class LoginViewModelTest {
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
     @Test
-    fun selectedServer_updatesOn_loginServerManagerChange() {
+    fun selectedServer_UpdatesOn_loginServerManagerChange() {
         val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
         Assert.assertEquals(loginServerManager.selectedLoginServer.url, viewModel.selectedServer.value)
         Assert.assertNotEquals(FAKE_SERVER_URL, viewModel.selectedServer.value)
@@ -82,7 +82,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun loginUrl_updatesOn_selectedServerChange() {
+    fun loginUrl_UpdatesOn_selectedServerChange() {
         Assert.assertNotEquals(FAKE_SERVER_URL, viewModel.selectedServer.value)
         Assert.assertTrue(viewModel.loginUrl.value!!.startsWith(viewModel.selectedServer.value!!))
         Assert.assertFalse(viewModel.loginUrl.value!!.startsWith(FAKE_SERVER_URL))

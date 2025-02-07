@@ -85,6 +85,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -100,12 +102,20 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.LoginViewModel
-import kotlinx.coroutines.launch
 
 enum class PickerStyle {
     LoginServerPicker,
     UserAccountPicker,
 }
+
+@VisibleForTesting
+internal const val PICKER_CD = "Picker"
+@VisibleForTesting
+internal const val CLOSE_BUTTON_CD = "Close"
+@VisibleForTesting
+internal const val BACK_BUTTON_CD = "Back"
+@VisibleForTesting
+internal const val ADD_NEW_BUTTON_CD = "Add"
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -202,7 +212,7 @@ internal fun PickerBottomSheet(
         val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
         var mutableSelectedListItem = selectedListItem
 
-        Column {
+        Column(modifier = Modifier.semantics { contentDescription = PICKER_CD }) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -218,7 +228,7 @@ internal fun PickerBottomSheet(
                         onClick = { addingNewServer = false },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
-                            contentColor = Color(0xFF747474),  // TODO: fix color
+                            contentColor = Color(0xFF747474),
                             disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Transparent,
                         ),
@@ -226,7 +236,7 @@ internal fun PickerBottomSheet(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = BACK_BUTTON_CD,
                         )
                     }
                 }
@@ -240,7 +250,7 @@ internal fun PickerBottomSheet(
                                 stringResource(R.string.sf__pick_server)
                             }
                         }
-                        PickerStyle.UserAccountPicker -> "Organizations"
+                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_selector_text)
                     },
                     color = Color.Black,
                     fontSize = 20.sp,
@@ -248,11 +258,7 @@ internal fun PickerBottomSheet(
                 )
                 // Close Button
                 IconButton(
-                    onClick = {
-                        scope.launch {
-                            sheetState.hide().also { onCancel() }
-                        }
-                  },
+                    onClick = { onCancel() },
                     colors = IconButtonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color(0xFF747474),  // TODO: fix color
@@ -263,7 +269,7 @@ internal fun PickerBottomSheet(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Close",
+                        contentDescription = CLOSE_BUTTON_CD,
                     )
                 }
             }
@@ -336,7 +342,7 @@ internal fun PickerBottomSheet(
                                             displayName = listItem.displayName,
                                             loginServer = listItem.loginServer,
                                             selected = selected,
-                                            onItemSelected = { },
+                                            onItemSelected = { onItemSelected(listItem, true) },
                                             profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
                                         )
                                     }
@@ -361,14 +367,15 @@ internal fun PickerBottomSheet(
                         },
                         modifier = Modifier
                             .padding(12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .semantics { contentDescription = ADD_NEW_BUTTON_CD },
                         shape = RoundedCornerShape(9.dp),
                         border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
                     ) {
                         Text(
                             text = when (pickerStyle) {
-                                PickerStyle.LoginServerPicker -> "Add New Connection"
-                                PickerStyle.UserAccountPicker -> "Add New Account"
+                                PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
+                                PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
                             },
                             color = Color(0xFF0B5CAB),
                             fontSize = 16.sp,
@@ -460,7 +467,7 @@ internal fun AddConnection(
         onClick = { addNewLoginServer?.let { it(name, serverUrl!!) } },
     ) {
         Text(
-            text = "Save",
+            text = stringResource(R.string.sf__server_url_save),
             fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
             color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
             modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
@@ -542,8 +549,8 @@ class PickerStylePreviewParameterProvider : PreviewParameterProvider<PickerStyle
         get() = sequenceOf(PickerStyle.LoginServerPicker, PickerStyle.UserAccountPicker)
 }
 
-private class UserAccountMock(
+internal class UserAccountMock(
     val displayName: String,
     val loginServer: String,
-    val profilePhoto: Bitmap?,
+    val profilePhoto: Bitmap? = null,
 )
