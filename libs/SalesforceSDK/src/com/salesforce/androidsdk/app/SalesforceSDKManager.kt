@@ -54,6 +54,8 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
@@ -123,6 +125,8 @@ import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AppCreateComplete
@@ -389,6 +393,45 @@ open class SalesforceSDKManager protected constructor(
      */
     @set:Synchronized
     var theme = SYSTEM_DEFAULT
+
+    /**
+     * @return the color scheme to use for Mobile SDK screens
+     */
+    @Composable
+    fun colorScheme(): ColorScheme {
+        return if (isDarkTheme) darkColorScheme() else lightColorScheme()
+    }
+
+    /**
+     * The light color scheme to use in Mobile SDK screens
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfLightColors
+     */
+    private var _lightColorScheme: ColorScheme? = null
+
+    @Composable
+    fun lightColorScheme(): ColorScheme {
+        return _lightColorScheme ?: sfLightColors().also { _lightColorScheme = it }
+    }
+
+    fun setLightColorScheme(value: ColorScheme) {
+        _lightColorScheme = value
+    }
+
+
+    /**
+     * The dark color scheme to use in Mobile SDK screens
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfDarkColors
+     */
+    private var _darkColorScheme: ColorScheme? = null
+
+    @Composable
+    fun darkColorScheme(): ColorScheme {
+        return _darkColorScheme ?: sfDarkColors().also { _darkColorScheme = it }
+    }
+
+    fun setDarkColorScheme(value: ColorScheme) {
+        _darkColorScheme = value
+    }
 
     /**
      * The app name to use in [.getUserAgent]. This string must only contain

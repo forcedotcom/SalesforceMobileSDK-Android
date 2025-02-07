@@ -43,15 +43,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.tooling.preview.Preview
-import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.string.app_name
 import com.salesforce.androidsdk.R.string.sf__manage_space_confirmation
 import com.salesforce.androidsdk.R.string.sf__manage_space_logout_no
@@ -76,15 +72,9 @@ open class ManageSpaceActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
+        // Set content
         setContent {
-            /* TODO: Update with support for light, dark and system themes: W-17687751 */
-            MaterialTheme(
-                darkColorScheme(
-                    background = White,
-                    primary = White,
-                    primaryContainer = colorResource(sf__primary_color),
-                )
-            ) {
+            MaterialTheme(colorScheme = getInstance().colorScheme()) {
                 ManageSpaceView()
             }
         }
