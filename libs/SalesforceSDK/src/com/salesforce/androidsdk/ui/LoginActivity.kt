@@ -129,6 +129,7 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAl
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.ui.LoginViewModel.Theme.Dark
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
@@ -157,7 +158,7 @@ import java.security.cert.X509Certificate
  * refresh tokens to create an account via the account manager which stores
  * them.
  */
-open class LoginActivity: FragmentActivity() {
+open class LoginActivity : FragmentActivity() {
     // View Model
     protected open val viewModel: LoginViewModel
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
@@ -194,6 +195,9 @@ open class LoginActivity: FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (viewModel.dynamicBackgroundTheme.value == Dark) {
+            SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+        }
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -754,8 +758,6 @@ open class LoginActivity: FragmentActivity() {
 
     /**
      * Called when the IDP login button is clicked.
-     *
-     * @param v IDP login button
      */
     open fun onIDPLoginClick() {
         SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
@@ -858,7 +860,7 @@ open class LoginActivity: FragmentActivity() {
      * AuthWebViewClient is an inner class of LoginActivity because it makes extensive use of the LoginViewModel,
      * which is only available to Activity classes (and composable functions).
      */
-    open inner class AuthWebViewClient: WebViewClient() {
+    open inner class AuthWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             // Check if user entered a custom domain
             val customDomainPatternMatch = SalesforceSDKManager.getInstance()
@@ -874,6 +876,7 @@ open class LoginActivity: FragmentActivity() {
                         null ->
                             // Add also sets as selected
                             serverManager.addCustomLoginServer("Custom Domain", baseUrl)
+
                         else ->
                             serverManager.selectedLoginServer = loginServer
                     }
@@ -986,6 +989,7 @@ open class LoginActivity: FragmentActivity() {
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
+
         // This parses the expected "rgb(x, x, x)" string.
         private val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
 

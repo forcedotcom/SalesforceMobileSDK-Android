@@ -55,6 +55,8 @@ import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
+import com.salesforce.androidsdk.ui.LoginViewModel.Theme.Dark
+import com.salesforce.androidsdk.ui.LoginViewModel.Theme.Light
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -70,6 +72,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     val loginUrl = MediatorLiveData<String>()
     internal var isIDPLoginFlowEnabled = derivedStateOf { SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled }
     internal var dynamicBackgroundColor = mutableStateOf(Color.White)
+    internal var dynamicBackgroundTheme = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Dark else Light }
     internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
     internal var showServerPicker = mutableStateOf(false)
     internal val defaultTitleText: String
@@ -319,4 +322,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val title: Int,
         val onClick: () -> Unit
     )
+
+    internal enum class Theme {
+        Dark,
+        Light
+    }
 }
