@@ -240,7 +240,7 @@ internal fun PickerBottomSheet(
         onDismissRequest = { /* Do nothing */ },
         sheetState = sheetState,
         dragHandle = null,
-        shape = RoundedCornerShape(CORNER_RADIUS.dp),
+        shape = RoundedCornerShape(topStart = CORNER_RADIUS.dp, topEnd = CORNER_RADIUS.dp),
         containerColor = colorScheme.primaryContainer,
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
