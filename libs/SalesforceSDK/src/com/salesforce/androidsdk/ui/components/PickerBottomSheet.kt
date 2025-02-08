@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui.components
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
@@ -40,8 +41,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -64,6 +67,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -89,6 +94,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -108,12 +114,25 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.theme.hintTextColor
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
 import kotlinx.coroutines.launch
 
 enum class PickerStyle {
     LoginServerPicker,
     UserAccountPicker,
 }
+
+internal const val PADDING_SIZE = 12
+internal const val ICON_SIZE = 32
+internal const val HEADER_TEXT_SIZE = 20
+internal const val HEADER_PADDING_SIZE = 16
+internal const val TEXT_SIZE = 16
+internal const val CORNER_RADIUS = 9
+internal const val STROKE_WIDTH = 1
+internal const val SLOW_ANIMATION_MS = 500
+internal const val TEXT_SELECTION_ALPHA = 0.2f
 
 @VisibleForTesting
 internal const val PICKER_CD = "Picker"
@@ -132,11 +151,12 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
+    val backgroundColor = SalesforceSDKManager.getInstance().colorScheme().background
     val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = !closePicker
             viewModel.loading.value = true
-            viewModel.dynamicBackgroundColor.value = Color.White
+            viewModel.dynamicBackgroundColor.value = backgroundColor
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
         }
     }
@@ -170,7 +190,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
         loginServerManager.addCustomLoginServer(name, url)
         viewModel.showServerPicker.value = false
         viewModel.loading.value = true
-        viewModel.dynamicBackgroundColor.value = Color.White
+        viewModel.dynamicBackgroundColor.value = backgroundColor
     }
 
     when(pickerStyle) {
@@ -220,17 +240,17 @@ internal fun PickerBottomSheet(
         onDismissRequest = { /* Do nothing */ },
         sheetState = sheetState,
         dragHandle = null,
-        shape = RoundedCornerShape(9.dp),
-        containerColor = Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(CORNER_RADIUS.dp),
+        containerColor = colorScheme.primaryContainer,
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
-        val sfRipple = RippleConfiguration(color = Color(0xFF0B5CAB))
+        val sfRipple = RippleConfiguration(color = colorScheme.primary)
         val mutableList = remember { list.toMutableStateList() }
         var mutableSelectedListItem = selectedListItem
 
         Column(modifier = Modifier.animateContentSize().semantics { contentDescription = PICKER_CD }) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(HEADER_PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -244,11 +264,11 @@ internal fun PickerBottomSheet(
                         onClick = { addingNewServer = false },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
-                            contentColor = Color(0xFF747474),
+                            contentColor = colorScheme.secondary,
                             disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Transparent,
                         ),
-                        modifier = Modifier.size(30.dp),
+                        modifier = Modifier.size(ICON_SIZE.dp),
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
@@ -268,8 +288,8 @@ internal fun PickerBottomSheet(
                         }
                         PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_selector_text)
                     },
-                    color = Color.Black,
-                    fontSize = 20.sp,
+                    color = colorScheme.onSecondary,
+                    fontSize = HEADER_TEXT_SIZE.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 // Close Button
@@ -278,11 +298,11 @@ internal fun PickerBottomSheet(
                     onClick = { coroutineScope.launch { sheetState.hide() } },
                     colors = IconButtonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color(0xFF747474),
+                        contentColor = colorScheme.secondary,
                         disabledContainerColor = Color.Transparent,
                         disabledContentColor = Color.Transparent,
                     ),
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(ICON_SIZE.dp),
                 ) {
                     Icon(
                         Icons.Default.Close,
@@ -290,12 +310,12 @@ internal fun PickerBottomSheet(
                     )
                 }
             }
-            HorizontalDivider(thickness = 1.dp, color = Color(0xFFE5E5E5))
+            HorizontalDivider(thickness = STROKE_WIDTH.dp, color = colorScheme.surfaceVariant)
 
             Crossfade(
                 targetState = addingNewServer,
                 animationSpec = tween(
-                    durationMillis = 500,
+                    durationMillis = SLOW_ANIMATION_MS,
                     easing = LinearEasing
                 ),
             ) { showAddConnection ->
@@ -324,7 +344,7 @@ internal fun PickerBottomSheet(
                                     Row(
                                         modifier = Modifier.animateItem(
                                             placementSpec = tween(),
-                                            fadeOutSpec = tween(500),
+                                            fadeOutSpec = tween(SLOW_ANIMATION_MS),
                                         )
                                     ) {
                                         when (pickerStyle) {
@@ -347,35 +367,47 @@ internal fun PickerBottomSheet(
                                                 }
 
                                             PickerStyle.UserAccountPicker -> {
-                                                if (listItem is UserAccount) {
-                                                    UserAccountListItem(
-                                                        displayName = listItem.displayName,
-                                                        loginServer = listItem.loginServer,
-                                                        selected = selected,
-                                                        onItemSelected = { onItemSelected(listItem, true) },
-                                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                                    )
-                                                /*
-                                                 TODO: Remove this mock when a UserAccount can be created in without
-                                                 SalesforceSDKManger (for previews).  This would be trivial with an
-                                                 internal constructor if the class was converted to Kotlin.
-                                                */
-                                                } else if (listItem is UserAccountMock) {
-                                                    UserAccountListItem(
-                                                        displayName = listItem.displayName,
-                                                        loginServer = listItem.loginServer,
-                                                        selected = selected,
-                                                        onItemSelected = { onItemSelected(listItem, true) },
-                                                        profilePhoto = listItem.profilePhoto?.let { painterResource(it.generationId) },
-                                                    )
+                                                if (LocalInspectionMode.current) {
+                                                    /*
+                                                     TODO: Remove this mock when a UserAccount can be created in without
+                                                     SalesforceSDKManger (for previews).  This would be trivial with an
+                                                     internal constructor if the class was converted to Kotlin.
+                                                    */
+                                                    if (listItem is UserAccountMock) {
+                                                        UserAccountListItem(
+                                                            displayName = listItem.displayName,
+                                                            loginServer = listItem.loginServer,
+                                                            selected = selected,
+                                                            onItemSelected = { onItemSelected(listItem, true) },
+                                                            profilePhoto = listItem.profilePhoto?.let {
+                                                                painterResource(
+                                                                    it.generationId
+                                                                )
+                                                            },
+                                                        )
+                                                    }
+                                                } else {
+                                                    if (listItem is UserAccount) {
+                                                        UserAccountListItem(
+                                                            displayName = listItem.displayName,
+                                                            loginServer = listItem.loginServer,
+                                                            selected = selected,
+                                                            onItemSelected = { onItemSelected(listItem, true) },
+                                                            profilePhoto = listItem.profilePhoto?.let {
+                                                                painterResource(
+                                                                    it.generationId
+                                                                )
+                                                            },
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                     HorizontalDivider(
-                                        thickness = 1.dp,
-                                        modifier = Modifier.padding(horizontal = 12.dp),
-                                        color = Color(0xFFE5E5E5),
+                                        thickness = STROKE_WIDTH.dp,
+                                        modifier = Modifier.padding(horizontal = PADDING_SIZE.dp),
+                                        color = colorScheme.surfaceVariant,
                                     )
 
                                     // Add New Connection/Account Button
@@ -389,21 +421,21 @@ internal fun PickerBottomSheet(
                                                     }
                                                 },
                                                 modifier = Modifier
-                                                    .padding(12.dp)
+                                                    .padding(PADDING_SIZE.dp)
                                                     .fillMaxWidth()
                                                     .semantics { contentDescription = ADD_NEW_BUTTON_CD },
-                                                shape = RoundedCornerShape(9.dp),
-                                                border = BorderStroke(1.dp, Color(0xFFc9c9c9)),
+                                                shape = RoundedCornerShape(CORNER_RADIUS.dp),
+                                                contentPadding = PaddingValues(PADDING_SIZE.dp),
+                                                border = BorderStroke(STROKE_WIDTH.dp, colorScheme.outline),
                                             ) {
                                                 Text(
                                                     text = when (pickerStyle) {
                                                         PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
                                                         PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
                                                     },
-                                                    color = Color(0xFF0B5CAB),
-                                                    fontSize = 16.sp,
+                                                    color = colorScheme.primary,
+                                                    fontSize = TEXT_SIZE.sp,
                                                     fontWeight = FontWeight.Medium,
-                                                    modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
                                                 )
                                             }
                                         }
@@ -430,8 +462,8 @@ internal fun AddConnection(
     var url by remember { mutableStateOf(previewUrl) }
     val focusRequester = remember { FocusRequester() }
     val sfTextSection = TextSelectionColors(
-        handleColor = Color(0xFF0176D3),
-        backgroundColor = Color(0xFF0176D3).copy(alpha = 0.2f),
+        handleColor = colorScheme.tertiary,
+        backgroundColor = colorScheme.tertiary.copy(alpha = TEXT_SELECTION_ALPHA),
     )
 
     Column {
@@ -443,18 +475,18 @@ internal fun AddConnection(
                 label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, top = 6.dp)
+                    .padding(PADDING_SIZE.dp)
                     .focusRequester(focusRequester),
                 colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFF0176D3),
-                    focusedLabelColor = Color(0xFF0176D3),
-                    focusedTextColor = Color(0xFF181818),
+                    focusedIndicatorColor = colorScheme.tertiary,
+                    focusedLabelColor = colorScheme.tertiary,
+                    focusedTextColor = colorScheme.onSecondary,
                     focusedContainerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color(0xFF939393),
-                    unfocusedLabelColor = Color(0xFF939393),
+                    unfocusedIndicatorColor = colorScheme.hintTextColor,
+                    unfocusedLabelColor = colorScheme.hintTextColor,
                     unfocusedContainerColor = Color.Transparent,
-                    unfocusedTextColor = Color(0xFF747474),
-                    cursorColor = Color(0xFF0176D3),
+                    unfocusedTextColor = colorScheme.secondary,
+                    cursorColor = colorScheme.tertiary,
                 ),
             )
             // Url input field
@@ -465,17 +497,17 @@ internal fun AddConnection(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp, top = 6.dp),
+                    .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp),
                 colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color(0xFF0176D3),
-                    focusedLabelColor = Color(0xFF0176D3),
-                    focusedTextColor = Color(0xFF181818),
+                    focusedIndicatorColor = colorScheme.tertiary,
+                    focusedLabelColor = colorScheme.tertiary,
+                    focusedTextColor = colorScheme.onSecondary,
                     focusedContainerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color(0xFF939393),
-                    unfocusedLabelColor = Color(0xFF939393),
+                    unfocusedIndicatorColor = colorScheme.hintTextColor,
+                    unfocusedLabelColor = colorScheme.hintTextColor,
                     unfocusedContainerColor = Color.Transparent,
-                    unfocusedTextColor = Color(0xFF747474),
-                    cursorColor = Color(0xFF0176D3),
+                    unfocusedTextColor = colorScheme.secondary,
+                    cursorColor = colorScheme.tertiary,
                 ),
             )
         }
@@ -486,14 +518,15 @@ internal fun AddConnection(
         val validInput = trimmedName.isNotBlank() && serverUrl != null
         Button(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(PADDING_SIZE.dp)
                 .fillMaxWidth(),
-            shape = RoundedCornerShape(9.dp),
+            shape = RoundedCornerShape(CORNER_RADIUS.dp),
+            contentPadding = PaddingValues(PADDING_SIZE.dp),
             colors = ButtonColors(
-                containerColor = Color(0xFF0176D3),
-                contentColor = Color(0xFF0176D3),
-                disabledContainerColor = Color(0xFFE5E5E5),
-                disabledContentColor = Color(0xFFE5E5E5),
+                containerColor = colorScheme.tertiary,
+                contentColor = colorScheme.tertiary,
+                disabledContainerColor = colorScheme.surfaceVariant,
+                disabledContentColor = colorScheme.surfaceVariant,
             ),
             enabled = validInput,
             onClick = { addNewLoginServer?.let { it(trimmedName, serverUrl!!) } },
@@ -501,8 +534,7 @@ internal fun AddConnection(
             Text(
                 text = stringResource(R.string.sf__server_url_save),
                 fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
-                color = if (validInput) Color(0xFFFFFFFF) else Color(0xFF747474),
-                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
             )
         }
     }
@@ -518,17 +550,19 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 }
 
 @Preview("Default", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionPreview() {
-    Column {
+        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection()
     }
 }
 
 @Preview("Values", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionValuesPreview() {
-    Column {
+        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection(
             getValidServer = { server: String -> server },
             previewName = "New Server",
@@ -537,58 +571,11 @@ private fun AddConnectionValuesPreview() {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
-@Composable
-private fun PickerBottomSheetLongListPreview(
-    @PreviewParameter(PickerStylePreviewParameterProvider::class) pickerStyle: PickerStyle,
-) {
-    val sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.Expanded, skipHiddenState = true)
-    val serverList = listOf(
-        LoginServer("Production", "https://login.salesforce.com", false),
-        LoginServer("Sandbox", "https://test.salesforce.com", false),
-        LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
-        LoginServer("Production2", "https://login.salesforce.com", false),
-        LoginServer("Sandbox2", "https://test.salesforce.com", false),
-        LoginServer("Custom2", "https://mobilesdk.my.salesforce.com", true),
-        LoginServer("Production3", "https://login.salesforce.com", false),
-        LoginServer("Sandbox3", "https://test.salesforce.com", false),
-        LoginServer("Custom3", "https://mobilesdk.my.salesforce.com", true),
-    )
-    val userAccountList = listOf(
-        UserAccountMock("Test User", "https://login.salesforce.com", null),
-        UserAccountMock("Second User", "https://mobilesdk.my.salesforce.com", null),
-        UserAccountMock("Third User", "https://login.salesforce.com", null),
-        UserAccountMock("Forth User", "https://mobilesdk.my.salesforce.com", null),
-        UserAccountMock("Fifth User", "https://login.salesforce.com", null),
-        UserAccountMock("Sixth User", "https://mobilesdk.my.salesforce.com", null),
-        UserAccountMock("Seventh User", "https://login.salesforce.com", null),
-        UserAccountMock("Eighth User", "https://mobilesdk.my.salesforce.com", null),
-    )
-
-    when(pickerStyle) {
-        PickerStyle.LoginServerPicker ->
-            PickerBottomSheet(
-                pickerStyle = pickerStyle,
-                sheetState = sheetState,
-                list = serverList,
-                selectedListItem = serverList[1],
-                onItemSelected = { _,_ -> },
-            )
-        PickerStyle.UserAccountPicker ->
-            PickerBottomSheet(
-                pickerStyle = pickerStyle,
-                sheetState = sheetState,
-                list = userAccountList,
-                selectedListItem = userAccountList.first(),
-                onItemSelected = { _,_ -> },
-            )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @PreviewScreenSizes
-@Preview
 @Composable
 private fun PickerBottomSheetPreview(
     @PreviewParameter(PickerStylePreviewParameterProvider::class) pickerStyle: PickerStyle,
@@ -604,23 +591,26 @@ private fun PickerBottomSheetPreview(
         UserAccountMock("Second User", "https://mobilesdk.my.salesforce.com", null),
     )
 
-    when(pickerStyle) {
-        PickerStyle.LoginServerPicker ->
-            PickerBottomSheet(
-                pickerStyle = pickerStyle,
-                sheetState = sheetState,
-                list = serverList,
-                selectedListItem = serverList[1],
-                onItemSelected = { _,_ -> },
-            )
-        PickerStyle.UserAccountPicker ->
-            PickerBottomSheet(
-                pickerStyle = pickerStyle,
-                sheetState = sheetState,
-                list = userAccountList,
-                selectedListItem = userAccountList.first(),
-                onItemSelected = { _,_ -> },
-            )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        when (pickerStyle) {
+            PickerStyle.LoginServerPicker ->
+                PickerBottomSheet(
+                    pickerStyle = pickerStyle,
+                    sheetState = sheetState,
+                    list = serverList,
+                    selectedListItem = serverList[1],
+                    onItemSelected = { _, _ -> },
+                )
+
+            PickerStyle.UserAccountPicker ->
+                PickerBottomSheet(
+                    pickerStyle = pickerStyle,
+                    sheetState = sheetState,
+                    list = userAccountList,
+                    selectedListItem = userAccountList.first(),
+                    onItemSelected = { _, _ -> },
+                )
+        }
     }
 }
 

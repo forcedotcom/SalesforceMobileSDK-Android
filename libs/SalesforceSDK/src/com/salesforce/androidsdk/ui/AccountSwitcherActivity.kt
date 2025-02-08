@@ -4,9 +4,10 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.MaterialTheme
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.PickerBottomSheet
 import com.salesforce.androidsdk.ui.components.PickerStyle
-import com.salesforce.androidsdk.ui.theme.LoginWebviewTheme
 
 
 /**
@@ -22,8 +23,7 @@ open class AccountSwitcherActivity: AppCompatActivity() {
 
         // Set content
         setContent {
-            /* TODO: Update with support for light, dark and system themes: W-17687751 */
-            LoginWebviewTheme {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
                 PickerBottomSheet(PickerStyle.UserAccountPicker)
             }
         }

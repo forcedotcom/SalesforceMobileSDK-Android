@@ -75,6 +75,12 @@ object SFColors {
     fun primaryColorDark(context: Context) = ContextCompat.getColor(context, R.color.sf__primary_color_dark)
 
     @ColorInt
+    fun onPrimaryColor(context: Context) = ContextCompat.getColor(context, R.color.sf__on_primary)
+
+    @ColorInt
+    fun onPrimaryColorDark(context: Context) = ContextCompat.getColor(context, R.color.sf__on_primary)
+
+    @ColorInt
     fun secondaryColor(context: Context) = ContextCompat.getColor(context, R.color.sf__secondary_color)
 
     @ColorInt
@@ -90,10 +96,28 @@ object SFColors {
     fun accessibilityNavColor(context: Context) = ContextCompat.getColor(context, R.color.sf__accessibility_nav_color)
 
     @ColorInt
-    fun subtextColor(context: Context) = ContextCompat.getColor(context, R.color.sf__subtext_color)
+    fun subTextColor(context: Context) = ContextCompat.getColor(context, R.color.sf__subtext_color)
 
     @ColorInt
-    fun api35StatusBarColor(context: Context) = ContextCompat.getColor(context, R.color.sf__api_35_status_bar_color)
+    fun outlineColor(context: Context) = ContextCompat.getColor(context, R.color.sf__outline)
+
+    @ColorInt
+    fun outlineColorDark(context: Context) = ContextCompat.getColor(context, R.color.sf__outline_dark)
+
+    @ColorInt
+    fun tertiaryColor(context: Context) = ContextCompat.getColor(context, R.color.sf__tertiary)
+
+    @ColorInt
+    fun tertiaryColorDark(context: Context) = ContextCompat.getColor(context, R.color.sf__tertiary_dark)
+
+    @ColorInt
+    fun errorColor(context: Context) = ContextCompat.getColor(context, R.color.sf__error)
+
+    @ColorInt
+    fun disabledText(context: Context) = ContextCompat.getColor(context, R.color.sf__disabled_text)
+
+    @ColorInt
+    fun disabledTextDark(context: Context) = ContextCompat.getColor(context, R.color.sf__disabled_text_dark)
 }
 
 @Composable
@@ -101,16 +125,21 @@ fun sfLightColors(): ColorScheme {
     val context = LocalContext.current
     return lightColorScheme(
         primary = Color(SFColors.primaryColor(context)),
-        primaryContainer = Color(SFColors.primaryColorDark(context)),
+        primaryContainer = Color(SFColors.layoutBackground(context)),
         secondary = Color(SFColors.secondaryColor(context)),
         background = Color(SFColors.background(context)),
         surface = Color(SFColors.layoutBackground(context)),
-        onPrimary = Color(SFColors.secondaryColor(context)),
+        onPrimary = Color(SFColors.onPrimaryColor(context)),
         onSecondary = Color(SFColors.textColor(context)),
         onBackground = Color(SFColors.textColor(context)),
         onSurface = Color(SFColors.textColor(context)),
         inverseSurface = Color(SFColors.background(context)), // Login background
-        inverseOnSurface = Color(SFColors.background(context)) // Login navigation bar
+        inverseOnSurface = Color(SFColors.background(context)), // Login navigation bar
+        surfaceVariant = Color(SFColors.secondaryColorDark(context)),
+        outline = Color(SFColors.outlineColor(context)),
+        tertiary = Color(SFColors.tertiaryColor(context)),
+        error = Color(SFColors.errorColor(context)),
+        onErrorContainer = Color(SFColors.disabledText(context)),
     )
 }
 
@@ -118,17 +147,22 @@ fun sfLightColors(): ColorScheme {
 fun sfDarkColors(): ColorScheme {
     val context = LocalContext.current
     return darkColorScheme(
-        primary = Color(SFColors.primaryColor(context)),
-        primaryContainer = Color(SFColors.primaryColorDark(context)),
+        primary = Color(SFColors.primaryColorDark(context)),
+        primaryContainer = Color(SFColors.layoutBackgroundDark(context)),
         secondary = Color(SFColors.secondaryColorDark(context)),
         background = Color(SFColors.backgroundDark(context)),
         surface = Color(SFColors.layoutBackgroundDark(context)),
-        onPrimary = Color(SFColors.secondaryColorDark(context)),
+        onPrimary = Color(SFColors.onPrimaryColorDark(context)),
         onSecondary = Color(SFColors.textColorDark(context)),
         onBackground = Color(SFColors.textColorDark(context)),
         onSurface = Color(SFColors.textColorDark(context)),
         inverseSurface = Color(SFColors.backgroundDark(context)), // Default dark background
-        inverseOnSurface = Color(SFColors.backgroundDark(context)) // Default dark navigation bar
+        inverseOnSurface = Color(SFColors.backgroundDark(context)), // Default dark navigation bar
+        surfaceVariant = Color(SFColors.subTextColor(context)),
+        outline = Color(SFColors.outlineColorDark(context)),
+        tertiary = Color(SFColors.tertiaryColorDark(context)),
+        error = Color(SFColors.errorColor(context)),
+        onErrorContainer = Color(SFColors.disabledTextDark(context)),
     )
 }
 
@@ -149,3 +183,11 @@ fun sfDarkLoginColors(): ColorScheme {
         inverseOnSurface = Color(SFColors.background(context)) // Login-specific navigation bar
     )
 }
+
+val ColorScheme.hintTextColor: Color
+    @Composable
+    get() = Color(SFColors.hintColor(LocalContext.current))
+
+val ColorScheme.subTextColor: Color
+    @Composable
+    get() = Color(SFColors.subTextColor(LocalContext.current))

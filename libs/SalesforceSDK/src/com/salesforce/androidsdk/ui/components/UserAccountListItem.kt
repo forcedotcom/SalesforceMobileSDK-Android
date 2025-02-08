@@ -26,16 +26,21 @@
  */
 package com.salesforce.androidsdk.ui.components
 
+import android.content.res.Configuration
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -44,7 +49,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -54,6 +58,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.ui.theme.subTextColor
 
 @VisibleForTesting
 internal const val USER_ACCOUNT_CD = "User Account List Item"
@@ -66,101 +73,113 @@ fun UserAccountListItem(
     onItemSelected: () -> Unit,
     profilePhoto: Painter?,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-            .semantics { contentDescription = USER_ACCOUNT_CD }
-            .clickable(
-                onClickLabel = "Login server selected.",
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = Color(0xFF181818)),
-            ) {
-                onItemSelected()
-            },
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = { onItemSelected() },
-            colors = RadioButtonDefaults.colors(
-                selectedColor = Color(0xFF0176D3),
-                unselectedColor = Color(0xFF747474)
-            ),
-            modifier = Modifier.semantics { contentDescription = RADIO_BUTTON_CD },
-        )
-        Column(
-            horizontalAlignment = Alignment.Start,
+    Box {
+        Row(
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+                .semantics { contentDescription = USER_ACCOUNT_CD }
+                .clickable(
+                    onClickLabel = "Login server selected.",
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(color = colorScheme.secondary),
+                ) {
+                    onItemSelected()
+                },
         ) {
-            Image(
-                profilePhoto ?: painterResource(R.drawable.sf__android_astro),
-                contentDescription = "Profile Photo",
-                modifier = Modifier.requiredHeight(32.dp)
+            RadioButton(
+                selected = selected,
+                onClick = { onItemSelected() },
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = colorScheme.tertiary,
+                    unselectedColor = colorScheme.secondary
+                ),
+                modifier = Modifier.semantics { contentDescription = RADIO_BUTTON_CD },
             )
-        }
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                displayName,
-                fontSize = 16.sp,
-                color = Color(0xFF181818),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                loginServer,
-                fontSize = 16.sp,
-                color = Color(0xFF444444),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Image(
+                    profilePhoto ?: painterResource(R.drawable.sf__android_astro),
+                    contentDescription = "Profile Photo",
+                    modifier = Modifier.requiredHeight(32.dp)
+                )
+            }
+            Column(modifier = Modifier.padding(PADDING_SIZE.dp)) {
+                Text(
+                    displayName,
+                    fontSize = 16.sp,
+                    color = colorScheme.secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    loginServer,
+                    fontSize = 16.sp,
+                    color = colorScheme.subTextColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
 
-@Preview("", showBackground = true, heightDp = 60)
+@Preview("", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun UserAccountPreview() {
-    UserAccountListItem(
-        "Test User",
-        "https://login.salesforce.com",
-        selected = false,
-        onItemSelected = { },
-        painterResource(R.drawable.sf__salesforce_logo),
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        UserAccountListItem(
+            "Test User",
+            "https://login.salesforce.com",
+            selected = false,
+            onItemSelected = { },
+            painterResource(R.drawable.sf__salesforce_logo),
+        )
+    }
 }
 
-@Preview("Selected", showBackground = true, heightDp = 60)
+@Preview("Selected", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun UserAccountSelectedPreview() {
-    UserAccountListItem(
-        "Test User",
-        "https://login.salesforce.com",
-        selected = true,
-        onItemSelected = { },
-        painterResource(R.drawable.sf__salesforce_logo),
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        UserAccountListItem(
+            "Test User",
+            "https://login.salesforce.com",
+            selected = true,
+            onItemSelected = { },
+            painterResource(R.drawable.sf__salesforce_logo),
+        )
+    }
 }
 
-@Preview (name = "User account without provided profile picture.", showBackground = true, heightDp = 60)
+@Preview (name = "User account without provided profile picture.", showBackground = true)
 @Composable
 private fun UserAccountPreviewNoPic() {
-    UserAccountListItem(
-        "Another Test User",
-        "https://mobilesdk.my.salesforce.com",
-        selected = false,
-        onItemSelected = { },
-        profilePhoto = null,
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        UserAccountListItem(
+            "Another Test User",
+            "https://mobilesdk.my.salesforce.com",
+            selected = false,
+            onItemSelected = { },
+            profilePhoto = null,
+        )
+    }
 }
 
-@Preview ("User Account with very long username and server url.", showBackground = true, heightDp = 60)
+@Preview ("User Account with very long username and server url.", showBackground = true)
 @Composable
 private fun UserAccountPreviewLong() {
-    UserAccountListItem(
-        "Looooooooooooooong Naaaaaaaaaaaaaaaaaaaammmmmmeeeee",
-        "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
-        selected = false,
-        onItemSelected = { },
-        profilePhoto = null,
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        UserAccountListItem(
+            "Looooooooooooooong Naaaaaaaaaaaaaaaaaaaammmmmmeeeee",
+            "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
+            selected = false,
+            onItemSelected = { },
+            profilePhoto = null,
+        )
+    }
 }
 

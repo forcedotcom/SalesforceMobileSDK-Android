@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui.components
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntOffsetAsState
@@ -35,6 +36,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +55,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
@@ -66,7 +70,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -80,8 +83,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.ui.theme.subTextColor
 
 private const val DELETE_BUTTON_SIZE = 80
+
 @VisibleForTesting
 internal const val LOGIN_SERVER_CD = "Login Server List Item"
 // Not only visible for testing because also used in UserAccountListItem.
@@ -130,7 +137,7 @@ fun LoginServerListItem(
                 .clickable(
                     onClickLabel = "Login server selected.",
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(color = Color(0xFF181818)),
+                    indication = ripple(color = colorScheme.onSecondary),
                     onClick = {
                         if (deleting) {
                             deleting = false
@@ -144,23 +151,23 @@ fun LoginServerListItem(
                 selected = selected,
                 onClick = { onItemSelected(server, true) },
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = Color(0xFF0176D3),
-                    unselectedColor = Color(0xFF747474)
+                    selectedColor = colorScheme.tertiary,
+                    unselectedColor = colorScheme.secondary
                 ),
                 modifier = Modifier.offset { offset }.semantics { contentDescription = RADIO_BUTTON_CD }
             )
-            Column(modifier = Modifier.weight(1f).padding(12.dp).offset { offset }) {
+            Column(modifier = Modifier.weight(1f).padding(PADDING_SIZE.dp).offset { offset }) {
                 Text(
                     server.name,
-                    fontSize = 16.sp,
-                    color = Color(0xFF181818),
+                    fontSize = TEXT_SIZE.sp,
+                    color = colorScheme.onSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     server.url,
-                    fontSize = 16.sp,
-                    color = Color(0xFF444444),
+                    fontSize = TEXT_SIZE.sp,
+                    color = colorScheme.subTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -172,12 +179,12 @@ fun LoginServerListItem(
                         onClick = { deleting = true },
                         enabled = !deleting,
                         interactionSource = null,
-                        modifier = Modifier.padding(end = 12.dp).size(32.dp).offset { offset },
+                        modifier = Modifier.padding(end = PADDING_SIZE.dp).size(ICON_SIZE.dp).offset { offset },
                     ) {
                         Icon(
                             Icons.TwoTone.Delete,
                             contentDescription = REMOVE_SERVER_CD,
-                            tint = Color(0xFF747474).copy(
+                            tint = colorScheme.secondary.copy(
                                 alpha = if (deleting) 0f else 1f
                             ),
                         )
@@ -197,7 +204,7 @@ fun LoginServerListItem(
                 exit = shrinkHorizontally { -deleteButtonPixels }
             ) {
                 Box(
-                    modifier = Modifier.background(Color(0xFFBA0517))
+                    modifier = Modifier.background(colorScheme.error)
                         .width(DELETE_BUTTON_SIZE.dp)
                         .height(rowHeightDp.value)
                         .semantics { contentDescription = DELETE_BUTTON_CD }
@@ -205,7 +212,7 @@ fun LoginServerListItem(
                 ) {
                     Text(
                         text = stringResource(R.string.sf__server_url_delete),
-                        color = Color(0xFFFFFFFF),
+                        color = colorScheme.onPrimary,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
@@ -215,81 +222,96 @@ fun LoginServerListItem(
 }
 
 @Preview("Default Server", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun DefaultServerPreview() {
-    LoginServerListItem(
-        server = LoginServer("Production", "https://login.salesforce.com", false),
-        selected = true,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer("Production", "https://login.salesforce.com", false),
+            selected = true,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
 
 @Preview("Very Long Default Server", showBackground = true)
 @Composable
 private fun LongDefaultServerPreview() {
-    LoginServerListItem(
-        server = LoginServer(
-            "Production Production Production Production",
-            "https://login.salesforce.comhttps://login.salesforce.comhttps://login.salesforce.comr",
-            false),
-        selected = true,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer(
+                "Production Production Production Production",
+                "https://login.salesforce.comhttps://login.salesforce.comhttps://login.salesforce.comr",
+                false
+            ),
+            selected = true,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
 
 @Preview("Custom Server", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun CustomServerPreview() {
-    LoginServerListItem(
-        server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
-        selected = false,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
-
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
+            selected = false,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
 
 @Preview("Deleting", showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun DeletingLoginServer() {
-    LoginServerListItem(
-        server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
-        selected = false,
-        previewDeleting = true,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer("Custom", "https://mobilesdk.my.salesforce.com", true),
+            selected = false,
+            previewDeleting = true,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
 
 @Preview("Very Long Custom Server", showBackground = true)
 @Composable
 private fun LongServerPreview() {
-    LoginServerListItem(
-        server = LoginServer(
-            "Custom Long Custom Long Custom Long Custom Long Custom Long ",
-            "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
-            true,
-        ),
-        selected = false,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer(
+                "Custom Long Custom Long Custom Long Custom Long Custom Long ",
+                "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
+                true,
+            ),
+            selected = false,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
 
 @Preview("Very Long Custom Server Deleting", showBackground = true)
 @Composable
 private fun LongServerDeletingPreview() {
-    LoginServerListItem(
-        server = LoginServer(
-            "Custom Long Custom Long Custom Long Custom Long Custom Long ",
-            "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
-            true,
-        ),
-        selected = false,
-        previewDeleting = true,
-        onItemSelected = { _,_ -> },
-        removeServer = { },
-    )
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        LoginServerListItem(
+            server = LoginServer(
+                "Custom Long Custom Long Custom Long Custom Long Custom Long ",
+                "https://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.comhttps://mobilesdk.my.salesforce.com",
+                true,
+            ),
+            selected = false,
+            previewDeleting = true,
+            onItemSelected = { _, _ -> },
+            removeServer = { },
+        )
+    }
 }
