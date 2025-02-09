@@ -265,7 +265,7 @@ public class LoginServerManagerTest {
 		int originalServerSize = 4; // 3 default servers + 1 custom
 		List<LoginServer> servers = loginServerManager.getLoginServers();
 		Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
-		LoginServer lastServer = servers.getLast();
+		LoginServer lastServer = servers.get(3);
 
 		// Remove
 		loginServerManager.removeServer(lastServer);
@@ -313,6 +313,38 @@ public class LoginServerManagerTest {
 		loginServerManager.removeServer(serverToDelete);
 		servers = loginServerManager.getLoginServers();
 		Assert.assertEquals("Servers should not be removed.", originalServerSize, servers.size());
+	}
+
+	/**
+	 * Test attempting to add a duplicate server default or custom server.
+	 */
+	@Test
+	public void testAddingDuplicateServers() {
+		int originalServerSize = 3; // 3 default servers
+		List<LoginServer> servers = loginServerManager.getLoginServers();
+		Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+		LoginServer prodServer = loginServerManager.getLoginServerFromURL(PRODUCTION_URL);
+
+		// Attempt to add a default server as a custom server.
+		loginServerManager.addCustomLoginServer(prodServer.name, prodServer.url);
+		Assert.assertEquals("Duplicate server should not be added.", originalServerSize,
+				loginServerManager.getLoginServers().size());
+
+		// Attempt to add a duplicate custom server.
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		Assert.assertEquals("Custom server should be added.", (originalServerSize + 1),
+				loginServerManager.getLoginServers().size());
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		Assert.assertEquals("Duplicate custom server should not be added.", (originalServerSize + 1),
+				loginServerManager.getLoginServers().size());
+
+		// Ensure servers that aren't duplicates are allowed.
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, PRODUCTION_URL);
+		Assert.assertEquals("Custom server should be added.", (originalServerSize + 2),
+				loginServerManager.getLoginServers().size());
+		loginServerManager.addCustomLoginServer(prodServer.name, CUSTOM_URL);
+		Assert.assertEquals("Custom server should be added..", (originalServerSize + 3),
+				loginServerManager.getLoginServers().size());
 	}
 
 	private void assertProduction(LoginServer server) {

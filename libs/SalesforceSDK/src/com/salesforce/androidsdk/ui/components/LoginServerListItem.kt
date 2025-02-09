@@ -135,7 +135,7 @@ fun LoginServerListItem(
                 .onSizeChanged { size -> rowSizePixels = size }
                 .semantics { contentDescription = LOGIN_SERVER_CD }
                 .clickable(
-                    onClickLabel = "Login server selected.",
+                    onClickLabel = "Select login server.",
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.onSecondary),
                     onClick = {

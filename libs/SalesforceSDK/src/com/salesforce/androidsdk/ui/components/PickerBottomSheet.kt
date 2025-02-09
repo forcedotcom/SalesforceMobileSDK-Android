@@ -245,7 +245,7 @@ internal fun PickerBottomSheet(
     ) {
         var addingNewServer by remember { mutableStateOf(false) }
         val sfRipple = RippleConfiguration(color = colorScheme.primary)
-        val mutableList = remember { list.toMutableStateList() }
+        val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
         var mutableSelectedListItem = selectedListItem
 
         Column(modifier = Modifier.animateContentSize().semantics { contentDescription = PICKER_CD }) {
@@ -540,6 +540,16 @@ internal fun AddConnection(
     }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+}
+
+// Ensure no duplicates in the list because they are not allowed by lazy column.
+fun List<Any>.pickerDistinctBy() : List<Any> {
+    return this.distinctBy {
+        when(first()) {
+            is LoginServer -> with(it as LoginServer) { "$name$url" }
+            else -> it.toString()
+        }
+    }
 }
 
 // Get access to host activity from within Compose.  tail rec makes this safe.

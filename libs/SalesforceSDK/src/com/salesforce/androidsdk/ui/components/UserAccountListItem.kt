@@ -80,7 +80,7 @@ fun UserAccountListItem(
             modifier = Modifier.fillMaxWidth()
                 .semantics { contentDescription = USER_ACCOUNT_CD }
                 .clickable(
-                    onClickLabel = "Login server selected.",
+                    onClickLabel = "Select user account.",
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.secondary),
                 ) {
@@ -102,20 +102,20 @@ fun UserAccountListItem(
                 Image(
                     profilePhoto ?: painterResource(R.drawable.sf__android_astro),
                     contentDescription = "Profile Photo",
-                    modifier = Modifier.requiredHeight(32.dp)
+                    modifier = Modifier.requiredHeight(ICON_SIZE.dp)
                 )
             }
             Column(modifier = Modifier.padding(PADDING_SIZE.dp)) {
                 Text(
                     displayName,
-                    fontSize = 16.sp,
-                    color = colorScheme.secondary,
+                    fontSize = TEXT_SIZE.sp,
+                    color = colorScheme.onSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     loginServer,
-                    fontSize = 16.sp,
+                    fontSize = TEXT_SIZE.sp,
                     color = colorScheme.subTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
