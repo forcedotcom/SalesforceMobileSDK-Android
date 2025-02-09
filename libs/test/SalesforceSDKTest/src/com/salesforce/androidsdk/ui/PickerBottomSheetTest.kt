@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.ui.components.ADD_NEW_BUTTON_CD
 import com.salesforce.androidsdk.ui.components.AddConnection
 import com.salesforce.androidsdk.ui.components.CLOSE_BUTTON_CD
 import com.salesforce.androidsdk.ui.components.DELETE_BUTTON_CD
+import com.salesforce.androidsdk.ui.components.LOGIN_SERVER_CD
 import com.salesforce.androidsdk.ui.components.PICKER_CD
 import com.salesforce.androidsdk.ui.components.PickerBottomSheet
 import com.salesforce.androidsdk.ui.components.PickerStyle
@@ -69,7 +70,6 @@ private const val TEST_NAME = "Production"
 private const val VALID_URL = "https://login.salesforce.com"
 private const val INVALID_URL = "invalid"
 private const val WITH_VALIDATION = "_with_validation"
-private const val LOGIN_SERVER_DESC = "Login Server List Item"
 
 private val prodServer = LoginServer(TEST_NAME, VALID_URL, false)
 private val sandboxServer = LoginServer("Sandbox", "https://test.salesforce.com", false)
@@ -81,7 +81,7 @@ private val user2 = UserAccountMock("user2", sandboxServer.url)
 private val userList = listOf(user1, user2)
 
 @VisibleForTesting
-internal val customsRowCd = (hasContentDescription(LOGIN_SERVER_DESC)
+internal val customsRowCd = (hasContentDescription(LOGIN_SERVER_CD)
         and hasText(customServer.name) and hasText(customServer.url))
 
 class PickerBottomSheetTest {
@@ -93,11 +93,11 @@ class PickerBottomSheetTest {
 
     private val pickerCd = hasContentDescription(PICKER_CD)
     private val closeButtonCd = hasContentDescription(CLOSE_BUTTON_CD)
-    private val prodRowCd = (hasContentDescription(LOGIN_SERVER_DESC)
+    private val prodRowCd = (hasContentDescription(LOGIN_SERVER_CD)
             and hasText(prodServer.name) and hasText(prodServer.url))
-    private val sandboxRowCd = (hasContentDescription(LOGIN_SERVER_DESC)
+    private val sandboxRowCd = (hasContentDescription(LOGIN_SERVER_CD)
             and hasText(sandboxServer.name) and hasText(sandboxServer.url))
-    private val customsRowCd = (hasContentDescription(LOGIN_SERVER_DESC)
+    private val customsRowCd = (hasContentDescription(LOGIN_SERVER_CD)
             and hasText(customServer.name) and hasText(customServer.url))
     private val user1RowCd = (hasContentDescription(USER_ACCOUNT_CD)
             and hasText(user1.displayName) and hasText(user1.loginServer))
@@ -376,12 +376,12 @@ class PickerBottomSheetTest {
         val customListItem = composeTestRule.onNode(customsRowCd)
         val customListItemRadioButton = customListItem.onChildAt(0)
         val customListItemRemoveButton = customListItem.onChildAt(1)
-        val custom2ListItem = composeTestRule.onNode((hasContentDescription(LOGIN_SERVER_DESC)
+        val custom2ListItem = composeTestRule.onNode((hasContentDescription(LOGIN_SERVER_CD)
                 and hasText(customServer2.name) and hasText(customServer2.url)))
         val custom2ListItemRadioButton = custom2ListItem.onChildAt(0)
         val custom2ListItemRemoveButton = custom2ListItem.onChildAt(1)
         val custom2ListItemDeleteButton = composeTestRule.onNode(hasContentDescription(DELETE_BUTTON_CD))
-        val custom3ListItem = composeTestRule.onNode((hasContentDescription(LOGIN_SERVER_DESC)
+        val custom3ListItem = composeTestRule.onNode((hasContentDescription(LOGIN_SERVER_CD)
                 and hasText(customServer3.name) and hasText(customServer3.url)))
         val custom3ListItemRadioButton = custom3ListItem.onChildAt(0)
         val custom3ListItemRemoveButton = custom3ListItem.onChildAt(1)

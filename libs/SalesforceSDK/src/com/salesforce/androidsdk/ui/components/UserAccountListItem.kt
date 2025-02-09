@@ -82,7 +82,7 @@ fun UserAccountListItem(
                 .clickable(
                     onClickLabel = "Select user account.",
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(color = colorScheme.secondary),
+                    indication = ripple(color = colorScheme.onSecondary),
                 ) {
                     onItemSelected()
                 },

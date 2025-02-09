@@ -94,7 +94,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -367,39 +366,35 @@ internal fun PickerBottomSheet(
                                                 }
 
                                             PickerStyle.UserAccountPicker -> {
-                                                if (LocalInspectionMode.current) {
-                                                    /*
-                                                     TODO: Remove this mock when a UserAccount can be created in without
-                                                     SalesforceSDKManger (for previews).  This would be trivial with an
-                                                     internal constructor if the class was converted to Kotlin.
-                                                    */
-                                                    if (listItem is UserAccountMock) {
-                                                        UserAccountListItem(
-                                                            displayName = listItem.displayName,
-                                                            loginServer = listItem.loginServer,
-                                                            selected = selected,
-                                                            onItemSelected = { onItemSelected(listItem, true) },
-                                                            profilePhoto = listItem.profilePhoto?.let {
-                                                                painterResource(
-                                                                    it.generationId
-                                                                )
-                                                            },
-                                                        )
-                                                    }
-                                                } else {
-                                                    if (listItem is UserAccount) {
-                                                        UserAccountListItem(
-                                                            displayName = listItem.displayName,
-                                                            loginServer = listItem.loginServer,
-                                                            selected = selected,
-                                                            onItemSelected = { onItemSelected(listItem, true) },
-                                                            profilePhoto = listItem.profilePhoto?.let {
-                                                                painterResource(
-                                                                    it.generationId
-                                                                )
-                                                            },
-                                                        )
-                                                    }
+                                                if (listItem is UserAccount) {
+                                                    UserAccountListItem(
+                                                        displayName = listItem.displayName,
+                                                        loginServer = listItem.loginServer,
+                                                        selected = selected,
+                                                        onItemSelected = { onItemSelected(listItem, true) },
+                                                        profilePhoto = listItem.profilePhoto?.let {
+                                                            painterResource(
+                                                                it.generationId
+                                                            )
+                                                        },
+                                                    )
+                                                /*
+                                                 TODO: Remove this mock when a UserAccount can be created in without
+                                                 SalesforceSDKManger (for previews).  This would be trivial with an
+                                                 internal constructor if the class was converted to Kotlin.
+                                                */
+                                                } else if (listItem is UserAccountMock) {
+                                                    UserAccountListItem(
+                                                        displayName = listItem.displayName,
+                                                        loginServer = listItem.loginServer,
+                                                        selected = selected,
+                                                        onItemSelected = { onItemSelected(listItem, true) },
+                                                        profilePhoto = listItem.profilePhoto?.let {
+                                                            painterResource(
+                                                                it.generationId
+                                                            )
+                                                        },
+                                                    )
                                                 }
                                             }
                                         }
@@ -544,10 +539,10 @@ internal fun AddConnection(
 
 // Ensure no duplicates in the list because they are not allowed by lazy column.
 fun List<Any>.pickerDistinctBy() : List<Any> {
-    return this.distinctBy {
-        when(first()) {
-            is LoginServer -> with(it as LoginServer) { "$name$url" }
-            else -> it.toString()
+    return distinctBy { listItem ->
+        when(listItem) {
+            is LoginServer -> with(listItem) { "$name$url" }
+            else -> listItem.toString()
         }
     }
 }
