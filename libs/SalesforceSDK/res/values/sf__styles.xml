@@ -174,7 +174,7 @@
 
     <style name="SalesforceSDK.ScreenLock" parent="@style/Theme.Design.NoActionBar">
         <item name="android:colorPrimary">@color/sf__primary_color</item>
-        <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfColorSecondary">@color/sf__on_primary</item>
         <item name="sfLayoutBackground">@color/sf__layout_background</item>
         <item name="android:colorBackground">@color/sf__background</item>
         <item name="android:textColor">@color/sf__text_color</item>
@@ -188,7 +188,7 @@
     </style>
 
     <style name="SalesforceSDK.ScreenLock.Dark">
-        <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfColorSecondary">@color/sf__on_primary</item>
         <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorBackground">@color/sf__background_dark</item>
         <item name="android:textColor">@color/sf__text_color_dark</item>
