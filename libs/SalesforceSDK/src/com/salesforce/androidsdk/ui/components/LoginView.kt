@@ -87,6 +87,8 @@ fun LoginView() {
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
     var showMenu by remember { mutableStateOf(false) }
+    val dynamicBackgroundColor = viewModel.dynamicBackgroundColor.value
+    val dynamicHeaderTextColor = viewModel.dynamicHeaderTextColor.value
     val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val titleText = if (viewModel.isUsingFrontDoorBridge) {
@@ -104,7 +106,7 @@ fun LoginView() {
                 title = viewModel.titleComposable ?: {
                     Text(
                         text = titleText,
-                        color = viewModel.dynamicHeaderTextColor.value,
+                        color = dynamicHeaderTextColor,
                         fontWeight = FontWeight.Bold,
                     )
                 },
@@ -113,7 +115,7 @@ fun LoginView() {
                         onClick = { showMenu = !showMenu },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
-                            contentColor = viewModel.dynamicHeaderTextColor.value,
+                            contentColor = dynamicHeaderTextColor,
                             disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Transparent,
                         ),
@@ -123,10 +125,9 @@ fun LoginView() {
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
-                        containerColor = Color.White,
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Change Server", color = Color.Gray) },
+                            text = { Text("Change Server") },
                             onClick = {
                                 viewModel.showServerPicker.value = true
                                 showMenu = false
@@ -137,11 +138,11 @@ fun LoginView() {
                                 viewModel.clearCookies()
                                 viewModel.reloadWebview()
                             },
-                            text = { Text("Clear Cookies", color = Color.Gray) },
+                            text = { Text("Clear Cookies") },
                         )
                         DropdownMenuItem(
                             onClick = { viewModel.reloadWebview() },
-                            text = { Text("Reload", color = Color.Gray) },
+                            text = { Text("Reload") },
                         )
                     }
                 },
@@ -151,7 +152,7 @@ fun LoginView() {
                             onClick = { activity.finish() },
                             colors = IconButtonColors(
                                 containerColor = Color.Transparent,
-                                contentColor = Color.Black,  // TODO: fix color
+                                contentColor = dynamicHeaderTextColor,
                                 disabledContainerColor = Color.Transparent,
                                 disabledContentColor = Color.Transparent,
                             ),
@@ -166,7 +167,7 @@ fun LoginView() {
             )
         },
         bottomBar = {
-            BottomAppBar(containerColor = viewModel.dynamicBackgroundColor.value) {
+            BottomAppBar(containerColor = dynamicBackgroundColor) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -208,7 +209,6 @@ fun LoginView() {
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(
-                    color = Color.Black,
                     modifier = Modifier
                         .size(50.dp)
                         .fillMaxSize(),
