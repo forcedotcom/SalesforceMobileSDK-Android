@@ -133,15 +133,6 @@ internal const val STROKE_WIDTH = 1
 internal const val SLOW_ANIMATION_MS = 500
 internal const val TEXT_SELECTION_ALPHA = 0.2f
 
-@VisibleForTesting
-internal const val PICKER_CD = "Picker"
-@VisibleForTesting
-internal const val CLOSE_BUTTON_CD = "Close"
-@VisibleForTesting
-internal const val BACK_BUTTON_CD = "Back"
-@VisibleForTesting
-internal const val ADD_NEW_BUTTON_CD = "Add"
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -246,8 +237,12 @@ internal fun PickerBottomSheet(
         val sfRipple = RippleConfiguration(color = colorScheme.primary)
         val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
         var mutableSelectedListItem = selectedListItem
+        val containerContentDescription = when (pickerStyle) {
+            PickerStyle.LoginServerPicker -> stringResource(R.string.sf__server_picker_content_description)
+            PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_picker_content_description)
+        }
 
-        Column(modifier = Modifier.animateContentSize().semantics { contentDescription = PICKER_CD }) {
+        Column(modifier = Modifier.animateContentSize().semantics { contentDescription = containerContentDescription }) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(HEADER_PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -271,7 +266,7 @@ internal fun PickerBottomSheet(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = BACK_BUTTON_CD,
+                            contentDescription = stringResource(R.string.sf__back_button_content_description),
                         )
                     }
                 }
@@ -305,7 +300,7 @@ internal fun PickerBottomSheet(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = CLOSE_BUTTON_CD,
+                        contentDescription = stringResource(R.string.sf__server_close_button_content_description),
                     )
                 }
             }
@@ -417,8 +412,7 @@ internal fun PickerBottomSheet(
                                                 },
                                                 modifier = Modifier
                                                     .padding(PADDING_SIZE.dp)
-                                                    .fillMaxWidth()
-                                                    .semantics { contentDescription = ADD_NEW_BUTTON_CD },
+                                                    .fillMaxWidth(),
                                                 shape = RoundedCornerShape(CORNER_RADIUS.dp),
                                                 contentPadding = PaddingValues(PADDING_SIZE.dp),
                                                 border = BorderStroke(STROKE_WIDTH.dp, colorScheme.outline),

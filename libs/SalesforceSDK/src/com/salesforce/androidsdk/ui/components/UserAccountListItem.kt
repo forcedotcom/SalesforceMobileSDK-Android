@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.ui.components
 
 import android.content.res.Configuration
-import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,10 +60,6 @@ import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
-import com.salesforce.androidsdk.ui.theme.subTextColor
-
-@VisibleForTesting
-internal const val USER_ACCOUNT_CD = "User Account List Item"
 
 @Composable
 fun UserAccountListItem(
@@ -78,9 +74,8 @@ fun UserAccountListItem(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
-                .semantics { contentDescription = USER_ACCOUNT_CD }
                 .clickable(
-                    onClickLabel = "Select user account.",
+                    onClickLabel = stringResource(R.string.sf__account_selector_click_label),
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.onSecondary),
                 ) {
@@ -94,15 +89,16 @@ fun UserAccountListItem(
                     selectedColor = colorScheme.tertiary,
                     unselectedColor = colorScheme.secondary
                 ),
-                modifier = Modifier.semantics { contentDescription = RADIO_BUTTON_CD },
             )
             Column(
                 horizontalAlignment = Alignment.Start,
             ) {
+                val photoContentDescription = stringResource(R.string.sf__profile_photo_content_description)
                 Image(
                     profilePhoto ?: painterResource(R.drawable.sf__android_astro),
                     contentDescription = "Profile Photo",
                     modifier = Modifier.requiredHeight(ICON_SIZE.dp)
+                        .semantics { contentDescription = photoContentDescription },
                 )
             }
             Column(modifier = Modifier.padding(PADDING_SIZE.dp)) {
@@ -116,7 +112,7 @@ fun UserAccountListItem(
                 Text(
                     loginServer,
                     fontSize = TEXT_SIZE.sp,
-                    color = colorScheme.subTextColor,
+                    color = colorScheme.onSecondaryContainer,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )

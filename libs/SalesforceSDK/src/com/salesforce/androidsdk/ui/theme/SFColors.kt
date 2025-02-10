@@ -99,6 +99,9 @@ object SFColors {
     fun subTextColor(context: Context) = ContextCompat.getColor(context, R.color.sf__subtext_color)
 
     @ColorInt
+    fun subTextColorDark(context: Context) = ContextCompat.getColor(context, R.color.sf__disabled_text_dark)
+
+    @ColorInt
     fun outlineColor(context: Context) = ContextCompat.getColor(context, R.color.sf__outline)
 
     @ColorInt
@@ -140,6 +143,7 @@ fun sfLightColors(): ColorScheme {
         tertiary = Color(SFColors.tertiaryColor(context)),
         error = Color(SFColors.errorColor(context)),
         onErrorContainer = Color(SFColors.disabledText(context)),
+        onSecondaryContainer = Color(SFColors.subTextColor(context)), // Used for SubText Color
     )
 }
 
@@ -163,6 +167,7 @@ fun sfDarkColors(): ColorScheme {
         tertiary = Color(SFColors.tertiaryColorDark(context)),
         error = Color(SFColors.errorColor(context)),
         onErrorContainer = Color(SFColors.disabledTextDark(context)),
+        onSecondaryContainer = Color(SFColors.subTextColorDark(context)), // Used for SubText Color
     )
 }
 
@@ -187,7 +192,3 @@ fun sfDarkLoginColors(): ColorScheme {
 val ColorScheme.hintTextColor: Color
     @Composable
     get() = Color(SFColors.hintColor(LocalContext.current))
-
-val ColorScheme.subTextColor: Color
-    @Composable
-    get() = Color(SFColors.subTextColor(LocalContext.current))

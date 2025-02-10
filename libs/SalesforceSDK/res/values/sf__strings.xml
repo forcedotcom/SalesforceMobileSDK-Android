@@ -27,6 +27,7 @@
 	<string name="sf__launch_idp">Log In with IDP App</string>
 	<string name="sf__login_with_biometric">Log In with Biometric</string>
 	<string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
+	<string name="sf__back_button_content_description">Back</string>
 
 	<!-- Server picker -->
 	<string name="sf__auth_login_production">Production</string>
@@ -37,6 +38,11 @@
 	<string name="sf__server_url_default_custom_url">URL</string>
 	<string name="sf__server_url_save">Save</string>
 	<string name="sf__server_url_delete">Delete</string>
+	<string name="sf__server_picker_content_description">Login Server Picker</string>
+	<string name="sf__server_close_button_content_description">Close</string>
+	<string name="sf__server_remove_content_description">Remove Server</string>
+	<string name="sf__server_delete_content_description">Confirm Delete</string>
+	<string name="sf__server_picker_click_label">Select login server</string>
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_title">Clear User Data?</string>
@@ -47,6 +53,9 @@
 	<!-- Account picker -->
 	<string name="sf__account_selector_text">Organizations</string>
 	<string name="sf__add_new_account">Add New Account</string>
+	<string name="sf__account_picker_content_description">User Account Picker</string>
+	<string name="sf__account_selector_click_label">Select user account</string>
+	<string name="sf__profile_photo_content_description">Profile Photo</string>
 
 	<!-- SP status updates -->
 	<string name="sf__failed_to_send_request_to_idp">Failed to send request to IDP app</string>

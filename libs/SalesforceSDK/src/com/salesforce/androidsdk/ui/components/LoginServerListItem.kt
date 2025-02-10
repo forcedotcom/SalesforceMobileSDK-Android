@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.ui.components
 
 import android.content.res.Configuration
-import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.shrinkHorizontally
@@ -84,20 +83,8 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
-import com.salesforce.androidsdk.ui.theme.subTextColor
 
 private const val DELETE_BUTTON_SIZE = 80
-
-@VisibleForTesting
-internal const val LOGIN_SERVER_CD = "Login Server List Item"
-// Not only visible for testing because also used in UserAccountListItem.
-internal const val RADIO_BUTTON_CD = "Radio Button"
-@VisibleForTesting
-internal const val REMOVE_SERVER_CD = "Remove Server"
-@VisibleForTesting
-internal const val DELETE_BUTTON_CD = "Delete Button"
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,9 +118,8 @@ fun LoginServerListItem(
             modifier = Modifier.fillMaxWidth()
                 .height(intrinsicSize = IntrinsicSize.Max)
                 .onSizeChanged { size -> rowSizePixels = size }
-                .semantics { contentDescription = LOGIN_SERVER_CD }
                 .clickable(
-                    onClickLabel = "Select login server.",
+                    onClickLabel = stringResource(R.string.sf__server_picker_click_label),
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.onSecondary),
                     onClick = {
@@ -152,7 +138,7 @@ fun LoginServerListItem(
                     selectedColor = colorScheme.tertiary,
                     unselectedColor = colorScheme.secondary
                 ),
-                modifier = Modifier.offset { offset }.semantics { contentDescription = RADIO_BUTTON_CD }
+                modifier = Modifier.offset { offset },
             )
             Column(modifier = Modifier.weight(1f).padding(PADDING_SIZE.dp).offset { offset }) {
                 Text(
@@ -165,7 +151,7 @@ fun LoginServerListItem(
                 Text(
                     server.url,
                     fontSize = TEXT_SIZE.sp,
-                    color = colorScheme.subTextColor,
+                    color = colorScheme.onSecondaryContainer,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -181,7 +167,7 @@ fun LoginServerListItem(
                     ) {
                         Icon(
                             Icons.TwoTone.Delete,
-                            contentDescription = REMOVE_SERVER_CD,
+                            contentDescription = stringResource(R.string.sf__server_remove_content_description),
                             tint = colorScheme.secondary.copy(
                                 alpha = if (deleting) 0f else 1f
                             ),
@@ -201,11 +187,12 @@ fun LoginServerListItem(
                 enter = slideInHorizontally { deleteButtonPixels },
                 exit = shrinkHorizontally { -deleteButtonPixels }
             ) {
+                val deleteContentDescription = stringResource(R.string.sf__server_delete_content_description)
                 Box(
                     modifier = Modifier.background(colorScheme.error)
                         .width(DELETE_BUTTON_SIZE.dp)
                         .height(rowHeightDp.value)
-                        .semantics { contentDescription = DELETE_BUTTON_CD }
+                        .semantics { contentDescription = deleteContentDescription }
                         .clickable { removeServer(server) }
                 ) {
                     Text(

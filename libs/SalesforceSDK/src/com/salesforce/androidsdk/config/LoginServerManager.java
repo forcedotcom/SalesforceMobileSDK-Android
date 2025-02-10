@@ -214,7 +214,7 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Removes a login serer from the list.
+	 * Removes a login server from the list.
 	 *
 	 * @param server the server to remove
 	 */
