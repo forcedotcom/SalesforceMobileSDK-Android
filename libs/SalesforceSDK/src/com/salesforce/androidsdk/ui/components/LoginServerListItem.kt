@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui.components
 
-import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
@@ -101,7 +100,6 @@ internal const val DELETE_BUTTON_CD = "Delete Button"
 
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun LoginServerListItem(
     server: LoginServer,
