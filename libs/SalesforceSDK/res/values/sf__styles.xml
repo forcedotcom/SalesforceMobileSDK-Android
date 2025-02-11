@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <style name="AccountSwitcher" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
     <style name="SalesforceSDK" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/sf__primary_color</item>
@@ -167,7 +174,7 @@
 
     <style name="SalesforceSDK.ScreenLock" parent="@style/Theme.Design.NoActionBar">
         <item name="android:colorPrimary">@color/sf__primary_color</item>
-        <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfColorSecondary">@color/sf__on_primary</item>
         <item name="sfLayoutBackground">@color/sf__layout_background</item>
         <item name="android:colorBackground">@color/sf__background</item>
         <item name="android:textColor">@color/sf__text_color</item>
@@ -181,7 +188,7 @@
     </style>
 
     <style name="SalesforceSDK.ScreenLock.Dark">
-        <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfColorSecondary">@color/sf__on_primary</item>
         <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorBackground">@color/sf__background_dark</item>
         <item name="android:textColor">@color/sf__text_color_dark</item>
