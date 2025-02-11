@@ -404,19 +404,6 @@ public class OAuth2 {
      * @param httpAccessor HttpAccess instance.
      * @param loginServer Login server.
      * @param refreshToken Refresh token.
-     *
-     * @deprecated Will be removed in 13.0.  Use {@link #revokeRefreshToken(HttpAccess, URI, String, LogoutReason)} instead.
-     */
-    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
-        revokeRefreshToken(httpAccessor, loginServer, refreshToken, LogoutReason.UNKNOWN);
-    }
-
-    /**
-     * Revokes the existing refresh token.
-     *
-     * @param httpAccessor HttpAccess instance.
-     * @param loginServer Login server.
-     * @param refreshToken Refresh token.
      * @param reason The reason the refresh token is being revoked.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
