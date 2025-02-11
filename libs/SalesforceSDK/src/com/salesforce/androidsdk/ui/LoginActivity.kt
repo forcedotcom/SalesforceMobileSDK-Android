@@ -119,6 +119,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LO
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -129,7 +130,6 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAl
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
-import com.salesforce.androidsdk.ui.LoginViewModel.Theme.Dark
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.AUTHENTICATION_FAILED_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.HTTP_ERROR_RESPONSE_CODE_INTENT
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.RESPONSE_ERROR_DESCRIPTION_INTENT
@@ -195,7 +195,7 @@ open class LoginActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (viewModel.dynamicBackgroundTheme.value == Dark) {
+        if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
 
