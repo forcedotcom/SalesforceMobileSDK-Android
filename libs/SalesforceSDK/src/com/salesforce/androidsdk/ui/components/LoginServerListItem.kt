@@ -29,10 +29,12 @@ package com.salesforce.androidsdk.ui.components
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateIntOffsetAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -61,17 +63,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,8 +91,11 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val DELETE_BUTTON_SIZE = 80
+private const val DELETE_ANIMATION_TIME = 300
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,6 +121,8 @@ fun LoginServerListItem(
     val rowHeightDp = remember {
         derivedStateOf { with(density) { rowSizePixels.height.toDp() } }
     }
+    val confirmDeleteFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { /* Necessary for accessibility */ }
 
     Box {
         Row(
@@ -159,8 +172,15 @@ fun LoginServerListItem(
 
             if (server.isCustom) {
                 CompositionLocalProvider(LocalRippleConfiguration provides null) {
+                    val scope = rememberCoroutineScope()
                     IconButton(
-                        onClick = { deleting = true },
+                        onClick = {
+                            deleting = true
+                            scope.launch {
+                                delay(DELETE_ANIMATION_TIME.toLong())
+                                confirmDeleteFocus.requestFocus()
+                            }
+                        },
                         enabled = !deleting,
                         interactionSource = null,
                         modifier = Modifier.padding(end = PADDING_SIZE.dp).size(ICON_SIZE.dp).offset { offset },
@@ -184,21 +204,26 @@ fun LoginServerListItem(
             Spacer(modifier = Modifier)
             AnimatedVisibility(
                 visible = deleting,
-                enter = slideInHorizontally { deleteButtonPixels },
+                enter = slideInHorizontally(tween(DELETE_ANIMATION_TIME)) { deleteButtonPixels },
                 exit = shrinkHorizontally { -deleteButtonPixels }
             ) {
-                val deleteContentDescription = stringResource(R.string.sf__server_delete_content_description)
                 Box(
                     modifier = Modifier.background(colorScheme.error)
                         .width(DELETE_BUTTON_SIZE.dp)
                         .height(rowHeightDp.value)
-                        .semantics { contentDescription = deleteContentDescription }
-                        .clickable { removeServer(server) }
+                        .clickable { removeServer(server) },
                 ) {
+                    val deleteContentDescription = stringResource(R.string.sf__server_delete_content_description)
                     Text(
                         text = stringResource(R.string.sf__server_url_delete),
                         color = colorScheme.onPrimary,
                         modifier = Modifier.align(Alignment.Center)
+                            .semantics {
+                                contentDescription = deleteContentDescription
+                                role = Role.Button
+                            }
+                            .focusRequester(confirmDeleteFocus)
+                            .focusable(),
                     )
                 }
             }

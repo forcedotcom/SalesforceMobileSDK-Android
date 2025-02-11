@@ -39,6 +39,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -82,6 +83,7 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -226,6 +228,12 @@ internal fun PickerBottomSheet(
     removeLoginServer: ((LoginServer) -> Unit)? = null,
     addNewAccount: (() -> Unit)? = null,
 ) {
+    val pickerFocus = remember { FocusRequester() }
+    val containerContentDescription = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__server_picker_content_description)
+        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_picker_content_description)
+    }
+
     ModalBottomSheet(
         onDismissRequest = { /* Do nothing */ },
         sheetState = sheetState,
@@ -237,12 +245,14 @@ internal fun PickerBottomSheet(
         val sfRipple = RippleConfiguration(color = colorScheme.primary)
         val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
         var mutableSelectedListItem = selectedListItem
-        val containerContentDescription = when (pickerStyle) {
-            PickerStyle.LoginServerPicker -> stringResource(R.string.sf__server_picker_content_description)
-            PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_picker_content_description)
-        }
 
-        Column(modifier = Modifier.animateContentSize().semantics { contentDescription = containerContentDescription }) {
+        Column(
+            modifier = Modifier.animateContentSize()
+                .semantics { contentDescription = containerContentDescription }
+                .focusRequester(pickerFocus)
+                .focusable(),
+        ) {
+            SideEffect { pickerFocus.requestFocus() }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(HEADER_PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
