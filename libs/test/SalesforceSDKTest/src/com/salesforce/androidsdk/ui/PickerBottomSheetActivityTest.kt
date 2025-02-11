@@ -31,13 +31,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.isNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onChildAt
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.salesforce.androidsdk.R
@@ -56,22 +56,6 @@ class PickerBottomSheetActivityTest {
     @get:Rule
     val androidComposeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-    private val serverPickerCd = hasContentDescription(
-        androidComposeTestRule.activity.getString(R.string.sf__server_picker_content_description)
-    )
-    private val accountPickerCd = hasContentDescription(
-        androidComposeTestRule.activity.getString(R.string.sf__account_picker_content_description)
-    )
-    private val closeButtonCd = hasContentDescription(
-        androidComposeTestRule.activity.getString(R.string.sf__server_close_button_content_description)
-    )
-    private val backButtonCd = hasContentDescription(
-        androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
-    )
-    private val deleteButtonCd = hasContentDescription(
-        androidComposeTestRule.activity.getString(R.string.sf__server_url_delete)
-    )
-
     // region Login Server Picker Tests
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -83,9 +67,15 @@ class PickerBottomSheetActivityTest {
             )
         }
 
-        val picker = androidComposeTestRule.onNode(serverPickerCd)
-        val closeButton = androidComposeTestRule.onNode(closeButtonCd)
-        val backButton = androidComposeTestRule.onNode(backButtonCd)
+        val picker = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_picker_content_description)
+        )
+        val closeButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_close_button_content_description)
+        )
+        val backButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
+        )
         val changeServerText = androidComposeTestRule.onNodeWithText(
             androidComposeTestRule.activity.getString(R.string.sf__pick_server)
         )
@@ -97,7 +87,7 @@ class PickerBottomSheetActivityTest {
         )
         val removeButton = androidComposeTestRule.onNode(customsRowCd).onChildAt(1)
         val deleteButton = androidComposeTestRule.onNodeWithText(
-            androidComposeTestRule.activity.getString(R.string.sf__server_url_delete)
+            androidComposeTestRule.activity.getString(R.string.sf__server_delete_content_description)
         )
 
         picker.assertIsDisplayed()
@@ -146,7 +136,9 @@ class PickerBottomSheetActivityTest {
         val customListItem = androidComposeTestRule.onNode(customsRowCd)
         val customListItemRadioButton = customListItem.onChildAt(0)
         val customListItemRemoveButton = customListItem.onChildAt(1)
-        val customListItemDeleteButton = androidComposeTestRule.onNode(deleteButtonCd)
+        val customListItemDeleteButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_delete_content_description)
+        )
 
         prodListItem.onChild().assertIsNotSelected()
         sandboxListItem.onChild().assertIsSelected()
@@ -190,7 +182,9 @@ class PickerBottomSheetActivityTest {
 
         val customListItem = androidComposeTestRule.onNode(customsRowCd)
         val customListItemRemoveButton = customListItem.onChildAt(1)
-        val customListItemDeleteButton = androidComposeTestRule.onNode(deleteButtonCd)
+        val customListItemDeleteButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_delete_content_description)
+        )
 
         // Click Remove
         customListItemRemoveButton.performClick()
@@ -223,7 +217,9 @@ class PickerBottomSheetActivityTest {
         val custom2ListItem = androidComposeTestRule.onNode(hasText(customServer2.name) and hasText(customServer2.url))
         val custom2ListItemRadioButton = custom2ListItem.onChildAt(0)
         val custom2ListItemRemoveButton = custom2ListItem.onChildAt(1)
-        val custom2ListItemDeleteButton = androidComposeTestRule.onNode(deleteButtonCd)
+        val custom2ListItemDeleteButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_delete_content_description)
+        )
         val custom3ListItem = androidComposeTestRule.onNode(hasText(customServer3.name) and hasText(customServer3.url))
         val custom3ListItemRadioButton = custom3ListItem.onChildAt(0)
         val custom3ListItemRemoveButton = custom3ListItem.onChildAt(1)
@@ -273,7 +269,9 @@ class PickerBottomSheetActivityTest {
         val customListItem = androidComposeTestRule.onNode(customsRowCd)
         val customListItemRadioButton = customListItem.onChildAt(0)
         val customListItemRemoveButton = customListItem.onChildAt(1)
-        val customListItemDeleteButton = androidComposeTestRule.onNode(deleteButtonCd)
+        val customListItemDeleteButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_delete_content_description)
+        )
 
         prodListItem.onChild().assertIsNotSelected()
         sandboxListItem.onChild().assertIsNotSelected()
@@ -308,9 +306,15 @@ class PickerBottomSheetActivityTest {
             )
         }
 
-        val picker = androidComposeTestRule.onNode(accountPickerCd)
-        val closeButton = androidComposeTestRule.onNode(closeButtonCd)
-        val backButton = androidComposeTestRule.onNode(backButtonCd)
+        val picker = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__account_picker_content_description)
+        )
+        val closeButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__server_close_button_content_description)
+        )
+        val backButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
+        )
         val accountSelectorText = androidComposeTestRule.onNodeWithText(
             androidComposeTestRule.activity.getString(R.string.sf__account_selector_text)
         )
