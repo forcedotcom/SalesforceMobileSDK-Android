@@ -76,6 +76,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.color.sf__secondary_color
+import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__launch_idp
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity
@@ -159,7 +160,7 @@ fun LoginView() {
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(sf__back_button_content_description),
                             )
                         }
                     }
