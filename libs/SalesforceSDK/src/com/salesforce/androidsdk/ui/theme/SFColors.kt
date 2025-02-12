@@ -171,24 +171,6 @@ fun sfDarkColors(): ColorScheme {
     )
 }
 
-@Composable
-fun sfDarkLoginColors(): ColorScheme {
-    val context = LocalContext.current
-    return darkColorScheme(
-        primary = Color(SFColors.primaryColor(context)),
-        primaryContainer = Color(SFColors.primaryColorDark(context)),
-        secondary = Color(SFColors.secondaryColorDark(context)),
-        background = Color(SFColors.background(context)), // Overriding with light mode background
-        surface = Color(SFColors.layoutBackground(context)), // Overriding with light mode layout
-        onPrimary = Color(SFColors.secondaryColorDark(context)),
-        onSecondary = Color(SFColors.textColorDark(context)),
-        onBackground = Color(SFColors.textColorDark(context)),
-        onSurface = Color(SFColors.textColorDark(context)),
-        inverseSurface = Color(SFColors.background(context)), // Login-specific background
-        inverseOnSurface = Color(SFColors.background(context)) // Login-specific navigation bar
-    )
-}
-
 val ColorScheme.hintTextColor: Color
     @Composable
     get() = Color(SFColors.hintColor(LocalContext.current))
