@@ -110,7 +110,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.R.string.sf__account_picker_content_description
+import com.salesforce.androidsdk.R.string.sf__account_selector_text
+import com.salesforce.androidsdk.R.string.sf__add_new_account
+import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__custom_url_button
+import com.salesforce.androidsdk.R.string.sf__pick_server
+import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
+import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
+import com.salesforce.androidsdk.R.string.sf__server_url_add_title
+import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_label
+import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_url
+import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
@@ -185,7 +196,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
         viewModel.dynamicBackgroundColor.value = backgroundColor
     }
 
-    when(pickerStyle) {
+    when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
             PickerBottomSheet(
                 pickerStyle,
@@ -230,8 +241,8 @@ internal fun PickerBottomSheet(
 ) {
     val pickerFocus = remember { FocusRequester() }
     val containerContentDescription = when (pickerStyle) {
-        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__server_picker_content_description)
-        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_picker_content_description)
+        PickerStyle.LoginServerPicker -> stringResource(sf__server_picker_content_description)
+        PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
     }
 
     ModalBottomSheet(
@@ -247,14 +258,17 @@ internal fun PickerBottomSheet(
         var mutableSelectedListItem = selectedListItem
 
         Column(
-            modifier = Modifier.animateContentSize()
+            modifier = Modifier
+                .animateContentSize()
                 .semantics { contentDescription = containerContentDescription }
                 .focusRequester(pickerFocus)
                 .focusable(),
         ) {
             SideEffect { pickerFocus.requestFocus() }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(HEADER_PADDING_SIZE.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(HEADER_PADDING_SIZE.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -276,7 +290,7 @@ internal fun PickerBottomSheet(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.sf__back_button_content_description),
+                            contentDescription = stringResource(sf__back_button_content_description),
                         )
                     }
                 }
@@ -285,12 +299,13 @@ internal fun PickerBottomSheet(
                     text = when (pickerStyle) {
                         PickerStyle.LoginServerPicker -> {
                             if (addingNewServer) {
-                                stringResource(R.string.sf__server_url_add_title)
+                                stringResource(sf__server_url_add_title)
                             } else {
-                                stringResource(R.string.sf__pick_server)
+                                stringResource(sf__pick_server)
                             }
                         }
-                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_selector_text)
+
+                        PickerStyle.UserAccountPicker -> stringResource(sf__account_selector_text)
                     },
                     color = colorScheme.onSecondary,
                     fontSize = HEADER_TEXT_SIZE.sp,
@@ -310,7 +325,7 @@ internal fun PickerBottomSheet(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = stringResource(R.string.sf__server_close_button_content_description),
+                        contentDescription = stringResource(sf__server_close_button_content_description),
                     )
                 }
             }
@@ -323,7 +338,7 @@ internal fun PickerBottomSheet(
                     easing = LinearEasing
                 ),
             ) { showAddConnection ->
-                when(showAddConnection) {
+                when (showAddConnection) {
                     // Login Server Add Connection
                     true -> {
                         AddConnection(
@@ -383,11 +398,11 @@ internal fun PickerBottomSheet(
                                                             )
                                                         },
                                                     )
-                                                /*
-                                                 TODO: Remove this mock when a UserAccount can be created in without
-                                                 SalesforceSDKManger (for previews).  This would be trivial with an
-                                                 internal constructor if the class was converted to Kotlin.
-                                                */
+                                                    /*
+                                                     TODO: Remove this mock when a UserAccount can be created in without
+                                                     SalesforceSDKManger (for previews).  This would be trivial with an
+                                                     internal constructor if the class was converted to Kotlin.
+                                                    */
                                                 } else if (listItem is UserAccountMock) {
                                                     UserAccountListItem(
                                                         displayName = listItem.displayName,
@@ -429,8 +444,8 @@ internal fun PickerBottomSheet(
                                             ) {
                                                 Text(
                                                     text = when (pickerStyle) {
-                                                        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
-                                                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
+                                                        PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button)
+                                                        PickerStyle.UserAccountPicker -> stringResource(sf__add_new_account)
                                                     },
                                                     color = colorScheme.primary,
                                                     fontSize = TEXT_SIZE.sp,
@@ -471,9 +486,10 @@ internal fun AddConnection(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+                label = { Text(stringResource(sf__server_url_default_custom_label)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(PADDING_SIZE.dp)
                     .focusRequester(focusRequester),
                 colors = TextFieldDefaults.colors(
@@ -492,10 +508,11 @@ internal fun AddConnection(
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+                label = { Text(stringResource(sf__server_url_default_custom_url)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -531,7 +548,7 @@ internal fun AddConnection(
             onClick = { addNewLoginServer?.let { it(trimmedName, serverUrl!!) } },
         ) {
             Text(
-                text = stringResource(R.string.sf__server_url_save),
+                text = stringResource(sf__server_url_save),
                 fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
                 color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
             )
@@ -542,9 +559,9 @@ internal fun AddConnection(
 }
 
 // Ensure no duplicates in the list because they are not allowed by lazy column.
-fun List<Any>.pickerDistinctBy() : List<Any> {
+fun List<Any>.pickerDistinctBy(): List<Any> {
     return distinctBy { listItem ->
-        when(listItem) {
+        when (listItem) {
             is LoginServer -> with(listItem) { "$name$url" }
             else -> listItem.toString()
         }
@@ -562,7 +579,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionPreview() {
-        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection()
     }
 }
@@ -571,7 +588,7 @@ private fun AddConnectionPreview() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionValuesPreview() {
-        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection(
             getValidServer = { server: String -> server },
             previewName = "New Server",

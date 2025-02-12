@@ -87,7 +87,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.R.string.sf__server_delete_content_description
+import com.salesforce.androidsdk.R.string.sf__server_picker_click_label
+import com.salesforce.androidsdk.R.string.sf__server_remove_content_description
+import com.salesforce.androidsdk.R.string.sf__server_url_delete
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
@@ -117,7 +120,7 @@ fun LoginServerListItem(
         },
         label = "offset"
     )
-    var rowSizePixels by remember { mutableStateOf(IntSize(0,0)) }
+    var rowSizePixels by remember { mutableStateOf(IntSize(0, 0)) }
     val rowHeightDp = remember {
         derivedStateOf { with(density) { rowSizePixels.height.toDp() } }
     }
@@ -128,11 +131,12 @@ fun LoginServerListItem(
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .height(intrinsicSize = IntrinsicSize.Max)
                 .onSizeChanged { size -> rowSizePixels = size }
                 .clickable(
-                    onClickLabel = stringResource(R.string.sf__server_picker_click_label),
+                    onClickLabel = stringResource(sf__server_picker_click_label),
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.onSecondary),
                     onClick = {
@@ -153,7 +157,10 @@ fun LoginServerListItem(
                 ),
                 modifier = Modifier.offset { offset },
             )
-            Column(modifier = Modifier.weight(1f).padding(PADDING_SIZE.dp).offset { offset }) {
+            Column(modifier = Modifier
+                .weight(1f)
+                .padding(PADDING_SIZE.dp)
+                .offset { offset }) {
                 Text(
                     server.name,
                     fontSize = TEXT_SIZE.sp,
@@ -183,11 +190,14 @@ fun LoginServerListItem(
                         },
                         enabled = !deleting,
                         interactionSource = null,
-                        modifier = Modifier.padding(end = PADDING_SIZE.dp).size(ICON_SIZE.dp).offset { offset },
+                        modifier = Modifier
+                            .padding(end = PADDING_SIZE.dp)
+                            .size(ICON_SIZE.dp)
+                            .offset { offset },
                     ) {
                         Icon(
                             Icons.TwoTone.Delete,
-                            contentDescription = stringResource(R.string.sf__server_remove_content_description),
+                            contentDescription = stringResource(sf__server_remove_content_description),
                             tint = colorScheme.secondary.copy(
                                 alpha = if (deleting) 0f else 1f
                             ),
@@ -208,16 +218,18 @@ fun LoginServerListItem(
                 exit = shrinkHorizontally { -deleteButtonPixels }
             ) {
                 Box(
-                    modifier = Modifier.background(colorScheme.error)
+                    modifier = Modifier
+                        .background(colorScheme.error)
                         .width(DELETE_BUTTON_SIZE.dp)
                         .height(rowHeightDp.value)
                         .clickable { removeServer(server) },
                 ) {
-                    val deleteContentDescription = stringResource(R.string.sf__server_delete_content_description)
+                    val deleteContentDescription = stringResource(sf__server_delete_content_description)
                     Text(
-                        text = stringResource(R.string.sf__server_url_delete),
+                        text = stringResource(sf__server_url_delete),
                         color = colorScheme.onPrimary,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier
+                            .align(Alignment.Center)
                             .semantics {
                                 contentDescription = deleteContentDescription
                                 role = Role.Button

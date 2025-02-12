@@ -77,7 +77,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.color.sf__secondary_color
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__launch_idp
+import com.salesforce.androidsdk.R.string.sf__more_options
+import com.salesforce.androidsdk.R.string.sf__pick_server
+import com.salesforce.androidsdk.R.string.sf__reload
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
@@ -121,14 +125,14 @@ fun LoginView() {
                             disabledContentColor = Color.Transparent,
                         ),
                     ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(sf__more_options))
                     }
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Change Server") },
+                            text = { Text(stringResource(sf__pick_server)) },
                             onClick = {
                                 viewModel.showServerPicker.value = true
                                 showMenu = false
@@ -139,11 +143,11 @@ fun LoginView() {
                                 viewModel.clearCookies()
                                 viewModel.reloadWebview()
                             },
-                            text = { Text("Clear Cookies") },
+                            text = { Text(stringResource(sf__clear_cookies)) },
                         )
                         DropdownMenuItem(
                             onClick = { viewModel.reloadWebview() },
-                            text = { Text("Reload") },
+                            text = { Text(stringResource(sf__reload)) },
                         )
                     }
                 },
