@@ -38,6 +38,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory.decodeResource
 import android.net.http.SslError
 import android.net.http.SslError.SSL_EXPIRED
@@ -912,6 +913,11 @@ open class LoginActivity : FragmentActivity() {
             }
 
             return authFlowFinished
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            viewModel.loading.value = true
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
