@@ -51,10 +51,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -86,28 +90,41 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun LoginView() {
+    val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
+
     val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
     var showMenu by remember { mutableStateOf(false) }
-    val dynamicBackgroundColor = viewModel.dynamicBackgroundColor.value
-    val dynamicHeaderTextColor = viewModel.dynamicHeaderTextColor.value
-    val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
-    val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val titleText = if (viewModel.isUsingFrontDoorBridge) {
         viewModel.frontdoorBridgeServer ?: ""
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
     }
 
+    /*
+     * Note: Login view contents comply with two themes: Either the dynamic
+     * theme or the system theme based on their location in the layout.
+     */
+    // Dynamic colors derived from the web view content's background.
+    val dynamicBackgroundColor = viewModel.dynamicBackgroundColor.value
+    val dynamicHeaderTextColor = viewModel.dynamicHeaderTextColor.value
+
+    // Dynamic colors which may by overridden by the view model.
+    val dynamicCustomizableTopBarColor = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
+
+    // System theme colors.
+    val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             CenterAlignedTopAppBar(
                 expandedHeight = if (viewModel.showTopBar) TopAppBarDefaults.TopAppBarExpandedHeight else 0.dp,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = dynamicCustomizableTopBarColor),
                 title = viewModel.titleComposable ?: {
                     Text(
                         text = titleText,
@@ -127,28 +144,30 @@ fun LoginView() {
                     ) {
                         Icon(Icons.Default.MoreVert, contentDescription = stringResource(sf__more_options))
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(sf__pick_server)) },
-                            onClick = {
-                                viewModel.showServerPicker.value = true
-                                showMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                viewModel.clearCookies()
-                                viewModel.reloadWebview()
-                            },
-                            text = { Text(stringResource(sf__clear_cookies)) },
-                        )
-                        DropdownMenuItem(
-                            onClick = { viewModel.reloadWebview() },
-                            text = { Text(stringResource(sf__reload)) },
-                        )
+                    CompositionLocalProvider(LocalRippleConfiguration provides themeRippleConfiguration) {
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(sf__pick_server)) },
+                                onClick = {
+                                    viewModel.showServerPicker.value = true
+                                    showMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                onClick = {
+                                    viewModel.clearCookies()
+                                    viewModel.reloadWebview()
+                                },
+                                text = { Text(stringResource(sf__clear_cookies)) },
+                            )
+                            DropdownMenuItem(
+                                onClick = { viewModel.reloadWebview() },
+                                text = { Text(stringResource(sf__reload)) },
+                            )
+                        }
                     }
                 },
                 navigationIcon = {

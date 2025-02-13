@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import androidx.annotation.StringRes
@@ -55,7 +54,6 @@ import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
