@@ -57,7 +57,6 @@ import android.security.KeyChain.getPrivateKey
 import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
-import android.view.View
 import android.view.ViewGroup
 import android.webkit.ClientCertRequest
 import android.webkit.SslErrorHandler
@@ -65,7 +64,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
@@ -104,6 +102,7 @@ import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
+import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
 import com.salesforce.androidsdk.R.string.sf__ssl_error
@@ -183,7 +182,6 @@ open class LoginActivity : FragmentActivity() {
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
-    private var biometricAuthenticationButton: Button? = null
     private var newUserIntent = false
     private val sharedBrowserSession: Boolean
         get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
@@ -374,7 +372,7 @@ open class LoginActivity : FragmentActivity() {
          * (pin/pattern/password/etc) instead of swipe or none.
          */
         if (requestCode == SETUP_REQUEST_CODE) {
-            // TODO: set button text to sf__login_with_biometric
+            viewModel.biometricAuthenticationButtonText.intValue = sf__login_with_biometric
             presentBiometric()
         }
     }
@@ -658,37 +656,35 @@ open class LoginActivity : FragmentActivity() {
                 e(TAG, "Biometric manager cannot authenticate. $error")
             }
 
-            BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED ->
-                // TODO: implement this button in compose.
-                biometricAuthenticationButton?.let { biometricAuthenticationButton ->
-                    /*
-                     * Prompts the user to setup OS screen lock and biometric
-                     * TODO: Remove when min API > 29
-                     */
-                    when {
-                        SDK_INT >= R -> biometricAuthenticationButton.setOnClickListener {
-                            startActivityForResult(
-                                Intent(
-                                    ACTION_BIOMETRIC_ENROLL
-                                ).apply {
-                                    putExtra(
-                                        EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
-                                        authenticators
-                                    )
-                                },
-                                SETUP_REQUEST_CODE
-                            )
-                        }
-
-                        else -> biometricAuthenticationButton.setOnClickListener {
-                            startActivityForResult(
-                                Intent(ACTION_SET_NEW_PASSWORD),
-                                SETUP_REQUEST_CODE
-                            )
-                        }
+            BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                /*
+                 * Prompts the user to setup OS screen lock and biometric
+                 * TODO: Remove when min API > 29
+                 */
+                when {
+                    SDK_INT >= R -> viewModel.biometricAuthenticationButtonAction.value = {
+                        startActivityForResult(
+                            Intent(
+                                ACTION_BIOMETRIC_ENROLL
+                            ).apply {
+                                putExtra(
+                                    EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                    authenticators
+                                )
+                            },
+                            SETUP_REQUEST_CODE
+                        )
                     }
-                    biometricAuthenticationButton.text = getString(sf__setup_biometric_unlock)
+
+                    else -> viewModel.biometricAuthenticationButtonAction.value = {
+                        startActivityForResult(
+                            Intent(ACTION_SET_NEW_PASSWORD),
+                            SETUP_REQUEST_CODE
+                        )
+                    }
                 }
+                viewModel.biometricAuthenticationButtonText.intValue = sf__setup_biometric_unlock
+            }
 
             BIOMETRIC_SUCCESS -> biometricPrompt.authenticate(promptInfo)
         }
@@ -754,7 +750,7 @@ open class LoginActivity : FragmentActivity() {
                 .build()
         }
 
-    open fun onBioAuthClick(view: View?) = presentBiometric()
+    open fun onBioAuthClick() = presentBiometric()
 
     /**
      * Called when the IDP login button is clicked.
@@ -931,7 +927,7 @@ open class LoginActivity : FragmentActivity() {
 
             // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
             if (url?.contains(ALLOW_SCREEN_INDICATOR) == true) {
-                // TODO: hide buttons via viewModel
+                viewModel.showBottomBarButtons.value = false
             }
             EventsObservable.get().notifyEvent(AuthWebViewPageFinished, url)
 

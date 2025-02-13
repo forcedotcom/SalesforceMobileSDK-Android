@@ -78,11 +78,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesforce.androidsdk.R.color.sf__on_primary
 import com.salesforce.androidsdk.R.color.sf__primary_color
-import com.salesforce.androidsdk.R.color.sf__secondary_color
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__launch_idp
+import com.salesforce.androidsdk.R.string.sf__login_title
 import com.salesforce.androidsdk.R.string.sf__more_options
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__reload
@@ -196,31 +197,19 @@ fun LoginView() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    // TODO: Restore Biometric Authentication button here.
-                    if (viewModel.isIDPLoginFlowEnabled.value) {
-                        Button(
-                            onClick = { activity.onIDPLoginClick() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .padding(start = 20.dp, end = 20.dp),
-                            shape = (RoundedCornerShape(5.dp)),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colorResource(id = sf__primary_color),
-                                contentColor = colorResource(id = sf__secondary_color)
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(id = sf__launch_idp),
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                    viewModel.additionalBottomBarButtons.value.forEach { button ->
-                        Button(onClick = {
-                            button.onClick()
-                        }) {
-                            Text(stringResource(button.title))
+                    if (viewModel.showBottomBarButtons.value) {
+                        if (viewModel.isBiometricAuthenticationLocked.value) {
+                            LoginBottomBarButton(viewModel.biometricAuthenticationButtonText.intValue) {
+                                activity.onBioAuthClick()
+                            }
+                        } else if (viewModel.isIDPLoginFlowEnabled.value) {
+                            LoginBottomBarButton(sf__launch_idp) {
+                                activity.onIDPLoginClick()
+                            }
+                        } else if (viewModel.customBottomBarButton.value != null) {
+                            viewModel.customBottomBarButton.value?.run {
+                                LoginBottomBarButton(title) { onClick }
+                            }
                         }
                     }
                 }
@@ -252,6 +241,36 @@ fun LoginView() {
         if (viewModel.showServerPicker.value) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)
         }
+    }
+}
+
+/**
+ * Composes a button for the bottom bar.
+ * @param textStringRes The button's text string resource
+ * @param onClick The button's on click behavior
+ */
+@Composable
+@Preview
+fun LoginBottomBarButton(
+    textStringRes: Int = sf__login_title,
+    onClick: () -> Unit = {}
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .padding(start = 20.dp, end = 20.dp),
+        shape = (RoundedCornerShape(5.dp)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(id = sf__primary_color),
+            contentColor = colorResource(id = sf__on_primary)
+        )
+    ) {
+        Text(
+            text = stringResource(id = textStringRes),
+            fontSize = 14.sp
+        )
     }
 }
 

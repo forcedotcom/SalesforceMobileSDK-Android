@@ -30,7 +30,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
-import com.salesforce.androidsdk.R.string.sf__login_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
@@ -46,7 +45,7 @@ import java.net.URI
 
 private const val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
 private const val FAKE_JWT = "1234"
-private const val FAKE_JWT_FLOW_AUTH =  "5678"
+private const val FAKE_JWT_FLOW_AUTH = "5678"
 
 @RunWith(AndroidJUnit4::class)
 class LoginViewModelTest {
@@ -148,17 +147,6 @@ class LoginViewModelTest {
         Assert.assertEquals(unchangedUrl, viewModel.getValidServerUrl(unchangedUrl))
         val endingSlash = "$unchangedUrl/"
         Assert.assertEquals(unchangedUrl, viewModel.getValidServerUrl(endingSlash))
-    }
-
-    @Test
-    fun additionalBottomBarButtons_Updatable() {
-        Assert.assertTrue(viewModel.additionalBottomBarButtons.value.isEmpty())
-
-        viewModel.additionalBottomBarButtons.value = viewModel.additionalBottomBarButtons.value.toMutableList().apply {
-            add(LoginViewModel.LoginAdditionalButton(sf__login_title) {})
-        }
-
-        Assert.assertTrue(viewModel.additionalBottomBarButtons.value.filter { it.title == sf__login_title }.size == 1)
     }
 
     private fun generateExpectedAuthorizationUrl(server: String, codeChallenge: String): String = OAuth2.getAuthorizationUrl(
