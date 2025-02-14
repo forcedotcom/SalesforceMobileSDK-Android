@@ -57,7 +57,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.R.drawable.sf__android_astro
+import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
+import com.salesforce.androidsdk.R.string.sf__account_selector_click_label
+import com.salesforce.androidsdk.R.string.sf__profile_photo_content_description
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 
@@ -73,9 +76,10 @@ fun UserAccountListItem(
         Row(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .clickable(
-                    onClickLabel = stringResource(R.string.sf__account_selector_click_label),
+                    onClickLabel = stringResource(sf__account_selector_click_label),
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = colorScheme.onSecondary),
                 ) {
@@ -93,11 +97,12 @@ fun UserAccountListItem(
             Column(
                 horizontalAlignment = Alignment.Start,
             ) {
-                val photoContentDescription = stringResource(R.string.sf__profile_photo_content_description)
+                val photoContentDescription = stringResource(sf__profile_photo_content_description)
                 Image(
-                    profilePhoto ?: painterResource(R.drawable.sf__android_astro),
-                    contentDescription = "Profile Photo",
-                    modifier = Modifier.requiredHeight(ICON_SIZE.dp)
+                    profilePhoto ?: painterResource(sf__android_astro),
+                    contentDescription = stringResource(sf__profile_photo_content_description),
+                    modifier = Modifier
+                        .requiredHeight(ICON_SIZE.dp)
                         .semantics { contentDescription = photoContentDescription },
                 )
             }
@@ -131,7 +136,7 @@ private fun UserAccountPreview() {
             "https://login.salesforce.com",
             selected = false,
             onItemSelected = { },
-            painterResource(R.drawable.sf__salesforce_logo),
+            painterResource(sf__salesforce_logo),
         )
     }
 }
@@ -146,12 +151,12 @@ private fun UserAccountSelectedPreview() {
             "https://login.salesforce.com",
             selected = true,
             onItemSelected = { },
-            painterResource(R.drawable.sf__salesforce_logo),
+            painterResource(sf__salesforce_logo),
         )
     }
 }
 
-@Preview (name = "User account without provided profile picture.", showBackground = true)
+@Preview(name = "User account without provided profile picture.", showBackground = true)
 @Composable
 private fun UserAccountPreviewNoPic() {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
@@ -165,7 +170,7 @@ private fun UserAccountPreviewNoPic() {
     }
 }
 
-@Preview ("User Account with very long username and server url.", showBackground = true)
+@Preview("User Account with very long username and server url.", showBackground = true)
 @Composable
 private fun UserAccountPreviewLong() {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {

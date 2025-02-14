@@ -51,10 +51,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -74,37 +78,58 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesforce.androidsdk.R.color.sf__on_primary
 import com.salesforce.androidsdk.R.color.sf__primary_color
-import com.salesforce.androidsdk.R.color.sf__secondary_color
+import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__launch_idp
+import com.salesforce.androidsdk.R.string.sf__login_title
+import com.salesforce.androidsdk.R.string.sf__more_options
+import com.salesforce.androidsdk.R.string.sf__pick_server
+import com.salesforce.androidsdk.R.string.sf__reload
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun LoginView() {
+    val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
+
     val loginUrl: String = viewModel.loginUrl.observeAsState().value ?: ""
     var showMenu by remember { mutableStateOf(false) }
-    val topBarColor: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
-    val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val titleText = if (viewModel.isUsingFrontDoorBridge) {
         viewModel.frontdoorBridgeServer ?: ""
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
     }
 
+    /*
+     * Note: Login view contents comply with two themes: Either the dynamic
+     * theme or the system theme based on their location in the layout.
+     */
+    // Dynamic colors derived from the web view content's background.
+    val dynamicBackgroundColor = viewModel.dynamicBackgroundColor.value
+    val dynamicHeaderTextColor = viewModel.dynamicHeaderTextColor.value
+
+    // Dynamic colors which may by overridden by the view model.
+    val dynamicCustomizableTopBarColor = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
+
+    // System theme colors.
+    val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             CenterAlignedTopAppBar(
                 expandedHeight = if (viewModel.showTopBar) TopAppBarDefaults.TopAppBarExpandedHeight else 0.dp,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = dynamicCustomizableTopBarColor),
                 title = viewModel.titleComposable ?: {
                     Text(
                         text = titleText,
-                        color = viewModel.dynamicHeaderTextColor.value,
+                        color = dynamicHeaderTextColor,
                         fontWeight = FontWeight.Bold,
                     )
                 },
@@ -113,36 +138,37 @@ fun LoginView() {
                         onClick = { showMenu = !showMenu },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
-                            contentColor = viewModel.dynamicHeaderTextColor.value,
+                            contentColor = dynamicHeaderTextColor,
                             disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Transparent,
                         ),
                     ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(sf__more_options))
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        containerColor = Color.White,
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Change Server", color = Color.Gray) },
-                            onClick = {
-                                viewModel.showServerPicker.value = true
-                                showMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            onClick = {
-                                viewModel.clearCookies()
-                                viewModel.reloadWebview()
-                            },
-                            text = { Text("Clear Cookies", color = Color.Gray) },
-                        )
-                        DropdownMenuItem(
-                            onClick = { viewModel.reloadWebview() },
-                            text = { Text("Reload", color = Color.Gray) },
-                        )
+                    CompositionLocalProvider(LocalRippleConfiguration provides themeRippleConfiguration) {
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(sf__pick_server)) },
+                                onClick = {
+                                    viewModel.showServerPicker.value = true
+                                    showMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                onClick = {
+                                    viewModel.clearCookies()
+                                    viewModel.reloadWebview()
+                                },
+                                text = { Text(stringResource(sf__clear_cookies)) },
+                            )
+                            DropdownMenuItem(
+                                onClick = { viewModel.reloadWebview() },
+                                text = { Text(stringResource(sf__reload)) },
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -151,14 +177,14 @@ fun LoginView() {
                             onClick = { activity.finish() },
                             colors = IconButtonColors(
                                 containerColor = Color.Transparent,
-                                contentColor = Color.Black,  // TODO: fix color
+                                contentColor = dynamicHeaderTextColor,
                                 disabledContainerColor = Color.Transparent,
                                 disabledContentColor = Color.Transparent,
                             ),
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(sf__back_button_content_description),
                             )
                         }
                     }
@@ -166,36 +192,24 @@ fun LoginView() {
             )
         },
         bottomBar = {
-            BottomAppBar(containerColor = viewModel.dynamicBackgroundColor.value) {
+            BottomAppBar(containerColor = dynamicBackgroundColor) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    // TODO: Restore Biometric Authentication button here.
-                    if (viewModel.isIDPLoginFlowEnabled.value) {
-                        Button(
-                            onClick = { activity.onIDPLoginClick() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .padding(start = 20.dp, end = 20.dp),
-                            shape = (RoundedCornerShape(5.dp)),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colorResource(id = sf__primary_color),
-                                contentColor = colorResource(id = sf__secondary_color)
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(id = sf__launch_idp),
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                    viewModel.additionalBottomBarButtons.value.forEach { button ->
-                        Button(onClick = {
-                            button.onClick()
-                        }) {
-                            Text(stringResource(button.title))
+                    if (viewModel.showBottomBarButtons.value) {
+                        if (viewModel.isBiometricAuthenticationLocked.value) {
+                            LoginBottomBarButton(viewModel.biometricAuthenticationButtonText.intValue) {
+                                activity.onBioAuthClick()
+                            }
+                        } else if (viewModel.isIDPLoginFlowEnabled.value) {
+                            LoginBottomBarButton(sf__launch_idp) {
+                                activity.onIDPLoginClick()
+                            }
+                        } else if (viewModel.customBottomBarButton.value != null) {
+                            viewModel.customBottomBarButton.value?.run {
+                                LoginBottomBarButton(title) { onClick }
+                            }
                         }
                     }
                 }
@@ -208,7 +222,6 @@ fun LoginView() {
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(
-                    color = Color.Black,
                     modifier = Modifier
                         .size(50.dp)
                         .fillMaxSize(),
@@ -228,6 +241,36 @@ fun LoginView() {
         if (viewModel.showServerPicker.value) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)
         }
+    }
+}
+
+/**
+ * Composes a button for the bottom bar.
+ * @param textStringRes The button's text string resource
+ * @param onClick The button's on click behavior
+ */
+@Composable
+@Preview
+fun LoginBottomBarButton(
+    textStringRes: Int = sf__login_title,
+    onClick: () -> Unit = {}
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .padding(start = 20.dp, end = 20.dp),
+        shape = (RoundedCornerShape(5.dp)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = colorResource(id = sf__primary_color),
+            contentColor = colorResource(id = sf__on_primary)
+        )
+    ) {
+        Text(
+            text = stringResource(id = textStringRes),
+            fontSize = 14.sp
+        )
     }
 }
 

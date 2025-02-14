@@ -3,7 +3,6 @@ package com.salesforce.androidsdk.app
 import android.accounts.Account
 import android.app.Activity
 import android.content.Context
-import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import androidx.compose.ui.graphics.Color
@@ -42,7 +41,7 @@ internal class PublicOverridesTest {
 
             override fun shouldUseCertBasedAuth(): Boolean { return  true }
             override fun onIDPLoginClick() { }
-            override fun onBioAuthClick(view: View?) { }
+            override fun onBioAuthClick() { }
             override fun fixBackButtonBehavior(keyCode: Int): Boolean { return false }
             override fun certAuthOrLogin() { }
             override fun onAuthFlowSuccess(userAccount: UserAccount) { }

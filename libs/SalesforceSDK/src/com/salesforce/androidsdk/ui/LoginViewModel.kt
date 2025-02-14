@@ -26,15 +26,17 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.text.TextUtils.isEmpty
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.luminance
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
@@ -42,8 +44,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
+import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.LIGHT
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -51,7 +56,6 @@ import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -68,9 +72,20 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
-    internal var isIDPLoginFlowEnabled = derivedStateOf { SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled }
-    internal var dynamicBackgroundColor = mutableStateOf(Color.White)
-    internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Color.Black else Color.White }
+    internal val showBottomBarButtons = mutableStateOf(true)
+    internal val isIDPLoginFlowEnabled = derivedStateOf {
+        SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
+    }
+    internal val isBiometricAuthenticationLocked = derivedStateOf {
+        SalesforceSDKManager.getInstance().biometricAuthenticationManager?.let { bioAuthManager ->
+            bioAuthManager.locked && bioAuthManager.hasBiometricOptedIn()
+        } ?: false
+    }
+    internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
+    internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
+    internal var dynamicBackgroundColor = mutableStateOf(White)
+    internal var dynamicBackgroundTheme = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
+    internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal var showServerPicker = mutableStateOf(false)
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
@@ -82,8 +97,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
 
-    /** The list of additional buttons to display on the login view bottom app bar */
-    open val additionalBottomBarButtons = mutableStateOf(listOf<LoginAdditionalButton>())
+    /**
+     * A custom button to display on the login view bottom app bar.  Note: If
+     * biometric authentication is enabled and locked that button will be
+     * displayed first.  Also, if IDP authentication is enabled that would also
+     * display before the custom button.
+     */
+    open val customBottomBarButton = mutableStateOf<LoginAdditionalButton?>(null)
 
     // Additional Auth Values
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
@@ -106,10 +126,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
-    val shouldShowBiometricPromptButton = with(SalesforceSDKManager.getInstance().biometricAuthenticationManager) {
-        this?.let { locked && hasBiometricOptedIn() } ?: false
-    }
-    // todo: add shouldShowIDPButton
 
     // The default, locally generated code verifier
     @VisibleForTesting

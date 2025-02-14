@@ -110,7 +110,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.R.string.sf__account_picker_content_description
+import com.salesforce.androidsdk.R.string.sf__account_selector_text
+import com.salesforce.androidsdk.R.string.sf__add_new_account
+import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__custom_url_button
+import com.salesforce.androidsdk.R.string.sf__pick_server
+import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
+import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
+import com.salesforce.androidsdk.R.string.sf__server_url_add_title
+import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_label
+import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_url
+import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
@@ -185,7 +196,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
         viewModel.dynamicBackgroundColor.value = backgroundColor
     }
 
-    when(pickerStyle) {
+    when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
             PickerBottomSheet(
                 pickerStyle,
@@ -230,42 +241,80 @@ internal fun PickerBottomSheet(
 ) {
     val pickerFocus = remember { FocusRequester() }
     val containerContentDescription = when (pickerStyle) {
-        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__server_picker_content_description)
-        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_picker_content_description)
+        PickerStyle.LoginServerPicker -> stringResource(sf__server_picker_content_description)
+        PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
     }
-
-    ModalBottomSheet(
-        onDismissRequest = { /* Do nothing */ },
-        sheetState = sheetState,
-        dragHandle = null,
-        shape = RoundedCornerShape(topStart = CORNER_RADIUS.dp, topEnd = CORNER_RADIUS.dp),
-        containerColor = colorScheme.primaryContainer,
-    ) {
-        var addingNewServer by remember { mutableStateOf(false) }
-        val sfRipple = RippleConfiguration(color = colorScheme.primary)
-        val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
-        var mutableSelectedListItem = selectedListItem
-
-        Column(
-            modifier = Modifier.animateContentSize()
-                .semantics { contentDescription = containerContentDescription }
-                .focusRequester(pickerFocus)
-                .focusable(),
+    val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
+    CompositionLocalProvider(LocalRippleConfiguration provides themeRippleConfiguration) {
+        ModalBottomSheet(
+            onDismissRequest = { /* Do nothing */ },
+            sheetState = sheetState,
+            dragHandle = null,
+            shape = RoundedCornerShape(topStart = CORNER_RADIUS.dp, topEnd = CORNER_RADIUS.dp),
+            containerColor = colorScheme.primaryContainer,
         ) {
-            SideEffect { pickerFocus.requestFocus() }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(HEADER_PADDING_SIZE.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            var addingNewServer by remember { mutableStateOf(false) }
+            val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
+            var mutableSelectedListItem = selectedListItem
+
+            Column(
+                modifier = Modifier
+                    .animateContentSize()
+                    .semantics { contentDescription = containerContentDescription }
+                    .focusRequester(pickerFocus)
+                    .focusable(),
             ) {
-                // Add Connection Back Arrow
-                AnimatedVisibility(
-                    visible = addingNewServer,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                SideEffect { pickerFocus.requestFocus() }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(HEADER_PADDING_SIZE.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    // Add Connection Back Arrow
+                    AnimatedVisibility(
+                        visible = addingNewServer,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
+                        IconButton(
+                            onClick = { addingNewServer = false },
+                            colors = IconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = colorScheme.secondary,
+                                disabledContainerColor = Color.Transparent,
+                                disabledContentColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.size(ICON_SIZE.dp),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(sf__back_button_content_description),
+                            )
+                        }
+                    }
+                    // Picker Title Text
+                    Text(
+                        text = when (pickerStyle) {
+                            PickerStyle.LoginServerPicker -> {
+                                if (addingNewServer) {
+                                    stringResource(sf__server_url_add_title)
+                                } else {
+                                    stringResource(sf__pick_server)
+                                }
+                            }
+
+                            PickerStyle.UserAccountPicker -> stringResource(sf__account_selector_text)
+                        },
+                        color = colorScheme.onSecondary,
+                        fontSize = HEADER_TEXT_SIZE.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    // Close Button
+                    val coroutineScope = rememberCoroutineScope()
                     IconButton(
-                        onClick = { addingNewServer = false },
+                        onClick = { coroutineScope.launch { sheetState.hide() } },
                         colors = IconButtonColors(
                             containerColor = Color.Transparent,
                             contentColor = colorScheme.secondary,
@@ -275,144 +324,109 @@ internal fun PickerBottomSheet(
                         modifier = Modifier.size(ICON_SIZE.dp),
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.sf__back_button_content_description),
+                            Icons.Default.Close,
+                            contentDescription = stringResource(sf__server_close_button_content_description),
                         )
                     }
                 }
-                // Picker Title Text
-                Text(
-                    text = when (pickerStyle) {
-                        PickerStyle.LoginServerPicker -> {
-                            if (addingNewServer) {
-                                stringResource(R.string.sf__server_url_add_title)
-                            } else {
-                                stringResource(R.string.sf__pick_server)
-                            }
-                        }
-                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__account_selector_text)
-                    },
-                    color = colorScheme.onSecondary,
-                    fontSize = HEADER_TEXT_SIZE.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                // Close Button
-                val coroutineScope = rememberCoroutineScope()
-                IconButton(
-                    onClick = { coroutineScope.launch { sheetState.hide() } },
-                    colors = IconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = colorScheme.secondary,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = Color.Transparent,
+                HorizontalDivider(thickness = STROKE_WIDTH.dp, color = colorScheme.surfaceVariant)
+
+                Crossfade(
+                    targetState = addingNewServer,
+                    animationSpec = tween(
+                        durationMillis = SLOW_ANIMATION_MS,
+                        easing = LinearEasing
                     ),
-                    modifier = Modifier.size(ICON_SIZE.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = stringResource(R.string.sf__server_close_button_content_description),
-                    )
-                }
-            }
-            HorizontalDivider(thickness = STROKE_WIDTH.dp, color = colorScheme.surfaceVariant)
+                ) { showAddConnection ->
+                    when (showAddConnection) {
+                        // Login Server Add Connection
+                        true -> {
+                            AddConnection(
+                                getValidServer = getValidServer,
+                                addNewLoginServer = { newServerName: String, newServerUrl: String ->
+                                    addingNewServer = false
+                                    addNewLoginServer?.invoke(newServerName, newServerUrl)
+                                }
+                            )
+                        }
+                        // Login Server or User Account List
+                        false -> {
+                            Column(
+                                modifier = Modifier.scrollable(
+                                    state = rememberScrollState(),
+                                    orientation = Orientation.Vertical,
+                                ),
+                            ) {
+                                LazyColumn(modifier = Modifier.animateContentSize()) {
+                                    items(items = mutableList, key = { it.toString() }) { listItem ->
+                                        val selected = (listItem == mutableSelectedListItem)
+                                        Row(
+                                            modifier = Modifier.animateItem(
+                                                placementSpec = tween(),
+                                                fadeOutSpec = tween(SLOW_ANIMATION_MS),
+                                            )
+                                        ) {
+                                            when (pickerStyle) {
+                                                PickerStyle.LoginServerPicker ->
+                                                    if (listItem is LoginServer) {
+                                                        LoginServerListItem(
+                                                            server = listItem,
+                                                            selected = selected,
+                                                            onItemSelected = onItemSelected,
+                                                            removeServer = { server: LoginServer ->
+                                                                if (selected) {
+                                                                    mutableSelectedListItem = list.first()
+                                                                    onItemSelected(list.first(), false)
+                                                                }
 
-            Crossfade(
-                targetState = addingNewServer,
-                animationSpec = tween(
-                    durationMillis = SLOW_ANIMATION_MS,
-                    easing = LinearEasing
-                ),
-            ) { showAddConnection ->
-                when(showAddConnection) {
-                    // Login Server Add Connection
-                    true -> {
-                        AddConnection(
-                            getValidServer = getValidServer,
-                            addNewLoginServer = { newServerName: String, newServerUrl: String ->
-                                addingNewServer = false
-                                addNewLoginServer?.invoke(newServerName, newServerUrl)
-                            }
-                        )
-                    }
-                    // Login Server or User Account List
-                    false -> {
-                        Column(
-                            modifier = Modifier.scrollable(
-                                state = rememberScrollState(),
-                                orientation = Orientation.Vertical,
-                            ),
-                        ) {
-                            LazyColumn(modifier = Modifier.animateContentSize()) {
-                                items(items = mutableList, key = { it.toString() }) { listItem ->
-                                    val selected = (listItem == mutableSelectedListItem)
-                                    Row(
-                                        modifier = Modifier.animateItem(
-                                            placementSpec = tween(),
-                                            fadeOutSpec = tween(SLOW_ANIMATION_MS),
-                                        )
-                                    ) {
-                                        when (pickerStyle) {
-                                            PickerStyle.LoginServerPicker ->
-                                                if (listItem is LoginServer) {
-                                                    LoginServerListItem(
-                                                        server = listItem,
-                                                        selected = selected,
-                                                        onItemSelected = onItemSelected,
-                                                        removeServer = { server: LoginServer ->
-                                                            if (selected) {
-                                                                mutableSelectedListItem = list.first()
-                                                                onItemSelected(list.first(), false)
+                                                                mutableList.remove(listItem)
+                                                                removeLoginServer?.let { it(server) }
                                                             }
+                                                        )
+                                                    }
 
-                                                            mutableList.remove(listItem)
-                                                            removeLoginServer?.let { it(server) }
-                                                        }
-                                                    )
-                                                }
-
-                                            PickerStyle.UserAccountPicker -> {
-                                                if (listItem is UserAccount) {
-                                                    UserAccountListItem(
-                                                        displayName = listItem.displayName,
-                                                        loginServer = listItem.loginServer,
-                                                        selected = selected,
-                                                        onItemSelected = { onItemSelected(listItem, true) },
-                                                        profilePhoto = listItem.profilePhoto?.let {
-                                                            painterResource(
-                                                                it.generationId
-                                                            )
-                                                        },
-                                                    )
-                                                /*
-                                                 TODO: Remove this mock when a UserAccount can be created in without
-                                                 SalesforceSDKManger (for previews).  This would be trivial with an
-                                                 internal constructor if the class was converted to Kotlin.
-                                                */
-                                                } else if (listItem is UserAccountMock) {
-                                                    UserAccountListItem(
-                                                        displayName = listItem.displayName,
-                                                        loginServer = listItem.loginServer,
-                                                        selected = selected,
-                                                        onItemSelected = { onItemSelected(listItem, true) },
-                                                        profilePhoto = listItem.profilePhoto?.let {
-                                                            painterResource(
-                                                                it.generationId
-                                                            )
-                                                        },
-                                                    )
+                                                PickerStyle.UserAccountPicker -> {
+                                                    if (listItem is UserAccount) {
+                                                        UserAccountListItem(
+                                                            displayName = listItem.displayName,
+                                                            loginServer = listItem.loginServer,
+                                                            selected = selected,
+                                                            onItemSelected = { onItemSelected(listItem, true) },
+                                                            profilePhoto = listItem.profilePhoto?.let {
+                                                                painterResource(
+                                                                    it.generationId
+                                                                )
+                                                            },
+                                                        )
+                                                        /*
+                                                         TODO: Remove this mock when a UserAccount can be created in without
+                                                         SalesforceSDKManger (for previews).  This would be trivial with an
+                                                         internal constructor if the class was converted to Kotlin.
+                                                        */
+                                                    } else if (listItem is UserAccountMock) {
+                                                        UserAccountListItem(
+                                                            displayName = listItem.displayName,
+                                                            loginServer = listItem.loginServer,
+                                                            selected = selected,
+                                                            onItemSelected = { onItemSelected(listItem, true) },
+                                                            profilePhoto = listItem.profilePhoto?.let {
+                                                                painterResource(
+                                                                    it.generationId
+                                                                )
+                                                            },
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    HorizontalDivider(
-                                        thickness = STROKE_WIDTH.dp,
-                                        modifier = Modifier.padding(horizontal = PADDING_SIZE.dp),
-                                        color = colorScheme.surfaceVariant,
-                                    )
+                                        HorizontalDivider(
+                                            thickness = STROKE_WIDTH.dp,
+                                            modifier = Modifier.padding(horizontal = PADDING_SIZE.dp),
+                                            color = colorScheme.surfaceVariant,
+                                        )
 
-                                    // Add New Connection/Account Button
-                                    if (listItem == mutableList.last()) {
-                                        CompositionLocalProvider(LocalRippleConfiguration provides sfRipple) {
+                                        // Add New Connection/Account Button
+                                        if (listItem == mutableList.last()) {
                                             OutlinedButton(
                                                 onClick = {
                                                     when (pickerStyle) {
@@ -429,8 +443,8 @@ internal fun PickerBottomSheet(
                                             ) {
                                                 Text(
                                                     text = when (pickerStyle) {
-                                                        PickerStyle.LoginServerPicker -> stringResource(R.string.sf__custom_url_button)
-                                                        PickerStyle.UserAccountPicker -> stringResource(R.string.sf__add_new_account)
+                                                        PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button)
+                                                        PickerStyle.UserAccountPicker -> stringResource(sf__add_new_account)
                                                     },
                                                     color = colorScheme.primary,
                                                     fontSize = TEXT_SIZE.sp,
@@ -471,9 +485,10 @@ internal fun AddConnection(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(R.string.sf__server_url_default_custom_label)) },
+                label = { Text(stringResource(sf__server_url_default_custom_label)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(PADDING_SIZE.dp)
                     .focusRequester(focusRequester),
                 colors = TextFieldDefaults.colors(
@@ -492,10 +507,11 @@ internal fun AddConnection(
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text(stringResource(R.string.sf__server_url_default_custom_url)) },
+                label = { Text(stringResource(sf__server_url_default_custom_url)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -531,7 +547,7 @@ internal fun AddConnection(
             onClick = { addNewLoginServer?.let { it(trimmedName, serverUrl!!) } },
         ) {
             Text(
-                text = stringResource(R.string.sf__server_url_save),
+                text = stringResource(sf__server_url_save),
                 fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
                 color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
             )
@@ -542,9 +558,9 @@ internal fun AddConnection(
 }
 
 // Ensure no duplicates in the list because they are not allowed by lazy column.
-fun List<Any>.pickerDistinctBy() : List<Any> {
+fun List<Any>.pickerDistinctBy(): List<Any> {
     return distinctBy { listItem ->
-        when(listItem) {
+        when (listItem) {
             is LoginServer -> with(listItem) { "$name$url" }
             else -> listItem.toString()
         }
@@ -562,7 +578,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionPreview() {
-        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection()
     }
 }
@@ -571,7 +587,7 @@ private fun AddConnectionPreview() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
 private fun AddConnectionValuesPreview() {
-        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         AddConnection(
             getValidServer = { server: String -> server },
             previewName = "New Server",
