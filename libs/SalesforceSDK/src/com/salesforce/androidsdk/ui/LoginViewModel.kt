@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui
 
 import android.webkit.CookieManager
 import android.webkit.URLUtil
-import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -69,6 +68,33 @@ import java.net.URI
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
+    // Default TopAppBar Customization
+
+    /** Default TopAppBar Color. */
+    open var topBarColor: Color? = null
+
+    /**  */
+    open var titleText: String? = null
+    open var titleTextColor: Color? = null
+
+    /** Loading Indicator */
+    val loadingIndicator: (@Composable () -> Unit)? = null
+
+    // Default BottomAppBar Customization
+    /**
+     * A custom button to display on the login view bottom app bar.
+     *
+     * Note: This button will not be displayed if the user is locked by Biometric Authentication
+     * or the Identity Provider flow is enabled.
+     */
+    open val customBottomBarButton = mutableStateOf<BottomBarButton?>(null)
+
+
+    // Override App Bars
+    val topAppBar: (@Composable () -> Unit)? = null
+    val bottomAppBar: (@Composable () -> Unit)? = null
+
+
     // LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
@@ -84,30 +110,22 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
     internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
     internal var dynamicBackgroundColor = mutableStateOf(White)
-    internal var dynamicBackgroundTheme = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
-    internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
+    internal var dynamicBackgroundTheme =
+        derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
+    internal var dynamicHeaderTextColor =
+        derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal var showServerPicker = mutableStateOf(false)
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
 
     // Public Overrideable LiveData
-    open var showTopBar = true
-    open var topBarColor: Color? = null
-    open var titleText: String? = null
-    open var titleComposable: (@Composable () -> Unit)? = null
     open var loading = mutableStateOf(false)
 
-    /**
-     * A custom button to display on the login view bottom app bar.  Note: If
-     * biometric authentication is enabled and locked that button will be
-     * displayed first.  Also, if IDP authentication is enabled that would also
-     * display before the custom button.
-     */
-    open val customBottomBarButton = mutableStateOf<LoginAdditionalButton?>(null)
-
     // Additional Auth Values
+    open var additionalParameters = hashMapOf<String, String>()
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
-    protected open val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+    protected open val authorizationDisplayType =
+        SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -121,7 +139,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     // LoginOptions values
     var jwt: String? = null
-    var additionalParameters = hashMapOf<String, String>()
 
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
@@ -149,7 +166,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer.url.run { trim { it <= ' ' } }
             if (selectedServer.value == trimmedServer) {
-                reloadWebview()
+                reloadWebView()
             } else {
                 selectedServer.value = trimmedServer
             }
@@ -164,7 +181,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }
     }
 
-    open fun reloadWebview() {
+    open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
@@ -278,7 +295,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         )
 
         return when {
-            jwtFlow -> getFrontdoorUrl(authorizationUrl, authCodeForJwtFlow, selectedServer.value, mapOf<String, String>())
+            jwtFlow -> getFrontdoorUrl(
+                authorizationUrl,
+                authCodeForJwtFlow,
+                selectedServer.value,
+                mapOf<String, String>()
+            )
+
             else -> authorizationUrl
         }.toString()
     }
@@ -330,9 +353,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param title The button's displayable title
      * @param onClick The button's on-click action
      */
-    data class LoginAdditionalButton(
-        @StringRes
-        val title: Int,
+    data class BottomBarButton(
+        val title: String,
         val onClick: () -> Unit
     )
 }

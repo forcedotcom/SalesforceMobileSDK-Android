@@ -283,7 +283,7 @@ open class LoginActivity : FragmentActivity() {
         viewModel.selectedServer.observe(this) {
             if (viewModel.singleServerCustomTabActivity) {
                 // Skip fetching authorization and show custom tab immediately.
-                viewModel.reloadWebview()
+                viewModel.reloadWebView()
                 viewModel.loginUrl.value?.let { url ->
                     loadLoginPageInCustomTab(url, customTabLauncher)
                 }
@@ -454,7 +454,7 @@ open class LoginActivity : FragmentActivity() {
                                 key = getPrivateKey(this, alias)
                             }
 
-                            viewModel.reloadWebview()
+                            viewModel.reloadWebView()
                         }.onFailure { throwable ->
                             e(TAG, "Exception thrown while retrieving X.509 certificate", throwable)
                         }
@@ -582,7 +582,7 @@ open class LoginActivity : FragmentActivity() {
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
             makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
-            viewModel.reloadWebview()
+            viewModel.reloadWebView()
         }
     }
 
@@ -834,7 +834,7 @@ open class LoginActivity : FragmentActivity() {
                         jwtFlowError()
                     } else {
                         viewModel.authCodeForJwtFlow = tokenResponse.authToken
-                        viewModel.reloadWebview()
+                        viewModel.reloadWebView()
                     }
                 }
             }

@@ -136,13 +136,8 @@ enum class PickerStyle {
     UserAccountPicker,
 }
 
-internal const val PADDING_SIZE = 12
 internal const val ICON_SIZE = 32
-internal const val HEADER_TEXT_SIZE = 20
 internal const val HEADER_PADDING_SIZE = 16
-internal const val TEXT_SIZE = 16
-internal const val CORNER_RADIUS = 9
-internal const val STROKE_WIDTH = 1
 internal const val SLOW_ANIMATION_MS = 500
 internal const val TEXT_SELECTION_ALPHA = 0.2f
 
