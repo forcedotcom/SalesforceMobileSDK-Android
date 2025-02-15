@@ -29,6 +29,7 @@
     <string name="sf__login_with_biometric">Log In with Biometric</string>
     <string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
     <string name="sf__back_button_content_description">Back</string>
+    <string name="sf__loading_indicator">Loading</string>
 
     <!-- Server picker -->
     <string name="sf__auth_login_production">Production</string>

@@ -68,19 +68,23 @@ import java.net.URI
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
-    // Default TopAppBar Customization
+    // DefaultTopAppBar Customization
 
-    /** Default TopAppBar Color. */
+    /** TopAppBar Color.  Defaults to WebView background color. */
     open var topBarColor: Color? = null
-
-    /**  */
+    /** TopAppBar text.  Defaults to login server url. */
     open var titleText: String? = null
+    /**
+     * TopAppBar text Color.  Defaults to black on light backgrounds and white
+     * on dark backgrounds.  Back and menu buttons will match this color.
+     */
     open var titleTextColor: Color? = null
 
     /** Loading Indicator */
     val loadingIndicator: (@Composable () -> Unit)? = null
 
-    // Default BottomAppBar Customization
+    // DefaultBottomAppBar Customization
+
     /**
      * A custom button to display on the login view bottom app bar.
      *
@@ -88,7 +92,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * or the Identity Provider flow is enabled.
      */
     open val customBottomBarButton = mutableStateOf<BottomBarButton?>(null)
-
 
     // Override App Bars
     val topAppBar: (@Composable () -> Unit)? = null
