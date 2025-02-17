@@ -1,4 +1,4 @@
-8plugins { `kotlin-dsl` }
+plugins { `kotlin-dsl` }
 
 repositories {
     google()
