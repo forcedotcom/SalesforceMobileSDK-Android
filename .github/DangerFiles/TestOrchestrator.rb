@@ -9,11 +9,11 @@ fail("Please re-submit this PR to the dev branch, we may have already fixed your
 # List of Android libraries for testing
 LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
 
-modifed_libs = Set[]
+modified_libs = Set[]
 for file in (git.modified_files + git.added_files);
     scheme = file.split("libs/").last.split("/").first
     if LIBS.include?(scheme) 
-        modifed_libs.add(scheme)
+        modified_libs.add(scheme)
     end
 end
 
@@ -23,5 +23,5 @@ if modified_libs.empty?
 end
 
 # Set Github Job output so we know which tests to run
-json_libs = modifed_libs.map { |l| "'#{l}'"}.join(", ")
+json_libs = modified_libs.map { |l| "'#{l}'"}.join(", ")
 `echo "libs=[#{json_libs}]" >> $GITHUB_OUTPUT`
