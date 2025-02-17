@@ -17,6 +17,11 @@ for file in (git.modified_files + git.added_files);
     end
 end
 
+# If modified_libs is empty, add all LIBS
+if modified_libs.empty?
+  modified_libs.merge(LIBS)
+end
+
 # Set Github Job output so we know which tests to run
 json_libs = modifed_libs.map { |l| "'#{l}'"}.join(", ")
 `echo "libs=[#{json_libs}]" >> $GITHUB_OUTPUT`
