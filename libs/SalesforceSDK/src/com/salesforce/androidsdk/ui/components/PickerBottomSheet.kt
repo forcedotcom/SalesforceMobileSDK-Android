@@ -83,7 +83,6 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -129,6 +128,7 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class PickerStyle {
@@ -236,6 +236,15 @@ internal fun PickerBottomSheet(
         PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
     }
     val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            delay(SLOW_ANIMATION_MS.toLong())
+            pickerFocus.requestFocus()
+        }
+    }
+
     CompositionLocalProvider(LocalRippleConfiguration provides themeRippleConfiguration) {
         ModalBottomSheet(
             onDismissRequest = { /* Do nothing */ },
@@ -255,7 +264,6 @@ internal fun PickerBottomSheet(
                     .focusRequester(pickerFocus)
                     .focusable(),
             ) {
-                SideEffect { pickerFocus.requestFocus() }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -303,7 +311,6 @@ internal fun PickerBottomSheet(
                         fontWeight = FontWeight.SemiBold,
                     )
                     // Close Button
-                    val coroutineScope = rememberCoroutineScope()
                     IconButton(
                         onClick = { coroutineScope.launch { sheetState.hide() } },
                         colors = IconButtonColors(
