@@ -83,7 +83,6 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -129,6 +128,7 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class PickerStyle {
@@ -136,14 +136,8 @@ enum class PickerStyle {
     UserAccountPicker,
 }
 
-internal const val PADDING_SIZE = 12
 internal const val ICON_SIZE = 32
-internal const val HEADER_TEXT_SIZE = 20
 internal const val HEADER_PADDING_SIZE = 16
-internal const val TEXT_SIZE = 16
-internal const val CORNER_RADIUS = 9
-internal const val STROKE_WIDTH = 1
-internal const val SLOW_ANIMATION_MS = 500
 internal const val TEXT_SELECTION_ALPHA = 0.2f
 
 
@@ -154,12 +148,10 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
-    val backgroundColor = SalesforceSDKManager.getInstance().colorScheme().background
     val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = !closePicker
             viewModel.loading.value = true
-            viewModel.dynamicBackgroundColor.value = backgroundColor
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
         }
     }
@@ -193,7 +185,6 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
         loginServerManager.addCustomLoginServer(name, url)
         viewModel.showServerPicker.value = false
         viewModel.loading.value = true
-        viewModel.dynamicBackgroundColor.value = backgroundColor
     }
 
     when (pickerStyle) {
@@ -245,6 +236,15 @@ internal fun PickerBottomSheet(
         PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
     }
     val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            delay(SLOW_ANIMATION_MS.toLong())
+            pickerFocus.requestFocus()
+        }
+    }
+
     CompositionLocalProvider(LocalRippleConfiguration provides themeRippleConfiguration) {
         ModalBottomSheet(
             onDismissRequest = { /* Do nothing */ },
@@ -264,7 +264,6 @@ internal fun PickerBottomSheet(
                     .focusRequester(pickerFocus)
                     .focusable(),
             ) {
-                SideEffect { pickerFocus.requestFocus() }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -278,20 +277,22 @@ internal fun PickerBottomSheet(
                         enter = fadeIn(),
                         exit = fadeOut(),
                     ) {
-                        IconButton(
-                            onClick = { addingNewServer = false },
-                            colors = IconButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = colorScheme.secondary,
-                                disabledContainerColor = Color.Transparent,
-                                disabledContentColor = Color.Transparent,
-                            ),
-                            modifier = Modifier.size(ICON_SIZE.dp),
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(sf__back_button_content_description),
-                            )
+                        ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
+                            IconButton(
+                                onClick = { addingNewServer = false },
+                                colors = IconButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = colorScheme.secondary,
+                                    disabledContainerColor = Color.Transparent,
+                                    disabledContentColor = Color.Transparent,
+                                ),
+                                modifier = Modifier.size(ICON_SIZE.dp),
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = backButtonDescription,
+                                )
+                            }
                         }
                     }
                     // Picker Title Text
@@ -312,21 +313,22 @@ internal fun PickerBottomSheet(
                         fontWeight = FontWeight.SemiBold,
                     )
                     // Close Button
-                    val coroutineScope = rememberCoroutineScope()
-                    IconButton(
-                        onClick = { coroutineScope.launch { sheetState.hide() } },
-                        colors = IconButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = colorScheme.secondary,
-                            disabledContainerColor = Color.Transparent,
-                            disabledContentColor = Color.Transparent,
-                        ),
-                        modifier = Modifier.size(ICON_SIZE.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(sf__server_close_button_content_description),
-                        )
+                    ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
+                        IconButton(
+                            onClick = { coroutineScope.launch { sheetState.hide() } },
+                            colors = IconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = colorScheme.secondary,
+                                disabledContainerColor = Color.Transparent,
+                                disabledContentColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.size(ICON_SIZE.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = closeButtonDescription,
+                            )
+                        }
                     }
                 }
                 HorizontalDivider(thickness = STROKE_WIDTH.dp, color = colorScheme.surfaceVariant)
@@ -443,8 +445,13 @@ internal fun PickerBottomSheet(
                                             ) {
                                                 Text(
                                                     text = when (pickerStyle) {
-                                                        PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button)
-                                                        PickerStyle.UserAccountPicker -> stringResource(sf__add_new_account)
+                                                        PickerStyle.LoginServerPicker -> stringResource(
+                                                            sf__custom_url_button
+                                                        )
+
+                                                        PickerStyle.UserAccountPicker -> stringResource(
+                                                            sf__add_new_account
+                                                        )
                                                     },
                                                     color = colorScheme.primary,
                                                     fontSize = TEXT_SIZE.sp,

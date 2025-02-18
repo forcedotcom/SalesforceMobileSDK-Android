@@ -126,7 +126,12 @@ public class LoginServerManager {
 
 		// Selection has been saved before.
 		if (name != null && url != null) {
-			selectedServer.postValue(new LoginServer(name, url, isCustom));
+			LoginServer server = new LoginServer(name, url, isCustom);
+
+			// Only notify livedata consumers if the value has changed.
+			if (!server.equals(selectedServer.getValue())) {
+				selectedServer.postValue(server);
+			}
 		} else {
 
 			// First time selection defaults to the first server on the list.

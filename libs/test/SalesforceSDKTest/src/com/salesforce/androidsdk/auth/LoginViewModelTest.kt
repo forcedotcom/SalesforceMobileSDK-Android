@@ -110,7 +110,7 @@ class LoginViewModelTest {
         val originalCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         Assert.assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
-        viewModel.reloadWebview()
+        viewModel.reloadWebView()
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         Assert.assertNotNull(newCodeChallenge)
         Assert.assertNotEquals(originalCodeChallenge, newCodeChallenge)
@@ -126,7 +126,7 @@ class LoginViewModelTest {
 
         viewModel.jwt = FAKE_JWT
         viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
-        viewModel.reloadWebview()
+        viewModel.reloadWebView()
         Assert.assertNotEquals(expectedUrl, viewModel.loginUrl.value)
 
         codeChallenge = getSHA256Hash(viewModel.codeVerifier)

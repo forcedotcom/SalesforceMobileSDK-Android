@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui
 
 import android.webkit.CookieManager
 import android.webkit.URLUtil
-import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -69,10 +68,47 @@ import java.net.URI
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
-    // LiveData
+    // region UI Customization
+
+    /** TopAppBar Color.  Defaults to WebView background color. */
+    open var topBarColor: Color? = null
+    /** TopAppBar text.  Defaults to login server url. */
+    open var titleText: String? = null
+    /**
+     * TopAppBar text Color.  Defaults to black on light backgrounds and white
+     * on dark backgrounds.  Back and menu buttons will match this color.
+     */
+    open var titleTextColor: Color? = null
+
+    /** Loading Indicator */
+    open val loadingIndicator: (@Composable () -> Unit)? = null
+
+    // DefaultBottomAppBar Customization
+
+    /**
+     * A custom button to display on the login view bottom app bar.
+     *
+     * Note: This button will not be displayed if the user is locked by Biometric Authentication
+     * or the Identity Provider flow is enabled.
+     */
+    open val customBottomBarButton = mutableStateOf<BottomBarButton?>(null)
+
+    // Override App Bars
+    /** TopAppBar that will be used instead of the default. */
+    open val topAppBar: (@Composable () -> Unit)? = null
+    /** BottomAppBar that will be used instead of the default. */
+    open val bottomAppBar: (@Composable () -> Unit)? = null
+
+    // endregion
+
+    // Public LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
-    internal val showBottomBarButtons = mutableStateOf(true)
+    var showServerPicker = mutableStateOf(false)
+    var loading = mutableStateOf(false)
+
+    // Internal LiveData
+    internal val authFinished = mutableStateOf(false)
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
     }
@@ -84,30 +120,22 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
     internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
     internal var dynamicBackgroundColor = mutableStateOf(White)
-    internal var dynamicBackgroundTheme = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
-    internal var dynamicHeaderTextColor = derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
-    internal var showServerPicker = mutableStateOf(false)
+    internal var dynamicBackgroundTheme =
+        derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
+    internal var dynamicHeaderTextColor =
+        derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
 
-    // Public Overrideable LiveData
-    open var showTopBar = true
-    open var topBarColor: Color? = null
-    open var titleText: String? = null
-    open var titleComposable: (@Composable () -> Unit)? = null
-    open var loading = mutableStateOf(false)
-
-    /**
-     * A custom button to display on the login view bottom app bar.  Note: If
-     * biometric authentication is enabled and locked that button will be
-     * displayed first.  Also, if IDP authentication is enabled that would also
-     * display before the custom button.
-     */
-    open val customBottomBarButton = mutableStateOf<LoginAdditionalButton?>(null)
-
-    // Additional Auth Values
+    /** Additional Auth Values used for login. */
+    open var additionalParameters = hashMapOf<String, String>()
+    /** JWT string used for JWT Auth Flow. */
+    var jwt: String? = null
+    /** Connected App/External Client App client Id. */
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
-    protected open val authorizationDisplayType = SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+    /** Authorization Display Type used for login. */
+    protected open val authorizationDisplayType =
+        SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -119,10 +147,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      */
     open val singleServerCustomTabActivity = false
 
-    // LoginOptions values
-    var jwt: String? = null
-    var additionalParameters = hashMapOf<String, String>()
-
+    /** Value representing if the back button should be shown on the login view. */
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
@@ -149,7 +174,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer.url.run { trim { it <= ' ' } }
             if (selectedServer.value == trimmedServer) {
-                reloadWebview()
+                reloadWebView()
             } else {
                 selectedServer.value = trimmedServer
             }
@@ -164,12 +189,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }
     }
 
-    open fun reloadWebview() {
+    /** Reloads the WebView with a newly generated authorization URL. */
+    open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
 
+    /** Clear WebView Cookies. */
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
@@ -278,7 +305,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         )
 
         return when {
-            jwtFlow -> getFrontdoorUrl(authorizationUrl, authCodeForJwtFlow, selectedServer.value, mapOf<String, String>())
+            jwtFlow -> getFrontdoorUrl(
+                authorizationUrl,
+                authCodeForJwtFlow,
+                selectedServer.value,
+                mapOf<String, String>()
+            )
+
             else -> authorizationUrl
         }.toString()
     }
@@ -330,9 +363,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param title The button's displayable title
      * @param onClick The button's on-click action
      */
-    data class LoginAdditionalButton(
-        @StringRes
-        val title: Int,
+    data class BottomBarButton(
+        val title: String,
         val onClick: () -> Unit
     )
 }

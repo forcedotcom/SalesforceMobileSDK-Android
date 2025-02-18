@@ -63,7 +63,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -125,7 +124,6 @@ fun LoginServerListItem(
         derivedStateOf { with(density) { rowSizePixels.height.toDp() } }
     }
     val confirmDeleteFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { /* Necessary for accessibility */ }
 
     Box {
         Row(
@@ -180,28 +178,31 @@ fun LoginServerListItem(
             if (server.isCustom) {
                 CompositionLocalProvider(LocalRippleConfiguration provides null) {
                     val scope = rememberCoroutineScope()
-                    IconButton(
-                        onClick = {
-                            deleting = true
-                            scope.launch {
-                                delay(DELETE_ANIMATION_TIME.toLong())
-                                confirmDeleteFocus.requestFocus()
-                            }
-                        },
-                        enabled = !deleting,
-                        interactionSource = null,
-                        modifier = Modifier
-                            .padding(end = PADDING_SIZE.dp)
-                            .size(ICON_SIZE.dp)
-                            .offset { offset },
-                    ) {
-                        Icon(
-                            Icons.TwoTone.Delete,
-                            contentDescription = stringResource(sf__server_remove_content_description),
-                            tint = colorScheme.secondary.copy(
-                                alpha = if (deleting) 0f else 1f
-                            ),
-                        )
+
+                    ToolTipWrapper(sf__server_remove_content_description) { removeDescription ->
+                        IconButton(
+                            onClick = {
+                                deleting = true
+                                scope.launch {
+                                    delay(DELETE_ANIMATION_TIME.toLong())
+                                    confirmDeleteFocus.requestFocus()
+                                }
+                            },
+                            enabled = !deleting,
+                            interactionSource = null,
+                            modifier = Modifier
+                                .padding(end = PADDING_SIZE.dp)
+                                .size(ICON_SIZE.dp)
+                                .offset { offset },
+                        ) {
+                            Icon(
+                                Icons.TwoTone.Delete,
+                                contentDescription = removeDescription,
+                                tint = colorScheme.secondary.copy(
+                                    alpha = if (deleting) 0f else 1f
+                                ),
+                            )
+                        }
                     }
                 }
             }
