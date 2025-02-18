@@ -64,10 +64,15 @@ import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RichTooltip
+import androidx.compose.material3.RichTooltipColors
 import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
@@ -82,12 +87,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -253,17 +260,20 @@ internal fun DefaultTopAppBar(
             )
         },
         actions = @Composable {
-            IconButton(
-                onClick = { showMenu = !showMenu },
-                colors = IconButtonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = titleTextColor,
-                    disabledContainerColor = Color.Transparent,
-                    disabledContentColor = Color.Transparent,
-                ),
-            ) {
-                Icon(Icons.Default.MoreVert, contentDescription = stringResource(sf__more_options))
+            ToolTipWrapper(sf__more_options) { moreOptionsDescription ->
+                IconButton(
+                    onClick = { showMenu = !showMenu },
+                    colors = IconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = titleTextColor,
+                        disabledContainerColor = Color.Transparent,
+                        disabledContentColor = Color.Transparent,
+                    ),
+                ) {
+                    Icon(Icons.Default.MoreVert, contentDescription = moreOptionsDescription)
+                }
             }
+
             CompositionLocalProvider(
                 LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
             ) {
@@ -289,19 +299,21 @@ internal fun DefaultTopAppBar(
         },
         navigationIcon = {
             if (shouldShowBackButton) {
-                IconButton(
-                    onClick = { finish() },
-                    colors = IconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = titleTextColor,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = Color.Transparent,
-                    ),
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(sf__back_button_content_description),
-                    )
+                ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
+                    IconButton(
+                        onClick = { finish() },
+                        colors = IconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = titleTextColor,
+                            disabledContainerColor = Color.Transparent,
+                            disabledContentColor = Color.Transparent,
+                        ),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = backButtonDescription,
+                        )
+                    }
                 }
             }
         }
@@ -398,6 +410,32 @@ internal fun DefaultBottomAppBar(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ToolTipWrapper(contentDescription: Int, content: @Composable (description: String) -> Unit) {
+    val description = stringResource(contentDescription)
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+        tooltip = {
+            RichTooltip(
+                caretSize = DpSize(PADDING_SIZE. dp, PADDING_SIZE.dp),
+                colors = RichTooltipColors(
+                    containerColor = colorScheme.outline,
+                    contentColor = colorScheme.onSecondary,
+                    titleContentColor = Color.Transparent, // Unused
+                    actionContentColor = Color.Transparent, // Unused
+                )
+            ) { Text(description) }
+        },
+        state = rememberTooltipState(
+            isPersistent = true,
+            initialIsVisible = LocalInspectionMode.current
+        )
+    ) {
+        content(description)
     }
 }
 
@@ -646,5 +684,36 @@ private fun BottomBarRedPreview() {
             loading = false,
             showButton = true,
         )
+    }
+}
+
+@Preview("Light", showBackground = true, heightDp = 100, widthDp = 100)
+@Preview("Dark", showBackground = true, heightDp = 100, widthDp = 100,
+    uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
+@Composable
+private fun TooltipPreview() {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            ToolTipWrapper(sf__loading_indicator) { cd ->
+                IconButton(
+                    onClick = { },
+                    colors = IconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = colorScheme.secondary,
+                        disabledContainerColor = Color.Transparent,
+                        disabledContentColor = Color.Transparent,
+                    ),
+                    modifier = Modifier.size(ICON_SIZE.dp),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = cd,
+                    )
+                }
+            }
+        }
     }
 }

@@ -277,20 +277,22 @@ internal fun PickerBottomSheet(
                         enter = fadeIn(),
                         exit = fadeOut(),
                     ) {
-                        IconButton(
-                            onClick = { addingNewServer = false },
-                            colors = IconButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = colorScheme.secondary,
-                                disabledContainerColor = Color.Transparent,
-                                disabledContentColor = Color.Transparent,
-                            ),
-                            modifier = Modifier.size(ICON_SIZE.dp),
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(sf__back_button_content_description),
-                            )
+                        ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
+                            IconButton(
+                                onClick = { addingNewServer = false },
+                                colors = IconButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = colorScheme.secondary,
+                                    disabledContainerColor = Color.Transparent,
+                                    disabledContentColor = Color.Transparent,
+                                ),
+                                modifier = Modifier.size(ICON_SIZE.dp),
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = backButtonDescription,
+                                )
+                            }
                         }
                     }
                     // Picker Title Text
@@ -311,20 +313,22 @@ internal fun PickerBottomSheet(
                         fontWeight = FontWeight.SemiBold,
                     )
                     // Close Button
-                    IconButton(
-                        onClick = { coroutineScope.launch { sheetState.hide() } },
-                        colors = IconButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = colorScheme.secondary,
-                            disabledContainerColor = Color.Transparent,
-                            disabledContentColor = Color.Transparent,
-                        ),
-                        modifier = Modifier.size(ICON_SIZE.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(sf__server_close_button_content_description),
-                        )
+                    ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
+                        IconButton(
+                            onClick = { coroutineScope.launch { sheetState.hide() } },
+                            colors = IconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = colorScheme.secondary,
+                                disabledContainerColor = Color.Transparent,
+                                disabledContentColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.size(ICON_SIZE.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = closeButtonDescription,
+                            )
+                        }
                     }
                 }
                 HorizontalDivider(thickness = STROKE_WIDTH.dp, color = colorScheme.surfaceVariant)
