@@ -278,9 +278,11 @@ internal fun DefaultTopAppBar(
                     MenuItem(stringResource(sf__clear_cookies)) {
                         clearCookies()
                         reloadWebView()
+                        showMenu = false
                     }
                     MenuItem(stringResource(sf__reload)) {
                         reloadWebView()
+                        showMenu = false
                     }
                 }
             }
