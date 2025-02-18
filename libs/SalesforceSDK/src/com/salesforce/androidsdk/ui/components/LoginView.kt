@@ -30,6 +30,11 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.webkit.WebView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -73,9 +78,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -110,9 +115,10 @@ internal const val CORNER_RADIUS = 12
 internal const val STROKE_WIDTH = 1
 internal const val BUTTON_HEIGHT = 48
 internal const val LEVEL_3_ELEVATION = 6
-internal const val HIDDEN_ALPHA = 0.0f
-internal const val VISIBLE_ALPHA = 100.0f
+internal const val LOADING_ALPHA = 0.2f
+internal const val VISIBLE_ALPHA = 1f
 internal const val LOADING_INDICATOR_SIZE = 50
+internal const val SLOW_ANIMATION_MS = 500
 
 @Composable
 fun LoginView() {
@@ -163,7 +169,9 @@ fun LoginView() {
     val bottomAppBar = viewModel.bottomAppBar ?: {
         DefaultBottomAppBar(
             backgroundColor = viewModel.dynamicBackgroundColor,
-            button = bioAuthButton ?: idpButton ?: customButton
+            button = bioAuthButton ?: idpButton ?: customButton,
+            loading = viewModel.loading.value,
+            showButton = !viewModel.authFinished.value,
         )
     }
 
@@ -189,6 +197,10 @@ internal fun LoginView(
     showServerPicker: MutableState<Boolean>,
 ) {
     val loginUrl = loginUrlData.observeAsState()
+    val alpha: Float by animateFloatAsState(
+        targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
+        animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
+    )
 
     Scaffold(
         topBar = topAppBar,
@@ -202,7 +214,7 @@ internal fun LoginView(
         AndroidView(
             modifier = Modifier
                 .padding(innerPadding)
-                .alpha(if (loading) HIDDEN_ALPHA else VISIBLE_ALPHA),
+                .graphicsLayer(alpha = alpha),
             factory = { webView },
             update = { it.loadUrl(loginUrl.value ?: "") },
         )
@@ -332,38 +344,54 @@ internal fun MenuItem(
 internal fun DefaultBottomAppBar(
     backgroundColor: MutableState<Color>,
     button: LoginViewModel.BottomBarButton?,
+    loading: Boolean,
+    showButton: Boolean,
 ) {
-    BottomAppBar(containerColor = backgroundColor.value) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
+    val alpha: Float by animateFloatAsState(
+        targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
+        animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
+    )
+
+    AnimatedVisibility(
+        visible = showButton,
+        enter = fadeIn(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
+        exit = fadeOut(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
+    ) {
+        BottomAppBar(
+            containerColor = backgroundColor.value,
+            modifier = Modifier.graphicsLayer(alpha = alpha)
         ) {
-            if (button != null) {
-                val buttonShape = RoundedCornerShape(CORNER_RADIUS.dp)
-                CompositionLocalProvider(
-                     LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
-                ) {
-                    OutlinedButton(
-                        onClick = button.onClick,
-                        modifier = Modifier
-                            .padding(PADDING_SIZE.dp)
-                            .height(BUTTON_HEIGHT.dp)
-                            .fillMaxWidth()
-                            .shadow(LEVEL_3_ELEVATION.dp, buttonShape),
-                        shape = buttonShape,
-                        contentPadding = PaddingValues(PADDING_SIZE.dp),
-                        border = BorderStroke(
-                            width = STROKE_WIDTH.dp,
-                            color = Color(SFColors.outlineColor(LocalContext.current)),
-                        ),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                if (button != null) {
+                    val buttonShape = RoundedCornerShape(CORNER_RADIUS.dp)
+                    CompositionLocalProvider(
+                        LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
                     ) {
-                        Text(
-                            text = button.title,
-                            color = Color(SFColors.primaryColor(LocalContext.current)),
-                            fontSize = TEXT_SIZE.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
+                        OutlinedButton(
+                            onClick = button.onClick,
+                            modifier = Modifier
+                                .padding(PADDING_SIZE.dp)
+                                .height(BUTTON_HEIGHT.dp)
+                                .fillMaxWidth()
+                                .shadow(LEVEL_3_ELEVATION.dp, buttonShape),
+                            shape = buttonShape,
+                            contentPadding = PaddingValues(PADDING_SIZE.dp),
+                            border = BorderStroke(
+                                width = STROKE_WIDTH.dp,
+                                color = Color(SFColors.outlineColor(LocalContext.current)),
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                text = button.title,
+                                color = Color(SFColors.primaryColor(LocalContext.current)),
+                                fontSize = TEXT_SIZE.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
             }
@@ -401,7 +429,45 @@ private fun AppBarPreview() {
 
 @Preview
 @Composable
+private fun AppBarLoadingPreview() {
+    val loginUrl = "https://login.salesforce.com"
+    val backgroundColor = Color(red = 244, green = 246, blue = 249)
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DefaultTopAppBar(
+            backgroundColor = backgroundColor,
+            titleText = loginUrl,
+            titleTextColor = Color.Black,
+            showServerPicker = remember { mutableStateOf(false) },
+            clearCookies = { },
+            reloadWebView = { },
+            shouldShowBackButton = false,
+            finish = { },
+        )
+    }
+}
+
+@Preview
+@Composable
 private fun AppBarBackButtonPreview() {
+    val loginUrl = "https://login.salesforce.com"
+    val backgroundColor = Color(red = 244, green = 246, blue = 249)
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DefaultTopAppBar(
+            backgroundColor = backgroundColor,
+            titleText = loginUrl,
+            titleTextColor = Color.Black,
+            showServerPicker = remember { mutableStateOf(false) },
+            clearCookies = { },
+            reloadWebView = { },
+            shouldShowBackButton = true,
+            finish = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun AppBarBackButtonLoadinPreview() {
     val loginUrl = "https://login.salesforce.com"
     val backgroundColor = Color(red = 244, green = 246, blue = 249)
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
@@ -441,10 +507,29 @@ private fun AppBarDarkPreview() {
 @Composable
 private fun BlueAppBarPreview() {
     val loginUrl = "https://login.salesforce.com"
-    val backgroundColor = sfLightColors().primary
+    val topBarColor = sfLightColors().primary
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         DefaultTopAppBar(
-            backgroundColor = backgroundColor,
+            backgroundColor = topBarColor,
+            titleText = loginUrl,
+            titleTextColor = Color.White,
+            showServerPicker = remember { mutableStateOf(false) },
+            clearCookies = { },
+            reloadWebView = { },
+            shouldShowBackButton = true,
+            finish = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun BlueAppBarLoadingPreview() {
+    val loginUrl = "https://login.salesforce.com"
+    val topBarColor = sfLightColors().primary
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DefaultTopAppBar(
+            backgroundColor = topBarColor,
             titleText = loginUrl,
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
@@ -459,10 +544,28 @@ private fun BlueAppBarPreview() {
 @Preview
 @Composable
 private fun CustomTextAppBarPreview() {
-    val backgroundColor = sfLightColors().primary
+    val topBarColor = sfLightColors().primary
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
         DefaultTopAppBar(
-            backgroundColor = backgroundColor,
+            backgroundColor = topBarColor,
+            titleText = "Log In",
+            titleTextColor = Color.White,
+            showServerPicker = remember { mutableStateOf(false) },
+            clearCookies = { },
+            reloadWebView = { },
+            shouldShowBackButton = false,
+            finish = { },
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CustomTextAppBarLoadingPreview() {
+    val topBarColor = sfLightColors().primary
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DefaultTopAppBar(
+            backgroundColor = topBarColor,
             titleText = "Log In",
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
@@ -520,7 +623,9 @@ private fun BottomBarPreview() {
             button = LoginViewModel.BottomBarButton(
                 title = "Login Button Preview",
                 onClick = { }
-            )
+            ),
+            loading = false,
+            showButton = true,
         )
     }
 }
@@ -535,7 +640,9 @@ private fun BottomBarRedPreview() {
             button = LoginViewModel.BottomBarButton(
                 title = "Login Button Preview",
                 onClick = { }
-            )
+            ),
+            loading = false,
+            showButton = true,
         )
     }
 }

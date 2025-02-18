@@ -68,7 +68,7 @@ import java.net.URI
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
-    // DefaultTopAppBar Customization
+    // region UI Customization
 
     /** TopAppBar Color.  Defaults to WebView background color. */
     open var topBarColor: Color? = null
@@ -81,7 +81,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open var titleTextColor: Color? = null
 
     /** Loading Indicator */
-    val loadingIndicator: (@Composable () -> Unit)? = null
+    open val loadingIndicator: (@Composable () -> Unit)? = null
 
     // DefaultBottomAppBar Customization
 
@@ -94,14 +94,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open val customBottomBarButton = mutableStateOf<BottomBarButton?>(null)
 
     // Override App Bars
-    val topAppBar: (@Composable () -> Unit)? = null
-    val bottomAppBar: (@Composable () -> Unit)? = null
+    /** TopAppBar that will be used instead of the default. */
+    open val topAppBar: (@Composable () -> Unit)? = null
+    /** BottomAppBar that will be used instead of the default. */
+    open val bottomAppBar: (@Composable () -> Unit)? = null
 
+    // endregion
 
-    // LiveData
+    // Public LiveData
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
-    internal val showBottomBarButtons = mutableStateOf(true)
+    var showServerPicker = mutableStateOf(false)
+    var loading = mutableStateOf(false)
+
+    // Internal LiveData
+    internal val authFinished = mutableStateOf(false)
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
     }
@@ -117,16 +124,16 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
     internal var dynamicHeaderTextColor =
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
-    internal var showServerPicker = mutableStateOf(false)
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
 
-    // Public Overrideable LiveData
-    open var loading = mutableStateOf(false)
-
-    // Additional Auth Values
+    /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
+    /** JWT string used for JWT Auth Flow. */
+    var jwt: String? = null
+    /** Connected App/External Client App client Id. */
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
+    /** Authorization Display Type used for login. */
     protected open val authorizationDisplayType =
         SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
 
@@ -140,9 +147,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      */
     open val singleServerCustomTabActivity = false
 
-    // LoginOptions values
-    var jwt: String? = null
-
+    /** Value representing if the back button should be shown on the login view. */
     val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
@@ -184,12 +189,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }
     }
 
+    /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
 
+    /** Clear WebView Cookies. */
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 

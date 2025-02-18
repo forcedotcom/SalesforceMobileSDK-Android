@@ -95,9 +95,12 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
+import com.salesforce.androidsdk.R.color.sf__background
+import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
@@ -355,6 +358,8 @@ open class LoginActivity : FragmentActivity() {
             )
             this.accountAuthenticatorResponse = null
         }
+
+        viewModel.authFinished.value = false
         super.finish()
     }
 
@@ -898,15 +903,28 @@ open class LoginActivity : FragmentActivity() {
                     )
 
                     else -> {
+                        // Show loading while we PKCE and/or create user account.
+                        viewModel.authFinished.value = true
+
                         // Determine if presence of override parameters require the user agent flow.
                         val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge
                                 && viewModel.frontdoorBridgeCodeVerifier == null
                         when {
-                            SalesforceSDKManager.getInstance().useWebServerAuthentication && !overrideWithUserAgentFlow ->
-                                viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
+                            SalesforceSDKManager.getInstance().useWebServerAuthentication
+                                    && !overrideWithUserAgentFlow ->
+
+                                viewModel.onWebServerFlowComplete(
+                                    params["code"],
+                                    ::onAuthFlowError,
+                                    ::onAuthFlowSuccess
+                                )
 
                             else ->
-                                viewModel.onAuthFlowComplete(TokenEndpointResponse(params), ::onAuthFlowError, ::onAuthFlowSuccess)
+                                viewModel.onAuthFlowComplete(
+                                    TokenEndpointResponse(params),
+                                    ::onAuthFlowError,
+                                    ::onAuthFlowSuccess
+                                )
                         }
                     }
                 }
@@ -922,21 +940,23 @@ open class LoginActivity : FragmentActivity() {
 
         override fun onPageFinished(view: WebView?, url: String?) {
             view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
-                viewModel.loading.value = false
                 if (url == ABOUT_BLANK) {
-                    viewModel.dynamicBackgroundColor.value = Color.White
+                    val isDark = SalesforceSDKManager.getInstance().isDarkTheme
+                    viewModel.dynamicBackgroundColor.value = Color(ContextCompat.getColor(baseContext,
+                        if (isDark) sf__background_dark else sf__background))
+
                     return@evaluateJavascript
                 }
 
-                viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result) ?: return@evaluateJavascript
+                viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
+                    ?: return@evaluateJavascript
+            }.also {
+                if (!viewModel.authFinished.value) {
+                    viewModel.loading.value = false
+                }
             }
 
-            // Remove the native login buttons (biometric, IDP) once on the allow/deny screen
-            if (url?.contains(ALLOW_SCREEN_INDICATOR) == true) {
-                viewModel.showBottomBarButtons.value = false
-            }
             EventsObservable.get().notifyEvent(AuthWebViewPageFinished, url)
-
             super.onPageFinished(view, url)
         }
 
@@ -999,7 +1019,6 @@ open class LoginActivity : FragmentActivity() {
         // region LoginWebviewClient Constants
 
         internal const val ABOUT_BLANK = "about:blank"
-        private const val ALLOW_SCREEN_INDICATOR = "frontdoor.jsp"
         private const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
 

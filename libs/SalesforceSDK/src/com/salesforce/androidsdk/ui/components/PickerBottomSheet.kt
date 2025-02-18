@@ -138,7 +138,6 @@ enum class PickerStyle {
 
 internal const val ICON_SIZE = 32
 internal const val HEADER_PADDING_SIZE = 16
-internal const val SLOW_ANIMATION_MS = 500
 internal const val TEXT_SELECTION_ALPHA = 0.2f
 
 
@@ -149,12 +148,10 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
     val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val activity = LocalContext.current.getActivity()
-    val backgroundColor = SalesforceSDKManager.getInstance().colorScheme().background
     val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = !closePicker
             viewModel.loading.value = true
-            viewModel.dynamicBackgroundColor.value = backgroundColor
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
         }
     }
@@ -188,7 +185,6 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
         loginServerManager.addCustomLoginServer(name, url)
         viewModel.showServerPicker.value = false
         viewModel.loading.value = true
-        viewModel.dynamicBackgroundColor.value = backgroundColor
     }
 
     when (pickerStyle) {
@@ -438,8 +434,13 @@ internal fun PickerBottomSheet(
                                             ) {
                                                 Text(
                                                     text = when (pickerStyle) {
-                                                        PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button)
-                                                        PickerStyle.UserAccountPicker -> stringResource(sf__add_new_account)
+                                                        PickerStyle.LoginServerPicker -> stringResource(
+                                                            sf__custom_url_button
+                                                        )
+
+                                                        PickerStyle.UserAccountPicker -> stringResource(
+                                                            sf__add_new_account
+                                                        )
                                                     },
                                                     color = colorScheme.primary,
                                                     fontSize = TEXT_SIZE.sp,

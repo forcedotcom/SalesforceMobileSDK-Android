@@ -305,11 +305,11 @@ class LoginViewActivityTest {
         )
         val button = androidComposeTestRule.onNodeWithText(BUTTON_TITLE)
 
-        backButton.assertIsNotDisplayed()
-        titleText.assertIsNotDisplayed()
-        menu.assertIsNotDisplayed()
+        backButton.assertIsDisplayed()
+        titleText.assertIsDisplayed()
+        menu.assertIsDisplayed()
         loadingIndicator.assertIsDisplayed()
-        button.assertIsNotDisplayed()
+        button.assertIsDisplayed()
     }
 
     // test (not) loading
@@ -380,8 +380,10 @@ class LoginViewActivityTest {
     private fun DefaultBottomAppBarTestWrapper(
         backgroundColor: MutableState<Color> = mutableStateOf(Color.White),
         button: LoginViewModel.BottomBarButton? = null,
+        loading: Boolean = false,
+        showButton: Boolean = true,
     ) {
-        DefaultBottomAppBar(backgroundColor, button)
+        DefaultBottomAppBar(backgroundColor, button, loading, showButton)
     }
 
     /**
