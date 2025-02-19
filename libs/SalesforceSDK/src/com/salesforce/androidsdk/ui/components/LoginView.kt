@@ -173,14 +173,17 @@ fun LoginView() {
             } else null
         }
 
-    val bottomAppBar = viewModel.bottomAppBar ?: {
-        DefaultBottomAppBar(
-            backgroundColor = viewModel.dynamicBackgroundColor,
-            button = bioAuthButton ?: idpButton ?: customButton,
-            loading = viewModel.loading.value,
-            showButton = !viewModel.authFinished.value,
-        )
-    }
+    val bottomAppBarButton = bioAuthButton ?: idpButton ?: customButton
+    val bottomAppBar = viewModel.bottomAppBar ?: bottomAppBarButton?.let { button ->
+        {
+            DefaultBottomAppBar(
+                backgroundColor = viewModel.dynamicBackgroundColor,
+                button = button,
+                loading = viewModel.loading.value,
+                showButton = !viewModel.authFinished.value
+            )
+        }
+    } ?: {}
 
     LoginView(
         loginUrlData = viewModel.loginUrl,
@@ -489,25 +492,6 @@ private fun AppBarLoadingPreview() {
 @Preview
 @Composable
 private fun AppBarBackButtonPreview() {
-    val loginUrl = "https://login.salesforce.com"
-    val backgroundColor = Color(red = 244, green = 246, blue = 249)
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
-        DefaultTopAppBar(
-            backgroundColor = backgroundColor,
-            titleText = loginUrl,
-            titleTextColor = Color.Black,
-            showServerPicker = remember { mutableStateOf(false) },
-            clearCookies = { },
-            reloadWebView = { },
-            shouldShowBackButton = true,
-            finish = { },
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun AppBarBackButtonLoadinPreview() {
     val loginUrl = "https://login.salesforce.com"
     val backgroundColor = Color(red = 244, green = 246, blue = 249)
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
