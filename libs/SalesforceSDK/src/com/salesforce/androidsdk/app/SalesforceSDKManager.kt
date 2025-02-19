@@ -1188,7 +1188,9 @@ open class SalesforceSDKManager protected constructor(
     fun showDevSupportDialog(frontActivity: Activity?) {
         if (!isDevSupportEnabled() || frontActivity == null) return
 
-        devActionsDialog?.dismiss()
+        runCatching {
+            devActionsDialog?.dismiss()
+        }
 
         CoroutineScope(Main).launch {
             val devActions = getDevActions(frontActivity)
