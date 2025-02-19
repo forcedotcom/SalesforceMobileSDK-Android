@@ -36,6 +36,7 @@ import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
+import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
@@ -67,7 +68,7 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.Success
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
+import com.salesforce.androidsdk.rest.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -170,9 +171,7 @@ internal class NativeLoginManager(
         val context = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
-        val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
-        options.putBoolean(SHOW_BIOMETRIC, bioAuthLocked)
-        intent.putExtras(options)
+        intent.putExtras(bundleOf(SHOW_BIOMETRIC to bioAuthLocked))
         Bundle().putParcelable(KEY_INTENT, intent)
 
         return intent
@@ -198,7 +197,7 @@ internal class NativeLoginManager(
 
     private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
         val appContext = SalesforceSDKManager.getInstance().appContext
-        val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
+        val loginOptions = LoginOptions(loginUrl, clientId, emptyArray<String>())
         val tokenEndpointResponse = TokenEndpointResponse(tokenResponse.rawResponse)
         tokenResponse.consumeQuietly()
 

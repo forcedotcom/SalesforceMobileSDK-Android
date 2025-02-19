@@ -43,14 +43,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -67,7 +64,6 @@ public class ClientManager {
 
     private final AccountManager accountManager;
     private final String accountType;
-    private final LoginOptions loginOptions;
     private final boolean revokedTokenShouldLogout;
 
     /**
@@ -75,13 +71,11 @@ public class ClientManager {
      *
      * @param ctx Context.
      * @param accountType Account type.
-     * @param loginOptions Login options.
      * @param revokedTokenShouldLogout True - if the SDK should logout when the access token is revoked, False - otherwise.
      */
-    public ClientManager(Context ctx, String accountType, LoginOptions loginOptions, boolean revokedTokenShouldLogout) {
+    public ClientManager(Context ctx, String accountType, boolean revokedTokenShouldLogout) {
     	this.accountManager = AccountManager.get(ctx);
         this.accountType = accountType;
-        this.loginOptions = loginOptions;
         this.revokedTokenShouldLogout = revokedTokenShouldLogout;
     }
 
@@ -99,7 +93,6 @@ public class ClientManager {
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
         Account acc = getAccount();
-        Bundle options = loginOptions.asBundle();
 
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity using either the default login URL or the Salesforce SDK manager's front door URL for Salesforce Identity API UI Bridge
         if (acc == null) {
@@ -108,9 +101,7 @@ public class ClientManager {
                     SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setPackage(activityContext.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            if (options != null) {
-                i.putExtras(options);
-            }
+
             /*
              * Special Note: `LoginActivity` does not actually return a result.
              * However, it does start broadcast intents that need to be received
@@ -476,7 +467,7 @@ public class ClientManager {
 
         private UserAccount refreshStaleToken(Account account) throws NetworkErrorException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
-            final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
+            final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
                         new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), refreshToken, addlParamsMap);
@@ -520,137 +511,6 @@ public class ClientManager {
 
         public AccountInfoNotFoundException(String msg, Throwable cause) {
             super(msg, cause);
-        }
-    }
-
-    /**
-     * Class encapsulating login options.
-     * There are passed in a bundle to the auth service, which passes them as "extras" when starting the login activity.
-     */
-    public static class LoginOptions {
-
-        private static final String JWT = "jwt";
-        private static final String LOGIN_URL = "loginUrl";
-        private static final String OAUTH_SCOPES = "oauthScopes";
-        private static final String OAUTH_CLIENT_ID = "oauthClientId";
-        private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
-        private static final String KEY_ADDL_PARAMS ="addlParams";
-
-        private String loginUrl;
-        private final String oauthCallbackUrl;
-        private final String oauthClientId;
-        private final String[] oauthScopes;
-        private String jwt;
-        private Map<String,String> additionalParameters;
-
-        public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes) {
-            this.loginUrl = loginUrl;
-            this.oauthCallbackUrl = oauthCallbackUrl;
-            this.oauthClientId = oauthClientId;
-            this.oauthScopes = oauthScopes;
-        }
-
-        public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes, String jwt) {
-            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes);
-            this.setJwt(jwt);
-        }
-
-        public LoginOptions(String loginUrl, String oauthCallbackUrl,
-                            String oauthClientId, String[] oauthScopes, String jwt,
-                            Map<String,String> additionalParameters) {
-            this(loginUrl, oauthCallbackUrl, oauthClientId, oauthScopes, jwt);
-            this.additionalParameters = additionalParameters;
-        }
-
-        public void setAdditionalParameters(Map<String,String> additionalParameters) {
-            this.additionalParameters = additionalParameters;
-        }
-
-        public void setJwt(String jwt) {
-            this.jwt = jwt;
-        }
-
-        public void setUrl(String url) {
-            this.loginUrl = url;
-        }
-
-        public String getLoginUrl() {
-            return loginUrl;
-        }
-
-        public void setLoginUrl(String loginUrl) {
-            this.loginUrl = loginUrl;
-        }
-
-        public String getOauthCallbackUrl() {
-            return oauthCallbackUrl;
-        }
-
-        public String getOauthClientId() {
-            return oauthClientId;
-        }
-
-        public String[] getOauthScopes() {
-            return oauthScopes;
-        }
-
-        public String getJwt() {
-            return jwt;
-        }
-
-        public Map<String, String> getAdditionalParameters() {
-            return additionalParameters;
-        }
-
-        public Bundle asBundle() {
-            Bundle bundle = new Bundle();
-            bundle.putString(LOGIN_URL, loginUrl);
-            bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
-            bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
-            bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
-            bundle.putString(JWT, jwt);
-            if (additionalParameters != null && additionalParameters.size() > 0) {
-                final HashMap<String, String> serializableMap = new HashMap<>();
-                serializableMap.putAll(additionalParameters);
-                bundle.putSerializable(KEY_ADDL_PARAMS,serializableMap);
-            }
-            return bundle;
-        }
-
-        /**
-         * Build a LoginOptions from the given bundle
-         * @param options - bundle
-         * @return
-         */
-        public static LoginOptions fromBundle(Bundle options) {
-            Map<String, String> additionalParameters = null;
-            final Serializable serializable = options.getSerializable(KEY_ADDL_PARAMS);
-            if (serializable != null) {
-                additionalParameters = (HashMap<String, String>) serializable;
-            }
-            return new LoginOptions(options.getString(LOGIN_URL),
-                                    options.getString(OAUTH_CALLBACK_URL),
-                                    options.getString(OAUTH_CLIENT_ID),
-                                    options.getStringArray(OAUTH_SCOPES),
-                                    options.getString(JWT),
-                                    additionalParameters);
-        }
-
-        /**
-         * Build a LoginOptions from the given bundle
-         * If the loginUrl in options is not one of the login servers, then the selected login server is used instead.
-         * @param options - bundle
-         * @return
-         */
-        public static LoginOptions fromBundleWithSafeLoginUrl(Bundle options) {
-            LoginOptions loginOptions = fromBundle(options);
-            LoginServerManager loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
-            if (loginServerManager.getLoginServerFromURL(loginOptions.getLoginUrl()) == null) {
-                loginOptions.setLoginUrl(loginServerManager.getSelectedLoginServer().url);
-            }
-            return loginOptions;
         }
     }
 }

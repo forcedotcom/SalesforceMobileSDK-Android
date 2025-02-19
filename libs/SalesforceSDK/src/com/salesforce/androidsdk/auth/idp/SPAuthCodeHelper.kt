@@ -32,7 +32,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.LoginOptions
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.util.LogUtil
@@ -88,13 +88,10 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     private fun completeLogin(tokenResponse: TokenEndpointResponse) {
-        val loginOptions = ClientManager.LoginOptions(
+        val loginOptions = LoginOptions(
             loginUrl,
-            spConfig.oauthCallbackUrl,
             spConfig.oauthClientId,
             spConfig.oauthScopes,
-            null,
-            null
         )
 
         val oauthHelper = OAuthWebviewHelper(context, this, loginOptions)

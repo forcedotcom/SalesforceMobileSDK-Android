@@ -13,7 +13,6 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 import org.junit.Test
@@ -92,8 +91,6 @@ internal class PublicOverridesTest {
             override var isBrowserLoginEnabled = false
             override val userAccountManager: UserAccountManager get() = super.userAccountManager
             override fun isDevSupportEnabled(): Boolean { return false }
-            override val loginOptions: LoginOptions get() = super.loginOptions
-            override fun getLoginOptions(jwt: String?, url: String?): LoginOptions { return loginOptions }
             override fun logout(frontActivity: Activity?, showLoginPage: Boolean) { }
             override fun logout(account: Account?, frontActivity: Activity?, showLoginPage: Boolean) { }
             override val loginServerManager: LoginServerManager get() = super.loginServerManager
