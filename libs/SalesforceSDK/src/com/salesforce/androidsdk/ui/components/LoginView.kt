@@ -169,7 +169,7 @@ fun LoginView() {
     val customButton =
         with(viewModel.customBottomBarButton.value) {
             if (this != null) {
-                LoginViewModel.BottomBarButton(title) { onClick }
+                LoginViewModel.BottomBarButton(title) { onClick() }
             } else null
         }
 
@@ -421,7 +421,7 @@ internal fun ToolTipWrapper(contentDescription: Int, content: @Composable (descr
         positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
         tooltip = {
             RichTooltip(
-                caretSize = DpSize(PADDING_SIZE. dp, PADDING_SIZE.dp),
+                caretSize = DpSize(PADDING_SIZE.dp, PADDING_SIZE.dp),
                 colors = RichTooltipColors(
                     containerColor = colorScheme.outline,
                     contentColor = colorScheme.onSecondary,
@@ -688,8 +688,10 @@ private fun BottomBarRedPreview() {
 }
 
 @Preview("Light", showBackground = true, heightDp = 100, widthDp = 100)
-@Preview("Dark", showBackground = true, heightDp = 100, widthDp = 100,
-    uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
+@Preview(
+    "Dark", showBackground = true, heightDp = 100, widthDp = 100,
+    uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818
+)
 @Composable
 private fun TooltipPreview() {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
