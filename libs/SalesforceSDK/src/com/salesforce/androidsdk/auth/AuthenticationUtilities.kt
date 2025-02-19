@@ -46,7 +46,6 @@ import com.salesforce.androidsdk.rest.RestClient.clearCaches
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.ScreenLockManager
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.Companion.MUST_BE_MANAGED_APP_PERM
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +58,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 import java.util.function.Consumer
+
+/**
+ * Set a custom permission on the connected application with that name
+ * for the application to be restricted to managed devices
+ */
+private const val MUST_BE_MANAGED_APP_PERM = "must_be_managed_app"
 
 private const val TAG = "AuthenticationUtilities"
 
@@ -79,6 +84,7 @@ internal fun onAuthFlowComplete(
     onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
+    nativeLogin: Boolean = false,
 ) {
     val context = SalesforceSDKManager.getInstance().appContext
     val blockIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
@@ -124,6 +130,7 @@ internal fun onAuthFlowComplete(
         .accountName(buildAccountName(userIdentity?.username, tokenResponse.instanceUrl))
         .loginServer(loginServer)
         .clientId(consumerKey)
+        .nativeLogin(nativeLogin)
         .build()
     account.downloadProfilePhoto()
 
