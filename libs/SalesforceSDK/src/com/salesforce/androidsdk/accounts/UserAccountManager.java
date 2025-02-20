@@ -325,8 +325,7 @@ public class UserAccountManager {
 		if (user.equals(curUser)) {
 			return;
 		}
-		final ClientManager cm = new ClientManager(context, accountType,
-				SalesforceSDKManager.getInstance().getLoginOptions(), true);
+		final ClientManager cm = new ClientManager(context, accountType, true);
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
@@ -350,23 +349,17 @@ public class UserAccountManager {
 	 * in ClientManager will return a RestClient instance for the new user.
 	 */
 	public void switchToNewUser() {
-		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
-		switchToNewUserWithOptions(options);
+		final Bundle options = new Bundle();
+		final Bundle reply = new Bundle();
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
+		options.putBoolean(LoginActivity.NEW_USER, true);
+		i.putExtras(options);
+		reply.putParcelable(AccountManager.KEY_INTENT, i);
+		context.startActivity(i);
 	}
 
-	/**
-	 * Kicks off the login flow to switch to a new user with jwt. Once the login
-	 * flow is complete, the context will automatically become the
-	 * new user's context and a call to peekRestClient() or getRestClient()
-	 * in ClientManager will return a RestClient instance for the new user.
-	 *
-	 * @param jwt JWT.
-	 * @param url Instance/My domain URL.
-	 */
-	public void switchToNewUser(String jwt, String url) {
-		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
-		switchToNewUserWithOptions(options);
-	}
 
 	/**
 	 * Logs the current user out.
@@ -695,17 +688,6 @@ public class UserAccountManager {
 		} catch (Exception e) {
 			SalesforceSDKLogger.e(TAG, "Exception thrown while attempting to refresh token", e);
 		}
-	}
-
-	private void switchToNewUserWithOptions(Bundle options) {
-		final Bundle reply = new Bundle();
-		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
-		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
-		options.putBoolean(LoginActivity.NEW_USER, true);
-		i.putExtras(options);
-		reply.putParcelable(AccountManager.KEY_INTENT, i);
-		context.startActivity(i);
 	}
 
 	/**

@@ -30,18 +30,15 @@ import static com.salesforce.androidsdk.accounts.UserAccountManagerTest.TEST_ACC
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME_2;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_AUTH_TOKEN;
-import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CLIENT_ID;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_KEY;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_VALUE;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_INSTANCE_URL;
-import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_LOGIN_URL;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.os.Bundle;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -53,10 +50,8 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.accounts.UserAccountTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.LogUtil;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -82,9 +77,6 @@ import java.util.concurrent.TimeUnit;
 @MediumTest
 public class ClientManagerTest {
 
-    public static final String[] TEST_SCOPES = new String[] {"web"};
-    public static final String TEST_CALLBACK_URL = "test://callback";
-
     private ClientManager clientManager;
     private AccountManager accountManager;
     private UserAccountManager userAccountManager;
@@ -98,8 +90,7 @@ public class ClientManagerTest {
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
-        final LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
-        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions, true);
+        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
@@ -132,36 +123,6 @@ public class ClientManagerTest {
     @Test
     public void testGetAccountType() {
         Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, clientManager.getAccountType());
-    }
-
-    /**
-     * Test setting/get of Login Options as a bundle
-     */
-    @Test
-    public void testLoginOptionsWithAdditionalParams() {
-        Map<String,String> additionalParams = new HashMap<>();
-        additionalParams.put("p1","v1");
-        additionalParams.put("p2","v2");
-        additionalParams.put("p3",null);
-        LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL,
-                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES, null, additionalParams);
-        Assert.assertNotNull("LoginOptions must not be null",loginOptions);
-        Assert.assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
-        Assert.assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-        Assert.assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
-        additionalParams = new HashMap<>();
-        additionalParams.put("p4","v1");
-        additionalParams.put("p5","v2");
-        loginOptions.setAdditionalParameters(additionalParams);
-        Assert.assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-        Bundle bundle = loginOptions.asBundle();
-        Assert.assertNotNull("LoginOptions Bundle must not be null",bundle);
-        Assert.assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
-        loginOptions = LoginOptions.fromBundle(bundle);
-        Assert.assertNotNull("LoginOptions from bundle should not be null",loginOptions);
-        Assert.assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.getAdditionalParameters());
-        Assert.assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.getAdditionalParameters().size());
-        Assert.assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.getAdditionalParameters().get("p4"));
     }
 
     /**
@@ -453,58 +414,6 @@ public class ClientManagerTest {
 
         // Make sure there are no accounts left
         assertNoAccounts();
-    }
-
-    @Test
-    public void testLoginOptionsToFromBundle() {
-        Bundle options = new Bundle();
-        options.putString("loginUrl", "some-login-url");
-        options.putString("oauthCallbackUrl", "some-oauth-callback-url");
-        options.putString("oauthClientId", "some-oauth-client-id");
-        options.putStringArray("oauthScopes", new String[] { "some-scope", "some-other-scope"});
-        options.putString("jwt", "some-jwt");
-
-        LoginOptions loginOptions = LoginOptions.fromBundle(options);
-        Assert.assertEquals("some-login-url", loginOptions.getLoginUrl());
-        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
-        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
-        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
-        Assert.assertEquals("some-jwt", loginOptions.getJwt());
-
-        Bundle recreatedBundle = loginOptions.asBundle();
-        Assert.assertEquals(LogUtil.bundleToString(recreatedBundle), LogUtil.bundleToString(options));
-    }
-
-    @Test
-    public void testLoginOptionsFromBundleWithSafeLoginUrl() {
-        // First using a bundle with a known login url (test.salesforce.com)
-        Bundle options = new Bundle();
-        options.putString("loginUrl", "https://test.salesforce.com");
-        options.putString("oauthCallbackUrl", "some-oauth-callback-url");
-        options.putString("oauthClientId", "some-oauth-client-id");
-        options.putStringArray("oauthScopes", new String[] { "some-scope", "some-other-scope"});
-        options.putString("jwt", "some-jwt");
-
-        // Expect the LoginOptions to have the same login url (test.salesforce.com)
-        LoginOptions loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(options);
-        Assert.assertEquals("https://test.salesforce.com", loginOptions.getLoginUrl());
-        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
-        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
-        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
-        Assert.assertEquals("some-jwt", loginOptions.getJwt());
-
-        // Now using a bundle with an unknown login url
-        options.putString("loginUrl", "some-login-url");
-
-        // Expect the LoginOptions to have the selected login server url (login.salesforce.com)
-        loginOptions = LoginOptions.fromBundleWithSafeLoginUrl(options);
-        Assert.assertEquals("https://login.salesforce.com", SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url);
-        Assert.assertEquals("https://login.salesforce.com", loginOptions.getLoginUrl());
-        Assert.assertEquals("some-oauth-callback-url", loginOptions.getOauthCallbackUrl());
-        Assert.assertEquals("some-oauth-client-id", loginOptions.getOauthClientId());
-        Assert.assertArrayEquals(new String[] { "some-scope", "some-other-scope"}, loginOptions.getOauthScopes());
-        Assert.assertEquals("some-jwt", loginOptions.getJwt());
-
     }
 
     /**

@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth
 
 import android.accounts.AccountManager.KEY_INTENT
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.os.Bundle
 import android.util.Base64.NO_PADDING
@@ -36,7 +35,7 @@ import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
-import com.salesforce.androidsdk.accounts.UserAccount
+import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
@@ -67,7 +66,6 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.Success
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -76,9 +74,9 @@ import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -170,9 +168,7 @@ internal class NativeLoginManager(
         val context = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
-        val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
-        options.putBoolean(SHOW_BIOMETRIC, bioAuthLocked)
-        intent.putExtras(options)
+        intent.putExtras(bundleOf(SHOW_BIOMETRIC to bioAuthLocked))
         Bundle().putParcelable(KEY_INTENT, intent)
 
         return intent
@@ -197,52 +193,26 @@ internal class NativeLoginManager(
     }
 
     private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
-        val appContext = SalesforceSDKManager.getInstance().appContext
-        val loginOptions = LoginOptions(loginUrl, redirectUri, clientId, emptyArray<String>())
         val tokenEndpointResponse = TokenEndpointResponse(tokenResponse.rawResponse)
         tokenResponse.consumeQuietly()
 
-        return suspendCoroutine { continuation ->
-            OAuthWebviewHelper(appContext, object : OAuthWebviewHelperEvents {
-                override fun loadingLoginPage(loginUrl: String) {
-                    /* This will never be called. */
-                }
-
-                override fun onAccountAuthenticatorResult(authResult: Bundle) {
-                    /* Unused */
-                }
-
-                override fun finish(userAccount: UserAccount?) {
-                    if (userAccount != null) {
-                        accountManager.switchToUser(userAccount)
-                        // Start App's Main Activity
-                        appContext.startActivity(
-                            Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-                                setPackage(appContext.packageName)
-                                flags = FLAG_ACTIVITY_NEW_TASK
-                            }
-                        )
-                    }
-
-                    /**
-                     * We need to wait until the main activity is launched before
-                     * returning success back to the app's Native Login Activity.  If we
-                     * don't they call finish() too early and the activity will be restarted.
-                     * This will cause it to hang around forever behind the main activity.
-                     */
-                    continuation.resume(
-                        when (userAccount) {
-                            null -> {
-                                SalesforceSDKLogger.e(TAG, "Unable to create user account from successful token response.")
-                                UnknownError
-                            }
-
-                            else -> Success
-                        }
-                    )
-                }
-
-            }, loginOptions).onAuthFlowComplete(tokenEndpointResponse, nativeLogin = true)
+        return withContext(Dispatchers.IO) {
+            suspendCoroutine { continuation ->
+                onAuthFlowComplete(
+                    tokenResponse = tokenEndpointResponse,
+                    loginServer = loginUrl,
+                    consumerKey = clientId,
+                    onAuthFlowError = { error, errorDesc, e ->
+                        SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
+                        continuation.resume(UnknownError)
+                    },
+                    onAuthFlowSuccess = { userAccount ->
+                        SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
+                        continuation.resume(Success)
+                    },
+                    nativeLogin = true,
+                )
+            }
         }
     }
 

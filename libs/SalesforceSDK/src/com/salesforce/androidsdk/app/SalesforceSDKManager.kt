@@ -119,7 +119,6 @@ import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
@@ -187,9 +186,6 @@ open class SalesforceSDKManager protected constructor(
 
     /** The Android context */
     val appContext: Context = context
-
-    /** Login options associated with the app */
-    private var loginOptionsInternal: LoginOptions? = null
 
     /**
      * Returns the class for the main activity.
@@ -548,42 +544,6 @@ open class SalesforceSDKManager protected constructor(
         Handler(getMainLooper()).post {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         }
-    }
-
-    /** Login options associated with the app */
-    open val loginOptions: LoginOptions get() = getLoginOptions(null, null)
-
-    /**
-     * Sets the login options associated with the app.
-     *
-     * @param jwt The `jwt`
-     * @param url The URL
-     */
-    open fun getLoginOptions(
-        jwt: String?,
-        url: String?
-    ) = loginOptionsInternal?.apply {
-        this.jwt = jwt
-        setUrl(url)
-    } ?: getBootConfig(
-        appContext
-    ).let { config ->
-        when {
-            isEmpty(jwt) -> LoginOptions(
-                url,
-                config.oauthRedirectURI,
-                config.remoteAccessConsumerKey,
-                config.oauthScopes
-            )
-
-            else -> LoginOptions(
-                url,
-                config.oauthRedirectURI,
-                config.remoteAccessConsumerKey,
-                config.oauthScopes,
-                jwt
-            )
-        }.also { loginOptionsInternal = it }
     }
 
     /**
@@ -995,7 +955,6 @@ open class SalesforceSDKManager protected constructor(
         val clientMgr = ClientManager(
             appContext,
             accountType,
-            null,
             shouldLogoutWhenTokenRevoked()
         )
 
@@ -1202,7 +1161,6 @@ open class SalesforceSDKManager protected constructor(
         ClientManager(
             appContext,
             accountType,
-            loginOptions,
             true
         )
     }
@@ -1218,7 +1176,6 @@ open class SalesforceSDKManager protected constructor(
     ): ClientManager = ClientManager(
         appContext,
         accountType,
-        getLoginOptions(jwt, url),
         true
     )
 

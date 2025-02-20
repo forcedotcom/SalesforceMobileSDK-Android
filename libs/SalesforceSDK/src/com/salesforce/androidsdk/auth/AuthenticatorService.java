@@ -105,10 +105,6 @@ public class AuthenticatorService extends Service {
     }
 
     private static class Authenticator extends AbstractAccountAuthenticator {
-
-    	private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
-    	private static final String ANDROID_PACKAGE_NAME = "androidPackageName";
-
         private final Context context;
 
         Authenticator(Context ctx) {
@@ -122,24 +118,16 @@ public class AuthenticatorService extends Service {
                         String authTokenType,
                         String[] requiredFeatures,
                         Bundle options) {
-        	if (isAddFromSettings(options)) {
-        		options.putAll(SalesforceSDKManager.getInstance().getLoginOptions().asBundle());
-        	}
         	return makeAuthIntentBundle(response, options);
         }
-
-        private boolean isAddFromSettings(Bundle options) {
-			return options.containsKey(ANDROID_PACKAGE_NAME)
-                    && SETTINGS_PACKAGE_NAME.equals(options.getString(ANDROID_PACKAGE_NAME));
-		}
 
         @Override
         public Bundle getAuthToken(AccountAuthenticatorResponse response, Account account,
                             String authTokenType, Bundle options) throws NetworkErrorException {
-
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
-            final Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().getAdditionalParameters();
+
             try {
+                final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
                         new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), originalUserAccount.getRefreshToken(), addlParamsMap);
 
@@ -170,10 +158,6 @@ public class AuthenticatorService extends Service {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
             }
-        }
-
-        private String decryptUserData(AccountManager mgr, Account account, String key, String encryptionKey) {
-            return  SalesforceSDKManager.decrypt(mgr.getUserData(account, key), encryptionKey);
         }
 
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {

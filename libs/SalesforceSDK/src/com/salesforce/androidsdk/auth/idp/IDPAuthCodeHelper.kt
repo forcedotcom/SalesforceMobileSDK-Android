@@ -34,7 +34,6 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
-import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
@@ -94,18 +93,8 @@ internal class IDPAuthCodeHelper private constructor(
     private fun buildRestClient(): RestClient? {
         SalesforceSDKLogger.d(TAG, "Building rest client")
         val context = SalesforceSDKManager.getInstance().appContext
-        val bootConfig = BootConfig.getBootConfig(context)
-        val idpCallbackUrl = bootConfig.oauthRedirectURI
-        val idpClientId = bootConfig.remoteAccessConsumerKey
-        val idpScopes = bootConfig.oauthScopes
-        val loginOptions = ClientManager.LoginOptions(
-            userAccount.loginServer, idpCallbackUrl, idpClientId, idpScopes
-        )
         val idpAccountType = SalesforceSDKManager.getInstance().accountType
-        val clientManager = ClientManager(
-            context, idpAccountType,
-            loginOptions, false
-        )
+        val clientManager = ClientManager(context, idpAccountType, false)
         return clientManager.peekRestClient(userAccount)
     }
 
