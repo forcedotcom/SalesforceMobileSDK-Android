@@ -26,13 +26,19 @@
  */
 package com.salesforce.androidsdk.auth
 
+import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__managed_app_error
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
+import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -87,6 +93,7 @@ internal fun onAuthFlowComplete(
     nativeLogin: Boolean = false,
 ) {
     val context = SalesforceSDKManager.getInstance().appContext
+    val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
     val blockIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
             fetchIsSalesforceIntegrationUser(tokenResponse, loginServer)
 
@@ -148,7 +155,7 @@ internal fun onAuthFlowComplete(
         if (existingUsers.contains(account)) {
             val duplicateUserAccount = existingUsers.removeAt(existingUsers.indexOf(account))
             clearCaches()
-            UserAccountManager.getInstance().clearCachedCurrentUser()
+            userAccountManager.clearCachedCurrentUser()
 
             // Revoke existing refresh token
             if (account.refreshToken != duplicateUserAccount.refreshToken) {
@@ -179,7 +186,7 @@ internal fun onAuthFlowComplete(
             existingUsers.forEach(Consumer { existingUser ->
                 if (isBiometricAuthenticationEnabled(existingUser)) {
                     // This is an unexpected logout(s) because we only support one Bio Auth user.
-                    SalesforceSDKManager.getInstance().userAccountManager.signoutUser(
+                    userAccountManager.signoutUser(
                         existingUser, null, false, OAuth2.LogoutReason.UNEXPECTED
                     )
                 }
@@ -190,8 +197,35 @@ internal fun onAuthFlowComplete(
     // Save the user account
     addAccount(account)
 
+    // Init user logging
+    SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
+
+    // Send User Switch Intent, create user and switch to user.
+    val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
+    val userSwitchType = when {
+        // We've already authenticated the first user, so there should be one
+        numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+
+        // Otherwise we're logging in with an additional user
+        numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+
+        // This should never happen but if it does, pass in the "unknown" value
+        else -> USER_SWITCH_TYPE_DEFAULT
+    }
+    userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+    userAccountManager.createAccount(account)
+    userAccountManager.switchToUser(account)
+
     // Kickoff the end of the flow before storing mobile policy to prevent launching
     // the main activity over/after the screen lock.
+    with(SalesforceSDKManager.getInstance()) {
+        appContext.startActivity(Intent(appContext, mainActivityClass).apply {
+            setPackage(appContext.packageName)
+            flags = FLAG_ACTIVITY_NEW_TASK
+        })
+    }
+
+    // Let the calling process resume
     onAuthFlowSuccess(account)
 
     // Screen lock required by mobile policy

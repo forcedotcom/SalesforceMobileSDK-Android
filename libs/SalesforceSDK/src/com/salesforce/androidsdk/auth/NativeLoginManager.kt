@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth
 
 import android.accounts.AccountManager.KEY_INTENT
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.os.Bundle
 import android.util.Base64.NO_PADDING
@@ -76,6 +75,8 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -192,33 +193,26 @@ internal class NativeLoginManager(
     }
 
     private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
-        val appContext = SalesforceSDKManager.getInstance().appContext
         val tokenEndpointResponse = TokenEndpointResponse(tokenResponse.rawResponse)
         tokenResponse.consumeQuietly()
 
-        return suspendCoroutine { continuation ->
-            onAuthFlowComplete(
-                tokenResponse = tokenEndpointResponse,
-                loginServer = loginUrl,
-                consumerKey = clientId,
-                onAuthFlowError = { error, errorDesc, e ->
-                    SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
-                    continuation.resume(UnknownError)
-                },
-                onAuthFlowSuccess = { userAccount ->
-                    accountManager.switchToUser(userAccount)
-                    // Start App's Main Activity
-                    appContext.startActivity(
-                        Intent(appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-                            setPackage(appContext.packageName)
-                            flags = FLAG_ACTIVITY_NEW_TASK
-                        }
-                    )
-
-                    continuation.resume(Success)
-                },
-                nativeLogin = true,
-            )
+        return withContext(Dispatchers.IO) {
+            suspendCoroutine { continuation ->
+                onAuthFlowComplete(
+                    tokenResponse = tokenEndpointResponse,
+                    loginServer = loginUrl,
+                    consumerKey = clientId,
+                    onAuthFlowError = { error, errorDesc, e ->
+                        SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
+                        continuation.resume(UnknownError)
+                    },
+                    onAuthFlowSuccess = { userAccount ->
+                        SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
+                        continuation.resume(Success)
+                    },
+                    nativeLogin = true,
+                )
+            }
         }
     }
 

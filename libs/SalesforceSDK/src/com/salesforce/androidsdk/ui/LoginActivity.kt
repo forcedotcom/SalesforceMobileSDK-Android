@@ -35,7 +35,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.Bitmap
@@ -116,10 +115,6 @@ import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
 import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
-import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
@@ -507,34 +502,10 @@ open class LoginActivity : FragmentActivity() {
      * @param userAccount The newly created user account.
      */
     protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
-        initAnalyticsManager(userAccount)
-        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-        val authenticatedUsers = userAccountManager.authenticatedUsers
-        val numAuthenticatedUsers = authenticatedUsers?.size ?: 0
-        val userSwitchType = when {
-            // We've already authenticated the first user, so there should be one
-            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
-
-            // Otherwise we're logging in with an additional user
-            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
-
-            // This should never happen but if it does, pass in the "unknown" value
-            else -> USER_SWITCH_TYPE_DEFAULT
-        }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-        setResult(Activity.RESULT_OK)
-
         // Create account and save result before switching to new user
         accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
 
-        userAccountManager.switchToUser(userAccount)
-        with(SalesforceSDKManager.getInstance()) {
-            appContext.startActivity(Intent(appContext, mainActivityClass).apply {
-                setPackage(packageName)
-                flags = FLAG_ACTIVITY_NEW_TASK
-            })
-        }
-
+        setResult(Activity.RESULT_OK)
         finish()
     }
 
@@ -631,9 +602,6 @@ open class LoginActivity : FragmentActivity() {
             }
         }
     }
-
-    private fun initAnalyticsManager(account: UserAccount?) =
-        SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
 
     internal inner class SPStatusCallback : StatusUpdateCallback {
         override fun onStatusUpdate(status: Status) {
