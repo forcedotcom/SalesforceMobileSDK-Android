@@ -11,11 +11,12 @@
 
     <style name="SalesforceSDK" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/sf__primary_color</item>
-        <item name="titleTextColor">@color/sf__secondary_color</item>
+        <item name="titleTextColor">@color/sf__on_primary</item>
         <item name="android:actionBarStyle">@style/SalesforceSDKActionBar</item>
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
         <item name="sfColorSecondary">@color/sf__secondary_color</item>
+        <item name="sfColorOnPrimary">@color/sf__on_primary</item>
         <item name="sfLayoutBackground">@color/sf__layout_background</item>
         <item name="android:colorBackground">@color/sf__background</item>
         <item name="sfBorderColor">@color/sf__border_color</item>
@@ -38,6 +39,7 @@
         <item name="android:colorPrimary">@color/sf__primary_color</item>
         <item name="android:colorPrimaryDark">@color/sf__primary_color</item>
         <item name="sfColorSecondary">@color/sf__secondary_color_dark</item>
+        <item name="sfColorOnPrimary">@color/sf__on_primary_dark</item>
         <item name="sfLayoutBackground">@color/sf__layout_background_dark</item>
         <item name="android:colorBackground">@color/sf__background_dark</item>
         <item name="sfBorderColor">@color/sf__border_color_dark</item>
