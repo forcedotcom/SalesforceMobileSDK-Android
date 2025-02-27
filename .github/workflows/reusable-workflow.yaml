@@ -37,8 +37,7 @@ jobs:
           cordova telemetry off
       - name: React Native Dependencies
         if: ${{ inputs.lib  == 'SalesforceReact' }}
-        run: |
-          npm install -g typescript
+        run: npm install -g typescript
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -47,11 +46,12 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7
+          gradle-version: "8.7"
+          add-job-summary: on-failure
+          add-job-summary-as-pr-comment: on-failure
       - name: Run Lint
         if: ${{ inputs.is_pr }}
-        run: |
-          ./gradlew libs:${{ inputs.lib }}:lint
+        run: ./gradlew libs:${{ inputs.lib }}:lint
       - uses: ruby/setup-ruby@v1
         if: ${{ inputs.is_pr }}
         with:
@@ -138,7 +138,6 @@ jobs:
 
             # Move one result to the directory expected for code coverge.
             mv firebase_${PR_API_VERSION} firebase
-      # Use this reporter for PRs because it correctly displays flapping/retried tests.
       - name: Test Report
         uses: mikepenz/action-junit-report@v5
         if: ${{ inputs.is_pr }}
@@ -150,19 +149,15 @@ jobs:
           flaky_summary: true
           fail_on_failure: true
           detailed_summary: true
+          group_reports: false
+          include_passed: true
+          skip_success_summary: true
+          include_empty_in_summary: false
+          simplified_summary: true
           report_paths: 'firebase_results/**.xml'
-      # Use this reporter for Nightly tests because it displays results per API level.
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: ${{ ! inputs.is_pr }}
-        with:
-          name: ${{ inputs.lib }} Test Results
-          path: firebase_results/**.xml
-          reporter: java-junit
       - name: Convert Code Coverage
         if: success() || failure()
-        run: |
-          ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
+        run: ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
       - uses: codecov/codecov-action@v5
         if: success() || failure()
         with:
