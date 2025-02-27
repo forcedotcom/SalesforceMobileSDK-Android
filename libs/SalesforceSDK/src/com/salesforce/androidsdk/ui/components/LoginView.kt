@@ -41,11 +41,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -87,6 +92,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -94,6 +100,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,16 +181,14 @@ fun LoginView() {
         }
 
     val bottomAppBarButton = bioAuthButton ?: idpButton ?: customButton
-    val bottomAppBar = viewModel.bottomAppBar ?: bottomAppBarButton?.let { button ->
-        {
-            DefaultBottomAppBar(
-                backgroundColor = viewModel.dynamicBackgroundColor,
-                button = button,
-                loading = viewModel.loading.value,
-                showButton = !viewModel.authFinished.value
-            )
-        }
-    } ?: {}
+    val bottomAppBar = viewModel.bottomAppBar ?: {
+        DefaultBottomAppBar(
+            backgroundColor = viewModel.dynamicBackgroundColor,
+            button = bottomAppBarButton,
+            loading = viewModel.loading.value,
+            showButton = !viewModel.authFinished.value
+        )
+    }
 
     LoginView(
         loginUrlData = viewModel.loginUrl,
@@ -368,21 +373,28 @@ internal fun DefaultBottomAppBar(
         targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
         animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
     )
+    val heightModifier = if (button == null) {
+        Modifier.height(WindowInsets.navigationBars.getBottom(LocalDensity.current).pxToDp())
+    } else {
+        Modifier.defaultMinSize()
+    }
 
-    AnimatedVisibility(
-        visible = showButton,
-        enter = fadeIn(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
-        exit = fadeOut(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
+    BottomAppBar(
+        containerColor = backgroundColor.value,
+        contentPadding = PaddingValues(0.dp),
+        modifier = heightModifier.graphicsLayer(alpha = alpha),
+        windowInsets = WindowInsets.navigationBars,
     ) {
-        BottomAppBar(
-            containerColor = backgroundColor.value,
-            modifier = Modifier.graphicsLayer(alpha = alpha)
+        AnimatedVisibility(
+            visible = showButton && (button != null),
+            enter = fadeIn(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
+            exit = fadeOut(animationSpec = tween(durationMillis = SLOW_ANIMATION_MS)),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                if (button != null) {
+            if (button != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
                     val buttonShape = RoundedCornerShape(CORNER_RADIUS.dp)
                     CompositionLocalProvider(
                         LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
@@ -441,6 +453,9 @@ internal fun ToolTipWrapper(contentDescription: Int, content: @Composable (descr
         content(description)
     }
 }
+
+@Composable
+internal fun Int.pxToDp() = with(LocalDensity.current) { this@pxToDp.toDp() }
 
 // Get access to host activity from within Compose.  tail rec makes this safe.
 private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
