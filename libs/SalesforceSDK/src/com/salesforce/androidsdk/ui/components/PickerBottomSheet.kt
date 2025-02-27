@@ -506,7 +506,7 @@ internal fun AddConnection(
                     unfocusedIndicatorColor = colorScheme.hintTextColor,
                     unfocusedLabelColor = colorScheme.hintTextColor,
                     unfocusedContainerColor = Color.Transparent,
-                    unfocusedTextColor = colorScheme.secondary,
+                    unfocusedTextColor = colorScheme.onSecondary,
                     cursorColor = colorScheme.tertiary,
                 ),
             )
@@ -528,7 +528,7 @@ internal fun AddConnection(
                     unfocusedIndicatorColor = colorScheme.hintTextColor,
                     unfocusedLabelColor = colorScheme.hintTextColor,
                     unfocusedContainerColor = Color.Transparent,
-                    unfocusedTextColor = colorScheme.secondary,
+                    unfocusedTextColor = colorScheme.onSecondary,
                     cursorColor = colorScheme.tertiary,
                 ),
             )
