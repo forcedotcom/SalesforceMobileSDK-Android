@@ -592,6 +592,8 @@ public class RestClient {
                 final StringBuilder resolvedUrlBuilder = new StringBuilder();
                 if (communityUrl != null && !communityUrl.trim().isEmpty()) {
                     resolvedUrlBuilder.append(communityUrl);
+                } else if (vfDomain != null && !vfDomain.trim().isEmpty() && path.contains("/apex/")) {
+                    resolvedUrlBuilder.append(vfDomain);
                 } else if (endpoint == RestRequest.RestEndpoint.INSTANCE) {
                     resolvedUrlBuilder.append(instanceUrl.toString());
                 } else if (endpoint == RestRequest.RestEndpoint.LOGIN) {
