@@ -145,9 +145,6 @@ public class SalesforceActivityDelegate {
     private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
 
         @Override
-        protected void onLogoutComplete() { }
-
-        @Override
         protected void onLogoutComplete(@NonNull OAuth2.LogoutReason reason) {
             ((SalesforceActivityInterface) activity).onLogoutComplete();
         }

@@ -522,52 +522,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     }
 
     /**
-     * Returns the front-doored URL of a URL passed in.
-     *
-     * @param providedUrl URL to be front-doored
-     * @param isAbsoluteUrl True if the URL should be used as is; false
-     * otherwise
-     * @return The front-doored URL
-     *
-     * @Deprecated we are no longer using front door to setup the session in the web view
-     *             instead we get the session from the login/refresh oauth flow
-     *             and sets them in CookieManager using SalesforceWebViewCookieManager
-     *             This method will be remove in Mobile SDK 13.0
-     */
-    @Deprecated("Deprecated - to be removed in 13.0")
-    fun getFrontDoorUrl(
-        providedUrl: String?,
-        isAbsoluteUrl: Boolean
-    ): String? {
-
-        /*
-         * Use the absolute URL in some cases and the relative URL in some other
-         * cases because of differences between instance URL and community URL.
-         * Community URL can be custom and the logic of determining which URL to
-         * use is in the 'resolveUrl' method in 'ClientInfo'
-         */
-        val restClient = restClient ?: return null
-        return "${restClient.clientInfo.instanceUrlAsString}/secur/frontdoor.jsp?".toHttpUrlOrNull()
-            ?.newBuilder()
-            ?.addQueryParameter(
-                name = "sid",
-                value = restClient.authToken
-            )
-            ?.addQueryParameter(
-                name = "retURL",
-                value = when {
-                    isAbsoluteUrl -> providedUrl
-                    else -> restClient.clientInfo.resolveUrl(providedUrl).toString()
-                }
-            )
-            ?.addQueryParameter(
-                name = "display",
-                value = "touch"
-            )
-            ?.build().toString()
-    }
-
-    /**
      * Load cached start page
      */
     private fun loadCachedStartPage() {

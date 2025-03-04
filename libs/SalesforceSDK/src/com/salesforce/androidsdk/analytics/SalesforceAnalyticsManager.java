@@ -209,19 +209,6 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
-     * Sets the interval for periodic background publishing in hours.
-     *
-     * @deprecated Planned for removal 13.0.
-     * Use {@link #setPublishPeriodicallyFrequencyHours(int)} )}.
-     */
-    @Deprecated()
-    public static synchronized void setPublishFrequencyInHours(
-            int periodicBackgroundPublishingHoursInterval
-    ) {
-        setPublishPeriodicallyFrequencyHours(periodicBackgroundPublishingHoursInterval);
-    }
-
-    /**
      * The enabled Salesforce analytics publishing type.
      *
      * @return The enabled Salesforce analytics publishing type
@@ -261,19 +248,6 @@ public class SalesforceAnalyticsManager {
      */
     public static int getPublishPeriodicallyFrequencyHours() {
         return publishPeriodicallyFrequencyHours;
-    }
-
-    /**
-     * Returns the publish frequency currently set, in hours.
-     *
-     * @return Publish frequency, in hours.
-     * @noinspection unused
-     * @deprecated Planned for removal 13.0.
-     * Use {@link #getPublishPeriodicallyFrequencyHours()} )}.
-     */
-    @Deprecated
-    public static int getPublishFrequencyInHours() {
-        return getPublishPeriodicallyFrequencyHours();
     }
 
     /**
