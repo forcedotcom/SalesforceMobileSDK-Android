@@ -39,16 +39,10 @@ import java.util.Locale
 abstract class LogoutCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) {
-            onLogoutComplete()
-
             val reason = intent.getStringExtra(SalesforceSDKManager.LOGOUT_REASON_KEY) ?: LogoutReason.UNKNOWN.toString()
             onLogoutComplete(LogoutReason.valueOf(reason.uppercase(Locale.ROOT)))
         }
     }
 
-    /** @deprecated Will be removed in 13.0.  Use the new [onLogoutComplete] that provides a [LogoutReason] instead. */
-    protected abstract fun onLogoutComplete()
-
-    // TODO: Make this abstract in 13.0 to replace the above onLogoutComplete()
-    protected open fun onLogoutComplete(reason: LogoutReason) { }
+    protected abstract fun onLogoutComplete(reason: LogoutReason)
 }
