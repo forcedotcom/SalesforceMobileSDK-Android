@@ -140,7 +140,7 @@ jobs:
             mv firebase_${PR_API_VERSION} firebase
       - name: Test Report
         uses: mikepenz/action-junit-report@v5
-        if: ${{ inputs.is_pr }}
+        if: success() || failure()
         with:
           check_name: ${{ inputs.lib }} Test Results
           job_name: ${{ inputs.lib }} Test Results
