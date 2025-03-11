@@ -1,5 +1,5 @@
 # Salesforce.com Mobile SDK for Android
-[![Nightly Tests](https://github.com/forcedotcom/SalesforceMobileSDK-Android/actions/workflows/nightly.yaml/badge.svg?branch=dev)](https://github.com/forcedotcom/SalesforceMobileSDK-Android/actions/workflows/nightly.yaml)
+[![Tests](https://github.com/forcedotcom/SalesforceMobileSDK-Android/actions/workflows/nightly.yaml/badge.svg?branch=dev)](https://github.com/forcedotcom/SalesforceMobileSDK-Android/actions/workflows/nightly.yaml)
 [![Known Vulnerabilities](https://snyk.io/test/github/forcedotcom/SalesforceMobileSDK-Android/badge.svg)](https://snyk.io/test/github/forcedotcom/SalesforceMobileSDK-Android)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/forcedotcom/SalesforceMobileSDK-Android?sort=semver)
 
