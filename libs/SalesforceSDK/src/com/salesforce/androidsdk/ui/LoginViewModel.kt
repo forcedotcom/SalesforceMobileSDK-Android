@@ -72,8 +72,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** TopAppBar Color.  Defaults to WebView background color. */
     open var topBarColor: Color? = null
+
     /** TopAppBar text.  Defaults to login server url. */
     open var titleText: String? = null
+
     /**
      * TopAppBar text Color.  Defaults to black on light backgrounds and white
      * on dark backgrounds.  Back and menu buttons will match this color.
@@ -96,6 +98,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // Override App Bars
     /** TopAppBar that will be used instead of the default. */
     open val topAppBar: (@Composable () -> Unit)? = null
+
     /** BottomAppBar that will be used instead of the default. */
     open val bottomAppBar: (@Composable () -> Unit)? = null
 
@@ -129,10 +132,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
+
     /** JWT string used for JWT Auth Flow. */
     var jwt: String? = null
+
     /** Connected App/External Client App client Id. */
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
+
     /** Authorization Display Type used for login. */
     protected open val authorizationDisplayType =
         SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
@@ -269,10 +275,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         frontdoorBridgeCodeVerifier = null
     }
 
-    // returns a valid https server url or null if the users input is invalid.
+    /**
+     * Returns a valid HTTPS server URL or null if the provided user input is
+     * invalid.
+     * @param url The user input URL to validate and return
+     * @return The validated server URL or null if the provided URL wasn't a
+     * valid URL
+     */
     internal fun getValidServerUrl(url: String): String? {
         if (!url.contains(".")) return null
         if (url.substringAfterLast(".").isEmpty()) return null
+        runCatching {
+            URI(url)
+        }.onFailure {
+            return null
+        }
 
         return when {
             URLUtil.isHttpsUrl(url) -> url
