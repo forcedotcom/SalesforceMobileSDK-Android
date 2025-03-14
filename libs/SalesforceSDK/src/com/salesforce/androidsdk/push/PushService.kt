@@ -258,7 +258,7 @@ open class PushService {
                 notificationsTypes = NotificationsApiClient(
                     apiHostName = instanceHost,
                     restClient = restClient
-                ).fetchNotificationsTypes()
+                ).fetchNotificationsTypes() ?: return
             )
         }
     }

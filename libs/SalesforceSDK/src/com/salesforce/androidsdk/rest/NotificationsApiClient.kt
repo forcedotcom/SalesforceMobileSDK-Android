@@ -27,7 +27,10 @@
 
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.rest.ApiVersionStrings.API_PREFIX
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.GET
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 
 /**
  * Provides REST client methods for a variety of notifications API endpoints.
@@ -50,12 +53,20 @@ class NotificationsApiClient(
      */
     @Suppress("unused")
     @Throws(SfapApiException::class)
-    fun fetchNotificationsTypes(): NotificationsTypesResponseBody {
+    fun fetchNotificationsTypes(): NotificationsTypesResponseBody? {
+        val context = SalesforceSDKManager.getInstance().appContext
 
         // Submit the request.
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
+        // TODO: Remove once MSDK default API version is 64 or greater.
+        if (apiVersion < "v64.0") {
+            SalesforceSDKLogger.w(TAG, "Cannot request Salesforce push notifications types with API less than v64.0")
+            return null
+        }
+
         val restRequest = RestRequest(
             GET,
-            "https://$apiHostName/services/data/v64.0/connect/notifications/types",
+            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/types",
             mutableMapOf<String, String>()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -72,5 +83,9 @@ class NotificationsApiClient(
                 source = responseBodyString
             )
         }
+    }
+
+    companion object {
+        private const val TAG = "NotificationsApiClient"
     }
 }
