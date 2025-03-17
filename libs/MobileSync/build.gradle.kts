@@ -1,5 +1,5 @@
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.0.0"
+rootProject.ext["PUBLISH_VERSION"] = "13.1.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "MobileSync"
 
 plugins {
