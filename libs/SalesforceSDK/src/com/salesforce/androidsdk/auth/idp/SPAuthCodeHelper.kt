@@ -27,15 +27,11 @@
 package com.salesforce.androidsdk.auth.idp
 
 import android.content.Context
-import android.os.Bundle
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents
-import com.salesforce.androidsdk.util.LogUtil
+import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +47,7 @@ internal class SPAuthCodeHelper private constructor (
     val code: String,
     private val codeVerifier: String,
     val onResult:(result:Result) -> Unit
-) : OAuthWebviewHelperEvents {
+) {
     data class Result(
         val success: Boolean,
         val user: UserAccount? = null,
@@ -88,18 +84,18 @@ internal class SPAuthCodeHelper private constructor (
     }
 
     private fun completeLogin(tokenResponse: TokenEndpointResponse) {
-        val loginOptions = ClientManager.LoginOptions(
-            loginUrl,
-            spConfig.oauthCallbackUrl,
-            spConfig.oauthClientId,
-            spConfig.oauthScopes,
-            null,
-            null
+        onAuthFlowComplete(
+            tokenResponse = tokenResponse,
+            loginServer = loginUrl,
+            consumerKey = spConfig.oauthClientId,
+            onAuthFlowError = { error, errorDesc, e ->
+                SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
+            },
+            onAuthFlowSuccess = { userAccount ->
+                SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
+                onResult(Result(success = true, user = userAccount))
+            },
         )
-
-        val oauthHelper = OAuthWebviewHelper(context, this, loginOptions)
-        SalesforceSDKLogger.d(TAG, "completeLogin oauthHelper $oauthHelper")
-        oauthHelper.onAuthFlowComplete(tokenResponse)
     }
 
     private fun loginWithAuthCode() {
@@ -110,21 +106,6 @@ internal class SPAuthCodeHelper private constructor (
                 SalesforceSDKLogger.e(TAG, "loginWithAuthCode failed", e)
                 onResult(Result(success = false, error = e.message))
             }
-        }
-    }
-
-    override fun loadingLoginPage(loginUrl: String) {
-        SalesforceSDKLogger.d(TAG, "loadingLoginPage $loginUrl")
-    }
-
-    override fun onAccountAuthenticatorResult(authResult: Bundle) {
-        SalesforceSDKLogger.d(TAG, "onAccountAuthenticatorResult ${LogUtil.bundleToString(authResult)}")
-    }
-
-    override fun finish(userAccount: UserAccount?) {
-        SalesforceSDKLogger.d(TAG, "finish $userAccount")
-        userAccount?.let {
-            onResult(Result(success = true, user = it))
         }
     }
 }

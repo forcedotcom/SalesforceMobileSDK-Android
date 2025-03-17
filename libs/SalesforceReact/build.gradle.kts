@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 import org.apache.tools.ant.taskdefs.condition.Os
 
 /**
@@ -12,7 +10,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 val useIntlJsc = false
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.2.0"
+rootProject.ext["PUBLISH_VERSION"] = "13.0.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceReact"
 
 plugins {
@@ -24,11 +22,11 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.74.5")
-    implementation("androidx.core:core-ktx:1.13.1")
-    androidTestImplementation("androidx.test:runner:1.6.0")
-    androidTestImplementation("androidx.test:rules:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    api("com.facebook.react:react-android:0.74.7")
+    implementation("androidx.core:core-ktx:1.15.0")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 
     // JSC from node_modules
@@ -44,10 +42,10 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
     }
 
     buildTypes {

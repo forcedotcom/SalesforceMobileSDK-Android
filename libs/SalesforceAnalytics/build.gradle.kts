@@ -1,7 +1,5 @@
-@file:Suppress("UnstableApiUsage")
-
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "12.2.0"
+rootProject.ext["PUBLISH_VERSION"] = "13.0.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceAnalytics"
 
 plugins {
@@ -14,20 +12,20 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.13.1")
-    androidTestImplementation("androidx.test:runner:1.6.0")
-    androidTestImplementation("androidx.test:rules:1.6.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.0")
+    implementation("androidx.core:core-ktx:1.15.0")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
 
 android {
     namespace = "com.salesforce.androidsdk.analytics"
     testNamespace = "com.salesforce.androidsdk.analytics.tests"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 28
     }
 
     buildTypes {
@@ -75,6 +73,10 @@ android {
         renderScript = true
         aidl = true
         buildConfig = true
+    }
+
+    kotlin {
+        jvmToolchain(17)
     }
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {

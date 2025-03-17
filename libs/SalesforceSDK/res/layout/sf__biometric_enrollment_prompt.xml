@@ -9,7 +9,7 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:orientation="vertical"
-    android:padding="@dimen/sf__server_layout_padding">
+    android:padding="@dimen/sf__dialog_layout_padding">
 
     <TextView
         android:layout_width="match_parent"
@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:orientation="horizontal"
-        android:padding="@dimen/sf__custom_url_layout_padding">
+        android:padding="@dimen/sf__dialog_layout_padding">
 
         <Button
             android:id="@+id/sf__use_password_button"

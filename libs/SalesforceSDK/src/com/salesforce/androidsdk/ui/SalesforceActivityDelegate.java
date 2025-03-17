@@ -26,13 +26,14 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
+
 import android.app.Activity;
 import android.content.IntentFilter;
 import android.view.KeyEvent;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
-import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -82,13 +83,11 @@ public class SalesforceActivityDelegate {
         if (buildRestClient) {
             // Gets login options.
             final String accountType = SalesforceSDKManager.getInstance().getAccountType();
-            final ClientManager.LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
             // Gets a rest client.
             new ClientManager(
                     SalesforceSDKManager.getInstance().getAppContext(),
                     accountType,
-                    loginOptions,
                     SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
             ).getRestClient(activity, new ClientManager.RestClientCallback() {
 
@@ -144,9 +143,6 @@ public class SalesforceActivityDelegate {
      * Acts on the logout complete event.
      */
     private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
-
-        @Override
-        protected void onLogoutComplete() { }
 
         @Override
         protected void onLogoutComplete(@NonNull OAuth2.LogoutReason reason) {

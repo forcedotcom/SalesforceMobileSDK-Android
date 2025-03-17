@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.accounts;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -45,6 +46,7 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.security.ScreenLockManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
@@ -69,7 +71,7 @@ public class UserAccountManager {
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
 	/**
-	 * Represents how the current user has been switched to, as found in an intent sent to a {@link android.content.BroadcastReceiver}
+	 * Represents how the current user has been switched to, as found in an intent sent to a {@link BroadcastReceiver}
 	 * filtering {@link #USER_SWITCH_INTENT_ACTION}. User switching including logging in, logging out and switching between authenticated
 	 * users. For backwards compatibility, the case where the last user has logged out is not included, as this currently does not
 	 * send a broadcast.
@@ -145,7 +147,7 @@ public class UserAccountManager {
 		final Editor e = sp.edit();
 		e.putString(USER_ID_KEY, userId);
 		e.putString(ORG_ID_KEY, orgId);
-		e.commit();
+		e.apply();
 	}
 
 	/**
@@ -275,7 +277,7 @@ public class UserAccountManager {
 			return false;
 		}
 		final List<UserAccount> userAccounts = getAuthenticatedUsers();
-		if (userAccounts == null || userAccounts.size() == 0) {
+		if (userAccounts == null || userAccounts.isEmpty()) {
 			return false;
 		}
 		for (final UserAccount userAccount : userAccounts) {
@@ -323,8 +325,7 @@ public class UserAccountManager {
 		if (user.equals(curUser)) {
 			return;
 		}
-		final ClientManager cm = new ClientManager(context, accountType,
-				SalesforceSDKManager.getInstance().getLoginOptions(), true);
+		final ClientManager cm = new ClientManager(context, accountType, true);
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
@@ -348,23 +349,17 @@ public class UserAccountManager {
 	 * in ClientManager will return a RestClient instance for the new user.
 	 */
 	public void switchToNewUser() {
-		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
-		switchToNewUserWithOptions(options);
+		final Bundle options = new Bundle();
+		final Bundle reply = new Bundle();
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
+		options.putBoolean(LoginActivity.NEW_USER, true);
+		i.putExtras(options);
+		reply.putParcelable(AccountManager.KEY_INTENT, i);
+		context.startActivity(i);
 	}
 
-	/**
-	 * Kicks off the login flow to switch to a new user with jwt. Once the login
-	 * flow is complete, the context will automatically become the
-	 * new user's context and a call to peekRestClient() or getRestClient()
-	 * in ClientManager will return a RestClient instance for the new user.
-	 *
-	 * @param jwt JWT.
-	 * @param url Instance/My domain URL.
-	 */
-	public void switchToNewUser(String jwt, String url) {
-		final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions(jwt, url).asBundle();
-		switchToNewUserWithOptions(options);
-	}
 
 	/**
 	 * Logs the current user out.
@@ -451,7 +446,7 @@ public class UserAccountManager {
 		boolean success = accountManager.addAccountExplicitly(acc, password, new Bundle());
 
 		// Add account will fail if the account already exists, so update refresh token.
-		if (!success && acc != null) {
+		if (!success) {
 			accountManager.setPassword(acc, password);
 		}
 
@@ -521,7 +516,7 @@ public class UserAccountManager {
 		final String email = decryptUserData(account, AuthenticatorService.KEY_EMAIL, encryptionKey);
 		final String language = decryptUserData(account, AuthenticatorService.KEY_LANGUAGE, encryptionKey);
 		final String locale = decryptUserData(account, AuthenticatorService.KEY_LOCALE, encryptionKey);
-		final Boolean nativeLogin = Boolean.valueOf(decryptUserData(account, AuthenticatorService.KEY_NATIVE_LOGIN, encryptionKey));
+		final boolean nativeLogin = Boolean.parseBoolean(decryptUserData(account, AuthenticatorService.KEY_NATIVE_LOGIN, encryptionKey));
 		final String firstName = decryptUserData(account, AuthenticatorService.KEY_FIRST_NAME, encryptionKey);
 		final String displayName = decryptUserData(account, AuthenticatorService.KEY_DISPLAY_NAME, encryptionKey);
 		final String photoUrl = decryptUserData(account, AuthenticatorService.KEY_PHOTO_URL, encryptionKey);
@@ -539,6 +534,8 @@ public class UserAccountManager {
 		final String cookieSidClient = decryptUserData(account, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
 		final String sidCookieName = decryptUserData(account, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
 		final String clientId = decryptUserData(account, AuthenticatorService.KEY_CLIENT_ID, encryptionKey);
+		final String parentSid = decryptUserData(account, AuthenticatorService.KEY_PARENT_SID, encryptionKey);
+		final String tokenFormat = decryptUserData(account, AuthenticatorService.KEY_TOKEN_FORMAT, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
 		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
@@ -588,6 +585,8 @@ public class UserAccountManager {
 					.cookieSidClient(cookieSidClient)
 					.sidCookieName(sidCookieName)
 					.clientId(clientId)
+					.parentSid(parentSid)
+					.tokenFormat(tokenFormat)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
 		}
@@ -620,8 +619,8 @@ public class UserAccountManager {
 						AuthenticatorService.KEY_ORG_ID), encryptionKey);
 				final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
 						AuthenticatorService.KEY_USER_ID), encryptionKey);
-				if (storedUserId.trim().equals(userId.trim())
-						&& storedOrgId.trim().equals(orgId.trim())) {
+				if (storedUserId.trim().equals(userId != null ? userId.trim() : null)
+						&& storedOrgId.trim().equals(orgId != null ? orgId.trim() : null)) {
 					return account;
 				}
 			}
@@ -657,7 +656,7 @@ public class UserAccountManager {
 			return null;
 		}
 		final List<UserAccount> userAccounts = getAuthenticatedUsers();
-		if (userAccounts == null || userAccounts.size() == 0) {
+		if (userAccounts == null || userAccounts.isEmpty()) {
 			return null;
 		}
 		for (final UserAccount userAccount : userAccounts) {
@@ -689,16 +688,6 @@ public class UserAccountManager {
 		} catch (Exception e) {
 			SalesforceSDKLogger.e(TAG, "Exception thrown while attempting to refresh token", e);
 		}
-	}
-
-	private void switchToNewUserWithOptions(Bundle options) {
-		final Bundle reply = new Bundle();
-		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
-		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		options.putBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC, false);
-		i.putExtras(options);
-		reply.putParcelable(AccountManager.KEY_INTENT, i);
-		context.startActivity(i);
 	}
 
 	/**
@@ -742,6 +731,8 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_COOKIE_SID_CLIENT, SalesforceSDKManager.encrypt(userAccount.getCookieSidClient(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_COOKIE_CLIENT_SRC, SalesforceSDKManager.encrypt(userAccount.getCookieClientSrc(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_SID_COOKIE_NAME, SalesforceSDKManager.encrypt(userAccount.getSidCookieName(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_PARENT_SID, SalesforceSDKManager.encrypt(userAccount.getParentSid(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_TOKEN_FORMAT, SalesforceSDKManager.encrypt(userAccount.getTokenFormat(), encryptionKey));
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {

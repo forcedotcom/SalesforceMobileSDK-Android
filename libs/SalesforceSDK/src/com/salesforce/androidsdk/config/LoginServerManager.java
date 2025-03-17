@@ -30,9 +30,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
-import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.MutableLiveData;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -41,7 +41,9 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +54,8 @@ import java.util.Map;
  * @author bhariharan
  */
 public class LoginServerManager {
+	// LiveData representation of the users current selected server.
+	public MutableLiveData<LoginServer> selectedServer = new MutableLiveData<>();
 
 	private static final String TAG = "LoginServerManager";
 
@@ -69,7 +73,6 @@ public class LoginServerManager {
 	private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
 	private final Context ctx;
-	private LoginServer selectedServer;
 	private final SharedPreferences settings;
 	private final SharedPreferences runtimePrefs;
 
@@ -85,7 +88,7 @@ public class LoginServerManager {
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
 				Context.MODE_PRIVATE);
 		initSharedPrefFile();
-		selectedServer = getSelectedLoginServer();
+		getSelectedLoginServer();
 	}
 
 	/**
@@ -123,7 +126,12 @@ public class LoginServerManager {
 
 		// Selection has been saved before.
 		if (name != null && url != null) {
-			selectedServer = new LoginServer(name, url, isCustom);
+			LoginServer server = new LoginServer(name, url, isCustom);
+
+			// Only notify livedata consumers if the value has changed.
+			if (!server.equals(selectedServer.getValue())) {
+				selectedServer.postValue(server);
+			}
 		} else {
 
 			// First time selection defaults to the first server on the list.
@@ -131,19 +139,14 @@ public class LoginServerManager {
 			if (allServers != null) {
 				final LoginServer server = allServers.get(0);
 				if (server != null) {
-					selectedServer = server;
+					selectedServer.postValue(server);
 				}
 			}
 
-			// For some reason, if it's still not set, sets it to the default.
-			if (selectedServer == null) {
-				selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
-			}
-
 			// Stores the selection for the future.
-			setSelectedLoginServer(selectedServer);
+			setSelectedLoginServer(selectedServer.getValue());
 		}
-		return selectedServer;
+		return selectedServer.getValue();
 	}
 
 	/**
@@ -163,7 +166,7 @@ public class LoginServerManager {
 		edit.putString(SERVER_URL, server.url);
 		edit.putBoolean(IS_CUSTOM, server.isCustom);
 		edit.apply();
-		selectedServer = server;
+		selectedServer.postValue(server);
 	}
 
 	/**
@@ -181,6 +184,14 @@ public class LoginServerManager {
 	 * @param url Server URL.
 	 */
 	public void addCustomLoginServer(String name, String url) {
+		// Prevent duplicate servers.
+		for (LoginServer existingServer : getLoginServers()) {
+			if (name.equals(existingServer.name) && url.equals(existingServer.url)) {
+				setSelectedLoginServer(existingServer);
+				return;
+			}
+		}
+
 		if (getLoginServersFromRuntimeConfig() == null) {
 			persistLoginServer(name, url, true, settings);
 		} else {
@@ -205,6 +216,39 @@ public class LoginServerManager {
 		edit.clear();
 		edit.apply();
 		initSharedPrefFile();
+	}
+
+	/**
+	 * Removes a login server from the list.
+	 *
+	 * @param server the server to remove
+	 */
+	public void removeServer(LoginServer server) {
+		List<LoginServer> servers = getLoginServers();
+		int index = servers.indexOf(server);
+
+		if (server.isCustom && index != -1) {
+			int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
+			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index+1, numServers));
+
+			final Editor edit = settings.edit();
+			edit.remove(String.format(Locale.US, SERVER_NAME, index))
+				.remove(String.format(Locale.US, SERVER_URL, index))
+				.remove(String.format(Locale.US, IS_CUSTOM, index));
+
+			// Re-index servers after the one removed from the list.
+			for (int i = (index + 1); i < numServers; i++) {
+				LoginServer reIndexServer = stack.pop();
+				edit.remove(String.format(Locale.US, SERVER_NAME, i))
+					.remove(String.format(Locale.US, SERVER_URL, i))
+					.remove(String.format(Locale.US, IS_CUSTOM, i))
+					.putString(String.format(Locale.US, SERVER_NAME, i-1), reIndexServer.name)
+					.putString(String.format(Locale.US, SERVER_URL, i-1), reIndexServer.url)
+					.putBoolean(String.format(Locale.US, IS_CUSTOM, i-1), reIndexServer.isCustom);
+			}
+
+			edit.putInt(NUMBER_OF_ENTRIES, --numServers).apply();
+		}
 	}
 
 	/**
@@ -394,7 +438,7 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
-		return (allServers.size() > 0 ? allServers : null);
+		return (!allServers.isEmpty() ? allServers : null);
 	}
 
 	/**

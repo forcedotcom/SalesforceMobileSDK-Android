@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 plugins {
     android
     `kotlin-android`
@@ -7,17 +5,17 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceHybrid"))
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.15.0")
 }
 
 android {
     namespace = "com.salesforce.samples.mobilesyncexplorerhybrid"
 
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
-        targetSdk = 34
-        minSdk = 26
+        targetSdk = 35
+        minSdk = 28
     }
 
     sourceSets {

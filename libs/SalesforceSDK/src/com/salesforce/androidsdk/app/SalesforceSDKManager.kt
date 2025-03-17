@@ -42,7 +42,9 @@ import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
 import android.os.Build.VERSION.RELEASE
+import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION.SECURITY_PATCH
+import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper.getMainLooper
@@ -52,15 +54,16 @@ import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import androidx.lifecycle.Lifecycle.Event.ON_START
-import androidx.lifecycle.Lifecycle.Event.ON_STOP
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
@@ -75,18 +78,19 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
-import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEvent
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishOnAppBackground
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -115,7 +119,6 @@ import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
@@ -123,6 +126,9 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AppCreateComplete
@@ -138,6 +144,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.Locale.US
 import java.util.SortedSet
 import java.util.UUID.randomUUID
@@ -168,7 +176,7 @@ open class SalesforceSDKManager protected constructor(
     mainActivity: Class<out Activity>,
     private val loginActivity: Class<out Activity>? = null,
     internal val nativeLoginActivity: Class<out Activity>? = null,
-) : LifecycleObserver {
+) : DefaultLifecycleObserver {
 
     constructor(
         context: Context,
@@ -178,9 +186,6 @@ open class SalesforceSDKManager protected constructor(
 
     /** The Android context */
     val appContext: Context = context
-
-    /** Login options associated with the app */
-    private var loginOptionsInternal: LoginOptions? = null
 
     /**
      * Returns the class for the main activity.
@@ -207,13 +212,19 @@ open class SalesforceSDKManager protected constructor(
      */
     private var showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver? = null
 
-    val webviewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
+    val webViewLoginActivityClass: Class<out Activity> = loginActivity ?: LoginActivity::class.java
 
     /**
      * The class of the activity used to perform the login process and create
      * the account.
      */
-    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webviewLoginActivityClass
+    val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
+
+    /**
+     * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
+     * visual customization without overriding LoginActivity.
+     */
+    var loginViewModelFactory = LoginViewModel.Factory
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -338,6 +349,8 @@ open class SalesforceSDKManager protected constructor(
      * - Or, if the specified browser is not installed
      *
      * Defaults to Chrome.
+     *
+     * Note: the App is responsible for [package visibility](https://developer.android.com/training/package-visibility).
      */
     @get:Synchronized
     @set:Synchronized
@@ -381,6 +394,45 @@ open class SalesforceSDKManager protected constructor(
     var theme = SYSTEM_DEFAULT
 
     /**
+     * @return the color scheme to use for Mobile SDK screens
+     */
+    @Composable
+    fun colorScheme(): ColorScheme {
+        return if (isDarkTheme) darkColorScheme() else lightColorScheme()
+    }
+
+    /**
+     * The light color scheme to use in Mobile SDK screens
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfLightColors
+     */
+    private var _lightColorScheme: ColorScheme? = null
+
+    @Composable
+    fun lightColorScheme(): ColorScheme {
+        return _lightColorScheme ?: sfLightColors().also { _lightColorScheme = it }
+    }
+
+    fun setLightColorScheme(value: ColorScheme) {
+        _lightColorScheme = value
+    }
+
+
+    /**
+     * The dark color scheme to use in Mobile SDK screens
+     * Defaults to com.salesforce.androidsdk.ui.theme.sfDarkColors
+     */
+    private var _darkColorScheme: ColorScheme? = null
+
+    @Composable
+    fun darkColorScheme(): ColorScheme {
+        return _darkColorScheme ?: sfDarkColors().also { _darkColorScheme = it }
+    }
+
+    fun setDarkColorScheme(value: ColorScheme) {
+        _darkColorScheme = value
+    }
+
+    /**
      * The app name to use in [.getUserAgent]. This string must only contain
      * printable ASCII characters.
      *
@@ -395,9 +447,9 @@ open class SalesforceSDKManager protected constructor(
                 val packageInfo = appContext.packageManager.getPackageInfo(
                     appContext.packageName, 0
                 )
-                appName = appContext.getString(
-                    packageInfo.applicationInfo.labelRes
-                )
+                appName = packageInfo.applicationInfo?.labelRes?.let {
+                    appContext.getString(it)
+                }
             }
             field
         }.onFailure { e ->
@@ -472,7 +524,7 @@ open class SalesforceSDKManager protected constructor(
             var ailtnAppName: String? = null
             runCatching {
                 val packageInfo = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-                ailtnAppName = appContext.getString(packageInfo.applicationInfo.labelRes)
+                ailtnAppName = packageInfo.applicationInfo?.labelRes?.let { appContext.getString(it) }
             }.onFailure { e ->
                 e(TAG, "Package not found", e)
             }
@@ -492,42 +544,6 @@ open class SalesforceSDKManager protected constructor(
         Handler(getMainLooper()).post {
             ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         }
-    }
-
-    /** Login options associated with the app */
-    open val loginOptions: LoginOptions get() = getLoginOptions(null, null)
-
-    /**
-     * Sets the login options associated with the app.
-     *
-     * @param jwt The `jwt`
-     * @param url The URL
-     */
-    open fun getLoginOptions(
-        jwt: String?,
-        url: String?
-    ) = loginOptionsInternal?.apply {
-        this.jwt = jwt
-        setUrl(url)
-    } ?: getBootConfig(
-        appContext
-    ).let { config ->
-        when {
-            isEmpty(jwt) -> LoginOptions(
-                url,
-                config.oauthRedirectURI,
-                config.remoteAccessConsumerKey,
-                config.oauthScopes
-            )
-
-            else -> LoginOptions(
-                url,
-                config.oauthRedirectURI,
-                config.remoteAccessConsumerKey,
-                config.oauthScopes,
-                jwt
-            )
-        }.also { loginOptionsInternal = it }
     }
 
     /**
@@ -582,6 +598,7 @@ open class SalesforceSDKManager protected constructor(
         googleCloudProjectId: String? = null,
         isReCaptchaEnterprise: Boolean = false
     ): NativeLoginManagerInterface {
+        registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
         nativeLoginManager = NativeLoginManager(
             consumerKey,
             callbackUrl,
@@ -594,9 +611,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Optionally enables browser based login instead of web view login. This
-     * should NOT be used directly by apps as this is meant for internal use
-     * based on the value configured on the server.
+     * Optionally enables browser based login instead of web view login.
      *
      * @param browserLoginEnabled True if Chrome should be used for login; false
      * otherwise
@@ -604,9 +619,9 @@ open class SalesforceSDKManager protected constructor(
      * false otherwise
      */
     @Synchronized
-    fun setBrowserLoginEnabled(
+    internal fun setBrowserLoginEnabled(
         browserLoginEnabled: Boolean,
-        shareBrowserSessionEnabled: Boolean
+        shareBrowserSessionEnabled: Boolean,
     ) {
         isBrowserLoginEnabled = browserLoginEnabled
         isShareBrowserSessionEnabled = shareBrowserSessionEnabled
@@ -937,11 +952,9 @@ open class SalesforceSDKManager protected constructor(
         showLoginPage: Boolean = true,
         reason: LogoutReason = UNKNOWN,
     ) {
-        createAndStoreEvent("userLogout", null, TAG, null)
         val clientMgr = ClientManager(
             appContext,
             accountType,
-            null,
             shouldLogoutWhenTokenRevoked()
         )
 
@@ -1109,7 +1122,7 @@ open class SalesforceSDKManager protected constructor(
             result
         }.onFailure { e ->
             w(TAG, "Package info could not be retrieved", e)
-        }.getOrDefault("")
+        }.getOrDefault("").toString()
 
     /**
      * Adds an app feature code for reporting in the user agent header
@@ -1148,7 +1161,6 @@ open class SalesforceSDKManager protected constructor(
         ClientManager(
             appContext,
             accountType,
-            loginOptions,
             true
         )
     }
@@ -1164,7 +1176,6 @@ open class SalesforceSDKManager protected constructor(
     ): ClientManager = ClientManager(
         appContext,
         accountType,
-        getLoginOptions(jwt, url),
         true
     )
 
@@ -1177,7 +1188,9 @@ open class SalesforceSDKManager protected constructor(
     fun showDevSupportDialog(frontActivity: Activity?) {
         if (!isDevSupportEnabled() || frontActivity == null) return
 
-        devActionsDialog?.dismiss()
+        runCatching {
+            devActionsDialog?.dismiss()
+        }
 
         CoroutineScope(Main).launch {
             val devActions = getDevActions(frontActivity)
@@ -1254,6 +1267,7 @@ open class SalesforceSDKManager protected constructor(
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
             "Current User", usersToString(userAccountManager.cachedCurrentUser),
+            "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
             addAll(
@@ -1278,6 +1292,23 @@ open class SalesforceSDKManager protected constructor(
                 )
             }
         }
+
+    private fun accessTokenExpiration(): String {
+        val currentUSer = userAccountManager.cachedCurrentUser
+        var expiration = "Unknown"
+
+        if (currentUSer.tokenFormat == "jwt") {
+            val jwtAccessToken = JwtAccessToken(currentUSer.authToken)
+            val expirationDate = jwtAccessToken.expirationDate()
+            if (expirationDate != null) {
+                val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                expiration = dateFormatter.format(expirationDate)
+            }
+        }
+
+        return expiration
+    }
+
 
     /**
      * Information to display in the developer support dialog for a specified
@@ -1382,7 +1413,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this is a debug build */
-    private val isDebugBuild
+    internal val isDebugBuild
         get() = getBuildConfigValue(
             appContext,
             "DEBUG"
@@ -1429,10 +1460,11 @@ open class SalesforceSDKManager protected constructor(
         }
 
     /**
-     * Sets the system status and navigation bars as visible regardless of style
-     * and OS dark theme states.
+     * Sets the system status and navigation bars to the light theme without
+     * regard to the system theme.  This is useful when the background is light
+     * even when dark theme is enabled.
      *
-     * @param activity The activity used to set style attributes
+     * @param activity The activity
      */
     open fun setViewNavigationVisibility(activity: Activity) {
         if (!isDarkTheme || activity.javaClass.name == loginActivityClass.name) {
@@ -1440,7 +1472,17 @@ open class SalesforceSDKManager protected constructor(
              * This covers the case where OS dark theme is true, but app has
              * disabled.
              */
-            activity.window.decorView.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            if (SDK_INT > R) {
+                runCatching {
+                    activity.window?.insetsController?.setSystemBarsAppearance(
+                        APPEARANCE_LIGHT_STATUS_BARS,
+                        APPEARANCE_LIGHT_STATUS_BARS
+                    )
+                }
+            } else {
+                // TODO: Remove with minimum API >= 30
+                activity.window?.decorView?.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            }
         }
     }
 
@@ -1459,9 +1501,9 @@ open class SalesforceSDKManager protected constructor(
                 windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
     }
 
-    @Suppress("unused")
-    @OnLifecycleEvent(ON_STOP)
-    protected open fun onAppBackgrounded() {
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
+
         (screenLockManager as ScreenLockManager?)?.onAppBackgrounded()
 
         // Publish analytics one-time on app background, if enabled.
@@ -1479,9 +1521,9 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
-    @Suppress("unused")
-    @OnLifecycleEvent(ON_START)
-    protected open fun onAppForegrounded() {
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
+
         (screenLockManager as ScreenLockManager?)?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
@@ -1515,7 +1557,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "12.2.0"
+        const val SDK_VERSION = "13.0.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager
@@ -1816,15 +1858,13 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
-     * If this takes more than five seconds it can cause Android's application
-     * not responding report.
-     *
      * @param completion An optional function to invoke at the end of the action
      */
     fun fetchAuthenticationConfiguration(
         completion: (() -> Unit)? = null
     ) = CoroutineScope(Default).launch {
         runCatching {
+            // If this takes more than five seconds it can cause Android's application not responding report.
             withTimeout(5000L) {
                 val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
 

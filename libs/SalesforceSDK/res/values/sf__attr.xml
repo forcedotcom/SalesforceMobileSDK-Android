@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="MobileSDKAttributes">
-        <attr name="sfLayoutBackground" format="color"/>
-        <attr name="sfColorSecondary" format="color"/>
-        <attr name="sfNegativeButtonTextColor" format="color"/>
-        <attr name="sfNegativeButtonBorderColor" format="color"/>
-        <attr name="sfBorderColor" format="color"/>
+        <attr name="sfLayoutBackground" format="color" />
+        <attr name="sfColorOnPrimary" format="color" />
+        <attr name="sfColorSecondary" format="color" />
+        <attr name="sfNegativeButtonTextColor" format="color" />
+        <attr name="sfNegativeButtonBorderColor" format="color" />
+        <attr name="sfBorderColor" format="color" />
     </declare-styleable>
 </resources>

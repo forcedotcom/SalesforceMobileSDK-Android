@@ -186,7 +186,7 @@ object PushMessaging {
             } else {
                 context.packageManager.getPackageInfo(context.packageName, 0)
             }
-            appName = context.getString(packageInfo.applicationInfo.labelRes)
+            appName = packageInfo.applicationInfo?.labelRes?.let { context.getString(it) }.toString()
         } catch (e: Exception) {
             SalesforceSDKLogger.w(TAG, "Package info could not be retrieved.", e)
         }

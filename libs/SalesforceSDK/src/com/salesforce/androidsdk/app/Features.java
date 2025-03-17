@@ -30,8 +30,6 @@ package com.salesforce.androidsdk.app;
  * Flags for ftr_ field in user agent
  */
 public class Features {
-
-
     public static final String FEATURE_AILTN_ENABLED = "AI";
     public static final String FEATURE_APP_IS_IDP = "IP";
     public static final String FEATURE_APP_IS_SP = "SP";
@@ -44,4 +42,6 @@ public class Features {
     public static final String FEATURE_USER_AUTH = "UA";
     public static final String FEATURE_SCREEN_LOCK = "SL";
     public static final String FEATURE_BIOMETRIC_AUTH = "BA";
+    public static final String FEATURE_NATIVE_LOGIN = "NL";
+    public static final String FEATURE_QR_CODE_LOGIN = "QR";
 }

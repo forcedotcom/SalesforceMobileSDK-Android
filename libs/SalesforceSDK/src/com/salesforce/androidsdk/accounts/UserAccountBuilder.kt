@@ -64,6 +64,8 @@ class UserAccountBuilder private constructor() {
     private var cookieSidClient: String? = null
     private var sidCookieName: String? = null
     private var clientId: String? = null
+    private var parentSid: String? = null
+    private var tokenFormat: String? = null
     private var additionalOauthValues: Map<String, String>? = null
     private var allowUnset = true
 
@@ -96,6 +98,8 @@ class UserAccountBuilder private constructor() {
             .cookieClientSrc(tr.cookieClientSrc)
             .cookieSidClient(tr.cookieSidClient)
             .sidCookieName(tr.sidCookieName)
+            .parentSid(tr.parentSid)
+            .tokenFormat(tr.tokenFormat)
     }
 
     /**
@@ -158,6 +162,8 @@ class UserAccountBuilder private constructor() {
             .cookieSidClient(userAccount.cookieSidClient)
             .sidCookieName(userAccount.sidCookieName)
             .clientId(userAccount.clientId)
+            .parentSid(userAccount.parentSid)
+            .tokenFormat(userAccount.tokenFormat)
     }
 
     /**
@@ -475,6 +481,26 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets parent sid
+     *
+     * @param parentSid parent sid
+     * @return Instance of this class.
+     */
+    fun parentSid(parentSid: String?): UserAccountBuilder {
+        return if (!allowUnset && parentSid == null) this else apply { this.parentSid = parentSid }
+    }
+
+    /**
+     * Sets token format
+     *
+     * @param tokenFormat token format
+     * @return Instance of this class.
+     */
+    fun tokenFormat(tokenFormat: String?): UserAccountBuilder {
+        return if (!allowUnset && tokenFormat == null) this else apply { this.tokenFormat = tokenFormat }
+    }
+
+    /**
      * Sets oauth client id
      *
      * @param clientId sid cookie name.
@@ -518,7 +544,8 @@ class UserAccountBuilder private constructor() {
             userId, username, accountName, communityId, communityUrl, firstName, lastName,
             displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
             lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin,
-            language, locale, cookieClientSrc, cookieSidClient, sidCookieName, clientId
+            language, locale, cookieClientSrc, cookieSidClient, sidCookieName, clientId,
+            parentSid, tokenFormat
         )
     }
 

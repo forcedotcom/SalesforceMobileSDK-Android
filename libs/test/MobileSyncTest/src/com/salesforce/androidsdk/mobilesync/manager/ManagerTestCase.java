@@ -52,7 +52,6 @@ import com.salesforce.androidsdk.mobilesync.util.Constants;
 import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -110,10 +109,11 @@ abstract public class ManagerTestCase {
         if (MobileSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        final LoginOptions loginOptions = new LoginOptions(LOGIN_URL,
-        		TEST_CALLBACK_URL, CLIENT_ID, TEST_SCOPES);
-        final ClientManager clientManager = new ClientManager(targetContext,
-        		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
+        final ClientManager clientManager = new ClientManager(
+                targetContext,
+                TestCredentials.ACCOUNT_TYPE,
+                true
+        );
         clientManager.createNewAccount(ACCOUNT_NAME,
         		USERNAME, TestCredentials.REFRESH_TOKEN,
         		TEST_AUTH_TOKEN, INSTANCE_URL,

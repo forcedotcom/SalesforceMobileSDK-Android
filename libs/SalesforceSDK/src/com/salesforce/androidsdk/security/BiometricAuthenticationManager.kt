@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.security
 
 import android.content.Intent
+import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -61,14 +62,11 @@ internal class BiometricAuthenticationManager: AppLockManager(
         currentUser?.let {
             locked = true
             val ctx = SalesforceSDKManager.getInstance().appContext
-            val options = SalesforceSDKManager.getInstance().loginOptions.asBundle()
             val intent = Intent(ctx, SalesforceSDKManager.getInstance().loginActivityClass)
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-            options.putBoolean(SHOW_BIOMETRIC, true)
-            intent.putExtras(options)
+            intent.putExtras(bundleOf(SHOW_BIOMETRIC to true))
             ctx.startActivity(intent)
             EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
         }

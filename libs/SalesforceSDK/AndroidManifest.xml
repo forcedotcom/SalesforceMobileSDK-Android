@@ -2,20 +2,12 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-	android:versionCode="87"
-	android:versionName="12.2.0">
+	android:versionCode="88"
+	android:versionName="13.0.0.dev">
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
-
-    <!--
-        USE_FINGERPRINT is available from API 23 to API 27
-        TODO: should be removed once minAPI > 27
-    -->
-    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-
-    <!-- USE_BIOMETRIC is available on API 28 and higher -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application>
@@ -40,6 +32,7 @@
             android:theme="@style/SalesforceSDK"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="true" />
 
         <!-- Screen Lock Activity-->
@@ -54,16 +47,10 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
-        <!-- Choose server activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
-            android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
-            android:exported="false" />
-
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
+            android:theme="@style/AccountSwitcher"
             android:exported="false" />
 
         <!-- IDP auth code activity -->

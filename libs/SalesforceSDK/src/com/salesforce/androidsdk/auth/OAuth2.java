@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth;
 
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -89,21 +90,21 @@ import okhttp3.Response;
 public class OAuth2 {
 
     private static final String ACCESS_TOKEN = "access_token";
-    protected static final String CLIENT_ID = "client_id";
+    protected static final String CLIENT_ID = "client_id"; // OAuth 2.0 token endpoint request body parameter names
+    protected static final String GRANT_TYPE = "grant_type"; // OAuth 2.0 token endpoint request body parameter names
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
-    private static final String FORMAT = "format";
-    protected static final String GRANT_TYPE = "grant_type";
+    protected static final String FORMAT = "format";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
-    private static final String JSON = "json";
+    protected static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
     private static final String BIOMETRIC_AUTHENTICATION = "ENABLE_BIOMETRIC_AUTHENTICATION";
     private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
-    private static final String REFRESH_TOKEN = "refresh_token";
-    private static final String HYBRID_REFRESH = "hybrid_refresh";
+    private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
+    private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     protected static final String REDIRECT_URI = "redirect_uri";
@@ -193,6 +194,8 @@ public class OAuth2 {
     private static final String COOKIE_CLIENT_SRC = "cookie-clientSrc";
     private static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
     private static final String SID_COOKIE_NAME = "sidCookieName";
+    private static final String PARENT_SID = "parent_sid";
+    private static final String TOKEN_FORMAT = "token_format";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -393,19 +396,6 @@ public class OAuth2 {
             }
         }
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
-    }
-
-    /**
-     * Revokes the existing refresh token.
-     *
-     * @param httpAccessor HttpAccess instance.
-     * @param loginServer Login server.
-     * @param refreshToken Refresh token.
-     *
-     * @deprecated Will be removed in 13.0.  Use {@link #revokeRefreshToken(HttpAccess, URI, String, LogoutReason)} instead.
-     */
-    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
-        revokeRefreshToken(httpAccessor, loginServer, refreshToken, LogoutReason.UNKNOWN);
     }
 
     /**
@@ -775,6 +765,8 @@ public class OAuth2 {
         public String cookieClientSrc;
         public String cookieSidClient;
         public String sidCookieName;
+        public String parentSid;
+        public String tokenFormat;
 
         /**
          * Parameterized constructor built during login flow.
@@ -812,6 +804,8 @@ public class OAuth2 {
                 cookieClientSrc = callbackUrlParams.get(COOKIE_CLIENT_SRC);
                 cookieSidClient = callbackUrlParams.get(COOKIE_SID_CLIENT);
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
+                parentSid = callbackUrlParams.get(PARENT_SID);
+                tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
@@ -838,6 +832,7 @@ public class OAuth2 {
         public TokenEndpointResponse(Response response) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -873,6 +868,8 @@ public class OAuth2 {
                 cookieClientSrc = parsedResponse.optString(COOKIE_CLIENT_SRC);
                 cookieSidClient = parsedResponse.optString(COOKIE_SID_CLIENT);
                 sidCookieName = parsedResponse.optString(SID_COOKIE_NAME);
+                parentSid = parsedResponse.optString(PARENT_SID);
+                tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
