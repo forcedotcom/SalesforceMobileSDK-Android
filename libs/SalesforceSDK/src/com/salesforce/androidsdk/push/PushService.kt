@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Intent
+import androidx.core.net.toUri
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -43,9 +44,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
+import com.salesforce.androidsdk.push.PushMessaging.clearNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.clearRegistrationInfo
 import com.salesforce.androidsdk.push.PushMessaging.getDeviceId
 import com.salesforce.androidsdk.push.PushMessaging.getRegistrationId
+import com.salesforce.androidsdk.push.PushMessaging.setNotificationTypes
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
@@ -55,6 +58,7 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
+import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestRequest
@@ -203,6 +207,63 @@ open class PushService {
     )
 
     /**
+     * Called after Salesforce push notification registration.
+     *
+     * @param status the registration status. One of the
+     * `REGISTRATION_STATUS_XXX` constants
+     * @param userAccount the user account that's performing registration
+     */
+    private fun onPushNotificationRegistrationStatusInternal(
+        status: Int,
+        userAccount: UserAccount?
+    ) {
+        // Fetch and store or clear Salesforce notifications types, as applicable.
+        refreshNotificationsTypes(status, userAccount)
+
+        // Allow subclass implementation.
+        onPushNotificationRegistrationStatus(status, userAccount)
+    }
+
+    /**
+     * Refreshes Salesforce notification types or clears them based on the
+     * provided Salesforce push notification registration status.
+     * @param status the registration status. One of the
+     * `REGISTRATION_STATUS_XXX` constants
+     * @param userAccount the user account that's performing registration
+     */
+    private fun refreshNotificationsTypes(
+        status: Int,
+        userAccount: UserAccount?
+    ) {
+        when (status) {
+            REGISTRATION_STATUS_SUCCEEDED ->
+                fetchNotificationsTypes(userAccount ?: return)
+
+            UNREGISTRATION_STATUS_SUCCEEDED ->
+                clearNotificationsTypes(userAccount ?: return)
+        }
+    }
+
+    /**
+     * Fetches notifications types and stores them for the provided user
+     * account.
+     * @param userAccount the user account that's performing registration
+     */
+    private fun fetchNotificationsTypes(userAccount: UserAccount) {
+        val instanceHost = userAccount.instanceServer.toUri().host
+        val restClient = getRestClient(userAccount)
+        if (instanceHost != null && restClient != null) {
+            setNotificationTypes(
+                userAccount = userAccount,
+                notificationsTypes = NotificationsApiClient(
+                    apiHostName = instanceHost,
+                    restClient = restClient
+                ).fetchNotificationsTypes() ?: return
+            )
+        }
+    }
+
+    /**
      * Listen for changes in registration status.
      *
      * Subclasses can override this method without calling the super method.
@@ -278,7 +339,7 @@ open class PushService {
 
                 response.consume()
                 sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-                onPushNotificationRegistrationStatus(status, account)
+                onPushNotificationRegistrationStatusInternal(status, account)
 
                 return id
             }
@@ -286,7 +347,7 @@ open class PushService {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatus(REGISTRATION_STATUS_FAILED, account)
+        onPushNotificationRegistrationStatusInternal(REGISTRATION_STATUS_FAILED, account)
 
         return null
     }
@@ -342,13 +403,13 @@ open class PushService {
                     registeredId,
                     restClient
                 ).consume()
-                onPushNotificationRegistrationStatus(
+                onPushNotificationRegistrationStatusInternal(
                     UNREGISTRATION_STATUS_SUCCEEDED,
                     account
                 )
             }
         }.onFailure { throwable ->
-            onPushNotificationRegistrationStatus(
+            onPushNotificationRegistrationStatusInternal(
                 UNREGISTRATION_STATUS_FAILED,
                 account
             )
@@ -520,7 +581,7 @@ open class PushService {
                 OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                     .setInputData(workData)
                     .setConstraints(constraints)
-                    .build().also {  workRequest ->
+                    .build().also { workRequest ->
                         workManager.enqueueUniqueWork(
                             PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME,
                             REPLACE,
