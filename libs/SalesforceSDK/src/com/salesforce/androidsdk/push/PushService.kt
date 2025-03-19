@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.push
 import android.app.NotificationChannel
 import android.app.NotificationChannelGroup
 import android.app.NotificationManager
-import android.app.NotificationManager.IMPORTANCE_DEFAULT
+import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
 import androidx.core.net.toUri
 import androidx.work.Constraints
@@ -280,9 +280,9 @@ open class PushService {
             notificationsTypesResponseBody.notificationTypes?.forEach { notificationType ->
                 createNotificationChannel(
                     NotificationChannel(
-                        notificationType.apiName,
+                        notificationType.type,
                         notificationType.label,
-                        IMPORTANCE_DEFAULT
+                        IMPORTANCE_HIGH
                     ).apply {
                         group = notificationChannelGroup.id
                     }
