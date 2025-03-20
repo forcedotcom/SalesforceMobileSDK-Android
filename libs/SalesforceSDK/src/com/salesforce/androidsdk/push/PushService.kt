@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.push
 
+import android.app.NotificationChannel
+import android.app.NotificationChannelGroup
+import android.app.NotificationManager
+import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
 import androidx.core.net.toUri
 import androidx.work.Constraints
@@ -59,6 +63,7 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.rest.NotificationsApiClient
+import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestRequest
@@ -237,10 +242,63 @@ open class PushService {
     ) {
         when (status) {
             REGISTRATION_STATUS_SUCCEEDED ->
-                fetchNotificationsTypes(userAccount ?: return)
+                registerNotificationChannels(
+                    fetchNotificationsTypes(userAccount ?: return) ?: return
+                )
 
-            UNREGISTRATION_STATUS_SUCCEEDED ->
+            UNREGISTRATION_STATUS_SUCCEEDED -> {
                 clearNotificationsTypes(userAccount ?: return)
+                removeNotificationsCategories()
+            }
+        }
+    }
+
+    /**
+     * Registers Android notification channels and notification groups for the
+     * provided Salesforce notifications API notifications types.
+     * @param notificationsTypesResponseBody The Salesforce notifications API
+     * notifications types
+     */
+    private fun registerNotificationChannels(
+        notificationsTypesResponseBody: NotificationsTypesResponseBody
+    ) {
+        val context = SalesforceSDKManager.getInstance().appContext
+        context.getSystemService(NotificationManager::class.java).run {
+
+            val notificationChannelGroup = getNotificationChannelGroup(
+                NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID
+            ) ?: run {
+                createNotificationChannelGroup(
+                    NotificationChannelGroup(
+                        NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID,
+                        NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME
+                    )
+                )
+                getNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
+            }
+
+            notificationsTypesResponseBody.notificationTypes?.forEach { notificationType ->
+                createNotificationChannel(
+                    NotificationChannel(
+                        notificationType.type,
+                        notificationType.label,
+                        IMPORTANCE_HIGH
+                    ).apply {
+                        group = notificationChannelGroup.id
+                    }
+                )
+            }
+        }
+    }
+
+    /**
+     * Removes previously registered Android notification channels and
+     * notification groups for Salesforce notifications API notifications types.
+     */
+    private fun removeNotificationsCategories() {
+        val context = SalesforceSDKManager.getInstance().appContext
+        context.getSystemService(NotificationManager::class.java).run {
+            deleteNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
         }
     }
 
@@ -249,17 +307,23 @@ open class PushService {
      * account.
      * @param userAccount the user account that's performing registration
      */
-    private fun fetchNotificationsTypes(userAccount: UserAccount) {
+    private fun fetchNotificationsTypes(
+        userAccount: UserAccount
+    ): NotificationsTypesResponseBody? {
         val instanceHost = userAccount.instanceServer.toUri().host
         val restClient = getRestClient(userAccount)
-        if (instanceHost != null && restClient != null) {
+        return if (instanceHost != null && restClient != null) {
+            val notificationsTypes = NotificationsApiClient(
+                apiHostName = instanceHost,
+                restClient = restClient
+            ).fetchNotificationsTypes()
             setNotificationTypes(
                 userAccount = userAccount,
-                notificationsTypes = NotificationsApiClient(
-                    apiHostName = instanceHost,
-                    restClient = restClient
-                ).fetchNotificationsTypes() ?: return
+                notificationsTypes = notificationsTypes ?: return null
             )
+            notificationsTypes
+        } else {
+            null
         }
     }
 
@@ -497,6 +561,19 @@ open class PushService {
         val pushNotificationKeyName = SalesforceKeyGenerator
             .getUniqueId(PUSH_NOTIFICATION_KEY_NAME)
             .replace("[^A-Za-z0-9]".toRegex(), "")
+
+        /**
+         * The push notification channel group id for push notification channels
+         * registered from Salesforce Notification API notifications types
+         */
+        private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID = "NOTIFICATION_GROUP_SALESFORCE"
+
+        /**
+         * The push notification channel group name for push notification
+         * channels registered from Salesforce Notification API notifications
+         * types
+         */
+        private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME = "Salesforce Notifications"
 
         protected const val REGISTRATION_STATUS_SUCCEEDED = 0
         protected const val REGISTRATION_STATUS_FAILED = 1
