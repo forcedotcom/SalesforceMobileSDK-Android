@@ -96,6 +96,7 @@ data class NotificationsTypesResponseBody(
 
         @Serializable
         data class ActionGroup(
+            val name: String? = null,
             val actions: Array<Action>? = null
         ) {
 
