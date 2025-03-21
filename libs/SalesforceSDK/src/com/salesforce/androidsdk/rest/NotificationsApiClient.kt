@@ -28,13 +28,16 @@
 package com.salesforce.androidsdk.rest
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.rest.ApiVersionStrings.API_PREFIX
+import com.salesforce.androidsdk.rest.RestRequest.MEDIA_TYPE_JSON
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.GET
+import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Provides REST client methods for a variety of notifications API endpoints.
- * - `/connect/notifications/types`
+ * - Notifications Types: `/connect/notifications/types`
+ * - Notifications Actions: `/connect/notifications/${notificationId}/actions/${actionKey}`
  *
  * See https://salesforce.quip.com/KGU3ALoXRCjK#RcfABAPLVfg
  * TODO: Replace the documentation link with the final documentation. ECJ20250310
@@ -75,11 +78,52 @@ class NotificationsApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             NotificationsTypesResponseBody.fromJson(responseBodyString)
         } else {
-            val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
-            throw SfapApiException(
-                errorCode = errorResponseBody.errorCode,
-                message = responseBodyString,
-                messageCode = errorResponseBody.messageCode,
+            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            throw NotificationsApiException(
+                errorCode = errorResponseBody.firstOrNull()?.errorCode,
+                message = errorResponseBody.firstOrNull()?.message,
+                messageCode = errorResponseBody.firstOrNull()?.messageCode,
+                source = responseBodyString
+            )
+        }
+    }
+
+    /**
+     * Submit a request to the Notifications API actions endpoint.
+     * @return The endpoint's response
+     */
+    @Throws(NotificationsApiException::class)
+    fun submitNotificationAction(
+        notificationId: String,
+        actionKey: String
+    ): NotificationsActionsResponseBody? {
+        val context = SalesforceSDKManager.getInstance().appContext
+
+        // Submit the request.
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
+        // TODO: Remove once MSDK default API version is 64 or greater.
+        if (apiVersion < "v64.0") {
+            SalesforceSDKLogger.w(TAG, "Cannot submit Salesforce Notifications API action with API less than v64.0")
+            return null
+        }
+
+        val restRequest = RestRequest(
+            POST,
+            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
+            "".toRequestBody(MEDIA_TYPE_JSON),
+            mutableMapOf<String, String>()
+        )
+        val restResponse = restClient.sendSync(restRequest)
+        val responseBodyString = restResponse.asString()
+
+        return if (restResponse.isSuccess && responseBodyString != null) {
+            NotificationsActionsResponseBody.fromJson(responseBodyString)
+        } else {
+            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            throw NotificationsApiException(
+                errorCode = errorResponseBody.firstOrNull()?.errorCode,
+                message = errorResponseBody.firstOrNull()?.message,
+                messageCode = errorResponseBody.firstOrNull()?.messageCode,
                 source = responseBodyString
             )
         }

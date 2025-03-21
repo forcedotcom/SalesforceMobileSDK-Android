@@ -247,8 +247,8 @@ open class PushService {
                 )
 
             UNREGISTRATION_STATUS_SUCCEEDED -> {
-                clearNotificationsTypes(userAccount ?: return)
                 removeNotificationsCategories()
+                clearNotificationsTypes(userAccount ?: return)
             }
         }
     }
@@ -310,21 +310,20 @@ open class PushService {
     private fun fetchNotificationsTypes(
         userAccount: UserAccount
     ): NotificationsTypesResponseBody? {
-        val instanceHost = userAccount.instanceServer.toUri().host
-        val restClient = getRestClient(userAccount)
-        return if (instanceHost != null && restClient != null) {
-            val notificationsTypes = NotificationsApiClient(
-                apiHostName = instanceHost,
-                restClient = restClient
-            ).fetchNotificationsTypes()
-            setNotificationTypes(
-                userAccount = userAccount,
-                notificationsTypes = notificationsTypes ?: return null
-            )
-            notificationsTypes
-        } else {
-            null
-        }
+        val instanceHost = userAccount.instanceServer.toUri().host ?: return null
+        val restClient = getRestClient(userAccount) ?: return null
+
+        val notificationsTypes = NotificationsApiClient(
+            apiHostName = instanceHost,
+            restClient = restClient
+        ).fetchNotificationsTypes()
+
+        setNotificationTypes(
+            userAccount = userAccount,
+            notificationsTypes = notificationsTypes ?: return null
+        )
+
+        return notificationsTypes
     }
 
     /**
