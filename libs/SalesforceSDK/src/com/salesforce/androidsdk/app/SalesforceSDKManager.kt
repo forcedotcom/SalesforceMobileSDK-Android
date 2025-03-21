@@ -618,7 +618,7 @@ open class SalesforceSDKManager protected constructor(
      * with the provided type.
      * @param type The notification type
      * @return The notification type from the Salesforce Notifications API types
-     * endpoint
+     * endpoint or null
      */
     fun getNotificationsType(
         type: String
@@ -632,7 +632,8 @@ open class SalesforceSDKManager protected constructor(
      * Invokes a Salesforce Notifications API notification action.
      * @param notificationId The Salesforce actionable notification's id
      * @param actionKey The Salesforce actionable notification's action key
-     * @return The Salesforce Notifications API actions endpoint response
+     * @return The Salesforce Notifications API actions endpoint response or
+     * null
      */
     fun invokeServerNotificationAction(
         notificationId: String,
