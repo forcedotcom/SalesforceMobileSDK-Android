@@ -95,7 +95,7 @@ public class SalesforceActivityDelegate {
                 public void authenticatedRestClient(RestClient client) {
                     if (client == null) {
                         SalesforceSDKManager.getInstance()
-                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE);
+                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE_MSDK);
                         return;
                     }
                     ((SalesforceActivityInterface) activity).onResume(client);

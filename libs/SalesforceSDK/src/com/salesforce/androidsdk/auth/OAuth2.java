@@ -205,15 +205,26 @@ public class OAuth2 {
     }
 
     public enum LogoutReason {
-        CORRUPT_STATE,           // "Corrupted client state"
-        REFRESH_TOKEN_EXPIRED,   // "Refresh token expired"
-        SSDK_LOGOUT_POLICY,      // "SSDK initiated logout for policy violation"
-        TIMEOUT,                 // "Timeout while waiting for server response"
-        UNEXPECTED,              // "Unexpected error or crash"
-        UNEXPECTED_RESPONSE,     // "Unexpected response from server"
-        UNKNOWN,                 // "Unknown"
-        USER_LOGOUT,             // "User initiated logout"
-        REFRESH_TOKEN_ROTATED;   // "Refresh token rotated"
+        // Corrupted client state
+        CORRUPT_STATE,
+
+        // Corrupted client state detected by application
+        CORRUPT_STATE_APP_CONFIGURATION_SETTINGS,      // bad configuration settings
+        CORRUPT_STATE_APP_PROVIDER_ERROR_INVALID_USER, // invalid user
+        CORRUPT_STATE_APP_INVALID_RESTCLIENT,          // invalid rest client
+        CORRUPT_STATE_APP_OTHER,                       // other
+
+        // Corrupted client state detected by Mobile SDK
+        CORRUPT_STATE_MSDK,
+
+        REFRESH_TOKEN_EXPIRED,   // Refresh token expired
+        SSDK_LOGOUT_POLICY,      // SSDK initiated logout for policy violation
+        TIMEOUT,                 // Timeout while waiting for server response
+        UNEXPECTED,              // Unexpected error or crash
+        UNEXPECTED_RESPONSE,     // Unexpected response from server
+        UNKNOWN,                 // Unknown
+        USER_LOGOUT,             // User initiated logout
+        REFRESH_TOKEN_ROTATED;   // Refresh token rotated
 
         @NonNull
         @Override
