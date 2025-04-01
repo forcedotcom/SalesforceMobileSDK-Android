@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteException;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -363,8 +364,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	static class DBErrorHandler implements DatabaseErrorHandler {
 		@Override
-		public void onCorruption(SQLiteDatabase dbObj) {
-			throw new SmartStore.SmartStoreException("Database is corrupted");
+		public void onCorruption(SQLiteDatabase dbObj, SQLiteException exception) {
+			throw new SmartStore.SmartStoreException("Database is corrupted", exception);
 		}
 	}
 
