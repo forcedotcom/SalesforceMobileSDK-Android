@@ -75,7 +75,8 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -196,22 +197,24 @@ internal class NativeLoginManager(
         val tokenEndpointResponse = TokenEndpointResponse(tokenResponse.rawResponse)
         tokenResponse.consumeQuietly()
 
-        return withContext(Dispatchers.IO) {
+        return withContext(Default) {
             suspendCoroutine { continuation ->
-                onAuthFlowComplete(
-                    tokenResponse = tokenEndpointResponse,
-                    loginServer = loginUrl,
-                    consumerKey = clientId,
-                    onAuthFlowError = { error, errorDesc, e ->
-                        SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
-                        continuation.resume(UnknownError)
-                    },
-                    onAuthFlowSuccess = { userAccount ->
-                        SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
-                        continuation.resume(Success)
-                    },
-                    nativeLogin = true,
-                )
+                runBlocking {
+                    onAuthFlowComplete(
+                        tokenResponse = tokenEndpointResponse,
+                        loginServer = loginUrl,
+                        consumerKey = clientId,
+                        onAuthFlowError = { error, errorDesc, e ->
+                            SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
+                            continuation.resume(UnknownError)
+                        },
+                        onAuthFlowSuccess = { userAccount ->
+                            SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
+                            continuation.resume(Success)
+                        },
+                        nativeLogin = true,
+                    )
+                }
             }
         }
     }

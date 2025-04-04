@@ -137,6 +137,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -884,11 +885,13 @@ open class LoginActivity : FragmentActivity() {
                                 )
 
                             else ->
-                                viewModel.onAuthFlowComplete(
-                                    TokenEndpointResponse(params),
-                                    ::onAuthFlowError,
-                                    ::onAuthFlowSuccess
-                                )
+                                CoroutineScope(Default).launch {
+                                    viewModel.onAuthFlowComplete(
+                                        TokenEndpointResponse(params),
+                                        ::onAuthFlowError,
+                                        ::onAuthFlowSuccess
+                                    )
+                                }
                         }
                     }
                 }
