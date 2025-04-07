@@ -1,12 +1,19 @@
 package com.salesforce.androidsdk.app
 
+import android.accounts.AccountManager
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest
+import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
+import org.junit.After
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -16,6 +23,33 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class PushMessagingTest {
+
+    /** An account manager for test.  TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407 */
+    private var accMgr: AccountManager? = null
+
+    /** A user account manager for test.  TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407 */
+    private var userAccMgr: UserAccountManager? = null
+
+    @Before
+    @Throws(Exception::class)
+    fun setUp() {
+
+        // TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        accMgr = AccountManager.get(targetContext)
+        userAccMgr = UserAccountManager.getInstance()
+        Assert.assertNull("There should be no authenticated users", userAccMgr?.getAuthenticatedUsers())
+    }
+
+    @After
+    @Throws(Exception::class)
+    fun tearDown() {
+
+        // TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
+        cleanupAccounts()
+        userAccMgr = null
+        accMgr = null
+    }
 
     @Test
     fun testClearNotificationsTypes() {
@@ -36,6 +70,21 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testGetNotificationsTypesViaSdkManager() {
+        createTestAccountInAccountManager()
+        PushMessaging.setNotificationTypes(
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
+        )
+
+        val notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+            "actionable_notif_test_type"
+        )
+
+        Assert.assertEquals("actionable_notif_test_type", notificationsType?.apiName)
+    }
+
+    @Test
     fun testSetNotificationsTypes() {
 
         PushMessaging.setNotificationTypes(
@@ -49,6 +98,28 @@ class PushMessagingTest {
         )
     }
 
+    /**
+     * Removes any existing accounts.
+     */
+    @Throws(java.lang.Exception::class)
+    private fun cleanupAccounts() {
+        for (acc in accMgr!!.getAccountsByType(UserAccountManagerTest.TEST_ACCOUNT_TYPE)) {
+            accMgr!!.removeAccountExplicitly(acc)
+        }
+    }
+
+    /**
+     * Create a test account.
+     * TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
+     *
+     * @return UserAccount.
+     */
+    private fun createTestAccountInAccountManager(): UserAccount {
+        val userAccount = UserAccountTest.createTestAccount()
+        userAccMgr?.createAccount(userAccount)
+        return userAccount
+    }
+
     companion object {
 
         private const val NOTIFICATIONS_TYPES_JSON =
@@ -59,5 +130,4 @@ class PushMessagingTest {
             putString("userId", "user-1-1")
         })
     }
-
 }
