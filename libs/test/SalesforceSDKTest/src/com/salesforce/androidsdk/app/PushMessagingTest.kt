@@ -10,6 +10,8 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.push.PushMessaging
+import com.salesforce.androidsdk.push.PushService
+import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import org.junit.After
 import org.junit.Assert
@@ -67,6 +69,25 @@ class PushMessagingTest {
         PushMessaging.clearNotificationsTypes(user)
 
         Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+    }
+
+    @Test
+    fun testOnPushNotificationRegistrationStatusInternal() {
+        var result = false
+
+        object : PushService() {
+            override fun onPushNotificationRegistrationStatus(
+                status: Int,
+                userAccount: UserAccount?
+            ) {
+                result = true
+            }
+        }.onPushNotificationRegistrationStatusInternal(
+            REGISTRATION_STATUS_SUCCEEDED,
+            null
+        )
+
+        Assert.assertTrue(result)
     }
 
     @Test

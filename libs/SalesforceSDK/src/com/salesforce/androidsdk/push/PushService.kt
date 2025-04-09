@@ -31,6 +31,7 @@ import android.app.NotificationChannelGroup
 import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.work.Constraints
 import androidx.work.Data
@@ -218,7 +219,8 @@ open class PushService {
      * `REGISTRATION_STATUS_XXX` constants
      * @param userAccount the user account that's performing registration
      */
-    private fun onPushNotificationRegistrationStatusInternal(
+    @VisibleForTesting
+    internal fun onPushNotificationRegistrationStatusInternal(
         status: Int,
         userAccount: UserAccount?
     ) {
@@ -340,7 +342,7 @@ open class PushService {
         "unused",
         "UNUSED_PARAMETER"
     )
-    protected fun onPushNotificationRegistrationStatus(
+    protected open fun onPushNotificationRegistrationStatus(
         status: Int,
         userAccount: UserAccount?,
     ) {
@@ -574,7 +576,8 @@ open class PushService {
          */
         private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME = "Salesforce Notifications"
 
-        protected const val REGISTRATION_STATUS_SUCCEEDED = 0
+        @VisibleForTesting
+        internal const val REGISTRATION_STATUS_SUCCEEDED = 0
         protected const val REGISTRATION_STATUS_FAILED = 1
         protected const val UNREGISTRATION_STATUS_SUCCEEDED = 2
         protected const val UNREGISTRATION_STATUS_FAILED = 3
