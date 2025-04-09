@@ -534,7 +534,7 @@ object PushMessaging {
             enqueuePushNotificationsRegistrationWork(
                 userAccount = account,
                 action = action,
-                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
+                pushNotificationsReRegistrationType = ReRegistrationOnAppForeground,
                 delayDays = null
             )
         }
