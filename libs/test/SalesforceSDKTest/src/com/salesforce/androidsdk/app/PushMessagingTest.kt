@@ -12,6 +12,7 @@ import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
+import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import org.junit.After
 import org.junit.Assert
@@ -134,6 +135,14 @@ class PushMessagingTest {
         )
 
         Assert.assertNull(notificationsActionsResponseBody)
+    }
+
+    @Test
+    fun testRefreshNotificationsTypes() {
+        PushService().refreshNotificationsTypes(REGISTRATION_STATUS_SUCCEEDED, null)
+        PushService().refreshNotificationsTypes(REGISTRATION_STATUS_SUCCEEDED, UserAccountTest.createTestAccount())
+        PushService().refreshNotificationsTypes(UNREGISTRATION_STATUS_SUCCEEDED, null)
+        PushService().refreshNotificationsTypes(UNREGISTRATION_STATUS_SUCCEEDED, UserAccountTest.createTestAccount())
     }
 
     @Test

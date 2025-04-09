@@ -238,7 +238,7 @@ open class PushService {
      * `REGISTRATION_STATUS_XXX` constants
      * @param userAccount the user account that's performing registration
      */
-    private fun refreshNotificationsTypes(
+    internal fun refreshNotificationsTypes(
         status: Int,
         userAccount: UserAccount?
     ) {
@@ -578,9 +578,9 @@ open class PushService {
 
         @VisibleForTesting
         internal const val REGISTRATION_STATUS_SUCCEEDED = 0
-        protected const val REGISTRATION_STATUS_FAILED = 1
-        protected const val UNREGISTRATION_STATUS_SUCCEEDED = 2
-        protected const val UNREGISTRATION_STATUS_FAILED = 3
+        internal const val REGISTRATION_STATUS_FAILED = 1
+        internal const val UNREGISTRATION_STATUS_SUCCEEDED = 2
+        internal const val UNREGISTRATION_STATUS_FAILED = 3
 
         /**
          * The Android background tasks name of the push notifications
