@@ -92,14 +92,22 @@ class PushMessagingTest {
 
     @Test
     fun testInvokeServerNotificationActionViaSdkManager() {
+        val salesforceSDKManager = SalesforceSDKManager.getInstance()
+
+        var notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
+            notificationId = "test_notification_id",
+            actionKey = "test_action_key"
+        )
+
+        Assert.assertNull(notificationsActionsResponseBody)
+
         createTestAccountInAccountManager()
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
             notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
         )
 
-        val salesforceSDKManager = SalesforceSDKManager.getInstance()
-        val notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
+        notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key"
         )

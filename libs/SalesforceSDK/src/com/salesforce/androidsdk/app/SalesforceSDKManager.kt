@@ -641,8 +641,8 @@ open class SalesforceSDKManager protected constructor(
         notificationId: String,
         actionKey: String
     ): NotificationsActionsResponseBody? {
-        val userAccount = userAccountManager.currentUser
-        val instanceHost = userAccount.instanceServer.toUri().host ?: return null
+        val userAccount: UserAccount? = userAccountManager.currentUser
+        val instanceHost = userAccount?.instanceServer?.toUri()?.host ?: return null
         val restClient = clientManager.peekRestClient(userAccount)
         return NotificationsApiClient(
             apiHostName = instanceHost,
