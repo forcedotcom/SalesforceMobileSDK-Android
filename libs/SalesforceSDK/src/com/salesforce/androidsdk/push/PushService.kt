@@ -300,7 +300,8 @@ open class PushService {
      * Removes previously registered Android notification channels and
      * notification groups for Salesforce notifications API notifications types.
      */
-    private fun removeNotificationsCategories() {
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun removeNotificationsCategories() {
         val context = SalesforceSDKManager.getInstance().appContext
         context.getSystemService(NotificationManager::class.java).run {
             deleteNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
@@ -312,7 +313,8 @@ open class PushService {
      * account.
      * @param userAccount the user account that's performing registration
      */
-    private fun fetchNotificationsTypes(
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun fetchNotificationsTypes(
         userAccount: UserAccount
     ): NotificationsTypesResponseBody? {
         val instanceHost = userAccount.instanceServer.toUri().host ?: return null
@@ -345,7 +347,8 @@ open class PushService {
         "unused",
         "UNUSED_PARAMETER"
     )
-    protected open fun onPushNotificationRegistrationStatus(
+    @VisibleForTesting(otherwise = PROTECTED)
+    internal open fun onPushNotificationRegistrationStatus(
         status: Int,
         userAccount: UserAccount?,
     ) {
@@ -606,7 +609,7 @@ open class PushService {
          *
          * @param userAccount The user account or null for all user accounts
          * @param action The push notifications registration action
-         * @param pushNotificationsRegistrationType Optionally, a specific
+         * @param pushNotificationsReRegistrationType Optionally, a specific
          * push notification registration type.  Defaults to the current
          * push notification registration type applied to this class
          * @param delayDays For registration actions, the interval in days
@@ -616,7 +619,7 @@ open class PushService {
         internal fun enqueuePushNotificationsRegistrationWork(
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
-            pushNotificationsRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
+            pushNotificationsReRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
             delayDays: Long?,
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
@@ -630,7 +633,7 @@ open class PushService {
                 .build()
 
             if (action == Register) {
-                when (pushNotificationsRegistrationType) {
+                when (pushNotificationsReRegistrationType) {
                     ReRegistrationDisabled -> {
                         /* Intentionally Blank */
                     }

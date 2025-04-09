@@ -8,11 +8,15 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest
-import com.salesforce.androidsdk.accounts.UserAccountTest
+import com.salesforce.androidsdk.accounts.UserAccountTest.createTestAccount
 import com.salesforce.androidsdk.push.PushMessaging
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import org.junit.After
 import org.junit.Assert
@@ -70,6 +74,42 @@ class PushMessagingTest {
         PushMessaging.clearNotificationsTypes(user)
 
         Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+    }
+
+    @Test
+    fun testEnqueuePushNotificationsRegistrationWork() {
+
+        PushService.enqueuePushNotificationsRegistrationWork(
+            createTestAccount(),
+            Register,
+            ReRegistrationDisabled,
+            0
+        )
+
+        PushService.enqueuePushNotificationsRegistrationWork(
+            createTestAccount(),
+            Deregister,
+            ReRegistrationDisabled,
+            0
+        )
+    }
+
+    @Test
+    fun testFetchNotificationsTypes() {
+        PushService().fetchNotificationsTypes(createTestAccount())
+    }
+
+    @Test
+    fun testOnPushNotificationRegistrationStatus() {
+        PushService().onPushNotificationRegistrationStatus(
+            REGISTRATION_STATUS_SUCCEEDED,
+            createTestAccount()
+        )
+
+        PushService().onPushNotificationRegistrationStatus(
+            UNREGISTRATION_STATUS_SUCCEEDED,
+            createTestAccount()
+        )
     }
 
     @Test
@@ -140,15 +180,20 @@ class PushMessagingTest {
     @Test
     fun testRefreshNotificationsTypes() {
         PushService().refreshNotificationsTypes(REGISTRATION_STATUS_SUCCEEDED, null)
-        PushService().refreshNotificationsTypes(REGISTRATION_STATUS_SUCCEEDED, UserAccountTest.createTestAccount())
+        PushService().refreshNotificationsTypes(REGISTRATION_STATUS_SUCCEEDED, createTestAccount())
         PushService().refreshNotificationsTypes(UNREGISTRATION_STATUS_SUCCEEDED, null)
-        PushService().refreshNotificationsTypes(UNREGISTRATION_STATUS_SUCCEEDED, UserAccountTest.createTestAccount())
+        PushService().refreshNotificationsTypes(UNREGISTRATION_STATUS_SUCCEEDED, createTestAccount())
     }
 
     @Test
     fun testRegisterNotificationChannels() {
 
         PushService().registerNotificationChannels(NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON))
+    }
+
+    @Test
+    fun testRemoveNotificationsCategories() {
+        PushService().removeNotificationsCategories()
     }
 
     @Test
@@ -182,7 +227,7 @@ class PushMessagingTest {
      * @return UserAccount.
      */
     private fun createTestAccountInAccountManager(): UserAccount {
-        val userAccount = UserAccountTest.createTestAccount()
+        val userAccount = createTestAccount()
         userAccMgr?.createAccount(userAccount)
         return userAccount
     }
