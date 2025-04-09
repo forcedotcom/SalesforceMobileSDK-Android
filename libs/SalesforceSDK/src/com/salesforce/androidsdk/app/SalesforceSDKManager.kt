@@ -622,10 +622,12 @@ open class SalesforceSDKManager protected constructor(
      */
     fun getNotificationsType(
         type: String
-    ) = getNotificationsTypes(
-        userAccountManager.currentUser
-    )?.notificationTypes?.firstOrNull { notificationType ->
-        notificationType.type == type
+    ) = userAccountManager.currentUser?.let { currentUser ->
+        getNotificationsTypes(
+            currentUser
+        )?.notificationTypes?.firstOrNull { notificationType ->
+            notificationType.type == type
+        }
     }
 
     /**

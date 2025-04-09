@@ -71,13 +71,19 @@ class PushMessagingTest {
 
     @Test
     fun testGetNotificationsTypesViaSdkManager() {
+        var notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+            "actionable_notif_test_type"
+        )
+
+        Assert.assertNull(notificationsType)
+
         createTestAccountInAccountManager()
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
             notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
         )
 
-        val notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+        notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
             "actionable_notif_test_type"
         )
 
