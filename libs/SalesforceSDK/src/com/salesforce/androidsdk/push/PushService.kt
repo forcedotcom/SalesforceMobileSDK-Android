@@ -32,6 +32,8 @@ import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PRIVATE
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.core.net.toUri
 import androidx.work.Constraints
 import androidx.work.Data
@@ -219,7 +221,7 @@ open class PushService {
      * `REGISTRATION_STATUS_XXX` constants
      * @param userAccount the user account that's performing registration
      */
-    @VisibleForTesting
+    @VisibleForTesting(otherwise = PRIVATE)
     internal fun onPushNotificationRegistrationStatusInternal(
         status: Int,
         userAccount: UserAccount?
@@ -261,7 +263,8 @@ open class PushService {
      * @param notificationsTypesResponseBody The Salesforce notifications API
      * notifications types
      */
-    private fun registerNotificationChannels(
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun registerNotificationChannels(
         notificationsTypesResponseBody: NotificationsTypesResponseBody
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
@@ -576,10 +579,13 @@ open class PushService {
          */
         private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME = "Salesforce Notifications"
 
-        @VisibleForTesting
+        @VisibleForTesting(otherwise = PROTECTED)
         internal const val REGISTRATION_STATUS_SUCCEEDED = 0
+        @VisibleForTesting(otherwise = PROTECTED)
         internal const val REGISTRATION_STATUS_FAILED = 1
+        @VisibleForTesting(otherwise = PROTECTED)
         internal const val UNREGISTRATION_STATUS_SUCCEEDED = 2
+        @VisibleForTesting(otherwise = PROTECTED)
         internal const val UNREGISTRATION_STATUS_FAILED = 3
 
         /**

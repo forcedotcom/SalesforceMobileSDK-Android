@@ -146,6 +146,12 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testRegisterNotificationChannels() {
+
+        PushService().registerNotificationChannels(NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON))
+    }
+
+    @Test
     fun testSetNotificationsTypes() {
 
         PushMessaging.setNotificationTypes(
