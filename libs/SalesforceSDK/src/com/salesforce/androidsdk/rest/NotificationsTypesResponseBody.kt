@@ -110,7 +110,7 @@ data class NotificationsTypesResponseBody(
                 if (actions != null) {
                     if (other.actions == null) return false
                     if (!actions.contentEquals(other.actions)) return false
-µπ                } else if (other.actions != null) return false
+                } else if (other.actions != null) return false
 
                 return true
             }
