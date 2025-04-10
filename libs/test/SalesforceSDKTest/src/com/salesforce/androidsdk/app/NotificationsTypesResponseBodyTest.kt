@@ -59,6 +59,9 @@ class NotificationsTypesResponseBodyTest {
 
         val valueDefault = NotificationsTypesResponseBody()
 
+        @Suppress("KotlinConstantConditions")
+        Assert.assertTrue(value == value)
+        Assert.assertFalse(value.equals("Unrelated Type"))
         Assert.assertFalse(value == valueDefault)
         Assert.assertNotEquals(value.hashCode(), valueDefault.hashCode())
     }
