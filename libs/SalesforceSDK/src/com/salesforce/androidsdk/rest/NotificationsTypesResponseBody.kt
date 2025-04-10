@@ -106,6 +106,7 @@ data class NotificationsTypesResponseBody(
 
                 other as ActionGroup
 
+                if (name != other.name) return false
                 if (actions != null) {
                     if (other.actions == null) return false
                     if (!actions.contentEquals(other.actions)) return false
@@ -115,7 +116,9 @@ data class NotificationsTypesResponseBody(
             }
 
             override fun hashCode(): Int {
-                return actions?.contentHashCode() ?: 0
+                var result = name?.hashCode() ?: 0
+                result = 31 * result + (actions?.contentHashCode() ?: 0)
+                return result
             }
 
             @Serializable
