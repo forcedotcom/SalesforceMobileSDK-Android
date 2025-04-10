@@ -69,6 +69,7 @@ class NotificationsTypesResponseBodyTest {
 
         assertFalse((value.copy(notificationTypes = null).equals(value)))
         assertFalse(value.equals(value.copy(notificationTypes = null)))
+        assertFalse(value.equals(value.copy(notificationTypes = arrayOf())))
 
         assertFalse(value == valueDefault)
         assertNotEquals(value.hashCode(), valueDefault.hashCode())
@@ -78,6 +79,7 @@ class NotificationsTypesResponseBodyTest {
             assertFalse(notificationType.equals(null))
             assertFalse(notificationType.equals("Unrelated Type"))
             assertFalse(notificationType.equals(notificationType.copy(actionGroups = null)))
+            assertFalse(notificationType.equals(notificationType.copy(actionGroups = arrayOf())))
             assertFalse(notificationType.copy(actionGroups = null).equals(notificationType))
             assertFalse(notificationType.hashCode() == notificationType.copy(actionGroups = null).hashCode())
             assertFalse(notificationType.equals(notificationType.copy(apiName = null)))
@@ -94,6 +96,7 @@ class NotificationsTypesResponseBodyTest {
                 assertFalse(actionGroup.equals(actionGroup.copy(name = null)))
                 assertFalse(actionGroup.hashCode() == actionGroup.copy(name = null).hashCode())
                 assertFalse(actionGroup.equals(actionGroup.copy(actions = null)))
+                assertFalse(actionGroup.equals(actionGroup.copy(actions = arrayOf())))
                 assertFalse(actionGroup.copy(actions = null).equals(actionGroup))
                 assertFalse(actionGroup.hashCode() == actionGroup.copy(actions = null).hashCode())
 
