@@ -63,6 +63,7 @@ class SalesforceActionableNotificationContentTest {
         )
 
         Assert.assertTrue(value == other)
+        Assert.assertEquals(value.sourceJson, other.sourceJson)
         Assert.assertEquals(value.hashCode(), other.hashCode())
 
         val valueDefault = SalesforceActionableNotificationContent(
