@@ -32,7 +32,7 @@ class NotificationsActionsResponseBodyTest {
         )
 
         Assert.assertTrue(value == other)
-        Assert.assertEquals(value.sourceJson, other.sourceJson)
+        Assert.assertEquals(json, other.sourceJson)
         Assert.assertEquals(value.hashCode(), other.hashCode())
 
         val valueDefault = NotificationsActionsResponseBody(
