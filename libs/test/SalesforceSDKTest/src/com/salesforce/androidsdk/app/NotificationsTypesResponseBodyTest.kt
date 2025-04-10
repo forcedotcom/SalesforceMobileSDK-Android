@@ -9,7 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Tests for `PushMessaging`.
+ * Tests for `NotificationsTypesResponseBodyTest`.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
