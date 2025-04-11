@@ -175,6 +175,51 @@ class PushMessagingTest {
         }
 
 
+        val restResponseFailureEmpty = mockk<RestResponse>()
+        every { restResponseFailureEmpty.asString() } returns encodeToString(
+            JsonArray.serializer(),
+            JsonArray(listOf())
+        )
+        every { restResponseFailureEmpty.isSuccess } returns false
+
+        val restClientFailureEmpty = mockk<RestClient>()
+        every { restClientFailureEmpty.sendSync(any()) } returns restResponseFailureEmpty
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            PushService().fetchNotificationsTypes(
+                apiHostName = "",
+                restClient = restClientFailureEmpty,
+                userAccount = createTestAccount()
+            )
+        }
+
+
+        val restResponseFailureNullProperties = mockk<RestResponse>()
+        every { restResponseFailureNullProperties.asString() } returns encodeToString(
+            JsonArray.serializer(),
+            JsonArray(
+                listOf(
+                    Json.encodeToJsonElement(
+                        NotificationsApiErrorResponseBody.serializer(),
+                        NotificationsApiErrorResponseBody()
+                    )
+                )
+            )
+        )
+        every { restResponseFailureNullProperties.isSuccess } returns false
+
+        val restClientFailureNullProperties = mockk<RestClient>()
+        every { restClientFailureNullProperties.sendSync(any()) } returns restResponseFailureNullProperties
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            PushService().fetchNotificationsTypes(
+                apiHostName = "",
+                restClient = restClientFailureNullProperties,
+                userAccount = createTestAccount()
+            )
+        }
+
+
         ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
 
@@ -334,6 +379,53 @@ class PushMessagingTest {
                 actionKey = "test_action_key",
                 instanceHost = "",
                 restClient = restClientFailure
+            )
+        }
+
+
+        val restResponseFailureEmpty = mockk<RestResponse>()
+        every { restResponseFailureEmpty.asString() } returns encodeToString(
+            JsonArray.serializer(),
+            JsonArray(listOf())
+        )
+        every { restResponseFailureEmpty.isSuccess } returns false
+
+        val restClientFailureEmpty = mockk<RestClient>()
+        every { restClientFailureEmpty.sendSync(any()) } returns restResponseFailureEmpty
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            salesforceSDKManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key",
+                instanceHost = "",
+                restClient = restClientFailureEmpty
+            )
+        }
+
+
+        val restResponseFailureNullProperties = mockk<RestResponse>()
+        every { restResponseFailureNullProperties.asString() } returns encodeToString(
+            JsonArray.serializer(),
+            JsonArray(
+                listOf(
+                    Json.encodeToJsonElement(
+                        NotificationsApiErrorResponseBody.serializer(),
+                        NotificationsApiErrorResponseBody()
+                    )
+                )
+            )
+        )
+        every { restResponseFailureNullProperties.isSuccess } returns false
+
+        val restClientFailureNullProperties = mockk<RestClient>()
+        every { restClientFailureNullProperties.sendSync(any()) } returns restResponseFailureNullProperties
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            salesforceSDKManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key",
+                instanceHost = "",
+                restClient = restClientFailureNullProperties
             )
         }
 
