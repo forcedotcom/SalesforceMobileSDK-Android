@@ -1307,7 +1307,7 @@ open class SalesforceSDKManager protected constructor(
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
-            "Current User", usersToString(userAccountManager.cachedCurrentUser), // TODO: Investigate crash in developer support show current user action. ECJ20250410
+            "Current User", usersToString(userAccountManager.cachedCurrentUser),
             "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
