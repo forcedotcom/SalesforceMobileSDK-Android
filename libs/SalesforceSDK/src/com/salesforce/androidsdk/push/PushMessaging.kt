@@ -298,11 +298,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            putString(REGISTRATION_ID, registrationId)
-        }
+        val editor = prefs.edit()
+        editor.putString(REGISTRATION_ID, registrationId)
+        editor.apply()
     }
 
     /**
@@ -316,7 +316,7 @@ object PushMessaging {
     fun isRegistered(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         return prefs.getString(REGISTRATION_ID, null) != null
     }
@@ -331,11 +331,11 @@ object PushMessaging {
     fun clearSFDCRegistrationInfo(context: Context, account: UserAccount?) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            remove(DEVICE_ID)
-        }
+        val editor = prefs.edit()
+        editor.remove(DEVICE_ID)
+        editor.apply()
     }
 
     /**
@@ -349,7 +349,7 @@ object PushMessaging {
     fun isRegisteredWithSFDC(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         return prefs.getString(DEVICE_ID, null) != null
     }
@@ -365,7 +365,7 @@ object PushMessaging {
     fun getDeviceId(context: Context, account: UserAccount?): String? {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         return prefs.getString(DEVICE_ID, null)
     }
@@ -385,11 +385,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime)
-        }
+        val editor = prefs.edit()
+        editor.putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime)
+        editor.apply()
     }
 
     /**
@@ -403,7 +403,7 @@ object PushMessaging {
     fun isInProgress(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         return prefs.getBoolean(IN_PROGRESS, false)
     }
@@ -418,11 +418,11 @@ object PushMessaging {
     fun clearRegistrationInfo(context: Context, account: UserAccount?) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            clear()
-        }
+        val editor = prefs.edit()
+        editor.clear()
+        editor.apply()
     }
 
     /**
@@ -440,14 +440,14 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            putString(REGISTRATION_ID, registrationId)
-            putString(DEVICE_ID, deviceId)
-            putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
-            putBoolean(IN_PROGRESS, false)
-        }
+        val editor = prefs.edit()
+        editor.putString(REGISTRATION_ID, registrationId)
+        editor.putString(DEVICE_ID, deviceId)
+        editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
+        editor.putBoolean(IN_PROGRESS, false)
+        editor.apply()
     }
 
     /**
@@ -518,11 +518,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
-        prefs.edit {
-            putBoolean(IN_PROGRESS, true)
-        }
+        val editor = prefs.edit()
+        editor.putBoolean(IN_PROGRESS, true)
+        editor.apply()
     }
 
     private fun runPushService(
@@ -534,7 +534,7 @@ object PushMessaging {
             enqueuePushNotificationsRegistrationWork(
                 userAccount = account,
                 action = action,
-                pushNotificationsReRegistrationType = ReRegistrationOnAppForeground,
+                pushNotificationsRegistrationType = ReRegistrationOnAppForeground,
                 delayDays = null
             )
         }

@@ -427,12 +427,7 @@ open class PushService {
 
                 response.consume()
                 sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-                onPushNotificationRegistrationStatusInternal(
-                    status = status,
-                    apiHostName = account.instanceServer,
-                    restClient = restClient,
-                    userAccount = account
-                )
+                onPushNotificationRegistrationStatusInternal(status = status, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
 
                 return id
             }
@@ -440,12 +435,7 @@ open class PushService {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatusInternal(
-            status = REGISTRATION_STATUS_FAILED,
-            apiHostName = account.instanceServer,
-            restClient = getRestClient(account) ?: return null,
-            userAccount = account
-        )
+        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = getRestClient(account) ?: return null, userAccount = account)
 
         return null
     }
@@ -501,21 +491,11 @@ open class PushService {
                     registeredId,
                     restClient
                 ).consume()
-                onPushNotificationRegistrationStatusInternal(
-                    status = UNREGISTRATION_STATUS_SUCCEEDED,
-                    apiHostName = account.instanceServer,
-                    restClient = restClient,
-                    userAccount = account
-                )
+                onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
             }
         }.onFailure { throwable ->
             getRestClient(account)?.let { restClient ->
-                onPushNotificationRegistrationStatusInternal(
-                    UNREGISTRATION_STATUS_FAILED,
-                    account.instanceServer,
-                    restClient,
-                    account
-                )
+                onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
             }
             SalesforceSDKLogger.e(
                 TAG,
@@ -642,7 +622,7 @@ open class PushService {
          *
          * @param userAccount The user account or null for all user accounts
          * @param action The push notifications registration action
-         * @param pushNotificationsReRegistrationType Optionally, a specific
+         * @param pushNotificationsRegistrationType Optionally, a specific
          * push notification registration type.  Defaults to the current
          * push notification registration type applied to this class
          * @param delayDays For registration actions, the interval in days
@@ -652,7 +632,7 @@ open class PushService {
         internal fun enqueuePushNotificationsRegistrationWork(
             userAccount: UserAccount?,
             action: PushNotificationsRegistrationAction,
-            pushNotificationsReRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
+            pushNotificationsRegistrationType: PushNotificationReRegistrationType = this.pushNotificationsRegistrationType,
             delayDays: Long?,
         ) {
             val context = SalesforceSDKManager.getInstance().appContext
@@ -666,7 +646,7 @@ open class PushService {
                 .build()
 
             if (action == Register) {
-                when (pushNotificationsReRegistrationType) {
+                when (pushNotificationsRegistrationType) {
                     ReRegistrationDisabled -> {
                         /* Intentionally Blank */
                     }
@@ -702,7 +682,7 @@ open class PushService {
                 OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                     .setInputData(workData)
                     .setConstraints(constraints)
-                    .build().also { workRequest ->
+                    .build().also {  workRequest ->
                         workManager.enqueueUniqueWork(
                             PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME,
                             REPLACE,
