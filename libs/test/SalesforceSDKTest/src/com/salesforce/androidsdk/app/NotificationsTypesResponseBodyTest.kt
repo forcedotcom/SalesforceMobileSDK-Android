@@ -69,8 +69,9 @@ class NotificationsTypesResponseBodyTest {
 
         assertFalse((value.copy(notificationTypes = null).equals(value)))
         assertFalse(value.equals(value.copy(notificationTypes = null)))
-//        assertFalse(value.copy(notificationTypes = null).equals(value.copy(notificationTypes = null))) // TODO: Is this the last case for null coverage on collection members? ECJ20250410
+        assertTrue(value.copy(notificationTypes = null).equals(value.copy(notificationTypes = null))) // TODO: Is this the last case for null coverage on collection members? ECJ20250410
         assertFalse(value.equals(value.copy(notificationTypes = arrayOf())))
+        assertFalse(value.copy(notificationTypes = arrayOf()).equals(value))
 
         assertFalse(value == valueDefault)
         assertNotEquals(value.hashCode(), valueDefault.hashCode())
