@@ -81,11 +81,11 @@ class NotificationsApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             NotificationsTypesResponseBody.fromJson(responseBodyString)
         } else {
-            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            val errorResponseBody = responseBodyString?.let { NotificationsApiErrorResponseBody.fromJson(responseBodyString) }
             throw NotificationsApiException(
-                errorCode = errorResponseBody.firstOrNull()?.errorCode,
-                message = errorResponseBody.firstOrNull()?.message,
-                messageCode = errorResponseBody.firstOrNull()?.messageCode,
+                errorCode = errorResponseBody?.firstOrNull()?.errorCode,
+                message = errorResponseBody?.firstOrNull()?.message ?: "No error response body was provided by the API endpoint.",
+                messageCode = errorResponseBody?.firstOrNull()?.messageCode,
                 source = responseBodyString
             )
         }
@@ -119,11 +119,11 @@ class NotificationsApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             NotificationsActionsResponseBody.fromJson(responseBodyString)
         } else {
-            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            val errorResponseBody = responseBodyString?.let { NotificationsApiErrorResponseBody.fromJson(responseBodyString) }
             throw NotificationsApiException(
-                errorCode = errorResponseBody.firstOrNull()?.errorCode,
-                message = errorResponseBody.firstOrNull()?.message,
-                messageCode = errorResponseBody.firstOrNull()?.messageCode,
+                errorCode = errorResponseBody?.firstOrNull()?.errorCode,
+                message = errorResponseBody?.firstOrNull()?.message ?: "No error response body was provided by the API endpoint.",
+                messageCode = errorResponseBody?.firstOrNull()?.messageCode,
                 source = responseBodyString
             )
         }

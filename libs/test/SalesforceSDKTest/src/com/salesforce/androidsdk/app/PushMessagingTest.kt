@@ -106,6 +106,7 @@ class PushMessagingTest {
 
     @Test
     fun testFetchNotificationsTypes() {
+
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns NOTIFICATIONS_TYPES_JSON
         every { restResponse.isSuccess } returns true
@@ -118,12 +119,31 @@ class PushMessagingTest {
             userAccount = createTestAccount()
         )
 
+
         ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
+
+
         PushService().fetchNotificationsTypes(
             apiHostName = "",
             restClient = restClient,
             userAccount = createTestAccount()
         )
+
+
+        val restResponseNullResponseBodyString = mockk<RestResponse>()
+        every { restResponseNullResponseBodyString.asString() } returns null
+        every { restResponseNullResponseBodyString.isSuccess } returns true
+        val restClientNullResponseBodyString = mockk<RestClient>()
+        every { restClientNullResponseBodyString.sendSync(any()) } returns restResponseNullResponseBodyString
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            PushService().fetchNotificationsTypes(
+                apiHostName = "",
+                restClient = restClientNullResponseBodyString,
+                userAccount = createTestAccount()
+            )
+        }
+
 
         val restResponseFailure = mockk<RestResponse>()
         every { restResponseFailure.asString() } returns encodeToString(
@@ -153,6 +173,7 @@ class PushMessagingTest {
                 userAccount = createTestAccount()
             )
         }
+
 
         ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
@@ -222,6 +243,7 @@ class PushMessagingTest {
     fun testInvokeServerNotificationActionViaSdkManager() {
         val salesforceSDKManager = SalesforceSDKManager.getInstance()
 
+
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
             NotificationsActionsResponseBody.serializer(),
@@ -241,7 +263,9 @@ class PushMessagingTest {
         )
         Assert.assertNull(notificationsActionsResponseBody)
 
+
         createTestAccountInAccountManager()
+
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
             notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
@@ -255,7 +279,9 @@ class PushMessagingTest {
         )
         Assert.assertNull(notificationsActionsResponseBody)
 
+
         ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
+
 
         notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
@@ -264,6 +290,22 @@ class PushMessagingTest {
             restClient = restClient
         )
         Assert.assertEquals(notificationsActionsResponseBody?.message, "test_message")
+
+
+        val restResponseNullResponseBodyString = mockk<RestResponse>()
+        every { restResponseNullResponseBodyString.asString() } returns null
+        every { restResponseNullResponseBodyString.isSuccess } returns true
+        val restClientNullResponseBodyString = mockk<RestClient>()
+        every { restClientNullResponseBodyString.sendSync(any()) } returns restResponseNullResponseBodyString
+
+        Assert.assertThrows(NotificationsApiException::class.java) {
+            salesforceSDKManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key",
+                instanceHost = "",
+                restClient = restClientNullResponseBodyString
+            )
+        }
 
         val restResponseFailure = mockk<RestResponse>()
         every { restResponseFailure.asString() } returns encodeToString(
@@ -294,6 +336,7 @@ class PushMessagingTest {
                 restClient = restClientFailure
             )
         }
+
 
         ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
