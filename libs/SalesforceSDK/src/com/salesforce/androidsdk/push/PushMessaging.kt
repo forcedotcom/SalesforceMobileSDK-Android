@@ -222,7 +222,7 @@ object PushMessaging {
     fun getRegistrationId(context: Context, account: UserAccount?): String? {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         return prefs.getString(REGISTRATION_ID, null)
     }
