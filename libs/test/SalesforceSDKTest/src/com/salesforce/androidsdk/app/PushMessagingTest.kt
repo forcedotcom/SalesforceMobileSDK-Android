@@ -16,7 +16,7 @@ import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
-import com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER_TEST
+import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiException
@@ -118,7 +118,7 @@ class PushMessagingTest {
             userAccount = createTestAccount()
         )
 
-        VERSION_NUMBER_TEST = "v64.0"
+        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
         PushService().fetchNotificationsTypes(
             apiHostName = "",
             restClient = restClient,
@@ -154,7 +154,7 @@ class PushMessagingTest {
             )
         }
 
-        VERSION_NUMBER_TEST = null
+        ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
 
     @Test
@@ -255,7 +255,7 @@ class PushMessagingTest {
         )
         Assert.assertNull(notificationsActionsResponseBody)
 
-        VERSION_NUMBER_TEST = "v64.0"
+        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
@@ -295,7 +295,7 @@ class PushMessagingTest {
             )
         }
 
-        VERSION_NUMBER_TEST = null
+        ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
 
     @Test
