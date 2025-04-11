@@ -26,7 +26,11 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import static androidx.annotation.VisibleForTesting.PRIVATE;
+
 import android.content.Context;
+
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -38,6 +42,10 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 public class ApiVersionStrings {
 
     public static final String VERSION_NUMBER = "v63.0";
+
+    @VisibleForTesting(otherwise = PRIVATE)
+    public static String VERSION_NUMBER_TEST = null;
+
     public static final String API_PREFIX = "/services/data/";
 
     public static String getBasePath() {
@@ -62,6 +70,9 @@ public class ApiVersionStrings {
         String apiVersion = VERSION_NUMBER;
         if (context != null) {
             apiVersion = context.getString(R.string.api_version);
+        }
+        if (VERSION_NUMBER_TEST != null) {
+            apiVersion = VERSION_NUMBER_TEST;
         }
         return apiVersion;
     }

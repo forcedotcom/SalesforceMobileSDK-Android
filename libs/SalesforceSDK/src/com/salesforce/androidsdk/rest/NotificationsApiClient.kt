@@ -50,6 +50,12 @@ class NotificationsApiClient(
     private val restClient: RestClient
 ) {
 
+    /** The application context.  TODO: Remove context members. ECJ20250410 */
+    private val context = SalesforceSDKManager.getInstance().appContext
+
+    /** The maximum Salesforce API version */
+    private val apiVersion = ApiVersionStrings.getVersionNumber(context)
+
     /**
      * Submit a request to the Notifications API Types endpoint.
      * @return The endpoint's response
@@ -57,12 +63,9 @@ class NotificationsApiClient(
     @Suppress("unused")
     @Throws(SfapApiException::class)
     fun fetchNotificationsTypes(): NotificationsTypesResponseBody? {
-        val context = SalesforceSDKManager.getInstance().appContext
 
         // Submit the request.
-        val apiVersion = ApiVersionStrings.getVersionNumber(context)
-        // TODO: Remove once MSDK default API version is 64 or greater.
-        if (apiVersion < "v64.0") {
+        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
             SalesforceSDKLogger.w(TAG, "Cannot request Salesforce push notifications types with API less than v64.0")
             return null
         }
@@ -97,12 +100,9 @@ class NotificationsApiClient(
         notificationId: String,
         actionKey: String
     ): NotificationsActionsResponseBody? {
-        val context = SalesforceSDKManager.getInstance().appContext
 
         // Submit the request.
-        val apiVersion = ApiVersionStrings.getVersionNumber(context)
-        // TODO: Remove once MSDK default API version is 64 or greater.
-        if (apiVersion < "v64.0") {
+        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
             SalesforceSDKLogger.w(TAG, "Cannot submit Salesforce Notifications API action with API less than v64.0")
             return null
         }

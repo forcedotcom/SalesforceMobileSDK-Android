@@ -34,7 +34,6 @@ import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
-import androidx.core.net.toUri
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -219,15 +218,24 @@ open class PushService {
      *
      * @param status the registration status. One of the
      * `REGISTRATION_STATUS_XXX` constants
+     * @param restClient The REST client to use for network APIs
+     * @param apiHostName The network API hostname
      * @param userAccount the user account that's performing registration
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun onPushNotificationRegistrationStatusInternal(
         status: Int,
+        apiHostName: String,
+        restClient: RestClient,
         userAccount: UserAccount?
     ) {
         // Fetch and store or clear Salesforce notifications types, as applicable.
-        refreshNotificationsTypes(status, userAccount)
+        refreshNotificationsTypes(
+            status = status,
+            apiHostName = apiHostName,
+            restClient = restClient,
+            userAccount = userAccount
+        )
 
         // Allow subclass implementation.
         onPushNotificationRegistrationStatus(status, userAccount)
@@ -238,16 +246,24 @@ open class PushService {
      * provided Salesforce push notification registration status.
      * @param status the registration status. One of the
      * `REGISTRATION_STATUS_XXX` constants
+     * @param restClient The REST client to use for network APIs
+     * @param apiHostName The network API hostname
      * @param userAccount the user account that's performing registration
      */
     internal fun refreshNotificationsTypes(
         status: Int,
+        apiHostName: String,
+        restClient: RestClient,
         userAccount: UserAccount?
     ) {
         when (status) {
             REGISTRATION_STATUS_SUCCEEDED ->
                 registerNotificationChannels(
-                    fetchNotificationsTypes(userAccount ?: return) ?: return
+                    fetchNotificationsTypes(
+                        apiHostName = apiHostName,
+                        restClient = restClient,
+                        userAccount = userAccount ?: return
+                    ) ?: return
                 )
 
             UNREGISTRATION_STATUS_SUCCEEDED -> {
@@ -311,17 +327,19 @@ open class PushService {
     /**
      * Fetches notifications types and stores them for the provided user
      * account.
-     * @param userAccount the user account that's performing registration
+     * @param restClient The REST client to use for network APIs
+     * @param apiHostName The network API hostname
+     * @param userAccount The user account that's performing registration
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun fetchNotificationsTypes(
+        apiHostName: String,
+        restClient: RestClient,
         userAccount: UserAccount
     ): NotificationsTypesResponseBody? {
-        val instanceHost = userAccount.instanceServer.toUri().host ?: return null
-        val restClient = getRestClient(userAccount) ?: return null
 
         val notificationsTypes = NotificationsApiClient(
-            apiHostName = instanceHost,
+            apiHostName = apiHostName,
             restClient = restClient
         ).fetchNotificationsTypes()
 
@@ -344,8 +362,7 @@ open class PushService {
      */
     @Suppress(
         "MemberVisibilityCanBePrivate",
-        "unused",
-        "UNUSED_PARAMETER"
+        "unused"
     )
     @VisibleForTesting(otherwise = PROTECTED)
     internal open fun onPushNotificationRegistrationStatus(
@@ -410,7 +427,12 @@ open class PushService {
 
                 response.consume()
                 sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-                onPushNotificationRegistrationStatusInternal(status, account)
+                onPushNotificationRegistrationStatusInternal(
+                    status = status,
+                    apiHostName = account.instanceServer,
+                    restClient = restClient,
+                    userAccount = account
+                )
 
                 return id
             }
@@ -418,7 +440,12 @@ open class PushService {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatusInternal(REGISTRATION_STATUS_FAILED, account)
+        onPushNotificationRegistrationStatusInternal(
+            status = REGISTRATION_STATUS_FAILED,
+            apiHostName = account.instanceServer,
+            restClient = getRestClient(account) ?: return null,
+            userAccount = account
+        )
 
         return null
     }
@@ -475,15 +502,21 @@ open class PushService {
                     restClient
                 ).consume()
                 onPushNotificationRegistrationStatusInternal(
-                    UNREGISTRATION_STATUS_SUCCEEDED,
-                    account
+                    status = UNREGISTRATION_STATUS_SUCCEEDED,
+                    apiHostName = account.instanceServer,
+                    restClient = restClient,
+                    userAccount = account
                 )
             }
         }.onFailure { throwable ->
-            onPushNotificationRegistrationStatusInternal(
-                UNREGISTRATION_STATUS_FAILED,
-                account
-            )
+            getRestClient(account)?.let { restClient ->
+                onPushNotificationRegistrationStatusInternal(
+                    UNREGISTRATION_STATUS_FAILED,
+                    account.instanceServer,
+                    restClient,
+                    account
+                )
+            }
             SalesforceSDKLogger.e(
                 TAG,
                 "Push notification un-registration failed",

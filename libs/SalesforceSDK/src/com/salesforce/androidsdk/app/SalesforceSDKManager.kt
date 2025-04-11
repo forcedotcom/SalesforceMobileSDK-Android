@@ -62,7 +62,6 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -639,11 +638,10 @@ open class SalesforceSDKManager protected constructor(
      */
     fun invokeServerNotificationAction(
         notificationId: String,
-        actionKey: String
+        actionKey: String,
+        instanceHost: String,
+        restClient: RestClient
     ): NotificationsActionsResponseBody? {
-        val userAccount: UserAccount? = userAccountManager.currentUser
-        val instanceHost = userAccount?.instanceServer?.toUri()?.host ?: return null
-        val restClient = clientManager.peekRestClient(userAccount)
         return NotificationsApiClient(
             apiHostName = instanceHost,
             restClient = restClient
@@ -1309,7 +1307,7 @@ open class SalesforceSDKManager protected constructor(
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
-            "Current User", usersToString(userAccountManager.cachedCurrentUser),
+            "Current User", usersToString(userAccountManager.cachedCurrentUser), // TODO: Investigate crash in developer support show current user action. ECJ20250410
             "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
