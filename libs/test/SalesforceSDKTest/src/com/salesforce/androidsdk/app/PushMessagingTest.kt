@@ -264,6 +264,12 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testApiVersionStrings() {
+        val result = ApiVersionStrings.getVersionNumber(null)
+        Assert.assertEquals(result, "v63.0")
+    }
+
+    @Test
     fun testGetNotificationsTypesViaSdkManager() {
         var notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
             "actionable_notif_test_type"
@@ -272,6 +278,15 @@ class PushMessagingTest {
         Assert.assertNull(notificationsType)
 
         createTestAccountInAccountManager()
+
+
+        notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+            "actionable_notif_test_type"
+        )
+
+        Assert.assertNull(notificationsType?.apiName)
+
+
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
             notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
@@ -282,12 +297,18 @@ class PushMessagingTest {
         )
 
         Assert.assertEquals("actionable_notif_test_type", notificationsType?.apiName)
-    }
 
-    @Test
-    fun testApiVersionStrings() {
-        val x = ApiVersionStrings.getVersionNumber(null)
-        Assert.assertEquals(x, "v63.0")
+
+        PushMessaging.setNotificationTypes(
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON).copy(notificationTypes = arrayOf())
+        )
+
+        notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+            "actionable_notif_test_type"
+        )
+
+        Assert.assertNull(notificationsType?.apiName)
     }
 
     @Test
