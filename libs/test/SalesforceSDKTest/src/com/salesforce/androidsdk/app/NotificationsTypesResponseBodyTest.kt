@@ -69,7 +69,7 @@ class NotificationsTypesResponseBodyTest {
 
         assertFalse((value.copy(notificationTypes = null).equals(value)))
         assertFalse(value.equals(value.copy(notificationTypes = null)))
-        assertTrue(value.copy(notificationTypes = null).equals(value.copy(notificationTypes = null))) // TODO: Is this the last case for null coverage on collection members? ECJ20250410
+        assertTrue(value.copy(notificationTypes = null).equals(value.copy(notificationTypes = null)))
         assertFalse(value.equals(value.copy(notificationTypes = arrayOf())))
         assertFalse(value.copy(notificationTypes = arrayOf()).equals(value))
 
@@ -80,11 +80,15 @@ class NotificationsTypesResponseBodyTest {
             assertTrue(notificationType.equals(notificationType))
             assertFalse(notificationType.equals(null))
             assertFalse(notificationType.equals("Unrelated Type"))
-            assertFalse(notificationType.equals(notificationType.copy(actionGroups = null)))
-            assertFalse(notificationType.equals(notificationType.copy(actionGroups = arrayOf())))
+
             assertFalse(notificationType.copy(actionGroups = null).equals(notificationType))
-            //assertFalse(notificationType.copy(actionGroups = null).equals(notificationType.copy(actionGroups = null)))  // TODO: Is this the last case for null coverage on collection members? ECJ20250410
+            assertFalse(notificationType.equals(notificationType.copy(actionGroups = null)))
+            assertTrue(notificationType.copy(actionGroups = null).equals(notificationType.copy(actionGroups = null)))
+            assertFalse(notificationType.equals(notificationType.copy(actionGroups = arrayOf())))
+            assertFalse(notificationType.copy(actionGroups = arrayOf()).equals(notificationType))
+
             assertFalse(notificationType.hashCode() == notificationType.copy(actionGroups = null).hashCode())
+
             assertFalse(notificationType.equals(notificationType.copy(apiName = null)))
             assertFalse(notificationType.hashCode() == notificationType.copy(apiName = null).hashCode())
             assertFalse(notificationType.equals(notificationType.copy(label = null)))
@@ -98,10 +102,13 @@ class NotificationsTypesResponseBodyTest {
                 assertFalse(actionGroup.equals("Unrelated Type"))
                 assertFalse(actionGroup.equals(actionGroup.copy(name = null)))
                 assertFalse(actionGroup.hashCode() == actionGroup.copy(name = null).hashCode())
-                assertFalse(actionGroup.equals(actionGroup.copy(actions = null)))
-                assertFalse(actionGroup.equals(actionGroup.copy(actions = arrayOf())))
+
                 assertFalse(actionGroup.copy(actions = null).equals(actionGroup))
-                //assertFalse(actionGroup.copy(actions = null).equals(actionGroup.copy(actions = null))) // TODO: Is this the last case for null coverage on collection members? ECJ20250410
+                assertFalse(actionGroup.equals(actionGroup.copy(actions = null)))
+                assertTrue(actionGroup.copy(actions = null).equals(actionGroup.copy(actions = null)))
+                assertFalse(actionGroup.equals(actionGroup.copy(actions = arrayOf())))
+                assertFalse(actionGroup.copy(actions = arrayOf()).equals(actionGroup))
+
                 assertFalse(actionGroup.hashCode() == actionGroup.copy(actions = null).hashCode())
 
                 actionGroup.actions?.first()?.let { action ->

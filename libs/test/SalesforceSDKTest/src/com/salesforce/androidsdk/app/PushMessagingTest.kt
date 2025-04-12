@@ -285,9 +285,14 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testApiVersionStrings() {
+        val x = ApiVersionStrings.getVersionNumber(null)
+        Assert.assertEquals(x, "v63.0")
+    }
+
+    @Test
     fun testInvokeServerNotificationActionViaSdkManager() {
         val salesforceSDKManager = SalesforceSDKManager.getInstance()
-
 
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
