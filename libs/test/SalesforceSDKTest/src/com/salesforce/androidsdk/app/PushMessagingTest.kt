@@ -271,13 +271,16 @@ class PushMessagingTest {
 
     @Test
     fun testGetNotificationsTypesViaSdkManager() {
+
         var notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
             "actionable_notif_test_type"
         )
 
         Assert.assertNull(notificationsType)
 
+
         createTestAccountInAccountManager()
+        PushMessaging.clearNotificationsTypes(SalesforceSDKManager.getInstance().userAccountManager.currentUser)
 
 
         notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
@@ -472,6 +475,12 @@ class PushMessagingTest {
         val restClient = mockk<RestClient>()
         every { restClient.sendSync(any()) } returns restResponse
 
+        PushService().refreshNotificationsTypes(
+            status = REGISTRATION_STATUS_SUCCEEDED,
+            apiHostName = "",
+            restClient = restClient,
+            userAccount = null
+        )
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
             apiHostName = "",
