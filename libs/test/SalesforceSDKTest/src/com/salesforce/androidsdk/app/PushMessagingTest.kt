@@ -476,16 +476,18 @@ class PushMessagingTest {
 
     @Test
     fun testRefreshNotificationsTypes() {
+
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
-            NotificationsActionsResponseBody.serializer(),
-            NotificationsActionsResponseBody(
-                message = "test_message"
-            )
+            NotificationsTypesResponseBody.serializer(),
+            NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON),
         )
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
         every { restClient.sendSync(any()) } returns restResponse
+
+
+        ApiVersionStrings.VERSION_NUMBER_TEST = null
 
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
@@ -493,30 +495,53 @@ class PushMessagingTest {
             restClient = restClient,
             userAccount = null
         )
+
+        Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+
+
+        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
+
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
             apiHostName = "",
             restClient = restClient,
-            userAccount = createTestAccount()
+            userAccount = null
         )
+        Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+
+        createTestAccountInAccountManager()
+
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
             apiHostName = "",
             restClient = restClient,
-            userAccount = createTestAccount()
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
+        Assert.assertEquals(
+            PushMessaging.getNotificationsTypes(SalesforceSDKManager.getInstance().userAccountManager.currentUser),
+            NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
+        )
+
+
         PushService().refreshNotificationsTypes(
             status = UNREGISTRATION_STATUS_SUCCEEDED,
             apiHostName = "",
             restClient = restClient,
             userAccount = null
         )
+        Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+
+
         PushService().refreshNotificationsTypes(
             status = UNREGISTRATION_STATUS_SUCCEEDED,
             apiHostName = "",
             restClient = restClient,
-            userAccount = createTestAccount()
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
+        Assert.assertNull(PushMessaging.getNotificationsTypes(user))
+
+
+        ApiVersionStrings.VERSION_NUMBER_TEST = null
     }
 
     @Test

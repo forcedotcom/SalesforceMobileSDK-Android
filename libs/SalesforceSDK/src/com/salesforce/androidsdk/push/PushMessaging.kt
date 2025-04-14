@@ -269,7 +269,7 @@ object PushMessaging {
     @JvmStatic
     internal fun setNotificationTypes(
         userAccount: UserAccount,
-        notificationsTypes: NotificationsTypesResponseBody
+        notificationsTypes: NotificationsTypesResponseBody?
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
@@ -279,10 +279,12 @@ object PushMessaging {
         sharedPreferences.edit {
             putString(
                 NOTIFICATIONS_TYPES,
-                Json.encodeToString(
-                    NotificationsTypesResponseBody.serializer(),
-                    notificationsTypes
-                )
+                notificationsTypes?.let { notificationsTypes ->
+                    Json.encodeToString(
+                        NotificationsTypesResponseBody.serializer(),
+                        notificationsTypes
+                    )
+                }
             )
         }
     }

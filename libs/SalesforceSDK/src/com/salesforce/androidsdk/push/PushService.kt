@@ -345,7 +345,7 @@ open class PushService {
 
         setNotificationTypes(
             userAccount = userAccount,
-            notificationsTypes = notificationsTypes ?: return null
+            notificationsTypes = notificationsTypes
         )
 
         return notificationsTypes
