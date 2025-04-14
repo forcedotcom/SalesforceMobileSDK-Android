@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.edit
@@ -45,6 +44,7 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.serialization.json.Json
 
 
 /**
@@ -237,7 +237,7 @@ object PushMessaging {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
             getSharedPrefFile(userAccount),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         sharedPreferences.edit { remove(NOTIFICATIONS_TYPES) }
     }
@@ -254,7 +254,7 @@ object PushMessaging {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
             getSharedPrefFile(userAccount),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
 
         return sharedPreferences.getString(NOTIFICATIONS_TYPES, null)?.let { json ->
@@ -274,12 +274,15 @@ object PushMessaging {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
             getSharedPrefFile(userAccount),
-            MODE_PRIVATE
+            Context.MODE_PRIVATE
         )
         sharedPreferences.edit {
             putString(
                 NOTIFICATIONS_TYPES,
-                notificationsTypes.sourceJson
+                Json.encodeToString(
+                    NotificationsTypesResponseBody.serializer(),
+                    notificationsTypes
+                )
             )
         }
     }

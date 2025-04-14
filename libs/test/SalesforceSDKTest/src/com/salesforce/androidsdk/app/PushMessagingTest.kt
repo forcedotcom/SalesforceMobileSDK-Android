@@ -292,14 +292,14 @@ class PushMessagingTest {
 
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
-            notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
+            notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON).copy(notificationTypes = null)
         )
 
         notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
             "actionable_notif_test_type"
         )
 
-        Assert.assertEquals("actionable_notif_test_type", notificationsType?.apiName)
+        Assert.assertNull(notificationsType?.apiName)
 
 
         PushMessaging.setNotificationTypes(
@@ -312,6 +312,18 @@ class PushMessagingTest {
         )
 
         Assert.assertNull(notificationsType?.apiName)
+
+
+        PushMessaging.setNotificationTypes(
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            notificationsTypes = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
+        )
+
+        notificationsType = SalesforceSDKManager.getInstance().getNotificationsType(
+            "actionable_notif_test_type"
+        )
+
+        Assert.assertEquals("actionable_notif_test_type", notificationsType?.apiName)
     }
 
     @Test
