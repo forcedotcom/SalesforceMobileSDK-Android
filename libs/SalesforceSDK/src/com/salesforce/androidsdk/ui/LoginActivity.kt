@@ -97,6 +97,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
@@ -917,6 +918,10 @@ open class LoginActivity : FragmentActivity() {
 
                 viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
                     ?: return@evaluateJavascript
+
+                // Ensure Status Bar Icons are readable no matter which OS theme is used.
+                val useLightIcons = viewModel.dynamicBackgroundTheme.value == DARK
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = useLightIcons
             }.also {
                 if (!viewModel.authFinished.value) {
                     viewModel.loading.value = false
