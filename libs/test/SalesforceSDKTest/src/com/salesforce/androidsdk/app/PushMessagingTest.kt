@@ -1,6 +1,7 @@
 package com.salesforce.androidsdk.app
 
 import android.accounts.AccountManager
+import android.app.NotificationManager
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
@@ -13,6 +14,7 @@ import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService
+import com.salesforce.androidsdk.push.PushService.Companion.NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
@@ -77,8 +79,8 @@ class PushMessagingTest {
         )
 
         Assert.assertEquals(
-            NOTIFICATIONS_TYPES_JSON,
-            PushMessaging.getNotificationsTypes(user)?.sourceJson
+            NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON),
+            PushMessaging.getNotificationsTypes(user)
         )
 
         PushMessaging.clearNotificationsTypes(user)
@@ -546,8 +548,39 @@ class PushMessagingTest {
 
     @Test
     fun testRegisterNotificationChannels() {
+        val notificationsTypesResponseBody = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
+        createTestAccountInAccountManager()
 
-        PushService().registerNotificationChannels(NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON))
+        // Run first time to test initial creation of notification channels.
+        PushService().registerNotificationChannels(notificationsTypesResponseBody)
+
+
+        // Run second time to test re-use of existing channels.
+        PushService().registerNotificationChannels(notificationsTypesResponseBody)
+
+        SalesforceSDKManager.getInstance().appContext.getSystemService(NotificationManager::class.java).run {
+            Assert.assertNotNull(
+                getNotificationChannelGroup(
+                    NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID
+                )
+            )
+            notificationsTypesResponseBody.notificationTypes?.forEach {
+                Assert.assertNotNull(notificationChannels.firstOrNull { notificationChannel ->
+                    notificationChannel.id == it.type
+                })
+            }
+        }
+
+
+        // Test when no notification types are in the data.
+        PushService().removeNotificationsCategories()
+        PushService().registerNotificationChannels(notificationsTypesResponseBody.copy(notificationTypes = null))
+
+        SalesforceSDKManager.getInstance().appContext.getSystemService(NotificationManager::class.java).run {
+            Assert.assertTrue(
+                notificationChannels.isEmpty()
+            )
+        }
     }
 
     @Test
@@ -564,8 +597,8 @@ class PushMessagingTest {
         )
 
         Assert.assertEquals(
-            NOTIFICATIONS_TYPES_JSON,
-            PushMessaging.getNotificationsTypes(user)?.sourceJson
+            NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON),
+            PushMessaging.getNotificationsTypes(user)
         )
     }
 

@@ -586,7 +586,8 @@ open class PushService {
          * The push notification channel group id for push notification channels
          * registered from Salesforce Notification API notifications types
          */
-        private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID = "NOTIFICATION_GROUP_SALESFORCE"
+        @VisibleForTesting(otherwise = PRIVATE)
+        internal const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID = "NOTIFICATION_GROUP_SALESFORCE"
 
         /**
          * The push notification channel group name for push notification
