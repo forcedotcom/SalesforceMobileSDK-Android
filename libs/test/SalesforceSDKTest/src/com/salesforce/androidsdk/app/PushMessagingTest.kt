@@ -271,6 +271,120 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testPerformRegistrationChange() {
+        createTestAccountInAccountManager()
+        PushMessaging.setRegistrationId(
+            context = SalesforceSDKManager.getInstance().appContext,
+            registrationId = "test_registration_id",
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
+        )
+
+        PushService().performRegistrationChange(
+            register = true,
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+        )
+
+        PushService().performRegistrationChange(
+            register = false,
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+        )
+    }
+
+    @Test
+    fun testOnRegistered() {
+        createTestAccountInAccountManager()
+
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponse.consume() } returns Unit
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns HTTP_CREATED
+        every { restResponse.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
+
+        PushService().onRegistered(
+            registrationId = "test_registration_id",
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            restClient = restClient
+        )
+
+
+        val restResponseNullId = mockk<RestResponse>()
+        every { restResponseNullId.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponseNullId.consume() } returns Unit
+        every { restResponseNullId.isSuccess } returns true
+        every { restResponseNullId.statusCode } returns HTTP_CREATED
+        every { restResponseNullId.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClientNullId = mockk<RestClient>()
+        every { restClientNullId.sendSync(any()) } throws Exception()
+
+        PushService().onRegistered(
+            registrationId = "test_registration_id",
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            restClient = restClientNullId
+        )
+
+
+        val restResponseNullUserAccount = mockk<RestResponse>()
+        every { restResponseNullUserAccount.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponseNullUserAccount.consume() } returns Unit
+        every { restResponseNullUserAccount.isSuccess } returns true
+        every { restResponseNullUserAccount.statusCode } returns HTTP_CREATED
+        every { restResponseNullUserAccount.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClientNullUserAccount = mockk<RestClient>()
+        every { restClientNullUserAccount.sendSync(any()) } throws Exception()
+
+        PushService().onRegistered(
+            registrationId = "test_registration_id",
+            account = null,
+            restClient = restClientNullUserAccount
+        )
+
+
+        val restResponseCatchException = mockk<RestResponse>()
+        every { restResponseCatchException.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponseCatchException.consume() } returns Unit
+        every { restResponseCatchException.isSuccess } returns true
+        every { restResponseCatchException.statusCode } returns HTTP_CREATED
+        every { restResponseCatchException.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClientCatchException = mockk<RestClient>()
+        every { restClientCatchException.sendSync(any()) } returns restResponseCatchException
+
+        object : PushService() {
+            override fun onPushNotificationRegistrationStatus(status: Int, userAccount: UserAccount?) {
+                super.onPushNotificationRegistrationStatus(status, userAccount)
+
+                throw Exception("Exception to be caught by PushService.onRegistered without handling.")
+            }
+        }.onRegistered(
+            registrationId = "test_registration_id",
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            restClient = restClientCatchException
+        )
+    }
+
+    @Test
     fun testRegisterSFDCPushNotification() {
         createTestAccountInAccountManager()
 
@@ -306,6 +420,40 @@ class PushMessagingTest {
 
         Assert.assertEquals(REGISTRATION_STATUS_SUCCEEDED, actualStatus)
         Assert.assertEquals("test_id", actualId)
+
+
+        val restResponseUnknownStatus = mockk<RestResponse>()
+        every { restResponseUnknownStatus.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponseUnknownStatus.consume() } returns Unit
+        every { restResponseUnknownStatus.isSuccess } returns true
+        every { restResponseUnknownStatus.statusCode } returns 666
+        every { restResponseUnknownStatus.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClientUnknownStatus = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponseUnknownStatus
+
+        var actualStatusUnknownStatus: Int? = null
+        val actualIdUnknownStatus = object : PushService() {
+            override fun onPushNotificationRegistrationStatus(
+                status: Int,
+                userAccount: UserAccount?
+            ) {
+                super.onPushNotificationRegistrationStatus(status, userAccount)
+
+                actualStatusUnknownStatus = status
+            }
+        }.registerSFDCPushNotification(
+            registrationId = "test_registration_id",
+            account = createTestAccount(),
+            restClient = restClientUnknownStatus
+        )
+
+        Assert.assertEquals(REGISTRATION_STATUS_FAILED, actualStatusUnknownStatus)
+        Assert.assertNull(actualIdUnknownStatus)
 
 
         val restResponseFailure = mockk<RestResponse>()

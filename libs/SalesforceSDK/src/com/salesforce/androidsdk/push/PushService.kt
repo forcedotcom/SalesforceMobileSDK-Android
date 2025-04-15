@@ -109,7 +109,8 @@ open class PushService {
         }
     }
 
-    private fun onRegistered(
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun onRegistered(
         registrationId: String,
         account: UserAccount?,
         restClient: RestClient
@@ -438,7 +439,7 @@ open class PushService {
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = getRestClient(account) ?: return null, userAccount = account)
+        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
 
         return null
     }
