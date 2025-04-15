@@ -385,6 +385,39 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testOnUnRegistered() {
+        createTestAccountInAccountManager()
+
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(
+                message = "test_message"
+            )
+        )
+        every { restResponse.consume() } returns Unit
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns HTTP_CREATED
+        every { restResponse.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
+
+        var statusActual: Int? = null
+        object : PushService() {
+            override fun onPushNotificationRegistrationStatus(status: Int, userAccount: UserAccount?) {
+                super.onPushNotificationRegistrationStatus(status, userAccount)
+
+                statusActual = status
+            }
+        }.onUnregistered(
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            restClient = restClient
+        )
+
+        Assert.assertEquals(UNREGISTRATION_STATUS_SUCCEEDED, statusActual)
+    }
+
+    @Test
     fun testRegisterSFDCPushNotification() {
         createTestAccountInAccountManager()
 
@@ -434,7 +467,7 @@ class PushMessagingTest {
         every { restResponseUnknownStatus.statusCode } returns 666
         every { restResponseUnknownStatus.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
         val restClientUnknownStatus = mockk<RestClient>()
-        every { restClient.sendSync(any()) } returns restResponseUnknownStatus
+        every { restClientUnknownStatus.sendSync(any()) } returns restResponseUnknownStatus
 
         var actualStatusUnknownStatus: Int? = null
         val actualIdUnknownStatus = object : PushService() {

@@ -92,6 +92,7 @@ open class PushService {
         register: Boolean,
         userAccount: UserAccount,
     ) {
+        val restClient = getRestClient(userAccount) ?: return
         when {
             register ->
                 onRegistered(
@@ -100,11 +101,12 @@ open class PushService {
                         userAccount
                     ) ?: return,
                     account = userAccount,
-                    restClient = getRestClient(userAccount) ?: return
+                    restClient = restClient
                 )
 
             else -> onUnregistered(
-                account = userAccount
+                account = userAccount,
+                restClient = restClient
             )
         }
     }
@@ -160,14 +162,19 @@ open class PushService {
         }
     }
 
-    private fun onUnregistered(account: UserAccount) {
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun onUnregistered(
+        account: UserAccount,
+        restClient: RestClient
+    ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val packageName = context.packageName
 
         runCatching {
             unregisterSFDCPushNotification(
                 getDeviceId(context, account),
-                account
+                account,
+                restClient
             )
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(
@@ -488,19 +495,17 @@ open class PushService {
     private fun unregisterSFDCPushNotification(
         registeredId: String?,
         account: UserAccount,
+        restClient: RestClient
     ) {
         runCatching {
-            getRestClient(account)?.let { restClient ->
-                onSendUnregisterPushNotificationRequest(
-                    registeredId,
-                    restClient
-                ).consume()
-                onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
-            }
+            onSendUnregisterPushNotificationRequest(
+                registeredId,
+                restClient
+            ).consume()
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
         }.onFailure { throwable ->
-            getRestClient(account)?.let { restClient ->
-                onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
-            }
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+
             SalesforceSDKLogger.e(
                 TAG,
                 "Push notification un-registration failed",
