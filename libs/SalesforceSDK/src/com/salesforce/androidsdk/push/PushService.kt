@@ -99,7 +99,8 @@ open class PushService {
                         SalesforceSDKManager.getInstance().appContext,
                         userAccount
                     ) ?: return,
-                    account = userAccount
+                    account = userAccount,
+                    restClient = getRestClient(userAccount) ?: return
                 )
 
             else -> onUnregistered(
@@ -111,6 +112,7 @@ open class PushService {
     private fun onRegistered(
         registrationId: String,
         account: UserAccount?,
+        restClient: RestClient
     ) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later")
@@ -122,7 +124,8 @@ open class PushService {
         runCatching {
             when (val id = registerSFDCPushNotification(
                 registrationId,
-                account
+                account,
+                restClient
             )) {
                 null -> setRegistrationId(
                     context,
@@ -372,9 +375,11 @@ open class PushService {
         // Intentionally Blank.
     }
 
-    private fun registerSFDCPushNotification(
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun registerSFDCPushNotification(
         registrationId: String,
         account: UserAccount,
+        restClient: RestClient
     ): String? {
 
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -400,37 +405,35 @@ open class PushService {
                 }
             }
 
-            getRestClient(account)?.let { restClient ->
-                fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
+            fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
 
-                var status = REGISTRATION_STATUS_FAILED
-                val response = onSendRegisterPushNotificationRequest(fields, restClient)
-                var id: String? = null
+            var status = REGISTRATION_STATUS_FAILED
+            val response = onSendRegisterPushNotificationRequest(fields, restClient)
+            var id: String? = null
 
-                /*
-                 * If the push notification device object has been created,
-                 * reads the device registration ID. If the status code
-                 * indicates that the resource is not found, push notifications
-                 * are not enabled for this connected app, which means we
-                 * should not attempt to re-register a few minutes later.
-                 */
-                when (response.statusCode) {
-                    HTTP_CREATED -> {
-                        response.asJSONObject()?.let { jsonObject ->
-                            id = jsonObject.getString(FIELD_ID)
-                            status = REGISTRATION_STATUS_SUCCEEDED
-                        }
+            /*
+             * If the push notification device object has been created,
+             * reads the device registration ID. If the status code
+             * indicates that the resource is not found, push notifications
+             * are not enabled for this connected app, which means we
+             * should not attempt to re-register a few minutes later.
+             */
+            when (response.statusCode) {
+                HTTP_CREATED -> {
+                    response.asJSONObject()?.let { jsonObject ->
+                        id = jsonObject.getString(FIELD_ID)
+                        status = REGISTRATION_STATUS_SUCCEEDED
                     }
-
-                    HTTP_NOT_FOUND -> id = NOT_ENABLED
                 }
 
-                response.consume()
-                sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-                onPushNotificationRegistrationStatusInternal(status = status, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
-
-                return id
+                HTTP_NOT_FOUND -> id = NOT_ENABLED
             }
+
+            response.consume()
+            sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
+            onPushNotificationRegistrationStatusInternal(status = status, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+
+            return id
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
@@ -576,7 +579,8 @@ open class PushService {
         private const val APPLICATION_BUNDLE = "ApplicationBundle"
         private const val CIPHER_NAME = "CipherName"
         private const val FIELD_ID = "id"
-        private const val NOT_ENABLED = "not_enabled"
+        @VisibleForTesting(otherwise = PRIVATE)
+        internal const val NOT_ENABLED = "not_enabled"
         const val PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey"
         val pushNotificationKeyName = SalesforceKeyGenerator
             .getUniqueId(PUSH_NOTIFICATION_KEY_NAME)
