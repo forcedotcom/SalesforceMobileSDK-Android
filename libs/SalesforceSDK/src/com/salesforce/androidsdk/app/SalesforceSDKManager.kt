@@ -631,21 +631,20 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * Invokes a Salesforce Notifications API notification action.
-     *
-     * TODO: Review parameter modifications. ECJ20250416
      * @param notificationId The Salesforce actionable notification's id
      * @param actionKey The Salesforce actionable notification's action key
+     * @param restClient The REST client to use when invoking the Salesforce
+     * Notifications API.  Note the REST client determines the user account used
+     * as well.  This defaults to the current user's REST client.
      * @return The Salesforce Notifications API actions endpoint response or
      * null
      */
     fun invokeServerNotificationAction(
         notificationId: String,
         actionKey: String,
-        instanceHost: String,
-        restClient: RestClient
+        restClient: RestClient = clientManager.peekRestClient(userAccountManager.currentUser)
     ): NotificationsActionsResponseBody? {
         return NotificationsApiClient(
-            apiHostName = instanceHost,
             restClient = restClient
         ).submitNotificationAction(
             notificationId = notificationId,

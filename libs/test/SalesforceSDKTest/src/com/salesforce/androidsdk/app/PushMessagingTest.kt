@@ -122,7 +122,6 @@ class PushMessagingTest {
         every { restClient.sendSync(any()) } returns restResponse
 
         PushService().fetchNotificationsTypes(
-            apiHostName = "",
             restClient = restClient,
             userAccount = createTestAccount()
         )
@@ -132,7 +131,6 @@ class PushMessagingTest {
 
 
         PushService().fetchNotificationsTypes(
-            apiHostName = "",
             restClient = restClient,
             userAccount = createTestAccount()
         )
@@ -146,7 +144,6 @@ class PushMessagingTest {
 
         Assert.assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                apiHostName = "",
                 restClient = restClientNullResponseBodyString,
                 userAccount = createTestAccount()
             )
@@ -176,7 +173,6 @@ class PushMessagingTest {
 
         Assert.assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                apiHostName = "",
                 restClient = restClientFailure,
                 userAccount = createTestAccount()
             )
@@ -195,7 +191,6 @@ class PushMessagingTest {
 
         Assert.assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                apiHostName = "",
                 restClient = restClientFailureEmpty,
                 userAccount = createTestAccount()
             )
@@ -221,7 +216,6 @@ class PushMessagingTest {
 
         Assert.assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                apiHostName = "",
                 restClient = restClientFailureNullProperties,
                 userAccount = createTestAccount()
             )
@@ -263,7 +257,6 @@ class PushMessagingTest {
             }
         }.onPushNotificationRegistrationStatusInternal(
             status = REGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = createTestAccount()
         )
@@ -698,7 +691,6 @@ class PushMessagingTest {
         var notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key",
-            instanceHost = "",
             restClient = restClient
         )
         Assert.assertNull(notificationsActionsResponseBody)
@@ -714,7 +706,6 @@ class PushMessagingTest {
         notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key",
-            instanceHost = "",
             restClient = restClient
         )
         Assert.assertNull(notificationsActionsResponseBody)
@@ -726,7 +717,6 @@ class PushMessagingTest {
         notificationsActionsResponseBody = salesforceSDKManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key",
-            instanceHost = "",
             restClient = restClient
         )
         Assert.assertEquals(notificationsActionsResponseBody?.message, "test_message")
@@ -742,7 +732,6 @@ class PushMessagingTest {
             salesforceSDKManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
-                instanceHost = "",
                 restClient = restClientNullResponseBodyString
             )
         }
@@ -772,7 +761,6 @@ class PushMessagingTest {
             salesforceSDKManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
-                instanceHost = "",
                 restClient = restClientFailure
             )
         }
@@ -792,7 +780,6 @@ class PushMessagingTest {
             salesforceSDKManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
-                instanceHost = "",
                 restClient = restClientFailureEmpty
             )
         }
@@ -819,7 +806,6 @@ class PushMessagingTest {
             salesforceSDKManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
-                instanceHost = "",
                 restClient = restClientFailureNullProperties
             )
         }
@@ -845,7 +831,6 @@ class PushMessagingTest {
 
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = null
         )
@@ -857,7 +842,6 @@ class PushMessagingTest {
 
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = null
         )
@@ -867,7 +851,6 @@ class PushMessagingTest {
 
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
@@ -879,7 +862,6 @@ class PushMessagingTest {
 
         PushService().refreshNotificationsTypes(
             status = UNREGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = null
         )
@@ -888,7 +870,6 @@ class PushMessagingTest {
 
         PushService().refreshNotificationsTypes(
             status = UNREGISTRATION_STATUS_SUCCEEDED,
-            apiHostName = "",
             restClient = restClient,
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )

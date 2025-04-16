@@ -230,20 +230,17 @@ open class PushService {
      * @param status the registration status. One of the
      * `REGISTRATION_STATUS_XXX` constants
      * @param restClient The REST client to use for network APIs
-     * @param apiHostName The network API hostname
      * @param userAccount the user account that's performing registration
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun onPushNotificationRegistrationStatusInternal(
         status: Int,
-        apiHostName: String,
         restClient: RestClient,
         userAccount: UserAccount?
     ) {
         // Fetch and store or clear Salesforce notifications types, as applicable.
         refreshNotificationsTypes(
             status = status,
-            apiHostName = apiHostName,
             restClient = restClient,
             userAccount = userAccount
         )
@@ -258,13 +255,11 @@ open class PushService {
      * @param status the registration status. One of the
      * `REGISTRATION_STATUS_XXX` constants
      * @param restClient The REST client to use for network APIs
-     * @param apiHostName The network API hostname
      * @param userAccount the user account that's performing registration
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun refreshNotificationsTypes(
         status: Int,
-        apiHostName: String,
         restClient: RestClient,
         userAccount: UserAccount?
     ) {
@@ -272,7 +267,6 @@ open class PushService {
             REGISTRATION_STATUS_SUCCEEDED ->
                 registerNotificationChannels(
                     fetchNotificationsTypes(
-                        apiHostName = apiHostName,
                         restClient = restClient,
                         userAccount = userAccount ?: return
                     ) ?: return
@@ -340,18 +334,15 @@ open class PushService {
      * Fetches notifications types and stores them for the provided user
      * account.
      * @param restClient The REST client to use for network APIs
-     * @param apiHostName The network API hostname
      * @param userAccount The user account that's performing registration
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun fetchNotificationsTypes(
-        apiHostName: String,
         restClient: RestClient,
         userAccount: UserAccount
     ): NotificationsTypesResponseBody? {
 
         val notificationsTypes = NotificationsApiClient(
-            apiHostName = apiHostName,
             restClient = restClient
         ).fetchNotificationsTypes()
 
@@ -440,14 +431,14 @@ open class PushService {
 
             response.consume()
             sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-            onPushNotificationRegistrationStatusInternal(status = status, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+            onPushNotificationRegistrationStatusInternal(status = status, restClient = restClient, userAccount = account)
 
             return id
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, restClient = restClient, userAccount = account)
 
         return null
     }
@@ -504,9 +495,9 @@ open class PushService {
                 registeredId,
                 restClient
             ).consume()
-            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, restClient = restClient, userAccount = account)
         }.onFailure { throwable ->
-            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, apiHostName = account.instanceServer, restClient = restClient, userAccount = account)
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, restClient = restClient, userAccount = account)
 
             SalesforceSDKLogger.e(
                 TAG,

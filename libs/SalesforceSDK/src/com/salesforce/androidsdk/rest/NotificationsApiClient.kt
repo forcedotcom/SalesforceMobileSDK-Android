@@ -42,11 +42,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * See https://salesforce.quip.com/KGU3ALoXRCjK#RcfABAPLVfg
  * TODO: Replace the documentation link with the final documentation. ECJ20250310
  *
- * @param apiHostName The Salesforce Notifications API hostname
  * @param restClient The REST client to use
  */
 class NotificationsApiClient(
-    private val apiHostName: String,
     private val restClient: RestClient
 ) {
 
@@ -68,7 +66,7 @@ class NotificationsApiClient(
 
         val restRequest = RestRequest(
             GET,
-            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/types",
+            "https://$restClient.clientInfo.instanceUrl.host/${ApiVersionStrings.getBasePath()}/connect/notifications/types",
             mutableMapOf<String, String>()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -107,7 +105,7 @@ class NotificationsApiClient(
 
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
+            "https://$restClient.clientInfo.instanceUrl.host/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
             "".toRequestBody(MEDIA_TYPE_JSON),
             mutableMapOf<String, String>()
         )
