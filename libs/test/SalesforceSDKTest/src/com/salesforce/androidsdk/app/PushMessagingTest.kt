@@ -273,20 +273,30 @@ class PushMessagingTest {
     @Test
     fun testPerformRegistrationChange() {
         createTestAccountInAccountManager()
+
+
+        PushService().performRegistrationChange(
+            register = true,
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
+        )
+
+
         PushMessaging.setRegistrationId(
             context = SalesforceSDKManager.getInstance().appContext,
             registrationId = "test_registration_id",
             account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
 
+
         PushService().performRegistrationChange(
             register = true,
-            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
+
 
         PushService().performRegistrationChange(
             register = false,
-            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         )
     }
 
@@ -415,6 +425,20 @@ class PushMessagingTest {
         )
 
         Assert.assertEquals(UNREGISTRATION_STATUS_SUCCEEDED, statusActual)
+
+
+        object : PushService() {
+            override fun unregisterSFDCPushNotification(
+                registeredId: String?,
+                account: UserAccount,
+                restClient: RestClient
+            ) {
+                throw Exception("Test exception for code coverage.")
+            }
+        }.onUnregistered(
+            account = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
+            restClient = restClient
+        )
     }
 
     @Test

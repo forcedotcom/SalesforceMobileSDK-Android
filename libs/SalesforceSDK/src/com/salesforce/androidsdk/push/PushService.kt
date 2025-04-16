@@ -477,7 +477,7 @@ open class PushService {
      * @throws IOException if the request could not be made
      */
     @Throws(IOException::class)
-    protected fun onSendUnregisterPushNotificationRequest(
+    private fun onSendUnregisterPushNotificationRequest(
         registeredId: String?,
         restClient: RestClient,
     ): RestResponse {
@@ -492,7 +492,8 @@ open class PushService {
         )
     }
 
-    private fun unregisterSFDCPushNotification(
+    @VisibleForTesting(otherwise = PRIVATE)
+    protected open fun unregisterSFDCPushNotification(
         registeredId: String?,
         account: UserAccount,
         restClient: RestClient
