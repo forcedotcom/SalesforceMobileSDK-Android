@@ -269,10 +269,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         frontdoorBridgeCodeVerifier = null
     }
 
-    // returns a valid https server url or null if the users input is invalid.
+    /**
+     * Returns a valid HTTPS server URL or null if the provided user input is
+     * invalid.
+     * @param url The user input URL to validate and return
+     * @return The validated server URL or null if the provided URL wasn't a
+     * valid URL
+     */
     internal fun getValidServerUrl(url: String): String? {
         if (!url.contains(".")) return null
         if (url.substringAfterLast(".").isEmpty()) return null
+        runCatching {
+            URI(url)
+        }.onFailure {
+            return null
+        }
 
         return when {
             URLUtil.isHttpsUrl(url) -> url

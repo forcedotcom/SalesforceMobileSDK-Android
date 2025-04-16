@@ -631,6 +631,8 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * Invokes a Salesforce Notifications API notification action.
+     *
+     * TODO: Review parameter modifications. ECJ20250416
      * @param notificationId The Salesforce actionable notification's id
      * @param actionKey The Salesforce actionable notification's action key
      * @return The Salesforce Notifications API actions endpoint response or

@@ -46,13 +46,12 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
     debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
 
-    androidTestImplementation("io.mockk:mockk-android:1.14.0")
-
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    androidTestImplementation("io.mockk:mockk-android:1.14.0")
 }
 
 android {

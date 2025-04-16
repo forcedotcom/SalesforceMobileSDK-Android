@@ -50,12 +50,6 @@ class NotificationsApiClient(
     private val restClient: RestClient
 ) {
 
-    /** The application context.  TODO: Remove context members. ECJ20250410 */
-    private val context = SalesforceSDKManager.getInstance().appContext
-
-    /** The maximum Salesforce API version */
-    private val apiVersion = ApiVersionStrings.getVersionNumber(context)
-
     /**
      * Submit a request to the Notifications API Types endpoint.
      * @return The endpoint's response
@@ -63,6 +57,8 @@ class NotificationsApiClient(
     @Suppress("unused")
     @Throws(SfapApiException::class)
     fun fetchNotificationsTypes(): NotificationsTypesResponseBody? {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
         if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
@@ -100,6 +96,8 @@ class NotificationsApiClient(
         notificationId: String,
         actionKey: String
     ): NotificationsActionsResponseBody? {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
         if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.

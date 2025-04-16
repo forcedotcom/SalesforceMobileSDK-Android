@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import static androidx.annotation.VisibleForTesting.PRIVATE;
-
 import android.content.Context;
 
 import androidx.annotation.VisibleForTesting;
@@ -43,7 +41,8 @@ public class ApiVersionStrings {
 
     public static final String VERSION_NUMBER = "v63.0";
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    /** A version number override exclusively to support unit tests */
+    @VisibleForTesting
     public static String VERSION_NUMBER_TEST = null;
 
     public static final String API_PREFIX = "/services/data/";

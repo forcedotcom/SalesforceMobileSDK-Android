@@ -8,7 +8,8 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.accounts.UserAccountManagerTest
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest.createTestAccount
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
@@ -48,31 +49,31 @@ import java.net.HttpURLConnection.HTTP_NOT_FOUND
 @SmallTest
 class PushMessagingTest {
 
-    /** An account manager for test.  TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407 */
-    private var accMgr: AccountManager? = null
+    /** An account manager for test */
+    private var accountManager: AccountManager? = null
 
-    /** A user account manager for test.  TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407 */
-    private var userAccMgr: UserAccountManager? = null
+    /** A user account manager for test */
+    private var userAccountManager: UserAccountManager? = null
 
     @Before
     @Throws(Exception::class)
     fun setUp() {
 
-        // TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
-        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-        accMgr = AccountManager.get(targetContext)
-        userAccMgr = UserAccountManager.getInstance()
-        Assert.assertNull("There should be no authenticated users", userAccMgr?.getAuthenticatedUsers())
+        accountManager = AccountManager.get(
+            InstrumentationRegistry.getInstrumentation().targetContext
+        )
+        userAccountManager = UserAccountManager.getInstance()
+
+        Assert.assertNull("There should be no authenticated users.", userAccountManager?.getAuthenticatedUsers())
     }
 
     @After
     @Throws(Exception::class)
     fun tearDown() {
 
-        // TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
-        cleanupAccounts()
-        userAccMgr = null
-        accMgr = null
+        cleanupAccounts(accountManager)
+        userAccountManager = null
+        accountManager = null
     }
 
     @Test
@@ -272,7 +273,7 @@ class PushMessagingTest {
 
     @Test
     fun testPerformRegistrationChange() {
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
 
         PushService().performRegistrationChange(
@@ -302,7 +303,7 @@ class PushMessagingTest {
 
     @Test
     fun testOnRegistered() {
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
@@ -396,7 +397,7 @@ class PushMessagingTest {
 
     @Test
     fun testOnUnRegistered() {
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
@@ -443,7 +444,7 @@ class PushMessagingTest {
 
     @Test
     fun testRegisterSFDCPushNotification() {
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         val restResponse = mockk<RestResponse>()
         every { restResponse.asString() } returns encodeToString(
@@ -615,6 +616,7 @@ class PushMessagingTest {
         Assert.assertEquals(null, actualIdForException)
     }
 
+    // TODO: Move to a separate test suite. ECJ20250416
     @Test
     fun testApiVersionStrings() {
         val result = ApiVersionStrings.getVersionNumber(null)
@@ -631,7 +633,7 @@ class PushMessagingTest {
         Assert.assertNull(notificationsType)
 
 
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
         PushMessaging.clearNotificationsTypes(SalesforceSDKManager.getInstance().userAccountManager.currentUser)
 
 
@@ -702,7 +704,7 @@ class PushMessagingTest {
         Assert.assertNull(notificationsActionsResponseBody)
 
 
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         PushMessaging.setNotificationTypes(
             userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser,
@@ -861,7 +863,7 @@ class PushMessagingTest {
         )
         Assert.assertNull(PushMessaging.getNotificationsTypes(user))
 
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         PushService().refreshNotificationsTypes(
             status = REGISTRATION_STATUS_SUCCEEDED,
@@ -899,7 +901,7 @@ class PushMessagingTest {
     @Test
     fun testRegisterNotificationChannels() {
         val notificationsTypesResponseBody = NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON)
-        createTestAccountInAccountManager()
+        createTestAccountInAccountManager(userAccountManager)
 
         // Run first time to test initial creation of notification channels.
         PushService().registerNotificationChannels(notificationsTypesResponseBody)
@@ -950,28 +952,6 @@ class PushMessagingTest {
             NotificationsTypesResponseBody.fromJson(NOTIFICATIONS_TYPES_JSON),
             PushMessaging.getNotificationsTypes(user)
         )
-    }
-
-    /**
-     * Removes any existing accounts.
-     */
-    @Throws(java.lang.Exception::class)
-    private fun cleanupAccounts() {
-        for (acc in accMgr!!.getAccountsByType(UserAccountManagerTest.TEST_ACCOUNT_TYPE)) {
-            accMgr!!.removeAccountExplicitly(acc)
-        }
-    }
-
-    /**
-     * Create a test account.
-     * TODO: Can this be common with `UserAccountManagerTest`? ECJ20250407
-     *
-     * @return UserAccount.
-     */
-    private fun createTestAccountInAccountManager(): UserAccount {
-        val userAccount = createTestAccount()
-        userAccMgr?.createAccount(userAccount)
-        return userAccount
     }
 
     companion object {

@@ -261,6 +261,7 @@ open class PushService {
      * @param apiHostName The network API hostname
      * @param userAccount the user account that's performing registration
      */
+    @VisibleForTesting(otherwise = PRIVATE)
     internal fun refreshNotificationsTypes(
         status: Int,
         apiHostName: String,
@@ -477,7 +478,7 @@ open class PushService {
      * @throws IOException if the request could not be made
      */
     @Throws(IOException::class)
-    private fun onSendUnregisterPushNotificationRequest(
+    protected fun onSendUnregisterPushNotificationRequest(
         registeredId: String?,
         restClient: RestClient,
     ): RestResponse {
