@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.serialization.json.Json
 
 
 /**
@@ -269,7 +270,7 @@ object PushMessaging {
     @JvmStatic
     internal fun setNotificationTypes(
         userAccount: UserAccount,
-        notificationsTypes: NotificationsTypesResponseBody
+        notificationsTypes: NotificationsTypesResponseBody?
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
@@ -279,7 +280,12 @@ object PushMessaging {
         sharedPreferences.edit {
             putString(
                 NOTIFICATIONS_TYPES,
-                notificationsTypes.sourceJson
+                notificationsTypes?.let { notificationsTypes ->
+                    Json.encodeToString(
+                        NotificationsTypesResponseBody.serializer(),
+                        notificationsTypes
+                    )
+                }
             )
         }
     }

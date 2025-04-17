@@ -70,7 +70,7 @@ public class UserAccountManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        cleanupAccounts();
+        cleanupAccounts(accMgr);
         userAccMgr = null;
         accMgr = null;
     }
@@ -96,7 +96,7 @@ public class UserAccountManagerTest {
      */
     @Test
     public void testGetAllUserAccounts() {
-        UserAccount firstUser = createTestAccountInAccountManager();
+        UserAccount firstUser = createTestAccountInAccountManager(userAccMgr);
         List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 1 authenticated user", 1, users.size());
         checkSameUserAccount(firstUser, users.get(0));
@@ -111,7 +111,7 @@ public class UserAccountManagerTest {
      */
     @Test
     public void testGetCurrentUserAccount() {
-        UserAccount userAccount = createTestAccountInAccountManager();
+        UserAccount userAccount = createTestAccountInAccountManager(userAccMgr);
         checkSameUserAccount(userAccount, userAccMgr.getCurrentUser());
     }
 
@@ -120,7 +120,7 @@ public class UserAccountManagerTest {
      */
     @Test
     public void testSwitchToUserAccount() {
-        UserAccount firstUser = createTestAccountInAccountManager();
+        UserAccount firstUser = createTestAccountInAccountManager(userAccMgr);
         checkSameUserAccount(firstUser, userAccMgr.getCurrentUser());
 
         UserAccount secondUser = createOtherTestAccountInAccountManager();
@@ -161,7 +161,7 @@ public class UserAccountManagerTest {
      */
     @Test
     public void testSignoutCurrentUser() {
-        createTestAccountInAccountManager();
+        createTestAccountInAccountManager(userAccMgr);
         Assert.assertEquals("There should be 1 authenticated user", 1, userAccMgr.getAuthenticatedUsers().size());
         userAccMgr.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT);
         Assert.assertNull("There should be no authenticated users", userAccMgr.getAuthenticatedUsers());
@@ -172,7 +172,7 @@ public class UserAccountManagerTest {
      */
     @Test
     public void testSignoutBackgroundUser() {
-        UserAccount firstUser = createTestAccountInAccountManager();
+        UserAccount firstUser = createTestAccountInAccountManager(userAccMgr);
         UserAccount secondUser = createOtherTestAccountInAccountManager();
         userAccMgr.signoutUser(firstUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
         Assert.assertEquals("There should be 1 authenticated user", 1, userAccMgr.getAuthenticatedUsers().size());
@@ -182,9 +182,9 @@ public class UserAccountManagerTest {
     /**
      * Removes any existing accounts.
      */
-    private void cleanupAccounts() throws Exception {
-        for (Account acc : accMgr.getAccountsByType(TEST_ACCOUNT_TYPE)) {
-            accMgr.removeAccountExplicitly(acc);
+    public static void cleanupAccounts(AccountManager accountManager) {
+        for (Account account : accountManager.getAccountsByType(TEST_ACCOUNT_TYPE)) {
+            accountManager.removeAccountExplicitly(account);
         }
     }
 
@@ -193,9 +193,9 @@ public class UserAccountManagerTest {
      *
      * @return UserAccount.
      */
-    private UserAccount createTestAccountInAccountManager() {
+    public static UserAccount createTestAccountInAccountManager(UserAccountManager userAccountManager) {
         UserAccount userAccount = UserAccountTest.createTestAccount();
-        userAccMgr.createAccount(userAccount);
+        userAccountManager.createAccount(userAccount);
         return userAccount;
     }
 

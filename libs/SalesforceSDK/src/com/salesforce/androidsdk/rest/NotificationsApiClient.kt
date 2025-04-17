@@ -42,11 +42,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * See https://salesforce.quip.com/KGU3ALoXRCjK#RcfABAPLVfg
  * TODO: Replace the documentation link with the final documentation. ECJ20250310
  *
- * @param apiHostName The Salesforce Notifications API hostname
  * @param restClient The REST client to use
  */
 class NotificationsApiClient(
-    private val apiHostName: String,
     private val restClient: RestClient
 ) {
 
@@ -58,18 +56,17 @@ class NotificationsApiClient(
     @Throws(SfapApiException::class)
     fun fetchNotificationsTypes(): NotificationsTypesResponseBody? {
         val context = SalesforceSDKManager.getInstance().appContext
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
-        val apiVersion = ApiVersionStrings.getVersionNumber(context)
-        // TODO: Remove once MSDK default API version is 64 or greater.
-        if (apiVersion < "v64.0") {
+        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
             SalesforceSDKLogger.w(TAG, "Cannot request Salesforce push notifications types with API less than v64.0")
             return null
         }
 
         val restRequest = RestRequest(
             GET,
-            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/types",
+            "https://$restClient.clientInfo.instanceUrl.host/${ApiVersionStrings.getBasePath()}/connect/notifications/types",
             mutableMapOf<String, String>()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -78,11 +75,11 @@ class NotificationsApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             NotificationsTypesResponseBody.fromJson(responseBodyString)
         } else {
-            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            val errorResponseBody = responseBodyString?.let { NotificationsApiErrorResponseBody.fromJson(responseBodyString) }
             throw NotificationsApiException(
-                errorCode = errorResponseBody.firstOrNull()?.errorCode,
-                message = errorResponseBody.firstOrNull()?.message,
-                messageCode = errorResponseBody.firstOrNull()?.messageCode,
+                errorCode = errorResponseBody?.firstOrNull()?.errorCode,
+                message = errorResponseBody?.firstOrNull()?.message ?: "No error response body was provided by the API endpoint.",
+                messageCode = errorResponseBody?.firstOrNull()?.messageCode,
                 source = responseBodyString
             )
         }
@@ -98,18 +95,17 @@ class NotificationsApiClient(
         actionKey: String
     ): NotificationsActionsResponseBody? {
         val context = SalesforceSDKManager.getInstance().appContext
+        val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
-        val apiVersion = ApiVersionStrings.getVersionNumber(context)
-        // TODO: Remove once MSDK default API version is 64 or greater.
-        if (apiVersion < "v64.0") {
+        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
             SalesforceSDKLogger.w(TAG, "Cannot submit Salesforce Notifications API action with API less than v64.0")
             return null
         }
 
         val restRequest = RestRequest(
             POST,
-            "https://$apiHostName/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
+            "https://$restClient.clientInfo.instanceUrl.host/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
             "".toRequestBody(MEDIA_TYPE_JSON),
             mutableMapOf<String, String>()
         )
@@ -119,11 +115,11 @@ class NotificationsApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             NotificationsActionsResponseBody.fromJson(responseBodyString)
         } else {
-            val errorResponseBody = NotificationsApiErrorResponseBody.fromJson(responseBodyString)
+            val errorResponseBody = responseBodyString?.let { NotificationsApiErrorResponseBody.fromJson(responseBodyString) }
             throw NotificationsApiException(
-                errorCode = errorResponseBody.firstOrNull()?.errorCode,
-                message = errorResponseBody.firstOrNull()?.message,
-                messageCode = errorResponseBody.firstOrNull()?.messageCode,
+                errorCode = errorResponseBody?.firstOrNull()?.errorCode,
+                message = errorResponseBody?.firstOrNull()?.message ?: "No error response body was provided by the API endpoint.",
+                messageCode = errorResponseBody?.firstOrNull()?.messageCode,
                 source = responseBodyString
             )
         }
