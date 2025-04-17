@@ -1,8 +1,7 @@
-package com.salesforce.androidsdk.app
+package com.salesforce.androidsdk.rest
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.NotificationType
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.NotificationType.ActionGroup
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.NotificationType.ActionGroup.Action

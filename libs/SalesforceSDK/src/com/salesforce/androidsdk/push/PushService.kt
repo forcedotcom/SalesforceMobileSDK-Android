@@ -91,8 +91,9 @@ open class PushService {
     fun performRegistrationChange(
         register: Boolean,
         userAccount: UserAccount,
+        restClient: RestClient? = getRestClient(userAccount)
     ) {
-        val restClient = getRestClient(userAccount) ?: return
+        val restClientUnwrapped = restClient ?: return
         when {
             register ->
                 onRegistered(
@@ -101,12 +102,12 @@ open class PushService {
                         userAccount
                     ) ?: return,
                     account = userAccount,
-                    restClient = restClient
+                    restClient = restClientUnwrapped
                 )
 
             else -> onUnregistered(
                 account = userAccount,
-                restClient = restClient
+                restClient = restClientUnwrapped
             )
         }
     }

@@ -1,8 +1,7 @@
-package com.salesforce.androidsdk.app
+package com.salesforce.androidsdk.rest
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import kotlinx.serialization.json.Json.Default.encodeToString
 import org.junit.Assert
 import org.junit.Test
