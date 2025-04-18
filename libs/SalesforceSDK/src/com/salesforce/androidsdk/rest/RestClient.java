@@ -321,6 +321,8 @@ public class RestClient {
      * @return
      */
     public Request buildRequest(RestRequest restRequest) {
+        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        if (uri == null) return null;
         final Request.Builder builder = new Request.Builder()
                 .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
@@ -368,7 +370,8 @@ public class RestClient {
      * @throws IOException
      */
     public RestResponse sendSync(RestRequest restRequest) throws IOException {
-        Request request = buildRequest(restRequest);
+        final Request request = buildRequest(restRequest);
+        if (request == null) return null;
         Response response = okHttpClient.newCall(request).execute();
         return new RestResponse(response);
     }

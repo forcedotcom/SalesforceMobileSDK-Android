@@ -206,6 +206,14 @@ class PushMessagingTest {
 
         ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
+        // Test once for coverage only with the default REST client.
+        assertThrows(NotificationsApiException::class.java) {
+            salesforceSdkManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key"
+            )
+        }
+
         val notificationsActionsResponseBody = salesforceSdkManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key",

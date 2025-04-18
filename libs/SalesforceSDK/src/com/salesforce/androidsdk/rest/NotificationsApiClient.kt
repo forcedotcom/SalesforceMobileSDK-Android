@@ -110,9 +110,9 @@ class NotificationsApiClient(
             mutableMapOf<String, String>()
         )
         val restResponse = restClient.sendSync(restRequest)
-        val responseBodyString = restResponse.asString()
+        val responseBodyString = restResponse?.asString()
 
-        return if (restResponse.isSuccess && responseBodyString != null) {
+        return if (restResponse?.isSuccess == true && responseBodyString != null) {
             NotificationsActionsResponseBody.fromJson(responseBodyString)
         } else {
             val errorResponseBody = responseBodyString?.let { NotificationsApiErrorResponseBody.fromJson(responseBodyString) }
