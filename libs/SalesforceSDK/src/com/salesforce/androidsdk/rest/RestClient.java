@@ -316,13 +316,18 @@ public class RestClient {
     }
 
     /**
-     * Helper to build okHttp Request from RestRequest
-     * @param restRequest
-     * @return
+     * Builds an OK HTTP request from a REST request.
+     *
+     * @param restRequest The REST request.
+     * @return The HTTP request
      */
     public Request buildRequest(RestRequest restRequest) {
+        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        if (uri == null) return null;
+        final HttpUrl url = HttpUrl.get(uri);
+        if (url == null) return null;
         final Request.Builder builder = new Request.Builder()
-                .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
+                .url(url)
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding additional headers
@@ -368,7 +373,8 @@ public class RestClient {
      * @throws IOException
      */
     public RestResponse sendSync(RestRequest restRequest) throws IOException {
-        Request request = buildRequest(restRequest);
+        final Request request = buildRequest(restRequest);
+        if (request == null) return null;
         Response response = okHttpClient.newCall(request).execute();
         return new RestResponse(response);
     }

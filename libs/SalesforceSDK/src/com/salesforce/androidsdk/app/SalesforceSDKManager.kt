@@ -62,7 +62,6 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -622,28 +621,30 @@ open class SalesforceSDKManager protected constructor(
      */
     fun getNotificationsType(
         type: String
-    ) = getNotificationsTypes(
-        userAccountManager.currentUser
-    )?.notificationTypes?.firstOrNull { notificationType ->
-        notificationType.type == type
+    ) = userAccountManager.currentUser?.let { currentUser ->
+        getNotificationsTypes(
+            currentUser
+        )?.notificationTypes?.firstOrNull { notificationType ->
+            notificationType.type == type
+        }
     }
 
     /**
      * Invokes a Salesforce Notifications API notification action.
      * @param notificationId The Salesforce actionable notification's id
      * @param actionKey The Salesforce actionable notification's action key
+     * @param restClient The REST client to use when invoking the Salesforce
+     * Notifications API.  Note the REST client determines the user account used
+     * as well.  This defaults to the current user's REST client.
      * @return The Salesforce Notifications API actions endpoint response or
      * null
      */
     fun invokeServerNotificationAction(
         notificationId: String,
-        actionKey: String
+        actionKey: String,
+        restClient: RestClient = clientManager.peekRestClient(userAccountManager.currentUser)
     ): NotificationsActionsResponseBody? {
-        val userAccount = userAccountManager.currentUser
-        val instanceHost = userAccount.instanceServer.toUri().host ?: return null
-        val restClient = clientManager.peekRestClient(userAccount)
         return NotificationsApiClient(
-            apiHostName = instanceHost,
             restClient = restClient
         ).submitNotificationAction(
             notificationId = notificationId,

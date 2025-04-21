@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.serialization.json.Json
 
 
 /**
@@ -264,7 +265,7 @@ object PushMessaging {
 
     /**
      * Stores the Salesforce notifications types for the provided user account.
-     * @param userAccount THe user account
+     * @param userAccount The user account
      */
     @JvmStatic
     internal fun setNotificationTypes(
@@ -279,7 +280,10 @@ object PushMessaging {
         sharedPreferences.edit {
             putString(
                 NOTIFICATIONS_TYPES,
-                notificationsTypes.sourceJson
+                Json.encodeToString(
+                    NotificationsTypesResponseBody.serializer(),
+                    notificationsTypes
+                )
             )
         }
     }
