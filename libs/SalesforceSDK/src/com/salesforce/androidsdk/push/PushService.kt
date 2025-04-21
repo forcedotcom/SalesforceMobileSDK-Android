@@ -102,17 +102,17 @@ open class PushService {
                         userAccount
                     ) ?: return,
                     account = userAccount,
-                    restClient = restClientUnwrapped
+                    restClient = restClientUnwrapped,
                 )
 
             else -> onUnregistered(
                 account = userAccount,
-                restClient = restClientUnwrapped
+                restClient = restClientUnwrapped,
             )
         }
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun onRegistered(
         registrationId: String,
         account: UserAccount?,
@@ -163,7 +163,7 @@ open class PushService {
         }
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun onUnregistered(
         account: UserAccount,
         restClient: RestClient
@@ -233,7 +233,7 @@ open class PushService {
      * @param restClient The REST client to use for network APIs
      * @param userAccount the user account that's performing registration
      */
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun onPushNotificationRegistrationStatusInternal(
         status: Int,
         restClient: RestClient,
@@ -258,7 +258,7 @@ open class PushService {
      * @param restClient The REST client to use for network APIs
      * @param userAccount the user account that's performing registration
      */
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun refreshNotificationsTypes(
         status: Int,
         restClient: RestClient,
@@ -286,7 +286,7 @@ open class PushService {
      * @param notificationsTypesResponseBody The Salesforce notifications API
      * notifications types
      */
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun registerNotificationChannels(
         notificationsTypesResponseBody: NotificationsTypesResponseBody
     ) {
@@ -323,7 +323,7 @@ open class PushService {
      * Removes previously registered Android notification channels and
      * notification groups for Salesforce notifications API notifications types.
      */
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun removeNotificationsCategories() {
         val context = SalesforceSDKManager.getInstance().appContext
         context.getSystemService(NotificationManager::class.java).run {
@@ -337,7 +337,7 @@ open class PushService {
      * @param restClient The REST client to use for network APIs
      * @param userAccount The user account that's performing registration
      */
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun fetchNotificationsTypes(
         restClient: RestClient,
         userAccount: UserAccount
@@ -347,10 +347,13 @@ open class PushService {
             restClient = restClient
         ).fetchNotificationsTypes()
 
-        setNotificationTypes(
-            userAccount = userAccount,
-            notificationsTypes = notificationsTypes
-        )
+        when (notificationsTypes) {
+            null -> clearNotificationsTypes(userAccount)
+            else -> setNotificationTypes(
+                userAccount = userAccount,
+                notificationsTypes = notificationsTypes
+            )
+        }
 
         return notificationsTypes
     }
@@ -376,7 +379,7 @@ open class PushService {
         // Intentionally Blank.
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     internal fun registerSFDCPushNotification(
         registrationId: String,
         account: UserAccount,
@@ -485,7 +488,7 @@ open class PushService {
         )
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting
     protected open fun unregisterSFDCPushNotification(
         registeredId: String?,
         account: UserAccount,
@@ -579,7 +582,8 @@ open class PushService {
         private const val APPLICATION_BUNDLE = "ApplicationBundle"
         private const val CIPHER_NAME = "CipherName"
         private const val FIELD_ID = "id"
-        @VisibleForTesting(otherwise = PRIVATE)
+
+        @VisibleForTesting
         internal const val NOT_ENABLED = "not_enabled"
         const val PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey"
         val pushNotificationKeyName = SalesforceKeyGenerator
@@ -590,7 +594,7 @@ open class PushService {
          * The push notification channel group id for push notification channels
          * registered from Salesforce Notification API notifications types
          */
-        @VisibleForTesting(otherwise = PRIVATE)
+        @VisibleForTesting
         internal const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID = "NOTIFICATION_GROUP_SALESFORCE"
 
         /**
@@ -602,10 +606,13 @@ open class PushService {
 
         @VisibleForTesting(otherwise = PROTECTED)
         internal const val REGISTRATION_STATUS_SUCCEEDED = 0
+
         @VisibleForTesting(otherwise = PROTECTED)
         internal const val REGISTRATION_STATUS_FAILED = 1
+
         @VisibleForTesting(otherwise = PROTECTED)
         internal const val UNREGISTRATION_STATUS_SUCCEEDED = 2
+
         @VisibleForTesting(otherwise = PROTECTED)
         internal const val UNREGISTRATION_STATUS_FAILED = 3
 

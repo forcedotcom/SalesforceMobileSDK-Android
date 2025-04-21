@@ -265,12 +265,12 @@ object PushMessaging {
 
     /**
      * Stores the Salesforce notifications types for the provided user account.
-     * @param userAccount THe user account
+     * @param userAccount The user account
      */
     @JvmStatic
     internal fun setNotificationTypes(
         userAccount: UserAccount,
-        notificationsTypes: NotificationsTypesResponseBody?
+        notificationsTypes: NotificationsTypesResponseBody
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val sharedPreferences = context.getSharedPreferences(
@@ -280,12 +280,10 @@ object PushMessaging {
         sharedPreferences.edit {
             putString(
                 NOTIFICATIONS_TYPES,
-                notificationsTypes?.let { notificationsTypes ->
-                    Json.encodeToString(
-                        NotificationsTypesResponseBody.serializer(),
-                        notificationsTypes
-                    )
-                }
+                Json.encodeToString(
+                    NotificationsTypesResponseBody.serializer(),
+                    notificationsTypes
+                )
             )
         }
     }

@@ -15,6 +15,6 @@ class ApiVersionStringsTest {
 
     @Test
     fun testApiVersionStrings() {
-        Assert.assertEquals("v63.0", ApiVersionStrings.getVersionNumber(null))
+        Assert.assertEquals(ApiVersionStrings.VERSION_NUMBER, ApiVersionStrings.getVersionNumber(null))
     }
 }
