@@ -18,6 +18,7 @@ import com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiException
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.fromJson
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
 import io.mockk.every
 import io.mockk.mockk
@@ -32,6 +33,8 @@ import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URI
+import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
  * Tests for `PushMessaging`.
@@ -194,6 +197,7 @@ class PushMessagingTest {
         )
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup
@@ -207,7 +211,7 @@ class PushMessagingTest {
         ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         // Test once for coverage only with the default REST client.
-        assertThrows(NotificationsApiException::class.java) {
+        assertThrows(SSLPeerUnverifiedException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key"
@@ -279,6 +283,34 @@ class PushMessagingTest {
     }
 
     @Test
+    fun testInvokeServerNotificationActionViaSdkManager_NullResponse() {
+        val salesforceSdkManager = SalesforceSDKManager.getInstance()
+
+        // Mocks.
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(any()) } returns null
+
+        // Setup.
+        createTestAccountInAccountManager(userAccountManager)
+
+        setNotificationTypes(
+            userAccount = user,
+            notificationsTypes = fromJson(NOTIFICATIONS_TYPES_JSON)
+        )
+
+        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
+
+        assertThrows(NotificationsApiException::class.java) {
+            salesforceSdkManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key",
+                restClient = restClient
+            )
+        }
+    }
+
+    @Test
     fun testInvokeServerNotificationActionViaSdkManager_NullResponseBodyString() {
         val salesforceSdkManager = SalesforceSDKManager.getInstance()
 
@@ -287,6 +319,7 @@ class PushMessagingTest {
         every { restResponse.asString() } returns null
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -332,6 +365,7 @@ class PushMessagingTest {
         every { restResponse.isSuccess } returns false
 
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -359,6 +393,7 @@ class PushMessagingTest {
         every { restResponse.isSuccess } returns false
 
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -393,6 +428,7 @@ class PushMessagingTest {
         every { restResponse.isSuccess } returns false
 
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -426,6 +462,32 @@ class PushMessagingTest {
 
         internal const val NOTIFICATIONS_TYPES_JSON =
             "{\"notificationTypes\":[{\"actionGroups\":[{\"actions\":[{\"actionKey\":\"new_acc_and_opp__new_account\",\"label\":\"New Account\",\"name\":\"new_account\",\"type\":\"NotificationApiAction\"},{\"actionKey\":\"new_acc_and_opp__new_opportunity\",\"label\":\"New Opportunity\",\"name\":\"new_opportunity\",\"type\":\"NotificationApiAction\"}],\"name\":\"new_acc_and_opp\"},{\"actions\":[{\"actionKey\":\"updateCase__escalate\",\"label\":\"Escalate\",\"name\":\"escalate\",\"type\":\"NotificationApiAction\"},{\"actionKey\":\"updateCase__raise_priority\",\"label\":\"Raise Priority\",\"name\":\"raise_priority\",\"type\":\"NotificationApiAction\"}],\"name\":\"updateCase\"}],\"apiName\":\"actionable_notif_test_type\",\"label\":\"Actionable Notification Test Type\",\"type\":\"actionable_notif_test_type\"},{\"apiName\":\"approval_request\",\"label\":\"Approval requests\",\"type\":\"approval_request\"},{\"apiName\":\"chatter_comment_on_post\",\"label\":\"New comments on a post\",\"type\":\"chatter_comment_on_post\"},{\"apiName\":\"chatter_group_mention\",\"label\":\"Group mentions on a post\",\"type\":\"chatter_group_mention\"},{\"apiName\":\"chatter_mention\",\"label\":\"Individual mentions on a post\",\"type\":\"chatter_mention\"},{\"apiName\":\"group_announce\",\"label\":\"Group manager announcements\",\"type\":\"group_announce\"},{\"apiName\":\"group_post\",\"label\":\"Posts to a group\",\"type\":\"group_post\"},{\"apiName\":\"personal_analytic\",\"label\":\"Salesforce Classic report updates\",\"type\":\"personal_analytic\"},{\"apiName\":\"profile_post\",\"label\":\"Posts to a profile\",\"type\":\"profile_post\"},{\"apiName\":\"stream_post\",\"label\":\"Posts to a stream\",\"type\":\"stream_post\"},{\"apiName\":\"task_delegated_to\",\"label\":\"Task assignments\",\"type\":\"task_delegated_to\"}]}"
+
+        private val clientInfo = ClientInfo(
+            /* instanceUrl = */ URI.create("https://192.0.2.1"), /* RFC 5737 Test URL */
+            /* loginUrl = */ URI.create("https://192.0.2.1"),
+            /* identityUrl = */ URI.create("https://192.0.2.1"),
+            /* accountName = */ null,
+            /* username = */ null,
+            /* userId = */ null,
+            /* orgId = */ null,
+            /* communityId = */ null,
+            /* communityUrl = */ null,
+            /* firstName = */ null,
+            /* lastName = */ null,
+            /* displayName = */ null,
+            /* email = */ null,
+            /* photoUrl = */ null,
+            /* thumbnailUrl = */ null,
+            /* additionalOauthValues = */ null,
+            /* lightningDomain = */ null,
+            /* lightningSid = */ null,
+            /* vfDomain = */ null,
+            /* vfSid = */ null,
+            /* contentDomain = */ null,
+            /* contentSid = */ null,
+            /* csrfToken = */ null
+        )
 
         private val user = UserAccount(Bundle().apply {
             putString("orgId", "org-1")

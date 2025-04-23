@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.rest.NotificationsApiException
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.fromJson
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
 import io.mockk.every
 import io.mockk.mockk
@@ -50,6 +51,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.HttpURLConnection.HTTP_CREATED
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
+import java.net.URI
 
 /**
  * Tests for `PushService`.
@@ -142,6 +144,7 @@ class PushServiceTest {
         every { restResponse.asString() } returns NOTIFICATIONS_TYPES_JSON
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -159,18 +162,19 @@ class PushServiceTest {
     fun testFetchNotificationsTypes_NullResponseBodyString() {
 
         // Mocks
-        val restResponseNullResponseBodyString = mockk<RestResponse>()
-        every { restResponseNullResponseBodyString.asString() } returns null
-        every { restResponseNullResponseBodyString.isSuccess } returns true
-        val restClientNullResponseBodyString = mockk<RestClient>()
-        every { restClientNullResponseBodyString.sendSync(any()) } returns restResponseNullResponseBodyString
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns null
+        every { restResponse.isSuccess } returns true
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
         VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                restClient = restClientNullResponseBodyString,
+                restClient = restClient,
                 userAccount = createTestAccount()
             )
         }
@@ -180,8 +184,8 @@ class PushServiceTest {
     fun testFetchNotificationsTypes_Failure() {
 
         // Mocks
-        val restResponseFailure = mockk<RestResponse>()
-        every { restResponseFailure.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             serializer(),
             JsonArray(
                 listOf(
@@ -196,17 +200,18 @@ class PushServiceTest {
                 )
             )
         )
-        every { restResponseFailure.isSuccess } returns false
+        every { restResponse.isSuccess } returns false
 
-        val restClientFailure = mockk<RestClient>()
-        every { restClientFailure.sendSync(any()) } returns restResponseFailure
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
         VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                restClient = restClientFailure,
+                restClient = restClient,
                 userAccount = createTestAccount()
             )
         }
@@ -216,22 +221,23 @@ class PushServiceTest {
     fun testFetchNotificationsTypes_FailureEmpty() {
 
         // Mocks.
-        val restResponseFailureEmpty = mockk<RestResponse>()
-        every { restResponseFailureEmpty.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             serializer(),
             JsonArray(listOf())
         )
-        every { restResponseFailureEmpty.isSuccess } returns false
+        every { restResponse.isSuccess } returns false
 
-        val restClientFailureEmpty = mockk<RestClient>()
-        every { restClientFailureEmpty.sendSync(any()) } returns restResponseFailureEmpty
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
         VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                restClient = restClientFailureEmpty,
+                restClient = restClient,
                 userAccount = createTestAccount()
             )
         }
@@ -241,8 +247,8 @@ class PushServiceTest {
     fun testFetchNotificationsTypes_FailureNullProperties() {
 
         // Mocks.
-        val restResponseFailureNullProperties = mockk<RestResponse>()
-        every { restResponseFailureNullProperties.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             serializer(),
             JsonArray(
                 listOf(
@@ -253,17 +259,18 @@ class PushServiceTest {
                 )
             )
         )
-        every { restResponseFailureNullProperties.isSuccess } returns false
+        every { restResponse.isSuccess } returns false
 
-        val restClientFailureNullProperties = mockk<RestClient>()
-        every { restClientFailureNullProperties.sendSync(any()) } returns restResponseFailureNullProperties
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
         VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             PushService().fetchNotificationsTypes(
-                restClient = restClientFailureNullProperties,
+                restClient = restClient,
                 userAccount = createTestAccount()
             )
         }
@@ -595,6 +602,7 @@ class PushServiceTest {
         )
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         // Setup.
@@ -755,19 +763,19 @@ class PushServiceTest {
         createTestAccountInAccountManager(userAccountManager)
 
         // Mocks.
-        val restResponseUnknownStatus = mockk<RestResponse>()
-        every { restResponseUnknownStatus.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             NotificationsActionsResponseBody.serializer(),
             NotificationsActionsResponseBody(
                 message = "test_message"
             )
         )
-        every { restResponseUnknownStatus.consume() } returns Unit
-        every { restResponseUnknownStatus.isSuccess } returns true
-        every { restResponseUnknownStatus.statusCode } returns 666
-        every { restResponseUnknownStatus.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
-        val restClientUnknownStatus = mockk<RestClient>()
-        every { restClientUnknownStatus.sendSync(any()) } returns restResponseUnknownStatus
+        every { restResponse.consume() } returns Unit
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns 666
+        every { restResponse.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
 
         var actualStatusUnknownStatus: Int? = null
         val actualIdUnknownStatus = object : PushService() {
@@ -782,7 +790,7 @@ class PushServiceTest {
         }.registerSFDCPushNotification(
             registrationId = "test_registration_id",
             account = createTestAccount(),
-            restClient = restClientUnknownStatus
+            restClient = restClient
         )
 
         assertEquals(REGISTRATION_STATUS_FAILED, actualStatusUnknownStatus)
@@ -794,19 +802,19 @@ class PushServiceTest {
         createTestAccountInAccountManager(userAccountManager)
 
         // Mocks.
-        val restResponseFailure = mockk<RestResponse>()
-        every { restResponseFailure.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             NotificationsActionsResponseBody.serializer(),
             NotificationsActionsResponseBody(
                 message = "test_message"
             )
         )
-        every { restResponseFailure.consume() } returns Unit
-        every { restResponseFailure.isSuccess } returns true
-        every { restResponseFailure.statusCode } returns HTTP_NOT_FOUND
-        every { restResponseFailure.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
-        val restClientFailure = mockk<RestClient>()
-        every { restClientFailure.sendSync(any()) } returns restResponseFailure
+        every { restResponse.consume() } returns Unit
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns HTTP_NOT_FOUND
+        every { restResponse.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
 
         var actualStatusForFailure: Int? = null
         val actualIdForFailure = object : PushService() {
@@ -821,7 +829,7 @@ class PushServiceTest {
         }.registerSFDCPushNotification(
             registrationId = "test_registration_id",
             account = createTestAccount(),
-            restClient = restClientFailure
+            restClient = restClient
         )
 
         assertEquals(REGISTRATION_STATUS_FAILED, actualStatusForFailure)
@@ -833,19 +841,19 @@ class PushServiceTest {
         createTestAccountInAccountManager(userAccountManager)
 
         // Mocks.
-        val restResponseNullResponseBody = mockk<RestResponse>()
-        every { restResponseNullResponseBody.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             NotificationsActionsResponseBody.serializer(),
             NotificationsActionsResponseBody(
                 message = "test_message"
             )
         )
-        every { restResponseNullResponseBody.consume() } returns Unit
-        every { restResponseNullResponseBody.isSuccess } returns true
-        every { restResponseNullResponseBody.statusCode } returns HTTP_CREATED
-        every { restResponseNullResponseBody.asJSONObject() } returns null
-        val restClientNullResponseBody = mockk<RestClient>()
-        every { restClientNullResponseBody.sendSync(any()) } returns restResponseNullResponseBody
+        every { restResponse.consume() } returns Unit
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns HTTP_CREATED
+        every { restResponse.asJSONObject() } returns null
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
 
         var actualStatusForNullResponseBody: Int? = null
         val actualIdForNullResponseBody = object : PushService() {
@@ -860,7 +868,7 @@ class PushServiceTest {
         }.registerSFDCPushNotification(
             registrationId = "test_registration_id",
             account = createTestAccount(),
-            restClient = restClientNullResponseBody
+            restClient = restClient
         )
 
         assertEquals(REGISTRATION_STATUS_FAILED, actualStatusForNullResponseBody)
@@ -872,19 +880,19 @@ class PushServiceTest {
         createTestAccountInAccountManager(userAccountManager)
 
         // Mocks.
-        val restResponseException = mockk<RestResponse>()
-        every { restResponseException.asString() } returns encodeToString(
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
             NotificationsActionsResponseBody.serializer(),
             NotificationsActionsResponseBody(
                 message = "test_message"
             )
         )
-        every { restResponseException.consume() } throws Exception()
-        every { restResponseException.isSuccess } returns true
-        every { restResponseException.statusCode } returns HTTP_CREATED
-        every { restResponseException.asJSONObject() } returns null
-        val restClientException = mockk<RestClient>()
-        every { restClientException.sendSync(any()) } returns restResponseException
+        every { restResponse.consume() } throws Exception()
+        every { restResponse.isSuccess } returns true
+        every { restResponse.statusCode } returns HTTP_CREATED
+        every { restResponse.asJSONObject() } returns null
+        val restClient = mockk<RestClient>()
+        every { restClient.sendSync(any()) } returns restResponse
 
         var actualStatusForException: Int? = null
         val actualIdForException = object : PushService() {
@@ -899,7 +907,7 @@ class PushServiceTest {
         }.registerSFDCPushNotification(
             registrationId = "test_registration_id",
             account = createTestAccount(),
-            restClient = restClientException
+            restClient = restClient
         )
 
         assertEquals(actualStatusForException, REGISTRATION_STATUS_FAILED)
@@ -912,6 +920,32 @@ class PushServiceTest {
     }
 
     companion object {
+
+        private val clientInfo = ClientInfo(
+            /* instanceUrl = */ URI.create("https://192.0.2.1"), /* RFC 5737 Test URL */
+            /* loginUrl = */ URI.create("https://192.0.2.1"),
+            /* identityUrl = */ URI.create("https://192.0.2.1"),
+            /* accountName = */ null,
+            /* username = */ null,
+            /* userId = */ null,
+            /* orgId = */ null,
+            /* communityId = */ null,
+            /* communityUrl = */ null,
+            /* firstName = */ null,
+            /* lastName = */ null,
+            /* displayName = */ null,
+            /* email = */ null,
+            /* photoUrl = */ null,
+            /* thumbnailUrl = */ null,
+            /* additionalOauthValues = */ null,
+            /* lightningDomain = */ null,
+            /* lightningSid = */ null,
+            /* vfDomain = */ null,
+            /* vfSid = */ null,
+            /* contentDomain = */ null,
+            /* contentSid = */ null,
+            /* csrfToken = */ null
+        )
 
         private val user = UserAccount(Bundle().apply {
             putString("orgId", "org-1")
