@@ -521,7 +521,7 @@ open class LoginActivity : FragmentActivity() {
      * @param errorDesc The error description
      * @param e The exception
      */
-    protected fun onAuthFlowError(
+    protected open fun onAuthFlowError(
         error: String,
         errorDesc: String?,
         e: Throwable? = null,
