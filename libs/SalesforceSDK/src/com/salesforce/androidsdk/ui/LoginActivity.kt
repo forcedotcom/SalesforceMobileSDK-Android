@@ -93,6 +93,7 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
@@ -920,7 +921,11 @@ open class LoginActivity : FragmentActivity() {
                     ?: return@evaluateJavascript
 
                 // Ensure Status Bar Icons are readable no matter which OS theme is used.
-                val useLightIcons = viewModel.dynamicBackgroundTheme.value == DARK
+                val useLightIcons = when {
+                    viewModel.titleTextColor != null -> viewModel.titleTextColor!!.luminance() < 0.5
+                    viewModel.topBarColor != null -> viewModel.topBarColor!!.luminance() < 0.5
+                    else -> viewModel.dynamicBackgroundTheme.value == DARK
+                }
                 WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = useLightIcons
             }.also {
                 if (!viewModel.authFinished.value) {
