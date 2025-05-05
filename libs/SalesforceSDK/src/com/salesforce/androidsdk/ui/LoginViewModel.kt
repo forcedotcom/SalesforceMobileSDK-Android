@@ -54,6 +54,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
+import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -240,7 +241,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * Called when the webview portion of the User Agent flow or the code exchange
      * portion of the Web Server is finished to create and the user.
      */
-    internal fun onAuthFlowComplete(
+    internal suspend fun onAuthFlowComplete(
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
@@ -249,7 +250,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // if the user tries to add another user right away.
         clearCookies()
         authCodeForJwtFlow = null
-        com.salesforce.androidsdk.auth.onAuthFlowComplete(
+        onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "", // This will never actually be null.
             consumerKey = clientId,

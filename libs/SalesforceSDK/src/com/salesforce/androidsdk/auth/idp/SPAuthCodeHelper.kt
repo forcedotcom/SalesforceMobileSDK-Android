@@ -83,7 +83,7 @@ internal class SPAuthCodeHelper private constructor (
         return tokenResponse
     }
 
-    private fun completeLogin(tokenResponse: TokenEndpointResponse) {
+    private suspend fun completeLogin(tokenResponse: TokenEndpointResponse) {
         onAuthFlowComplete(
             tokenResponse = tokenResponse,
             loginServer = loginUrl,

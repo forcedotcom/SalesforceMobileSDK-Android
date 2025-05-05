@@ -42,9 +42,9 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
+import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.push.PushMessaging.register
@@ -55,8 +55,10 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Request.Builder
@@ -83,7 +85,7 @@ private const val TAG = "AuthenticationUtilities"
  *  * Creates an Account.
  *  * Checks for any CA/ECA settings such as Screen Lock or Biometric Authentication.
  */
-internal fun onAuthFlowComplete(
+internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
     consumerKey: String,
@@ -113,14 +115,17 @@ internal fun onAuthFlowComplete(
         return
     }
 
-    var userIdentity: IdServiceResponse? = null
-    runCatching {
-        userIdentity = OAuth2.callIdentityService(
-            HttpAccess.DEFAULT,
-            tokenResponse.idUrlWithInstance,
-            tokenResponse.authToken,
-        )
-    }
+    val userIdentity = runCatching {
+        withContext(Default) {
+            callIdentityService(
+                HttpAccess.DEFAULT,
+                tokenResponse.idUrlWithInstance,
+                tokenResponse.authToken,
+            )
+        }
+    }.onFailure { throwable ->
+        w(TAG, "Cannot fetch user identity due to an error.", throwable)
+    }.getOrNull()
 
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
     if (mustBeManagedApp && !getRuntimeConfig(context).isManagedApp) {
@@ -231,10 +236,10 @@ internal fun onAuthFlowComplete(
     // Screen lock required by mobile policy
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
-        val timeoutInMills = (userIdentity?.screenLockTimeout ?: 0) * 1000 * 60
+        val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
         (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
             account,
-            userIdentity?.screenLock ?: false,
+            userIdentity.screenLock,
             timeoutInMills
         )
     }
@@ -242,10 +247,10 @@ internal fun onAuthFlowComplete(
     // Biometric authorization required by mobile policy
     if (userIdentity?.biometricAuth == true) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
-        val timeoutInMills = (userIdentity?.biometricAuthTimeout ?: 0) * 60 * 1000
+        val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
         (SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
             account,
-            userIdentity?.biometricAuth ?: false,
+            userIdentity.biometricAuth,
             timeoutInMills
         )
     }
@@ -307,7 +312,7 @@ private fun HttpUrl.isSalesforceUrl(): Boolean {
     // List from https://help.salesforce.com/s/articleView?language=en_US&id=sf.domain_name_url_formats.htm&type=5
     val salesforceHosts = listOf(".salesforce.com", ".force.com", ".sfdcopens.com", ".site.com", ".lightning.com",
         ".salesforce-sites.com", ".force-user-content.com", ".salesforce-experience.com", ".salesforce-scrt.com")
-    return salesforceHosts.map { host.endsWith(it) }.any() { it }
+    return salesforceHosts.map { host.endsWith(it) }.any { it }
 }
 
 private fun addAccount(account: UserAccount?) {

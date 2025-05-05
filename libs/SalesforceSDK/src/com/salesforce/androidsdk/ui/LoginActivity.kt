@@ -97,6 +97,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
@@ -137,6 +138,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -519,7 +521,7 @@ open class LoginActivity : FragmentActivity() {
      * @param errorDesc The error description
      * @param e The exception
      */
-    protected fun onAuthFlowError(
+    protected open fun onAuthFlowError(
         error: String,
         errorDesc: String?,
         e: Throwable? = null,
@@ -884,11 +886,13 @@ open class LoginActivity : FragmentActivity() {
                                 )
 
                             else ->
-                                viewModel.onAuthFlowComplete(
-                                    TokenEndpointResponse(params),
-                                    ::onAuthFlowError,
-                                    ::onAuthFlowSuccess
-                                )
+                                CoroutineScope(Default).launch {
+                                    viewModel.onAuthFlowComplete(
+                                        TokenEndpointResponse(params),
+                                        ::onAuthFlowError,
+                                        ::onAuthFlowSuccess
+                                    )
+                                }
                         }
                     }
                 }
@@ -914,6 +918,10 @@ open class LoginActivity : FragmentActivity() {
 
                 viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
                     ?: return@evaluateJavascript
+
+                // Ensure Status Bar Icons are readable no matter which OS theme is used.
+                val useLightIcons = viewModel.dynamicBackgroundTheme.value == DARK
+                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = useLightIcons
             }.also {
                 if (!viewModel.authFinished.value) {
                     viewModel.loading.value = false
