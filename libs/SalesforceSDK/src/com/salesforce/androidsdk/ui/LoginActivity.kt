@@ -921,11 +921,10 @@ open class LoginActivity : FragmentActivity() {
                     ?: return@evaluateJavascript
 
                 // Ensure Status Bar Icons are readable no matter which OS theme is used.
-                val useLightIcons = when {
-                    viewModel.titleTextColor != null -> viewModel.titleTextColor!!.luminance() < 0.5
-                    viewModel.topBarColor != null -> viewModel.topBarColor!!.luminance() < 0.5
-                    else -> viewModel.dynamicBackgroundTheme.value == DARK
-                }
+                val titleTextColorLight = viewModel.titleTextColor?.luminance()?.let { it < 0.5 }
+                val topAppBarDark = viewModel.topBarColor?.luminance()?.let { it < 0.5 }
+                val dynamicThemeIsDark = viewModel.dynamicBackgroundTheme.value == DARK
+                val useLightIcons = titleTextColorLight ?: topAppBarDark ?: dynamicThemeIsDark
                 WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = useLightIcons
             }.also {
                 if (!viewModel.authFinished.value) {
