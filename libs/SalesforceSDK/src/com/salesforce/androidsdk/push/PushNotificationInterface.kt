@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.push
 
-import com.google.firebase.FirebaseOptions
+import android.content.Context
 import com.google.firebase.messaging.FirebaseMessaging
 
 /**
@@ -42,9 +42,10 @@ interface PushNotificationInterface {
      * The implementation of this method would receive a notification and
      * handle it in some way, such as showing a notification to the user.
      *
-     * @param data the notification payload.
+     * @param data the notification payload
+     * @param context The Android context
      */
-    fun onPushMessageReceived(data: Map<String?, String?>?)
+    fun onPushMessageReceived(data: Map<String?, String?>?, context: Context)
 
     /**
      * This method is optional, you may simply return null.

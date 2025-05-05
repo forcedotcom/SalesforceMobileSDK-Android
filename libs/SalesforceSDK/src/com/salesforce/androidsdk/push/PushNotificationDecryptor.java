@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.push;
 
+import android.content.Context;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -58,12 +59,12 @@ class PushNotificationDecryptor {
         return INSTANCE;
     }
 
-    void onPushMessageReceived(RemoteMessage message) {
+    void onPushMessageReceived(RemoteMessage message, Context context) {
         final Map<String, String> data = processNotificationPayload(message.getData());
         if (SalesforceSDKManager.hasInstance()) {
             final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
             if (pnInterface != null) {
-                pnInterface.onPushMessageReceived(data);
+                pnInterface.onPushMessageReceived(data, context);
             }
         }
     }
