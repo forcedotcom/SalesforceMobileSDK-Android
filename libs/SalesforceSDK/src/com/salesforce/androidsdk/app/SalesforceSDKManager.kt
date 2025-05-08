@@ -1336,11 +1336,11 @@ open class SalesforceSDKManager protected constructor(
         }
 
     private fun accessTokenExpiration(): String {
-        val currentUser = userAccountManager.cachedCurrentUser
+        val currentUSer = userAccountManager.cachedCurrentUser
         var expiration = "Unknown"
 
-        if (currentUser.tokenFormat == "jwt") {
-            val jwtAccessToken = JwtAccessToken(currentUser.authToken)
+        if (currentUSer.tokenFormat == "jwt") {
+            val jwtAccessToken = JwtAccessToken(currentUSer.authToken)
             val expirationDate = jwtAccessToken.expirationDate()
             if (expirationDate != null) {
                 val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
