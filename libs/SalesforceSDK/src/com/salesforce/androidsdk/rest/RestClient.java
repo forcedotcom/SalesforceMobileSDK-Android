@@ -49,6 +49,8 @@ import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 /**
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
@@ -338,6 +340,19 @@ public class RestClient {
             }
         }
         return builder.build();
+    }
+
+    /**
+     * Returns a new web socket for the provided request and web socket listener.
+     * @param request The request
+     * @param listener The web socket listener
+     * @return The web socket
+     */
+    public WebSocket newWebSocket(
+            Request request,
+            WebSocketListener listener
+    ) {
+        return okHttpClient.newWebSocket(request, listener);
     }
 
     /**
