@@ -26,9 +26,12 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -38,6 +41,16 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.util.test.TestCredentials;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -54,15 +67,11 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import okhttp3.Response;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 /**
  * Tests for RestClient
@@ -128,6 +137,23 @@ public class RestClientTest {
         testOauthKeys = null;
         testOauthValues = null;
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
+    }
+
+    @Test
+    public void testNewWebSocket() {
+        final RestRequest restRequest = new RestRequest(
+                RestMethod.GET,
+                RestRequest.RestEndpoint.LOGIN,
+                "/a",
+                (JSONObject) null,
+                null);
+
+        final WebSocket webSocket = restClient.newWebSocket(
+                restClient.buildRequest(restRequest),
+                new WebSocketListener() {
+                });
+
+        Assert.assertNotNull(webSocket);
     }
 
     /**
