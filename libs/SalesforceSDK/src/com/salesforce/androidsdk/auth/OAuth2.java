@@ -196,6 +196,8 @@ public class OAuth2 {
     private static final String SID_COOKIE_NAME = "sidCookieName";
     private static final String PARENT_SID = "parent_sid";
     private static final String TOKEN_FORMAT = "token_format";
+    private static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    private static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -778,6 +780,8 @@ public class OAuth2 {
         public String sidCookieName;
         public String parentSid;
         public String tokenFormat;
+        public String beaconChildConsumerKey;
+        public String beaconChildConsumerSecret;
 
         /**
          * Parameterized constructor built during login flow.
@@ -817,6 +821,8 @@ public class OAuth2 {
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
+                beaconChildConsumerKey = callbackUrlParams.get(BEACON_CHILD_CONSUMER_KEY);
+                beaconChildConsumerSecret = callbackUrlParams.get(BEACON_CHILD_CONSUMER_SECRET);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
@@ -881,6 +887,13 @@ public class OAuth2 {
                 sidCookieName = parsedResponse.optString(SID_COOKIE_NAME);
                 parentSid = parsedResponse.optString(PARENT_SID);
                 tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
+
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_KEY)) {
+                    beaconChildConsumerKey = parsedResponse.getString(BEACON_CHILD_CONSUMER_KEY);
+                }
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_SECRET)) {
+                    beaconChildConsumerSecret = parsedResponse.getString(BEACON_CHILD_CONSUMER_SECRET);
+                }
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);

@@ -95,6 +95,8 @@ public class UserAccountTest {
     public static final String TEST_CLIENT_ID = "test-client-id";
     public static final String TEST_PARENT_SID = "test-parent-sid";
     public static final String TEST_TOKEN_FORMAT = "test-token-format";
+    public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
+    public static final String TEST_BEACON_CHILD_CONSUMER_SECRET = "test-beacon-child-consumer-secret";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -178,6 +180,26 @@ public class UserAccountTest {
                 .accountName(TEST_ACCOUNT_NAME_2)
                 .build();
         checkOtherTestAccount(otherUserAccount);
+    }
+
+    @Test
+    public void testGetClientIdForRefresh() {
+        UserAccount userWithBeaconChildKey = createTestAccount();
+        Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, userWithBeaconChildKey.getBeaconChildConsumerKey());
+        Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, userWithBeaconChildKey.getBeaconChildConsumerSecret());
+        Assert.assertEquals("Client id should match", TEST_CLIENT_ID, userWithBeaconChildKey.getClientId());
+        Assert.assertEquals("Client id for refresh should be beacon child client id", TEST_BEACON_CHILD_CONSUMER_KEY, userWithBeaconChildKey.getClientIdForRefresh());
+
+        UserAccount userWithoutBeaconChildKey = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(userWithBeaconChildKey)
+                .beaconChildConsumerKey(null)
+                .beaconChildConsumerSecret(null)
+                .build();
+
+        Assert.assertNull("Beacon child consumer key should be null", userWithoutBeaconChildKey.getBeaconChildConsumerKey());
+        Assert.assertNull("Beacon child consumer secret should be null", userWithoutBeaconChildKey.getBeaconChildConsumerSecret());
+        Assert.assertEquals("Client id should match", TEST_CLIENT_ID, userWithoutBeaconChildKey.getClientId());
+        Assert.assertEquals("Client id for refresh should be client id", TEST_CLIENT_ID, userWithoutBeaconChildKey.getClientIdForRefresh());
     }
 
     /**
@@ -355,6 +377,8 @@ public class UserAccountTest {
         object.put(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
         object.put(UserAccount.PARENT_SID, TEST_PARENT_SID);
         object.put(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
+        object.put(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
+        object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -399,6 +423,8 @@ public class UserAccountTest {
         object.putString(UserAccount.CLIENT_ID, TEST_CLIENT_ID);
         object.putString(UserAccount.PARENT_SID, TEST_PARENT_SID);
         object.putString(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
+        object.putString(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
+        object.putString(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -441,6 +467,8 @@ public class UserAccountTest {
                 .clientId(TEST_CLIENT_ID)
                 .parentSid(TEST_PARENT_SID)
                 .tokenFormat(TEST_TOKEN_FORMAT)
+                .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)
+                .beaconChildConsumerSecret(TEST_BEACON_CHILD_CONSUMER_SECRET)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }
@@ -494,7 +522,8 @@ public class UserAccountTest {
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
         Assert.assertEquals("Parent sid should match", TEST_PARENT_SID, account.getParentSid());
         Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
-
+        Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, account.getBeaconChildConsumerKey());
+        Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, account.getBeaconChildConsumerSecret());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -534,6 +563,8 @@ public class UserAccountTest {
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
         Assert.assertEquals("Parent sid should match", TEST_PARENT_SID, account.getParentSid());
         Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
+        Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, account.getBeaconChildConsumerKey());
+        Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, account.getBeaconChildConsumerSecret());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -569,7 +600,8 @@ public class UserAccountTest {
         params.put("sidCookieName", TEST_SID_COOKIE_NAME);
         params.put("parent_sid", TEST_PARENT_SID);
         params.put("token_format", TEST_TOKEN_FORMAT);
-
+        params.put("beacon_child_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
+        params.put("beacon_child_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
         return new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
     }
 

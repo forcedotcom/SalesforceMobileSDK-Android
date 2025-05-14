@@ -93,7 +93,9 @@ public class UserAccount {
 	public static final String CLIENT_ID = "clientId";
 	public static final String PARENT_SID = "parentSid";
 	public static final String TOKEN_FORMAT = "tokenFormat";
-;
+	public static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
+	public static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
@@ -136,6 +138,8 @@ public class UserAccount {
 	private String parentSid;
 	private String tokenFormat;
 	private Map<String, String> additionalOauthValues;
+	private String beaconChildConsumerKey;
+	private String beaconChildConsumerSecret;
 
 	/**
 	 * Parameterized constructor.
@@ -173,6 +177,8 @@ public class UserAccount {
 	 * @param clientId oauth client id
 	 * @param parentSid parent sid
 	 * @param tokenFormat token format
+	 * @param beaconChildConsumerKey beacon child consumer key
+	 * @param beaconChildConsumerSecret beacon child consumer secret
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -183,7 +189,8 @@ public class UserAccount {
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
-				String sidCookieName, String clientId, String parentSid, String tokenFormat) {
+				String sidCookieName, String clientId, String parentSid, String tokenFormat,
+				String beaconChildConsumerKey, String beaconChildConsumerSecret) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -218,6 +225,8 @@ public class UserAccount {
 		this.clientId = clientId;
 		this.parentSid = parentSid;
 		this.tokenFormat = tokenFormat;
+		this.beaconChildConsumerKey = beaconChildConsumerKey;
+		this.beaconChildConsumerSecret = beaconChildConsumerSecret;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -265,6 +274,8 @@ public class UserAccount {
 			clientId = object.optString(CLIENT_ID, null);
 			parentSid = object.optString(PARENT_SID, null);
 			tokenFormat = object.optString(TOKEN_FORMAT, null);
+			beaconChildConsumerKey = object.optString(BEACON_CHILD_CONSUMER_KEY, null);
+			beaconChildConsumerSecret = object.optString(BEACON_CHILD_CONSUMER_SECRET, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -318,6 +329,8 @@ public class UserAccount {
 			clientId = bundle.getString(CLIENT_ID);
 			parentSid = bundle.getString(PARENT_SID);
 			tokenFormat = bundle.getString(TOKEN_FORMAT);
+			beaconChildConsumerKey = bundle.getString(BEACON_CHILD_CONSUMER_KEY);
+			beaconChildConsumerSecret = bundle.getString(BEACON_CHILD_CONSUMER_SECRET);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -612,6 +625,15 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the oauth client id to use for refresh
+	 * In the case of beacon app, the beacon child consumer key returned during login should be used instead of the configured consumer key
+	 * @return client id to use for refresh.
+	 */
+	public String getClientIdForRefresh() {
+		return !TextUtils.isEmpty(beaconChildConsumerKey) ? beaconChildConsumerKey : clientId;
+	}
+
+	/**
 	 * Returns the parent sid.
 	 *
 	 * @return parent sid.
@@ -627,6 +649,24 @@ public class UserAccount {
 	 */
 	public String getTokenFormat() {
 		return tokenFormat;
+	}
+
+	/**
+	 * Returns the beacon child consumer key .
+	 *
+	 * @return beacon child consumer key.
+	 */
+	public String getBeaconChildConsumerKey() {
+		return beaconChildConsumerKey;
+	}
+
+	/**
+	 * Returns the beacon child consumer secret.
+	 *
+	 * @return beacon child consumer secret.
+	 */
+	public String getBeaconChildConsumerSecret() {
+		return beaconChildConsumerSecret;
 	}
 
 	/**
@@ -897,6 +937,8 @@ public class UserAccount {
 			object.put(SID_COOKIE_NAME, sidCookieName);
 			object.put(PARENT_SID, parentSid);
 			object.put(TOKEN_FORMAT, tokenFormat);
+			object.put(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
+			object.put(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
 			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
@@ -954,6 +996,8 @@ public class UserAccount {
 		object.putString(CLIENT_ID, clientId);
 		object.putString(PARENT_SID, parentSid);
 		object.putString(TOKEN_FORMAT, tokenFormat);
+		object.putString(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
+		object.putString(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}

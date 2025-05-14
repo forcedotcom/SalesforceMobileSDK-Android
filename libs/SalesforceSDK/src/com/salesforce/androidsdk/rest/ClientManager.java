@@ -470,7 +470,7 @@ public class ClientManager {
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), refreshToken, addlParamsMap);
+                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), refreshToken, addlParamsMap);
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)
