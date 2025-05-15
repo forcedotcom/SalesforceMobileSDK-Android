@@ -49,6 +49,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.MediaType;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 /**
  * Tests for {@link UserAccount}
  */
@@ -151,20 +157,38 @@ public class UserAccountTest {
 
     /**
      * Tests populating account from token end point response and id response
+     * Simulating user agent flow
      */
     @Test
-    public void testPopulateFromTokenEndpointAndIdService() throws JSONException {
-        OAuth2.TokenEndpointResponse tr = createTokenEndpointResponse();
+    public void testPopulateFromTokenEndpointAndIdServiceLikeUserAgentFlow() throws JSONException {
         OAuth2.IdServiceResponse id = createIdServiceResponse();
-        UserAccount account = UserAccountBuilder.getInstance()
-                .populateFromTokenEndpointResponse(tr)
+        OAuth2.TokenEndpointResponse trUserAgentFlow = createTokenEndpointResponseLikeUserAgentFlow();
+        checkTestAccount(UserAccountBuilder.getInstance()
+                .populateFromTokenEndpointResponse(trUserAgentFlow)
                 .populateFromIdServiceResponse(id)
                 .accountName(TEST_ACCOUNT_NAME)
                 .loginServer(TEST_LOGIN_URL)
                 .nativeLogin(TEST_NATIVE_LOGIN)
                 .clientId(TEST_CLIENT_ID)
-                .build();
-        checkTestAccount(account);
+                .build());
+    }
+
+    /**
+     * Tests populating account from token end point response and id response
+     * Simulating web server flow
+     */
+    @Test
+    public void testPopulateFromTokenEndpointAndIdServiceLikeWebServerFlow() throws JSONException {
+        OAuth2.IdServiceResponse id = createIdServiceResponse();
+        OAuth2.TokenEndpointResponse trWebServerFlow = createTokenEndpointResponseLikeWebServerFlow();
+        checkTestAccount(UserAccountBuilder.getInstance()
+                .populateFromTokenEndpointResponse(trWebServerFlow)
+                .populateFromIdServiceResponse(id)
+                .accountName(TEST_ACCOUNT_NAME)
+                .loginServer(TEST_LOGIN_URL)
+                .nativeLogin(TEST_NATIVE_LOGIN)
+                .clientId(TEST_CLIENT_ID)
+                .build());
     }
 
     /**
@@ -578,7 +602,28 @@ public class UserAccountTest {
         return new ArrayList<>(Collections.singletonList(TEST_CUSTOM_KEY));
     }
 
-    private OAuth2.TokenEndpointResponse createTokenEndpointResponse() {
+    private OAuth2.TokenEndpointResponse createTokenEndpointResponseLikeUserAgentFlow() {
+        Map<String, String> params = createTokenEndpointParams();
+        return new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+    }
+
+    private OAuth2.TokenEndpointResponse createTokenEndpointResponseLikeWebServerFlow() {
+        JSONObject responseJson = new JSONObject(createTokenEndpointParams());
+        MediaType mediaType = MediaType.parse("application/json");
+        ResponseBody responseBody = ResponseBody.create(responseJson.toString(), mediaType);
+
+        Response response =  new Response.Builder()
+                .code(200) // HTTP 200 OK
+                .message("OK")
+                .protocol(Protocol.HTTP_1_1)
+                .request(new Request.Builder().url("https://something.salesforce.com").build())
+                .body(responseBody)
+                .build();
+
+        return new OAuth2.TokenEndpointResponse(response, createAdditionalOauthKeys());
+    }
+
+    private Map<String, String> createTokenEndpointParams() {
         Map<String, String> params = new HashMap<>();
 
         params.put("access_token", TEST_AUTH_TOKEN);
@@ -602,7 +647,8 @@ public class UserAccountTest {
         params.put("token_format", TEST_TOKEN_FORMAT);
         params.put("beacon_child_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
         params.put("beacon_child_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
-        return new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+
+        return params;
     }
 
     private OAuth2.IdServiceResponse createIdServiceResponse() throws JSONException {
