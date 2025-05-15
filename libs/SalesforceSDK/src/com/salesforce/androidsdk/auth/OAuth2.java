@@ -821,8 +821,8 @@ public class OAuth2 {
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
-                beaconChildConsumerKey = callbackUrlParams.get(BEACON_CHILD_CONSUMER_KEY);
-                beaconChildConsumerSecret = callbackUrlParams.get(BEACON_CHILD_CONSUMER_SECRET);
+
+                // NB: beacon apps not supported with user agent flow so no beacon child fields expected
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
@@ -888,6 +888,7 @@ public class OAuth2 {
                 parentSid = parsedResponse.optString(PARENT_SID);
                 tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
+                // Beacon child fields expected when using a beacon app and web server flow
                 if (parsedResponse.has(BEACON_CHILD_CONSUMER_KEY)) {
                     beaconChildConsumerKey = parsedResponse.getString(BEACON_CHILD_CONSUMER_KEY);
                 }

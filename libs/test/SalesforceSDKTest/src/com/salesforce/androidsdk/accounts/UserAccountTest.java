@@ -170,7 +170,7 @@ public class UserAccountTest {
                 .loginServer(TEST_LOGIN_URL)
                 .nativeLogin(TEST_NATIVE_LOGIN)
                 .clientId(TEST_CLIENT_ID)
-                .build());
+                .build(), false /* no beacon child fields during user agent flow */);
     }
 
     /**
@@ -188,7 +188,7 @@ public class UserAccountTest {
                 .loginServer(TEST_LOGIN_URL)
                 .nativeLogin(TEST_NATIVE_LOGIN)
                 .clientId(TEST_CLIENT_ID)
-                .build());
+                .build(), true /* beacon child fields expected with web server flow */);
     }
 
     /**
@@ -515,6 +515,15 @@ public class UserAccountTest {
      * @param account
      */
     void checkTestAccount(UserAccount account) {
+        checkTestAccount(account, true);
+    }
+
+    /**
+     * Check that the account passed has the test values
+     * @param account
+     * @param expectBeaconChildFields
+     */
+    void checkTestAccount(UserAccount account, boolean expectBeaconChildFields) {
         Assert.assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         Assert.assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -546,8 +555,13 @@ public class UserAccountTest {
         Assert.assertEquals("Sid cookie name should match", TEST_SID_COOKIE_NAME, account.getSidCookieName());
         Assert.assertEquals("Parent sid should match", TEST_PARENT_SID, account.getParentSid());
         Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
-        Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, account.getBeaconChildConsumerKey());
-        Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, account.getBeaconChildConsumerSecret());
+        if (expectBeaconChildFields) {
+            Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, account.getBeaconChildConsumerKey());
+            Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, account.getBeaconChildConsumerSecret());
+        } else {
+            Assert.assertNull("Beacon child consumer key should be null", account.getBeaconChildConsumerKey());
+            Assert.assertNull("Beacon child consumer secret should be null", account.getBeaconChildConsumerSecret());
+        }
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -608,7 +622,10 @@ public class UserAccountTest {
     }
 
     private OAuth2.TokenEndpointResponse createTokenEndpointResponseLikeWebServerFlow() {
-        JSONObject responseJson = new JSONObject(createTokenEndpointParams());
+        Map<String, String> params = createTokenEndpointParams();
+        params.put("beacon_child_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
+        params.put("beacon_child_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
+        JSONObject responseJson = new JSONObject(params);
         MediaType mediaType = MediaType.parse("application/json");
         ResponseBody responseBody = ResponseBody.create(responseJson.toString(), mediaType);
 
@@ -645,8 +662,6 @@ public class UserAccountTest {
         params.put("sidCookieName", TEST_SID_COOKIE_NAME);
         params.put("parent_sid", TEST_PARENT_SID);
         params.put("token_format", TEST_TOKEN_FORMAT);
-        params.put("beacon_child_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
-        params.put("beacon_child_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
 
         return params;
     }
