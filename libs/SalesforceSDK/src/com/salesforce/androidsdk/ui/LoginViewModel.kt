@@ -129,7 +129,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal var dynamicHeaderTextColor =
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal val defaultTitleText: String
-        get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
+        get() {
+            val loginUrl = loginUrl.value
+            return when {
+                loginUrl == ABOUT_BLANK -> ""
+                loginUrl != null -> loginUrl
+                else -> selectedServer.value ?: ""
+            }
+        }
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
@@ -162,6 +169,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // The default, locally generated code verifier
     @VisibleForTesting
     internal var codeVerifier: String? = null
+
+    /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
+    internal var loginHint: String? = null
 
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
@@ -313,10 +323,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
-            URI(server),
+            loginUrl.value?.let { URI(it) } ?: URI(server),
             clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
+            loginHint,
             authorizationDisplayType,
             codeChallenge,
             additionalParams

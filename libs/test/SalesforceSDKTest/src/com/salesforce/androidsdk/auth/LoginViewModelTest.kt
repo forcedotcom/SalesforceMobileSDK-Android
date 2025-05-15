@@ -156,6 +156,7 @@ class LoginViewModelTest {
         bootConfig.remoteAccessConsumerKey,
         bootConfig.oauthRedirectURI,
         bootConfig.oauthScopes,
+        null,
         SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type),
         codeChallenge,
         hashMapOf<String, String>()
