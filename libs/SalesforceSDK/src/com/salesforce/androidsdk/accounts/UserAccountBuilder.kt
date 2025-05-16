@@ -68,6 +68,8 @@ class UserAccountBuilder private constructor() {
     private var tokenFormat: String? = null
     private var additionalOauthValues: Map<String, String>? = null
     private var allowUnset = true
+    private var beaconChildConsumerKey: String? = null
+    private var beaconChildConsumerSecret: String? = null
 
     /**
      * Set fields from token end point response
@@ -100,6 +102,8 @@ class UserAccountBuilder private constructor() {
             .sidCookieName(tr.sidCookieName)
             .parentSid(tr.parentSid)
             .tokenFormat(tr.tokenFormat)
+            .beaconChildConsumerKey(tr.beaconChildConsumerKey)
+            .beaconChildConsumerSecret(tr.beaconChildConsumerSecret)
     }
 
     /**
@@ -164,6 +168,8 @@ class UserAccountBuilder private constructor() {
             .clientId(userAccount.clientId)
             .parentSid(userAccount.parentSid)
             .tokenFormat(userAccount.tokenFormat)
+            .beaconChildConsumerKey(userAccount.beaconChildConsumerKey)
+            .beaconChildConsumerSecret(userAccount.beaconChildConsumerSecret)
     }
 
     /**
@@ -534,6 +540,26 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets beacon child consumer key
+     *
+     * @param beaconChildConsumerKey beacon child consumer key
+     * @return Instance of this class.
+     */
+    fun beaconChildConsumerKey(beaconChildConsumerKey: String?): UserAccountBuilder {
+        return if (!allowUnset && beaconChildConsumerKey == null) this else apply { this.beaconChildConsumerKey = beaconChildConsumerKey }
+    }
+
+    /**
+     * Sets beacon child consumer secret
+     *
+     * @param beaconChildConsumerSecret beacon child consumer secret
+     * @return Instance of this class.
+     */
+    fun beaconChildConsumerSecret(beaconChildConsumerSecret: String?): UserAccountBuilder {
+        return if (!allowUnset && beaconChildConsumerSecret == null) this else apply { this.beaconChildConsumerSecret = beaconChildConsumerSecret }
+    }
+
+    /**
      * Builds and returns a UserAccount object.
      *
      * @return UserAccount object.
@@ -545,7 +571,7 @@ class UserAccountBuilder private constructor() {
             displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
             lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin,
             language, locale, cookieClientSrc, cookieSidClient, sidCookieName, clientId,
-            parentSid, tokenFormat
+            parentSid, tokenFormat, beaconChildConsumerKey, beaconChildConsumerSecret
         )
     }
 

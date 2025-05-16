@@ -86,6 +86,8 @@ public class AuthenticatorService extends Service {
     public static final String KEY_SID_COOKIE_NAME = "sidCookieName";
     public static final String KEY_PARENT_SID = "parentSid";
     public static final String KEY_TOKEN_FORMAT = "tokenFormat";
+    public static final String KEY_BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
+    public static final String KEY_BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
 
     private static final String TAG = "AuthenticatorService";
 
@@ -129,7 +131,7 @@ public class AuthenticatorService extends Service {
             try {
                 final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), originalUserAccount.getRefreshToken(), addlParamsMap);
+                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap);
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)

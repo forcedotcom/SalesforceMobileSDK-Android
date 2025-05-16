@@ -196,6 +196,8 @@ public class OAuth2 {
     private static final String SID_COOKIE_NAME = "sidCookieName";
     private static final String PARENT_SID = "parent_sid";
     private static final String TOKEN_FORMAT = "token_format";
+    private static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    private static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -778,9 +780,11 @@ public class OAuth2 {
         public String sidCookieName;
         public String parentSid;
         public String tokenFormat;
+        public String beaconChildConsumerKey;
+        public String beaconChildConsumerSecret;
 
         /**
-         * Parameterized constructor built during login flow.
+         * Parameterized constructor built from params during user agent login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
          * @param additionalOauthKeys Additional oauth keys.
@@ -818,13 +822,15 @@ public class OAuth2 {
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
 
+                // NB: beacon apps not supported with user agent flow so no beacon child fields expected
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
 
         /**
-         * Parameterized constructor built during login flow.
+         * Parameterized constructor built from params during user agent login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
          */
@@ -834,31 +840,31 @@ public class OAuth2 {
                     : null);
         }
 
-
         /**
-         * Parameterized constructor built from refresh flow response.
+         * Parameterized constructor built from refresh flow response
+         * or code exchange response (web server login flow).
          *
          * @param response Token endpoint response.
+         * @param additionalOauthKeys Additional oauth keys.
          */
-        public TokenEndpointResponse(Response response) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+        public TokenEndpointResponse(Response response, List<String> additionalOauthKeys) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
-                idUrl  = parsedResponse.getString(ID);
+                idUrl = parsedResponse.getString(ID);
                 computeOtherFields();
                 if (parsedResponse.has(REFRESH_TOKEN)) {
                     refreshToken = parsedResponse.getString(REFRESH_TOKEN);
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_ID)) {
-                	communityId = parsedResponse.getString(SFDC_COMMUNITY_ID);
+                    communityId = parsedResponse.getString(SFDC_COMMUNITY_ID);
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
-                	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
+                    communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
-                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     additionalOauthValues = new HashMap<>();
                     for (final String key : additionalOauthKeys) {
@@ -882,9 +888,29 @@ public class OAuth2 {
                 parentSid = parsedResponse.optString(PARENT_SID);
                 tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
+                // Beacon child fields expected when using a beacon app and web server flow
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_KEY)) {
+                    beaconChildConsumerKey = parsedResponse.getString(BEACON_CHILD_CONSUMER_KEY);
+                }
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_SECRET)) {
+                    beaconChildConsumerSecret = parsedResponse.getString(BEACON_CHILD_CONSUMER_SECRET);
+                }
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
+        }
+
+        /**
+         * Parameterized constructor built from refresh flow response
+         * or code exchange response (web server login flow).
+         *
+         * @param response Token endpoint response.
+         */
+        public TokenEndpointResponse(Response response) {
+            this(response, SalesforceSDKManager.getInstance() != null
+                    ? SalesforceSDKManager.getInstance() .getAdditionalOauthKeys()
+                    : null);
         }
 
         private void computeOtherFields() throws URISyntaxException {
