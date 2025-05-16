@@ -199,9 +199,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
-            val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
-                loginUrl.value = getAuthorizationUrl(newServer)
+            newServer?.let {
+                val isNewServer = loginUrl.value?.startsWith(newServer) != true
+                if (isNewServer && !isUsingFrontDoorBridge) {
+                    loginUrl.value = getAuthorizationUrl(newServer)
+                }
             }
         }
     }
