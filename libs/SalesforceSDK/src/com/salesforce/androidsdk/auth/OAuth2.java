@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import static android.text.TextUtils.isEmpty;
+
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -274,7 +276,7 @@ public class OAuth2 {
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         }
-        if (loginHint != null && !loginHint.isEmpty()) {
+        if (!TextUtils.isEmpty(loginHint)) {
             sb.append(AND).append(LOGIN_HINT).append(EQUAL).append(Uri.encode(loginHint));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
@@ -868,7 +870,7 @@ public class OAuth2 {
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     additionalOauthValues = new HashMap<>();
                     for (final String key : additionalOauthKeys) {
-                        if (!TextUtils.isEmpty(key)) {
+                        if (!isEmpty(key)) {
                             final String value = parsedResponse.optString(key);
                             additionalOauthValues.put(key, value);
                         }
