@@ -126,6 +126,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -197,8 +198,14 @@ open class LoginActivity : FragmentActivity() {
 
         // Set the Salesforce Welcome Login hint and host for the OAuth authorize URL, if applicable.
         viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
-        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let {
-            viewModel.loginUrl.value = "https://$it"
+        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
+            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+                LoginServer(
+                    loginHost,
+                    "https://$loginHost",
+                    true
+                )
+            )
         }
 
         /*

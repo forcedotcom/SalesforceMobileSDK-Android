@@ -88,26 +88,26 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun defaultTitleText() {
-        val regex = "https://login.salesforce.com/services/oauth2/authorize\\?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=[^=]+&code_challenge=[^=]+".toRegex()
+    fun defaultTitleText_Init_HasExpectedDefault() {
+        val regex = "https://login.salesforce.com/services/oauth2/authorize\\?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=[^%]+&code_challenge=[^%]+".toRegex()
         assertTrue(regex.matches(viewModel.defaultTitleText))
     }
 
     @Test
-    fun nullSelectedServerDefaultTitleText() {
-        viewModel.loginUrl.value = null
+    fun defaultTitleText_UpdatesOn_selectedServerIsNull() {
         viewModel.selectedServer.value = null
+        viewModel.loginUrl.value = null
         assertEquals("", viewModel.defaultTitleText)
     }
 
     @Test
-    fun blankLoginUrlDefaultTitleText() {
+    fun defaultTitleText_UpdatesOn_LoginUrlIsAboutBlank() {
         viewModel.loginUrl.value = ABOUT_BLANK
         assertEquals("", viewModel.defaultTitleText)
     }
 
     @Test
-    fun customLoginUrlDefaultTitleText() {
+    fun defaultTitle_UpdatesOn_loginUrlIsCustom() {
         val customLoginUrl = "https://custom.salesforce.com"
         viewModel.loginUrl.value = "https://custom.salesforce.com"
         assertEquals(customLoginUrl, viewModel.defaultTitleText)
@@ -168,6 +168,20 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun loginHint_Changes_loginUrl() {
+        val server = viewModel.selectedServer.value!!
+        val codeChallenge = getSHA256Hash(viewModel.codeVerifier)
+        val result = generateExpectedAuthorizationUrl(
+            server = server,
+            codeChallenge = codeChallenge,
+            loginHint = "ietf_example_domain_reserved_for_test@example.com",
+        )
+        val expectedResult =
+            "https://login.salesforce.com/services/oauth2/authorize\\?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&login_hint=ietf_example_domain_reserved_for_test%40example.com&redirect_uri=__REDIRECT_URI__&device_id=[^=]+&code_challenge=[^=]+".toRegex()
+        assertTrue(expectedResult.matches(result))
+    }
+
+    @Test
     fun testGetValidSeverUrl() {
         assertNull(viewModel.getValidServerUrl(""))
         assertNull(viewModel.getValidServerUrl("not_a_url_at_all"))
@@ -181,14 +195,18 @@ class LoginViewModelTest {
         assertEquals(unchangedUrl, viewModel.getValidServerUrl(endingSlash))
     }
 
-    private fun generateExpectedAuthorizationUrl(server: String, codeChallenge: String): String = OAuth2.getAuthorizationUrl(
+    private fun generateExpectedAuthorizationUrl(
+        server: String,
+        codeChallenge: String,
+        loginHint: String? = null,
+    ) = OAuth2.getAuthorizationUrl(
         true,
         true,
         URI(server),
         bootConfig.remoteAccessConsumerKey,
         bootConfig.oauthRedirectURI,
         bootConfig.oauthScopes,
-        null,
+        loginHint,
         SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type),
         codeChallenge,
         hashMapOf<String, String>()

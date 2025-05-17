@@ -325,7 +325,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             SalesforceSDKManager.getInstance().useWebServerAuthentication,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
-            loginUrl.value?.let { URI(it) } ?: URI(server),
+            URI(server),
             clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
