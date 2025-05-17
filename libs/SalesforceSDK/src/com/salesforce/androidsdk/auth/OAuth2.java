@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import static android.text.TextUtils.isEmpty;
+
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -104,6 +106,7 @@ public class OAuth2 {
     private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
+    public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
@@ -246,6 +249,7 @@ public class OAuth2 {
      * @param callbackUrl                OAuth callback URL or redirect URL.
      * @param scopes                     A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
      *                                   the default OAuth scope is provided.
+     * @param loginHint                  When applicable, the Salesforce Welcome Login hint
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
      * @param addlParams                 Any additional parameters that may be added to the request.
@@ -259,6 +263,7 @@ public class OAuth2 {
             String clientId,
             String callbackUrl,
             String[] scopes,
+            String loginHint,
             String displayType,
             String codeChallenge,
             Map<String,String> addlParams) {
@@ -272,6 +277,9 @@ public class OAuth2 {
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
+        if (!TextUtils.isEmpty(loginHint)) {
+            sb.append(AND).append(LOGIN_HINT).append(EQUAL).append(Uri.encode(loginHint));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
@@ -868,7 +876,7 @@ public class OAuth2 {
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     additionalOauthValues = new HashMap<>();
                     for (final String key : additionalOauthKeys) {
-                        if (!TextUtils.isEmpty(key)) {
+                        if (!isEmpty(key)) {
                             final String value = parsedResponse.optString(key);
                             additionalOauthValues.put(key, value);
                         }

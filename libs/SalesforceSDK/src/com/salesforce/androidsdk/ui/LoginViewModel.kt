@@ -129,7 +129,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal var dynamicHeaderTextColor =
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal val defaultTitleText: String
-        get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
+        get() {
+            val loginUrl = loginUrl.value
+            return when {
+                loginUrl == ABOUT_BLANK -> ""
+                loginUrl != null -> loginUrl
+                else -> selectedServer.value ?: ""
+            }
+        }
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
@@ -163,6 +170,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     @VisibleForTesting
     internal var codeVerifier: String? = null
 
+    /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
+    internal var loginHint: String? = null
+
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
 
@@ -189,9 +199,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
-            val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
-                loginUrl.value = getAuthorizationUrl(newServer)
+            newServer?.let {
+                val isNewServer = loginUrl.value?.startsWith(newServer) != true
+                if (isNewServer && !isUsingFrontDoorBridge) {
+                    loginUrl.value = getAuthorizationUrl(newServer)
+                }
             }
         }
     }
@@ -317,6 +329,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
+            loginHint,
             authorizationDisplayType,
             codeChallenge,
             additionalParams

@@ -126,6 +126,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -193,6 +194,18 @@ open class LoginActivity : FragmentActivity() {
         enableEdgeToEdge()
         if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
+        }
+
+        // Set the Salesforce Welcome Login hint and host for the OAuth authorize URL, if applicable.
+        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
+        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
+            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+                LoginServer(
+                    loginHost,
+                    "https://$loginHost",
+                    true
+                )
+            )
         }
 
         /*
@@ -1001,6 +1014,15 @@ open class LoginActivity : FragmentActivity() {
         internal const val ABOUT_BLANK = "about:blank"
         private const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
+
+        // endregion
+        // region Log In With Login Hint Public Implementation
+
+        /** Intent extra key for login hint value */
+        const val EXTRA_KEY_LOGIN_HINT = "login_hint"
+
+        /** Intent extra key for login host to use with login hint */
+        const val EXTRA_KEY_LOGIN_HOST = "login_host"
 
         // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation
