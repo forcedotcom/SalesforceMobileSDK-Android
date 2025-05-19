@@ -148,10 +148,8 @@ jobs:
           check_retries: true
           flaky_summary: true
           fail_on_failure: true
-          detailed_summary: true
           group_reports: false
           include_passed: true
-          skip_success_summary: true
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
