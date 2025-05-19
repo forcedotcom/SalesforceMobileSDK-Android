@@ -113,7 +113,6 @@ internal class IDPAuthCodeHelper private constructor(
             spConfig.oauthClientId,
             spConfig.oauthCallbackUrl,
             spConfig.oauthScopes,
-            null,
             context.getString(R.string.oauth_display_type),
             codeChallenge,
             null

@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import static android.text.TextUtils.isEmpty;
-
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -234,6 +232,49 @@ public class OAuth2 {
         public String toString() {
             return this.name().toLowerCase(Locale.ROOT);
         }
+    }
+
+    /**
+     * Builds the URL to the authorization web page for this login server.
+     * You need not provide the 'refresh_token' scope, as it is provided automatically.
+     *
+     * This overload defaults `loginHint` to null and does not enable Salesforce Welcome Login hint.
+     *
+     * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
+     * @param useHybridAuthentication    True to use "hybrid" flow
+     * @param loginServer                Base protocol and server to use (e.g. https://login.salesforce.com).
+     * @param clientId                   OAuth client ID.
+     * @param callbackUrl                OAuth callback URL or redirect URL.
+     * @param scopes                     A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
+     *                                   the default OAuth scope is provided.
+     * @param displayType                OAuth display type. If null, the default of 'touch' is used.
+     * @param codeChallenge              Code challenge to use when using web server flow
+     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @return A URL to start the OAuth flow in a web browser/view.
+     * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
+     */
+    public static URI getAuthorizationUrl(
+            boolean useWebServerAuthentication,
+            boolean useHybridAuthentication,
+            URI loginServer,
+            String clientId,
+            String callbackUrl,
+            String[] scopes,
+            String displayType,
+            String codeChallenge,
+            Map<String, String> addlParams) {
+        return getAuthorizationUrl(
+                useWebServerAuthentication,
+                useHybridAuthentication,
+                loginServer,
+                clientId,
+                callbackUrl,
+                scopes,
+                null,
+                displayType,
+                codeChallenge,
+                addlParams
+        );
     }
 
     /**
@@ -870,7 +911,7 @@ public class OAuth2 {
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     additionalOauthValues = new HashMap<>();
                     for (final String key : additionalOauthKeys) {
-                        if (!isEmpty(key)) {
+                        if (!TextUtils.isEmpty(key)) {
                             final String value = parsedResponse.optString(key);
                             additionalOauthValues.put(key, value);
                         }
