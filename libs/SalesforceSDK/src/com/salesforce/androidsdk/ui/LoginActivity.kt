@@ -74,6 +74,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
@@ -158,7 +160,8 @@ import java.security.cert.X509Certificate
  */
 open class LoginActivity : FragmentActivity() {
     // View Model
-    protected open val viewModel: LoginViewModel
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val viewModel: LoginViewModel
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
 
     // Webview and Clients
@@ -197,16 +200,7 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Set the Salesforce Welcome Login hint and host for the OAuth authorize URL, if applicable.
-        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
-        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
-            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-                LoginServer(
-                    loginHost,
-                    "https://$loginHost",
-                    true
-                )
-            )
-        }
+        useLoginHint(intent)
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -448,7 +442,27 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // endregion
+    // region Salesforce Welcome Login Private Implementation
 
+    /**
+     * Uses the Salesforce Welcome login hint and host in the Intent, if
+     * applicable.
+     */
+    private fun useLoginHint(intent: Intent) {
+
+        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
+        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
+            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+                LoginServer(
+                    loginHost,
+                    "https://$loginHost",
+                    true
+                )
+            )
+        }
+    }
+
+    // endregion
     // End of Public Functions
 
     protected open fun certAuthOrLogin() {
