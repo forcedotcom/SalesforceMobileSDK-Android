@@ -1901,10 +1901,14 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
+     * @param httpAccess The HTTP access to use for API integration.  Defaults
+     * to null to use the default HTTP access.  This parameter is intended for
+     * testing purposes only and should not be used in release builds.
      * @param completion An optional function to invoke at the end of the action
      */
-    fun fetchAuthenticationConfiguration(
-        completion: (() -> Unit)? = null
+    internal fun fetchAuthenticationConfiguration(
+        httpAccess: HttpAccess? = null,
+        completion: (() -> Unit)? = null,
     ) = CoroutineScope(Default).launch {
         runCatching {
             // If this takes more than five seconds it can cause Android's application not responding report.
@@ -1920,7 +1924,7 @@ open class SalesforceSDKManager protected constructor(
                     return@withTimeout
                 }
 
-                getMyDomainAuthConfig(loginServer).let { authConfig ->
+                getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
                     setBrowserLoginEnabled(
                         browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
                         shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
