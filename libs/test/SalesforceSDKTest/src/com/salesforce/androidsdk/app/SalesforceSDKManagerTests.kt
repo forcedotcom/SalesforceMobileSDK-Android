@@ -209,7 +209,7 @@ class SalesforceSDKManagerTests {
 
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
-                httpAccess = httpAccess,
+                httpAccess = httpAccessThrows,
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
