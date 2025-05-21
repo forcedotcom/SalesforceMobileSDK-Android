@@ -116,7 +116,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.7.0 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.9.0 community", store.getSQLCipherVersion());
 	}
 
 	/**
