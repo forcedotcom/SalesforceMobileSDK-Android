@@ -145,7 +145,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
@@ -1903,6 +1902,10 @@ open class SalesforceSDKManager protected constructor(
         ): String? = if (data == null || key == null) null else Encryptor.decrypt(data, key)
     }
 
+    /** A timeout for the fetch authentication configuration method.  Intended for test use only. */
+    @VisibleForTesting
+    var fetchAuthenticationConfigurationTimeout: Long? = null
+
     /**
      * Fetches the authentication configuration, if required.
      *
@@ -1916,7 +1919,7 @@ open class SalesforceSDKManager protected constructor(
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
-        withTimeoutOrNull(5000L) {
+        withTimeoutOrNull(fetchAuthenticationConfigurationTimeout ?: 5000L) {
             val loginServer = loginServerManager.selectedLoginServer?.url?.trim() ?: return@withTimeoutOrNull
 
             if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {

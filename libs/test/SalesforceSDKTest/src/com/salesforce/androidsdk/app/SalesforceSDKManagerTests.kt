@@ -62,6 +62,8 @@ class SalesforceSDKManagerTests {
     @After
     fun teardown() {
         SalesforceSDKManager.getInstance().loginServerManager.reset()
+
+        SalesforceSDKManager.getInstance().fetchAuthenticationConfigurationTimeout = null /* Default Timeout */
     }
 
     @Test
@@ -184,6 +186,30 @@ class SalesforceSDKManagerTests {
             }.join()
         }
 
+        assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    fun salesforceSdkManager_DoesNotUpdate_onFetchAuthenticationConfigurationWithTimeout() {
+
+        // Login Server: Sandbox
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
+
+        SalesforceSDKManager.getInstance().loginServerManager.useSandbox()
+
+        SalesforceSDKManager.getInstance().fetchAuthenticationConfigurationTimeout = -1L /* Immediate Timeout */
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        // Assert values haven't changed due to caught exception.
         assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
         assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
     }
