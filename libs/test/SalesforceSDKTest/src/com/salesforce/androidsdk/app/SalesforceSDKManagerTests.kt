@@ -16,7 +16,9 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.ResponseBody
+import org.junit.After
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -51,6 +53,15 @@ class SalesforceSDKManagerTests {
 
     private val httpAccess = mockk<HttpAccess>().apply {
         every { getOkHttpClient() } returns this@SalesforceSDKManagerTests.okHttpClient
+    }
+
+    @Before
+    fun setup() {
+    }
+
+    @After
+    fun teardown() {
+        SalesforceSDKManager.getInstance().loginServerManager.reset()
     }
 
     @Test
