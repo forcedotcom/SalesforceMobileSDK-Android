@@ -201,6 +201,8 @@ internal suspend fun onAuthFlowComplete(
 
     // Save the user account
     addAccount(account)
+    userAccountManager.createAccount(account)
+    userAccountManager.switchToUser(account)
 
     // Init user logging
     SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
@@ -218,8 +220,6 @@ internal suspend fun onAuthFlowComplete(
         else -> USER_SWITCH_TYPE_DEFAULT
     }
     userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-    userAccountManager.createAccount(account)
-    userAccountManager.switchToUser(account)
 
     // Kickoff the end of the flow before storing mobile policy to prevent launching
     // the main activity over/after the screen lock.
