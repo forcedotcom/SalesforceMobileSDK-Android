@@ -155,10 +155,7 @@ public class LoginServerManager {
 	 *
 	 * @param server LoginServer instance.
 	 */
-	public void setSelectedLoginServer(LoginServer server) {
-		if (server == null) {
-			return;
-		}
+	public void setSelectedLoginServer(@NonNull LoginServer server) {
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
 				Context.MODE_PRIVATE);
 		final Editor edit = selectedServerPrefs.edit();
@@ -458,7 +455,7 @@ public class LoginServerManager {
 		 * @param url Server URL.
 		 * @param isCustom True - if custom URL, False - otherwise.
 		 */
-		public LoginServer(String name, String url, boolean isCustom) {
+		public LoginServer(@NonNull String name, @NonNull String url, boolean isCustom) {
 			this.name = name;
 			this.url = url;
 			this.isCustom = isCustom;
