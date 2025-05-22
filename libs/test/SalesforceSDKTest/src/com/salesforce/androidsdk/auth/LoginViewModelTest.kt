@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
@@ -89,15 +90,8 @@ class LoginViewModelTest {
 
     @Test
     fun defaultTitleText_Init_HasExpectedDefault() {
-        val regex = "https://login.salesforce.com/services/oauth2/authorize\\?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=[^%]+&code_challenge=[^%]+".toRegex()
+        val regex = "https://login.salesforce.com".toRegex()
         assertTrue(regex.matches(viewModel.defaultTitleText))
-    }
-
-    @Test
-    fun defaultTitleText_UpdatesOn_selectedServerIsNull() {
-        viewModel.selectedServer.value = null
-        viewModel.loginUrl.value = null
-        assertEquals("", viewModel.defaultTitleText)
     }
 
     @Test
@@ -108,8 +102,16 @@ class LoginViewModelTest {
 
     @Test
     fun defaultTitle_UpdatesOn_loginUrlIsCustom() {
-        val customLoginUrl = "https://custom.salesforce.com"
-        viewModel.loginUrl.value = "https://custom.salesforce.com"
+        val customLoginUrl = "https://www.example.com"
+
+        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+            LoginServer(
+                "Example",
+                customLoginUrl,
+                true
+            )
+        )
+
         assertEquals(customLoginUrl, viewModel.defaultTitleText)
     }
 

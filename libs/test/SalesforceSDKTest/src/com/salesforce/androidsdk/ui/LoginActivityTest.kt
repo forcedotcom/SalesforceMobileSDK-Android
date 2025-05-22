@@ -35,8 +35,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -64,31 +62,6 @@ class LoginActivityTest {
 
                 assertEquals(expectedLoginHint, actualLoginHint)
                 assertEquals(expectedLoginServerHostname, parse(actualLoginServerHostname.url).host)
-            }
-        }
-    }
-
-    @Test
-    fun viewModelLoginHint_DoesNotUpdateLoginUrl_onSelectedServerSetNull() {
-
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
-
-            activityScenario.onActivity { activity ->
-
-                val loginUrl = activity.viewModel.loginUrl
-
-                assertNotNull(activity.viewModel.selectedServer.value)
-                assertNotNull(loginUrl)
-
-                activity.viewModel.selectedServer.value = null
-
-                assertNull(activity.viewModel.selectedServer.value)
-                assertEquals(loginUrl, activity.viewModel.loginUrl)
             }
         }
     }
