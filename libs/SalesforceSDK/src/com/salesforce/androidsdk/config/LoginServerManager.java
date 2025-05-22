@@ -145,10 +145,7 @@ public class LoginServerManager {
 			}
 
 			// Stores the selection for the future.
-			final LoginServer loginServer = selectedServer.getValue();
-			if (loginServer != null) {
-				setSelectedLoginServer(loginServer);
-			}
+			setSelectedLoginServer(selectedServer.getValue());
 		}
 		return selectedServer.getValue();
 	}
@@ -159,6 +156,9 @@ public class LoginServerManager {
 	 * @param server LoginServer instance.
 	 */
 	public void setSelectedLoginServer(LoginServer server) {
+		if (server == null) {
+			return;
+		}
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
 				Context.MODE_PRIVATE);
 		final Editor edit = selectedServerPrefs.edit();
