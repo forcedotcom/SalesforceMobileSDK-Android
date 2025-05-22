@@ -1920,7 +1920,7 @@ open class SalesforceSDKManager protected constructor(
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
         withTimeoutOrNull(fetchAuthenticationConfigurationTimeout ?: 5000L) {
-            val loginServer = loginServerManager.selectedLoginServer?.url?.trim() ?: return@withTimeoutOrNull
+            val loginServer = loginServerManager.selectedLoginServer.url.trim()
 
             if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
                 setBrowserLoginEnabled(
