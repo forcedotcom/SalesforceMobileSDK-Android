@@ -1902,10 +1902,6 @@ open class SalesforceSDKManager protected constructor(
         ): String? = if (data == null || key == null) null else Encryptor.decrypt(data, key)
     }
 
-    /** A timeout for the fetch authentication configuration method.  Intended for test use only. */
-    @VisibleForTesting
-    var fetchAuthenticationConfigurationTimeout: Long? = null
-
     /**
      * Fetches the authentication configuration, if required.
      *
@@ -1919,7 +1915,7 @@ open class SalesforceSDKManager protected constructor(
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
-        withTimeoutOrNull(fetchAuthenticationConfigurationTimeout ?: 5000L) {
+        withTimeoutOrNull(5000L) {
             val loginServer = loginServerManager.selectedLoginServer.url.trim()
             if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
                 setBrowserLoginEnabled(
