@@ -52,7 +52,6 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
-import android.util.Log
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
@@ -146,7 +145,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
@@ -1920,43 +1919,23 @@ open class SalesforceSDKManager protected constructor(
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
-        runCatching {
-            withTimeout(fetchAuthenticationConfigurationTimeout ?: 5000L) {
-                val loginServer = loginServerManager.selectedLoginServer.url.trim()
+        withTimeoutOrNull(fetchAuthenticationConfigurationTimeout ?: 5000L) {
+            val loginServer = loginServerManager.selectedLoginServer.url.trim()
+            if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = false,
+                    shareBrowserSessionEnabled = false
+                )
 
-                if (loginServer == PRODUCTION_LOGIN_URL) {
-                    Log.i("CodeCov", "1")
-                }
-                if (loginServer == WELCOME_LOGIN_URL) {
-                    Log.i("CodeCov", "2")
-                }
-                if (loginServer == SANDBOX_LOGIN_URL) {
-                    Log.i("CodeCov", "3")
-                }
-                if (!isHttpsUrl(loginServer)) {
-                    Log.i("CodeCov", "4")
-                }
-                if (loginServer.toHttpUrlOrNull() == null) {
-                    Log.i("CodeCov", "5")
-                }
-                if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = false,
-                        shareBrowserSessionEnabled = false
-                    )
-
-                    return@withTimeout
-                }
-
-                getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
-                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
-                    )
-                }
+                return@withTimeoutOrNull
             }
-        }.onFailure {
-            Log.i("CodeCov", "6")
+
+            getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
+                    shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                )
+            }
         }
 
         completion.invoke()
