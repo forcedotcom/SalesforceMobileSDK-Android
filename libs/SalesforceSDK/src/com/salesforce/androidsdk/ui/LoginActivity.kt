@@ -74,6 +74,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
@@ -126,6 +128,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -157,7 +160,8 @@ import java.security.cert.X509Certificate
  */
 open class LoginActivity : FragmentActivity() {
     // View Model
-    protected open val viewModel: LoginViewModel
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val viewModel: LoginViewModel
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
 
     // Webview and Clients
@@ -194,6 +198,9 @@ open class LoginActivity : FragmentActivity() {
         if (viewModel.dynamicBackgroundTheme.value == DARK) {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
+
+        // Set the Salesforce Welcome Login hint and host for the OAuth authorize URL, if applicable.
+        useLoginHint(intent)
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -435,7 +442,27 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // endregion
+    // region Salesforce Welcome Login Private Implementation
 
+    /**
+     * Uses the Salesforce Welcome login hint and host in the Intent, if
+     * applicable.
+     */
+    private fun useLoginHint(intent: Intent) {
+
+        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
+        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
+            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+                LoginServer(
+                    loginHost,
+                    "https://$loginHost",
+                    true
+                )
+            )
+        }
+    }
+
+    // endregion
     // End of Public Functions
 
     protected open fun certAuthOrLogin() {
@@ -1001,6 +1028,15 @@ open class LoginActivity : FragmentActivity() {
         internal const val ABOUT_BLANK = "about:blank"
         private const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
+
+        // endregion
+        // region Log In With Login Hint Public Implementation
+
+        /** Intent extra key for login hint value */
+        const val EXTRA_KEY_LOGIN_HINT = "login_hint"
+
+        /** Intent extra key for login host to use with login hint */
+        const val EXTRA_KEY_LOGIN_HOST = "login_host"
 
         // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation

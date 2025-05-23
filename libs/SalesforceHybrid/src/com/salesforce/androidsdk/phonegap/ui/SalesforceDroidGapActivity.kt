@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.config.BootConfig.isAbsoluteUrl
 import com.salesforce.androidsdk.config.BootConfig.validateBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
+import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.getAppHomeUrl
 import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper.hasCachedAppHome
@@ -573,7 +574,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                         ?.url
                         ?.trim { it <= ' ' } ?: return@withTimeout
 
-                    if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
+                    if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
                         return@withTimeout
                     }
 
