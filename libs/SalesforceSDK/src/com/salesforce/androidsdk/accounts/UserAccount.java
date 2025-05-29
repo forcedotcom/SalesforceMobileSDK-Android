@@ -710,7 +710,8 @@ public class UserAccount {
 		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
 		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
 		int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
-		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
+			state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
 			downloadReq.setDestinationUri(destUri);
 			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
