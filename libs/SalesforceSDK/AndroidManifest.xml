@@ -57,8 +57,7 @@
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
-            android:exported="true"
-            android:screenOrientation="portrait" />
+            android:exported="true" />
 
         <!--  Dev info activity -->
         <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
