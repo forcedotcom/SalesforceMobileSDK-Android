@@ -57,6 +57,8 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
@@ -104,6 +106,7 @@ import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
+import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
@@ -142,7 +145,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
@@ -339,11 +342,13 @@ open class SalesforceSDKManager protected constructor(
      */
     @set:Synchronized
     open var isBrowserLoginEnabled = false
-        protected set
+        @VisibleForTesting(otherwise = PROTECTED)
+        set
 
     /** Optionally enables browser session sharing */
     var isShareBrowserSessionEnabled = false
-        private set
+        @VisibleForTesting
+        set
 
     /**
      * The custom tab browser to use during advanced authentication.
@@ -1900,36 +1905,35 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
+     * @param httpAccess The HTTP access to use for API integration.  Defaults
+     * to null to use the default HTTP access.  This parameter is intended for
+     * testing purposes only and should not be used in release builds.
      * @param completion An optional function to invoke at the end of the action
      */
-    fun fetchAuthenticationConfiguration(
-        completion: (() -> Unit)? = null
+    internal fun fetchAuthenticationConfiguration(
+        httpAccess: HttpAccess? = null,
+        completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
-        runCatching {
-            // If this takes more than five seconds it can cause Android's application not responding report.
-            withTimeout(5000L) {
-                val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
+        // If this takes more than five seconds it can cause Android's application not responding report.
+        withTimeoutOrNull(5000L) {
+            val loginServer = loginServerManager.selectedLoginServer.url.trim()
+            if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = false,
+                    shareBrowserSessionEnabled = false
+                )
 
-                if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = false,
-                        shareBrowserSessionEnabled = false
-                    )
-
-                    return@withTimeout
-                }
-
-                getMyDomainAuthConfig(loginServer).let { authConfig ->
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
-                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
-                    )
-                }
+                return@withTimeoutOrNull
             }
-        }.onFailure { e ->
-            e(TAG, "Exception occurred while fetching authentication configuration", e)
+
+            getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
+                    shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                )
+            }
         }
 
-        completion?.invoke()
+        completion.invoke()
     }
 }

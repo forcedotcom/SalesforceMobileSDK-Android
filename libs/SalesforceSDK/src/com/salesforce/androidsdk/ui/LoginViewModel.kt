@@ -163,6 +163,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     @VisibleForTesting
     internal var codeVerifier: String? = null
 
+    /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
+    internal var loginHint: String? = null
+
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
 
@@ -317,6 +320,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
+            loginHint,
             authorizationDisplayType,
             codeChallenge,
             additionalParams
