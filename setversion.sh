@@ -45,13 +45,6 @@ parse_opts ()
 }
 
 # Helper functions
-update_package_json ()
-{
-    local file=$1
-    local versionName=$2
-    gsed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
-}
-
 update_top_build_gradle ()
 {
     local file=$1
@@ -136,9 +129,6 @@ fi
 SHORT_VERSION=`echo ${OPT_VERSION} | cut -d. -f1,2`
 
 echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
-
-echo "*** Updating main package.json ***"
-update_package_json "./package.json" "${OPT_VERSION}"
 
 echo "*** Updating react package.json ***"
 update_react_package_json "./libs/SalesforceReact/package.json" "${OPT_VERSION}" "${OPT_IS_DEV}"
