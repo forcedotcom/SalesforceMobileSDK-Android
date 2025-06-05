@@ -124,7 +124,7 @@ task<Exec>("buildReactTestBundle") {
             "cmd",
             "/c",
             "node",
-            "node_modules/react-native/local-cli/cli.js",
+            "node_modules/react-native/cli.js",
             "bundle",
             "--platform",
             "android",
@@ -139,8 +139,8 @@ task<Exec>("buildReactTestBundle") {
         )
     } else {
         commandLine(
-            "/usr/local/bin/node",
-            "node_modules/react-native/local-cli/cli.js",
+            "node",
+            "node_modules/react-native/cli.js",
             "bundle",
             "--platform",
             "android",

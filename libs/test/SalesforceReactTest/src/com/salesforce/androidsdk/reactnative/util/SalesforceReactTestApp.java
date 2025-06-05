@@ -51,7 +51,7 @@ public class SalesforceReactTestApp extends Application implements ReactApplicat
     @Override
     public void onCreate() {
         super.onCreate();
-        SoLoader.init(this, /* native exopackage */ false);
+        SoLoader.init(this, /* native exopackage */ false); // TODO: This may need updated to OpenSourceMergedSoMapping. ECJ20250604
         EventBuilderHelper.enableDisable(false);
         SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
         TestCredentials.init(this);
