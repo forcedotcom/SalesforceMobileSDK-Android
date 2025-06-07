@@ -69,6 +69,7 @@ public class UserAccountTest {
     public static final String TEST_USERNAME = "test_username";
     public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
     public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
+    public static final String TEST_API_INSTANCE_URL = "https://api.salesforce.com";
     public static final String TEST_IDENTITY_URL = "https://test.salesforce.com/" + TEST_ORG_ID + "/" + TEST_USER_ID;
     public static final String TEST_COMMUNITY_URL = "https://mobilesdk.cs1.my.salesforce.com";
     public static final String TEST_AUTH_TOKEN = "test_auth_token";
@@ -375,6 +376,7 @@ public class UserAccountTest {
         object.put(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
         object.put(UserAccount.ID_URL, TEST_IDENTITY_URL);
         object.put(UserAccount.INSTANCE_SERVER, TEST_INSTANCE_URL);
+        object.put(UserAccount.API_INSTANCE_SERVER, TEST_API_INSTANCE_URL);
         object.put(UserAccount.ORG_ID, TEST_ORG_ID);
         object.put(UserAccount.USER_ID, TEST_USER_ID);
         object.put(UserAccount.USERNAME, TEST_USERNAME);
@@ -419,6 +421,7 @@ public class UserAccountTest {
         object.putString(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
         object.putString(UserAccount.ID_URL, TEST_IDENTITY_URL);
         object.putString(UserAccount.INSTANCE_SERVER, TEST_INSTANCE_URL);
+        object.putString(UserAccount.API_INSTANCE_SERVER, TEST_API_INSTANCE_URL);
         object.putString(UserAccount.ORG_ID, TEST_ORG_ID);
         object.putString(UserAccount.USER_ID, TEST_USER_ID);
         object.putString(UserAccount.USERNAME, TEST_USERNAME);
@@ -463,6 +466,7 @@ public class UserAccountTest {
                 .loginServer(TEST_LOGIN_URL)
                 .idUrl(TEST_IDENTITY_URL)
                 .instanceServer(TEST_INSTANCE_URL)
+                .apiInstanceServer(TEST_API_INSTANCE_URL)
                 .orgId(TEST_ORG_ID)
                 .userId(TEST_USER_ID)
                 .username(TEST_USERNAME)
@@ -529,6 +533,7 @@ public class UserAccountTest {
         Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
         Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
         Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
+        Assert.assertEquals("API instance URL should match", TEST_API_INSTANCE_URL, account.getApiInstanceServer());
         Assert.assertEquals("Org ID should match", TEST_ORG_ID, account.getOrgId());
         Assert.assertEquals("User ID should match", TEST_USER_ID, account.getUserId());
         Assert.assertEquals("User name should match", TEST_USERNAME, account.getUsername());
@@ -575,6 +580,7 @@ public class UserAccountTest {
         Assert.assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
         Assert.assertEquals("Identity URL should match", TEST_IDENTITY_URL, account.getIdUrl());
         Assert.assertEquals("Instance URL should match", TEST_INSTANCE_URL, account.getInstanceServer());
+        Assert.assertEquals("API instance URL should match", TEST_API_INSTANCE_URL, account.getApiInstanceServer());
         Assert.assertEquals("Org ID should match", TEST_ORG_ID_2, account.getOrgId());
         Assert.assertEquals("User ID should match", TEST_USER_ID_2, account.getUserId());
         Assert.assertEquals("User name should match", TEST_USERNAME_2, account.getUsername());
@@ -646,6 +652,7 @@ public class UserAccountTest {
         params.put("access_token", TEST_AUTH_TOKEN);
         params.put("refresh_token", TEST_REFRESH_TOKEN);
         params.put("instance_url", TEST_INSTANCE_URL);
+        params.put("api_instance_url", TEST_API_INSTANCE_URL);
         params.put("id", TEST_IDENTITY_URL);
         params.put("sfdc_community_id", TEST_COMMUNITY_ID);
         params.put("sfdc_community_url", TEST_COMMUNITY_URL);
