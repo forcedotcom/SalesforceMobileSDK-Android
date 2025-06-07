@@ -38,6 +38,7 @@ class UserAccountBuilder private constructor() {
     private var loginServer: String? = null
     private var idUrl: String? = null
     private var instanceServer: String? = null
+    private var apiInstanceServer: String? = null
     private var orgId: String? = null
     private var userId: String? = null
     private var username: String? = null
@@ -84,6 +85,7 @@ class UserAccountBuilder private constructor() {
         return authToken(tr.authToken)
             .refreshToken(tr.refreshToken)
             .instanceServer(tr.instanceUrl)
+            .apiInstanceServer(tr.apiInstanceUrl)
             .idUrl(tr.idUrl)
             .orgId(tr.orgId)
             .userId(tr.userId)
@@ -139,6 +141,7 @@ class UserAccountBuilder private constructor() {
             .loginServer(userAccount.loginServer)
             .idUrl(userAccount.idUrl)
             .instanceServer(userAccount.instanceServer)
+            .apiInstanceServer(userAccount.apiInstanceServer)
             .orgId(userAccount.orgId)
             .userId(userAccount.userId)
             .username(userAccount.username)
@@ -232,6 +235,16 @@ class UserAccountBuilder private constructor() {
      */
     fun instanceServer(instanceServer: String?): UserAccountBuilder {
         return if (!allowUnset && instanceServer == null) this else apply { this.instanceServer = instanceServer }
+    }
+
+    /**
+     * Sets api instance server.
+     *
+     * @param apiInstanceServer API instance server.
+     * @return Instance of this class.
+     */
+    fun apiInstanceServer(apiInstanceServer: String?): UserAccountBuilder {
+        return if (!allowUnset && apiInstanceServer == null) this else apply { this.apiInstanceServer = apiInstanceServer }
     }
 
     /**
@@ -566,12 +579,43 @@ class UserAccountBuilder private constructor() {
      */
     fun build(): UserAccount {
         return UserAccount(
-            authToken, refreshToken, loginServer, idUrl, instanceServer, orgId,
-            userId, username, accountName, communityId, communityUrl, firstName, lastName,
-            displayName, email, photoUrl, thumbnailUrl, additionalOauthValues, lightningDomain,
-            lightningSid, vfDomain, vfSid, contentDomain, contentSid, csrfToken, nativeLogin,
-            language, locale, cookieClientSrc, cookieSidClient, sidCookieName, clientId,
-            parentSid, tokenFormat, beaconChildConsumerKey, beaconChildConsumerSecret
+            authToken,
+            refreshToken,
+            loginServer,
+            idUrl,
+            instanceServer,
+            orgId,
+            userId,
+            username,
+            accountName,
+            communityId,
+            communityUrl,
+            firstName,
+            lastName,
+            displayName,
+            email,
+            photoUrl,
+            thumbnailUrl,
+            additionalOauthValues,
+            lightningDomain,
+            lightningSid,
+            vfDomain,
+            vfSid,
+            contentDomain,
+            contentSid,
+            csrfToken,
+            nativeLogin,
+            language,
+            locale,
+            cookieClientSrc,
+            cookieSidClient,
+            sidCookieName,
+            clientId,
+            parentSid,
+            tokenFormat,
+            beaconChildConsumerKey,
+            beaconChildConsumerSecret,
+            apiInstanceServer
         )
     }
 

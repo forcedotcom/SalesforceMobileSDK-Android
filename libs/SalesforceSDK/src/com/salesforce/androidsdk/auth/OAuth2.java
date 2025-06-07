@@ -97,6 +97,7 @@ public class OAuth2 {
     protected static final String FORMAT = "format";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
+    private static final String API_INSTANCE_URL = "api_instance_url";
     protected static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
@@ -808,6 +809,7 @@ public class OAuth2 {
         public String authToken;
         public String refreshToken;
         public String instanceUrl;
+        public String apiInstanceUrl;
         public String idUrl;
         public String idUrlWithInstance;
         public String orgId;
@@ -844,6 +846,7 @@ public class OAuth2 {
                 authToken = callbackUrlParams.get(ACCESS_TOKEN);
                 refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
                 instanceUrl = callbackUrlParams.get(INSTANCE_URL);
+                apiInstanceUrl = callbackUrlParams.get(API_INSTANCE_URL);
                 idUrl = callbackUrlParams.get(ID);
                 code = callbackUrlParams.get(CODE);
                 computeOtherFields();
@@ -903,6 +906,7 @@ public class OAuth2 {
                 Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
+                apiInstanceUrl = parsedResponse.getString(API_INSTANCE_URL);
                 idUrl = parsedResponse.getString(ID);
                 computeOtherFields();
                 if (parsedResponse.has(REFRESH_TOKEN)) {

@@ -509,6 +509,7 @@ public class UserAccountManager {
 		final String loginServer = decryptUserData(account, AuthenticatorService.KEY_LOGIN_URL, encryptionKey);
 		final String idUrl = decryptUserData(account, AuthenticatorService.KEY_ID_URL, encryptionKey);
 		final String instanceServer = decryptUserData(account, AuthenticatorService.KEY_INSTANCE_URL, encryptionKey);
+		final String apiInstanceServer = decryptUserData(account, AuthenticatorService.KEY_API_INSTANCE_URL, encryptionKey);
 		final String orgId = decryptUserData(account, AuthenticatorService.KEY_ORG_ID, encryptionKey);
 		final String userId = decryptUserData(account, AuthenticatorService.KEY_USER_ID, encryptionKey);
 		final String username = decryptUserData(account, AuthenticatorService.KEY_USERNAME, encryptionKey);
@@ -562,6 +563,7 @@ public class UserAccountManager {
 					.loginServer(loginServer)
 					.idUrl(idUrl)
 					.instanceServer(instanceServer)
+					.apiInstanceServer(apiInstanceServer)
 					.orgId(orgId)
 					.userId(userId)
 					.username(username)
@@ -710,6 +712,7 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encrypt(userAccount.getLoginServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encrypt(userAccount.getIdUrl(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getInstanceServer(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_API_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getApiInstanceServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(userAccount.getClientId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(userAccount.getOrgId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userAccount.getUserId(), encryptionKey));

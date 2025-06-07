@@ -63,6 +63,7 @@ public class UserAccount {
 	public static final String LOGIN_SERVER = "loginServer";
 	public static final String ID_URL = "idUrl";
 	public static final String INSTANCE_SERVER = "instanceServer";
+	public static final String API_INSTANCE_SERVER = "apiInstanceServer";
 	public static final String ORG_ID = "orgId";
 	public static final String USER_ID = "userId";
 	public static final String USERNAME = "username";
@@ -109,6 +110,7 @@ public class UserAccount {
 	private String loginServer;
 	private String idUrl;
 	private String instanceServer;
+	private String apiInstanceServer;
 	private String orgId;
 	private String userId;
 	private String username;
@@ -144,41 +146,42 @@ public class UserAccount {
 	/**
 	 * Parameterized constructor.
 	 *
-	 * @param authToken Auth token.
-	 * @param refreshToken Refresh token.
-	 * @param loginServer Login server.
-	 * @param idUrl Identity URL.
-	 * @param instanceServer Instance server.
-	 * @param orgId Org ID.
-	 * @param userId User ID.
-	 * @param username Username.
-	 * @param accountName Account name.
-	 * @param communityId Community ID.
-	 * @param communityUrl Community URL.
-	 * @param firstName First Name.
-	 * @param lastName Last Name.
-	 * @param displayName Display Name.
-	 * @param email Email.
-	 * @param photoUrl Photo URL.
-	 * @param thumbnailUrl Thumbnail URL.
-	 * @param additionalOauthValues Additional OAuth values.
-	 * @param lightningDomain Lightning domain.
-	 * @param lightningSid Lightning SID.
-	 * @param vfDomain VF domain.
-	 * @param vfSid VF SID.
-	 * @param contentDomain Content domain.
-	 * @param contentSid Content SID.
-	 * @param nativeLogin If the account was added with native auth.
-	 * @param language User's language,
-	 * @param locale User's locale,
-	 * @param cookieClientSrc cookie client src
-	 * @param cookieSidClient cookie sid client
-	 * @param sidCookieName sid cookie name
-	 * @param clientId oauth client id
-	 * @param parentSid parent sid
-	 * @param tokenFormat token format
-	 * @param beaconChildConsumerKey beacon child consumer key
+	 * @param authToken                 Auth token.
+	 * @param refreshToken              Refresh token.
+	 * @param loginServer               Login server.
+	 * @param idUrl                     Identity URL.
+	 * @param instanceServer            Instance server.
+	 * @param orgId                     Org ID.
+	 * @param userId                    User ID.
+	 * @param username                  Username.
+	 * @param accountName               Account name.
+	 * @param communityId               Community ID.
+	 * @param communityUrl              Community URL.
+	 * @param firstName                 First Name.
+	 * @param lastName                  Last Name.
+	 * @param displayName               Display Name.
+	 * @param email                     Email.
+	 * @param photoUrl                  Photo URL.
+	 * @param thumbnailUrl              Thumbnail URL.
+	 * @param additionalOauthValues     Additional OAuth values.
+	 * @param lightningDomain           Lightning domain.
+	 * @param lightningSid              Lightning SID.
+	 * @param vfDomain                  VF domain.
+	 * @param vfSid                     VF SID.
+	 * @param contentDomain             Content domain.
+	 * @param contentSid                Content SID.
+	 * @param nativeLogin               If the account was added with native auth.
+	 * @param language                  User's language,
+	 * @param locale                    User's locale,
+	 * @param cookieClientSrc           cookie client src
+	 * @param cookieSidClient           cookie sid client
+	 * @param sidCookieName             sid cookie name
+	 * @param clientId                  oauth client id
+	 * @param parentSid                 parent sid
+	 * @param tokenFormat               token format
+	 * @param beaconChildConsumerKey    beacon child consumer key
 	 * @param beaconChildConsumerSecret beacon child consumer secret
+	 * @param apiInstanceServer         API instance server
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -190,12 +193,13 @@ public class UserAccount {
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
 				String sidCookieName, String clientId, String parentSid, String tokenFormat,
-				String beaconChildConsumerKey, String beaconChildConsumerSecret) {
+				String beaconChildConsumerKey, String beaconChildConsumerSecret, String apiInstanceServer) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
 		this.idUrl = idUrl;
 		this.instanceServer = instanceServer;
+		this.apiInstanceServer = apiInstanceServer;
 		this.orgId = orgId;
 		this.userId = userId;
 		this.username = username;
@@ -244,6 +248,7 @@ public class UserAccount {
 			loginServer = object.optString(LOGIN_SERVER, null);
 			idUrl = object.optString(ID_URL, null);
 			instanceServer = object.optString(INSTANCE_SERVER, null);
+			apiInstanceServer = object.optString(API_INSTANCE_SERVER, null);
 			orgId = object.optString(ORG_ID, null);
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
@@ -301,6 +306,7 @@ public class UserAccount {
 			loginServer = bundle.getString(LOGIN_SERVER);
 			idUrl = bundle.getString(ID_URL);
 			instanceServer = bundle.getString(INSTANCE_SERVER);
+			apiInstanceServer = bundle.getString(API_INSTANCE_SERVER);
 			orgId = bundle.getString(ORG_ID);
 			userId = bundle.getString(USER_ID);
 			username = bundle.getString(USERNAME);
@@ -387,6 +393,15 @@ public class UserAccount {
 	 */
 	public String getInstanceServer() {
 		return instanceServer;
+	}
+
+	/**
+	 * Returns the API instance server for this user account.
+	 *
+	 * @return API instance server.
+	 */
+	public String getApiInstanceServer() {
+		return apiInstanceServer;
 	}
 
 	/**
@@ -911,6 +926,7 @@ public class UserAccount {
 			object.put(LOGIN_SERVER, loginServer);
 			object.put(ID_URL, idUrl);
 			object.put(INSTANCE_SERVER, instanceServer);
+			object.put(API_INSTANCE_SERVER, apiInstanceServer);
 			object.put(ORG_ID, orgId);
 			object.put(USER_ID, userId);
 			object.put(USERNAME, username);
@@ -968,6 +984,7 @@ public class UserAccount {
 		object.putString(LOGIN_SERVER, loginServer);
 		object.putString(ID_URL, idUrl);
 		object.putString(INSTANCE_SERVER, instanceServer);
+		object.putString(API_INSTANCE_SERVER, apiInstanceServer);
 		object.putString(ORG_ID, orgId);
 		object.putString(USER_ID, userId);
 		object.putString(USERNAME, username);
