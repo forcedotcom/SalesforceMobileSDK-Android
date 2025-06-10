@@ -8,6 +8,7 @@
   "dependencies": {
     "@babel/plugin-transform-private-property-in-object": "^7.24.7",
     "create-react-class": "^15.7.0",
+    "jsc-android": "^250231.0.0",
     "react": "19.0.0",
     "react-native": "0.79.3",
     "react-native-force": "git+https://github.com/JohnsonEricAtSalesforce/SalesforceMobileSDK-ReactNative.git#feature/w-16556387_reactnative_android-upgrade-to-react-native-0.79"

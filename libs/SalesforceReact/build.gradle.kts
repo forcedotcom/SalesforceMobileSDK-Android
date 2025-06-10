@@ -31,10 +31,11 @@ dependencies {
 
     // JSC from node_modules
     if (useIntlJsc) {
-        androidTestImplementation("io.github.react-native-community:jsc-android:2026004.+")
+        androidTestImplementation("org.webkit:android-jsc-intl:+")
     } else {
-        androidTestImplementation("io.github.react-native-community:jsc-android:2026004.+")
+        androidTestImplementation("org.webkit:android-jsc:+")
     }
+
 }
 
 android {
