@@ -22,7 +22,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.74.7")
+    api("com.facebook.react:react-android:0.79.3")
     implementation("androidx.core:core-ktx:1.15.0")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
@@ -31,11 +31,10 @@ dependencies {
 
     // JSC from node_modules
     if (useIntlJsc) {
-        androidTestImplementation("org.webkit:android-jsc-intl:+")
+        androidTestImplementation("io.github.react-native-community:jsc-android:2026004.+")
     } else {
-        androidTestImplementation("org.webkit:android-jsc:+")
+        androidTestImplementation("io.github.react-native-community:jsc-android:2026004.+")
     }
-
 }
 
 android {
