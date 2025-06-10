@@ -58,6 +58,7 @@ public class AuthenticatorService extends Service {
     // Keys to extra info in the account.
     public static final String KEY_LOGIN_URL = "loginUrl";
     public static final String KEY_INSTANCE_URL = "instanceUrl";
+    public static final String KEY_API_INSTANCE_URL = "apiInstanceUrl";
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_CLIENT_ID = "clientId";
     public static final String KEY_ORG_ID = "orgId";
