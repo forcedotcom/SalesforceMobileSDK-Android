@@ -52,10 +52,10 @@ public class ReactMobileSyncTest extends ReactTestCase {
     @Parameterized.Parameters(name = "{0}")
     public static List<String> data() {
         return Arrays.asList(
+                "testCleanResyncGhosts",
                 "testSyncUp",
                 "testSyncDown",
                 "testReSync",
-                "testCleanResyncGhosts",
                 "testGetSyncStatusDeleteSync");
     }
 

@@ -22,7 +22,7 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.74.7")
+    api("com.facebook.react:react-android:0.79.3")
     implementation("androidx.core:core-ktx:1.15.0")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
@@ -124,7 +124,7 @@ task<Exec>("buildReactTestBundle") {
             "cmd",
             "/c",
             "node",
-            "node_modules/react-native/local-cli/cli.js",
+            "node_modules/react-native/cli.js",
             "bundle",
             "--platform",
             "android",
@@ -139,8 +139,8 @@ task<Exec>("buildReactTestBundle") {
         )
     } else {
         commandLine(
-            "/usr/local/bin/node",
-            "node_modules/react-native/local-cli/cli.js",
+            "node",
+            "node_modules/react-native/cli.js",
             "bundle",
             "--platform",
             "android",
