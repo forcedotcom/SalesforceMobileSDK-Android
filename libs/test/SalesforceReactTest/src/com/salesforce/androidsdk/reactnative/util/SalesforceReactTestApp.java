@@ -31,10 +31,13 @@ import android.app.Application;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactNativeHost;
+import com.facebook.react.soloader.OpenSourceMergedSoMapping;
 import com.facebook.soloader.SoLoader;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
+
+import java.io.IOException;
 
 /**
  * Test application for Salesforce react native modules.
@@ -51,7 +54,11 @@ public class SalesforceReactTestApp extends Application implements ReactApplicat
     @Override
     public void onCreate() {
         super.onCreate();
-        SoLoader.init(this, /* native exopackage */ false);
+        try {
+            SoLoader.init(this, OpenSourceMergedSoMapping.INSTANCE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         EventBuilderHelper.enableDisable(false);
         SalesforceReactSDKManager.initReactNative(getApplicationContext(), ReactTestActivity.class);
         TestCredentials.init(this);
