@@ -23,7 +23,7 @@ android {
     namespace = "com.salesforce.androidsdk.mobilesync"
     testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
@@ -38,8 +38,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -48,8 +48,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/MobileSyncTest")
-            java.srcDir("../test/MobileSyncTest/src")
-            resources.srcDir("../test/MobileSyncTest/src")
+            java.srcDirs(arrayOf("../test/MobileSyncTest/src"))
+            resources.srcDirs(arrayOf("../test/MobileSyncTest/src"))
             res.srcDirs(arrayOf("../test/MobileSyncTest/res"))
         }
     }

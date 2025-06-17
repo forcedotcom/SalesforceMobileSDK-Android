@@ -42,7 +42,7 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
@@ -57,8 +57,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -67,8 +67,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/SalesforceReactTest")
-            java.srcDir("../test/SalesforceReactTest/src")
-            resources.srcDir("../test/SalesforceReactTest/src")
+            java.srcDirs(arrayOf("../test/SalesforceReactTest/src"))
+            resources.srcDirs(arrayOf("../test/SalesforceReactTest/src"))
             res.srcDirs(arrayOf("../test/SalesforceReactTest/res"))
         }
     }

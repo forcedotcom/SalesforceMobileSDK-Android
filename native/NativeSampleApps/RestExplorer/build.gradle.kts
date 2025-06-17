@@ -29,10 +29,10 @@ android {
     namespace = "com.salesforce.samples.restexplorer"
     testNamespace = "com.salesforce.samples.restexplorer.tests"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 35
         minSdk = 28
     }
 
@@ -45,8 +45,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -55,8 +55,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/RestExplorerTest")
-            java.srcDir("../test/RestExplorerTest/src")
-            resources.srcDir("../test/RestExplorerTest/src")
+            java.srcDirs(arrayOf("../test/RestExplorerTest/src"))
+            resources.srcDirs(arrayOf("../test/RestExplorerTest/src"))
             res.srcDirs(arrayOf("../test/RestExplorerTest/res"))
         }
     }

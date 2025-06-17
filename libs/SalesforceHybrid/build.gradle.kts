@@ -28,7 +28,7 @@ android {
     namespace = "com.salesforce.androidsdk.hybrid"
     testNamespace = "com.salesforce.androidsdk.phonegap"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
@@ -43,8 +43,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -53,8 +53,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/SalesforceHybridTest")
-            java.srcDir("../test/SalesforceHybridTest/src")
-            resources.srcDir("../test/SalesforceHybridTest/src")
+            java.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
+            resources.srcDirs(arrayOf("../test/SalesforceHybridTest/src"))
             res.srcDirs(arrayOf("../test/SalesforceHybridTest/res"))
         }
     }

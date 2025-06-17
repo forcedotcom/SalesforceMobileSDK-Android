@@ -11,18 +11,18 @@ dependencies {
 android {
     namespace = "com.salesforce.samples.appconfigurator"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 35
         minSdk = 28
     }
 
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))

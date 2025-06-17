@@ -27,7 +27,7 @@ android {
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 28
@@ -42,8 +42,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDir("src")
-            resources.srcDir("src")
+            java.srcDirs(arrayOf("src"))
+            resources.srcDirs(arrayOf("src"))
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -53,8 +53,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/SmartStoreTest")
-            java.srcDir("../test/SmartStoreTest/src")
-            resources.srcDir("../test/SmartStoreTest/src")
+            java.srcDirs(arrayOf("../test/SmartStoreTest/src"))
+            resources.srcDirs(arrayOf("../test/SmartStoreTest/src"))
             res.srcDirs(arrayOf("../test/SmartStoreTest/res"))
         }
     }
