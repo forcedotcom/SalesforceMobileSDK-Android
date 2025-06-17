@@ -45,8 +45,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
+            java.srcDir("src")
+            resources.srcDir("src")
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -55,8 +55,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/RestExplorerTest")
-            java.srcDirs(arrayOf("../test/RestExplorerTest/src"))
-            resources.srcDirs(arrayOf("../test/RestExplorerTest/src"))
+            java.srcDir("../test/RestExplorerTest/src")
+            resources.srcDir("../test/RestExplorerTest/src")
             res.srcDirs(arrayOf("../test/RestExplorerTest/res"))
         }
     }

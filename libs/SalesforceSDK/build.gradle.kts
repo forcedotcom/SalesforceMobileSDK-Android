@@ -8,11 +8,12 @@ plugins {
     `publish-module`
     jacoco
     kotlin("plugin.serialization") version "2.0.21"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 dependencies {
     val composeVersion = "1.8.2"
-    val livecycleVersion = "2.8.7" // Update requires Kotlin 2.
+    val livecycleVersion = "2.9.1"
     val androidXActivityVersion = "1.10.1"
 
     api(project(":libs:SalesforceAnalytics"))
@@ -28,30 +29,35 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
-    implementation("androidx.activity:activity-compose:$androidXActivityVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$livecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$livecycleVersion")
     implementation("androidx.lifecycle:lifecycle-service:$livecycleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("androidx.window:window:1.4.0")
     implementation("androidx.window:window-core:1.4.0")
-    implementation("androidx.compose.material3:material3-android:1.3.2")
-    implementation(platform("androidx.compose:compose-bom:2025.06.00"))
-    implementation("androidx.compose.foundation:foundation-android:$composeVersion")
-    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
-    implementation("androidx.compose.material:material:$composeVersion")
-
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
 
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     androidTestImplementation("io.mockk:mockk-android:1.14.0")
+
+    // Note: Compose dependencies are synchronized with the content in the Compose set up guide for easier migration to new versions.
+    val composeBom = platform("androidx.compose:compose-bom:2025.05.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.compose.material3:material3:1.3.2")
+
+    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
+    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
+
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
+    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
 }
 
 android {
@@ -73,8 +79,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
+            java.srcDir("src")
+            resources.srcDir("src")
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -83,8 +89,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/SalesforceSDKTest")
-            java.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
+            java.srcDir("../test/SalesforceSDKTest/src")
+            resources.srcDir("../test/SalesforceSDKTest/src")
             res.srcDirs(arrayOf("../test/SalesforceSDKTest/res"))
             @Suppress("UnstableApiUsage")
             assets.directories.add("../../shared/test")
@@ -112,11 +118,6 @@ android {
         aidl = true
         buildConfig = true
         compose = true
-    }
-
-    @Suppress("UnstableApiUsage")
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {

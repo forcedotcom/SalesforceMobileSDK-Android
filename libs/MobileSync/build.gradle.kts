@@ -38,8 +38,8 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
+            java.srcDir("src")
+            resources.srcDir("src")
             aidl.srcDirs(arrayOf("src"))
             renderscript.srcDirs(arrayOf("src"))
             res.srcDirs(arrayOf("res"))
@@ -48,8 +48,8 @@ android {
 
         getByName("androidTest") {
             setRoot("../test/MobileSyncTest")
-            java.srcDirs(arrayOf("../test/MobileSyncTest/src"))
-            resources.srcDirs(arrayOf("../test/MobileSyncTest/src"))
+            java.srcDir("../test/MobileSyncTest/src")
+            resources.srcDir("../test/MobileSyncTest/src")
             res.srcDirs(arrayOf("../test/MobileSyncTest/res"))
         }
     }
