@@ -12,7 +12,7 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
@@ -91,7 +91,7 @@ android {
         }
 
         sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)

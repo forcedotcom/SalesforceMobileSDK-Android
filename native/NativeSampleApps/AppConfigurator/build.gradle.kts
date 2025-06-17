@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
 }
 
 android {
