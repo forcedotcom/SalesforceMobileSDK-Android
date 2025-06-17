@@ -13,10 +13,10 @@ dependencies {
 android {
     namespace = "com.salesforce.samples.configuredapp"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        targetSdk = 35
+        targetSdk = 36
         minSdk = 28
     }
 

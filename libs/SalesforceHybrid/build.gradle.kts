@@ -28,7 +28,7 @@ android {
     namespace = "com.salesforce.androidsdk.hybrid"
     testNamespace = "com.salesforce.androidsdk.phonegap"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28

@@ -22,7 +22,7 @@ android {
     namespace = "com.salesforce.androidsdk.analytics"
     testNamespace = "com.salesforce.androidsdk.analytics.tests"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28

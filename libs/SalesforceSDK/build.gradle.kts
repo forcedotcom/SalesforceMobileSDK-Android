@@ -64,7 +64,7 @@ android {
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28

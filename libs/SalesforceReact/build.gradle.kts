@@ -42,7 +42,7 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28
@@ -170,7 +170,7 @@ afterEvaluate {
         tasks.getByName("preDebugAndroidTestBuild").dependsOn(
             tasks.getByName("buildReactTestBundleIfNotExists")
         )
-    } catch (πignored: Throwable) {
+    } catch (ignored: Throwable) {
         println("The preDebugAndroidTestBuild task was not found.")
     }
 }

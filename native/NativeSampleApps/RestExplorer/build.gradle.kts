@@ -29,10 +29,10 @@ android {
     namespace = "com.salesforce.samples.restexplorer"
     testNamespace = "com.salesforce.samples.restexplorer.tests"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        targetSdk = 35
+        targetSdk = 36
         minSdk = 28
     }
 

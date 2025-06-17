@@ -23,7 +23,7 @@ android {
     namespace = "com.salesforce.androidsdk.mobilesync"
     testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 28
