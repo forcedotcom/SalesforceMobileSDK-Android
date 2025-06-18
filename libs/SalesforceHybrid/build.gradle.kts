@@ -14,11 +14,11 @@ plugins {
 dependencies {
     api(project(":libs:MobileSync"))
     api("org.apache.cordova:framework:13.0.0")
-    api("androidx.appcompat:appcompat:1.7.0")
-    api("androidx.appcompat:appcompat-resources:1.7.0")
-    api("androidx.webkit:webkit:1.12.1")
+    api("androidx.appcompat:appcompat:1.7.1")
+    api("androidx.appcompat:appcompat-resources:1.7.1")
+    api("androidx.webkit:webkit:1.14.0")
     api("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
@@ -97,7 +97,7 @@ android {
         }
 
         sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
