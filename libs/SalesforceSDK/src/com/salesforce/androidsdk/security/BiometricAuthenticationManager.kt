@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.BiometricAuthOptInPrompt
 import com.salesforce.androidsdk.util.EventsObservable
+import androidx.core.content.edit
 
 internal class BiometricAuthenticationManager: AppLockManager(
     BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
@@ -42,7 +43,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("isEnabled")
     override val enabled: Boolean
-        get() { return currentUser != null && getPolicy(currentUser!!).first }
+        get() = currentUser?.let { getPolicy(it).first } == true
     private val currentUser: UserAccount?
         get() { return SalesforceSDKManager.getInstance().userAccountManager.currentUser }
 
@@ -74,9 +75,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     override fun biometricOptIn(optIn: Boolean) {
         currentUser?.let { user ->
-            getAccountPrefs(user).edit()
-                .putBoolean(USER_BIO_OPT_IN, optIn)
-                .apply()
+            getAccountPrefs(user).edit { putBoolean(USER_BIO_OPT_IN, optIn) }
         }
     }
 
@@ -94,8 +93,7 @@ internal class BiometricAuthenticationManager: AppLockManager(
 
     override fun enableNativeBiometricLoginButton(enabled: Boolean) {
         currentUser?.let { user ->
-            getAccountPrefs(user)
-                .edit().putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled).apply()
+            getAccountPrefs(user).edit { putBoolean(BIO_AUTH_NATIVE_BUTTON, enabled) }
         }
     }
 
