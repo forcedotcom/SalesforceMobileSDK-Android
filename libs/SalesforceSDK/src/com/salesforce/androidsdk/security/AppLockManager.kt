@@ -31,6 +31,7 @@ import android.content.SharedPreferences
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.util.EventsObservable
+import androidx.core.content.edit
 
 typealias Policy = Pair<Boolean, Int>
 
@@ -84,17 +85,17 @@ internal abstract class AppLockManager(
     }
 
     open fun storeMobilePolicy(account: UserAccount, enabled: Boolean, timeout: Int) {
-        getAccountPrefs(account).edit()
-            .putBoolean(enabledKey, enabled)
-            .putInt(timeoutKey, timeout)
-            .apply()
+        getAccountPrefs(account).edit {
+            putBoolean(enabledKey, enabled)
+                .putInt(timeoutKey, timeout)
+        }
     }
 
     open fun cleanUp(account: UserAccount) {
-        val editor = getAccountPrefs(account).edit()
-        getAccountPrefs(account).all.keys.forEach { key ->
-            editor.remove(key)
+        getAccountPrefs(account).edit {
+            getAccountPrefs(account).all.keys.forEach { key ->
+                remove(key)
+            }
         }
-        editor.apply()
     }
 }
