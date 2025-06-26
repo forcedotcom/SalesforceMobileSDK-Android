@@ -208,7 +208,6 @@ open class LoginActivity : FragmentActivity() {
          * plus the optional web server flow code verifier accompanying the
          * frontdoor bridge URL.
          */
-        viewModel.isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
         val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
             uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
         } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
@@ -216,6 +215,29 @@ open class LoginActivity : FragmentActivity() {
                 frontdoorBridgeUrl,
                 intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
             )
+        }
+
+        /**
+         *  The Salesforce Connected App or External Client App consumer key
+         *  from the Salesforce Identity API UI Bridge front door URL.  This
+         *  is sometimes known as "client id" or "remote access consumer
+         *  key".
+         */
+        val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
+
+        // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
+        val uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey = uiBridgeApiParametersConsumerKey == viewModel.bootConfig.remoteAccessConsumerKey
+        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey
+
+        // Alert the user if the front door bridge URL is not for this app and was discarded.
+        if (viewModel.bootConfig.remoteAccessConsumerKey != null && !uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey) {
+            runOnUiThread {
+                makeText(
+                    this,
+                    "Cannot use another app's login QR Code.  Please log in to this app.",
+                    LENGTH_LONG
+                ).show()
+            }
         }
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
