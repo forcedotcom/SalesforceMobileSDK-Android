@@ -102,6 +102,7 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
@@ -142,6 +143,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -293,11 +295,18 @@ open class LoginActivity : FragmentActivity() {
                 }
             } else {
                 with(SalesforceSDKManager.getInstance()) {
-                    if (useWebServerAuthentication) {
-                        // Fetch well known config and load in custom tab if required.
-                        fetchAuthenticationConfiguration {
-                            if (isBrowserLoginEnabled) {
+                    // Fetch well known config and load in custom tab if required.
+                    fetchAuthenticationConfiguration {
+                        if (isBrowserLoginEnabled) {
+                            if (useWebServerAuthentication) {
                                 viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                            } else {
+                                /* Reload the webview now that isBrowserLoginEnabled has been set
+                                   to true so that we generate an authorization URL with PKCE values.  */
+                                lifecycleScope.launch(Dispatchers.Main) {
+                                    viewModel.reloadWebView()
+                                    viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
+                                }
                             }
                         }
                     }
@@ -900,25 +909,19 @@ open class LoginActivity : FragmentActivity() {
                         // Show loading while we PKCE and/or create user account.
                         viewModel.authFinished.value = true
 
-                        // Determine if presence of override parameters require the user agent flow.
-                        val overrideWithUserAgentFlow = viewModel.isUsingFrontDoorBridge
-                                && viewModel.frontdoorBridgeCodeVerifier == null
                         when {
-                            SalesforceSDKManager.getInstance().useWebServerAuthentication
-                                    && !overrideWithUserAgentFlow ->
-
+                            viewModel.useWebServerFlow ->
                                 viewModel.onWebServerFlowComplete(
                                     params["code"],
                                     ::onAuthFlowError,
-                                    ::onAuthFlowSuccess
+                                    ::onAuthFlowSuccess,
                                 )
-
                             else ->
                                 CoroutineScope(Default).launch {
                                     viewModel.onAuthFlowComplete(
                                         TokenEndpointResponse(params),
                                         ::onAuthFlowError,
-                                        ::onAuthFlowSuccess
+                                        ::onAuthFlowSuccess,
                                     )
                                 }
                         }
