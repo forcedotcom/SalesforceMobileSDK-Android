@@ -791,7 +791,6 @@ public class ExplorerActivity extends SalesforceActivity {
 		credsMap.put("test_redirect_uri", config.getOauthRedirectURI());
 		credsMap.put("refresh_token", user.getRefreshToken());
 		credsMap.put("instance_url", user.getInstanceServer());
-		credsMap.put("api_instance_url", user.getApiInstanceServer());
 		credsMap.put("identity_url", user.getIdUrl());
 		credsMap.put("access_token", "__NOT_REQUIRED__");
 		credsMap.put("organization_id", user.getOrgId());
@@ -802,6 +801,10 @@ public class ExplorerActivity extends SalesforceActivity {
 
 		if (user.getCommunityUrl() != null) {
 			credsMap.put("community_url", user.getCommunityUrl());
+		}
+
+		if (user.getApiInstanceServer() != null) {
+			credsMap.put("api_instance_url", user.getApiInstanceServer());
 		}
 
 		String credentials = new JSONObject(credsMap).toString().replaceAll("\\\\", "");

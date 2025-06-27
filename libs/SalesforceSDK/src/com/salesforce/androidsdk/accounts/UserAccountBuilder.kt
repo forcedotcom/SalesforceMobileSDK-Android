@@ -615,7 +615,7 @@ class UserAccountBuilder private constructor() {
             tokenFormat,
             beaconChildConsumerKey,
             beaconChildConsumerSecret,
-            apiInstanceServer
+            apiInstanceServer,
         )
     }
 
