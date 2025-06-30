@@ -146,7 +146,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     internal val useWebServerFlow: Boolean
         get() = with(SalesforceSDKManager.getInstance()) {
+            // Browser based authentication requires the Web Server flow for PKCE security.
             (useWebServerAuthentication || isBrowserLoginEnabled)
+                    // QR Code login may require User Agent flow.
                     && !(isUsingFrontDoorBridge && frontdoorBridgeCodeVerifier == null)
         }
 
