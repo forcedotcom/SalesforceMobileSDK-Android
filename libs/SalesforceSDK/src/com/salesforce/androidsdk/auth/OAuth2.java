@@ -906,7 +906,9 @@ public class OAuth2 {
                 Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
-                apiInstanceUrl = parsedResponse.getString(API_INSTANCE_URL);
+                if (parsedResponse.has(API_INSTANCE_URL)) {
+                    apiInstanceUrl = parsedResponse.getString(API_INSTANCE_URL);
+                }
                 idUrl = parsedResponse.getString(ID);
                 computeOtherFields();
                 if (parsedResponse.has(REFRESH_TOKEN)) {
