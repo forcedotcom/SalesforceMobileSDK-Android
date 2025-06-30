@@ -227,11 +227,11 @@ open class LoginActivity : FragmentActivity() {
         val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
 
         // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
-        val uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey = uiBridgeApiParametersConsumerKey == viewModel.bootConfig.remoteAccessConsumerKey
-        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey
+        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
+        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
 
         // Alert the user if the front door bridge URL is not for this app and was discarded.
-        if (viewModel.bootConfig.remoteAccessConsumerKey != null && !uiBridgeApiParametersFrontDoorBridgeUrlMatchesConsumerKey) {
+        if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
             runOnUiThread {
                 makeText(
                     this,
