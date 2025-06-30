@@ -108,7 +108,7 @@ class LoginActivityTest {
     }
 
     @Test
-    fun viewModelFrontDoorBridgeCodeVerifier_DefaultValue_onCreateWithQrCodeLoginIntentAndMismatchedConsumerKey() {
+    fun viewModelIsUsingFrontDoorBridge_DefaultValue_onCreateWithQrCodeLoginIntentAndMismatchedConsumerKey() {
         val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__MISMATCHED_CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
 
         launch<LoginActivity>(
@@ -122,6 +122,44 @@ class LoginActivityTest {
             activityScenario.onActivity { activity ->
 
                 assertFalse(activity.viewModel.isUsingFrontDoorBridge)
+            }
+        }
+    }
+
+    @Test
+    fun viewModelIsUsingFrontDoorBridge_UpdatesOn_onCreateWithQrCodeLoginIntentAndMissingStartUrl() {
+        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26missingStartURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
+
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                data = uri
+            }).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+
+                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
+            }
+        }
+    }
+
+    @Test
+    fun viewModelIsUsingFrontDoorBridge_UpdatesOn_onCreateWithQrCodeLoginIntentAndMissingStartUrlClientId() {
+        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526missing_client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
+
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                data = uri
+            }).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+
+                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
             }
         }
     }
