@@ -106,6 +106,7 @@ import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
+import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
@@ -234,7 +235,7 @@ open class LoginActivity : FragmentActivity() {
             runOnUiThread {
                 makeText(
                     this,
-                    "Cannot use another app's login QR Code.  Please log in to this app.",
+                    getString(cannot_use_another_apps_login_qr_code),
                     LENGTH_LONG
                 ).show()
             }

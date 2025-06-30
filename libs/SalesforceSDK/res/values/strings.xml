@@ -7,6 +7,7 @@
     <string name="app_name">SalesforceSDK</string>
     <string name="account_type">com.salesforce.androidsdk</string>
     <string name="app_package">com.salesforce.androidsdk</string>
+    <string name="cannot_use_another_apps_login_qr_code">Cannot use another app\'s login QR Code.  Please log in to this app.</string>
 
     <!-- If you're only supporting recent versions of Android (e.g. 3.x and up), you can override this to be touch and get a better looking login UI  -->
     <string name="oauth_display_type">touch</string>
