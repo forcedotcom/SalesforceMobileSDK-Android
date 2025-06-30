@@ -106,6 +106,7 @@ import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
+import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
@@ -208,7 +209,6 @@ open class LoginActivity : FragmentActivity() {
          * plus the optional web server flow code verifier accompanying the
          * frontdoor bridge URL.
          */
-        viewModel.isUsingFrontDoorBridge = isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)
         val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
             uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
         } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
@@ -216,6 +216,29 @@ open class LoginActivity : FragmentActivity() {
                 frontdoorBridgeUrl,
                 intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
             )
+        }
+
+        /**
+         *  The Salesforce Connected App or External Client App consumer key
+         *  from the Salesforce Identity API UI Bridge front door URL.  This
+         *  is sometimes known as "client id" or "remote access consumer
+         *  key".
+         */
+        val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
+
+        // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
+        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
+        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
+
+        // Alert the user if the front door bridge URL is not for this app and was discarded.
+        if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
+            runOnUiThread {
+                makeText(
+                    this,
+                    getString(cannot_use_another_apps_login_qr_code),
+                    LENGTH_LONG
+                ).show()
+            }
         }
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
