@@ -471,17 +471,21 @@ public class OAuth2 {
      * @param reason The reason the refresh token is being revoked.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
-        final String requestUrl = loginServer.toString() + OAUTH_REVOKE_PATH;
-        final FormBody body = new FormBody.Builder()
-                .add(TOKEN, refreshToken)
-                .add(REVOKE_REASON, reason.toString())
-                .build();
-        final Request request = new Request.Builder().url(requestUrl).post(body).build();
+        final Request request = buildRevokeRefreshTokenRequest(loginServer, refreshToken, reason);
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
             SalesforceSDKLogger.w(TAG, "Exception thrown while revoking refresh token", e);
         }
+    }
+
+    protected static Request buildRevokeRefreshTokenRequest(URI loginServer, String refreshToken, LogoutReason reason) {
+        final String requestUrl = loginServer.toString() + OAUTH_REVOKE_PATH;
+        final FormBody body = new FormBody.Builder()
+                .add(TOKEN, refreshToken)
+                .add(REVOKE_REASON, reason.toString())
+                .build();
+        return new Request.Builder().url(requestUrl).post(body).build();
     }
 
     /**
