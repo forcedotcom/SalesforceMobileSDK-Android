@@ -143,6 +143,7 @@ public class OAuth2 {
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    private static final String REVOKE_REASON = "revoke_reason";
 
     /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
     protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
@@ -155,7 +156,7 @@ public class OAuth2 {
 
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=%s&revoke_reason=%s";
+    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke";
     private static final String LIGHTNING_DOMAIN = "lightning_domain";
     private static final String LIGHTNING_SID = "lightning_sid";
     private static final String VF_DOMAIN = "visualforce_domain";
@@ -470,8 +471,12 @@ public class OAuth2 {
      * @param reason The reason the refresh token is being revoked.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
-        final String requestPath = String.format(OAUTH_REVOKE_PATH, refreshToken, reason.toString());
-        final Request request = new Request.Builder().url(loginServer.toString() + requestPath).get().build();
+        final String requestUrl = loginServer.toString() + OAUTH_REVOKE_PATH;
+        final FormBody body = new FormBody.Builder()
+                .add(TOKEN, refreshToken)
+                .add(REVOKE_REASON, reason.toString())
+                .build();
+        final Request request = new Request.Builder().url(requestUrl).post(body).build();
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
