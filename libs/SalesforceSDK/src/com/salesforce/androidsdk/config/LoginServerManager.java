@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -167,7 +168,11 @@ public class LoginServerManager {
 		edit.putString(SERVER_URL, server.url);
 		edit.putBoolean(IS_CUSTOM, server.isCustom);
 		edit.apply();
-		selectedServer.postValue(server);
+		if (Looper.myLooper() == Looper.getMainLooper()) {
+			selectedServer.setValue(server);
+		} else {
+			selectedServer.postValue(server);
+		}
 	}
 
 	/**

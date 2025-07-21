@@ -330,6 +330,7 @@ open class LoginActivity : FragmentActivity() {
 
         // Take action on selected server change.
         viewModel.selectedServer.observe(this) { selectedServer ->
+            if (isFinishing) { return@observe }
 
             // Guard against observing a selected server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val selectedServerUri = selectedServer.toUri()
@@ -909,10 +910,10 @@ open class LoginActivity : FragmentActivity() {
 
         intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
             val loginUrl = "https://$loginHost"
+            loginServerManager.addCustomLoginServer(loginHost, loginUrl)
             loginServerManager.setSelectedLoginServer(
                 LoginServer(loginHost, loginUrl, true)
             )
-            loginServerManager.addCustomLoginServer(loginHost, loginUrl)
         }
     }
 
@@ -951,8 +952,8 @@ open class LoginActivity : FragmentActivity() {
      * */
     private fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
         proposedSelectedServerUrl: Uri
-    ) = viewModel.loginUrl.value?.toUri()?.let {
-        isSalesforceWelcomeDiscoveryMobileCallbackUrl(proposedSelectedServerUrl)
+    ) = viewModel.loginUrl.value?.toUri()?.let { loginUrl ->
+        isSalesforceWelcomeDiscoveryMobileUrl(this, loginUrl) && !(isSalesforceWelcomeDiscoveryMobileUrl(this, proposedSelectedServerUrl))
     } ?: false
 
     /**
