@@ -36,8 +36,7 @@ import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.Bitmap
@@ -217,13 +216,8 @@ open class LoginActivity : FragmentActivity() {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
 
-        // Apply the intent extras' Salesforce Welcome Login hint and host for use in the OAuth authorize URL, if applicable.
-        applySalesforceWelcomeLoginHintAndHost(intent)
-
-        // Apply the URL as the initial login URL if it's a valid Salesforce Welcome Discovery URL.
-        intent.data?.let { uri ->
-            useSalesforceWelcomeDiscoveryMobileUrl(uri)
-        }
+        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+        applySalesforceWelcomeDiscoveryIntent(intent)
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -330,7 +324,6 @@ open class LoginActivity : FragmentActivity() {
 
         // Take action on selected server change.
         viewModel.selectedServer.observe(this) { selectedServer ->
-            if (isFinishing) { return@observe }
 
             // Guard against observing a selected server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val selectedServerUri = selectedServer.toUri()
@@ -394,11 +387,14 @@ open class LoginActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        // If the intent is a callback from Chrome, process it and do nothing else
-        if (isCustomTabAuthFinishedCallback(intent)) {
+        // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
+        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isSalesforceWelcomeDiscoveryMobileUrl(this, it)) } != true) {
             completeAdvAuthFlow(intent)
             return
         }
+
+        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+        applySalesforceWelcomeDiscoveryIntent(intent)
     }
 
     private fun clearWebView(showServerPicker: Boolean = true) {
@@ -896,6 +892,21 @@ open class LoginActivity : FragmentActivity() {
     // region Salesforce Welcome Login Private Implementation
 
     /**
+     * If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+     * @param intent The intent
+     */
+    private fun applySalesforceWelcomeDiscoveryIntent(intent: Intent) {
+
+        // Apply the intent extras' Salesforce Welcome Login hint and host for use in the OAuth authorize URL, if applicable.
+        applySalesforceWelcomeLoginHintAndHost(intent)
+
+        // Apply the URL as the initial login URL if it's a valid Salesforce Welcome Discovery URL.
+        intent.data?.let { uri ->
+            useSalesforceWelcomeDiscoveryMobileUrl(uri)
+        }
+    }
+
+    /**
      * If the intent has the Salesforce Welcome login hint and host, applies
      * those for use in the generation of the OAuth URL.  This is used by
      * Salesforce Welcome for external linking to default login with a specific
@@ -975,10 +986,8 @@ open class LoginActivity : FragmentActivity() {
                     LoginActivity::class.java
                 ).apply {
                     data = generateSalesforceWelcomeDiscoveryMobileUrl(uri)
-                    flags = FLAG_ACTIVITY_CLEAR_TASK.or(FLAG_ACTIVITY_NEW_TASK)
+                    flags = FLAG_ACTIVITY_SINGLE_TOP
                 })
-            finish()
-
             true
         }
 
@@ -991,10 +1000,8 @@ open class LoginActivity : FragmentActivity() {
                     this,
                     LoginActivity::class.java
                 ).apply {
-                    flags = FLAG_ACTIVITY_CLEAR_TASK.or(FLAG_ACTIVITY_NEW_TASK)
+                    flags = FLAG_ACTIVITY_SINGLE_TOP
                 })
-            finish()
-
             true
         } else {
 
@@ -1018,7 +1025,6 @@ open class LoginActivity : FragmentActivity() {
                 loginHint = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT) ?: return false,
                 loginHost = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN)?.toUri()?.host ?: return false
             )
-            finish()
             return true
         } else false
     }
@@ -1458,7 +1464,7 @@ open class LoginActivity : FragmentActivity() {
             Intent(context, LoginActivity::class.java).apply {
                 putExtra(EXTRA_KEY_LOGIN_HINT, loginHint)
                 putExtra(EXTRA_KEY_LOGIN_HOST, loginHost)
-                flags = FLAG_ACTIVITY_CLEAR_TASK.or(FLAG_ACTIVITY_NEW_TASK)
+                flags = FLAG_ACTIVITY_SINGLE_TOP
                 context.startActivity(this)
             }
         }
