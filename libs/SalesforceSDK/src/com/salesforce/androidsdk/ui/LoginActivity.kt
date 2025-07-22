@@ -922,9 +922,6 @@ open class LoginActivity : FragmentActivity() {
         intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
             val loginUrl = "https://$loginHost"
             loginServerManager.addCustomLoginServer(loginHost, loginUrl)
-            loginServerManager.setSelectedLoginServer(
-                LoginServer(loginHost, loginUrl, true)
-            )
         }
     }
 
