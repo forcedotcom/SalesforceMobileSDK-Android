@@ -34,11 +34,14 @@ import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
+import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory.decodeResource
+import android.net.Uri
 import android.net.http.SslError
 import android.net.http.SslError.SSL_EXPIRED
 import android.net.http.SslError.SSL_IDMISMATCH
@@ -130,7 +133,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
-import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -151,11 +154,20 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URI
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
 /**
  * Login activity authenticates a user. Authorization happens inside a web view.
+ *
+ * Support for Salesforce Welcome (WSC) Discovery is provided.  If the activity
+ * is started with a valid WSC Discovery URL in the intent data, the web view
+ * will display WSC Discovery.  The activity will return the user to default
+ * log in with the selected login hint and My Domain login server after
+ * completing the WSC Discovery flow.  In addition to WSC Discovery, the
+ * activity may be started using intent extras for login hint and My Domain
+ * login server.  See the extra key constants provided by the activity.
  *
  * Once an authorization code is obtained, it is exchanged for access and
  * refresh tokens to create an account via the account manager which stores
@@ -180,6 +192,7 @@ open class LoginActivity : FragmentActivity() {
             webViewClient = this@LoginActivity.webViewClient
             webChromeClient = this@LoginActivity.webChromeClient
             setBackgroundColor(Color.Transparent.toArgb())
+            settings.domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
             settings.javaScriptEnabled = true
         }
 
@@ -202,8 +215,8 @@ open class LoginActivity : FragmentActivity() {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
 
-        // Set the Salesforce Welcome Login hint and host for the OAuth authorize URL, if applicable.
-        useLoginHint(intent)
+        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+        applySalesforceWelcomeDiscoveryIntent(intent)
 
         /*
          * For Salesforce Identity API UI Bridge support, the overriding
@@ -220,7 +233,7 @@ open class LoginActivity : FragmentActivity() {
             )
         }
 
-        /**
+        /*
          *  The Salesforce Connected App or External Client App consumer key
          *  from the Salesforce Identity API UI Bridge front door URL.  This
          *  is sometimes known as "client id" or "remote access consumer
@@ -308,8 +321,20 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
-        // Take action on server change.
-        viewModel.selectedServer.observe(this) {
+        // Take action on selected server change.
+        viewModel.selectedServer.observe(this) { selectedServer ->
+
+            // Guard against observing a selected server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
+            val selectedServerUri = selectedServer.toUri()
+            if (intent.data?.host == selectedServerUri.host) {
+                return@observe
+            }
+
+            // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
+            if (switchDefaultOrSalesforceWelcomeDiscoveryLogin(selectedServerUri)) {
+                return@observe
+            }
+
             if (viewModel.singleServerCustomTabActivity) {
                 // Skip fetching authorization and show custom tab immediately.
                 viewModel.reloadWebView()
@@ -361,11 +386,14 @@ open class LoginActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        // If the intent is a callback from Chrome, process it and do nothing else
-        if (isCustomTabAuthFinishedCallback(intent)) {
+        // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
+        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isSalesforceWelcomeDiscoveryMobileUrl(this, it)) } != true) {
             completeAdvAuthFlow(intent)
             return
         }
+
+        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+        applySalesforceWelcomeDiscoveryIntent(intent)
     }
 
     private fun clearWebView(showServerPicker: Boolean = true) {
@@ -474,27 +502,6 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // endregion
-    // region Salesforce Welcome Login Private Implementation
-
-    /**
-     * Uses the Salesforce Welcome login hint and host in the Intent, if
-     * applicable.
-     */
-    private fun useLoginHint(intent: Intent) {
-
-        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
-        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
-            SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-                LoginServer(
-                    loginHost,
-                    "https://$loginHost",
-                    true
-                )
-            )
-        }
-    }
-
-    // endregion
     // End of Public Functions
 
     protected open fun certAuthOrLogin() {
@@ -567,7 +574,7 @@ open class LoginActivity : FragmentActivity() {
         // Create account and save result before switching to new user
         accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
 
-        setResult(Activity.RESULT_OK)
+        setResult(RESULT_OK)
         finish()
     }
 
@@ -881,6 +888,157 @@ open class LoginActivity : FragmentActivity() {
         )
     }
 
+    // region Salesforce Welcome Login Private Implementation
+
+    /**
+     * If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+     * @param intent The intent
+     */
+    private fun applySalesforceWelcomeDiscoveryIntent(intent: Intent) {
+
+        // Apply the intent extras' Salesforce Welcome Login hint and host for use in the OAuth authorize URL, if applicable.
+        applySalesforceWelcomeLoginHintAndHost(intent)
+
+        // Apply the URL as the initial login URL if it's a valid Salesforce Welcome Discovery URL.
+        intent.data?.let { uri ->
+            useSalesforceWelcomeDiscoveryMobileUrl(uri)
+        }
+    }
+
+    /**
+     * If the intent has the Salesforce Welcome login hint and host, applies
+     * those for use in the generation of the OAuth URL.  This is used by
+     * Salesforce Welcome for external linking to default login with a specific
+     * login username hint and My Domain log in server.  It is also used in the
+     * Salesforce Welcome Discovery flow.
+     * @param intent The activity's intent
+     */
+    private fun applySalesforceWelcomeLoginHintAndHost(intent: Intent) {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+
+        viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
+
+        intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
+            val loginUrl = "https://$loginHost"
+            loginServerManager.addCustomLoginServer(loginHost, loginUrl)
+        }
+    }
+
+    /**
+     * Creates a Salesforce Welcome Discovery mobile URL using the provided
+     * Salesforce Welcome Discovery host and path URL.
+     * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
+     * Discovery host and path URL
+     * @return A Salesforce Welcome Discovery mobile URL with all required
+     * parameters
+     */
+    private fun generateSalesforceWelcomeDiscoveryMobileUrl(
+        salesforceWelcomeDiscoveryHostAndPathUrl: Uri
+    ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
+        .appendQueryParameter(
+            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
+            viewModel.bootConfig.remoteAccessConsumerKey
+        )
+        .appendQueryParameter(
+            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
+            URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8")
+        )
+        .appendQueryParameter(
+            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL,
+            SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL
+        )
+        .build()
+
+    /**
+     * Determines if the provided proposed selected server URL is a switch from
+     * Salesforce Welcome Discovery back to default log in.
+     * @param proposedSelectedServerUrl The proposed selected server URL
+     * @return Boolean true if the provided proposed selected server URL is a
+     * switch from Salesforce Welcome Discovery back to the default log in,
+     * false otherwise.
+     * */
+    private fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
+        proposedSelectedServerUrl: Uri
+    ) = viewModel.loginUrl.value?.toUri()?.let { loginUrl ->
+        isSalesforceWelcomeDiscoveryMobileUrl(this, loginUrl) && !(isSalesforceWelcomeDiscoveryMobileUrl(this, proposedSelectedServerUrl))
+    } ?: false
+
+    /**
+     * Switches between default or Salesforce Welcome Discovery log in as needed
+     * using the provided proposed selected server URL.
+     * @param uri The proposed selected server URL
+     * @return Boolean true if a switch between default or Salesforce Welcome
+     * Discovery log is made, false otherwise.
+     */
+    private fun switchDefaultOrSalesforceWelcomeDiscoveryLogin(uri: Uri) =
+
+        // If the selected server has changed to a new Salesforce Welcome Discovery URL and host.
+        if (isSalesforceWelcomeDiscoveryUrlPath(uri)) {
+
+            // Navigate to Salesforce Welcome Discovery.
+            startActivity(
+                Intent(
+                    this,
+                    LoginActivity::class.java
+                ).apply {
+                    data = generateSalesforceWelcomeDiscoveryMobileUrl(uri)
+                    flags = FLAG_ACTIVITY_SINGLE_TOP
+                })
+            true
+        }
+
+        // If the new selected server isn't a Salesforce Welcome Discovery URL but the previous was...
+        else if (isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(uri)) {
+
+            // Navigate to login.
+            startActivity(
+                Intent(
+                    this,
+                    LoginActivity::class.java
+                ).apply {
+                    flags = FLAG_ACTIVITY_SINGLE_TOP
+                })
+            true
+        } else {
+
+            false
+        }
+
+    /**
+     * Uses the provided Salesforce Welcome Discovery mobile callback URL to
+     * start default login, if the URL is applicable. This URL is loaded by the
+     * web view at the conclusion of the discovery flow.
+     * @param uri The Salesforce Welcome Discovery mobile callback URL
+     * @return Boolean true if default login was started with the provided
+     * Salesforce Welcome Discovery URL, otherwise false.
+     */
+    private fun useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(
+        uri: Uri
+    ): Boolean {
+        return if (isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri)) {
+            startDefaultLoginWithHintAndHost(
+                context = this,
+                loginHint = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT) ?: return false,
+                loginHost = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN)?.toUri()?.host ?: return false
+            )
+            return true
+        } else false
+    }
+
+    /**
+     * If the provided URL is a Salesforce Welcome Discovery mobile URL, applies
+     * that as the initial URL.
+     * @param uri The URL to apply as the initial URL if it is a valid
+     * Salesforce Welcome Discovery mobile URL
+     */
+    private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
+        if (isSalesforceWelcomeDiscoveryMobileUrl(this, uri)) {
+            viewModel.loginUrl.postValue(uri.toString())
+        }
+    }
+
+    // endregion
+
     /**
      * A web view client which intercepts the redirect to the OAuth callback URL.  That redirect marks the end of
      * the user facing portion of the authentication flow.
@@ -890,6 +1048,12 @@ open class LoginActivity : FragmentActivity() {
      */
     open inner class AuthWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+
+            // Use the request's Salesforce Welcome Discovery mobile callback URL, if applicable.
+            if (useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(request.url)) {
+                return true
+            }
+
             // Check if user entered a custom domain
             val customDomainPatternMatch = SalesforceSDKManager.getInstance()
                 .customDomainInferencePattern?.matcher(request.url.toString())?.find() ?: false
@@ -939,6 +1103,7 @@ open class LoginActivity : FragmentActivity() {
                                     ::onAuthFlowError,
                                     ::onAuthFlowSuccess,
                                 )
+
                             else ->
                                 CoroutineScope(Default).launch {
                                     viewModel.onAuthFlowComplete(
@@ -1056,15 +1221,6 @@ open class LoginActivity : FragmentActivity() {
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
 
         // endregion
-        // region Log In With Login Hint Public Implementation
-
-        /** Intent extra key for login hint value */
-        const val EXTRA_KEY_LOGIN_HINT = "login_hint"
-
-        /** Intent extra key for login host to use with login hint */
-        const val EXTRA_KEY_LOGIN_HOST = "login_host"
-
-        // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation
 
         /**
@@ -1163,6 +1319,15 @@ open class LoginActivity : FragmentActivity() {
         )
 
         // endregion
+        // region Salesforce Welcome Login Public Implementation
+
+        /** Intent extra key for Salesforce Welcome login username hint value */
+        const val EXTRA_KEY_LOGIN_HINT = "login_hint"
+
+        /** Intent extra key for Salesforce Welcome login host to use with login hint */
+        const val EXTRA_KEY_LOGIN_HOST = "login_host"
+
+        // endregion
         // region QR Code Login Via Salesforce Identity API UI Bridge Private Implementation
 
         /** Extras key for the Salesforce Identity API UI Bridge front door URL */
@@ -1208,6 +1373,100 @@ open class LoginActivity : FragmentActivity() {
                     else -> null
                 }
             )
+        }
+
+        // endregion
+        // region Salesforce Welcome Login Private Implementation
+
+        /** The default Salesforce Welcome Discovery mobile callback URL.  This value is fixed until future Salesforce Welcome updates */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL = "sfdc://discocallback"
+
+        /** The Salesforce Welcome Discovery mobile callback URL's "login hint" parameter key */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT = "login_hint"
+
+        /** The Salesforce Welcome Discovery mobile callback URL's "my domain" parameter key */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN = "my_domain"
+
+        /** The Salesforce Welcome Discovery mobile URL's callback URL query string parameter name */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL = "callback_url"
+
+        /** The Salesforce Welcome Discovery mobile URL's client id (consumer key) query string parameter name */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID = "client_id"
+
+        /** The Salesforce Welcome Discovery mobile URL's client version query string parameter name */
+        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION = "client_version"
+
+        /** The URL path used by Salesforce Welcome Discovery URLs */
+        private const val SALESFORCE_WELCOME_DISCOVERY_URL_PATH = "/discovery"
+
+        /**
+         * Determines if the provided URL has the Salesforce Welcome Discovery
+         * path.
+         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * path
+         * @return Boolean true if the URL has the Salesforce Welcome Discovery
+         * path or false otherwise
+         */
+        fun isSalesforceWelcomeDiscoveryUrlPath(
+            uri: Uri,
+        ) = uri.path?.contains(
+            SALESFORCE_WELCOME_DISCOVERY_URL_PATH
+        ) == true
+
+        /**
+         * Determines if the provided URL has the Salesforce Welcome Discovery
+         * path and parameters for mobile callback.  The client id (consumer
+         * key) of the URL must match the boot config's consumer key.
+         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * path and parameters for mobile callback
+         * @return Boolean true if the URL has the Salesforce Welcome Discovery
+         * path and parameters for mobile callback and matches the boot config's
+         * consumer key or false otherwise
+         */
+        fun isSalesforceWelcomeDiscoveryMobileUrl(
+            context: Context,
+            uri: Uri,
+        ): Boolean {
+            val clientIdParameter = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID)
+            return isSalesforceWelcomeDiscoveryUrlPath(uri) && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
+            ) != null && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
+            ) != null && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
+            ) != null && clientIdParameter == getBootConfig(context).remoteAccessConsumerKey &&
+                    (clientIdParameter == "SfdcMobileChatterAndroid" || clientIdParameter == "SfdcMobileChatteriOS") // TODO: Keep this list of client ids up to date with those supported by Salesforce Welcome Discovery or remove it when no longer required.
+        }
+
+        /**
+         * Determines if the provided URL is a Salesforce Welcome Discovery
+         * mobile callback URL.
+         * @param uri The URL to determine is a Salesforce Welcome Discovery
+         * mobile callback URL
+         * @return Boolean true if the URL is a Salesforce Welcome Discovery
+         * mobile callback URL, false otherwise
+         */
+        private fun isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri: Uri) =
+            uri.toString().startsWith(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL)
+
+        /**
+         * Starts login with the provided Salesforce Welcome login username hint
+         * and login host.
+         * @param context The Android context
+         * @param loginHint The Salesforce Welcome login username hint
+         * @param loginHost The Salesforce Welcome login host
+         */
+        private fun startDefaultLoginWithHintAndHost(
+            context: Context,
+            loginHint: String,
+            loginHost: String,
+        ) {
+            Intent(context, LoginActivity::class.java).apply {
+                putExtra(EXTRA_KEY_LOGIN_HINT, loginHint)
+                putExtra(EXTRA_KEY_LOGIN_HOST, loginHost)
+                flags = FLAG_ACTIVITY_SINGLE_TOP
+                context.startActivity(this)
+            }
         }
 
         // endregion
