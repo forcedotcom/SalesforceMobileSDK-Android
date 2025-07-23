@@ -134,7 +134,6 @@ import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
-import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -1427,13 +1426,17 @@ open class LoginActivity : FragmentActivity() {
         fun isSalesforceWelcomeDiscoveryMobileUrl(
             context: Context,
             uri: Uri,
-        ) = isSalesforceWelcomeDiscoveryUrlPath(uri) && uri.queryParameterNames?.contains(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
-        ) != null && uri.queryParameterNames?.contains(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
-        ) != null && uri.queryParameterNames?.contains(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
-        ) != null && uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID) == getBootConfig(context).remoteAccessConsumerKey
+        ): Boolean {
+            val clientIdParameter = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID)
+            return isSalesforceWelcomeDiscoveryUrlPath(uri) && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
+            ) != null && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
+            ) != null && uri.queryParameterNames?.contains(
+                SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
+            ) != null && clientIdParameter == getBootConfig(context).remoteAccessConsumerKey &&
+                    (clientIdParameter == "SfdcMobileChatterAndroid" || clientIdParameter == "SfdcMobileChatteriOS")
+        }
 
         /**
          * Determines if the provided URL is a Salesforce Welcome Discovery
