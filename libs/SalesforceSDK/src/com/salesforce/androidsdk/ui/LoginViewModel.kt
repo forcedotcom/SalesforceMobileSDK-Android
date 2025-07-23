@@ -162,7 +162,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
             if (isUsingFrontDoorBridge) {
                 // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
-                codeVerifier != null
+                frontdoorBridgeCodeVerifier != null
             }
             // Second, when not using a front-door bridge URL, the app's preferences can be used.
             else {
