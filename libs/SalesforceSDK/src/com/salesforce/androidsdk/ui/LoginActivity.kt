@@ -1435,7 +1435,7 @@ open class LoginActivity : FragmentActivity() {
             ) != null && uri.queryParameterNames?.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
             ) != null && clientIdParameter == getBootConfig(context).remoteAccessConsumerKey &&
-                    (clientIdParameter == "SfdcMobileChatterAndroid" || clientIdParameter == "SfdcMobileChatteriOS")
+                    (clientIdParameter == "SfdcMobileChatterAndroid" || clientIdParameter == "SfdcMobileChatteriOS") // TODO: Keep this list of client ids up to date with those supported by Salesforce Welcome Discovery or remove it when no longer required.
         }
 
         /**
