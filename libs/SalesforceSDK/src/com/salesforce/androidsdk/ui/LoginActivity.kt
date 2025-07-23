@@ -215,46 +215,7 @@ open class LoginActivity : FragmentActivity() {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
 
-        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
-        applySalesforceWelcomeDiscoveryIntent(intent)
-
-        /*
-         * For Salesforce Identity API UI Bridge support, the overriding
-         * frontdoor bridge URL to use in place of the default initial login URL
-         * plus the optional web server flow code verifier accompanying the
-         * frontdoor bridge URL.
-         */
-        val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
-            uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
-        } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
-            UiBridgeApiParameters(
-                frontdoorBridgeUrl,
-                intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
-            )
-        }
-
-        /*
-         *  The Salesforce Connected App or External Client App consumer key
-         *  from the Salesforce Identity API UI Bridge front door URL.  This
-         *  is sometimes known as "client id" or "remote access consumer
-         *  key".
-         */
-        val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
-
-        // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
-        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
-        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
-
-        // Alert the user if the front door bridge URL is not for this app and was discarded.
-        if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
-            runOnUiThread {
-                makeText(
-                    this,
-                    getString(cannot_use_another_apps_login_qr_code),
-                    LENGTH_LONG
-                ).show()
-            }
-        }
+        applyIntent(intent)
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
         if (intent.extras?.getBoolean(NEW_USER) == true) {
@@ -289,16 +250,9 @@ open class LoginActivity : FragmentActivity() {
             presentBiometric()
         }
 
-        // Prompt user with the default login page or log in via other configurations such as using
-        // a Salesforce Identity API UI Bridge front door URL.
-        when {
-            viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null ->
-                loginWithFrontdoorBridgeUrl(
-                    uiBridgeApiParameters.frontdoorBridgeUrl,
-                    uiBridgeApiParameters.pkceCodeVerifier
-                )
-
-            else -> certAuthOrLogin()
+        // Prompt user with the default login page when not using a Salesforce Identity API UI Bridge front door URL.
+        if (!viewModel.isUsingFrontDoorBridge) {
+            certAuthOrLogin()
         }
 
         // Take control of the back logic if the device is locked.
@@ -387,13 +341,12 @@ open class LoginActivity : FragmentActivity() {
         super.onNewIntent(intent)
 
         // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
-        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isSalesforceWelcomeDiscoveryMobileUrl(this, it)) } != true) {
+        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isQrCodeLoginUrlIntent(intent) || isSalesforceWelcomeDiscoveryMobileUrl(this, it)) } != true) {
             completeAdvAuthFlow(intent)
             return
         }
 
-        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
-        applySalesforceWelcomeDiscoveryIntent(intent)
+        applyIntent(intent)
     }
 
     private fun clearWebView(showServerPicker: Boolean = true) {
@@ -444,7 +397,7 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    // region QR Code Login Via UI Bridge API Public Implementation
+    // region Log In Via Salesforce Identity API UI Bridge Front Door URL Public Implementation
 
     /**
      * Automatically log in with a UI Bridge API front door bridge URL and PKCE
@@ -502,7 +455,7 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // endregion
-    // End of Public Functions
+    // region End Of Public Methods
 
     protected open fun certAuthOrLogin() {
         when {
@@ -627,7 +580,8 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    // End of Public API (protected)
+    // endregion
+    // region End Of Public API (protected)
 
     private fun isCustomTabAuthFinishedCallback(intent: Intent): Boolean {
         return intent.data != null
@@ -684,7 +638,9 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    // Biometric Authentication Code
+    // endregion
+    // region Biometric Authentication Code
+
     private fun presentBiometric() {
         val biometricPrompt = biometricPrompt
         val biometricManager = BiometricManager.from(this)
@@ -888,6 +844,65 @@ open class LoginActivity : FragmentActivity() {
         )
     }
 
+    // endregion
+    // region Log In Via Salesforce Identity API UI Bridge Front Door URL Private Implementation
+
+
+    /**
+     * If the intent is for log in via Salesforce Identity API UI Bridge API
+     * front door URL, apply it to the activity.
+     * @param intent The intent
+     */
+    private fun applyUiBridgeApiFrontDoorUrl(intent: Intent) {
+
+        /*
+         * For Salesforce Identity API UI Bridge support, the overriding
+         * frontdoor bridge URL to use in place of the default initial login URL
+         * plus the optional web server flow code verifier accompanying the
+         * frontdoor bridge URL.
+         */
+        val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
+            uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
+        } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
+            UiBridgeApiParameters(
+                frontdoorBridgeUrl,
+                intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
+            )
+        }
+
+        /*
+         *  The Salesforce Connected App or External Client App consumer key
+         *  from the Salesforce Identity API UI Bridge front door URL.  This
+         *  is sometimes known as "client id" or "remote access consumer
+         *  key".
+         */
+        val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
+
+        // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
+        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
+        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
+
+        // Alert the user if the front door bridge URL is not for this app and was discarded.
+        if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
+            runOnUiThread {
+                makeText(
+                    this,
+                    getString(cannot_use_another_apps_login_qr_code),
+                    LENGTH_LONG
+                ).show()
+            }
+        }
+
+        // Use the front door URL as the login page if applicable.
+        if (viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null) {
+            loginWithFrontdoorBridgeUrl(
+                uiBridgeApiParameters.frontdoorBridgeUrl,
+                uiBridgeApiParameters.pkceCodeVerifier
+            )
+        }
+    }
+
+    // endregion
     // region Salesforce Welcome Login Private Implementation
 
     /**
@@ -1038,6 +1053,20 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // endregion
+
+    /**
+     * Applies a new intent to the activity, for instance when the activity is
+     * created or receives a new intent.
+     * @param intent The new intent
+     */
+    private fun applyIntent(intent: Intent) {
+
+        // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
+        applySalesforceWelcomeDiscoveryIntent(intent)
+
+        // If the intent is for log in using a UI Bridge API front door URL, apply it to the activity.
+        applyUiBridgeApiFrontDoorUrl(intent)
+    }
 
     /**
      * A web view client which intercepts the redirect to the OAuth callback URL.  That redirect marks the end of
@@ -1221,7 +1250,7 @@ open class LoginActivity : FragmentActivity() {
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
 
         // endregion
-        // region QR Code Login Via Salesforce Identity API UI Bridge Public Implementation
+        // region Log In Via Salesforce Identity API UI Bridge Front Door URL Public Implementation
 
         /**
          * For QR code login URLs, the URL path which distinguishes them from other URLs provided by
@@ -1328,7 +1357,7 @@ open class LoginActivity : FragmentActivity() {
         const val EXTRA_KEY_LOGIN_HOST = "login_host"
 
         // endregion
-        // region QR Code Login Via Salesforce Identity API UI Bridge Private Implementation
+        // region Log In Via Salesforce Identity API UI Bridge Front Door URL Private Implementation
 
         /** Extras key for the Salesforce Identity API UI Bridge front door URL */
         const val EXTRA_KEY_FRONTDOOR_BRIDGE_URL = "frontdoor_bridge_url"
