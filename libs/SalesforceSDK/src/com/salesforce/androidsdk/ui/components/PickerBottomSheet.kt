@@ -151,8 +151,10 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = !closePicker
-            viewModel.loading.value = true
-            SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
+            if (newSelectedServer != SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer) {
+                viewModel.loading.value = true
+                SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
+            }
         }
     }
     val onLoginServerCancel = { viewModel.showServerPicker.value = false }
