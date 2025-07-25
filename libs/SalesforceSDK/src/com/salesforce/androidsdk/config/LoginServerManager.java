@@ -192,7 +192,7 @@ public class LoginServerManager {
 	public void addCustomLoginServer(String name, String url) {
 		// Prevent duplicate servers.
 		for (LoginServer existingServer : getLoginServers()) {
-			if (name.equals(existingServer.name) && url.equals(existingServer.url)) {
+			if (url.equals(existingServer.url)) {
 				setSelectedLoginServer(existingServer);
 				return;
 			}

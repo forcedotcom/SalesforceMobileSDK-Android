@@ -1456,6 +1456,7 @@ open class LoginActivity : FragmentActivity() {
             context: Context,
             uri: Uri,
         ): Boolean {
+            if (!uri.isHierarchical) return false
             val clientIdParameter = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID)
             return isSalesforceWelcomeDiscoveryUrlPath(uri) && uri.queryParameterNames?.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
