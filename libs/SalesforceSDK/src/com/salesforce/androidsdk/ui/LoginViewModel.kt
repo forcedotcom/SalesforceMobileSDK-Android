@@ -228,6 +228,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
+            // The Web Server Flow code challenge makes the authorization url unique each time,
+            // which triggers recomposition.  For User Agent Flow, change it to blank.
+            if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                loginUrl.value = ABOUT_BLANK
+            }
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
