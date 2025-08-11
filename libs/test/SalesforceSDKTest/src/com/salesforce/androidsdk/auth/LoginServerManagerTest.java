@@ -338,11 +338,11 @@ public class LoginServerManagerTest {
 		Assert.assertEquals("Duplicate custom server should not be added.", (originalServerSize + 1),
 				loginServerManager.getLoginServers().size());
 
-		// Ensure servers that aren't duplicates are allowed.
-		loginServerManager.addCustomLoginServer(CUSTOM_NAME, PRODUCTION_URL);
+		// Ensure servers with duplicate names but unique URLs are allowed.
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL_2);
 		Assert.assertEquals("Custom server should be added.", (originalServerSize + 2),
 				loginServerManager.getLoginServers().size());
-		loginServerManager.addCustomLoginServer(prodServer.name, CUSTOM_URL);
+		loginServerManager.addCustomLoginServer(prodServer.name, "https://custom3.com");
 		Assert.assertEquals("Custom server should be added..", (originalServerSize + 3),
 				loginServerManager.getLoginServers().size());
 	}
