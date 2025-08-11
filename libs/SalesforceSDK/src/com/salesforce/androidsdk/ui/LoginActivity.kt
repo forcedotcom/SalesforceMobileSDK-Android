@@ -182,9 +182,8 @@ open class LoginActivity : FragmentActivity() {
     // Webview and Clients
     protected open val webViewClient = AuthWebViewClient()
     protected open val webChromeClient = WebChromeClient()
-    open val webView: WebView
-        @SuppressLint("SetJavaScriptEnabled")
-        get() = WebView(this.baseContext).apply {
+    open val webView: WebView by lazy {
+        WebView(this.baseContext).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -193,8 +192,10 @@ open class LoginActivity : FragmentActivity() {
             webChromeClient = this@LoginActivity.webChromeClient
             setBackgroundColor(Color.Transparent.toArgb())
             settings.domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
+            @SuppressLint("SetJavaScriptEnabled")
             settings.javaScriptEnabled = true
         }
+    }
 
     // Private variables
     private var wasBackgrounded = false
