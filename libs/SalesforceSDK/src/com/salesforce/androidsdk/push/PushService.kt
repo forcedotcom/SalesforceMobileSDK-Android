@@ -385,9 +385,7 @@ open class PushService {
         account: UserAccount,
         restClient: RestClient
     ): String? {
-
         val sdkManager = SalesforceSDKManager.getInstance()
-        val accountManager = UserAccountManager.getInstance()
 
         runCatching {
             val fields: MutableMap<String, String?> = mutableMapOf(
@@ -397,9 +395,8 @@ open class PushService {
             )
 
             // Adds community ID to the registration payload to allow scoping of notifications per community.
-            val communityId = accountManager.currentUser.communityId
-            if (communityId?.isNotEmpty() == true) {
-                fields[NETWORK_ID] = communityId
+            account.communityUrl?.takeUnless { it.isBlank() }?.let {
+                fields[NETWORK_ID] = it
             }
 
             // Adds an RSA public key to the registration payload if available.
