@@ -181,7 +181,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open val singleServerCustomTabActivity = false
 
     /** Value representing if the back button should be shown on the login view. */
-    val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
+    open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
 
