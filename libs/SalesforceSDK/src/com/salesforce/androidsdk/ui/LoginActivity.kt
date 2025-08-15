@@ -603,26 +603,33 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    private fun handleBackBehavior() {
-        // If app is using Native Login this activity is a fallback and can be dismissed.
-        if (SalesforceSDKManager.getInstance().nativeLoginActivity != null) {
-            setResult(RESULT_CANCELED)
-            finish()
-            return // If we don't call return here moveTaskToBack can also be called below.
-        }
+    internal fun handleBackBehavior() {
+        with(SalesforceSDKManager.getInstance()) {
+            // If app is using Native Login this activity is a fallback and can be dismissed.
+            if (nativeLoginActivity != null) {
+                setResult(RESULT_CANCELED)
+                finish()
+                return // If we don't call return here moveTaskToBack can also be called below.
+            }
 
-        // Do nothing if locked
-        if (SalesforceSDKManager.getInstance().biometricAuthenticationManager?.locked == false) {
-            /*
-             * If there are no accounts signed in, the login screen needs to go
-             * away and go back to the home screen. However, if the login screen
-             * has been brought up from the switcher screen, the back button
-             * should take the user back to the previous screen.
-             */
-            wasBackgrounded = true
-            when (SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers) {
-                null -> moveTaskToBack(true)
-                else -> finish()
+            // Do nothing if locked
+            if (biometricAuthenticationManager?.locked == false) {
+                /*
+                 * If there are no accounts signed in, the login screen needs to go
+                 * away and go back to the home screen. However, if the login screen
+                 * has been brought up from the switcher screen, the back button
+                 * should take the user back to the previous screen.
+                 *
+                 * shouldShowBackButton normally checks for authenticated users,
+                 * but trust the app if it has been overridden.
+                 */
+                wasBackgrounded = true
+                if (userAccountManager.authenticatedUsers != null || viewModel.shouldShowBackButton) {
+                    setResult(RESULT_CANCELED)
+                    finish()
+                } else {
+                    moveTaskToBack(true)
+                }
             }
         }
     }

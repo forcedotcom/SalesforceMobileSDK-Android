@@ -151,7 +151,7 @@ fun LoginView() {
             clearCookies = { viewModel.clearCookies() },
             reloadWebView = { viewModel.reloadWebView() },
             shouldShowBackButton = viewModel.shouldShowBackButton,
-            finish = { activity.finish() },
+            finish = { activity.handleBackBehavior() },
         )
     }
 
