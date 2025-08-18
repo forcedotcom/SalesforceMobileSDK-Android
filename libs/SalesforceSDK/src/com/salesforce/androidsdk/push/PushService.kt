@@ -395,8 +395,9 @@ open class PushService {
             )
 
             // Adds community ID to the registration payload to allow scoping of notifications per community.
-            account.communityUrl?.takeUnless { it.isBlank() }?.let {
-                fields[NETWORK_ID] = it
+            val communityUrl = account.communityUrl
+            if (!communityUrl.isNullOrBlank()) {
+                fields[NETWORK_ID] = communityUrl
             }
 
             // Adds an RSA public key to the registration payload if available.
