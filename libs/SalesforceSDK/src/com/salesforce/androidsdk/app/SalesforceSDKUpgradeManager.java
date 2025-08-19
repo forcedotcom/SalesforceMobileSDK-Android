@@ -62,7 +62,7 @@ public class SalesforceSDKUpgradeManager {
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
 
-    private UserManager userManager;
+    private final UserManager userManager;
 
     /**
      * Returns an instance of this class.
@@ -84,12 +84,7 @@ public class SalesforceSDKUpgradeManager {
     }
 
     public SalesforceSDKUpgradeManager() {
-        this(new UserManager() {
-            @Override
-            public List<UserAccount> getAuthenticatedUsers() {
-                return SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-            }
-        });
+        this(() -> SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers());
     }
     public SalesforceSDKUpgradeManager(UserManager userManager) {
         this.userManager = userManager;
@@ -320,7 +315,7 @@ public class SalesforceSDKUpgradeManager {
         final String LEGACY_ACCOUNT_TYPE = "com.salesforce.androidsdk";
         if (SalesforceSDKManager.getInstance().getAccountType().equals(LEGACY_ACCOUNT_TYPE)) {
             SalesforceSDKLogger.e(TAG, "No app specific account type found.  To ensure users " +
-                    "can login override the account_type value in strings.xml.");
+                    "can login override the \"account_type\" value in your strings.xml.");
             return;
         }
 
@@ -335,7 +330,7 @@ public class SalesforceSDKUpgradeManager {
                     continue;
                 }
 
-                // Android OS accounts immutable so we have to remove the account and add a new one.
+                // Android OS accounts are immutable so we have to remove the account and add a new one.
                 accountManager.removeAccountExplicitly(account);
                 userAccountManager.createAccount(userAccount);
             } catch (Exception e) {
