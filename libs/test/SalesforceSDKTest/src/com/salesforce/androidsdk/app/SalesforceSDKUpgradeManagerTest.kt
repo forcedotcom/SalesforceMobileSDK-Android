@@ -15,9 +15,11 @@ import com.salesforce.androidsdk.config.LegacyAdminSettingsManager
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.security.KeyStoreWrapper
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
@@ -207,9 +209,17 @@ class SalesforceSDKUpgradeManagerTest {
         mockkObject(SalesforceSDKManager)
         val mockSDKManager = mockk<SalesforceSDKManager> {
             every { accountType } returns LEGACY_ACCOUNT_TYPE
-            every { appContext.getSharedPreferences(any(), any()) } returns mockk(relaxed = true)
+            every { appContext.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE) } returns mockk {
+                every { getString(ACC_MGR_KEY, "") } returns "14.0.0"
+                every { edit() } returns mockk<SharedPreferences.Editor> {
+                    every { putString(any(), any()) } returns this
+                    every { commit() } returns true
+                }
+            }
         }
         every { SalesforceSDKManager.getInstance() } returns mockSDKManager
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.e(any(), any<String>()) } returns Unit
 
         // Create upgrade manager and upgrade
         val upgradeManager = SalesforceSDKUpgradeManager(userMgr)
@@ -217,8 +227,17 @@ class SalesforceSDKUpgradeManagerTest {
         upgradeManager.upgrade()
 
         // Verify that no account operations were attempted (early return)
-        verify(exactly = 0) { mockSDKManager.clientManager }
-        verify(exactly = 0) { mockSDKManager.userAccountManager }
+        verify(exactly = 0) {
+            mockSDKManager.clientManager
+            mockSDKManager.userAccountManager
+        }
+        verify(exactly = 1) {
+            SalesforceSDKLogger.e(
+                "SalesforceSDKUpgradeManager",
+                "No app specific account type found.  To ensure users " +
+                        "can login override the \"account_type\" value in your strings.xml.",
+            )
+        }
     }
 
     @Test
@@ -328,6 +347,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.e(any(), any<String>()) } returns Unit
 
         // Create upgrade manager and trigger migration
         val upgradeManager = SalesforceSDKUpgradeManager(userMgr)
@@ -337,6 +358,10 @@ class SalesforceSDKUpgradeManagerTest {
         // Verify account was not removed or recreated when buildUserAccount returns null, but other accounts still succeed.
         verify(exactly = 0) { mockAccountManager.removeAccountExplicitly(legacyAccount1) }
         verify(exactly = 1) {
+            SalesforceSDKLogger.e(
+                "SalesforceSDKUpgradeManager",
+                "Unable to build UserAccount from account: ${legacyAccount1.name}",
+            )
             mockAccountManager.removeAccountExplicitly(legacyAccount2)
             mockUserAccountManager.createAccount(userAccount2)
             mockUserAccountManager.createAccount(any())
@@ -357,7 +382,7 @@ class SalesforceSDKUpgradeManagerTest {
         }
         val mockUserAccountManager = mockk<UserAccountManager> {
             // mock corrupted account error
-            every { buildUserAccount(legacyAccount1) } returns null
+            every { buildUserAccount(legacyAccount1) } returns userAccount1
             every { buildUserAccount(legacyAccount2) } returns userAccount2
             every { createAccount(any()) } returns mockk<Bundle>()
         }
@@ -376,6 +401,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.e(any(), any<String>(), any<Exception>()) } returns Unit
 
         // Create upgrade manager and trigger migration
         val upgradeManager = SalesforceSDKUpgradeManager(userMgr)
@@ -385,6 +412,11 @@ class SalesforceSDKUpgradeManagerTest {
         // Verify second account was still processed despite first account failing
         verify(exactly = 0) { mockUserAccountManager.createAccount(userAccount1) }
         verify(exactly = 1) {
+            SalesforceSDKLogger.e(
+                "SalesforceSDKUpgradeManager",
+                "Failed to migrate account: ${legacyAccount1.name}",
+                any<RuntimeException>()
+            )
             mockAccountManager.removeAccountExplicitly(legacyAccount2)
             mockUserAccountManager.createAccount(userAccount2)
         }
