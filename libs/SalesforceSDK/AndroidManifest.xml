@@ -27,6 +27,16 @@
                 android:resource="@xml/authenticator" />
         </service>
 
+        <service android:exported="true"
+            android:name="com.salesforce.androidsdk.auth.LegacyAuthenticatorService"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/legacy_authenticator" />
+        </service>
+
         <!-- Login activity -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
             android:theme="@style/SalesforceSDK"

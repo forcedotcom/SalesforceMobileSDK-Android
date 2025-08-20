@@ -1192,7 +1192,16 @@ open class SalesforceSDKManager protected constructor(
     open val isHybrid = false
 
     /** The authentication account type, which should match authenticator.xml */
-    val accountType = appContext.getString(account_type)
+    val accountType: String by lazy {
+        val type = appContext.getString(account_type)
+        if (type == "com.salesforce.androidsdk") {
+            // TODO: Turn this logline into an assert in 14.0
+            e(TAG, "No app specific account type found.  To ensure users " +
+                    "can login override the \"account_type\" value in your strings.xml.")
+        }
+
+        return@lazy type
+    }
 
     override fun toString() =
         """
