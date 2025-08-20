@@ -181,8 +181,10 @@ open class LoginActivity : FragmentActivity() {
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
 
     // Webview and Clients
-    protected open val webViewClient = AuthWebViewClient()
-    protected open val webChromeClient = WebChromeClient()
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val webViewClient = AuthWebViewClient()
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val webChromeClient = WebChromeClient()
     open val webView: WebView by lazy {
         WebView(this.baseContext).apply {
             layoutParams = ViewGroup.LayoutParams(

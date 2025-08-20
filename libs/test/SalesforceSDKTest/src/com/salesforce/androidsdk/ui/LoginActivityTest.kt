@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui
 
 import android.content.Intent
 import android.net.Uri.parse
+import android.webkit.WebView
 import androidx.core.net.toUri
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
@@ -160,6 +161,29 @@ class LoginActivityTest {
             activityScenario.onActivity { activity ->
 
                 assertTrue(activity.viewModel.isUsingFrontDoorBridge)
+            }
+        }
+    }
+
+    @Test
+    fun testWebviewSettings() {
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        ).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+                val defaultWebview = WebView(activity)
+                val expectedUserAgent = "${SalesforceSDKManager.getInstance().userAgent} ${defaultWebview.settings.userAgentString}"
+
+                assertEquals(activity.webViewClient, activity.webView.webViewClient)
+                assertEquals(activity.webChromeClient, activity.webView.webChromeClient)
+
+                assertTrue(activity.webView.settings.domStorageEnabled)
+                assertTrue(activity.webView.settings.javaScriptEnabled)
+                assertEquals(expectedUserAgent, activity.webView.settings.userAgentString)
             }
         }
     }
