@@ -152,6 +152,7 @@ import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.lang.String.format
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -180,8 +181,10 @@ open class LoginActivity : FragmentActivity() {
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
 
     // Webview and Clients
-    protected open val webViewClient = AuthWebViewClient()
-    protected open val webChromeClient = WebChromeClient()
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val webViewClient = AuthWebViewClient()
+    @VisibleForTesting(otherwise = PROTECTED)
+    open val webChromeClient = WebChromeClient()
     open val webView: WebView by lazy {
         WebView(this.baseContext).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -191,9 +194,16 @@ open class LoginActivity : FragmentActivity() {
             webViewClient = this@LoginActivity.webViewClient
             webChromeClient = this@LoginActivity.webChromeClient
             setBackgroundColor(Color.Transparent.toArgb())
-            settings.domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
-            @SuppressLint("SetJavaScriptEnabled")
-            settings.javaScriptEnabled = true
+            settings.apply {
+                domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
+                @SuppressLint("SetJavaScriptEnabled")
+                javaScriptEnabled = true
+                userAgentString = format(
+                    "%s %s",
+                    SalesforceSDKManager.getInstance().userAgent,
+                    userAgentString ?: "",
+                )
+            }
         }
     }
 
