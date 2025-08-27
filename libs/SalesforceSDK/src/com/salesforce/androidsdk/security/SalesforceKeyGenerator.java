@@ -176,6 +176,12 @@ public class SalesforceKeyGenerator {
 
         // Encrypt and store unique id if it was just created, or if it had to be decrypted with old cipher mode
         if (storeUniqueId) {
+            // Check if existing key supports OAEP padding, recreate if not
+            if (!KeyStoreWrapper.getInstance().keySupportsOAEPPadding(KEYSTORE_ALIAS)) {
+                SalesforceSDKLogger.i(TAG, "Key doesn't support OAEP padding, recreating key pair with OAEP support");
+                KeyStoreWrapper.getInstance().deleteKey(KEYSTORE_ALIAS);
+            }
+            
             final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
             final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
             storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
