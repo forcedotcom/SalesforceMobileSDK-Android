@@ -58,6 +58,7 @@ public class KeyStoreWrapperTest {
 
     private static final String KEY_1 = "key_1";
     private static final String KEY_2 = "key_2";
+    private static final String KEY_OAEP_TEST = "key_oaep_test";
     private static final int RSA_LENGTH = 2048;
 
     @Before
@@ -72,6 +73,7 @@ public class KeyStoreWrapperTest {
         final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
         keyStoreWrapper.deleteKey(KEY_1);
         keyStoreWrapper.deleteKey(KEY_2);
+        keyStoreWrapper.deleteKey(KEY_OAEP_TEST);
     }
 
     @Test
@@ -196,6 +198,27 @@ public class KeyStoreWrapperTest {
 
         // Also works without the upgrade step
         tryNewOrUpgradedClientAgainstNewOrOldServer(false, false, false);
+    }
+
+    @Test
+    public void testKeySupportsOAEPPadding() {
+        final KeyStoreWrapper keyStoreWrapper = KeyStoreWrapper.getInstance();
+        Assert.assertNotNull("KeyStoreWrapper instance should not be null", keyStoreWrapper);
+
+        // Create a legacy key pair without OAEP padding support
+        keyStoreWrapper.legacyCreateKeysIfNecessary("RSA", KEY_OAEP_TEST, RSA_LENGTH);
+        
+        // Verify the legacy key does NOT support OAEP padding
+        Assert.assertFalse("Legacy key should not support OAEP padding", 
+                keyStoreWrapper.keySupportsOAEPPadding(KEY_OAEP_TEST));
+
+        // Delete the legacy key and create a modern key pair
+        keyStoreWrapper.deleteKey(KEY_OAEP_TEST);
+        keyStoreWrapper.getRSAPublicKey(KEY_OAEP_TEST, RSA_LENGTH); // This creates the key with modern spec
+        
+        // Verify the modern key DOES support OAEP padding
+        Assert.assertTrue("Modern key should support OAEP padding", 
+                keyStoreWrapper.keySupportsOAEPPadding(KEY_OAEP_TEST));
     }
 
     /**
