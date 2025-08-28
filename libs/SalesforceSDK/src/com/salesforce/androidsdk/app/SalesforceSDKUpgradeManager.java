@@ -127,6 +127,9 @@ public class SalesforceSDKUpgradeManager {
             if (installedVersion.isLessThan(new SdkVersion(12, 0, 0, false))) {
                 updateFromBefore12_0_0();
             }
+            if (installedVersion.isLessThan(new SdkVersion(13, 0, 2, false))) {
+                updateFromBefore13_0_2();
+            }
             if (installedVersion.isLessThan(new SdkVersion(15, 0, 0, false))) {
                 migrateAccountType();
             }
@@ -306,6 +309,10 @@ public class SalesforceSDKUpgradeManager {
         PushMessaging.setReRegistrationRequested(true);
     }
 
+    private void updateFromBefore13_0_2() {
+        // Re-register all users for push notifications with new keys once push is setup
+        PushMessaging.setReRegistrationRequested(true);
+    }
 
     /*
      *  Migrate any accounts with account_type "com.salesforce.androidsdk" to a unique value.
