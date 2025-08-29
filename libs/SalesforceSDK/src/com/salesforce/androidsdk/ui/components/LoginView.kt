@@ -107,7 +107,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__clear_cookies
-import com.salesforce.androidsdk.R.string.sf__clear_caches
+import com.salesforce.androidsdk.R.string.sf__clear_cache
 import com.salesforce.androidsdk.R.string.sf__launch_idp
 import com.salesforce.androidsdk.R.string.sf__loading_indicator
 import com.salesforce.androidsdk.R.string.sf__more_options
@@ -150,7 +150,7 @@ fun LoginView() {
             titleTextColor = viewModel.titleTextColor ?: viewModel.dynamicHeaderTextColor.value,
             showServerPicker = viewModel.showServerPicker,
             clearCookies = { viewModel.clearCookies() },
-            clearCaches = { viewModel.clearCaches(activity.webView) },
+            clearWebViewCache = { viewModel.clearWebViewCache(activity.webView) },
             reloadWebView = { viewModel.reloadWebView() },
             shouldShowBackButton = viewModel.shouldShowBackButton,
             finish = { activity.handleBackBehavior() },
@@ -248,7 +248,7 @@ internal fun DefaultTopAppBar(
     titleTextColor: Color,
     showServerPicker: MutableState<Boolean>,
     clearCookies: () -> Unit,
-    clearCaches: () -> Unit,
+    clearWebViewCache: () -> Unit,
     reloadWebView: () -> Unit,
     shouldShowBackButton: Boolean,
     finish: () -> Unit,
@@ -298,8 +298,8 @@ internal fun DefaultTopAppBar(
                         reloadWebView()
                         showMenu = false
                     }
-                    MenuItem(stringResource(sf__clear_caches)) {
-                        clearCaches()
+                    MenuItem(stringResource(sf__clear_cache)) {
+                        clearWebViewCache()
                         reloadWebView()
                         showMenu = false
                     }
@@ -482,7 +482,7 @@ private fun AppBarPreview() {
             titleTextColor = Color.Black,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
             finish = { },
@@ -502,7 +502,7 @@ private fun AppBarLoadingPreview() {
             titleTextColor = Color.Black,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
             finish = { },
@@ -522,7 +522,7 @@ private fun AppBarBackButtonPreview() {
             titleTextColor = Color.Black,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
             finish = { },
@@ -542,7 +542,7 @@ private fun AppBarDarkPreview() {
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
             finish = { },
@@ -562,7 +562,7 @@ private fun BlueAppBarPreview() {
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
             finish = { },
@@ -582,7 +582,7 @@ private fun BlueAppBarLoadingPreview() {
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
             finish = { },
@@ -601,7 +601,7 @@ private fun CustomTextAppBarPreview() {
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
             finish = { },
@@ -620,7 +620,7 @@ private fun CustomTextAppBarLoadingPreview() {
             titleTextColor = Color.White,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
             finish = { },
@@ -639,7 +639,7 @@ private fun LongCustomTextAppBarPreview() {
             titleTextColor = Color.Black,
             showServerPicker = remember { mutableStateOf(false) },
             clearCookies = { },
-            clearCaches = { },
+            clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
             finish = { },

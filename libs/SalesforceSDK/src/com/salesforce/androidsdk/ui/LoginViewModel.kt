@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui
 
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -241,8 +242,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
-    /** Clear WebView Caches. */
-    open fun clearCaches(webView: android.webkit.WebView) {
+    /** Clear WebView Cache. */
+    open fun clearWebViewCache(webView: WebView) {
         webView.clearCache(true)
     }
 
