@@ -241,6 +241,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
 
+    /** Clear WebView Caches. */
+    open fun clearCaches(webView: android.webkit.WebView) {
+        webView.clearCache(true)
+    }
+
     /**
      * Automatically log in using the provided UI Bridge API parameters.
      * @param frontdoorBridgeUrl The UI Bridge API front door bridge API
