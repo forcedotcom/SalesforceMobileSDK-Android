@@ -156,9 +156,24 @@ class SalesforceSDKUpgradeManagerTest {
     }
 
     @Test
-    fun testUpgradeAfter12() {
+    fun testUpgradeFromBefore1302() {
+        // Set version to a version before 13.0.2
+        setVersion("12.2.0")
+
+        // Create public key for push notifications
+        KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)
+
+        // Upgrade to latest
+        upgradeMgr.upgrade()
+
+        // Make sure re-registration is requested
+        Assert.assertTrue(PushMessaging.reRegistrationRequested)
+    }
+
+    @Test
+    fun testUpgradeAfter1302() {
         // Set version to 12.0.0
-        setVersion("12.0.0")
+        setVersion("13.0.2")
 
         // Create public key for push notifications
         KeyStoreWrapper.getInstance().getRSAPublicString(PushService.pushNotificationKeyName)

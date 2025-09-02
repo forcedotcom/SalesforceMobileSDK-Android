@@ -28,12 +28,14 @@ package com.salesforce.androidsdk.security;
 
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.io.IOException;
+import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -251,6 +253,34 @@ public class KeyStoreWrapper {
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Could not generate key pair", e);
         }
+    }
+
+    /**
+     * Checks if the RSA key supports OAEP encryption padding.
+     *
+     * @param name Alias of the key to check.
+     * @return true if the key supports OAEP padding, false otherwise.
+     */
+    public boolean keySupportsOAEPPadding(String name) {
+        try {
+            if (keyStore.containsAlias(name)) {
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(name, null);
+                KeyFactory keyFactory = KeyFactory.getInstance(privateKey.getAlgorithm(), ANDROID_KEYSTORE);
+                KeyInfo keyInfo = keyFactory.getKeySpec(privateKey, KeyInfo.class);
+                String[] encryptionPaddings = keyInfo.getEncryptionPaddings();
+                
+                if (encryptionPaddings != null) {
+                    for (String padding : encryptionPaddings) {
+                        if (KeyProperties.ENCRYPTION_PADDING_RSA_OAEP.equals(padding)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            SalesforceSDKLogger.e(TAG, "Could not check key padding capabilities", e);
+        }
+        return false;
     }
 
     // For testing only - create key the way we used to before the 11.1.1 cipher change
