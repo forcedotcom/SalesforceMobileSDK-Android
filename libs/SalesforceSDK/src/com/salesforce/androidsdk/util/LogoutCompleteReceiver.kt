@@ -58,7 +58,7 @@ abstract class LogoutCompleteReceiver : BroadcastReceiver() {
      * @param reason The reason for the logout. If no reason is available, [LogoutReason.UNKNOWN] is used.
      */
     @Deprecated(
-        message = "Use onLogoutComplete method that includes the userAccount that was logged out.",
+        message = "To be removed in 14.0. Use onLogoutComplete method that includes the userAccount that was logged out.",
         replaceWith = ReplaceWith("onLogoutComplete(reason: LogoutReason, userAccount: UserAccount?)")
     )
     protected open fun onLogoutComplete(reason: LogoutReason) {}
