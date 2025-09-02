@@ -18,7 +18,7 @@ buildscript {
 
 allprojects {
     group = "com.salesforce.mobilesdk"
-    version = "13.0.1"
+    version = "13.0.2"
 
     // Ensure that we do not use newer language features that would make the SDK incompatible with
     // apps that do not target the latest version of Kotlin.

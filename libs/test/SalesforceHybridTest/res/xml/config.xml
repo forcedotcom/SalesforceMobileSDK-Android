@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <widget xmlns     = "http://www.w3.org/ns/widgets"
     id        = "com.salesforce.androidsdk"
-    version   = "13.0.1">
+    version   = "13.0.2">
 
     <content src="index.html" />
 

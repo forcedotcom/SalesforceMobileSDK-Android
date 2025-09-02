@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.0.1"
+rootProject.ext["PUBLISH_VERSION"] = "13.0.2"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
 
 plugins {
