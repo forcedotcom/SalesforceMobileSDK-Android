@@ -26,18 +26,26 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USERNAME;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.checkSameUserAccount;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
+import android.content.IntentFilter;
 
+import androidx.core.content.ContextCompat;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,6 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 /**
  * Tests for UserAccountManager.
@@ -59,6 +68,7 @@ public class UserAccountManagerTest {
 
     private UserAccountManager userAccMgr;
     private AccountManager accMgr;
+    private FakeLogoutCompleteReceiver logoutCompleteReceiver;
 
     @Before
     public void setUp() throws Exception {
@@ -66,13 +76,19 @@ public class UserAccountManagerTest {
         accMgr = AccountManager.get(targetContext);
         userAccMgr = UserAccountManager.getInstance();
         Assert.assertNull("There should be no authenticated users", userAccMgr.getAuthenticatedUsers());
+        logoutCompleteReceiver = new FakeLogoutCompleteReceiver();
+        ContextCompat.registerReceiver(targetContext, logoutCompleteReceiver,
+                new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION), RECEIVER_NOT_EXPORTED);
     }
 
     @After
     public void tearDown() throws Exception {
+        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        targetContext.unregisterReceiver(logoutCompleteReceiver);
         cleanupAccounts(accMgr);
         userAccMgr = null;
         accMgr = null;
+        logoutCompleteReceiver = null;
     }
 
     /**
@@ -165,6 +181,9 @@ public class UserAccountManagerTest {
         Assert.assertEquals("There should be 1 authenticated user", 1, userAccMgr.getAuthenticatedUsers().size());
         userAccMgr.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT);
         Assert.assertNull("There should be no authenticated users", userAccMgr.getAuthenticatedUsers());
+        Assert.assertEquals(OAuth2.LogoutReason.USER_LOGOUT, logoutCompleteReceiver.getLastReasonReceived());
+        Assert.assertNotNull(logoutCompleteReceiver.getLastUserAccountReceived());
+        Assert.assertEquals(TEST_USERNAME, logoutCompleteReceiver.getLastUserAccountReceived().getUsername());
     }
 
     /**
@@ -177,6 +196,9 @@ public class UserAccountManagerTest {
         userAccMgr.signoutUser(firstUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
         Assert.assertEquals("There should be 1 authenticated user", 1, userAccMgr.getAuthenticatedUsers().size());
         checkSameUserAccount(secondUser, userAccMgr.getCurrentUser());
+        Assert.assertEquals(OAuth2.LogoutReason.USER_LOGOUT, logoutCompleteReceiver.getLastReasonReceived());
+        Assert.assertNotNull(logoutCompleteReceiver.getLastUserAccountReceived());
+        Assert.assertEquals(TEST_USERNAME, logoutCompleteReceiver.getLastUserAccountReceived().getUsername());
     }
 
     /**
@@ -210,4 +232,37 @@ public class UserAccountManagerTest {
         return userAccount;
     }
 
+    private static class FakeLogoutCompleteReceiver extends LogoutCompleteReceiver {
+        private OAuth2.LogoutReason lastReasonReceived;
+        private UserAccount lastUserAccountReceived;
+        // Use a semaphore here to ensure the test doesn't proceed until the logout complete
+        // receiver has been called
+        private final Semaphore completionSemaphore = new Semaphore(0);
+
+        protected void onLogoutComplete(@NotNull OAuth2.LogoutReason reason, @Nullable UserAccount userAccount) {
+            lastReasonReceived = reason;
+            lastUserAccountReceived = userAccount;
+            completionSemaphore.release();
+        }
+
+        public OAuth2.LogoutReason getLastReasonReceived() {
+            try {
+                completionSemaphore.acquire();
+            } catch (InterruptedException e) {
+                Assert.fail("Interrupted while waiting for lastReasonReceived to be set");
+            }
+            completionSemaphore.release();
+            return lastReasonReceived;
+        }
+
+        public UserAccount getLastUserAccountReceived() {
+            try {
+                completionSemaphore.acquire();
+            } catch (InterruptedException e) {
+                Assert.fail("Interrupted while waiting for lastUserAccountReceived to be set");
+            }
+            completionSemaphore.release();
+            return lastUserAccountReceived;
+        }
+    }
 }

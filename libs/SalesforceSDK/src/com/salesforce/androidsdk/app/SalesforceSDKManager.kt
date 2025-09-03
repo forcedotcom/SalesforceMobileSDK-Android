@@ -734,11 +734,9 @@ open class SalesforceSDKManager protected constructor(
      */
     private fun cleanUp(
         frontActivity: Activity?,
-        account: Account?,
+        userAccount: UserAccount?,
         shouldDismissActivity: Boolean
     ) {
-        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
-
         // Clean up within this process
         cleanUp(userAccount)
 
@@ -1080,14 +1078,15 @@ open class SalesforceSDKManager protected constructor(
         frontActivity: Activity?,
         logoutReason: LogoutReason,
     ) {
+        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
         cleanUp(
             frontActivity,
-            account,
+            userAccount,
             showLoginPage
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
-        notifyLogoutComplete(showLoginPage, logoutReason)
+        notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
         // Revoke the existing refresh token
         if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
@@ -1110,9 +1109,9 @@ open class SalesforceSDKManager protected constructor(
      * Sends the logout complete event.
      * @param showLoginPage When true, shows the login page
      */
-    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason) {
+    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason, userAccount: UserAccount?) {
         EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
-        sendLogoutCompleteIntent(logoutReason)
+        sendLogoutCompleteIntent(logoutReason, userAccount)
         if (showLoginPage) {
             startSwitcherActivityIfRequired()
         }
@@ -1416,12 +1415,15 @@ open class SalesforceSDKManager protected constructor(
     } ?: ""
 
     /** Sends the logout completed intent */
-    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason) =
+    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason, userAccount: UserAccount?) =
         appContext.sendBroadcast(Intent(
             LOGOUT_COMPLETE_INTENT_ACTION
         ).apply {
             setPackage(appContext.packageName)
             putExtra(LOGOUT_REASON_KEY, logoutReason.toString())
+            userAccount?.let { userAccount ->
+                putExtra(USER_ACCOUNT_KEY, userAccount.toBundle())
+            }
         })
 
     /**
@@ -1439,7 +1441,7 @@ open class SalesforceSDKManager protected constructor(
             )
             userAccount?.let { userAccount ->
                 putExtra(
-                    USER_ACCOUNT,
+                    USER_ACCOUNT_KEY,
                     userAccount.toBundle()
                 )
             }
@@ -1452,7 +1454,7 @@ open class SalesforceSDKManager protected constructor(
             intent: Intent
         ) {
             if (intent.action == CLEANUP_INTENT_ACTION && intent.getStringExtra(PROCESS_ID_KEY) != PROCESS_ID) {
-                cleanUp(intent.getBundleExtra(USER_ACCOUNT)?.let { bundle ->
+                cleanUp(intent.getBundleExtra(USER_ACCOUNT_KEY)?.let { bundle ->
                     UserAccount(bundle)
                 })
             }
@@ -1629,7 +1631,7 @@ open class SalesforceSDKManager protected constructor(
         private val PROCESS_ID = randomUUID().toString()
 
         /** The user account key for broadcast intents  */
-        private const val USER_ACCOUNT = "userAccount"
+        internal const val USER_ACCOUNT_KEY = "userAccount"
 
         /** An intent action indicating logout was completed */
         const val LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE"

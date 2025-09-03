@@ -29,9 +29,10 @@ package com.salesforce.androidsdk.util
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.USER_ACCOUNT_KEY
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
-import java.util.Locale
 
 /**
  * Listens for the logout complete event, and acts on it.
@@ -39,10 +40,34 @@ import java.util.Locale
 abstract class LogoutCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) {
-            val reason = intent.getStringExtra(SalesforceSDKManager.LOGOUT_REASON_KEY) ?: LogoutReason.UNKNOWN.toString()
-            onLogoutComplete(LogoutReason.valueOf(reason.uppercase(Locale.ROOT)))
+            val reason = intent.getStringExtra(SalesforceSDKManager.LOGOUT_REASON_KEY)?.let {
+                LogoutReason.valueOf(it.uppercase())
+            } ?: LogoutReason.UNKNOWN
+            val userAccount = intent.getBundleExtra(USER_ACCOUNT_KEY)?.let { bundle ->
+                UserAccount(bundle)
+            }
+            @Suppress("DEPRECATION")
+            onLogoutComplete(reason)
+            onLogoutComplete(reason, userAccount)
         }
     }
 
-    protected abstract fun onLogoutComplete(reason: LogoutReason)
+    /**
+     * Called when logout is complete.
+     *
+     * @param reason The reason for the logout. If no reason is available, [LogoutReason.UNKNOWN] is used.
+     */
+    @Deprecated(
+        message = "To be removed in 14.0. Use onLogoutComplete method that includes the userAccount that was logged out.",
+        replaceWith = ReplaceWith("onLogoutComplete(reason: LogoutReason, userAccount: UserAccount?)")
+    )
+    protected open fun onLogoutComplete(reason: LogoutReason) {}
+
+    /**
+     * Called when logout is complete.
+     *
+     * @param reason The reason for the logout. If no reason is available, [LogoutReason.UNKNOWN] is used.
+     * @param userAccount The user account that was logged out. If no user account is available, null is used.
+     */
+    protected open fun onLogoutComplete(reason: LogoutReason, userAccount: UserAccount?) {}
 }
