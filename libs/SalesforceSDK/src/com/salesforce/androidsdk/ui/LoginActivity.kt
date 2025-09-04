@@ -186,7 +186,7 @@ open class LoginActivity : FragmentActivity() {
     @VisibleForTesting(otherwise = PROTECTED)
     open val webChromeClient = WebChromeClient()
     open val webView: WebView by lazy {
-        WebView(this.baseContext).apply {
+        WebView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
