@@ -186,6 +186,42 @@ class LoginViewActivityTest {
     }
 
     @Test
+    fun topAppBar_ClearCacheButton_ClearsCacheAndReloads() {
+        var clearCacheCalled = false
+        var reloadCalled = false
+        androidComposeTestRule.setContent {
+            DefaultTopAppBarTestWrapper(
+                clearWebViewCache = { clearCacheCalled = true },
+                reloadWebView = { reloadCalled = true },
+            )
+        }
+
+        val backButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
+        )
+        val titleText = androidComposeTestRule.onNodeWithText(DEFAULT_URL)
+        val menu = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__more_options)
+        )
+        val clearCacheButton = androidComposeTestRule.onNodeWithText(
+            androidComposeTestRule.activity.getString(R.string.sf__clear_cache)
+        )
+
+        backButton.assertDoesNotExist()
+        titleText.assertIsDisplayed()
+        menu.assertIsDisplayed()
+
+        menu.performClick()
+        clearCacheButton.assertIsDisplayed()
+        Assert.assertFalse("Clear cache should not be called yet.", clearCacheCalled)
+        Assert.assertFalse("Reload should not be called yet.", reloadCalled)
+
+        clearCacheButton.performClick()
+        Assert.assertTrue("Clear cache should be called.", clearCacheCalled)
+        Assert.assertTrue("Reload should be called.", reloadCalled)
+    }
+
+    @Test
     fun topAppBar_ReloadButton_CallsReload() {
         var reloadCalled = false
         androidComposeTestRule.setContent {
@@ -363,13 +399,14 @@ class LoginViewActivityTest {
         titleTextColor: Color = Color.Black,
         showServerPicker: MutableState<Boolean> = remember { mutableStateOf(false) },
         clearCookies: () -> Unit = { },
+        clearWebViewCache: () -> Unit = { },
         reloadWebView: () -> Unit = { },
         shouldShowBackButton: Boolean = false,
         finish: () -> Unit = { },
     ) {
         DefaultTopAppBar(
             backgroundColor, titleText, titleTextColor, showServerPicker, clearCookies,
-            reloadWebView, shouldShowBackButton, finish
+            clearWebViewCache, reloadWebView, shouldShowBackButton, finish
         )
     }
 

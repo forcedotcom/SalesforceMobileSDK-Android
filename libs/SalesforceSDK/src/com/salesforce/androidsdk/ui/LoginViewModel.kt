@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui
 
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -240,6 +241,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Clear WebView Cookies. */
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
+
+    /** Clear WebView Cache. */
+    open fun clearWebViewCache(webView: WebView) {
+        webView.clearCache(true)
+    }
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
