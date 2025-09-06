@@ -23,10 +23,10 @@ plugins {
 dependencies {
     api(project(":libs:MobileSync"))
     api("com.facebook.react:react-android:0.79.3")
-    implementation("androidx.core:core-ktx:1.16.0")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    implementation("androidx.core:core-ktx:1.17.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 
     // JSC from node_modules
@@ -42,6 +42,7 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
+    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
     compileSdk = 35
 
     defaultConfig {
