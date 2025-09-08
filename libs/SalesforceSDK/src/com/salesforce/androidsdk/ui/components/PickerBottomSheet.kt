@@ -95,6 +95,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -393,13 +395,11 @@ internal fun PickerBottomSheet(
                                                     if (listItem is UserAccount) {
                                                         UserAccountListItem(
                                                             displayName = listItem.displayName,
-                                                            loginServer = listItem.loginServer,
+                                                            loginServer = listItem.communityUrl ?: listItem.instanceServer,
                                                             selected = selected,
                                                             onItemSelected = { onItemSelected(listItem, true) },
-                                                            profilePhoto = listItem.profilePhoto?.let {
-                                                                painterResource(
-                                                                    it.generationId
-                                                                )
+                                                            profilePhoto = listItem.profilePhoto?.let { bitmap ->
+                                                                BitmapPainter(bitmap.asImageBitmap())
                                                             },
                                                         )
                                                         /*
@@ -413,10 +413,8 @@ internal fun PickerBottomSheet(
                                                             loginServer = listItem.loginServer,
                                                             selected = selected,
                                                             onItemSelected = { onItemSelected(listItem, true) },
-                                                            profilePhoto = listItem.profilePhoto?.let {
-                                                                painterResource(
-                                                                    it.generationId
-                                                                )
+                                                            profilePhoto = listItem.profilePhoto?.let { bitmap ->
+                                                                BitmapPainter(bitmap.asImageBitmap())
                                                             },
                                                         )
                                                     }

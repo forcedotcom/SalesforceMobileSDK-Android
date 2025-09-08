@@ -13,16 +13,17 @@ dependencies {
     api(project(":libs:SmartStore"))
     api("androidx.appcompat:appcompat:1.7.1")
     api("androidx.appcompat:appcompat-resources:1.7.1")
-    implementation("androidx.core:core-ktx:1.16.0")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
 
 android {
     namespace = "com.salesforce.androidsdk.mobilesync"
     testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
 
+    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
     compileSdk = 35
 
     defaultConfig {
