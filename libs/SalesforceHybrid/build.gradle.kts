@@ -18,7 +18,7 @@ dependencies {
     api("androidx.appcompat:appcompat-resources:1.7.1")
     api("androidx.webkit:webkit:1.14.0")
     api("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

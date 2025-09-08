@@ -18,15 +18,15 @@ dependencies {
     api(project(":libs:SalesforceAnalytics"))
     api("com.squareup.okhttp3:okhttp:4.12.0")
     api("com.google.firebase:firebase-messaging:25.0.0")
-    api("androidx.core:core:1.17.0")
-    api("androidx.browser:browser:1.9.0")
+    api("androidx.core:core:1.16.0") // Update requires API 36 compileSdk
+    api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
     api("androidx.work:work-runtime-ktx:2.10.3")
 
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
     implementation("androidx.activity:activity-compose:$androidXActivityVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
@@ -51,7 +51,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    androidTestImplementation("io.mockk:mockk-android:1.14.5")
+    androidTestImplementation("io.mockk:mockk-android:1.14.0") // Update requires Kotlin 2
 }
 
 android {

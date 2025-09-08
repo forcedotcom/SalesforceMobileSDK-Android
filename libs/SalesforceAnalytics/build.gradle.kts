@@ -12,7 +12,7 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
