@@ -56,7 +56,9 @@ internal abstract class AppLockManager(
     }
 
     fun onAppBackgrounded() {
-        lastBackgroundTimestamp = System.currentTimeMillis()
+        if (!locked) {
+            lastBackgroundTimestamp = System.currentTimeMillis()
+        }
     }
 
     fun onUnlock() {
