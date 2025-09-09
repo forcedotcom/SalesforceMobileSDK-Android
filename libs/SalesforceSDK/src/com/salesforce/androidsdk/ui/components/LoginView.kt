@@ -163,7 +163,7 @@ fun LoginView() {
             LoginViewModel.BottomBarButton(
                 stringResource(viewModel.biometricAuthenticationButtonText.intValue)
             ) {
-                viewModel.biometricAuthenticationButtonAction
+                viewModel.biometricAuthenticationButtonAction.value?.invoke() ?: activity.onBioAuthClick()
             }
         } else null
     val idpButton =
