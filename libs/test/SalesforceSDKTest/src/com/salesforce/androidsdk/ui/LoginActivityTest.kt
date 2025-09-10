@@ -104,7 +104,7 @@ class LoginActivityTest {
                 assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
                 assertEquals("__CODE_VERIFIER__", activity.viewModel.frontdoorBridgeLoginOverride?.codeVerifier)
                 assertEquals("https://mobilesdk.my.salesforce.com", activity.viewModel.frontdoorBridgeLoginOverride?.frontdoorBridgeUrl?.let { "${it.scheme}://${it.host}" })
-                assertEquals("https://mobilesdk.my.salesforce.com/secur/frontdoor.jsp?otp=__OTP__&startURL=%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D__CONSUMER_KEY__%26redirect_uri%3Dtestsfdc%253A%252F%252F%252Fmobilesdk%252Fdetect%252Foauth%252Fdone%26code_challenge%3D__CODE_CHALLENGE__&cshc=__CSHC__", activity.viewModel.loginUrl.value)
+                assertNull(activity.viewModel.loginUrl.value)
             }
         }
     }
@@ -142,7 +142,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
+                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }
@@ -161,7 +161,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
+                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }
