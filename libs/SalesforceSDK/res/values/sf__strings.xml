@@ -31,6 +31,8 @@
     <string name="sf__setup_biometric_unlock">Setup Biometric Unlock</string>
     <string name="sf__back_button_content_description">Back</string>
     <string name="sf__loading_indicator">Loading</string>
+    <string name="sf__cannot_use_another_apps_login_qr_code">Cannot use another app\'s login QR Code.  Please log in to this app.</string>
+    <string name="sf__cannot_use_another_login_hosts_login_qr_code">Cannot use another login host\'s login QR Code.  Please log in to this app.</string>
 
     <!-- Server picker -->
     <string name="sf__auth_login_production">Production</string>
