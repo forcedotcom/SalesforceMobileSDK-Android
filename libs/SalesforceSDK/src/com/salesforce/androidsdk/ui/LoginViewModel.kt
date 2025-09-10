@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -161,9 +162,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal val useWebServerFlow: Boolean
         get() = with(SalesforceSDKManager.getInstance()) {
             // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
-            if (isUsingFrontDoorBridge) {
+            if (frontdoorBridgeLoginOverride != null) {
                 // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
-                frontdoorBridgeCodeVerifier != null
+                frontdoorBridgeLoginOverride?.codeVerifier != null
             }
             // Second, when not using a front-door bridge URL, the app's preferences can be used.
             else {
@@ -196,14 +197,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
 
-    // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
-    internal var isUsingFrontDoorBridge = false
-
-    // The optional server used for code exchange.
-    internal var frontdoorBridgeServer: String? = null
-
-    // The optional web server flow code verifier accompanying the front door bridge server.
-    internal var frontdoorBridgeCodeVerifier: String? = null
+    // For Salesforce Identity API UI Bridge support, an overriding front door bridge login override instance.
+    internal var frontdoorBridgeLoginOverride: FrontdoorBridgeLoginOverride? = null
 
 
     init {
@@ -220,7 +215,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer ->
             val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
+            if (isNewServer && frontdoorBridgeLoginOverride == null) {
                 loginUrl.value = getAuthorizationUrl(newServer)
             }
         }
@@ -228,12 +223,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
-        if (!isUsingFrontDoorBridge) {
-            // The Web Server Flow code challenge makes the authorization url unique each time,
-            // which triggers recomposition.  For User Agent Flow, change it to blank.
-            if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
-                loginUrl.value = ABOUT_BLANK
-            }
+        if (frontdoorBridgeLoginOverride == null) {
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
@@ -253,13 +243,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param pkceCodeVerifier The PKCE code verifier
      */
     fun loginWithFrontDoorBridgeUrl(
-        frontdoorBridgeUrl: String,
+        frontdoorBridgeUrl: Uri,
         pkceCodeVerifier: String?,
     ) {
-        isUsingFrontDoorBridge = true
-        frontdoorBridgeServer = with(URI(frontdoorBridgeUrl)) { "${scheme}://${host}" }
-        frontdoorBridgeCodeVerifier = pkceCodeVerifier
-        loginUrl.value = frontdoorBridgeUrl
+        val frontdoorBridgeLoginOverride = FrontdoorBridgeLoginOverride(
+            frontdoorBridgeUrl = frontdoorBridgeUrl,
+            codeVerifier = pkceCodeVerifier
+        )
+
+        // Only assign if both consumer key and login host match
+        if (frontdoorBridgeLoginOverride.matchesConsumerKey && frontdoorBridgeLoginOverride.matchesLoginHost) {
+            this@LoginViewModel.frontdoorBridgeLoginOverride = frontdoorBridgeLoginOverride
+            loginUrl.value = frontdoorBridgeUrl.toString()
+        }
     }
 
     /**
@@ -307,13 +303,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
 
     /**
-     * Resets all state related to Salesforce Identity API UI Bridge front door bridge URL log in to
-     * its default inactive state.
+     * Resets all state related to Salesforce Identity API UI Bridge front door
+     * bridge URL log in to its default inactive state.
      */
     internal fun resetFrontDoorBridgeUrl() {
-        isUsingFrontDoorBridge = false
-        frontdoorBridgeServer = null
-        frontdoorBridgeCodeVerifier = null
+        frontdoorBridgeLoginOverride = null
     }
 
     /**
@@ -380,8 +374,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) = withContext(IO) {
         runCatching {
-            val server = if (isUsingFrontDoorBridge) frontdoorBridgeServer else selectedServer.value
-            val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
+            val server = frontdoorBridgeLoginOverride?.frontdoorBridgeUrl?.toString() ?: selectedServer.value
+            val verifier = frontdoorBridgeLoginOverride?.codeVerifier ?: codeVerifier
 
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,

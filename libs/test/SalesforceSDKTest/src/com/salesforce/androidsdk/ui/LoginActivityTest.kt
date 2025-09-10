@@ -37,7 +37,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,7 +82,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertFalse(activity.viewModel.isUsingFrontDoorBridge)
+                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }
@@ -100,9 +101,9 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
-                assertEquals("__CODE_VERIFIER__", activity.viewModel.frontdoorBridgeCodeVerifier)
-                assertEquals("https://mobilesdk.my.salesforce.com", activity.viewModel.frontdoorBridgeServer)
+                assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
+                assertEquals("__CODE_VERIFIER__", activity.viewModel.frontdoorBridgeLoginOverride?.codeVerifier)
+                assertEquals("https://mobilesdk.my.salesforce.com", activity.viewModel.frontdoorBridgeLoginOverride?.frontdoorBridgeUrl?.let { "${it.scheme}://${it.host}" })
                 assertEquals("https://mobilesdk.my.salesforce.com/secur/frontdoor.jsp?otp=__OTP__&startURL=%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D__CONSUMER_KEY__%26redirect_uri%3Dtestsfdc%253A%252F%252F%252Fmobilesdk%252Fdetect%252Foauth%252Fdone%26code_challenge%3D__CODE_CHALLENGE__&cshc=__CSHC__", activity.viewModel.loginUrl.value)
             }
         }
@@ -122,7 +123,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertFalse(activity.viewModel.isUsingFrontDoorBridge)
+                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }
@@ -141,7 +142,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
+                assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }
@@ -160,7 +161,7 @@ class LoginActivityTest {
 
             activityScenario.onActivity { activity ->
 
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
+                assertNotNull(activity.viewModel.frontdoorBridgeLoginOverride)
             }
         }
     }

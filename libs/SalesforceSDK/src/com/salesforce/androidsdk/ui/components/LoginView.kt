@@ -137,8 +137,10 @@ fun LoginView() {
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val viewModel: LoginViewModel =
         viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
-    val titleText = if (viewModel.isUsingFrontDoorBridge) {
-        viewModel.frontdoorBridgeServer ?: ""
+    val titleText = if (viewModel.frontdoorBridgeLoginOverride != null) {
+        viewModel.frontdoorBridgeLoginOverride?.frontdoorBridgeUrl?.let { uri ->
+            "${uri.scheme}://${uri.host}"
+        } ?: ""
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
     }
