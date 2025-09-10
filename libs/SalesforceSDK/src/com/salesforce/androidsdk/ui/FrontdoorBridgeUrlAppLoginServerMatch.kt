@@ -67,7 +67,7 @@ internal data class FrontdoorBridgeUrlAppLoginServerMatch(
         }
 
         if (frontdoorBridgeUrl.isMyDomain()) {
-            val frontdoorBridgeUrlMyDomainSuffix = frontdoorBridgeUrlHost.split("\\.my\\.").last()
+            val frontdoorBridgeUrlMyDomainSuffix = "my.${frontdoorBridgeUrlHost.split(".my.").last()}"
             if (frontdoorBridgeUrlMyDomainSuffix.isNotEmpty()) {
                 for (eligibleAppLoginServer in eligibleAppLoginServers) {
                     if (eligibleAppLoginServer.endsWith(frontdoorBridgeUrlMyDomainSuffix)) {
@@ -100,7 +100,13 @@ internal data class FrontdoorBridgeUrlAppLoginServerMatch(
                 }
             }
         } else {
-            results.add(selectedAppLoginHost)
+            try {
+                val url = URL(selectedAppLoginHost)
+                results.add(url.host)
+            } catch (_: Exception) {
+                // If parsing fails, try to use as-is (might already be just a host)
+                results.add(selectedAppLoginHost)
+            }
         }
         return results
     }

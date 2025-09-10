@@ -28,19 +28,27 @@
 package com.salesforce.androidsdk.ui
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.net.toUri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.config.LoginServerManaging
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.RuntimeConfig
-import io.mockk.*
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,14 +62,16 @@ class FrontdoorBridgeLoginOverrideTest {
 
     companion object {
         private const val CONSUMER_KEY = "test_consumer_key"
-        private const val DIFFERENT_CONSUMER_KEY = "different_consumer_key"
         private const val CODE_VERIFIER = "test_code_verifier"
         private const val SELECTED_LOGIN_SERVER = "https://login.salesforce.com"
-        private const val FRONTDOOR_URL_WITH_MATCHING_CLIENT_ID = "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
-        private const val FRONTDOOR_URL_WITH_DIFFERENT_CLIENT_ID = "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Ddifferent_consumer_key%26response_type%3Dcode"
+        private const val FRONTDOOR_URL_WITH_MATCHING_CLIENT_ID =
+            "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
+        private const val FRONTDOOR_URL_WITH_DIFFERENT_CLIENT_ID =
+            "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Ddifferent_consumer_key%26response_type%3Dcode"
         private const val FRONTDOOR_URL_NO_START_URL = "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning"
         private const val FRONTDOOR_URL_NO_CLIENT_ID = "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode"
-        private const val CUSTOM_HOST_URL = "https://custom.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Fcustom.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
+        private const val CUSTOM_HOST_URL =
+            "https://custom.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Fcustom.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
     }
 
     private lateinit var mockSalesforceSDKManager: SalesforceSDKManager
@@ -73,31 +83,31 @@ class FrontdoorBridgeLoginOverrideTest {
     @Before
     fun setUp() {
         // Mock static objects
-        mockSalesforceSDKManager = mockk()
-        mockContext = mockk()
-        mockBootConfig = mockk()
-        mockRuntimeConfig = mockk()
-        mockLoginServerManager = mockk()
+        mockSalesforceSDKManager = mockk(relaxed = true)
+        mockContext = mockk(relaxed = true)
+        mockBootConfig = mockk(relaxed = true)
+        mockRuntimeConfig = mockk(relaxed = true)
+        mockLoginServerManager = mockk(relaxed = true)
 
         // Mock SalesforceSDKManager singleton
         mockkObject(SalesforceSDKManager)
         every { SalesforceSDKManager.getInstance() } returns mockSalesforceSDKManager
         every { mockSalesforceSDKManager.appContext } returns mockContext
         every { mockSalesforceSDKManager.loginServerManager } returns mockLoginServerManager
+        every { mockSalesforceSDKManager.isHybrid } returns false
 
-        // Mock BootConfig
-        mockkObject(BootConfig)
-        every { BootConfig.getBootConfig(mockContext) } returns mockBootConfig
+        // Mock BootConfig static methods
+        mockkStatic(BootConfig::class)
+        every { BootConfig.getBootConfig(any()) } returns mockBootConfig
         every { mockBootConfig.remoteAccessConsumerKey } returns CONSUMER_KEY
 
-        // Mock RuntimeConfig
-        mockkObject(RuntimeConfig)
-        every { RuntimeConfig.getRuntimeConfig(mockContext) } returns mockRuntimeConfig
+        // Mock RuntimeConfig static methods
+        mockkStatic(RuntimeConfig::class)
+        every { RuntimeConfig.getRuntimeConfig(any()) } returns mockRuntimeConfig
 
         // Default mock behavior for LoginServerManager
-        val mockSelectedServer = mockk<LoginServer>()
-        every { mockSelectedServer.url } returns SELECTED_LOGIN_SERVER
-        every { mockLoginServerManager.selectedLoginServer } returns mockSelectedServer
+        val selectedServer = LoginServer("Production", SELECTED_LOGIN_SERVER, false)
+        every { mockLoginServerManager.selectedLoginServer } returns selectedServer
         every { mockLoginServerManager.addCustomLoginServer(any(), any()) } just Runs
     }
 
@@ -211,9 +221,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = FRONTDOOR_URL_WITH_MATCHING_CLIENT_ID.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -232,9 +244,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -253,9 +267,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = true, mdmLoginServers = arrayOf("login.salesforce.com"))
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -274,9 +290,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -296,9 +314,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -316,12 +336,15 @@ class FrontdoorBridgeLoginOverrideTest {
     @Test
     fun testMatchesLoginHost_MyDomainMatch_ReturnsTrue() {
         // Arrange
-        val myDomainUrl = "https://mydomain.my.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Fmydomain.my.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
+        val myDomainUrl =
+            "https://mydomain.my.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Fmydomain.my.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
         val frontdoorUrl = myDomainUrl.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Custom", "https://custom.salesforce.com", true)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Custom", "https://custom.salesforce.com", true)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -332,7 +355,7 @@ class FrontdoorBridgeLoginOverrideTest {
 
         // Assert
         assertTrue(override.matchesLoginHost)
-        verify { mockLoginServerManager.addCustomLoginServer("https://custom.salesforce.com", "https://custom.salesforce.com") }
+        verify { mockLoginServerManager.addCustomLoginServer("https://mydomain.my.salesforce.com", "https://mydomain.my.salesforce.com") }
     }
 
     @Test
@@ -341,9 +364,11 @@ class FrontdoorBridgeLoginOverrideTest {
         val frontdoorUrl = FRONTDOOR_URL_WITH_MATCHING_CLIENT_ID.toUri()
         every { mockRuntimeConfig.getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts) } returns false
         every { mockRuntimeConfig.getStringArrayStoredAsArrayOrCSV(RuntimeConfig.ConfigKey.AppServiceHosts) } throws Exception("Test exception")
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -361,9 +386,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -386,9 +413,11 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -411,15 +440,17 @@ class FrontdoorBridgeLoginOverrideTest {
         // Arrange
         val frontdoorUrl = CUSTOM_HOST_URL.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
             frontdoorBridgeUrl = frontdoorUrl,
             codeVerifier = "",
-            selectedAppLoginServer = "https://custom.salesforce.com",
+            selectedAppLoginServer = "https://different.salesforce.com",
             addingAndSwitchingLoginServersPerMdm = false,
             addingAndSwitchingLoginServerOverride = false
         )
@@ -446,15 +477,12 @@ class FrontdoorBridgeLoginOverrideTest {
     @Test
     fun testEdgeCase_NullHost_NoMatch() {
         // Arrange
-        val mockUri = mockk<Uri>()
-        every { mockUri.host } returns null
-        every { mockUri.toString() } returns "invalid-url-no-host"
-        every { mockUri.getQueryParameter("startURL") } returns null
+        val uri = "invalid-url-no-host".toUri() // This will have a null host and no query parameters
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
-            frontdoorBridgeUrl = mockUri,
+            frontdoorBridgeUrl = uri,
             addingAndSwitchingLoginServersPerMdm = true
         )
 
@@ -519,12 +547,15 @@ class FrontdoorBridgeLoginOverrideTest {
     @Test
     fun testEdgeCase_SpecialCharactersInUrls() {
         // Arrange
-        val specialCharUrl = "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode%26special%3D%2B%26another%3D%40"
+        val specialCharUrl =
+            "https://login.salesforce.com/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2Flogin.salesforce.com%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode%26special%3D%2B%26another%3D%40"
         val frontdoorUrl = specialCharUrl.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -540,12 +571,15 @@ class FrontdoorBridgeLoginOverrideTest {
     @Test
     fun testEdgeCase_CaseInsensitiveHost() {
         // Arrange
-        val upperCaseHostUrl = "https://LOGIN.SALESFORCE.COM/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2FLOGIN.SALESFORCE.COM%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
+        val upperCaseHostUrl =
+            "https://LOGIN.SALESFORCE.COM/setup/secur/RemoteAccessAuthorizationPage.apexp?source=lightning&startURL=https%3A%2F%2FLOGIN.SALESFORCE.COM%2Fservices%2Foauth2%2Fauthorize%3Fclient_id%3Dtest_consumer_key%26response_type%3Dcode"
         val frontdoorUrl = upperCaseHostUrl.toUri()
         setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-        setupLoginServerManagerMocks(listOf(
-            LoginServer("Production", "https://login.salesforce.com", false)
-        ))
+        setupLoginServerManagerMocks(
+            listOf(
+                LoginServer("Production", "https://login.salesforce.com", false)
+            )
+        )
 
         // Act
         val override = FrontdoorBridgeLoginOverride(
@@ -572,9 +606,11 @@ class FrontdoorBridgeLoginOverrideTest {
             // Arrange
             val frontdoorUrl = CUSTOM_HOST_URL.toUri()
             setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-            setupLoginServerManagerMocks(listOf(
-                LoginServer("Production", "https://login.salesforce.com", false)
-            ))
+            setupLoginServerManagerMocks(
+                listOf(
+                    LoginServer("Production", "https://login.salesforce.com", false)
+                )
+            )
 
             // Act
             val override = FrontdoorBridgeLoginOverride(

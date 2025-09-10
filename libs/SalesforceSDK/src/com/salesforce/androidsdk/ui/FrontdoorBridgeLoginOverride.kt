@@ -124,11 +124,11 @@ internal class FrontdoorBridgeLoginOverride(
             appLoginServer = frontdoorBridgeUrl.host
         }
 
-        appLoginServer?.let { appLoginServer ->
+        appLoginServer?.let { server ->
             matchesLoginHost = true
-            // Set the login appLoginServer on the server manager
+            // Set the login server on the server manager
             val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
-            val loginUrl = "https://$appLoginServer"
+            val loginUrl = "https://$server"
             loginServerManager.addCustomLoginServer(loginUrl, loginUrl)
         }
     }
