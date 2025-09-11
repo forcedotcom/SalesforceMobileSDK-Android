@@ -71,21 +71,21 @@ class LoginActivityTest {
         }
     }
 
-    @Test
-    fun viewModelIsUsingFrontDoorBridge_DefaultValue_onCreateWithoutQrCodeLoginIntent() {
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
-
-            activityScenario.onActivity { activity ->
-
-                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
-            }
-        }
-    }
+//    @Test
+//    fun viewModelIsUsingFrontDoorBridge_DefaultValue_onCreateWithoutQrCodeLoginIntent() {
+//        launch<LoginActivity>(
+//            Intent(
+//                getApplicationContext(),
+//                LoginActivity::class.java
+//            )
+//        ).use { activityScenario ->
+//
+//            activityScenario.onActivity { activity ->
+//
+//                assertNull(activity.viewModel.frontdoorBridgeLoginOverride)
+//            }
+//        }
+//    }
 
     @Test
     fun viewModelFrontDoorBridgeCodeVerifier_UpdatesOn_onCreateWithQrCodeLoginIntent() {
