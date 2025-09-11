@@ -278,7 +278,8 @@ open class LoginActivity : FragmentActivity() {
             // Check if the user backed out of the custom tab.
             if (result.resultCode == Activity.RESULT_CANCELED) {
                 if (viewModel.singleServerCustomTabActivity) {
-                    finish()
+                    // Show blank page and spinner until PKCE is done.
+                    viewModel.loginUrl.value = ABOUT_BLANK
                 } else {
                     // Don't show server picker if we are re-authenticating with cookie.
                     clearWebView(showServerPicker = !sharedBrowserSession)
@@ -1192,7 +1193,7 @@ open class LoginActivity : FragmentActivity() {
                 val useLightIcons = titleTextColorLight ?: topAppBarDark ?: dynamicThemeIsDark
                 WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = useLightIcons
             }.also {
-                if (!viewModel.authFinished.value) {
+                if (!viewModel.authFinished.value && url != ABOUT_BLANK) {
                     viewModel.loading.value = false
                 }
             }
