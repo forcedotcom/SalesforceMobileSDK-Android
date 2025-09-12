@@ -276,7 +276,7 @@ public class KeyValueEncryptedFileStoreTest {
     @Test
     public void testSaveLargeStreamGetLargeStream() throws IOException {
         final String key = "largeStreamKey";
-        final int dataSize = 5 * 1024 * 1024; // 16MB
+        final int dataSize = 5 * 1024 * 1024; // 5MB
 
         // Generate and save large stream
         try (InputStream largeStream = getLargeStringStream(dataSize)) {
