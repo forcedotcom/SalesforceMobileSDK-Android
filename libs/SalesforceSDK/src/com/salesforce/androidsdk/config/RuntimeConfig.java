@@ -26,9 +26,13 @@
  */
 package com.salesforce.androidsdk.config;
 
+import static androidx.annotation.VisibleForTesting.PACKAGE_PRIVATE;
+
 import android.content.Context;
 import android.content.RestrictionsManager;
 import android.os.Bundle;
+
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.Features;
@@ -69,7 +73,8 @@ public class RuntimeConfig {
 
     private static RuntimeConfig INSTANCE = null;
 
-    RuntimeConfig(Context ctx) {
+    @VisibleForTesting(otherwise = PACKAGE_PRIVATE)
+    public RuntimeConfig(Context ctx) {
         configurations = getRestrictions(ctx);
         isManaged = hasRestrictionsProvider(ctx);
 

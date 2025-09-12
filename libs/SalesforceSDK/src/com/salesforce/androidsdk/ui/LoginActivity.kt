@@ -32,7 +32,6 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
@@ -110,8 +109,9 @@ import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
-import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.R.string.sf__cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.sf__cannot_use_another_login_hosts_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
@@ -262,7 +262,7 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Prompt user with the default login page when not using a Salesforce Identity API UI Bridge front door URL.
-        if (!viewModel.isUsingFrontDoorBridge) {
+        if (viewModel.frontdoorBridgeLoginOverride == null) {
             certAuthOrLogin()
         }
 
@@ -276,7 +276,7 @@ open class LoginActivity : FragmentActivity() {
             ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
             // Check if the user backed out of the custom tab.
-            if (result.resultCode == Activity.RESULT_CANCELED) {
+            if (result.resultCode == RESULT_CANCELED) {
                 if (viewModel.singleServerCustomTabActivity) {
                     // Show blank page and spinner until PKCE is done.
                     viewModel.loginUrl.value = ABOUT_BLANK
@@ -311,7 +311,8 @@ open class LoginActivity : FragmentActivity() {
                 with(SalesforceSDKManager.getInstance()) {
                     // Fetch well known config and load in custom tab if required.
                     fetchAuthenticationConfiguration {
-                        if (isBrowserLoginEnabled) {
+                        /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */
+                        if (isBrowserLoginEnabled && viewModel.frontdoorBridgeLoginOverride == null) {
                             if (useWebServerAuthentication) {
                                 viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
                             } else {
@@ -874,12 +875,7 @@ open class LoginActivity : FragmentActivity() {
      */
     private fun applyUiBridgeApiFrontDoorUrl(intent: Intent) {
 
-        /*
-         * For Salesforce Identity API UI Bridge support, the overriding
-         * frontdoor bridge URL to use in place of the default initial login URL
-         * plus the optional web server flow code verifier accompanying the
-         * frontdoor bridge URL.
-         */
+        // Obtain the intent's front door bridge URL parameters either from the extras or the data.
         val uiBridgeApiParameters = if (isQrCodeLoginUrlIntent(intent)) {
             uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
         } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
@@ -889,35 +885,33 @@ open class LoginActivity : FragmentActivity() {
             )
         }
 
-        /*
-         *  The Salesforce Connected App or External Client App consumer key
-         *  from the Salesforce Identity API UI Bridge front door URL.  This
-         *  is sometimes known as "client id" or "remote access consumer
-         *  key".
-         */
-        val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
+        // Apply the intent's front door bridge URL parameters to the view model.
+        val frontdoorBridgeLoginOverride = uiBridgeApiParameters?.frontdoorBridgeUrl?.let { frontdoorBridgeUrl ->
+            val result = FrontdoorBridgeLoginOverride(
+                frontdoorBridgeUrl = frontdoorBridgeUrl.toUri(),
+                codeVerifier = uiBridgeApiParameters.pkceCodeVerifier
+            )
+            if (result.matchesConsumerKey && result.matchesLoginHost) {
+                viewModel.frontdoorBridgeLoginOverride = result
+            }
+            result
+        }
 
-        // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
-        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
-        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
-
-        // Alert the user if the front door bridge URL is not for this app and was discarded.
-        if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
+        // Alert the user if the front door bridge URL failed validation and was discarded.
+        var errorMessage: String? = null
+        if (frontdoorBridgeLoginOverride?.matchesConsumerKey == false) {
+            errorMessage = getString(sf__cannot_use_another_apps_login_qr_code)
+        } else if (frontdoorBridgeLoginOverride?.matchesLoginHost == false) {
+            errorMessage = getString(sf__cannot_use_another_login_hosts_login_qr_code)
+        }
+        errorMessage?.let { errorMessage ->
             runOnUiThread {
                 makeText(
                     this,
-                    getString(cannot_use_another_apps_login_qr_code),
+                    errorMessage,
                     LENGTH_LONG
                 ).show()
             }
-        }
-
-        // Use the front door URL as the login page if applicable.
-        if (viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null) {
-            loginWithFrontdoorBridgeUrl(
-                uiBridgeApiParameters.frontdoorBridgeUrl,
-                uiBridgeApiParameters.pkceCodeVerifier
-            )
         }
     }
 
@@ -1335,6 +1329,7 @@ open class LoginActivity : FragmentActivity() {
          * @return Boolean true if the intent has front door bridge URL
          * parameters or false otherwise
          */
+        @Suppress("unused")
         private fun isFrontdoorBridgeUrlIntent(
             intent: Intent,
         ) = intent.hasExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)

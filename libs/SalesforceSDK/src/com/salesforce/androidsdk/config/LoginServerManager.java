@@ -54,7 +54,7 @@ import java.util.Map;
  *
  * @author bhariharan
  */
-public class LoginServerManager {
+public class LoginServerManager implements LoginServerManaging {
 	// LiveData representation of the users current selected server.
 	public MutableLiveData<LoginServer> selectedServer = new MutableLiveData<>();
 
@@ -271,7 +271,7 @@ public class LoginServerManager {
 		} else {
 			allServers = getLoginServersFromPreferences(runtimePrefs);
 		}
-		return allServers;
+		return allServers; // TODO: Evaluate this new warning. ECJ20250911
 	}
 
 	/**
