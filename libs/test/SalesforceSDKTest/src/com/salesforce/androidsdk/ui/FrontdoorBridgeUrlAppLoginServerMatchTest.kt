@@ -90,7 +90,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -102,14 +102,19 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         // Arrange
         val uri = PRODUCTION_URL.toUri()
 
+        val mockLoginServer1 = LoginServer("Production", PRODUCTION_URL, false)
+
         val mockLoginServerManaging = mockk<LoginServerManaging>()
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockLoginServer1
+        )
 
         // Act
         val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = false,
-            selectedAppLoginServer = "login.salesforce.com"
+            selectedAppLoginServer = PRODUCTION_URL
         )
 
         // Assert
@@ -128,7 +133,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = false,
-            selectedAppLoginServer = "login.salesforce.com"
+            selectedAppLoginServer = PRODUCTION_URL
         )
 
         // Assert
@@ -155,7 +160,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -177,7 +182,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -199,7 +204,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -219,7 +224,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -246,7 +251,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -268,7 +273,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -295,7 +300,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert
@@ -317,7 +322,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // First access
@@ -339,7 +344,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         // Arrange - testing complex MyDomain matching with multiple servers
         val uri = "https://company.my.salesforce.com".toUri()
 
-        val mockLoginServer1 = LoginServer("Production", "https://login.salesforce.com", false)
+        val mockLoginServer1 = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServer2 = LoginServer("Sandbox", "https://test.my.salesforce.com", false)
 
@@ -379,7 +384,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
+            selectedAppLoginServer = SANDBOX_URL
         )
 
         // Assert - Should return null because suffix is empty
