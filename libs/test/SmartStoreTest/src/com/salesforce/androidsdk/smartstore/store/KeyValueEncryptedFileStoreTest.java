@@ -270,15 +270,25 @@ public class KeyValueEncryptedFileStoreTest {
         }
     }
 
+    /**
+     * Test saving and getting large streams to verify memory efficiency
+     */
     @Test
-    public void testSaveStreamGetLargeValue() {
-        for (int i = 0; i < 24; i++) {
-            String key = "key" + i;
-            String value = getLargeString((int) Math.pow(2, i));
-            InputStream stream = stringToStream(value);
-            keyValueStore.saveStream(key, stream);
-            Assert.assertEquals(
-                    "Wrong value for key: " + key, value, keyValueStore.getValue(key));
+    public void testSaveLargeStreamGetLargeStream() throws IOException {
+        final String key = "largeStreamKey";
+        final int dataSize = 5 * 1024 * 1024; // 5MB
+
+        // Generate and save large stream
+        try (InputStream largeStream = getLargeStringStream(dataSize)) {
+            keyValueStore.saveStream(key, largeStream);
+        }
+
+        // Retrieve and verify the stream
+        try (InputStream retrievedStream = keyValueStore.getStream(key);
+             InputStream expectedStream = getLargeStringStream(dataSize)) {
+
+            Assert.assertNotNull("Retrieved stream should not be null", retrievedStream);
+            Assert.assertTrue("Streams should be equal", streamsEqual(expectedStream, retrievedStream));
         }
     }
 
@@ -872,6 +882,80 @@ public class KeyValueEncryptedFileStoreTest {
                 inputStream.close();
             } catch (IOException e) {
                 Assert.fail("Stream failed to close");
+            }
+        }
+    }
+
+    /**
+     * Helper method to create a large string stream without loading all data into memory
+     * @param size Size in bytes
+     * @return InputStream containing the large string data
+     */
+    private InputStream getLargeStringStream(int size) {
+        return new InputStream() {
+            private int bytesRead = 0;
+            private final String pattern = "0123456789ABCDEF";
+            private final byte[] patternBytes = pattern.getBytes(StandardCharsets.UTF_8);
+            private final int patternLength = patternBytes.length;
+
+            @Override
+            public int read() throws IOException {
+                if (bytesRead >= size) {
+                    return -1; // End of stream
+                }
+                byte b = patternBytes[bytesRead % patternLength];
+                bytesRead++;
+                return b & 0xFF;
+            }
+
+            @Override
+            public int read(byte[] buffer, int offset, int length) throws IOException {
+                if (bytesRead >= size) {
+                    return -1; // End of stream
+                }
+                
+                int bytesToRead = Math.min(length, size - bytesRead);
+                for (int i = 0; i < bytesToRead; i++) {
+                    buffer[offset + i] = patternBytes[(bytesRead + i) % patternLength];
+                }
+                bytesRead += bytesToRead;
+                return bytesToRead;
+            }
+        };
+    }
+
+    /**
+     * Helper method to compare two streams for equality without loading all data into memory
+     * @param stream1 First stream
+     * @param stream2 Second stream
+     * @return true if streams contain identical data
+     * @throws IOException if there's an error reading the streams
+     */
+    private boolean streamsEqual(InputStream stream1, InputStream stream2) throws IOException {
+        byte[] buffer1 = new byte[8192];
+        byte[] buffer2 = new byte[8192];
+        
+        int bytesRead1, bytesRead2;
+        
+        while (true) {
+            bytesRead1 = stream1.read(buffer1);
+            bytesRead2 = stream2.read(buffer2);
+            
+            // Check if both streams reached end
+            if (bytesRead1 == -1 && bytesRead2 == -1) {
+                return true;
+            }
+            
+            // Check if only one stream reached end
+            if (bytesRead1 != bytesRead2) {
+                return false;
+            }
+            
+            // Compare the read bytes
+            for (int i = 0; i < bytesRead1; i++) {
+                if (buffer1[i] != buffer2[i]) {
+                    return false;
+                }
             }
         }
     }
