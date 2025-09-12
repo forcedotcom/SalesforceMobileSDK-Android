@@ -311,7 +311,8 @@ open class LoginActivity : FragmentActivity() {
                 with(SalesforceSDKManager.getInstance()) {
                     // Fetch well known config and load in custom tab if required.
                     fetchAuthenticationConfiguration {
-                        if (isBrowserLoginEnabled) {
+                        /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */
+                        if (isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
                             if (useWebServerAuthentication) {
                                 viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
                             } else {
