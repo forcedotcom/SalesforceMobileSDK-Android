@@ -36,19 +36,9 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 internal interface LoginServerManaging {
 
     /**
-     * Returns the login server at the specified index.
-     *
-     * @param index The index of the login server to retrieve
-     * @return The login server instance at the specified index, or null if
-     * index is out of bounds
+     * Returns the list of login servers.
+     * @return The list of login servers
      */
-    fun loginServerAtIndex(index: Int): LoginServer?
-
-    /**
-     * Returns the total number of login servers.
-     *
-     * @return The number of available login servers
-     */
-    fun numberOfLoginServers(): Int
+    val loginServers: List<LoginServer>
 }
 

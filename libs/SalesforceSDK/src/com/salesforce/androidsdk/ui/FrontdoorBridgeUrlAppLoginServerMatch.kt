@@ -30,86 +30,77 @@ import android.net.Uri
 import com.salesforce.androidsdk.config.LoginServerManaging
 import java.net.URL
 
-internal data class FrontdoorBridgeUrlAppLoginServerMatch(
-    val frontdoorBridgeUrl: Uri,
-    val loginServerManaging: LoginServerManaging,
-    val addingAndSwitchingLoginServersAllowed: Boolean,
-    val selectedAppLoginServer: String
-) {
+internal fun appLoginServerForFrontdoorBridgeUrl(
+    frontdoorBridgeUrl: Uri,
+    loginServerManaging: LoginServerManaging,
+    addingAndSwitchingLoginServersAllowed: Boolean,
+    selectedAppLoginServer: String
+): String? {
+    val frontdoorBridgeUrlHost = frontdoorBridgeUrl.host ?: return null
 
-    internal val appLoginServerMatch: String? by lazy {
-        appLoginServerForFrontdoorBridgeUrl(
-            frontdoorBridgeUrl,
-            loginServerManaging,
-            addingAndSwitchingLoginServersAllowed,
-            selectedAppLoginServer
-        )
+    val eligibleAppLoginServers = eligibleAppLoginServersForFrontdoorBridgeUrl(
+        loginServerManaging,
+        addingAndSwitchingLoginServersAllowed,
+        selectedAppLoginServer
+    )
+
+    // TODO: "Would be more efficient to combine this so you aren't iterating through the list twice." ECJ20250911
+    for (eligibleAppLoginServer in eligibleAppLoginServers) {
+        if (frontdoorBridgeUrlHost == eligibleAppLoginServer) {
+            return eligibleAppLoginServer
+        }
     }
 
-    private fun appLoginServerForFrontdoorBridgeUrl(
-        frontdoorBridgeUrl: Uri,
-        loginServerManaging: LoginServerManaging,
-        addingAndSwitchingLoginServersAllowed: Boolean,
-        selectedAppLoginServer: String
-    ): String? {
-        val frontdoorBridgeUrlHost = frontdoorBridgeUrl.host ?: return null
+    // TODO: Complete review of both versions of login host soft-matching logic below. ECJ20250911
+    // Original Notes From Slack
+//    Let me recap what I have, soft matching is defined as:
+//    if QR is not a my domain, existing login server must match exactly
+//    if QR is a my domain, existing login server must either match exactly or match everything after the .my.
+//    (a) If adding and switching are disallowed, only let the QR through if its login server "soft-matches" the currently selected login server.
+//    (b) If adding is disallowed but switching is allowed, let the QR through if its login server "soft-matches" any of the login server and switch to it.
+//    (c) If adding is allowed and switching is allowed, try (b) first, but if no match are found add the QR login server and switch to it.
 
-        val eligibleAppLoginServers = eligibleAppLoginServersForFrontdoorBridgeUrl(
-            loginServerManaging,
-            addingAndSwitchingLoginServersAllowed,
-            selectedAppLoginServer
-        )
+    // Newer Notes From Github
+    // [Soft match]
+    // Look at part of the hostname in the QR code that comes after .my. and make sure it appears in the currently selected login server
+    //   also as long as the currently selected login server does not have .my, itself.
+    // When the currently login server has a .my. the whole hostname should match.
+    // So mydomain.my.salesforce.com would be allowed if login.salesforce.com is currently selected
+    //   but not if myotherdomain.my.salesforce.com is selected.
 
+
+    if (frontdoorBridgeUrl.isMyDomain()) {
+        val frontdoorBridgeUrlMyDomainSuffix = "my.${frontdoorBridgeUrlHost.split(".my.").last()}"
         for (eligibleAppLoginServer in eligibleAppLoginServers) {
-            if (frontdoorBridgeUrlHost == eligibleAppLoginServer) {
+            if (eligibleAppLoginServer.endsWith(frontdoorBridgeUrlMyDomainSuffix)) {
                 return eligibleAppLoginServer
             }
         }
-
-        if (frontdoorBridgeUrl.isMyDomain()) {
-            val frontdoorBridgeUrlMyDomainSuffix = "my.${frontdoorBridgeUrlHost.split(".my.").last()}"
-            if (frontdoorBridgeUrlMyDomainSuffix.isNotEmpty()) {
-                for (eligibleAppLoginServer in eligibleAppLoginServers) {
-                    if (eligibleAppLoginServer.endsWith(frontdoorBridgeUrlMyDomainSuffix)) {
-                        return eligibleAppLoginServer
-                    }
-                }
-            }
-        }
-
-        return null
     }
 
-    private fun eligibleAppLoginServersForFrontdoorBridgeUrl(
-        loginHostStore: LoginServerManaging,
-        addingAndSwitchingLoginHostsAllowed: Boolean,
-        selectedAppLoginHost: String
-    ): List<String> {
-        val results = mutableListOf<String>()
-        if (addingAndSwitchingLoginHostsAllowed) {
-            val numberOfHosts = loginHostStore.numberOfLoginServers()
-            for (i in 0 until numberOfHosts) {
-                val server = loginHostStore.loginServerAtIndex(i)
-                server?.let {
-                    try {
-                        val url = URL(it.url)
-                        results.add(url.host)
-                    } catch (_: Exception) {
-                        // Skip invalid URLs
-                    }
-                }
-            }
-        } else {
-            try {
-                val url = URL(selectedAppLoginHost)
+    return null
+}
+
+private fun eligibleAppLoginServersForFrontdoorBridgeUrl(
+    loginHostStore: LoginServerManaging,
+    addingAndSwitchingLoginHostsAllowed: Boolean,
+    selectedAppLoginHost: String
+): List<String> {
+    val results = mutableListOf<String>()
+    if (addingAndSwitchingLoginHostsAllowed) {
+        for (loginServer in loginHostStore.loginServers ?: return emptyList()) {
+            runCatching {
+                val url = URL(loginServer.url)
                 results.add(url.host)
-            } catch (_: Exception) {
-                // If parsing fails, try to use as-is (might already be just a host)
-                results.add(selectedAppLoginHost)
             }
         }
-        return results
+    } else {
+        runCatching {
+            val url = URL(selectedAppLoginHost)
+            results.add(url.host)
+        }
     }
+    return results
 }
 
 private fun Uri.isMyDomain(): Boolean {

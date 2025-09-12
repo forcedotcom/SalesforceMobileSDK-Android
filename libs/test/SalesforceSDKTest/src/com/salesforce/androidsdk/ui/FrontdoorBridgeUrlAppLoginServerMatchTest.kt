@@ -41,7 +41,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Tests for FrontdoorBridgeUrlAppLoginServerMatch
+ * Tests for appLoginServerForFrontdoorBridgeUrl
+ * TODO: Could this be re-written to look like `ParentChildrenOtherSyncTest`? ECJ20250911
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -60,7 +61,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServerManaging = mockk<LoginServerManaging>()
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -68,7 +69,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -79,12 +80,13 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 2
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns LoginServer("Sandbox", SANDBOX_URL, false)
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockLoginServer,
+            LoginServer("Sandbox", SANDBOX_URL, false)
+        )
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -92,7 +94,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertEquals("login.salesforce.com", match.appLoginServerMatch)
+        assertEquals("login.salesforce.com", match)
     }
 
     @Test
@@ -103,7 +105,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServerManaging = mockk<LoginServerManaging>()
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = false,
@@ -111,7 +113,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertEquals("login.salesforce.com", match.appLoginServerMatch)
+        assertEquals("login.salesforce.com", match)
     }
 
     @Test
@@ -122,7 +124,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServerManaging = mockk<LoginServerManaging>()
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = false,
@@ -130,7 +132,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -143,12 +145,13 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer2 = LoginServer("Custom", "https://login.my.salesforce.com", true)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 2
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer1
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns mockLoginServer2
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockLoginServer1,
+            mockLoginServer2
+        )
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -156,7 +159,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertEquals("login.my.salesforce.com", match.appLoginServerMatch)
+        assertEquals("login.my.salesforce.com", match)
     }
 
     @Test
@@ -167,11 +170,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Different", "https://different.example.com", true)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 1
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(mockLoginServer)
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -179,7 +181,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -190,11 +192,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 1
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(mockLoginServer)
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -202,7 +203,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -211,10 +212,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val uri = PRODUCTION_URL.toUri()
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 0
+        every { mockLoginServerManaging.loginServers } returns listOf()
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -222,7 +223,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -235,12 +236,13 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockValidLoginServer = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 2
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockInvalidLoginServer
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns mockValidLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockInvalidLoginServer,
+            mockValidLoginServer
+        )
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -248,7 +250,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertEquals("login.salesforce.com", match.appLoginServerMatch)
+        assertEquals("login.salesforce.com", match)
     }
 
     @Test
@@ -259,11 +261,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>(relaxed = true)
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 1
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(mockLoginServer)
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -271,7 +272,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 
     @Test
@@ -284,12 +285,13 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer2 = LoginServer("Production2", PRODUCTION_URL, false) // Same host, should return first match
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 2
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer1
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns mockLoginServer2
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockLoginServer1,
+            mockLoginServer2
+        )
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -297,55 +299,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert
-        assertEquals("login.salesforce.com", match.appLoginServerMatch)
-    }
-
-    @Test
-    fun testAppLoginServerMatch_NullLoginServerAtIndex_SkipsNull() {
-        // Arrange
-        val uri = PRODUCTION_URL.toUri()
-
-        val mockLoginServer = LoginServer("Production", PRODUCTION_URL, false)
-
-        val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 2
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns null
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns mockLoginServer
-
-        // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
-            frontdoorBridgeUrl = uri,
-            loginServerManaging = mockLoginServerManaging,
-            addingAndSwitchingLoginServersAllowed = true,
-            selectedAppLoginServer = "test.salesforce.com"
-        )
-
-        // Assert
-        assertEquals("login.salesforce.com", match.appLoginServerMatch)
-    }
-
-    @Test
-    fun testDataClassProperties_AllPropertiesAccessible() {
-        // Arrange
-        val uri = PRODUCTION_URL.toUri()
-
-        val mockLoginServerManaging = mockk<LoginServerManaging>()
-        val selectedServer = "test.salesforce.com"
-        val addingSwitchingAllowed = true
-
-        // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
-            frontdoorBridgeUrl = uri,
-            loginServerManaging = mockLoginServerManaging,
-            addingAndSwitchingLoginServersAllowed = addingSwitchingAllowed,
-            selectedAppLoginServer = selectedServer
-        )
-
-        // Assert
-        assertEquals(uri, match.frontdoorBridgeUrl)
-        assertEquals(mockLoginServerManaging, match.loginServerManaging)
-        assertEquals(addingSwitchingAllowed, match.addingAndSwitchingLoginServersAllowed)
-        assertEquals(selectedServer, match.selectedAppLoginServer)
+        assertEquals("login.salesforce.com", match)
     }
 
     @Test
@@ -356,11 +310,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Production", PRODUCTION_URL, false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 1
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(mockLoginServer)
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -368,9 +321,9 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // First access
-        val firstResult = match.appLoginServerMatch
+        val firstResult = match
         // Second access (should use cached value)
-        val secondResult = match.appLoginServerMatch
+        val secondResult = match
 
         // Assert
         assertEquals("login.salesforce.com", firstResult)
@@ -378,8 +331,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         assertEquals(firstResult, secondResult)
 
         // Verify lazy initialization - should only call methods once
-        verify(exactly = 1) { mockLoginServerManaging.numberOfLoginServers() }
-        verify(exactly = 1) { mockLoginServerManaging.loginServerAtIndex(0) }
+        verify(exactly = 1) { mockLoginServerManaging.loginServers }
     }
 
     @Test
@@ -394,13 +346,14 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer3 = LoginServer("Custom", "https://custom.my.salesforce.com", true)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 3
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer1
-        every { mockLoginServerManaging.loginServerAtIndex(1) } returns mockLoginServer2
-        every { mockLoginServerManaging.loginServerAtIndex(2) } returns mockLoginServer3
+        every { mockLoginServerManaging.loginServers } returns listOf(
+            mockLoginServer1,
+            mockLoginServer2,
+            mockLoginServer3
+        )
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -408,7 +361,7 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert - Should match the first server ending with "my.salesforce.com"
-        assertEquals("test.my.salesforce.com", match.appLoginServerMatch)
+        assertEquals("test.my.salesforce.com", match)
     }
 
     @Test
@@ -419,11 +372,10 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         val mockLoginServer = LoginServer("Salesforce", "https://salesforce.com", false)
 
         val mockLoginServerManaging = mockk<LoginServerManaging>()
-        every { mockLoginServerManaging.numberOfLoginServers() } returns 1
-        every { mockLoginServerManaging.loginServerAtIndex(0) } returns mockLoginServer
+        every { mockLoginServerManaging.loginServers } returns listOf(mockLoginServer)
 
         // Act
-        val match = FrontdoorBridgeUrlAppLoginServerMatch(
+        val match = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = uri,
             loginServerManaging = mockLoginServerManaging,
             addingAndSwitchingLoginServersAllowed = true,
@@ -431,6 +383,6 @@ class FrontdoorBridgeUrlAppLoginServerMatchTest {
         )
 
         // Assert - Should return null because suffix is empty
-        assertNull(match.appLoginServerMatch)
+        assertNull(match)
     }
 }

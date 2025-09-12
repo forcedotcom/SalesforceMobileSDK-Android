@@ -109,9 +109,9 @@ import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__cannot_use_another_login_hosts_login_qr_code
-import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
@@ -310,7 +310,8 @@ open class LoginActivity : FragmentActivity() {
                 with(SalesforceSDKManager.getInstance()) {
                     // Fetch well known config and load in custom tab if required.
                     fetchAuthenticationConfiguration {
-                        if (isBrowserLoginEnabled && viewModel.frontdoorBridgeLoginOverride == null /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */) {
+                        /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */
+                        if (isBrowserLoginEnabled && viewModel.frontdoorBridgeLoginOverride == null) {
                             if (useWebServerAuthentication) {
                                 viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
                             } else {
@@ -430,7 +431,7 @@ open class LoginActivity : FragmentActivity() {
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun loginWithFrontdoorBridgeUrl(
-        frontdoorBridgeUrl: Uri,
+        frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?,
     ) = viewModel.loginWithFrontDoorBridgeUrl(frontdoorBridgeUrl, pkceCodeVerifier)
 
@@ -878,7 +879,7 @@ open class LoginActivity : FragmentActivity() {
             uiBridgeApiParametersFromQrCodeLoginUrl(intent.data?.toString())
         } else intent.getStringExtra(EXTRA_KEY_FRONTDOOR_BRIDGE_URL)?.let { frontdoorBridgeUrl ->
             UiBridgeApiParameters(
-                frontdoorBridgeUrl.toUri(),
+                frontdoorBridgeUrl,
                 intent.getStringExtra(EXTRA_KEY_PKCE_CODE_VERIFIER)
             )
         }
@@ -886,7 +887,7 @@ open class LoginActivity : FragmentActivity() {
         // Apply the intent's front door bridge URL parameters to the view model.
         val frontdoorBridgeLoginOverride = uiBridgeApiParameters?.frontdoorBridgeUrl?.let { frontdoorBridgeUrl ->
             val result = FrontdoorBridgeLoginOverride(
-                frontdoorBridgeUrl = frontdoorBridgeUrl,
+                frontdoorBridgeUrl = frontdoorBridgeUrl.toUri(),
                 codeVerifier = uiBridgeApiParameters.pkceCodeVerifier
             )
             if (result.matchesConsumerKey && result.matchesLoginHost) {
@@ -1353,7 +1354,7 @@ open class LoginActivity : FragmentActivity() {
         data class UiBridgeApiParameters(
 
             /** The front door bridge URL */
-            val frontdoorBridgeUrl: Uri,
+            val frontdoorBridgeUrl: String,
 
             /** The PKCE code verifier */
             val pkceCodeVerifier: String?,
@@ -1408,7 +1409,7 @@ open class LoginActivity : FragmentActivity() {
             uiBridgeApiParameterJsonString: String,
         ) = JSONObject(uiBridgeApiParameterJsonString).let { uiBridgeApiParameterJson ->
             UiBridgeApiParameters(
-                uiBridgeApiParameterJson.getString(qrCodeLoginUrlJsonFrontdoorBridgeUrlKey).toUri(),
+                uiBridgeApiParameterJson.getString(qrCodeLoginUrlJsonFrontdoorBridgeUrlKey),
                 when (uiBridgeApiParameterJson.has(qrCodeLoginUrlJsonPkceCodeVerifierKey)) {
                     true -> uiBridgeApiParameterJson.optString(qrCodeLoginUrlJsonPkceCodeVerifierKey)
                     else -> null

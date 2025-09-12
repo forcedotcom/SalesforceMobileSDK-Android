@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -39,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.luminance
+import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -224,6 +224,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
         if (frontdoorBridgeLoginOverride == null) {
+            // The Web Server Flow code challenge makes the authorization url unique each time,
+            // which triggers recomposition.  For User Agent Flow, change it to blank.
+            if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                loginUrl.value = ABOUT_BLANK
+            }
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
@@ -243,18 +248,17 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param pkceCodeVerifier The PKCE code verifier
      */
     fun loginWithFrontDoorBridgeUrl(
-        frontdoorBridgeUrl: Uri,
+        frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?,
     ) {
-        val frontdoorBridgeLoginOverride = FrontdoorBridgeLoginOverride(
-            frontdoorBridgeUrl = frontdoorBridgeUrl,
+        FrontdoorBridgeLoginOverride(
+            frontdoorBridgeUrl = frontdoorBridgeUrl.toUri(),
             codeVerifier = pkceCodeVerifier
-        )
-
-        // Only assign if both consumer key and login host match
-        if (frontdoorBridgeLoginOverride.matchesConsumerKey && frontdoorBridgeLoginOverride.matchesLoginHost) {
-            this@LoginViewModel.frontdoorBridgeLoginOverride = frontdoorBridgeLoginOverride
-            loginUrl.value = frontdoorBridgeUrl.toString()
+        ).let {
+            if (it.matchesConsumerKey && it.matchesLoginHost) {
+                frontdoorBridgeLoginOverride = it
+                loginUrl.value = frontdoorBridgeUrl
+            }
         }
     }
 

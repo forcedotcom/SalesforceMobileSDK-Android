@@ -271,7 +271,7 @@ public class LoginServerManager implements LoginServerManaging {
 		} else {
 			allServers = getLoginServersFromPreferences(runtimePrefs);
 		}
-		return allServers;
+		return allServers; // TODO: Evaluate this new warning. ECJ20250911
 	}
 
 	/**
@@ -446,37 +446,6 @@ public class LoginServerManager implements LoginServerManaging {
 		}
 		return (!allServers.isEmpty() ? allServers : null);
 	}
-
-    // region Login Server Managing Implementation
-
-    /**
-     * Returns the login server at the specified index.
-     *
-     * @param index The index of the login server to retrieve
-     * @return The Login server instance at the specified index, or null if index is out of bounds
-     */
-    @Override
-    public LoginServer loginServerAtIndex(int index) {
-        final List<LoginServer> servers = getLoginServers();
-        if (servers != null && index >= 0 && index < servers.size()) {
-            return servers.get(index);
-        }
-        return null;
-    }
-
-    /**
-     * Returns the total number of login servers.
-     *
-     * @return The number of available login servers
-     */
-    @Override
-    public int numberOfLoginServers() {
-        final List<LoginServer> servers = getLoginServers();
-        return servers != null ? servers.size() : 0;
-    }
-
-    // endregion
-
 
 	/**
 	 * Class to encapsulate a login server name, URL, index and type (custom or not).

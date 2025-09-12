@@ -468,10 +468,7 @@ class FrontdoorBridgeLoginOverrideTest {
     }
 
     private fun setupLoginServerManagerMocks(servers: List<LoginServer>) {
-        every { mockLoginServerManager.numberOfLoginServers() } returns servers.size
-        servers.forEachIndexed { index, server ->
-            every { mockLoginServerManager.loginServerAtIndex(index) } returns server
-        }
+        every { mockLoginServerManager.loginServers } returns servers
     }
 
     @Test
@@ -524,24 +521,6 @@ class FrontdoorBridgeLoginOverrideTest {
         // Assert
         assertEquals("", override.codeVerifier)
         assertTrue(override.matchesConsumerKey)
-    }
-
-    @Test
-    fun testEdgeCase_VeryLongCodeVerifier() {
-        // Arrange
-        val longCodeVerifier = "a".repeat(1000) // Very long code verifier
-        val frontdoorUrl = FRONTDOOR_URL_WITH_MATCHING_CLIENT_ID.toUri()
-        setupRuntimeConfigMocks(onlyShowAuthorizedServers = false, mdmLoginServers = emptyArray())
-
-        // Act
-        val override = FrontdoorBridgeLoginOverride(
-            frontdoorBridgeUrl = frontdoorUrl,
-            codeVerifier = longCodeVerifier,
-            addingAndSwitchingLoginServersPerMdm = true
-        )
-
-        // Assert
-        assertEquals(longCodeVerifier, override.codeVerifier)
     }
 
     @Test

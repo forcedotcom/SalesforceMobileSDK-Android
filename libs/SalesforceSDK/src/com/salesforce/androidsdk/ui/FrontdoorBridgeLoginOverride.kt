@@ -90,9 +90,7 @@ internal class FrontdoorBridgeLoginOverride(
         private set
 
     init {
-        val frontdoorBridgeUrlComponents = frontdoorBridgeUrl.toString()
-        val frontdoorBridgeUri = frontdoorBridgeUrlComponents.toUri()
-        val startUrlParam = frontdoorBridgeUri.getQueryParameter("startURL")
+        val startUrlParam = frontdoorBridgeUrl.getQueryParameter("startURL")
 
         // Check if the client_id matches the app's consumer key
         startUrlParam?.let { startUrlString ->
@@ -106,20 +104,20 @@ internal class FrontdoorBridgeLoginOverride(
         }
 
         // Check if the front door URL host matches the app's selected login server
-        val addingAndSwitchingLoginServersAllowedResolved = if (!addingAndSwitchingLoginServersPerMdm) {
-            addingAndSwitchingLoginServerOverride
-        } else {
+        val addingAndSwitchingLoginServersAllowedResolved = if (addingAndSwitchingLoginServersPerMdm) {
             addingAndSwitchingLoginServersAllowed
+        } else {
+            addingAndSwitchingLoginServerOverride
         }
 
-        val frontdoorBridgeUrlAppLoginServerMatch = FrontdoorBridgeUrlAppLoginServerMatch(
+        val frontdoorBridgeUrlAppLoginServerMatch = appLoginServerForFrontdoorBridgeUrl(
             frontdoorBridgeUrl = frontdoorBridgeUrl,
             loginServerManaging = loginServerManager,
             addingAndSwitchingLoginServersAllowed = addingAndSwitchingLoginServersAllowedResolved,
             selectedAppLoginServer = selectedAppLoginServer
         )
 
-        var appLoginServer = frontdoorBridgeUrlAppLoginServerMatch.appLoginServerMatch
+        var appLoginServer = frontdoorBridgeUrlAppLoginServerMatch
         if (appLoginServer == null && addingAndSwitchingLoginServersAllowedResolved) {
             appLoginServer = frontdoorBridgeUrl.host
         }
@@ -136,13 +134,14 @@ internal class FrontdoorBridgeLoginOverride(
     private val addingAndSwitchingLoginServersAllowed: Boolean
         get() {
             val runtimeConfig = getRuntimeConfig(SalesforceSDKManager.getInstance().appContext)
-            val onlyShowAuthorizedServers = runtimeConfig.getBoolean(OnlyShowAuthorizedHosts)
+            // If true, prevents users from modifying the list of hosts that the Salesforce mobile app can connect to.
+            val onlyShowAuthorizedHosts = runtimeConfig.getBoolean(OnlyShowAuthorizedHosts)
             val mdmLoginServers = try {
                 runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts)
             } catch (_: Exception) {
                 null
             }
-            return !onlyShowAuthorizedServers && (mdmLoginServers?.isEmpty() != false)
+            return !onlyShowAuthorizedHosts && (mdmLoginServers?.isEmpty() != false)
         }
 
     private val loginServerManager: LoginServerManaging
