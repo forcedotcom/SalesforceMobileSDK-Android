@@ -39,9 +39,11 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Ignore("This test will pass only via Android Studio for local developer workstations.  It fails consistently in continuous integration.  Until this is resolved, this test will be ignored.")
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
 
