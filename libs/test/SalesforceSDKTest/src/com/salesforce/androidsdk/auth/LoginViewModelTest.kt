@@ -30,8 +30,6 @@ import android.webkit.WebView
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import io.mockk.mockk
-import io.mockk.verify
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
@@ -40,6 +38,8 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
+import io.mockk.spyk
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -203,13 +203,14 @@ class LoginViewModelTest {
     @Test
     fun clearWebViewCache_CallsWebViewClearCache_WithTrueParameter() {
         // Arrange
-        val mockWebView = mockk<WebView>(relaxed = true)
-        
+        val webView = WebView(context)
+        val webviewSpy = spyk<WebView>(webView)
+
         // Act
-        viewModel.clearWebViewCache(mockWebView)
-        
+        viewModel.clearWebViewCache(webviewSpy)
+
         // Assert
-        verify { mockWebView.clearCache(true) }
+        verify { webviewSpy.clearCache(true) }
     }
 
     private fun generateExpectedAuthorizationUrl(
