@@ -57,10 +57,10 @@ import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.security.KeyChain.choosePrivateKeyAlias
 import android.security.KeyChain.getCertificateChain
 import android.security.KeyChain.getPrivateKey
-import android.view.Display.FLAG_SECURE
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.ViewGroup
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import android.webkit.ClientCertRequest
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
