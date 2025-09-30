@@ -97,6 +97,7 @@ public class OAuth2 {
     protected static final String FORMAT = "format";
     private static final String ID = "id";
     private static final String INSTANCE_URL = "instance_url";
+    private static final String API_INSTANCE_URL = "api_instance_url";
     protected static final String JSON = "json";
     private static final String MOBILE_POLICY = "mobile_policy";
     private static final String SCREEN_LOCK_TIMEOUT = "screen_lock";
@@ -104,6 +105,7 @@ public class OAuth2 {
     private static final String BIOMETRIC_AUTHENTICATION_TIMEOUT = "BIOMETRIC_AUTHENTICATION_TIMEOUT";
     private static final int BIOMETRIC_AUTHENTICATION_DEFAULT_TIMEOUT = 15;
     private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
+    public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
@@ -141,6 +143,7 @@ public class OAuth2 {
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
+    private static final String REVOKE_REASON = "revoke_reason";
 
     /** Endpoint path for Salesforce Identity API initialize headless, password-less login flow */
     protected static String OAUTH_ENDPOINT_HEADLESS_INIT_PASSWORDLESS_LOGIN = "/services/auth/headless/init/passwordless/login";
@@ -153,7 +156,7 @@ public class OAuth2 {
 
     private static final String OAUTH_DISPLAY_PARAM = "?display=";
     protected static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=%s&revoke_reason=%s";
+    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke";
     private static final String LIGHTNING_DOMAIN = "lightning_domain";
     private static final String LIGHTNING_SID = "lightning_sid";
     private static final String VF_DOMAIN = "visualforce_domain";
@@ -196,6 +199,8 @@ public class OAuth2 {
     private static final String SID_COOKIE_NAME = "sidCookieName";
     private static final String PARENT_SID = "parent_sid";
     private static final String TOKEN_FORMAT = "token_format";
+    private static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    private static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -205,15 +210,26 @@ public class OAuth2 {
     }
 
     public enum LogoutReason {
-        CORRUPT_STATE,           // "Corrupted client state"
-        REFRESH_TOKEN_EXPIRED,   // "Refresh token expired"
-        SSDK_LOGOUT_POLICY,      // "SSDK initiated logout for policy violation"
-        TIMEOUT,                 // "Timeout while waiting for server response"
-        UNEXPECTED,              // "Unexpected error or crash"
-        UNEXPECTED_RESPONSE,     // "Unexpected response from server"
-        UNKNOWN,                 // "Unknown"
-        USER_LOGOUT,             // "User initiated logout"
-        REFRESH_TOKEN_ROTATED;   // "Refresh token rotated"
+        // Corrupted client state
+        CORRUPT_STATE,
+
+        // Corrupted client state detected by application
+        CORRUPT_STATE_APP_CONFIGURATION_SETTINGS,      // bad configuration settings
+        CORRUPT_STATE_APP_PROVIDER_ERROR_INVALID_USER, // invalid user
+        CORRUPT_STATE_APP_INVALID_RESTCLIENT,          // invalid rest client
+        CORRUPT_STATE_APP_OTHER,                       // other
+
+        // Corrupted client state detected by Mobile SDK
+        CORRUPT_STATE_MSDK,
+
+        REFRESH_TOKEN_EXPIRED,   // Refresh token expired
+        SSDK_LOGOUT_POLICY,      // SSDK initiated logout for policy violation
+        TIMEOUT,                 // Timeout while waiting for server response
+        UNEXPECTED,              // Unexpected error or crash
+        UNEXPECTED_RESPONSE,     // Unexpected response from server
+        UNKNOWN,                 // Unknown
+        USER_LOGOUT,             // User initiated logout
+        REFRESH_TOKEN_ROTATED;   // Refresh token rotated
 
         @NonNull
         @Override
@@ -225,6 +241,8 @@ public class OAuth2 {
     /**
      * Builds the URL to the authorization web page for this login server.
      * You need not provide the 'refresh_token' scope, as it is provided automatically.
+     *
+     * This overload defaults `loginHint` to null and does not enable Salesforce Welcome Login hint.
      *
      * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
      * @param useHybridAuthentication    True to use "hybrid" flow
@@ -248,6 +266,49 @@ public class OAuth2 {
             String[] scopes,
             String displayType,
             String codeChallenge,
+            Map<String, String> addlParams) {
+        return getAuthorizationUrl(
+                useWebServerAuthentication,
+                useHybridAuthentication,
+                loginServer,
+                clientId,
+                callbackUrl,
+                scopes,
+                null,
+                displayType,
+                codeChallenge,
+                addlParams
+        );
+    }
+
+    /**
+     * Builds the URL to the authorization web page for this login server.
+     * You need not provide the 'refresh_token' scope, as it is provided automatically.
+     *
+     * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
+     * @param useHybridAuthentication    True to use "hybrid" flow
+     * @param loginServer                Base protocol and server to use (e.g. https://login.salesforce.com).
+     * @param clientId                   OAuth client ID.
+     * @param callbackUrl                OAuth callback URL or redirect URL.
+     * @param scopes                     A list of OAuth scopes to request (e.g. {"visualforce", "api"}). If null,
+     *                                   the default OAuth scope is provided.
+     * @param loginHint                  When applicable, the Salesforce Welcome Login hint
+     * @param displayType                OAuth display type. If null, the default of 'touch' is used.
+     * @param codeChallenge              Code challenge to use when using web server flow
+     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @return A URL to start the OAuth flow in a web browser/view.
+     * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
+     */
+    public static URI getAuthorizationUrl(
+            boolean useWebServerAuthentication,
+            boolean useHybridAuthentication,
+            URI loginServer,
+            String clientId,
+            String callbackUrl,
+            String[] scopes,
+            String loginHint,
+            String displayType,
+            String codeChallenge,
             Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         final String responseType = useWebServerAuthentication
@@ -259,6 +320,9 @@ public class OAuth2 {
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
             sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        }
+        if (!TextUtils.isEmpty(loginHint)) {
+            sb.append(AND).append(LOGIN_HINT).append(EQUAL).append(Uri.encode(loginHint));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
@@ -407,13 +471,21 @@ public class OAuth2 {
      * @param reason The reason the refresh token is being revoked.
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken, LogoutReason reason) {
-        final String requestPath = String.format(OAUTH_REVOKE_PATH, refreshToken, reason.toString());
-        final Request request = new Request.Builder().url(loginServer.toString() + requestPath).get().build();
+        final Request request = buildRevokeRefreshTokenRequest(loginServer, refreshToken, reason);
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
             SalesforceSDKLogger.w(TAG, "Exception thrown while revoking refresh token", e);
         }
+    }
+
+    protected static Request buildRevokeRefreshTokenRequest(URI loginServer, String refreshToken, LogoutReason reason) {
+        final String requestUrl = loginServer.toString() + OAUTH_REVOKE_PATH;
+        final FormBody body = new FormBody.Builder()
+                .add(TOKEN, refreshToken)
+                .add(REVOKE_REASON, reason.toString())
+                .build();
+        return new Request.Builder().url(requestUrl).post(body).build();
     }
 
     /**
@@ -746,6 +818,7 @@ public class OAuth2 {
         public String authToken;
         public String refreshToken;
         public String instanceUrl;
+        public String apiInstanceUrl;
         public String idUrl;
         public String idUrlWithInstance;
         public String orgId;
@@ -767,9 +840,11 @@ public class OAuth2 {
         public String sidCookieName;
         public String parentSid;
         public String tokenFormat;
+        public String beaconChildConsumerKey;
+        public String beaconChildConsumerSecret;
 
         /**
-         * Parameterized constructor built during login flow.
+         * Parameterized constructor built from params during user agent login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
          * @param additionalOauthKeys Additional oauth keys.
@@ -780,6 +855,7 @@ public class OAuth2 {
                 authToken = callbackUrlParams.get(ACCESS_TOKEN);
                 refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
                 instanceUrl = callbackUrlParams.get(INSTANCE_URL);
+                apiInstanceUrl = callbackUrlParams.get(API_INSTANCE_URL);
                 idUrl = callbackUrlParams.get(ID);
                 code = callbackUrlParams.get(CODE);
                 computeOtherFields();
@@ -807,13 +883,15 @@ public class OAuth2 {
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
 
+                // NB: beacon apps not supported with user agent flow so no beacon child fields expected
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
         }
 
         /**
-         * Parameterized constructor built during login flow.
+         * Parameterized constructor built from params during user agent login flow.
          *
          * @param callbackUrlParams Callback URL parameters.
          */
@@ -823,31 +901,34 @@ public class OAuth2 {
                     : null);
         }
 
-
         /**
-         * Parameterized constructor built from refresh flow response.
+         * Parameterized constructor built from refresh flow response
+         * or code exchange response (web server login flow).
          *
          * @param response Token endpoint response.
+         * @param additionalOauthKeys Additional oauth keys.
          */
-        public TokenEndpointResponse(Response response) {
+        @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+        public TokenEndpointResponse(Response response, List<String> additionalOauthKeys) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 Log.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
-                idUrl  = parsedResponse.getString(ID);
+                if (parsedResponse.has(API_INSTANCE_URL)) {
+                    apiInstanceUrl = parsedResponse.getString(API_INSTANCE_URL);
+                }
+                idUrl = parsedResponse.getString(ID);
                 computeOtherFields();
                 if (parsedResponse.has(REFRESH_TOKEN)) {
                     refreshToken = parsedResponse.getString(REFRESH_TOKEN);
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_ID)) {
-                	communityId = parsedResponse.getString(SFDC_COMMUNITY_ID);
+                    communityId = parsedResponse.getString(SFDC_COMMUNITY_ID);
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
-                	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
+                    communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
-                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
                 if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                     additionalOauthValues = new HashMap<>();
                     for (final String key : additionalOauthKeys) {
@@ -871,9 +952,29 @@ public class OAuth2 {
                 parentSid = parsedResponse.optString(PARENT_SID);
                 tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
+                // Beacon child fields expected when using a beacon app and web server flow
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_KEY)) {
+                    beaconChildConsumerKey = parsedResponse.getString(BEACON_CHILD_CONSUMER_KEY);
+                }
+                if (parsedResponse.has(BEACON_CHILD_CONSUMER_SECRET)) {
+                    beaconChildConsumerSecret = parsedResponse.getString(BEACON_CHILD_CONSUMER_SECRET);
+                }
+
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
             }
+        }
+
+        /**
+         * Parameterized constructor built from refresh flow response
+         * or code exchange response (web server login flow).
+         *
+         * @param response Token endpoint response.
+         */
+        public TokenEndpointResponse(Response response) {
+            this(response, SalesforceSDKManager.getInstance() != null
+                    ? SalesforceSDKManager.getInstance() .getAdditionalOauthKeys()
+                    : null);
         }
 
         private void computeOtherFields() throws URISyntaxException {

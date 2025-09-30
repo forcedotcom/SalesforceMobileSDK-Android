@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.rest
 
+import com.salesforce.androidsdk.rest.RestRequest.MEDIA_TYPE_JSON
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import com.salesforce.androidsdk.rest.SfapApiGenerationsResponseBody.Companion.fromJson
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
@@ -75,7 +75,7 @@ class SfapApiClient(
             "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/embeddings",
             requestBody
                 .toJson()
-                .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
+                .toRequestBody(MEDIA_TYPE_JSON),
             generateSfapApiHeaders()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -113,7 +113,7 @@ class SfapApiClient(
             POST,
             "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/chat-generations",
             requestBody.toJson()
-                .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
+                .toRequestBody(MEDIA_TYPE_JSON),
             generateSfapApiHeaders()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -152,7 +152,7 @@ class SfapApiClient(
             "https://$apiHostName/einstein/platform/v1/models/$modelNameUnwrapped/generations",
             SfapApiGenerationsRequestBody(prompt)
                 .toJson()
-                .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
+                .toRequestBody(MEDIA_TYPE_JSON),
             generateSfapApiHeaders()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -189,7 +189,7 @@ class SfapApiClient(
             "https://$apiHostName/einstein/platform/v1/feedback",
             requestBody
                 .toJson()
-                .toRequestBody(CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON.toMediaTypeOrNull()),
+                .toRequestBody(MEDIA_TYPE_JSON),
             generateSfapApiHeaders()
         )
         val restResponse = restClient.sendSync(restRequest)
@@ -211,8 +211,6 @@ class SfapApiClient(
     companion object {
 
         internal val jsonIgnoreUnknownKeys = Json { ignoreUnknownKeys = true }
-
-        private const val CONTENT_TYPE_HEADER_VALUE_APPLICATION_JSON = "application/json; charset=utf-8"
 
         private fun generateSfapApiHeaders() = mutableMapOf(
             "x-sfdc-app-context" to "EinsteinGPT",

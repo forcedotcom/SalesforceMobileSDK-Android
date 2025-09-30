@@ -49,6 +49,8 @@ import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 
 /**
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
@@ -316,13 +318,18 @@ public class RestClient {
     }
 
     /**
-     * Helper to build okHttp Request from RestRequest
-     * @param restRequest
-     * @return
+     * Builds an OK HTTP request from a REST request.
+     *
+     * @param restRequest The REST request.
+     * @return The HTTP request
      */
     public Request buildRequest(RestRequest restRequest) {
+        final URI uri = oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest);
+        if (uri == null) return null;
+        final HttpUrl url = HttpUrl.get(uri);
+        if (url == null) return null;
         final Request.Builder builder = new Request.Builder()
-                .url(HttpUrl.get(oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest)))
+                .url(url)
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding additional headers
@@ -333,6 +340,19 @@ public class RestClient {
             }
         }
         return builder.build();
+    }
+
+    /**
+     * Returns a new web socket for the provided request and web socket listener.
+     * @param request The request
+     * @param listener The web socket listener
+     * @return The web socket
+     */
+    public WebSocket newWebSocket(
+            Request request,
+            WebSocketListener listener
+    ) {
+        return okHttpClient.newWebSocket(request, listener);
     }
 
     /**
@@ -368,7 +388,8 @@ public class RestClient {
      * @throws IOException
      */
     public RestResponse sendSync(RestRequest restRequest) throws IOException {
-        Request request = buildRequest(restRequest);
+        final Request request = buildRequest(restRequest);
+        if (request == null) return null;
         Response response = okHttpClient.newCall(request).execute();
         return new RestResponse(response);
     }

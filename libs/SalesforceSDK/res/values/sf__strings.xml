@@ -24,6 +24,7 @@
     <string name="sf__more_options">More Options</string>
     <string name="sf__pick_server">Change Server</string>
     <string name="sf__clear_cookies">Clear Cookies</string>
+    <string name="sf__clear_cache">Clear cache</string>
     <string name="sf__reload">Reload</string>
     <string name="sf__launch_idp">Log In with IDP App</string>
     <string name="sf__login_with_biometric">Log In with Biometric</string>

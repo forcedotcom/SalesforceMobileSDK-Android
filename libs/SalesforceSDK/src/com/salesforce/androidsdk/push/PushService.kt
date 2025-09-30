@@ -26,7 +26,14 @@
  */
 package com.salesforce.androidsdk.push
 
+import android.app.NotificationChannel
+import android.app.NotificationChannelGroup
+import android.app.NotificationManager
+import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PRIVATE
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy.UPDATE
@@ -43,9 +50,11 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
+import com.salesforce.androidsdk.push.PushMessaging.clearNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.clearRegistrationInfo
 import com.salesforce.androidsdk.push.PushMessaging.getDeviceId
 import com.salesforce.androidsdk.push.PushMessaging.getRegistrationId
+import com.salesforce.androidsdk.push.PushMessaging.setNotificationTypes
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
@@ -55,6 +64,8 @@ import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistration
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
+import com.salesforce.androidsdk.rest.NotificationsApiClient
+import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestRequest
@@ -80,7 +91,9 @@ open class PushService {
     fun performRegistrationChange(
         register: Boolean,
         userAccount: UserAccount,
+        restClient: RestClient? = getRestClient(userAccount)
     ) {
+        val restClientUnwrapped = restClient ?: return
         when {
             register ->
                 onRegistered(
@@ -88,18 +101,22 @@ open class PushService {
                         SalesforceSDKManager.getInstance().appContext,
                         userAccount
                     ) ?: return,
-                    account = userAccount
+                    account = userAccount,
+                    restClient = restClientUnwrapped,
                 )
 
             else -> onUnregistered(
-                account = userAccount
+                account = userAccount,
+                restClient = restClientUnwrapped,
             )
         }
     }
 
-    private fun onRegistered(
+    @VisibleForTesting
+    internal fun onRegistered(
         registrationId: String,
         account: UserAccount?,
+        restClient: RestClient
     ) {
         if (account == null) {
             SalesforceSDKLogger.e(TAG, "Account is null, will retry registration later")
@@ -111,7 +128,8 @@ open class PushService {
         runCatching {
             when (val id = registerSFDCPushNotification(
                 registrationId,
-                account
+                account,
+                restClient
             )) {
                 null -> setRegistrationId(
                     context,
@@ -145,14 +163,19 @@ open class PushService {
         }
     }
 
-    private fun onUnregistered(account: UserAccount) {
+    @VisibleForTesting
+    internal fun onUnregistered(
+        account: UserAccount,
+        restClient: RestClient
+    ) {
         val context = SalesforceSDKManager.getInstance().appContext
         val packageName = context.packageName
 
         runCatching {
             unregisterSFDCPushNotification(
                 getDeviceId(context, account),
-                account
+                account,
+                restClient
             )
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(
@@ -203,6 +226,139 @@ open class PushService {
     )
 
     /**
+     * Called after Salesforce push notification registration.
+     *
+     * @param status the registration status. One of the
+     * `REGISTRATION_STATUS_XXX` constants
+     * @param restClient The REST client to use for network APIs
+     * @param userAccount the user account that's performing registration
+     */
+    @VisibleForTesting
+    internal fun onPushNotificationRegistrationStatusInternal(
+        status: Int,
+        restClient: RestClient,
+        userAccount: UserAccount?
+    ) {
+        // Fetch and store or clear Salesforce notifications types, as applicable.
+        refreshNotificationsTypes(
+            status = status,
+            restClient = restClient,
+            userAccount = userAccount
+        )
+
+        // Allow subclass implementation.
+        onPushNotificationRegistrationStatus(status, userAccount)
+    }
+
+    /**
+     * Refreshes Salesforce notification types or clears them based on the
+     * provided Salesforce push notification registration status.
+     * @param status the registration status. One of the
+     * `REGISTRATION_STATUS_XXX` constants
+     * @param restClient The REST client to use for network APIs
+     * @param userAccount the user account that's performing registration
+     */
+    @VisibleForTesting
+    internal fun refreshNotificationsTypes(
+        status: Int,
+        restClient: RestClient,
+        userAccount: UserAccount?
+    ) {
+        when (status) {
+            REGISTRATION_STATUS_SUCCEEDED ->
+                registerNotificationChannels(
+                    fetchNotificationsTypes(
+                        restClient = restClient,
+                        userAccount = userAccount ?: return
+                    ) ?: return
+                )
+
+            UNREGISTRATION_STATUS_SUCCEEDED -> {
+                removeNotificationsCategories()
+                clearNotificationsTypes(userAccount ?: return)
+            }
+        }
+    }
+
+    /**
+     * Registers Android notification channels and notification groups for the
+     * provided Salesforce notifications API notifications types.
+     * @param notificationsTypesResponseBody The Salesforce notifications API
+     * notifications types
+     */
+    @VisibleForTesting
+    internal fun registerNotificationChannels(
+        notificationsTypesResponseBody: NotificationsTypesResponseBody
+    ) {
+        val context = SalesforceSDKManager.getInstance().appContext
+        context.getSystemService(NotificationManager::class.java).run {
+
+            val notificationChannelGroup = getNotificationChannelGroup(
+                NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID
+            ) ?: run {
+                createNotificationChannelGroup(
+                    NotificationChannelGroup(
+                        NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID,
+                        NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME
+                    )
+                )
+                getNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
+            }
+
+            notificationsTypesResponseBody.notificationTypes?.forEach { notificationType ->
+                createNotificationChannel(
+                    NotificationChannel(
+                        notificationType.type,
+                        notificationType.label,
+                        IMPORTANCE_HIGH
+                    ).apply {
+                        group = notificationChannelGroup.id
+                    }
+                )
+            }
+        }
+    }
+
+    /**
+     * Removes previously registered Android notification channels and
+     * notification groups for Salesforce notifications API notifications types.
+     */
+    @VisibleForTesting
+    internal fun removeNotificationsCategories() {
+        val context = SalesforceSDKManager.getInstance().appContext
+        context.getSystemService(NotificationManager::class.java).run {
+            deleteNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
+        }
+    }
+
+    /**
+     * Fetches notifications types and stores them for the provided user
+     * account.
+     * @param restClient The REST client to use for network APIs
+     * @param userAccount The user account that's performing registration
+     */
+    @VisibleForTesting
+    internal fun fetchNotificationsTypes(
+        restClient: RestClient,
+        userAccount: UserAccount
+    ): NotificationsTypesResponseBody? {
+
+        val notificationsTypes = NotificationsApiClient(
+            restClient = restClient
+        ).fetchNotificationsTypes()
+
+        when (notificationsTypes) {
+            null -> clearNotificationsTypes(userAccount)
+            else -> setNotificationTypes(
+                userAccount = userAccount,
+                notificationsTypes = notificationsTypes
+            )
+        }
+
+        return notificationsTypes
+    }
+
+    /**
      * Listen for changes in registration status.
      *
      * Subclasses can override this method without calling the super method.
@@ -213,23 +369,23 @@ open class PushService {
      */
     @Suppress(
         "MemberVisibilityCanBePrivate",
-        "unused",
-        "UNUSED_PARAMETER"
+        "unused"
     )
-    protected fun onPushNotificationRegistrationStatus(
+    @VisibleForTesting(otherwise = PROTECTED)
+    internal open fun onPushNotificationRegistrationStatus(
         status: Int,
         userAccount: UserAccount?,
     ) {
         // Intentionally Blank.
     }
 
-    private fun registerSFDCPushNotification(
+    @VisibleForTesting
+    internal fun registerSFDCPushNotification(
         registrationId: String,
         account: UserAccount,
+        restClient: RestClient
     ): String? {
-
         val sdkManager = SalesforceSDKManager.getInstance()
-        val accountManager = UserAccountManager.getInstance()
 
         runCatching {
             val fields: MutableMap<String, String?> = mutableMapOf(
@@ -239,9 +395,9 @@ open class PushService {
             )
 
             // Adds community ID to the registration payload to allow scoping of notifications per community.
-            val communityId = accountManager.currentUser.communityId
-            if (communityId?.isNotEmpty() == true) {
-                fields[NETWORK_ID] = communityId
+            val communityUrl = account.communityUrl
+            if (!communityUrl.isNullOrBlank()) {
+                fields[NETWORK_ID] = communityUrl
             }
 
             // Adds an RSA public key to the registration payload if available.
@@ -251,42 +407,40 @@ open class PushService {
                 }
             }
 
-            getRestClient(account)?.let { restClient ->
-                fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
+            fields[CIPHER_NAME] = Encryptor.CipherMode.RSA_OAEP_SHA256.name
 
-                var status = REGISTRATION_STATUS_FAILED
-                val response = onSendRegisterPushNotificationRequest(fields, restClient)
-                var id: String? = null
+            var status = REGISTRATION_STATUS_FAILED
+            val response = onSendRegisterPushNotificationRequest(fields, restClient)
+            var id: String? = null
 
-                /*
-                 * If the push notification device object has been created,
-                 * reads the device registration ID. If the status code
-                 * indicates that the resource is not found, push notifications
-                 * are not enabled for this connected app, which means we
-                 * should not attempt to re-register a few minutes later.
-                 */
-                when (response.statusCode) {
-                    HTTP_CREATED -> {
-                        response.asJSONObject()?.let { jsonObject ->
-                            id = jsonObject.getString(FIELD_ID)
-                            status = REGISTRATION_STATUS_SUCCEEDED
-                        }
+            /*
+             * If the push notification device object has been created,
+             * reads the device registration ID. If the status code
+             * indicates that the resource is not found, push notifications
+             * are not enabled for this connected app, which means we
+             * should not attempt to re-register a few minutes later.
+             */
+            when (response.statusCode) {
+                HTTP_CREATED -> {
+                    response.asJSONObject()?.let { jsonObject ->
+                        id = jsonObject.getString(FIELD_ID)
+                        status = REGISTRATION_STATUS_SUCCEEDED
                     }
-
-                    HTTP_NOT_FOUND -> id = NOT_ENABLED
                 }
 
-                response.consume()
-                sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
-                onPushNotificationRegistrationStatus(status, account)
-
-                return id
+                HTTP_NOT_FOUND -> id = NOT_ENABLED
             }
+
+            response.consume()
+            sdkManager.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS)
+            onPushNotificationRegistrationStatusInternal(status = status, restClient = restClient, userAccount = account)
+
+            return id
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(TAG, "Push notification registration failed", throwable)
         }
 
-        onPushNotificationRegistrationStatus(REGISTRATION_STATUS_FAILED, account)
+        onPushNotificationRegistrationStatusInternal(status = REGISTRATION_STATUS_FAILED, restClient = restClient, userAccount = account)
 
         return null
     }
@@ -332,26 +486,21 @@ open class PushService {
         )
     }
 
-    private fun unregisterSFDCPushNotification(
+    @VisibleForTesting
+    protected open fun unregisterSFDCPushNotification(
         registeredId: String?,
         account: UserAccount,
+        restClient: RestClient
     ) {
         runCatching {
-            getRestClient(account)?.let { restClient ->
-                onSendUnregisterPushNotificationRequest(
-                    registeredId,
-                    restClient
-                ).consume()
-                onPushNotificationRegistrationStatus(
-                    UNREGISTRATION_STATUS_SUCCEEDED,
-                    account
-                )
-            }
+            onSendUnregisterPushNotificationRequest(
+                registeredId,
+                restClient
+            ).consume()
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_SUCCEEDED, restClient = restClient, userAccount = account)
         }.onFailure { throwable ->
-            onPushNotificationRegistrationStatus(
-                UNREGISTRATION_STATUS_FAILED,
-                account
-            )
+            onPushNotificationRegistrationStatusInternal(status = UNREGISTRATION_STATUS_FAILED, restClient = restClient, userAccount = account)
+
             SalesforceSDKLogger.e(
                 TAG,
                 "Push notification un-registration failed",
@@ -431,16 +580,39 @@ open class PushService {
         private const val APPLICATION_BUNDLE = "ApplicationBundle"
         private const val CIPHER_NAME = "CipherName"
         private const val FIELD_ID = "id"
-        private const val NOT_ENABLED = "not_enabled"
+
+        @VisibleForTesting
+        internal const val NOT_ENABLED = "not_enabled"
         const val PUSH_NOTIFICATION_KEY_NAME = "PushNotificationKey"
         val pushNotificationKeyName = SalesforceKeyGenerator
             .getUniqueId(PUSH_NOTIFICATION_KEY_NAME)
             .replace("[^A-Za-z0-9]".toRegex(), "")
 
-        protected const val REGISTRATION_STATUS_SUCCEEDED = 0
-        protected const val REGISTRATION_STATUS_FAILED = 1
-        protected const val UNREGISTRATION_STATUS_SUCCEEDED = 2
-        protected const val UNREGISTRATION_STATUS_FAILED = 3
+        /**
+         * The push notification channel group id for push notification channels
+         * registered from Salesforce Notification API notifications types
+         */
+        @VisibleForTesting
+        internal const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID = "NOTIFICATION_GROUP_SALESFORCE"
+
+        /**
+         * The push notification channel group name for push notification
+         * channels registered from Salesforce Notification API notifications
+         * types
+         */
+        private const val NOTIFICATION_CHANNEL_GROUP_SALESFORCE_NAME = "Salesforce Notifications"
+
+        @VisibleForTesting(otherwise = PROTECTED)
+        internal const val REGISTRATION_STATUS_SUCCEEDED = 0
+
+        @VisibleForTesting(otherwise = PROTECTED)
+        internal const val REGISTRATION_STATUS_FAILED = 1
+
+        @VisibleForTesting(otherwise = PROTECTED)
+        internal const val UNREGISTRATION_STATUS_SUCCEEDED = 2
+
+        @VisibleForTesting(otherwise = PROTECTED)
+        internal const val UNREGISTRATION_STATUS_FAILED = 3
 
         /**
          * The Android background tasks name of the push notifications
@@ -520,7 +692,7 @@ open class PushService {
                 OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                     .setInputData(workData)
                     .setConstraints(constraints)
-                    .build().also {  workRequest ->
+                    .build().also { workRequest ->
                         workManager.enqueueUniqueWork(
                             PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME,
                             REPLACE,

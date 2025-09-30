@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui
 
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -73,8 +74,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** TopAppBar Color.  Defaults to WebView background color. */
     open var topBarColor: Color? = null
+
     /** TopAppBar text.  Defaults to login server url. */
     open var titleText: String? = null
+
     /**
      * TopAppBar text Color.  Defaults to black on light backgrounds and white
      * on dark backgrounds.  Back and menu buttons will match this color.
@@ -97,6 +100,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // Override App Bars
     /** TopAppBar that will be used instead of the default. */
     open val topAppBar: (@Composable () -> Unit)? = null
+
     /** BottomAppBar that will be used instead of the default. */
     open val bottomAppBar: (@Composable () -> Unit)? = null
 
@@ -130,13 +134,42 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
+
     /** JWT string used for JWT Auth Flow. */
     var jwt: String? = null
+
     /** Connected App/External Client App client Id. */
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
+
     /** Authorization Display Type used for login. */
     protected open val authorizationDisplayType =
         SalesforceSDKManager.getInstance().appContext.getString(oauth_display_type)
+
+    /**
+     * Determines use of OAuth 2.0 Web Server Flow or User-Agent Flow.
+     *
+     * When a Salesforce Identity API UI Bridge Front-Door URL is in use for log
+     * in and it has a PKCE/Code verifier Web Server Flow will be Enabled.  For
+     * a Front-Door Bridge URL without a PKCE/Code Verifier User-Agent Flow will
+     * be enabled.
+     *
+     * When no Front-Door Bridge URL is in use, Web Server Flow is
+     * enabled when web server authentication or browser login are enabled.
+     * @return True if Web Server Flow is enabled, false if User-Agent Flow is
+     * enabled.
+     */
+    internal val useWebServerFlow: Boolean
+        get() = with(SalesforceSDKManager.getInstance()) {
+            // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
+            if (isUsingFrontDoorBridge) {
+                // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
+                frontdoorBridgeCodeVerifier != null
+            }
+            // Second, when not using a front-door bridge URL, the app's preferences can be used.
+            else {
+                useWebServerAuthentication || isBrowserLoginEnabled
+            }
+        }
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -149,13 +182,16 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     open val singleServerCustomTabActivity = false
 
     /** Value representing if the back button should be shown on the login view. */
-    val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
+    open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
         !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
     }
 
     // The default, locally generated code verifier
     @VisibleForTesting
     internal var codeVerifier: String? = null
+
+    /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
+    internal var loginHint: String? = null
 
     // Auth code we receive from the JWT swap for magic links.
     internal var authCodeForJwtFlow: String? = null
@@ -193,6 +229,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
+            // The Web Server Flow code challenge makes the authorization url unique each time,
+            // which triggers recomposition.  For User Agent Flow, change it to blank.
+            if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                loginUrl.value = ABOUT_BLANK
+            }
             loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
@@ -200,6 +241,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Clear WebView Cookies. */
     open fun clearCookies() =
         CookieManager.getInstance().removeAllCookies(null)
+
+    /** Clear WebView Cache. */
+    open fun clearWebViewCache(webView: WebView) {
+        webView.clearCache(true)
+    }
 
     /**
      * Automatically log in using the provided UI Bridge API parameters.
@@ -270,10 +316,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         frontdoorBridgeCodeVerifier = null
     }
 
-    // returns a valid https server url or null if the users input is invalid.
+    /**
+     * Returns a valid HTTPS server URL or null if the provided user input is
+     * invalid.
+     * @param url The user input URL to validate and return
+     * @return The validated server URL or null if the provided URL wasn't a
+     * valid URL
+     */
     internal fun getValidServerUrl(url: String): String? {
         if (!url.contains(".")) return null
         if (url.substringAfterLast(".").isEmpty()) return null
+        runCatching {
+            URI(url)
+        }.onFailure {
+            return null
+        }
 
         return when {
             URLUtil.isHttpsUrl(url) -> url
@@ -289,17 +346,17 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             else -> additionalParameters
         }
 
-        // NB code verifier / code challenge are only used when useWebServerAuthentication is true
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
-            SalesforceSDKManager.getInstance().useWebServerAuthentication,
+            useWebServerFlow,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
             URI(server),
             clientId,
             bootConfig.oauthRedirectURI,
             bootConfig.oauthScopes,
+            loginHint,
             authorizationDisplayType,
             codeChallenge,
             additionalParams

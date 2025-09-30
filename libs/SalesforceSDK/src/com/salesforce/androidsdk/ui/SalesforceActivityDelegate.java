@@ -33,8 +33,10 @@ import android.content.IntentFilter;
 import android.view.KeyEvent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -95,7 +97,7 @@ public class SalesforceActivityDelegate {
                 public void authenticatedRestClient(RestClient client) {
                     if (client == null) {
                         SalesforceSDKManager.getInstance()
-                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE);
+                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE_MSDK);
                         return;
                     }
                     ((SalesforceActivityInterface) activity).onResume(client);
@@ -145,7 +147,10 @@ public class SalesforceActivityDelegate {
     private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
 
         @Override
-        protected void onLogoutComplete(@NonNull OAuth2.LogoutReason reason) {
+        protected void onLogoutComplete(
+                @NonNull OAuth2.LogoutReason reason,
+                @Nullable UserAccount userAccount
+        ) {
             ((SalesforceActivityInterface) activity).onLogoutComplete();
         }
     }

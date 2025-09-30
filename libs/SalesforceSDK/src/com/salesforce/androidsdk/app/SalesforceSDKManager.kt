@@ -57,6 +57,8 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
@@ -104,6 +106,7 @@ import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
+import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
@@ -111,6 +114,7 @@ import com.salesforce.androidsdk.developer.support.notifications.local.ShowDevel
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
 import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
+import com.salesforce.androidsdk.push.PushMessaging.getNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
 import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.push.PushMessaging.unregister
@@ -119,6 +123,8 @@ import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
+import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
@@ -139,7 +145,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.json.JSONObject
 import java.lang.String.CASE_INSENSITIVE_ORDER
@@ -336,11 +342,13 @@ open class SalesforceSDKManager protected constructor(
      */
     @set:Synchronized
     open var isBrowserLoginEnabled = false
-        protected set
+        @VisibleForTesting(otherwise = PROTECTED)
+        set
 
     /** Optionally enables browser session sharing */
     var isShareBrowserSessionEnabled = false
-        private set
+        @VisibleForTesting
+        set
 
     /**
      * The custom tab browser to use during advanced authentication.
@@ -415,7 +423,6 @@ open class SalesforceSDKManager protected constructor(
     fun setLightColorScheme(value: ColorScheme) {
         _lightColorScheme = value
     }
-
 
     /**
      * The dark color scheme to use in Mobile SDK screens
@@ -611,6 +618,46 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
+     * Returns the Salesforce Notifications API types endpoint notification type
+     * with the provided type.
+     * @param type The notification type
+     * @return The notification type from the Salesforce Notifications API types
+     * endpoint or null
+     */
+    fun getNotificationsType(
+        type: String
+    ) = userAccountManager.currentUser?.let { currentUser ->
+        getNotificationsTypes(
+            currentUser
+        )?.notificationTypes?.firstOrNull { notificationType ->
+            notificationType.type == type
+        }
+    }
+
+    /**
+     * Invokes a Salesforce Notifications API notification action.
+     * @param notificationId The Salesforce actionable notification's id
+     * @param actionKey The Salesforce actionable notification's action key
+     * @param restClient The REST client to use when invoking the Salesforce
+     * Notifications API.  Note the REST client determines the user account used
+     * as well.  This defaults to the current user's REST client.
+     * @return The Salesforce Notifications API actions endpoint response or
+     * null
+     */
+    fun invokeServerNotificationAction(
+        notificationId: String,
+        actionKey: String,
+        restClient: RestClient = clientManager.peekRestClient(userAccountManager.currentUser)
+    ): NotificationsActionsResponseBody? {
+        return NotificationsApiClient(
+            restClient = restClient
+        ).submitNotificationAction(
+            notificationId = notificationId,
+            actionKey = actionKey
+        )
+    }
+
+    /**
      * Optionally enables browser based login instead of web view login.
      *
      * @param browserLoginEnabled True if Chrome should be used for login; false
@@ -687,11 +734,9 @@ open class SalesforceSDKManager protected constructor(
      */
     private fun cleanUp(
         frontActivity: Activity?,
-        account: Account?,
+        userAccount: UserAccount?,
         shouldDismissActivity: Boolean
     ) {
-        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
-
         // Clean up within this process
         cleanUp(userAccount)
 
@@ -1033,14 +1078,15 @@ open class SalesforceSDKManager protected constructor(
         frontActivity: Activity?,
         logoutReason: LogoutReason,
     ) {
+        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
         cleanUp(
             frontActivity,
-            account,
+            userAccount,
             showLoginPage
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
-        notifyLogoutComplete(showLoginPage, logoutReason)
+        notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
         // Revoke the existing refresh token
         if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
@@ -1063,9 +1109,9 @@ open class SalesforceSDKManager protected constructor(
      * Sends the logout complete event.
      * @param showLoginPage When true, shows the login page
      */
-    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason) {
+    private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason, userAccount: UserAccount?) {
         EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
-        sendLogoutCompleteIntent(logoutReason)
+        sendLogoutCompleteIntent(logoutReason, userAccount)
         if (showLoginPage) {
             startSwitcherActivityIfRequired()
         }
@@ -1145,7 +1191,16 @@ open class SalesforceSDKManager protected constructor(
     open val isHybrid = false
 
     /** The authentication account type, which should match authenticator.xml */
-    val accountType = appContext.getString(account_type)
+    val accountType: String by lazy {
+        val type = appContext.getString(account_type)
+        if (type == "com.salesforce.androidsdk") {
+            // TODO: Turn this logline into an assert in 14.0
+            e(TAG, "No app specific account type found.  To ensure users " +
+                    "can login override the \"account_type\" value in your strings.xml.")
+        }
+
+        return@lazy type
+    }
 
     override fun toString() =
         """
@@ -1360,12 +1415,15 @@ open class SalesforceSDKManager protected constructor(
     } ?: ""
 
     /** Sends the logout completed intent */
-    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason) =
+    private fun sendLogoutCompleteIntent(logoutReason: LogoutReason, userAccount: UserAccount?) =
         appContext.sendBroadcast(Intent(
             LOGOUT_COMPLETE_INTENT_ACTION
         ).apply {
             setPackage(appContext.packageName)
             putExtra(LOGOUT_REASON_KEY, logoutReason.toString())
+            userAccount?.let { userAccount ->
+                putExtra(USER_ACCOUNT_KEY, userAccount.toBundle())
+            }
         })
 
     /**
@@ -1383,7 +1441,7 @@ open class SalesforceSDKManager protected constructor(
             )
             userAccount?.let { userAccount ->
                 putExtra(
-                    USER_ACCOUNT,
+                    USER_ACCOUNT_KEY,
                     userAccount.toBundle()
                 )
             }
@@ -1396,7 +1454,7 @@ open class SalesforceSDKManager protected constructor(
             intent: Intent
         ) {
             if (intent.action == CLEANUP_INTENT_ACTION && intent.getStringExtra(PROCESS_ID_KEY) != PROCESS_ID) {
-                cleanUp(intent.getBundleExtra(USER_ACCOUNT)?.let { bundle ->
+                cleanUp(intent.getBundleExtra(USER_ACCOUNT_KEY)?.let { bundle ->
                     UserAccount(bundle)
                 })
             }
@@ -1557,7 +1615,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "13.0.2"
+        const val SDK_VERSION = "13.1.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager
@@ -1573,7 +1631,7 @@ open class SalesforceSDKManager protected constructor(
         private val PROCESS_ID = randomUUID().toString()
 
         /** The user account key for broadcast intents  */
-        private const val USER_ACCOUNT = "userAccount"
+        internal const val USER_ACCOUNT_KEY = "userAccount"
 
         /** An intent action indicating logout was completed */
         const val LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE"
@@ -1858,36 +1916,35 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Fetches the authentication configuration, if required.
      *
+     * @param httpAccess The HTTP access to use for API integration.  Defaults
+     * to null to use the default HTTP access.  This parameter is intended for
+     * testing purposes only and should not be used in release builds.
      * @param completion An optional function to invoke at the end of the action
      */
-    fun fetchAuthenticationConfiguration(
-        completion: (() -> Unit)? = null
+    internal fun fetchAuthenticationConfiguration(
+        httpAccess: HttpAccess? = null,
+        completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
-        runCatching {
-            // If this takes more than five seconds it can cause Android's application not responding report.
-            withTimeout(5000L) {
-                val loginServer = loginServerManager.selectedLoginServer?.url?.trim { it <= ' ' } ?: return@withTimeout
+        // If this takes more than five seconds it can cause Android's application not responding report.
+        withTimeoutOrNull(5000L) {
+            val loginServer = loginServerManager.selectedLoginServer.url.trim()
+            if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = false,
+                    shareBrowserSessionEnabled = false
+                )
 
-                if (loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = false,
-                        shareBrowserSessionEnabled = false
-                    )
-
-                    return@withTimeout
-                }
-
-                getMyDomainAuthConfig(loginServer).let { authConfig ->
-                    setBrowserLoginEnabled(
-                        browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
-                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
-                    )
-                }
+                return@withTimeoutOrNull
             }
-        }.onFailure { e ->
-            e(TAG, "Exception occurred while fetching authentication configuration", e)
+
+            getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
+                setBrowserLoginEnabled(
+                    browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
+                    shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                )
+            }
         }
 
-        completion?.invoke()
+        completion.invoke()
     }
 }

@@ -1,5 +1,5 @@
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.0.2"
+rootProject.ext["PUBLISH_VERSION"] = "13.1.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "MobileSync"
 
 plugins {
@@ -11,18 +11,19 @@ plugins {
 
 dependencies {
     api(project(":libs:SmartStore"))
-    api("androidx.appcompat:appcompat:1.7.0")
-    api("androidx.appcompat:appcompat-resources:1.7.0")
-    implementation("androidx.core:core-ktx:1.15.0")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    api("androidx.appcompat:appcompat:1.7.1")
+    api("androidx.appcompat:appcompat-resources:1.7.1")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
 
 android {
     namespace = "com.salesforce.androidsdk.mobilesync"
     testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
 
+    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
     compileSdk = 35
 
     defaultConfig {
@@ -88,7 +89,7 @@ android {
         }
 
         sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)

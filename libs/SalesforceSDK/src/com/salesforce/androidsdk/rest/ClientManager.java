@@ -379,10 +379,6 @@ public class ClientManager {
         @Override
         public String getNewAuthToken() {
             SalesforceSDKLogger.i(TAG, "Need new access token");
-            final Account acc = clientManager.getAccount();
-            if (acc == null) {
-                return null;
-            }
 
             // Wait if another thread is already fetching an access token
             synchronized (lock) {
@@ -396,14 +392,34 @@ public class ClientManager {
                 }
                 gettingAuthToken = true;
             }
+
+            // Only check for matching account inside synchronized thread that
+            // is actually getting the new auth token.
+            UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+            Account[] accounts = clientManager.getAccounts();
+            Account matchingAccount = null;
             String newAuthToken = null;
             String newInstanceUrl = null;
-            try {
 
+            if (refreshToken != null) {
+                for (Account account : accounts) {
+                    UserAccount user = userAccountManager.buildUserAccount(account);
+                    if (user != null && refreshToken.equals(user.getRefreshToken())) {
+                        matchingAccount = account;
+                        break;
+                    }
+                }
+            }
+
+            // Fail early to ensure we don't logout the current user below by sending null.
+            if (matchingAccount == null) {
+                return null;
+            }
+
+            try {
                 // Invalidate current auth token.
-                final String cachedAuthToken = clientManager.peekRestClient(acc).getAuthToken();
-                clientManager.invalidateToken(cachedAuthToken);
-                final UserAccount userAccount = refreshStaleToken(acc);
+                clientManager.invalidateToken(lastNewAuthToken);
+                final UserAccount userAccount = refreshStaleToken(matchingAccount);
 
                 // NB: userAccount will be null if refresh token is no longer valid
                 newAuthToken = userAccount != null ? userAccount.getAuthToken() : null;
@@ -417,11 +433,12 @@ public class ClientManager {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
                         }
+                        boolean showLoginPage = accounts.length > 1;
                         // Note: As of writing (2024) this call will never succeed because revoke API is an
                         // authenticated endpoint.  However, there is no harm in attempting and the debug logs
                         // produced may help developers better understand the state of their app.
                         SalesforceSDKManager.getInstance()
-                                .logout(null, null, false, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED);
+                                .logout(matchingAccount, null, showLoginPage, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED);
                     }
 
                     // Broadcasts an intent that the refresh token has been revoked.
@@ -470,7 +487,7 @@ public class ClientManager {
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientId(), refreshToken, addlParamsMap);
+                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), refreshToken, addlParamsMap);
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)

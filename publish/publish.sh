@@ -11,3 +11,4 @@ fi
 ./gradlew libs:SalesforceReact:publishReleasePublicationToSonatypeRepository
 ./gradlew libs:SmartStore:publishReleasePublicationToSonatypeRepository
 ./gradlew libs:MobileSync:publishReleasePublicationToSonatypeRepository
+./gradlew publishToSonatype closeSonatypeStagingRepository

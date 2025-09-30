@@ -63,6 +63,7 @@ public class UserAccount {
 	public static final String LOGIN_SERVER = "loginServer";
 	public static final String ID_URL = "idUrl";
 	public static final String INSTANCE_SERVER = "instanceServer";
+	public static final String API_INSTANCE_SERVER = "apiInstanceServer";
 	public static final String ORG_ID = "orgId";
 	public static final String USER_ID = "userId";
 	public static final String USERNAME = "username";
@@ -93,7 +94,9 @@ public class UserAccount {
 	public static final String CLIENT_ID = "clientId";
 	public static final String PARENT_SID = "parentSid";
 	public static final String TOKEN_FORMAT = "tokenFormat";
-;
+	public static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
+	public static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
@@ -107,6 +110,7 @@ public class UserAccount {
 	private String loginServer;
 	private String idUrl;
 	private String instanceServer;
+	private String apiInstanceServer;
 	private String orgId;
 	private String userId;
 	private String username;
@@ -136,43 +140,48 @@ public class UserAccount {
 	private String parentSid;
 	private String tokenFormat;
 	private Map<String, String> additionalOauthValues;
+	private String beaconChildConsumerKey;
+	private String beaconChildConsumerSecret;
 
 	/**
 	 * Parameterized constructor.
 	 *
-	 * @param authToken Auth token.
-	 * @param refreshToken Refresh token.
-	 * @param loginServer Login server.
-	 * @param idUrl Identity URL.
-	 * @param instanceServer Instance server.
-	 * @param orgId Org ID.
-	 * @param userId User ID.
-	 * @param username Username.
-	 * @param accountName Account name.
-	 * @param communityId Community ID.
-	 * @param communityUrl Community URL.
-	 * @param firstName First Name.
-	 * @param lastName Last Name.
-	 * @param displayName Display Name.
-	 * @param email Email.
-	 * @param photoUrl Photo URL.
-	 * @param thumbnailUrl Thumbnail URL.
-	 * @param additionalOauthValues Additional OAuth values.
-	 * @param lightningDomain Lightning domain.
-	 * @param lightningSid Lightning SID.
-	 * @param vfDomain VF domain.
-	 * @param vfSid VF SID.
-	 * @param contentDomain Content domain.
-	 * @param contentSid Content SID.
-	 * @param nativeLogin If the account was added with native auth.
-	 * @param language User's language,
-	 * @param locale User's locale,
-	 * @param cookieClientSrc cookie client src
-	 * @param cookieSidClient cookie sid client
-	 * @param sidCookieName sid cookie name
-	 * @param clientId oauth client id
-	 * @param parentSid parent sid
-	 * @param tokenFormat token format
+	 * @param authToken                 Auth token.
+	 * @param refreshToken              Refresh token.
+	 * @param loginServer               Login server.
+	 * @param idUrl                     Identity URL.
+	 * @param instanceServer            Instance server.
+	 * @param orgId                     Org ID.
+	 * @param userId                    User ID.
+	 * @param username                  Username.
+	 * @param accountName               Account name.
+	 * @param communityId               Community ID.
+	 * @param communityUrl              Community URL.
+	 * @param firstName                 First Name.
+	 * @param lastName                  Last Name.
+	 * @param displayName               Display Name.
+	 * @param email                     Email.
+	 * @param photoUrl                  Photo URL.
+	 * @param thumbnailUrl              Thumbnail URL.
+	 * @param additionalOauthValues     Additional OAuth values.
+	 * @param lightningDomain           Lightning domain.
+	 * @param lightningSid              Lightning SID.
+	 * @param vfDomain                  VF domain.
+	 * @param vfSid                     VF SID.
+	 * @param contentDomain             Content domain.
+	 * @param contentSid                Content SID.
+	 * @param nativeLogin               If the account was added with native auth.
+	 * @param language                  User's language,
+	 * @param locale                    User's locale,
+	 * @param cookieClientSrc           cookie client src
+	 * @param cookieSidClient           cookie sid client
+	 * @param sidCookieName             sid cookie name
+	 * @param clientId                  oauth client id
+	 * @param parentSid                 parent sid
+	 * @param tokenFormat               token format
+	 * @param beaconChildConsumerKey    beacon child consumer key
+	 * @param beaconChildConsumerSecret beacon child consumer secret
+	 * @param apiInstanceServer         API instance server
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -183,12 +192,14 @@ public class UserAccount {
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
-				String sidCookieName, String clientId, String parentSid, String tokenFormat) {
+				String sidCookieName, String clientId, String parentSid, String tokenFormat,
+				String beaconChildConsumerKey, String beaconChildConsumerSecret, String apiInstanceServer) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
 		this.idUrl = idUrl;
 		this.instanceServer = instanceServer;
+		this.apiInstanceServer = apiInstanceServer;
 		this.orgId = orgId;
 		this.userId = userId;
 		this.username = username;
@@ -218,6 +229,8 @@ public class UserAccount {
 		this.clientId = clientId;
 		this.parentSid = parentSid;
 		this.tokenFormat = tokenFormat;
+		this.beaconChildConsumerKey = beaconChildConsumerKey;
+		this.beaconChildConsumerSecret = beaconChildConsumerSecret;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -235,6 +248,7 @@ public class UserAccount {
 			loginServer = object.optString(LOGIN_SERVER, null);
 			idUrl = object.optString(ID_URL, null);
 			instanceServer = object.optString(INSTANCE_SERVER, null);
+			apiInstanceServer = object.optString(API_INSTANCE_SERVER, null);
 			orgId = object.optString(ORG_ID, null);
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
@@ -265,6 +279,8 @@ public class UserAccount {
 			clientId = object.optString(CLIENT_ID, null);
 			parentSid = object.optString(PARENT_SID, null);
 			tokenFormat = object.optString(TOKEN_FORMAT, null);
+			beaconChildConsumerKey = object.optString(BEACON_CHILD_CONSUMER_KEY, null);
+			beaconChildConsumerSecret = object.optString(BEACON_CHILD_CONSUMER_SECRET, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -290,6 +306,7 @@ public class UserAccount {
 			loginServer = bundle.getString(LOGIN_SERVER);
 			idUrl = bundle.getString(ID_URL);
 			instanceServer = bundle.getString(INSTANCE_SERVER);
+			apiInstanceServer = bundle.getString(API_INSTANCE_SERVER);
 			orgId = bundle.getString(ORG_ID);
 			userId = bundle.getString(USER_ID);
 			username = bundle.getString(USERNAME);
@@ -318,6 +335,8 @@ public class UserAccount {
 			clientId = bundle.getString(CLIENT_ID);
 			parentSid = bundle.getString(PARENT_SID);
 			tokenFormat = bundle.getString(TOKEN_FORMAT);
+			beaconChildConsumerKey = bundle.getString(BEACON_CHILD_CONSUMER_KEY);
+			beaconChildConsumerSecret = bundle.getString(BEACON_CHILD_CONSUMER_SECRET);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -374,6 +393,15 @@ public class UserAccount {
 	 */
 	public String getInstanceServer() {
 		return instanceServer;
+	}
+
+	/**
+	 * Returns the API instance server for this user account.
+	 *
+	 * @return API instance server.
+	 */
+	public String getApiInstanceServer() {
+		return apiInstanceServer;
 	}
 
 	/**
@@ -612,6 +640,15 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the oauth client id to use for refresh
+	 * In the case of beacon app, the beacon child consumer key returned during login should be used instead of the configured consumer key
+	 * @return client id to use for refresh.
+	 */
+	public String getClientIdForRefresh() {
+		return !TextUtils.isEmpty(beaconChildConsumerKey) ? beaconChildConsumerKey : clientId;
+	}
+
+	/**
 	 * Returns the parent sid.
 	 *
 	 * @return parent sid.
@@ -627,6 +664,24 @@ public class UserAccount {
 	 */
 	public String getTokenFormat() {
 		return tokenFormat;
+	}
+
+	/**
+	 * Returns the beacon child consumer key .
+	 *
+	 * @return beacon child consumer key.
+	 */
+	public String getBeaconChildConsumerKey() {
+		return beaconChildConsumerKey;
+	}
+
+	/**
+	 * Returns the beacon child consumer secret.
+	 *
+	 * @return beacon child consumer secret.
+	 */
+	public String getBeaconChildConsumerSecret() {
+		return beaconChildConsumerSecret;
 	}
 
 	/**
@@ -670,7 +725,8 @@ public class UserAccount {
 		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
 		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
 		int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
-		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
+			state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
 			downloadReq.setDestinationUri(destUri);
 			downloadReq.addRequestHeader(AUTHORIZATION, BEARER + authToken);
@@ -871,6 +927,7 @@ public class UserAccount {
 			object.put(LOGIN_SERVER, loginServer);
 			object.put(ID_URL, idUrl);
 			object.put(INSTANCE_SERVER, instanceServer);
+			object.put(API_INSTANCE_SERVER, apiInstanceServer);
 			object.put(ORG_ID, orgId);
 			object.put(USER_ID, userId);
 			object.put(USERNAME, username);
@@ -897,6 +954,8 @@ public class UserAccount {
 			object.put(SID_COOKIE_NAME, sidCookieName);
 			object.put(PARENT_SID, parentSid);
 			object.put(TOKEN_FORMAT, tokenFormat);
+			object.put(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
+			object.put(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
 			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
@@ -926,6 +985,7 @@ public class UserAccount {
 		object.putString(LOGIN_SERVER, loginServer);
 		object.putString(ID_URL, idUrl);
 		object.putString(INSTANCE_SERVER, instanceServer);
+		object.putString(API_INSTANCE_SERVER, apiInstanceServer);
 		object.putString(ORG_ID, orgId);
 		object.putString(USER_ID, userId);
 		object.putString(USERNAME, username);
@@ -954,6 +1014,8 @@ public class UserAccount {
 		object.putString(CLIENT_ID, clientId);
 		object.putString(PARENT_SID, parentSid);
 		object.putString(TOKEN_FORMAT, tokenFormat);
+		object.putString(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
+		object.putString(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}

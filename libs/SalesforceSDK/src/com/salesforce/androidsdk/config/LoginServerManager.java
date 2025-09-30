@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -61,6 +62,7 @@ public class LoginServerManager {
 
 	// Default login servers.
 	public static final String PRODUCTION_LOGIN_URL = "https://login.salesforce.com";
+	public static final String WELCOME_LOGIN_URL = "https://welcome.salesforce.com/discovery";
 	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
 
 	// Keys used in shared preferences.
@@ -166,7 +168,11 @@ public class LoginServerManager {
 		edit.putString(SERVER_URL, server.url);
 		edit.putBoolean(IS_CUSTOM, server.isCustom);
 		edit.apply();
-		selectedServer.postValue(server);
+		if (Looper.myLooper() == Looper.getMainLooper()) {
+			selectedServer.setValue(server);
+		} else {
+			selectedServer.postValue(server);
+		}
 	}
 
 	/**
@@ -186,7 +192,7 @@ public class LoginServerManager {
 	public void addCustomLoginServer(String name, String url) {
 		// Prevent duplicate servers.
 		for (LoginServer existingServer : getLoginServers()) {
-			if (name.equals(existingServer.name) && url.equals(existingServer.url)) {
+			if (url.equals(existingServer.url)) {
 				setSelectedLoginServer(existingServer);
 				return;
 			}
@@ -457,7 +463,7 @@ public class LoginServerManager {
 		 * @param url Server URL.
 		 * @param isCustom True - if custom URL, False - otherwise.
 		 */
-		public LoginServer(String name, String url, boolean isCustom) {
+		public LoginServer(@NonNull String name, @NonNull String url, boolean isCustom) {
 			this.name = name;
 			this.url = url;
 			this.isCustom = isCustom;

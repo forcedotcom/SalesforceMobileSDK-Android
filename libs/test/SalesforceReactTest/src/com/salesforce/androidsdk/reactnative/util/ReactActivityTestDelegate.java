@@ -62,7 +62,7 @@ public class ReactActivityTestDelegate extends ReactActivityDelegate {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         getReactNativeHost().getReactInstanceManager().destroy();
         super.onDestroy();
     }

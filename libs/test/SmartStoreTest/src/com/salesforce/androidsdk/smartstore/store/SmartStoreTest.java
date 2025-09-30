@@ -116,7 +116,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testSQLCipherVersion() {
-		Assert.assertEquals("Wrong sqlcipher version", "4.6.1 community", store.getSQLCipherVersion());
+		Assert.assertEquals("Wrong sqlcipher version", "4.10.0 community", store.getSQLCipherVersion());
 	}
 
 	/**
@@ -124,7 +124,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	@Test
 	public void testCipherProviderVersion() {
-		Assert.assertEquals("Wrong sqlcipher provider version", "OpenSSL 3.0.14 4 Jun 2024", store.getCipherProviderVersion());
+		Assert.assertEquals("Wrong sqlcipher provider version", "OpenSSL 3.0.17 1 Jul 2025", store.getCipherProviderVersion());
 	}
 
 	/**
@@ -793,7 +793,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Query all with select paths
 		runQueryCheckResultsAndExplainPlan(OTHER_TEST_SOUP,
 				QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", Order.ascending, 10),
-				0, type != Type.json1, "SCAN", new JSONArray("['ka1']"), new JSONArray("['ka2']"), new JSONArray("['ka3']"));
+				0, true, "SCAN", new JSONArray("['ka1']"), new JSONArray("['ka2']"), new JSONArray("['ka3']"));
 	}
 
 	/**
@@ -886,7 +886,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Range query with select paths
 		runQueryCheckResultsAndExplainPlan(OTHER_TEST_SOUP,
 				QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", "ka2", "ka3", "key", Order.descending, 10),
-				0, type != Type.json1, "SEARCH", new JSONArray("['ka3']"), new JSONArray("['ka2']"));
+				0, true, "SEARCH", new JSONArray("['ka3']"), new JSONArray("['ka2']"));
 	}
 
 	/**
@@ -942,7 +942,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 		// Like query (contains) with select paths
 		runQueryCheckResultsAndExplainPlan(OTHER_TEST_SOUP,
-				QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", "%bc%", "key", Order.descending, 10), 0, type != Type.json1, "SCAN",
+				QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", "%bc%", "key", Order.descending, 10), 0, true, "SCAN",
 				new JSONArray("['bbcd']"), new JSONArray("['abcd']"), new JSONArray("['abcc']"));
 	}
 

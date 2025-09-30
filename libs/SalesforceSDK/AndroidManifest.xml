@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-	android:versionCode="89"
-	android:versionName="13.0.2">
+	android:versionCode="90"
+	android:versionName="13.1.0.dev">
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
@@ -25,6 +25,16 @@
             </intent-filter>
             <meta-data android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenticator" />
+        </service>
+
+        <service android:exported="true"
+            android:name="com.salesforce.androidsdk.auth.LegacyAuthenticatorService"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/legacy_authenticator" />
         </service>
 
         <!-- Login activity -->
@@ -57,8 +67,7 @@
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity"
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
-            android:exported="true"
-            android:screenOrientation="portrait" />
+            android:exported="true" />
 
         <!--  Dev info activity -->
         <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"

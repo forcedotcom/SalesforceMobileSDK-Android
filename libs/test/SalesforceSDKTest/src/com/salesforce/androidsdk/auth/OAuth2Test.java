@@ -61,6 +61,7 @@ import java.util.TimeZone;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
+import okio.Buffer;
 
 /**
  * Tests for OAuth2.
@@ -481,5 +482,37 @@ public class OAuth2Test {
         final String openIdToken = OAuth2.getOpenIDToken(TestCredentials.LOGIN_URL,
                 TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         Assert.assertNotNull("OpenID token should not be null", openIdToken);
+    }
+
+    /**
+     * Testing buildRevokeRefreshTokenRequest.
+     */
+    @Test
+    public void testBuildRevokeRefreshTokenRequest() throws Exception {
+        String refreshToken = "test_refresh_token_123";
+        OAuth2.LogoutReason reason = OAuth2.LogoutReason.USER_LOGOUT;
+        URI loginServer = new URI(TestCredentials.LOGIN_URL);
+
+        Request request = OAuth2.buildRevokeRefreshTokenRequest(loginServer, refreshToken, reason);
+
+        // Verify URL
+        String expectedUrl = TestCredentials.LOGIN_URL + "/services/oauth2/revoke";
+        Assert.assertEquals(expectedUrl, request.url().toString());
+
+        // Verify method
+        Assert.assertEquals("POST", request.method());
+
+        // Verify body contains expected parameters
+        String body = getRequestBodyAsString(request);
+        Assert.assertTrue(body.contains("token=" + refreshToken));
+        Assert.assertTrue(body.contains("revoke_reason=" + reason.toString()));
+    }
+
+    private String getRequestBodyAsString(Request request) throws IOException {
+        okio.Buffer buffer = new okio.Buffer();
+        if (request.body() != null) {
+            request.body().writeTo(buffer);
+        }
+        return buffer.readUtf8();
     }
 }

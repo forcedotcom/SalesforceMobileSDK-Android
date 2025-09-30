@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.edit
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.installations.FirebaseInstallations
@@ -40,8 +42,10 @@ import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
+import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.serialization.json.Json
 
 
 /**
@@ -63,6 +67,7 @@ object PushMessaging {
     private const val REGISTRATION_ID = "c2dm_registration_id"
     private const val DEVICE_ID = "deviceId"
     private const val IN_PROGRESS = "inprogress"
+    private const val NOTIFICATIONS_TYPES = "notifications_types"
 
     // Re-register once push is setup
     @JvmStatic
@@ -218,9 +223,69 @@ object PushMessaging {
     fun getRegistrationId(context: Context, account: UserAccount?): String? {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
         return prefs.getString(REGISTRATION_ID, null)
+    }
+
+    /**
+     * Clears Salesforce notifications types for the provided user account.
+     * @param userAccount the user account
+     */
+    internal fun clearNotificationsTypes(
+        userAccount: UserAccount
+    ) {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val sharedPreferences = context.getSharedPreferences(
+            getSharedPrefFile(userAccount),
+            MODE_PRIVATE
+        )
+        sharedPreferences.edit { remove(NOTIFICATIONS_TYPES) }
+    }
+
+    /**
+     * Returns Salesforce notifications types for the provided user account.
+     * @param userAccount the user account
+     * @return The Salesforce notifications types or null if there are none
+     */
+    @JvmStatic
+    fun getNotificationsTypes(
+        userAccount: UserAccount
+    ): NotificationsTypesResponseBody? {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val sharedPreferences = context.getSharedPreferences(
+            getSharedPrefFile(userAccount),
+            MODE_PRIVATE
+        )
+
+        return sharedPreferences.getString(NOTIFICATIONS_TYPES, null)?.let { json ->
+            NotificationsTypesResponseBody.fromJson(json)
+        }
+    }
+
+    /**
+     * Stores the Salesforce notifications types for the provided user account.
+     * @param userAccount The user account
+     */
+    @JvmStatic
+    internal fun setNotificationTypes(
+        userAccount: UserAccount,
+        notificationsTypes: NotificationsTypesResponseBody
+    ) {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val sharedPreferences = context.getSharedPreferences(
+            getSharedPrefFile(userAccount),
+            MODE_PRIVATE
+        )
+        sharedPreferences.edit {
+            putString(
+                NOTIFICATIONS_TYPES,
+                Json.encodeToString(
+                    NotificationsTypesResponseBody.serializer(),
+                    notificationsTypes
+                )
+            )
+        }
     }
 
     /**
@@ -237,11 +302,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.putString(REGISTRATION_ID, registrationId)
-        editor.apply()
+        prefs.edit {
+            putString(REGISTRATION_ID, registrationId)
+        }
     }
 
     /**
@@ -255,7 +320,7 @@ object PushMessaging {
     fun isRegistered(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
         return prefs.getString(REGISTRATION_ID, null) != null
     }
@@ -270,11 +335,11 @@ object PushMessaging {
     fun clearSFDCRegistrationInfo(context: Context, account: UserAccount?) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.remove(DEVICE_ID)
-        editor.apply()
+        prefs.edit {
+            remove(DEVICE_ID)
+        }
     }
 
     /**
@@ -288,7 +353,7 @@ object PushMessaging {
     fun isRegisteredWithSFDC(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
         return prefs.getString(DEVICE_ID, null) != null
     }
@@ -304,7 +369,7 @@ object PushMessaging {
     fun getDeviceId(context: Context, account: UserAccount?): String? {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
         return prefs.getString(DEVICE_ID, null)
     }
@@ -324,11 +389,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime)
-        editor.apply()
+        prefs.edit {
+            putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime)
+        }
     }
 
     /**
@@ -342,7 +407,7 @@ object PushMessaging {
     fun isInProgress(context: Context, account: UserAccount?): Boolean {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
         return prefs.getBoolean(IN_PROGRESS, false)
     }
@@ -357,11 +422,11 @@ object PushMessaging {
     fun clearRegistrationInfo(context: Context, account: UserAccount?) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.clear()
-        editor.apply()
+        prefs.edit {
+            clear()
+        }
     }
 
     /**
@@ -379,14 +444,14 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.putString(REGISTRATION_ID, registrationId)
-        editor.putString(DEVICE_ID, deviceId)
-        editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
-        editor.putBoolean(IN_PROGRESS, false)
-        editor.apply()
+        prefs.edit {
+            putString(REGISTRATION_ID, registrationId)
+            putString(DEVICE_ID, deviceId)
+            putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis())
+            putBoolean(IN_PROGRESS, false)
+        }
     }
 
     /**
@@ -457,11 +522,11 @@ object PushMessaging {
     ) {
         val prefs = context.getSharedPreferences(
             getSharedPrefFile(account),
-            Context.MODE_PRIVATE
+            MODE_PRIVATE
         )
-        val editor = prefs.edit()
-        editor.putBoolean(IN_PROGRESS, true)
-        editor.apply()
+        prefs.edit {
+            putBoolean(IN_PROGRESS, true)
+        }
     }
 
     private fun runPushService(

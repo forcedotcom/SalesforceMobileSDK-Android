@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.util;
 import android.content.Intent;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -63,7 +65,26 @@ public class AuthConfigUtil {
      * @param loginUrl Login URL.
      * @return Auth config.
      */
-    public static MyDomainAuthConfig getMyDomainAuthConfig(String loginUrl) {
+    public static MyDomainAuthConfig getMyDomainAuthConfig(
+            String loginUrl
+    ) {
+        return getMyDomainAuthConfig(null, loginUrl);
+    }
+
+    /**
+     * Returns the auth config associated with a my domain login endpoint. This call
+     * should be made from a background thread since it makes a network request.
+     *
+     * @param httpAccess The HTTP access to use for API integration.  Defaults
+     * to null to use the default HTTP access.  This parameter is intended for
+     * testing purposes only and should not be used in release builds.
+     * @param loginUrl Login URL.
+     * @return Auth config.
+     */
+    public static MyDomainAuthConfig getMyDomainAuthConfig(
+            @Nullable HttpAccess httpAccess,
+            String loginUrl
+    ) {
         if (TextUtils.isEmpty(loginUrl)) {
             return null;
         }
@@ -74,7 +95,8 @@ public class AuthConfigUtil {
         final String authConfigUrl = loginUrl + MY_DOMAIN_AUTH_CONFIG_ENDPOINT;
         final Request request = new Request.Builder().url(authConfigUrl).get().build();
         try {
-            final Response response = HttpAccess.DEFAULT.getOkHttpClient().newCall(request).execute();
+            final HttpAccess httpAccessResolved = httpAccess != null ? httpAccess : HttpAccess.DEFAULT;
+            final Response response = httpAccessResolved.getOkHttpClient().newCall(request).execute();
             if (response.isSuccessful()) {
                 authConfig = new MyDomainAuthConfig((new RestResponse(response)).asJSONObject());
             }

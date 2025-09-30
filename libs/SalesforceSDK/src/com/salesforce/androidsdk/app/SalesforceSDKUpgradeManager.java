@@ -30,10 +30,13 @@ import static com.salesforce.androidsdk.security.ScreenLockManager.MOBILE_POLICY
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK;
 import static com.salesforce.androidsdk.security.ScreenLockManager.SCREEN_LOCK_TIMEOUT;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.config.AdminSettingsManager;
@@ -45,7 +48,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-
 
 /**
  * This class handles upgrades from one version to another.
@@ -60,7 +62,7 @@ public class SalesforceSDKUpgradeManager {
 
     private static SalesforceSDKUpgradeManager INSTANCE = null;
 
-    private UserManager userManager;
+    private final UserManager userManager;
 
     /**
      * Returns an instance of this class.
@@ -82,12 +84,7 @@ public class SalesforceSDKUpgradeManager {
     }
 
     public SalesforceSDKUpgradeManager() {
-        this(new UserManager() {
-            @Override
-            public List<UserAccount> getAuthenticatedUsers() {
-                return SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-            }
-        });
+        this(() -> SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers());
     }
     public SalesforceSDKUpgradeManager(UserManager userManager) {
         this.userManager = userManager;
@@ -132,6 +129,9 @@ public class SalesforceSDKUpgradeManager {
             }
             if (installedVersion.isLessThan(new SdkVersion(13, 0, 2, false))) {
                 updateFromBefore13_0_2();
+            }
+            if (installedVersion.isLessThan(new SdkVersion(15, 0, 0, false))) {
+                migrateAccountType();
             }
         } catch (Exception e) {
             SalesforceSDKLogger.e(
@@ -312,5 +312,37 @@ public class SalesforceSDKUpgradeManager {
     private void updateFromBefore13_0_2() {
         // Re-register all users for push notifications with new keys once push is setup
         PushMessaging.setReRegistrationRequested(true);
+    }
+
+    /*
+     *  Migrate any accounts with account_type "com.salesforce.androidsdk" to a unique value.
+     *  TODO: Remove this in Mobile SDK 15.0
+     */
+    private void migrateAccountType() {
+        final String LEGACY_ACCOUNT_TYPE = "com.salesforce.androidsdk";
+        if (SalesforceSDKManager.getInstance().getAccountType().equals(LEGACY_ACCOUNT_TYPE)) {
+            SalesforceSDKLogger.e(TAG, "No app specific account type found.  To ensure users " +
+                    "can login override the \"account_type\" value in your strings.xml.");
+            return;
+        }
+
+        final AccountManager accountManager = SalesforceSDKManager.getInstance().getClientManager().getAccountManager();
+        final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+
+        for (Account account : accountManager.getAccountsByType(LEGACY_ACCOUNT_TYPE)) {
+            try {
+                final UserAccount userAccount = userAccountManager.buildUserAccount(account);
+                if (userAccount == null) {
+                    SalesforceSDKLogger.e(TAG, "Unable to build UserAccount from account: " + account.name);
+                    continue;
+                }
+
+                // Android OS accounts are immutable so we have to remove the account and add a new one.
+                accountManager.removeAccountExplicitly(account);
+                userAccountManager.createAccount(userAccount);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to migrate account: " + account.name, e);
+            }
+        }
     }
 }

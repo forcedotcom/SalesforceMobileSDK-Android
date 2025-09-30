@@ -803,6 +803,10 @@ public class ExplorerActivity extends SalesforceActivity {
 			credsMap.put("community_url", user.getCommunityUrl());
 		}
 
+		if (user.getApiInstanceServer() != null) {
+			credsMap.put("api_instance_url", user.getApiInstanceServer());
+		}
+
 		String credentials = new JSONObject(credsMap).toString().replaceAll("\\\\", "");
 		ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
 		ClipData data = ClipData.newPlainText("credentials", credentials);

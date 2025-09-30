@@ -5,18 +5,18 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.appcompat:appcompat-resources:1.7.0")
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.appcompat:appcompat-resources:1.7.1")
+    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
 }
 
 android {
     namespace = "com.salesforce.samples.configuredapp"
 
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        targetSdk = 35
+        targetSdk = 36
         minSdk = 28
     }
 

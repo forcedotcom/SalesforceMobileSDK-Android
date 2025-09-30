@@ -46,7 +46,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.7"
+          gradle-version: "8.10.1"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - name: Run Lint
@@ -79,8 +79,8 @@ jobs:
         if: success() || failure()
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "34"
-          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
+          PR_API_VERSION: "35"
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
@@ -114,8 +114,8 @@ jobs:
         if: success() || failure()
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "34"
-          FULL_API_RANGE: "28 29 30 31 32 33 34 35"
+          PR_API_VERSION: "35"
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
@@ -148,10 +148,8 @@ jobs:
           check_retries: true
           flaky_summary: true
           fail_on_failure: true
-          detailed_summary: true
           group_reports: false
           include_passed: true
-          skip_success_summary: true
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
