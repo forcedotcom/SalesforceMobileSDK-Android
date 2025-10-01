@@ -842,6 +842,7 @@ public class OAuth2 {
         public String tokenFormat;
         public String beaconChildConsumerKey;
         public String beaconChildConsumerSecret;
+        public String scope;
 
         /**
          * Parameterized constructor built from params during user agent login flow.
@@ -882,6 +883,7 @@ public class OAuth2 {
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
+                scope = callbackUrlParams.get(SCOPE);
 
                 // NB: beacon apps not supported with user agent flow so no beacon child fields expected
 
@@ -959,6 +961,7 @@ public class OAuth2 {
                 if (parsedResponse.has(BEACON_CHILD_CONSUMER_SECRET)) {
                     beaconChildConsumerSecret = parsedResponse.getString(BEACON_CHILD_CONSUMER_SECRET);
                 }
+                scope = parsedResponse.optString(SCOPE);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);

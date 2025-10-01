@@ -89,6 +89,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_TOKEN_FORMAT = "tokenFormat";
     public static final String KEY_BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
     public static final String KEY_BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    public static final String KEY_SCOPE = "scope";
 
     private static final String TAG = "AuthenticatorService";
 

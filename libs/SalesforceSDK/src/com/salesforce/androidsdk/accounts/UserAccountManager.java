@@ -539,6 +539,7 @@ public class UserAccountManager {
 		final String tokenFormat = decryptUserData(account, AuthenticatorService.KEY_TOKEN_FORMAT, encryptionKey);
 		final String beaconChildConsumerKey = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
 		final String beaconChildConsumerSecret = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, encryptionKey);
+		final String scope = decryptUserData(account, AuthenticatorService.KEY_SCOPE, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
 		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
@@ -593,6 +594,7 @@ public class UserAccountManager {
 					.tokenFormat(tokenFormat)
 					.beaconChildConsumerKey(beaconChildConsumerKey)
 					.beaconChildConsumerSecret(beaconChildConsumerSecret)
+					.scope(scope)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
 		}
@@ -742,6 +744,7 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_TOKEN_FORMAT, SalesforceSDKManager.encrypt(userAccount.getTokenFormat(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerKey(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerSecret(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_SCOPE, SalesforceSDKManager.encrypt(userAccount.getScope(), encryptionKey));
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {

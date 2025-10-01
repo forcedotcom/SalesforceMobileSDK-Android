@@ -71,6 +71,7 @@ class UserAccountBuilder private constructor() {
     private var allowUnset = true
     private var beaconChildConsumerKey: String? = null
     private var beaconChildConsumerSecret: String? = null
+    private var scope: String? = null
 
     /**
      * Set fields from token end point response
@@ -106,6 +107,7 @@ class UserAccountBuilder private constructor() {
             .tokenFormat(tr.tokenFormat)
             .beaconChildConsumerKey(tr.beaconChildConsumerKey)
             .beaconChildConsumerSecret(tr.beaconChildConsumerSecret)
+            .scope(tr.scope)
     }
 
     /**
@@ -173,6 +175,7 @@ class UserAccountBuilder private constructor() {
             .tokenFormat(userAccount.tokenFormat)
             .beaconChildConsumerKey(userAccount.beaconChildConsumerKey)
             .beaconChildConsumerSecret(userAccount.beaconChildConsumerSecret)
+            .scope(userAccount.scope)
     }
 
     /**
@@ -573,6 +576,16 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets scope returned by token endpoint.
+     *
+     * @param scope OAuth scopes string.
+     * @return Instance of this class.
+     */
+    fun scope(scope: String?): UserAccountBuilder {
+        return if (!allowUnset && scope == null) this else apply { this.scope = scope }
+    }
+
+    /**
      * Builds and returns a UserAccount object.
      *
      * @return UserAccount object.
@@ -616,6 +629,7 @@ class UserAccountBuilder private constructor() {
             beaconChildConsumerKey,
             beaconChildConsumerSecret,
             apiInstanceServer,
+            scope,
         )
     }
 
