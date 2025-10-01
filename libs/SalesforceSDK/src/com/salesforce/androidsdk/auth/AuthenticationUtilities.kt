@@ -31,6 +31,7 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__managed_app_error
+import com.salesforce.androidsdk.R.string.sf__missing_refresh_token_scope_error
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -115,17 +116,36 @@ internal suspend fun onAuthFlowComplete(
         return
     }
 
-    val userIdentity = runCatching {
-        withContext(Default) {
-            callIdentityService(
-                HttpAccess.DEFAULT,
-                tokenResponse.idUrlWithInstance,
-                tokenResponse.authToken,
-            )
-        }
-    }.onFailure { throwable ->
-        w(TAG, "Cannot fetch user identity due to an error.", throwable)
-    }.getOrNull()
+    // Create a ScopeParser from tokenResponse.scope
+    val scopeParser = ScopeParser(tokenResponse.scope)
+    
+    // Check that it has the refresh token scope, otherwise call onAuthFlowError
+    if (!scopeParser.hasRefreshTokenScope()) {
+        w(TAG, "Missing refresh token scope.")
+        onAuthFlowError(
+            context.getString(sf__generic_authentication_error_title),
+            context.getString(sf__missing_refresh_token_scope_error), null
+        )
+        return
+    }
+
+    // Check that the tokenResponse.scope contains the identity scope before calling the identity service
+    val userIdentity = if (scopeParser.hasIdentityScope()) {
+        runCatching {
+            withContext(Default) {
+                callIdentityService(
+                    HttpAccess.DEFAULT,
+                    tokenResponse.idUrlWithInstance,
+                    tokenResponse.authToken,
+                )
+            }
+        }.onFailure { throwable ->
+            w(TAG, "Cannot fetch user identity due to an error.", throwable)
+        }.getOrNull()
+    } else {
+        w(TAG, "Missing identity scope, skipping identity service call.")
+        null
+    }
 
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
     if (mustBeManagedApp && !getRuntimeConfig(context).isManagedApp) {

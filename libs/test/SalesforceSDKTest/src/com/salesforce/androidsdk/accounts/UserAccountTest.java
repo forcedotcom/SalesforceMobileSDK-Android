@@ -127,26 +127,6 @@ public class UserAccountTest {
         BundleTestHelper.checkSameBundle("UserAccount bundles do not match", expected, actual);
     }
 
-    @Test
-    public void testParseScopes() {
-        UserAccount account = createTestAccount();
-        String[] scopes = account.parseScopes();
-        // Our TEST_SCOPE is "api web openid refresh_token"
-        Assert.assertArrayEquals(new String[]{"api", "web", "openid", "refresh_token"}, scopes);
-
-        // Empty / null handling
-        UserAccount emptyScope = UserAccountBuilder.getInstance()
-                .populateFromUserAccount(account)
-                .scope(null)
-                .build();
-        Assert.assertArrayEquals(new String[]{}, emptyScope.parseScopes());
-
-        UserAccount blankScope = UserAccountBuilder.getInstance()
-                .populateFromUserAccount(account)
-                .scope("   ")
-                .build();
-        Assert.assertArrayEquals(new String[]{}, blankScope.parseScopes());
-    }
 
     @Test
     public void testHasScope() {

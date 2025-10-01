@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.ScopeParser;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -682,37 +683,13 @@ public class UserAccount {
 	}
 
 	/**
-	 * Parses the space-delimited scope string into its individual components.
-	 *
-	 * @return Array of scope strings (empty if scope is null/empty).
-	 */
-	public String[] parseScopes() {
-		if (TextUtils.isEmpty(scope)) {
-			return new String[0];
-		}
-		final String trimmed = scope.trim();
-		if (trimmed.isEmpty()) {
-			return new String[0];
-		}
-		return trimmed.split("\\s+");
-	}
-
-	/**
 	 * Checks whether the provided scope exists in this account's scope list.
 	 *
 	 * @param scopeToCheck Scope name to check.
 	 * @return True if present, false otherwise.
 	 */
 	public boolean hasScope(String scopeToCheck) {
-		if (TextUtils.isEmpty(scopeToCheck)) {
-			return false;
-		}
-		for (final String s : parseScopes()) {
-			if (scopeToCheck.equals(s)) {
-				return true;
-			}
-		}
-		return false;
+		return new ScopeParser(scope).hasScope(scopeToCheck);
 	}
 	/**
 	 * Returns the beacon child consumer key.
