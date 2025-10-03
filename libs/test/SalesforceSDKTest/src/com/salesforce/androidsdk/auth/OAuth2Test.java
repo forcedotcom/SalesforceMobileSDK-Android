@@ -298,6 +298,28 @@ public class OAuth2Test {
         }
     }
 
+    private void tryLoginHint(String loginHint, String expectedLoginHintParamValue) throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+
+        // Test with loginHint provided
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, loginHint, null, "some-challenge", null);
+        HttpUrl url = HttpUrl.get(authorizationUrl);
+        boolean loginHintFound = false;
+        for (int i = 0, size = url.querySize(); i < size; i++) {
+            if (url.queryParameterName(i).equalsIgnoreCase("login_hint")) {
+                loginHintFound = true;
+                Assert.assertEquals("Wrong login hint value", expectedLoginHintParamValue, url.queryParameterValue(i));
+                break;
+            }
+        }
+        if (expectedLoginHintParamValue == null) {
+            Assert.assertFalse("Login hint found when not expected", loginHintFound);
+        } else {
+            Assert.assertTrue("No login hint param found in query", loginHintFound);
+        }
+    }
+
     /**
 	 * Testing getAuthorizationUrl with scopes.
      *
@@ -305,7 +327,6 @@ public class OAuth2Test {
 	 */
     @Test
 	public void testGetAuthorizationUrlWithScopes() throws URISyntaxException {
-
         //verify basic scopes present
         tryScopes(new String[]{"foo", "bar"}, "bar foo refresh_token");
 
@@ -317,7 +338,52 @@ public class OAuth2Test {
 
         //empty scopes -- should not find scopes
         tryScopes(new String[] {}, null);
+
+        //null scopes -- should not find scopes
+        tryScopes(null, null);
 	}
+
+    /**
+     * Testing getAuthorizationUrl with loginHint parameter.
+     *
+     * @throws URISyntaxException See {@link URISyntaxException}.
+     */
+    @Test
+    public void testGetAuthorizationUrlWithLoginHint() throws URISyntaxException {
+        //verify basic login hint present
+        tryLoginHint("user@org.com", "user@org.com");
+
+        //empty login hint -- should not find login hint
+        tryLoginHint("", null);
+
+        //null login hint -- should not find login hint
+        tryLoginHint(null, null);
+    }
+
+    /**
+     * Testing getAuthorizationUrl with custom displayType.
+     *
+     * @throws URISyntaxException See {@link URISyntaxException}.
+     */
+    @Test
+    public void testGetAuthorizationUrlWithCustomDisplayType() throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        String customDisplayType = "page";
+        
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(true, true, new URI(TestCredentials.LOGIN_URL),
+                TestCredentials.CLIENT_ID, callbackUrl, null, null, customDisplayType, "some-challenge", null);
+        HttpUrl url = HttpUrl.get(authorizationUrl);
+        
+        boolean displayFound = false;
+        for (int i = 0, size = url.querySize(); i < size; i++) {
+            if (url.queryParameterName(i).equalsIgnoreCase("display")) {
+                displayFound = true;
+                Assert.assertEquals("Wrong display value", customDisplayType, url.queryParameterValue(i));
+                break;
+            }
+        }
+        Assert.assertTrue("display parameter should be present", displayFound);
+    }
 	
 	
 	/**
