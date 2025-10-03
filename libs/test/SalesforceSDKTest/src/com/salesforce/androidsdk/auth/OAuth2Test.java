@@ -61,7 +61,6 @@ import java.util.TimeZone;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.Response;
-import okio.Buffer;
 
 /**
  * Tests for OAuth2.
@@ -515,4 +514,43 @@ public class OAuth2Test {
         }
         return buffer.readUtf8();
     }
+
+    /**
+     * Testing computeScopeParameter with null input.
+     */
+    @Test
+    public void testComputeScopeParameterWithNull() {
+        String result = OAuth2.computeScopeParameter(null);
+        Assert.assertEquals("Should return empty string for null input", "", result);
+    }
+
+    /**
+     * Testing computeScopeParameter with empty array.
+     */
+    @Test
+    public void testComputeScopeParameterWithEmptyArray() {
+        String result = OAuth2.computeScopeParameter(new String[]{});
+        Assert.assertEquals("Should return empty string for empty array", "", result);
+    }
+
+    /**
+     * Testing computeScopeParameter when refresh_token is not included.
+     */
+    @Test
+    public void testComputeScopeParameterWhenRefreshTokenNotIncluded() {
+        String result = OAuth2.computeScopeParameter(new String[]{"web", "api", "visualforce"});
+        // TreeSet sorts alphabetically, so expected order is: api refresh_token visualforce web
+        Assert.assertEquals("Should include all scopes plus refresh_token, sorted alphabetically", "api refresh_token visualforce web", result);
+    }
+
+    /**
+     * Testing computeScopeParameter when refresh_token is already included.
+     */
+    @Test
+    public void testComputeScopeParameterWhenRefreshTokenIncluded() {
+        String result = OAuth2.computeScopeParameter(new String[]{"api", "refresh_token", "web"});
+        // refresh_token should not be duplicated
+        Assert.assertEquals("Should not duplicate refresh_token", "api refresh_token web", result);
+    }
+
 }

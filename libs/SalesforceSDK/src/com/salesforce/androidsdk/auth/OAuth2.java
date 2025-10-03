@@ -387,17 +387,13 @@ public class OAuth2 {
     }
 
     /**
-     * Computes the scope parameter from an array of scopes. Also adds
-     * the 'refresh_token' scope if it hasn't already been added.
+     * Computes the scope parameter from an array of scopes.
      *
      * @param scopes Array of scopes.
-     * @return Scope parameter.
+     * @return Scope parameter string (possibly empty).
      */
     public static String computeScopeParameter(String[] scopes) {
-        final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
-        final Set<String> scopesSet = new TreeSet<>(scopesList);
-        scopesSet.add(REFRESH_TOKEN);
-        return TextUtils.join(SINGLE_SPACE, scopesSet.toArray(new String[]{}));
+        return ScopeParser.computeScopeParameter(scopes);
     }
 
     /**

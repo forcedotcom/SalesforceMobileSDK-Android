@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.auth
 
+import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import androidx.annotation.VisibleForTesting
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__managed_app_error
@@ -46,6 +48,8 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
+import com.salesforce.androidsdk.config.LoginServerManager
+import com.salesforce.androidsdk.config.RuntimeConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.push.PushMessaging.register
 import com.salesforce.androidsdk.rest.RestClient.clearCaches
@@ -85,6 +89,7 @@ private const val TAG = "AuthenticationUtilities"
  *  * Creates an Account.
  *  * Checks for any CA/ECA settings such as Screen Lock or Biometric Authentication.
  */
+@VisibleForTesting
 internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
@@ -93,11 +98,23 @@ internal suspend fun onAuthFlowComplete(
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
     nativeLogin: Boolean = false,
-) {
-    val context = SalesforceSDKManager.getInstance().appContext
-    val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-    val blockIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
-            fetchIsSalesforceIntegrationUser(tokenResponse, loginServer)
+    context: Context = SalesforceSDKManager.getInstance().appContext,
+    userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
+    blockIntegrationUser: Boolean = (SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
+            fetchIsSalesforceIntegrationUser(tokenResponse, loginServer)),
+    runtimeConfig: RuntimeConfig = getRuntimeConfig(SalesforceSDKManager.getInstance().appContext),
+    updateLoggingPrefs: (account: UserAccount) -> Unit = ::updateLoggingPrefsHelper,
+    fetchUserIdentity: (suspend (tokenResponse: TokenEndpointResponse) -> OAuth2.IdServiceResponse?)? = null,
+    startMainActivity: () -> Unit = ::startMainActivityHelper,
+    setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
+    addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
+    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
+    handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
+    handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit = ::handleDuplicateUserAccount,
+    ) {
+
+    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
+    val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
 
     if (blockIntegrationUser) {
         /*
@@ -115,20 +132,24 @@ internal suspend fun onAuthFlowComplete(
         return
     }
 
-    val userIdentity = runCatching {
-        withContext(Default) {
-            callIdentityService(
-                HttpAccess.DEFAULT,
-                tokenResponse.idUrlWithInstance,
-                tokenResponse.authToken,
-            )
-        }
-    }.onFailure { throwable ->
-        w(TAG, "Cannot fetch user identity due to an error.", throwable)
-    }.getOrNull()
+    // Create a ScopeParser from tokenResponse.scope
+    val scopeParser = ScopeParser(tokenResponse.scope)
+    
+    // Check that it has the refresh token scope, only warns if it is missing
+    if (!scopeParser.hasRefreshTokenScope()) {
+        w(TAG, "Missing refresh token scope.")
+    }
+
+    // Check that the tokenResponse.scope contains the identity scope before calling the identity service
+    val userIdentity = if (scopeParser.hasIdentityScope()) {
+        actualFetchUserIdentity(tokenResponse)
+    } else {
+        w(TAG, "Missing identity scope, skipping identity service call.")
+        null
+    }
 
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
-    if (mustBeManagedApp && !getRuntimeConfig(context).isManagedApp) {
+    if (mustBeManagedApp && !runtimeConfig.isManagedApp) {
         onAuthFlowError(
             context.getString(sf__generic_authentication_error_title),
             context.getString(sf__managed_app_error), null
@@ -144,60 +165,12 @@ internal suspend fun onAuthFlowComplete(
         .clientId(consumerKey)
         .nativeLogin(nativeLogin)
         .build()
-    account.downloadProfilePhoto()
 
     // Set additional administrator prefs if they exist
-    userIdentity?.customAttributes?.let { customAttributes ->
-        SalesforceSDKManager.getInstance().adminSettingsManager?.setPrefs(customAttributes, account)
-    }
+    setAdministratorPreferences(userIdentity, account)
 
-    userIdentity?.customPermissions?.let { customPermissions ->
-        SalesforceSDKManager.getInstance().adminPermsManager?.setPrefs(customPermissions, account)
-    }
-
-    SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.let { existingUsers ->
-        // Check if the user already exists
-        if (existingUsers.contains(account)) {
-            val duplicateUserAccount = existingUsers.removeAt(existingUsers.indexOf(account))
-            clearCaches()
-            userAccountManager.clearCachedCurrentUser()
-
-            // Revoke existing refresh token
-            if (account.refreshToken != duplicateUserAccount.refreshToken) {
-                runCatching {
-                    URI(duplicateUserAccount.instanceServer)
-                }.onFailure { throwable ->
-                    w(TAG, "Revoking token failed", throwable)
-                }.onSuccess { uri ->
-                    // The user authenticated via webview again, unlock the app.
-                    if (isBiometricAuthenticationEnabled(duplicateUserAccount)) {
-                        (SalesforceSDKManager.getInstance().biometricAuthenticationManager
-                                as? BiometricAuthenticationManager)?.onUnlock()
-                    }
-                    CoroutineScope(IO).launch {
-                        revokeRefreshToken(
-                            HttpAccess.DEFAULT,
-                            uri,
-                            duplicateUserAccount.refreshToken,
-                            OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
-                        )
-                    }
-                }
-            }
-        }
-
-        // If this account has biometric authentication enabled remove any others that also have it
-        if (userIdentity?.biometricAuth == true) {
-            existingUsers.forEach(Consumer { existingUser ->
-                if (isBiometricAuthenticationEnabled(existingUser)) {
-                    // This is an unexpected logout(s) because we only support one Bio Auth user.
-                    userAccountManager.signoutUser(
-                        existingUser, null, false, OAuth2.LogoutReason.UNEXPECTED
-                    )
-                }
-            })
-        }
-    }
+    // Handle duplicate user account scenarios
+    handleDuplicateUserAccount(userAccountManager, account, userIdentity)
 
     // Save the user account
     addAccount(account)
@@ -205,7 +178,7 @@ internal suspend fun onAuthFlowComplete(
     userAccountManager.switchToUser(account)
 
     // Init user logging
-    SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
+    updateLoggingPrefs(account)
 
     // Send User Switch Intent, create user and switch to user.
     val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
@@ -223,37 +196,16 @@ internal suspend fun onAuthFlowComplete(
 
     // Kickoff the end of the flow before storing mobile policy to prevent launching
     // the main activity over/after the screen lock.
-    with(SalesforceSDKManager.getInstance()) {
-        appContext.startActivity(Intent(appContext, mainActivityClass).apply {
-            setPackage(appContext.packageName)
-            flags = FLAG_ACTIVITY_NEW_TASK
-        })
-    }
+    startMainActivity()
 
     // Let the calling process resume
     onAuthFlowSuccess(account)
 
     // Screen lock required by mobile policy
-    if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
-        val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
-        (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
-            account,
-            userIdentity.screenLock,
-            timeoutInMills
-        )
-    }
+    handleScreenLockPolicy(userIdentity, account)
 
     // Biometric authorization required by mobile policy
-    if (userIdentity?.biometricAuth == true) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
-        val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
-        (SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
-            account,
-            userIdentity.biometricAuth,
-            timeoutInMills
-        )
-    }
+    handleBiometricAuthPolicy(userIdentity, account)
 }
 
 internal fun defaultBuildAccountName(
@@ -315,18 +267,22 @@ private fun HttpUrl.isSalesforceUrl(): Boolean {
     return salesforceHosts.map { host.endsWith(it) }.any { it }
 }
 
-private fun addAccount(account: UserAccount?) {
+private fun addAccount(account: UserAccount?, context: Context, isTestRun: Boolean, loginServerManager: LoginServerManager) {
+
+    // Download profile photo
+    account?.downloadProfilePhoto()
+
     /*
      * Registers for push notifications if setup by the app. This step needs
      * to happen after the account has been added by client manager, so that
      * the push service has all the account info it needs.
      */
-    register(SalesforceSDKManager.getInstance().appContext, account)
+    register(context, account)
 
     when {
-        SalesforceSDKManager.getInstance().isTestRun -> logAddAccount(account)
+        isTestRun -> logAddAccount(account, loginServerManager)
         else -> CoroutineScope(IO).launch {
-            logAddAccount(account)
+            logAddAccount(account, loginServerManager)
         }
     }
 }
@@ -336,12 +292,12 @@ private fun addAccount(account: UserAccount?) {
  *
  * @param account The user account
  */
-private fun logAddAccount(account: UserAccount?) {
+private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServerManager) {
     val attributes = JSONObject()
     runCatching {
         val users = UserAccountManager.getInstance().authenticatedUsers
         attributes.put("numUsers", users?.size ?: 0)
-        val servers = SalesforceSDKManager.getInstance().loginServerManager.loginServers
+        val servers = loginServerManager.loginServers
         attributes.put("numLoginServers", servers?.size ?: 0)
         servers?.let { serversUnwrapped ->
             val serversJson = JSONArray()
@@ -355,5 +311,174 @@ private fun logAddAccount(account: UserAccount?) {
         createAndStoreEventSync("addUser", account, TAG, attributes)
     }.onFailure { throwable ->
         e(TAG, "Exception thrown while creating JSON", throwable)
+    }
+}
+
+/**
+ * Helper method to fetch user identity from token response.
+ */
+private suspend fun fetchUserIdentity(
+    tokenResponse: TokenEndpointResponse
+): OAuth2.IdServiceResponse? {
+    return runCatching {
+        withContext(Default) {
+            callIdentityService(
+                HttpAccess.DEFAULT,
+                tokenResponse.idUrlWithInstance,
+                tokenResponse.authToken,
+            )
+        }
+    }.onFailure { throwable ->
+        w(TAG, "Cannot fetch user identity due to an error.", throwable)
+    }.getOrNull()
+}
+
+/**
+ * Helper method to set administrator preferences for a user account.
+ */
+private fun setAdministratorPreferences(
+    userIdentity: OAuth2.IdServiceResponse?,
+    account: UserAccount
+) {
+    // Set additional administrator prefs if they exist
+    userIdentity?.customAttributes?.let { customAttributes ->
+        SalesforceSDKManager.getInstance().adminSettingsManager?.setPrefs(customAttributes, account)
+    }
+
+    userIdentity?.customPermissions?.let { customPermissions ->
+        SalesforceSDKManager.getInstance().adminPermsManager?.setPrefs(customPermissions, account)
+    }
+}
+
+/**
+ * Helper method to start main activity.
+ */
+private fun startMainActivityHelper() {
+    with(SalesforceSDKManager.getInstance()) {
+        appContext.startActivity(
+            Intent(
+                appContext,
+                mainActivityClass
+            ).apply {
+                setPackage(appContext.packageName)
+                flags = FLAG_ACTIVITY_NEW_TASK
+            })
+    }
+}
+
+/**
+ * Helper method to update logging preferences.
+ */
+private fun updateLoggingPrefsHelper(account: UserAccount) {
+    SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
+}
+
+/**
+ * Helper method to handle screen lock mobile policy.
+ */
+private fun handleScreenLockPolicy(
+    userIdentity: OAuth2.IdServiceResponse?,
+    account: UserAccount
+) {
+    if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
+        val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
+        (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
+            account,
+            userIdentity.screenLock,
+            timeoutInMills
+        )
+    }
+}
+
+/**
+ * Helper method to handle biometric authentication mobile policy.
+ */
+private fun handleBiometricAuthPolicy(
+    userIdentity: OAuth2.IdServiceResponse?,
+    account: UserAccount
+) {
+    if (userIdentity?.biometricAuth == true) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
+        (SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
+            account,
+            userIdentity.biometricAuth,
+            timeoutInMills
+        )
+    }
+}
+
+/**
+ * Helper method to add account and perform related operations.
+ */
+private fun addAccountHelper(
+    account: UserAccount
+) {
+    addAccount(
+        account,
+        SalesforceSDKManager.getInstance().appContext,
+        SalesforceSDKManager.getInstance().isTestRun,
+        SalesforceSDKManager.getInstance().loginServerManager
+    )
+}
+
+/**
+ * Helper method to handle duplicate user account scenarios during authentication.
+ * This method manages existing users by:
+ * - Removing duplicate accounts and clearing caches
+ * - Revoking old refresh tokens when a new one is provided
+ * - Unlocking biometric authentication for the duplicate user
+ * - Signing out other users with biometric auth when a new biometric user is added
+ */
+private fun handleDuplicateUserAccount(
+    userAccountManager: UserAccountManager,
+    account: UserAccount,
+    userIdentity: OAuth2.IdServiceResponse?
+) {
+    userAccountManager.authenticatedUsers?.let { existingUsers ->
+        // Check if the user already exists
+        if (existingUsers.contains(account)) {
+            val duplicateUserAccount = existingUsers.removeAt(existingUsers.indexOf(account))
+            clearCaches()
+            userAccountManager.clearCachedCurrentUser()
+
+            // Revoke existing refresh token
+            if (account.refreshToken != duplicateUserAccount.refreshToken) {
+                runCatching {
+                    URI(duplicateUserAccount.instanceServer)
+                }.onFailure { throwable ->
+                    w(TAG, "Revoking token failed", throwable)
+                }.onSuccess { uri ->
+                    // The user authenticated via webview again, unlock the app.
+                    if (isBiometricAuthenticationEnabled(duplicateUserAccount)) {
+                        (SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                                as? BiometricAuthenticationManager)?.onUnlock()
+                    }
+                    CoroutineScope(IO).launch {
+                        CoroutineScope(IO).launch {
+                            revokeRefreshToken(
+                                HttpAccess.DEFAULT,
+                                uri,
+                                duplicateUserAccount.refreshToken,
+                                OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // If this account has biometric authentication enabled remove any others that also have it
+        if (userIdentity?.biometricAuth == true) {
+            existingUsers.forEach(Consumer { existingUser ->
+                if (isBiometricAuthenticationEnabled(existingUser)) {
+                    // This is an unexpected logout(s) because we only support one Bio Auth user.
+                    userAccountManager.signoutUser(
+                        existingUser, null, false, OAuth2.LogoutReason.UNEXPECTED
+                    )
+                }
+            })
+        }
     }
 }
