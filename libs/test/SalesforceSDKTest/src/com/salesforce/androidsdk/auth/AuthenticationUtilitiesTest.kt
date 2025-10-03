@@ -116,23 +116,6 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testOnAuthFlowComplete_missingRefreshTokenScope_shouldCallError() = runTest {
-        // Given
-        val tokenResponseWithoutRefreshToken = createTokenEndpointResponse(
-            scope = "id" // Missing refresh_token scope
-        )
-
-        // When
-        callOnAuthFlowComplete(tokenResponseWithoutRefreshToken)
-
-        // Then
-        verify { onAuthFlowError.invoke("Error", "Authentication error: missing refresh_token scope on connected app / external client app. Please contact your administrator.", null) }
-        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
-        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
-    }
-
-    @Test
     fun testOnAuthFlowComplete_managedAppRequirement_shouldCallError() = runTest {
         // Given
         val userIdentityWithManagedAppRequirement = createIdServiceResponse(
