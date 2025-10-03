@@ -90,6 +90,7 @@ private const val TAG = "AuthenticationUtilities"
  *  * Creates an Account.
  *  * Checks for any CA/ECA settings such as Screen Lock or Biometric Authentication.
  */
+@VisibleForTesting
 internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
@@ -98,55 +99,23 @@ internal suspend fun onAuthFlowComplete(
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
     nativeLogin: Boolean = false,
-) {
-    val blockIntegrationUser = SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
-            fetchIsSalesforceIntegrationUser(tokenResponse, loginServer)
-
-    onAuthFlowComplete(
-        tokenResponse,
-        loginServer,
-        consumerKey,
-        onAuthFlowError,
-        onAuthFlowSuccess,
-        buildAccountName,
-        nativeLogin,
-        SalesforceSDKManager.getInstance().appContext,
-        SalesforceSDKManager.getInstance().userAccountManager,
-        blockIntegrationUser,
-        getRuntimeConfig(SalesforceSDKManager.getInstance().appContext),
-        ::updateLoggingPrefsHelper,
-        ::fetchUserIdentity,
-        ::startMainActivityHelper,
-        ::setAdministratorPreferences,
-        ::addAccountHelper,
-        ::handleScreenLockPolicy,
-        ::handleBiometricAuthPolicy,
-        ::handleDuplicateUserAccount
-    )
-}
-
-@VisibleForTesting
-internal suspend fun onAuthFlowComplete(
-    tokenResponse: TokenEndpointResponse,
-    loginServer: String,
-    consumerKey: String,
-    onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
-    onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
-    buildAccountName: (username: String?, instanceServer: String?) -> String,
-    nativeLogin: Boolean = false,
-    context: Context,
-    userAccountManager: UserAccountManager,
-    blockIntegrationUser: Boolean,
-    runtimeConfig: RuntimeConfig,
-    updateLoggingPrefs: (account: UserAccount) -> Unit,
-    fetchUserIdentity: suspend (tokenResponse: TokenEndpointResponse) -> OAuth2.IdServiceResponse?,
-    startMainActivity: () -> Unit,
-    setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit,
-    addAccount: (account: UserAccount) -> Unit,
-    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit,
-    handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit,
-    handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit,
+    context: Context = SalesforceSDKManager.getInstance().appContext,
+    userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
+    blockIntegrationUser: Boolean = (SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
+            fetchIsSalesforceIntegrationUser(tokenResponse, loginServer)),
+    runtimeConfig: RuntimeConfig = getRuntimeConfig(SalesforceSDKManager.getInstance().appContext),
+    updateLoggingPrefs: (account: UserAccount) -> Unit = ::updateLoggingPrefsHelper,
+    fetchUserIdentity: (suspend (tokenResponse: TokenEndpointResponse) -> OAuth2.IdServiceResponse?)? = null,
+    startMainActivity: () -> Unit = ::startMainActivityHelper,
+    setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
+    addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
+    handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
+    handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
+    handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit = ::handleDuplicateUserAccount,
     ) {
+
+    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
+    val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
 
     if (blockIntegrationUser) {
         /*
@@ -179,7 +148,7 @@ internal suspend fun onAuthFlowComplete(
 
     // Check that the tokenResponse.scope contains the identity scope before calling the identity service
     val userIdentity = if (scopeParser.hasIdentityScope()) {
-        fetchUserIdentity(tokenResponse)
+        actualFetchUserIdentity(tokenResponse)
     } else {
         w(TAG, "Missing identity scope, skipping identity service call.")
         null
@@ -391,10 +360,16 @@ private fun setAdministratorPreferences(
  * Helper method to start main activity.
  */
 private fun startMainActivityHelper() {
-    SalesforceSDKManager.getInstance().appContext.startActivity(Intent(SalesforceSDKManager.getInstance().appContext, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-        setPackage(SalesforceSDKManager.getInstance().appContext.packageName)
-        flags = FLAG_ACTIVITY_NEW_TASK
-    })
+    with(SalesforceSDKManager.getInstance()) {
+        appContext.startActivity(
+            Intent(
+                appContext,
+                mainActivityClass
+            ).apply {
+                setPackage(appContext.packageName)
+                flags = FLAG_ACTIVITY_NEW_TASK
+            })
+    }
 }
 
 /**

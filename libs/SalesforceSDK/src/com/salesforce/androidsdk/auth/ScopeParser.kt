@@ -36,8 +36,6 @@ class ScopeParser {
     companion object {
         const val REFRESH_TOKEN = "refresh_token"
         const val ID = "id"
-        private const val SINGLE_SPACE = " "
-        private const val EMPTY_STRING = ""
 
         /**
          * Factory method that creates a ScopeParser from a space-delimited scope string.
@@ -68,13 +66,13 @@ class ScopeParser {
             // If no scopes are provided, return an empty string. This indicates that all scopes
             // assigned to the connected app / external client app will be requested by default.
             if (scopes.isNullOrEmpty()) {
-                return EMPTY_STRING
+                return ""
             }
 
             // When explicit scopes are provided, ensure REFRESH_TOKEN is included.
             val scopesSet = scopes.toSortedSet()
             scopesSet.add(REFRESH_TOKEN)
-            return scopesSet.joinToString(SINGLE_SPACE)
+            return scopesSet.joinToString(" ")
         }
     }
 
@@ -152,8 +150,8 @@ class ScopeParser {
      */
     val scopesAsString: String
         get() = if (_scopes.isEmpty()) {
-            EMPTY_STRING
+            ""
         } else {
-            _scopes.sorted().joinToString(SINGLE_SPACE)
+            _scopes.sorted().joinToString(" ")
         }
 }
