@@ -45,7 +45,7 @@ class SalesforceWebViewCookieManager {
         d(TAG, "setCookies for userAccount:${userAccount.toJson()}")
 
         // Warn if expected scopes are missing
-        inspectScopes(userAccount.scope)
+        userAccount.scope?.let { inspectScopes(it) }
 
         val instanceUrl = userAccount.instanceServer
         val lightningDomain = userAccount.lightningDomain
