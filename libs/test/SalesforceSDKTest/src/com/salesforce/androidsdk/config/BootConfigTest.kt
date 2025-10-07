@@ -36,7 +36,13 @@ import io.mockk.every
 import io.mockk.mockk
 import org.json.JSONException
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -143,6 +149,7 @@ class BootConfigTest {
         assertNotNull("Boot config should not be null.", config)
         assertNotNull("OAuth scopes should not be null when specified in XML.", config.oauthScopes)
         assertTrue("OAuth scopes should have at least one scope.", config.oauthScopes!!.isNotEmpty())
+        assertArrayEquals("Incorrect OAuth scopes.", arrayOf("api", "web", "openid"), config.oauthScopes)
     }
 
     @Test

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="hello">Hello World!</string>
+    <string name="account_type">com.salesforce.androidsdk.salesforcereact.login</string>
     <string name="app_name">ReactNativeTest</string>
     <string name="app_package">com.salesforce.androidsdk.reactnative.tests</string>
 </resources>
