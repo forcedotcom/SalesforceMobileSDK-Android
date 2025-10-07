@@ -77,9 +77,7 @@ public class SDKInfoPluginTest {
         Assert.assertEquals("Wrong bootconfig shouldAuthenticate", bootconfig.shouldAuthenticate(), sdkInfoBootConfig.getBoolean("shouldAuthenticate"));
         Assert.assertEquals("Wrong bootconfig attemptOfflineLoad", bootconfig.attemptOfflineLoad(), sdkInfoBootConfig.getBoolean("attemptOfflineLoad"));
         Assert.assertEquals("Wrong bootconfig isLocal", bootconfig.isLocal(), sdkInfoBootConfig.getBoolean("isLocal"));
-		List<String> sdkInfoOAuthScopes = toList(sdkInfoBootConfig.getJSONArray("oauthScopes"));
-        Assert.assertEquals("Wrong bootconfig oauthScopes", 1, sdkInfoOAuthScopes.size());
-        Assert.assertTrue("Wrong bootconfig oauthScopes", sdkInfoOAuthScopes.contains("api"));
+        Assert.assertNull("Wrong bootconfig oauthScopes", sdkInfoBootConfig.optJSONArray("oauthScopes"));
         Assert.assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
         Assert.assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
         Assert.assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
