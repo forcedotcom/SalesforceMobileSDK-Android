@@ -31,17 +31,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 
+@OptIn(ExperimentalMaterial3Api::class)
 class DevInfoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +66,16 @@ class DevInfoActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
-                DevInfoScreen(devInfoList)
+                Scaffold(
+                    contentWindowInsets = WindowInsets.safeDrawing,
+                    topBar = {
+                        TopAppBar(
+                            title = { Text(stringResource(id = R.string.sf__dev_support_title)) }
+                        )
+                    }
+                ) { innerPadding ->
+                    DevInfoScreen(innerPadding, devInfoList)
+                }
             }
         }
     }
@@ -76,24 +87,17 @@ class DevInfoActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DevInfoScreen(devInfoList: List<Pair<String, String>>) {
-    Column(
+fun DevInfoScreen(
+    paddingValues: PaddingValues,
+    devInfoList: List<Pair<String, String>>,
+) {
+    LazyColumn(
+        contentPadding = paddingValues,
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
-        TopAppBar(
-            title = { Text(stringResource(id = R.string.sf__dev_support_title)) }
-        )
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars) // Adds padding to account for system navigation bar
-        ) {
-            items(devInfoList) { (name, value) ->
-                DevInfoItem(name, value)
-            }
+        items(devInfoList) { (name, value) ->
+            DevInfoItem(name, value)
         }
     }
 }
