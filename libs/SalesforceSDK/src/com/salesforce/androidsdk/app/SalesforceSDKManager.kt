@@ -1322,6 +1322,7 @@ open class SalesforceSDKManager protected constructor(
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
             "Current User", usersToString(userAccountManager.cachedCurrentUser),
+            "Scopes", (userAccountManager.cachedCurrentUser).scope,
             "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
