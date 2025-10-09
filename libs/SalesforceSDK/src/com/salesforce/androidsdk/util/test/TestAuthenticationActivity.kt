@@ -51,9 +51,10 @@ import com.salesforce.androidsdk.util.test.TestCredentials.REFRESH_TOKEN
 import com.salesforce.androidsdk.util.test.TestCredentials.USER_ID
 
 /**
- * An activity that authenticates using a provided set of credentials rather
- * than user interaction.  This is intended only for tests automation in debug
- * build variants.  This class should not be used in release builds.
+ * An activity that authenticates using credentials provided in the intent
+ * rather than user interaction.  This is intended only for test automation in
+ * app debug build variants.  This class should not be used in release builds as
+ * it will simply finish without any action.
  */
 class TestAuthenticationActivity : AppCompatActivity() {
 
@@ -61,7 +62,7 @@ class TestAuthenticationActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val credentials = intent.getStringExtra("creds")
-        if (credentials == null) {
+        if (!SalesforceSDKManager.getInstance().isDebugBuild || credentials == null) {
             finish()
             return
         }
