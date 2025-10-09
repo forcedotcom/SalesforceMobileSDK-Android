@@ -74,12 +74,6 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
-        <!-- Dev ui testing activity -->
-        <activity android:name="com.salesforce.androidsdk.test.TestAuthentication"
-            android:excludeFromRecents="true"
-            android:theme="@style/SalesforceSDK"
-            android:exported="true" />
-
         <!-- Receiver in SP app for IDP-SP login flows -->
         <receiver android:name="com.salesforce.androidsdk.auth.idp.SPReceiver"
             android:exported="true"

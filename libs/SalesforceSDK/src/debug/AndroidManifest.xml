@@ -2,4 +2,15 @@
 
     <!-- Debug-Only: Post notifications permission supports the show developer support notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+
+        <!-- Debug-Only: Test Authentication Activity For Automated Testing -->
+        <activity
+            android:name="com.salesforce.androidsdk.util.test.TestAuthenticationActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/SalesforceSDK" />
+
+    </application>
 </manifest>

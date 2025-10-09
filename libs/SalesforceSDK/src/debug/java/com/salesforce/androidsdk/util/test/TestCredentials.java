@@ -38,7 +38,7 @@ import org.json.JSONObject;
 
 /**
  * Authentication credentials used to make live server calls in tests
- *
+ * <p>
  * To populate test_credentials.json clone SalesforceMobileSDK-Shared and run web app in credsHelper folder
  */
 public class TestCredentials {
@@ -80,8 +80,7 @@ public class TestCredentials {
             PHOTO_URL = json.getString("photo_url");
             LANGUAGE = json.optString("language", "en_US");
             LOCALE = json.optString("locale", "en_US");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Failed to read test_credentials.json", e);
         }
     }
@@ -97,7 +96,7 @@ public class TestCredentials {
             USER_ID = json.getString("user_id");
             LOGIN_URL = json.getString("test_login_domain");
             INSTANCE_URL = json.getString("instance_url");
-            COMMUNITY_URL = json.optString("community_url", INSTANCE_URL /* in case the test_credentials.json was obtained for a user / org without community setup */);
+            COMMUNITY_URL = json.optString("community_url", INSTANCE_URL /* In case the test_credentials.json was obtained for a user/org without community setup */);
             IDENTITY_URL = json.getString("identity_url");
             CLIENT_ID = json.getString("test_client_id");
             REFRESH_TOKEN = json.getString("refresh_token");
@@ -108,6 +107,5 @@ public class TestCredentials {
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
-
     }
 }
