@@ -43,7 +43,7 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@Ignore
+@Ignore("This test consistently times out on Firebase Test Lab emulators.")
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
 

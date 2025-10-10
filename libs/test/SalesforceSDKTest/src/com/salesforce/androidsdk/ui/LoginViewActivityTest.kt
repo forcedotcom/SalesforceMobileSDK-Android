@@ -58,12 +58,14 @@ import com.salesforce.androidsdk.ui.components.DefaultLoadingIndicator
 import com.salesforce.androidsdk.ui.components.DefaultTopAppBar
 import com.salesforce.androidsdk.ui.components.LoginView
 import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
 private const val DEFAULT_URL = "https://login.salesforce.com"
 private const val BUTTON_TITLE = "Test Button"
 
+@Ignore("This test consistently times out on Firebase Test Lab emulators.")
 class LoginViewActivityTest {
 
     @get:Rule
