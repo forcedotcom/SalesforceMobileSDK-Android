@@ -39,11 +39,9 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@Ignore("This test consistently times out on Firebase Test Lab emulators.")
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
 
