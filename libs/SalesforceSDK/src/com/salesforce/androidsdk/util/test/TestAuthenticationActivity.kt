@@ -48,6 +48,7 @@ import com.salesforce.androidsdk.util.test.TestCredentials.LOGIN_URL
 import com.salesforce.androidsdk.util.test.TestCredentials.ORG_ID
 import com.salesforce.androidsdk.util.test.TestCredentials.PHOTO_URL
 import com.salesforce.androidsdk.util.test.TestCredentials.REFRESH_TOKEN
+import com.salesforce.androidsdk.util.test.TestCredentials.USERNAME
 import com.salesforce.androidsdk.util.test.TestCredentials.USER_ID
 
 /**
@@ -86,7 +87,7 @@ class TestAuthenticationActivity : AppCompatActivity() {
             .firstName("User")
             .lastName("Test")
             .displayName("Test user")
-            .username("username")
+            .username(USERNAME)
             .build()
 
         val authTokenProvider = AccMgrAuthTokenProvider(

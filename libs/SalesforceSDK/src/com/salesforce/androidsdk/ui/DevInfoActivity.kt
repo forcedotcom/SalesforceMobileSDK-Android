@@ -103,14 +103,14 @@ fun DevInfoScreen(
 }
 
 @Composable
-fun DevInfoItem(name: String, value: String) {
+fun DevInfoItem(name: String, value: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
     ) {
         Text(text = name, fontWeight = FontWeight.Bold)
-        Text(text = value, color = Color.Gray)
+        Text(text = value ?: "", color = Color.Gray)
         HorizontalDivider()
     }
 }
