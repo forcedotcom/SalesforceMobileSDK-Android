@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Debug-Only: Post notifications permission supports the show developer support notification. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+</manifest>
