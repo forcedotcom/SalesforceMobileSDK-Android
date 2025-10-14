@@ -74,6 +74,13 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
+        <!-- Test Authentication Activity For Automated Testing. This activity is only functional for debug builds of the app using Salesforce Mobile SDK -->
+        <activity
+            android:name="com.salesforce.androidsdk.util.test.TestAuthenticationActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/SalesforceSDK" />
+
         <!-- Receiver in SP app for IDP-SP login flows -->
         <receiver android:name="com.salesforce.androidsdk.auth.idp.SPReceiver"
             android:exported="true"
