@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.serialization.json.Json.Default.encodeToJsonElement
 import kotlinx.serialization.json.Json.Default.encodeToString
 import kotlinx.serialization.json.JsonArray
@@ -738,6 +739,7 @@ class PushServiceTest {
         val restClient = mockk<RestClient>()
         every { restClient.sendSync(any()) } returns restResponse
 
+        val account = createTestAccount()
         var actualStatus: Int? = null
         val actualId = object : PushService() {
             override fun onPushNotificationRegistrationStatus(
@@ -750,9 +752,15 @@ class PushServiceTest {
             }
         }.registerSFDCPushNotification(
             registrationId = "test_registration_id",
-            account = createTestAccount(),
+            account = account,
             restClient = restClient
         )
+
+        verify(exactly = 1) {
+            restClient.sendSync(withArg {
+                assertEquals("test_community_id", it.requestBodyAsJson.get("NetworkId"))
+            })
+        }
 
         assertEquals(REGISTRATION_STATUS_SUCCEEDED, actualStatus)
         assertEquals("test_id", actualId)
