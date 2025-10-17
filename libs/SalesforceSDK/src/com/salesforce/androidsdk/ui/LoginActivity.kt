@@ -32,7 +32,6 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
@@ -276,7 +275,7 @@ open class LoginActivity : FragmentActivity() {
             ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
             // Check if the user backed out of the custom tab.
-            if (result.resultCode == Activity.RESULT_CANCELED) {
+            if (result.resultCode == RESULT_CANCELED) {
                 if (viewModel.singleServerCustomTabActivity) {
                     // Show blank page and spinner until PKCE is done.
                     viewModel.loginUrl.value = ABOUT_BLANK
@@ -560,6 +559,8 @@ open class LoginActivity : FragmentActivity() {
         e: Throwable? = null,
     ) {
         // Reset state from previous log in attempt.
+        // - Reset the auth-finished property which keeps the progress spinner displayed even when the web view finishing would normally hide it.
+        viewModel.authFinished.value = false
         // - Salesforce Identity UI Bridge API log in, such as QR code login.
         viewModel.resetFrontDoorBridgeUrl()
         e(TAG, "$error: $errorDesc", e)
