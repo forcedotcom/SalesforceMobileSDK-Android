@@ -32,7 +32,6 @@ import android.app.NotificationManager
 import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
-import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.work.Constraints
 import androidx.work.Data
@@ -43,7 +42,6 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_PUSH_NOTIFICATIONS
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -395,9 +393,9 @@ open class PushService {
             )
 
             // Adds community ID to the registration payload to allow scoping of notifications per community.
-            val communityUrl = account.communityUrl
-            if (!communityUrl.isNullOrBlank()) {
-                fields[NETWORK_ID] = communityUrl
+            val communityId = account.communityId
+            if (!communityId.isNullOrBlank()) {
+                fields[NETWORK_ID] = communityId
             }
 
             // Adds an RSA public key to the registration payload if available.
