@@ -46,15 +46,12 @@ import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimeZone;
-import java.util.TreeSet;
 
 import okhttp3.FormBody;
 import okhttp3.Request;
@@ -452,7 +449,10 @@ public class OAuth2 {
         builder.add(FORMAT, JSON);
         if (addlParams != null ) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
-                builder.add(entry.getKey(),entry.getValue());
+                // Safely ignore missing values since, for instance, a user account that is being upgraded may not have received that value yet.
+                if (entry.getValue() != null) {
+                    builder.add(entry.getKey(), entry.getValue());
+                }
             }
         }
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
