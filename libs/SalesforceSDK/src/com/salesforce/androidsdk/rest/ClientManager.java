@@ -508,7 +508,7 @@ public class ClientManager {
                 }
                 return null;
             } catch (Exception e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
             }
         }
