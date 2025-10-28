@@ -204,6 +204,8 @@ class LoginActivityTest {
 
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = true
 
+        val nonHierarchicalUri = "mailto:test@example.com"
+
         val incorrectPathUrl = "https://welcome.salesforce.com/other/path?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
         val emptyPathUrl = "https://welcome.salesforce.com?/$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
         val missingPathUrl = "https://welcome.salesforce.com?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
@@ -214,19 +216,21 @@ class LoginActivityTest {
 
         val otherUrl = "https://login.salesforce.com"
 
-        assertTrue(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
+        assertTrue("Valid URI should return true", isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(incorrectPathUrl.toUri()))
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(emptyPathUrl.toUri()))
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(missingPathUrl.toUri()))
+        assertFalse("Non-hierarchical URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(nonHierarchicalUri.toUri()))
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(missingClientIdUrl.toUri()))
+        assertFalse("Incorrect path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(incorrectPathUrl.toUri()))
+        assertFalse("Empty path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(emptyPathUrl.toUri()))
+        assertFalse("Missing path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingPathUrl.toUri()))
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(missingClientVersionUrl.toUri()))
+        assertFalse("Missing client id parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingClientIdUrl.toUri()))
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(missingCallbackUrl.toUri()))
+        assertFalse("Missing client version parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingClientVersionUrl.toUri()))
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(otherUrl.toUri()))
+        assertFalse("Missing callback URL parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingCallbackUrl.toUri()))
+
+        assertFalse("Non-welcome URL should return false", isSalesforceWelcomeDiscoveryMobileUrl(otherUrl.toUri()))
 
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = supportWelcomeDiscovery
     }
