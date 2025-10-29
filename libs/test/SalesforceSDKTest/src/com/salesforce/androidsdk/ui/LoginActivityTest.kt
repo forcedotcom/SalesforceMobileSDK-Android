@@ -36,6 +36,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -186,5 +191,47 @@ class LoginActivityTest {
                 assertEquals(expectedUserAgent, activity.webView.settings.userAgentString)
             }
         }
+    }
+
+    @Test
+    fun testIsWelcomeDiscoveryUri() {
+        val supportWelcomeDiscovery = SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
+        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = false
+
+        val validUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+
+        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
+
+        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = true
+
+        val nonHierarchicalUri = "mailto:test@example.com"
+
+        val incorrectPathUrl = "https://welcome.salesforce.com/other/path?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+        val emptyPathUrl = "https://welcome.salesforce.com?/$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+        val missingPathUrl = "https://welcome.salesforce.com?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+
+        val missingClientIdUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+        val missingClientVersionUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+        val missingCallbackUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y"
+
+        val otherUrl = "https://login.salesforce.com"
+
+        assertTrue("Valid URI should return true", isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
+
+        assertFalse("Non-hierarchical URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(nonHierarchicalUri.toUri()))
+
+        assertFalse("Incorrect path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(incorrectPathUrl.toUri()))
+        assertFalse("Empty path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(emptyPathUrl.toUri()))
+        assertFalse("Missing path URI should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingPathUrl.toUri()))
+
+        assertFalse("Missing client id parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingClientIdUrl.toUri()))
+
+        assertFalse("Missing client version parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingClientVersionUrl.toUri()))
+
+        assertFalse("Missing callback URL parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingCallbackUrl.toUri()))
+
+        assertFalse("Non-welcome URL should return false", isSalesforceWelcomeDiscoveryMobileUrl(otherUrl.toUri()))
+
+        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = supportWelcomeDiscovery
     }
 }
