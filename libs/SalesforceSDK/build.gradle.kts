@@ -11,7 +11,6 @@ plugins {
 }
 
 dependencies {
-    val composeVersion = "1.8.2" // Update requires Kotlin 2.
     val livecycleVersion = "2.8.7" // Update requires Kotlin 2.
     val androidXActivityVersion = "1.10.1"
 
@@ -36,21 +35,21 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
     implementation("androidx.window:window:1.4.0")
     implementation("androidx.window:window-core:1.4.0")
-    implementation("androidx.compose.material3:material3-android:1.3.2")
+    implementation("androidx.compose.material3:material3-android")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
-    implementation("androidx.compose.foundation:foundation-android:$composeVersion")
-    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
-    implementation("androidx.compose.material:material:$composeVersion")
+    implementation("androidx.compose.foundation:foundation-android")
+    implementation("androidx.compose.runtime:runtime-livedata")
+    implementation("androidx.compose.ui:ui-tooling-preview-android")
+    implementation("androidx.compose.material:material")
 
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("io.mockk:mockk-android:1.14.0") // Update requires Kotlin 2
 }
 
