@@ -185,7 +185,7 @@ fun BootConfigView() {
         OutlinedTextField(
             value = dynamicScopes.value ?: "",
             onValueChange = { dynamicScopes.value = it },
-            label = { Text("Scopes (comma separated)") },
+            label = { Text("Scopes") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,11 +286,6 @@ fun LoginOptionsScreen(
     }
 }
 
-val previewBootConfig = object : BootConfig() {
-    override fun getRemoteAccessConsumerKey() = "3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw"
-    override fun getOauthRedirectURI() = "testsfdc:///mobilesdk/detect/oauth/done"
-}
-
 @Preview(showBackground = true)
 @Composable
 fun OptionsTogglePreview() {
@@ -308,12 +303,18 @@ fun BootConfigViewPreview() {
 @Preview(showBackground = true)
 @Composable
 fun LoginOptionsScreenPreview() {
+    val consumerKey = stringResource(R.string.remoteAccessConsumerKey)
+    val redirect = stringResource(R.string.oauthRedirectURI)
+
     LoginOptionsScreen(
         innerPadding = PaddingValues(0.dp),
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
         supportWelcomeDiscovery = MutableLiveData(false),
-        bootConfig = previewBootConfig,
+        bootConfig = object : BootConfig() {
+            override fun getRemoteAccessConsumerKey() = consumerKey
+            override fun getOauthRedirectURI() = redirect
+        },
     )
 }
 
