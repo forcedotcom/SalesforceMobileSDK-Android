@@ -112,4 +112,5 @@
     <string name="sf__notifications_local_show_dev_support_content">Show Salesforce Mobile SDK developer support</string>
     <string name="sf__notifications_local_show_dev_support_text">Tap to display Salesforce Mobile SDK developer support in the active app.</string>
     <string name="sf__notifications_local_show_dev_support_title">Salesforce Mobile Developer Support</string>
+    <string name="sf__dev_support_login_options_title">Login Options</string>
 </resources>

@@ -26,10 +26,12 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.content.ClipData
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -46,20 +48,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 class DevInfoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
         val devInfoList = prepareListData(SalesforceSDKManager.getInstance().devSupportInfos)
@@ -92,9 +98,9 @@ fun DevInfoScreen(
     devInfoList: List<Pair<String, String>>,
 ) {
     LazyColumn(
-        contentPadding = paddingValues,
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
     ) {
         items(devInfoList) { (name, value) ->
             DevInfoItem(name, value)
@@ -104,13 +110,46 @@ fun DevInfoScreen(
 
 @Composable
 fun DevInfoItem(name: String, value: String?) {
+    val coroutineScope = rememberCoroutineScope()
+    val clipboard = LocalClipboard.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(start = 10.dp, end = 10.dp, top = 10.dp)
+            .clickable {
+                // Copy to clipboard
+                val clipData = ClipData.newPlainText(name, value)
+                coroutineScope.launch {
+                    clipboard.setClipEntry(ClipEntry(clipData))
+                }
+            }
     ) {
         Text(text = name, fontWeight = FontWeight.Bold)
-        Text(text = value ?: "", color = Color.Gray)
-        HorizontalDivider()
+        Text(
+            text = value ?: "",
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 10.dp),
+        )
+        HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DevInfoItemPreview() {
+    DevInfoItem("Item Name", "Item Value")
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DevInfoScreenPreview() {
+    DevInfoScreen(
+        PaddingValues(0.dp),
+        devInfoList = listOf(
+            "SDK Version" to SalesforceSDKManager.SDK_VERSION,
+            "User Agent" to "SalesforceMobileSDK/13.2.0.dev android mobile/15 (sdk_gphone64_arm64) " +
+                    "RestExplorer/1.0(1) Native uid_adc6e133bd0ac338 ftr_AI.SP.UA SecurityPatch/2024-09-05",
+        ),
+    )
 }

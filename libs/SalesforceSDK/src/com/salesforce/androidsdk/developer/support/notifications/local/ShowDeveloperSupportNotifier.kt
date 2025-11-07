@@ -131,21 +131,7 @@ internal class ShowDeveloperSupportNotifier {
                 activity.getSharedPreferences(
                     SFDC_SHARED_PREFERENCES_NAME_DEVELOPER_SUPPORT,
                     MODE_PRIVATE
-                ).run {
-                    val postNotificationsPermissionRequested = getBoolean(
-                        SFDC_SHARED_PREFERENCES_KEY_DEVELOPER_SUPPORT_POST_NOTIFICATIONS_PERMISSION_REQUESTED,
-                        false
-                    )
-                    if (postNotificationsPermissionRequested) return
-
-                    edit {
-                        putBoolean(
-                            SFDC_SHARED_PREFERENCES_KEY_DEVELOPER_SUPPORT_POST_NOTIFICATIONS_PERMISSION_REQUESTED,
-                            true
-                        )
-                        apply()
-                    }
-                }
+                )
 
                 // Prompt for the post notifications permission.
                 ActivityCompat.requestPermissions(

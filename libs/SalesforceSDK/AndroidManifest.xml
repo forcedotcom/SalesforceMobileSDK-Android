@@ -74,6 +74,11 @@
             android:theme="@style/SalesforceSDK"
             android:exported="false" />
 
+        <!-- Login Options activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.LoginOptionsActivity"
+            android:theme="@style/SalesforceSDK"
+            android:exported="false" />
+
         <!-- Test Authentication Activity For Automated Testing. This activity is only functional for debug builds of the app using Salesforce Mobile SDK -->
         <activity
             android:name="com.salesforce.androidsdk.util.test.TestAuthenticationActivity"

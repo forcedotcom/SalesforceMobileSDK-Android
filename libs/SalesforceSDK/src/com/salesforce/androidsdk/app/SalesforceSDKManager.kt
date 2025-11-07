@@ -132,6 +132,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
 import com.salesforce.androidsdk.ui.DevInfoActivity
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginOptionsActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
@@ -204,7 +205,7 @@ open class SalesforceSDKManager protected constructor(
      * Null or an authenticated Activity for private use when developer support
      * is enabled.
      */
-    private var authenticatedActivityForDeveloperSupport: Activity? = null
+    private var activityForDeveloperSupport: Activity? = null
 
     /**
      * Null or the Android Activity lifecycle callbacks object registered when
@@ -863,10 +864,10 @@ open class SalesforceSDKManager protected constructor(
     ) {
 
         // Assign the authenticated Activity
-        authenticatedActivityForDeveloperSupport = authenticatedActivity
+        activityForDeveloperSupport = authenticatedActivity
 
         // Display or hide the show developer support notification
-        when (userAccountManager.currentAccount == null || authenticatedActivityForDeveloperSupport == null) {
+        when (activityForDeveloperSupport == null) {
             true -> hideDeveloperSupportNotification(lifecycleActivity)
             else -> showDeveloperSupportNotification(lifecycleActivity)
         }
@@ -1286,37 +1287,52 @@ open class SalesforceSDKManager protected constructor(
      * features for
      * @return map of title to dev actions handlers to display
      */
-    protected open fun getDevActions(
-        frontActivity: Activity
-    ) = mapOf(
-
-        "Show dev info" to object : DevActionHandler {
-            override fun onSelected() {
-                frontActivity.startActivity(
-                    Intent(
-                        frontActivity,
-                        DevInfoActivity::class.java
+    protected open fun getDevActions(frontActivity: Activity): Map<String, DevActionHandler> {
+        val actions = mutableMapOf(
+            "Show dev info" to object : DevActionHandler {
+                override fun onSelected() {
+                    frontActivity.startActivity(
+                        Intent(
+                            frontActivity,
+                            DevInfoActivity::class.java
+                        )
                     )
-                )
-            }
-        },
+                }
+            },
+            "Login Options" to object : DevActionHandler {
+                override fun onSelected() {
+                    frontActivity.startActivity(
+                        Intent(
+                            frontActivity,
+                            LoginOptionsActivity::class.java
+                        )
+                    )
+                }
+            },
+        )
 
-        "Logout" to object : DevActionHandler {
-            override fun onSelected() {
-                logout(frontActivity = frontActivity, reason = LogoutReason.USER_LOGOUT)
+        // Do not show Logout or Switch User options in Dev menu on the Login screen.
+        if (frontActivity !is LoginActivity) {
+            actions["Logout"] = object : DevActionHandler {
+                override fun onSelected() {
+                    logout(frontActivity = frontActivity, reason = LogoutReason.USER_LOGOUT)
+                }
             }
-        },
 
-        "Switch user" to object : DevActionHandler {
-            override fun onSelected() {
-                appContext.startActivity(Intent(
-                    appContext,
-                    accountSwitcherActivityClass
-                ).apply {
-                    flags = FLAG_ACTIVITY_NEW_TASK
-                })
+            actions["Switch User"] = object : DevActionHandler {
+                override fun onSelected() {
+                    appContext.startActivity(Intent(
+                        appContext,
+                        accountSwitcherActivityClass
+                    ).apply {
+                        flags = FLAG_ACTIVITY_NEW_TASK
+                    })
+                }
             }
-        })
+        }
+
+        return actions
+    }
 
     /** Information to display in the developer support dialog */
     open val devSupportInfos: List<String>
@@ -1328,8 +1344,8 @@ open class SalesforceSDKManager protected constructor(
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
-            "Current User", usersToString(userAccountManager.cachedCurrentUser),
-            "Scopes", (userAccountManager.cachedCurrentUser).scope,
+            "Current User", userAccountManager.cachedCurrentUser?.accountName ?: "",
+            "Scopes", userAccountManager.cachedCurrentUser?.scope ?: "",
             "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {
@@ -1357,11 +1373,11 @@ open class SalesforceSDKManager protected constructor(
         }
 
     private fun accessTokenExpiration(): String {
-        val currentUSer = userAccountManager.cachedCurrentUser
+        val currentUser = userAccountManager.cachedCurrentUser
         var expiration = "Unknown"
 
-        if (currentUSer.tokenFormat == "jwt") {
-            val jwtAccessToken = JwtAccessToken(currentUSer.authToken)
+        if (currentUser?.tokenFormat == "jwt") {
+            val jwtAccessToken = JwtAccessToken(currentUser.authToken)
             val expirationDate = jwtAccessToken.expirationDate()
             if (expirationDate != null) {
                 val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -1403,23 +1419,11 @@ open class SalesforceSDKManager protected constructor(
      * @return A string representation of the provided users.
      */
     private fun usersToString(
-        vararg userAccounts: UserAccount
-    ) = join(
-        ", ",
-        userAccounts.map { userAccount ->
-            userAccount.accountName
-        }
-    )
-
-    /**
-     * Returns a string representation of the provided users.
-     * @param userAccounts The user accounts
-     * @return A string representation of the provided users.
-     */
-    private fun usersToString(
         userAccounts: List<UserAccount>?
     ) = userAccounts?.toTypedArray<UserAccount>()?.let {
-        usersToString(*it)
+        join(", ", it.map { userAccount ->
+            userAccount.accountName
+        })
     } ?: ""
 
     /** Sends the logout completed intent */
@@ -1582,7 +1586,7 @@ open class SalesforceSDKManager protected constructor(
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppBackgrounded()
 
         // Hide the Salesforce Mobile SDK "Show Developer Support" notification
-        authenticatedActivityForDeveloperSupport?.let {
+        activityForDeveloperSupport?.let {
             hideDeveloperSupportNotification(it)
         }
     }
@@ -1605,9 +1609,9 @@ open class SalesforceSDKManager protected constructor(
         }
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
-        if (userAccountManager.currentAccount != null && authenticatedActivityForDeveloperSupport != null) {
+        if (activityForDeveloperSupport != null) {
             showDeveloperSupportNotification(
-                authenticatedActivityForDeveloperSupport
+                activityForDeveloperSupport
             )
         }
     }
@@ -1838,19 +1842,10 @@ open class SalesforceSDKManager protected constructor(
                 }
 
                 override fun onActivityResumed(activity: Activity) {
-                    when (activity.javaClass) {
-                        salesforceSDKManager.loginActivityClass ->
-                            salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(
-                                authenticatedActivity = null,
-                                lifecycleActivity = activity
-                            )
-
-                        else ->
-                            salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(
-                                authenticatedActivity = activity,
-                                lifecycleActivity = activity
-                            )
-                    }
+                    salesforceSDKManager.updateDeveloperSupportForActivityLifecycle(
+                        authenticatedActivity = activity,
+                        lifecycleActivity = activity,
+                    )
                 }
 
                 override fun onActivityPaused(activity: Activity) {
@@ -1876,7 +1871,7 @@ open class SalesforceSDKManager protected constructor(
             val showDeveloperSupportBroadcastIntentReceiver: BroadcastReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     salesforceSDKManager.showDevSupportDialog(
-                        salesforceSDKManager.authenticatedActivityForDeveloperSupport
+                        salesforceSDKManager.activityForDeveloperSupport
                     )
                 }
             }
