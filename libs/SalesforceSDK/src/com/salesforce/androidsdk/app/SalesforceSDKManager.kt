@@ -1341,11 +1341,13 @@ open class SalesforceSDKManager protected constructor(
             "App Type", appType,
             "User Agent", userAgent,
             "Use Web Server Authentication", "$useWebServerAuthentication",
+            "Use Hybrid Authentication Token", "$useHybridAuthentication",
+            "Support Welcome Discovery", "$supportsWelcomeDiscovery",
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
             "Current User", userAccountManager.cachedCurrentUser?.accountName ?: "",
-            "Scopes", userAccountManager.cachedCurrentUser?.scope ?: "",
+            "Current User Scopes", userAccountManager.cachedCurrentUser?.scope?.replace(" ", ", ") ?: "",
             "Access Token Expiration", accessTokenExpiration(),
             "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
         ).apply {

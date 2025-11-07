@@ -4,18 +4,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -40,13 +42,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.MediatorLiveData
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.ui.components.PADDING_SIZE
+import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 
 var dynamicConsumerKey = MutableLiveData("")
@@ -55,7 +58,8 @@ var dynamicScopes = MutableLiveData("")
 
 class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
-    val useHybridToken = MediatorLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
+    val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
+    val supportWelcomeDiscovery = MutableLiveData(SalesforceSDKManager.getInstance().supportsWelcomeDiscovery)
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Override
@@ -83,7 +87,7 @@ class LoginOptionsActivity: ComponentActivity() {
                 Scaffold(
                     contentWindowInsets = WindowInsets.safeDrawing,
                     topBar = {
-                        TopAppBar(
+                        CenterAlignedTopAppBar(
                             title = {
                                 Text(stringResource(R.string.sf__dev_support_login_options_title))
                             }
@@ -94,6 +98,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         innerPadding,
                         useWebServer,
                         useHybridToken,
+                        supportWelcomeDiscovery,
                     )
                 }
             }
@@ -103,18 +108,22 @@ class LoginOptionsActivity: ComponentActivity() {
     override fun onPause() {
         super.onPause()
         // TODO: Set Dynamic Boot Config
+
+        val viewModel: LoginViewModel
+                by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
+        viewModel.reloadWebView()
     }
 }
 
 @Composable
 fun OptionToggle(
     title: String,
-    useWebServer: MutableLiveData<Boolean>,
+    optionData: MutableLiveData<Boolean>,
 ) {
-    val checked by useWebServer.observeAsState(initial = false)
+    val checked by optionData.observeAsState(initial = false)
     
     Row(
-        modifier = Modifier.fillMaxWidth().padding(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
@@ -123,7 +132,7 @@ fun OptionToggle(
         )
         Switch(
             checked = checked,
-            onCheckedChange = { useWebServer.value = it },
+            onCheckedChange = { optionData.value = it },
         )
     }
 }
@@ -201,13 +210,18 @@ fun BootConfigItem(name: String, value: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 10.dp, end = 10.dp, top = 10.dp)
+            .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp, top = PADDING_SIZE.dp)
     ) {
-        Text(text = name)
+        Text(
+            text = name,
+            fontSize = TEXT_SIZE.sp,
+            color = colorScheme.onSecondary,
+        )
         Text(
             text = value ?: "",
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 10.dp),
+            fontSize = TEXT_SIZE.sp,
+            color = colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(top = PADDING_SIZE.dp),
         )
     }
 }
@@ -217,43 +231,48 @@ fun LoginOptionsScreen(
     innerPadding: PaddingValues,
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
+    supportWelcomeDiscovery: MutableLiveData<Boolean>,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
 ) {
     var useDynamicConfig by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.padding(innerPadding)) {
+    Column(
+        modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
         OptionToggle("Use Web Server Flow", useWebServer)
         OptionToggle("Use Hybrid Auth Token", useHybridToken)
+        OptionToggle("Support Welcome Discovery", supportWelcomeDiscovery)
 
         HorizontalDivider()
 
         Text(
             text = "Boot Config File",
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier.padding(PADDING_SIZE.dp)
         )
 
-        LazyColumn {
-            val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
-            val bootConfigList = listOf(
-                "Consumer Key" to bootConfig.remoteAccessConsumerKey,
-                "Redirect URI" to bootConfig.oauthRedirectURI,
-                "Scopes" to scopes.joinToString(separator = ", "),
-            )
-            items(bootConfigList) { (name, value) ->
-                BootConfigItem(name, value)
-            }
+        val scopes = bootConfig.oauthScopes ?: emptyArray<String>()
+        val bootConfigList = listOf(
+            "Consumer Key" to bootConfig.remoteAccessConsumerKey,
+            "Redirect URI" to bootConfig.oauthRedirectURI,
+            "Scopes" to scopes.joinToString(separator = ", "),
+        )
+        bootConfigList.forEach { (name, value) ->
+            BootConfigItem(name, value)
         }
 
         HorizontalDivider()
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = "Use Dynamic Boot Config",
-                modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
             )
             Switch(
                 checked = useDynamicConfig,
@@ -293,6 +312,7 @@ fun LoginOptionsScreenPreview() {
         innerPadding = PaddingValues(0.dp),
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
+        supportWelcomeDiscovery = MutableLiveData(false),
         bootConfig = previewBootConfig,
     )
 }

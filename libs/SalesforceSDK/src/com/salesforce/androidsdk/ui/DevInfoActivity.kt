@@ -41,24 +41,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.components.PADDING_SIZE
+import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +78,7 @@ class DevInfoActivity : ComponentActivity() {
                 Scaffold(
                     contentWindowInsets = WindowInsets.safeDrawing,
                     topBar = {
-                        TopAppBar(
+                        CenterAlignedTopAppBar(
                             title = { Text(stringResource(id = R.string.sf__dev_support_title)) }
                         )
                     }
@@ -116,22 +119,32 @@ fun DevInfoItem(name: String, value: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 10.dp, end = 10.dp, top = 10.dp)
+            .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp, top = PADDING_SIZE.dp)
             .clickable {
-                // Copy to clipboard
-                val clipData = ClipData.newPlainText(name, value)
-                coroutineScope.launch {
-                    clipboard.setClipEntry(ClipEntry(clipData))
+                // Copy non-null and non-boolean values to clipboard.
+                value?.let {
+                    if (it.toBooleanStrictOrNull() == null) {
+                        val clipData = ClipData.newPlainText(name, it)
+                        coroutineScope.launch {
+                            clipboard.setClipEntry(ClipEntry(clipData))
+                        }
+                    }
                 }
             }
     ) {
-        Text(text = name, fontWeight = FontWeight.Bold)
+        Text(
+            text = name,
+            fontSize = TEXT_SIZE.sp,
+            fontWeight = FontWeight.Bold,
+            color = colorScheme.onSecondary,
+        )
         Text(
             text = value ?: "",
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 10.dp),
+            fontSize = TEXT_SIZE.sp,
+            color = colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(top = PADDING_SIZE.dp),
         )
-        HorizontalDivider(modifier = Modifier.padding(top = 10.dp))
+        HorizontalDivider(modifier = Modifier.padding(top = PADDING_SIZE.dp))
     }
 }
 

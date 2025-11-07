@@ -339,6 +339,11 @@ open class LoginActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         wasBackgrounded = false
+
+        // If debug LoginOptions were changed reload the webview.
+        if (SalesforceSDKManager.getInstance().isDebugBuild && webView.url != viewModel.loginUrl.value) {
+            viewModel.reloadWebView()
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent) =
