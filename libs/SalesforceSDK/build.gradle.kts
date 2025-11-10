@@ -12,7 +12,7 @@ plugins {
 
 dependencies {
     val composeVersion = "1.8.2" // Update requires Kotlin 2.
-    val livecycleVersion = "2.8.7" // Update requires Kotlin 2.
+    val lifecycleVersion = "2.8.7" // Update requires Kotlin 2.
     val androidXActivityVersion = "1.10.1"
 
     api(project(":libs:SalesforceAnalytics"))
@@ -29,10 +29,10 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
     implementation("androidx.activity:activity-compose:$androidXActivityVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-service:$livecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-service:$lifecycleVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
     implementation("androidx.window:window:1.4.0")
     implementation("androidx.window:window-core:1.4.0")
