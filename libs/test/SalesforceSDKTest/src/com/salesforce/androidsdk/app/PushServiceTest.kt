@@ -707,6 +707,7 @@ class PushServiceTest {
 
         // Setup.
         val notificationsTypesResponseBody = fromJson(NOTIFICATIONS_TYPES_JSON)
+        val originalNotificationTypes = notificationsTypesResponseBody.notificationTypes
         createTestAccountInAccountManager(userAccountManager)
 
         // Test when no notification types are in the data.
@@ -714,9 +715,17 @@ class PushServiceTest {
         PushService().registerNotificationChannels(notificationsTypesResponseBody.copy(notificationTypes = null))
 
         salesforceSdkManager.appContext.getSystemService(NotificationManager::class.java).run {
-            assertTrue(
-                notificationChannels.isEmpty()
-            )
+            // Verify that the Salesforce notification channel group exists but has no channels.
+            val channelGroup = getNotificationChannelGroup(NOTIFICATION_CHANNEL_GROUP_SALESFORCE_ID)
+            assertNotNull(channelGroup)
+            assertTrue(channelGroup.channels.isEmpty())
+            
+            // Verify that no channels with the original notification type IDs exist.
+            originalNotificationTypes?.forEach {
+                assertNull(notificationChannels.firstOrNull { notificationChannel ->
+                    notificationChannel.id == it.type
+                })
+            }
         }
     }
 
