@@ -11,7 +11,7 @@
     "jsc-android": "^250231.0.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-force": "git+https://github.com/JohnsonEricAtSalesforce/SalesforceMobileSDK-ReactNative.git#bugfix/w-20151632_msdk-android-security-bug-cve-2025-11953-react-native-community-cli-rce"
+    "react-native-force": "git+https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative.git#dev"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
