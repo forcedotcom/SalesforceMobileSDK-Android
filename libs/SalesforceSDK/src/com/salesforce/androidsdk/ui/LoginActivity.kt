@@ -341,8 +341,14 @@ open class LoginActivity : FragmentActivity() {
         wasBackgrounded = false
 
         // If debug LoginOptions were changed reload the webview.
-        if (SalesforceSDKManager.getInstance().isDebugBuild && webView.url != viewModel.loginUrl.value) {
-            viewModel.reloadWebView()
+        //
+        // Note:  The dev menu cannot be access when a Custom Tab is displayed so
+        // we can safely ignore that scenario.
+        with(SalesforceSDKManager.getInstance()) {
+            if (isDebugBuild && loginDevMenuReload) {
+                viewModel.reloadWebView()
+                loginDevMenuReload = false
+            }
         }
     }
 

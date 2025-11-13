@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,10 +52,6 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.ui.components.PADDING_SIZE
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
-
-var dynamicConsumerKey = MutableLiveData("")
-var dynamicRedirectUri = MutableLiveData("")
-var dynamicScopes = MutableLiveData("")
 
 class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
@@ -81,6 +78,13 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().useHybridAuthentication = value
             },
         )
+        supportWelcomeDiscovery.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                // onChanged lambda
+                value -> SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = value
+            },
+        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -104,20 +108,12 @@ class LoginOptionsActivity: ComponentActivity() {
             }
         }
     }
-
-    override fun onPause() {
-        super.onPause()
-        // TODO: Set Dynamic Boot Config
-
-        val viewModel: LoginViewModel
-                by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
-        viewModel.reloadWebView()
-    }
 }
 
 @Composable
 fun OptionToggle(
     title: String,
+    contentDescription: String,
     optionData: MutableLiveData<Boolean>,
 ) {
     val checked by optionData.observeAsState(initial = false)
@@ -132,22 +128,36 @@ fun OptionToggle(
         )
         Switch(
             checked = checked,
-            onCheckedChange = { optionData.value = it },
+            onCheckedChange = {
+                optionData.value = it
+                SalesforceSDKManager.getInstance().loginDevMenuReload = true
+            },
+            modifier = Modifier.semantics {
+                this.contentDescription = contentDescription
+            }
         )
     }
 }
 
 @Composable
 fun BootConfigView() {
+    var dynamicConsumerKey by remember { mutableStateOf("") }
+    var dynamicRedirectUri by remember { mutableStateOf("") }
+    var dynamicScopes by remember { mutableStateOf("") }
+    val consumerKeyFieldDesc = stringResource(R.string.sf__login_options_consumer_key_field_content_description)
+    val redirectFieldDesc = stringResource(R.string.sf__login_options_redirect_uri_field_content_description)
+    val scopesFieldDesc = stringResource(R.string.sf__login_options_scopes_field_content_description)
+
     Column {
         OutlinedTextField(
-            value = dynamicConsumerKey.value ?: "",
-            onValueChange = { dynamicConsumerKey.value = it },
+            value = dynamicConsumerKey,
+            onValueChange = { dynamicConsumerKey = it },
             label = { Text("Consumer Key") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(PADDING_SIZE.dp),
+                .padding(PADDING_SIZE.dp)
+                .semantics { contentDescription = consumerKeyFieldDesc },
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = colorScheme.tertiary,
                 focusedLabelColor = colorScheme.tertiary,
@@ -162,13 +172,14 @@ fun BootConfigView() {
         )
 
         OutlinedTextField(
-            value = dynamicRedirectUri.value ?: "",
-            onValueChange = { dynamicRedirectUri.value },
+            value = dynamicRedirectUri,
+            onValueChange = { dynamicRedirectUri = it },
             label = { Text("Redirect URI") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(PADDING_SIZE.dp),
+                .padding(PADDING_SIZE.dp)
+                .semantics { contentDescription = redirectFieldDesc },
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = colorScheme.tertiary,
                 focusedLabelColor = colorScheme.tertiary,
@@ -183,13 +194,14 @@ fun BootConfigView() {
         )
 
         OutlinedTextField(
-            value = dynamicScopes.value ?: "",
-            onValueChange = { dynamicScopes.value = it },
+            value = dynamicScopes,
+            onValueChange = { dynamicScopes = it },
             label = { Text("Scopes") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(PADDING_SIZE.dp),
+                .padding(PADDING_SIZE.dp)
+                .semantics { contentDescription = scopesFieldDesc },
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = colorScheme.tertiary,
                 focusedLabelColor = colorScheme.tertiary,
@@ -242,9 +254,21 @@ fun LoginOptionsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        OptionToggle("Use Web Server Flow", useWebServer)
-        OptionToggle("Use Hybrid Auth Token", useHybridToken)
-        OptionToggle("Support Welcome Discovery", supportWelcomeDiscovery)
+        OptionToggle(
+            "Use Web Server Flow",
+            stringResource(R.string.sf__login_options_webserver_toggle_content_description),
+            useWebServer,
+        )
+        OptionToggle(
+            "Use Hybrid Auth Token",
+            stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
+            useHybridToken,
+        )
+        OptionToggle(
+            "Support Welcome Discovery",
+            stringResource(R.string.sf__login_options_welcome_toggle_content_description),
+            supportWelcomeDiscovery,
+        )
 
         HorizontalDivider()
 
@@ -274,9 +298,13 @@ fun LoginOptionsScreen(
                 text = "Use Dynamic Boot Config",
                 modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
             )
+            val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
             Switch(
                 checked = useDynamicConfig,
                 onCheckedChange = { useDynamicConfig = it },
+                modifier = Modifier.semantics {
+                    contentDescription = dynamicConfigToggleDesc
+                }
             )
         }
 
@@ -290,7 +318,7 @@ fun LoginOptionsScreen(
 @Composable
 fun OptionsTogglePreview() {
     Column {
-        OptionToggle("Test Toggle", MutableLiveData(false))
+        OptionToggle("Test Toggle", "", MutableLiveData(false))
     }
 }
 

@@ -387,6 +387,9 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var useHybridAuthentication = true
 
+    // Used to ensure the webview is reloaded when Dev Menu Login Options are changed.
+    internal var loginDevMenuReload = false
+
     /**
      * The regular expression pattern used to detect "Use Custom Domain" input
      * from login web view.
