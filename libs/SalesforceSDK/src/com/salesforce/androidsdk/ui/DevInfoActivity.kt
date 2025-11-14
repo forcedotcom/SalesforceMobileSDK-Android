@@ -87,6 +87,7 @@ import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import kotlinx.coroutines.launch
+import javax.annotation.processing.Generated
 
 @OptIn(ExperimentalMaterial3Api::class)
 class DevInfoActivity : ComponentActivity() {
@@ -261,6 +262,7 @@ fun CollapsibleSection(
     }
 }
 
+@Generated // Prevents previews from being included in code coverage.
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -270,6 +272,7 @@ private fun DevInfoItemPreview() {
     }
 }
 
+@Generated
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -280,6 +283,7 @@ private fun DevInfoItemLongPreview() {
     }
 }
 
+@Generated
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -293,6 +297,7 @@ private fun CollapsibleSectionPreview() {
     }
 }
 
+@Generated
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable

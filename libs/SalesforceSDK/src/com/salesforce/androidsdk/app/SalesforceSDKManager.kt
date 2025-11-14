@@ -1292,7 +1292,8 @@ open class SalesforceSDKManager protected constructor(
      * features for
      * @return map of title to dev actions handlers to display
      */
-    protected open fun getDevActions(frontActivity: Activity): Map<String, DevActionHandler> {
+    @VisibleForTesting(otherwise = PROTECTED)
+    open fun getDevActions(frontActivity: Activity): Map<String, DevActionHandler> {
         val actions = mutableMapOf(
             "Show dev info" to object : DevActionHandler {
                 override fun onSelected() {

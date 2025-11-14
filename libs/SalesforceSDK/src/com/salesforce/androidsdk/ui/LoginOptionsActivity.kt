@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.ui.components.PADDING_SIZE
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
+import javax.annotation.processing.Generated
 
 class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
@@ -314,6 +315,7 @@ fun LoginOptionsScreen(
     }
 }
 
+@Generated // Prevents previews from being included in code coverage.
 @Preview(showBackground = true)
 @Composable
 fun OptionsTogglePreview() {
@@ -322,12 +324,14 @@ fun OptionsTogglePreview() {
     }
 }
 
+@Generated
 @Preview(showBackground = true)
 @Composable
 fun BootConfigViewPreview() {
     BootConfigView()
 }
 
+@Generated
 @Preview(showBackground = true)
 @Composable
 fun LoginOptionsScreenPreview() {
