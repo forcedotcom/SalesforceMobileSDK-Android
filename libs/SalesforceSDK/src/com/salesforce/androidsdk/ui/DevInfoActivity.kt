@@ -27,30 +27,50 @@
 package com.salesforce.androidsdk.ui
 
 import android.content.ClipData
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
@@ -60,8 +80,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.developer.support.DevSupportInfo
+import com.salesforce.androidsdk.ui.components.ICON_SIZE
 import com.salesforce.androidsdk.ui.components.PADDING_SIZE
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +95,7 @@ class DevInfoActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val devInfoList = prepareListData(SalesforceSDKManager.getInstance().devSupportInfos)
+        val devSupportInfo = SalesforceSDKManager.getInstance().devSupportInfo
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -83,30 +107,67 @@ class DevInfoActivity : ComponentActivity() {
                         )
                     }
                 ) { innerPadding ->
-                    DevInfoScreen(innerPadding, devInfoList)
+                    DevInfoScreen(innerPadding, devSupportInfo)
                 }
             }
         }
     }
-
-    private fun prepareListData(rawData: List<String>): List<Pair<String, String>> {
-        return rawData.chunked(2).map { it[0] to it[1] }
-    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DevInfoScreen(
     paddingValues: PaddingValues,
-    devInfoList: List<Pair<String, String>>,
+    devSupportInfo: DevSupportInfo,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
     ) {
-        items(devInfoList) { (name, value) ->
+        // Basic SDK Information (non-collapsible, no header)
+        val basicInfo = listOf(
+            "SDK Version" to devSupportInfo.sdkVersion,
+            "App Type" to devSupportInfo.appType,
+            "User Agent" to devSupportInfo.userAgent,
+            "Authenticated Users" to devSupportInfo.authenticatedUsersString,
+        )
+
+        items(basicInfo) { (name, value) ->
             DevInfoItem(name, value)
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        // Auth Config Section
+        item {
+            CollapsibleSection(
+                title = "Authentication Configuration",
+                items = devSupportInfo.authConfig,
+            )
+        }
+
+        // Boot Config Section
+        item {
+            CollapsibleSection(
+                title = "Boot Configuration",
+                items = devSupportInfo.bootConfigValues,
+            )
+        }
+
+        // Current User Section
+        devSupportInfo.currentUser?.let {
+            item {
+                CollapsibleSection(
+                    title = "Current User",
+                    items = devSupportInfo.currentUserInfo,
+                )
+            }
+        }
+
+        // Runtime Config Section
+        item {
+            CollapsibleSection(
+                title = "Runtime Configuration",
+                items = devSupportInfo.runtimeConfigValues,
+            )
         }
     }
 }
@@ -148,21 +209,103 @@ fun DevInfoItem(name: String, value: String?) {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun DevInfoItemPreview() {
-    DevInfoItem("Item Name", "Item Value")
+fun CollapsibleSection(
+    title: String,
+    items: List<Pair<String, String>>,
+    defaultExpanded: Boolean = false,
+) {
+    var expanded by remember { mutableStateOf(defaultExpanded) }
+    val chevronRotation = remember { Animatable(0f) }
+
+    LaunchedEffect(expanded) {
+        chevronRotation.animateTo(targetValue = if (expanded) 180f else 0f)
+    }
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = PADDING_SIZE.dp, vertical = (PADDING_SIZE / 2).dp)
+    ) {
+        Column {
+            // Header with click handler
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(PADDING_SIZE.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    fontSize = (TEXT_SIZE + 2).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.primary
+                )
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    modifier = Modifier.size(ICON_SIZE.dp)
+                        .rotate(chevronRotation.value),
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                )
+            }
+
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    items.forEach { (name, value) ->
+                        DevInfoItem(name, value)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
-private fun DevInfoScreenPreview() {
-    DevInfoScreen(
-        PaddingValues(0.dp),
-        devInfoList = listOf(
-            "SDK Version" to SalesforceSDKManager.SDK_VERSION,
-            "User Agent" to "SalesforceMobileSDK/13.2.0.dev android mobile/15 (sdk_gphone64_arm64) " +
-                    "RestExplorer/1.0(1) Native uid_adc6e133bd0ac338 ftr_AI.SP.UA SecurityPatch/2024-09-05",
-        ),
-    )
+private fun DevInfoItemPreview() {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DevInfoItem("SDK Version", SalesforceSDKManager.SDK_VERSION)
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
+@Composable
+private fun DevInfoItemLongPreview() {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        DevInfoItem("User Agent","SalesforceMobileSDK/13.2.0.dev android mobile/15 (sdk_gphone64_arm64) " +
+                "RestExplorer/1.0(1) Native uid_adc6e133bd0ac338 ftr_AI.SP.UA SecurityPatch/2024-09-05")
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
+@Composable
+private fun CollapsibleSectionPreview() {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        CollapsibleSection(
+            "Collapsed",
+            listOf("User Agent" to "SalesforceMobileSDK/13.2.0.dev android mobile/15 (sdk_gphone64_arm64) " +
+                "RestExplorer/1.0(1) Native uid_adc6e133bd0ac338 ftr_AI.SP.UA SecurityPatch/2024-09-05"),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
+@Composable
+private fun CollapsibleSectionExpandedPreview() {
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+        CollapsibleSection(
+            "Expanded",
+            listOf(
+                "SDK Version" to SalesforceSDKManager.SDK_VERSION,
+                "User Agent" to "SalesforceMobileSDK/13.2.0.dev android mobile/15 (sdk_gphone64_arm64) " +
+                    "RestExplorer/1.0(1) Native uid_adc6e133bd0ac338 ftr_AI.SP.UA SecurityPatch/2024-09-05"
+            ),
+            defaultExpanded = true,
+        )
+    }
 }

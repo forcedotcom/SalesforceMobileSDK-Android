@@ -102,6 +102,7 @@ import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -109,6 +110,7 @@ import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
+import com.salesforce.androidsdk.developer.support.DevSupportInfo
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.BROADCAST_INTENT_ACTION_SHOW_DEVELOPER_SUPPORT
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
@@ -1338,6 +1340,10 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Information to display in the developer support dialog */
+    @Deprecated(
+        "Will be removed in Mobile SDK 14.0, please use the new data class representation.",
+        ReplaceWith("devSupportInfo")
+    )
     open val devSupportInfos: List<String>
         get() = mutableListOf(
             "SDK Version", SDK_VERSION,
@@ -1376,6 +1382,25 @@ open class SalesforceSDKManager protected constructor(
                 )
             }
         }
+
+    open val devSupportInfo
+        get() = DevSupportInfo(
+            SDK_VERSION,
+            appType,
+            userAgent,
+            userAccountManager.authenticatedUsers ?: emptyList(),
+            authConfig = listOf(
+                "Use Web Server Authentication" to "$useWebServerAuthentication",
+                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
+                "Browser Login Enabled" to "$isBrowserLoginEnabled",
+                "IDP Enabled" to "$isIDPLoginFlowEnabled",
+                "Identity Provider" to "$isIdentityProvider",
+            ),
+            BootConfig.getBootConfig(appContext),
+            userAccountManager.currentUser,
+            getRuntimeConfig(appContext),
+        )
 
     private fun accessTokenExpiration(): String {
         val currentUser = userAccountManager.cachedCurrentUser
@@ -1424,11 +1449,23 @@ open class SalesforceSDKManager protected constructor(
      * @return A string representation of the provided users.
      */
     private fun usersToString(
+        vararg userAccounts: UserAccount
+    ) = join(
+        ", ",
+        userAccounts.map { userAccount ->
+            userAccount.accountName
+        }
+    )
+
+    /**
+     * Returns a string representation of the provided users.
+     * @param userAccounts The user accounts
+     * @return A string representation of the provided users.
+     */
+    private fun usersToString(
         userAccounts: List<UserAccount>?
     ) = userAccounts?.toTypedArray<UserAccount>()?.let {
-        join(", ", it.map { userAccount ->
-            userAccount.accountName
-        })
+        usersToString(*it)
     } ?: ""
 
     /** Sends the logout completed intent */
