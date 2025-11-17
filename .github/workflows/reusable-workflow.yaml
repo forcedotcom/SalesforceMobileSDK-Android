@@ -46,7 +46,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.10.1"
+          gradle-version: "8.12.0"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - name: Run Lint
