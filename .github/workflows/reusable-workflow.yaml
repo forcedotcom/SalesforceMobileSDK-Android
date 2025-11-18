@@ -46,7 +46,8 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13.0"
+          # This is the actual Gradle version (not AGP), which can be found in the gradle-wrapper.properties file.
+          gradle-version: "8.14.3"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - name: Run Lint
