@@ -501,7 +501,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 //            )
 //        );
 //
-//        devInfo.setSmartStoreValues(smartStoreSection);
+//        devInfo.getAdditionalSections().add(smartStoreSection);
 //        return devInfo;
 //    }
 

@@ -525,50 +525,6 @@ class DevSupportInfoTest {
     }
 
     @Test
-    fun createFromLegacyDevInfos_ExtractsSmartStoreSection() {
-        val legacyDevInfos = listOf(
-            "SDK Version", "13.2.0",
-            "App Type", "Native",
-            "User Agent", "TestUserAgent",
-            "SQLCipher version", "4.5.0",
-            "SQLCipher Compile Options", "OPTION1, OPTION2",
-            "SQLCipher Runtime Setting", "SETTING1, SETTING2",
-            "User SmartStores", "store1, store2",
-            "Global SmartStores", "global1",
-            "User Key-Value Stores", "kv1",
-            "Global Key-Value Stores", "kv2",
-            "Consumer Key", "test_key",
-            "Redirect URI", "test://redirect",
-        )
-
-        val devSupportInfo = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
-
-        // Verify SmartStore section was extracted
-        assertNotNull(devSupportInfo.smartStoreSection)
-        assertEquals("Smart Store", devSupportInfo.smartStoreSection?.first)
-        
-        val smartStoreValues = devSupportInfo.smartStoreSection!!.second
-        assertEquals(7, smartStoreValues.size)
-        assertTrue(smartStoreValues.any { it.first == "SQLCipher version" && it.second == "4.5.0" })
-        assertTrue(smartStoreValues.any { it.first == "SQLCipher Compile Options" && it.second == "OPTION1, OPTION2" })
-        assertTrue(smartStoreValues.any { it.first == "SQLCipher Runtime Setting" && it.second == "SETTING1, SETTING2" })
-        assertTrue(smartStoreValues.any { it.first == "User SmartStores" && it.second == "store1, store2" })
-        assertTrue(smartStoreValues.any { it.first == "Global SmartStores" && it.second == "global1" })
-        assertTrue(smartStoreValues.any { it.first == "User Key-Value Stores" && it.second == "kv1" })
-        assertTrue(smartStoreValues.any { it.first == "Global Key-Value Stores" && it.second == "kv2" })
-
-        // Verify SmartStore values were removed from basicInfo
-        val basicInfo = devSupportInfo.basicInfo!!
-        assertFalse(basicInfo.any { it.first == "SQLCipher version" })
-        assertFalse(basicInfo.any { it.first == "User SmartStores" })
-        
-        // Verify other values remain in basicInfo
-        assertTrue(basicInfo.any { it.first == "SDK Version" && it.second == "13.2.0" })
-        assertTrue(basicInfo.any { it.first == "App Type" && it.second == "Native" })
-        assertTrue(basicInfo.any { it.first == "User Agent" && it.second == "TestUserAgent" })
-    }
-
-    @Test
     fun createFromLegacyDevInfos_RemovesValuesFromBasicInfoWhenMovedToSections() {
         val legacyDevInfos = listOf(
             "SDK Version", "13.2.0",

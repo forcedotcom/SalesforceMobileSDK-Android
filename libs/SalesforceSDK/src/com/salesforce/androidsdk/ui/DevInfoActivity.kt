@@ -160,7 +160,8 @@ fun DevInfoScreen(
             }
         }
 
-        devSupportInfo.smartStoreSection?.let { (title, items) ->
+        // Additional Sections
+        devSupportInfo.additionalSections.forEach { (title, items) ->
             item {
                 CollapsibleSection(title, items)
             }

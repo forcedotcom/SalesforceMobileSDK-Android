@@ -43,7 +43,7 @@ data class DevSupportInfo(
     val bootConfigSection: DevInfoSection? = null,
     val currentUserSection: DevInfoSection? = null,
     val runtimeConfigSection: DevInfoSection? = null,
-    val additionalSections: List<DevInfoSection>? = null,
+    val additionalSections: MutableList<DevInfoSection> = mutableListOf(),
 ) {
 
     constructor(
@@ -104,16 +104,6 @@ data class DevSupportInfo(
                 "Require Cert Auth",
                 "Only Show Authorized Hosts",
             )
-            val smartStoreSection = legacyDevInfo.createSection(
-                sectionTitle = "Smart Store",
-                /* ...keys = */ "SQLCipher version",
-                "SQLCipher Compile Options",
-                "SQLCipher Runtime Setting",
-                "User SmartStores",
-                "Global SmartStores",
-                "User Key-Value Stores",
-                "Global Key-Value Stores",
-            )
 
             return DevSupportInfo(
                 basicInfo = legacyDevInfo,
@@ -121,7 +111,7 @@ data class DevSupportInfo(
                 bootConfigSection,
                 currentUserSection,
                 runtimeConfigSection,
-            ).also { it.smartStoreSection = smartStoreSection }
+            )
         }
 
         fun parseBootConfigInfo(bootConfig: BootConfig): DevInfoList {
@@ -190,8 +180,6 @@ data class DevSupportInfo(
             return values
         }
     }
-
-    var smartStoreSection: DevInfoSection? = null
 }
 
 /**
