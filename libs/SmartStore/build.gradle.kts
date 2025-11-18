@@ -13,7 +13,7 @@ dependencies {
     api(project(":libs:SalesforceSDK"))
     //noinspection GradleDependency -  Needs to line up with supported SQLCipher version.
     api("androidx.sqlite:sqlite:2.2.0")
-    api("net.zetetic:sqlcipher-android:4.10.0")
+    api("net.zetetic:sqlcipher-android:4.11.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")

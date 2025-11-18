@@ -42,7 +42,7 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
+    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0.  Also, React Native 0.81.5 requests 36.
     compileSdk = 35
 
     defaultConfig {

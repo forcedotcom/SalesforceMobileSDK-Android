@@ -46,7 +46,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.10.1"
+          gradle-version: "8.13.0"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - name: Run Lint
@@ -106,7 +106,7 @@ jobs:
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=${{ inputs.lib }} \
-                --timeout=30m --no-auto-google-login --no-record-video --no-performance-metrics \
+                --timeout=40m --no-auto-google-login --no-record-video --no-performance-metrics \
                 --num-flaky-test-attempts=${RETRIES} || true
             done
       - name: Copy Test Results
