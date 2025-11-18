@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.Manifest
+import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
@@ -47,6 +49,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.components.AddConnection
 import com.salesforce.androidsdk.ui.components.PickerBottomSheet
@@ -88,6 +91,14 @@ class PickerBottomSheetTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    // TODO: Remove if when min SDK version is 33
+    @get:Rule
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
+    }
 
     /* This call will print the semantic tree: composeTestRule.onAllNodes(isRoot()).printToLog("", 10) */
 

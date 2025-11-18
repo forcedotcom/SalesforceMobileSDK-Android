@@ -234,4 +234,54 @@ class LoginActivityTest {
 
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = supportWelcomeDiscovery
     }
+
+    @Test
+    fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
+        // Set loginDevMenuReload to false initially
+        SalesforceSDKManager.getInstance().loginDevMenuReload = false
+        
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        ).use { activityScenario ->
+            // Get the initial login URL
+            var initialUrl: String? = null
+            activityScenario.onActivity { activity ->
+                initialUrl = activity.viewModel.loginUrl.value
+            }
+            
+            // Pause the activity (simulating going to dev menu)
+            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
+            
+            // Simulate changing login options in dev menu
+            activityScenario.onActivity { _ ->
+                SalesforceSDKManager.getInstance().loginDevMenuReload = true
+            }
+            
+            // Resume the activity
+            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+            
+            // Verify the webview was reloaded (URL should be regenerated)
+            activityScenario.onActivity { activity ->
+                // The reload flag should be reset to false
+                assertFalse(
+                    "loginDevMenuReload should be reset to false after reload",
+                    SalesforceSDKManager.getInstance().loginDevMenuReload
+                )
+                
+                // For Web Server Flow, the URL changes each time due to code challenge
+                // Verify that reloadWebView was called by checking the URL changed
+                val newUrl = activity.viewModel.loginUrl.value
+                if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                    // Web Server Flow generates a new code challenge each time
+                    assertTrue(
+                        "Login URL should have changed after reload for Web Server Flow",
+                        newUrl != initialUrl
+                    )
+                }
+            }
+        }
+    }
 }

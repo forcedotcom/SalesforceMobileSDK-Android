@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import static androidx.annotation.VisibleForTesting.PROTECTED;
 import static com.salesforce.androidsdk.smartstore.store.KeyValueEncryptedFileStore.KEY_VALUE_STORES;
 
 import android.app.Activity;
@@ -33,6 +34,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -442,7 +444,8 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     @NonNull
     @Override
-    protected Map<String, DevActionHandler> getDevActions(
+    @VisibleForTesting(otherwise = PROTECTED)
+    public Map<String, DevActionHandler> getDevActions(
             @NonNull final Activity frontActivity
     ) {
         Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);
@@ -480,6 +483,27 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         ));
         return devSupportInfos;
     }
+
+//   TODO:  Use the below code in 14.0 when getDevSupportInfos is removed.
+//
+//    @Override
+//    public @NotNull DevSupportInfo getDevSupportInfo() {
+//        DevSupportInfo devInfo = super.getDevSupportInfo();
+//        Pair<String, List<Pair<String, String>>> smartStoreSection = new Pair<>(
+//                "Smart Store", Arrays.asList(
+//                new Pair<>("SQLCipher version", getSmartStore().getSQLCipherVersion()),
+//                new Pair<>("SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions())),
+//                new Pair<>("SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings())),
+//                new Pair<>("User SmartStores", TextUtils.join(", ", getUserStoresPrefixList())),
+//                new Pair<>("Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList())),
+//                new Pair<>("User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList())),
+//                new Pair<>("Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList()))
+//            )
+//        );
+//
+//        devInfo.getAdditionalSections().add(smartStoreSection);
+//        return devInfo;
+//    }
 
     /**
      * Get key value store with given name for current user

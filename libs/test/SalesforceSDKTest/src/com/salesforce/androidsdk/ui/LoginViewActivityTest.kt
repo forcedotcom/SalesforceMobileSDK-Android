@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.Manifest
+import android.os.Build
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.BottomAppBar
@@ -52,6 +54,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
+import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.ui.components.DefaultBottomAppBar
 import com.salesforce.androidsdk.ui.components.DefaultLoadingIndicator
@@ -68,6 +71,14 @@ class LoginViewActivityTest {
 
     @get:Rule
     val androidComposeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    // TODO: Remove if when min SDK version is 33
+    @get:Rule
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
+    }
 
     @Test
     fun topAppBar_Default_DisplaysCorrectly() {

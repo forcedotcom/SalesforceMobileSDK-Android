@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.Manifest
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.test.assertIsDisplayed
@@ -40,6 +42,7 @@ import androidx.compose.ui.test.onChildAt
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.components.PickerStyle
@@ -55,6 +58,14 @@ class PickerBottomSheetActivityTest {
 
     @get:Rule
     val androidComposeTestRule = createAndroidComposeRule<ComponentActivity>()
+
+    // TODO: Remove if when min SDK version is 33
+    @get:Rule
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
+    }
 
     // region Login Server Picker Tests
 

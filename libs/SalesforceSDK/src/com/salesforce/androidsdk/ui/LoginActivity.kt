@@ -339,6 +339,17 @@ open class LoginActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         wasBackgrounded = false
+
+        // If debug LoginOptions were changed reload the webview.
+        //
+        // Note:  The dev menu cannot be access when a Custom Tab is displayed so
+        // we can safely ignore that scenario.
+        with(SalesforceSDKManager.getInstance()) {
+            if (isDebugBuild && loginDevMenuReload) {
+                viewModel.reloadWebView()
+                loginDevMenuReload = false
+            }
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent) =
