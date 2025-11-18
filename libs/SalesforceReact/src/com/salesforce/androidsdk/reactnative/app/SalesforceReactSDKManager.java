@@ -26,10 +26,13 @@
  */
 package com.salesforce.androidsdk.reactnative.app;
 
+import static androidx.annotation.VisibleForTesting.PROTECTED;
+
 import android.app.Activity;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.JavaScriptModule;
@@ -165,7 +168,8 @@ public class SalesforceReactSDKManager extends MobileSyncSDKManager {
 
     @NonNull
     @Override
-    protected Map<String, DevActionHandler> getDevActions(
+    @VisibleForTesting(otherwise = PROTECTED)
+    public Map<String, DevActionHandler> getDevActions(
             @NonNull final Activity frontActivity
     ) {
         Map<String, DevActionHandler> devActions = super.getDevActions(frontActivity);

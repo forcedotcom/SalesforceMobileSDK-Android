@@ -68,14 +68,19 @@ class DevInfoActivityTest {
         val devSupportInfo = SalesforceSDKManager.getInstance().devSupportInfo
         
         // Verify basic SDK information is displayed (non-collapsible)
+        val basicInfo = devSupportInfo.basicInfo!!
+        
         composeTestRule.onNodeWithText("SDK Version").assertIsDisplayed()
-        composeTestRule.onNodeWithText(devSupportInfo.sdkVersion).assertIsDisplayed()
+        val sdkVersion = basicInfo.find { it.first == "SDK Version" }?.second!!
+        composeTestRule.onNodeWithText(sdkVersion).assertIsDisplayed()
         
         composeTestRule.onNodeWithText("App Type").assertIsDisplayed()
-        composeTestRule.onNodeWithText(devSupportInfo.appType).assertIsDisplayed()
+        val appType = basicInfo.find { it.first == "App Type" }?.second!!
+        composeTestRule.onNodeWithText(appType).assertIsDisplayed()
         
         composeTestRule.onNodeWithText("User Agent").assertIsDisplayed()
-        composeTestRule.onNodeWithText(devSupportInfo.userAgent).assertIsDisplayed()
+        val userAgent = basicInfo.find { it.first == "User Agent" }?.second!!
+        composeTestRule.onNodeWithText(userAgent).assertIsDisplayed()
     }
 
     @Test
@@ -92,9 +97,11 @@ class DevInfoActivityTest {
         
         // Verify sections start collapsed by checking that content is not initially visible
         // Check that auth config items are not displayed initially
-        if (devSupportInfo.authConfig.isNotEmpty()) {
-            val firstAuthConfigKey = devSupportInfo.authConfig[0].first
-            composeTestRule.onNodeWithText(firstAuthConfigKey).assertIsNotDisplayed()
+        devSupportInfo.authConfigSection?.let { (_, items) ->
+            if (items.isNotEmpty()) {
+                val firstAuthConfigKey = items[0].first
+                composeTestRule.onNodeWithText(firstAuthConfigKey).assertIsNotDisplayed()
+            }
         }
     }
 
@@ -106,9 +113,11 @@ class DevInfoActivityTest {
         composeTestRule.onNodeWithText("Authentication Configuration").performClick()
         
         // Verify content is now visible
-        if (devSupportInfo.authConfig.isNotEmpty()) {
-            val firstAuthConfigKey = devSupportInfo.authConfig[0].first
-            composeTestRule.onNodeWithText(firstAuthConfigKey).assertIsDisplayed()
+        devSupportInfo.authConfigSection?.let { (_, items) ->
+            if (items.isNotEmpty()) {
+                val firstAuthConfigKey = items[0].first
+                composeTestRule.onNodeWithText(firstAuthConfigKey).assertIsDisplayed()
+            }
         }
     }
 
@@ -120,18 +129,22 @@ class DevInfoActivityTest {
         composeTestRule.onNodeWithText("Boot Configuration").performClick()
         
         // Verify content is visible
-        if (devSupportInfo.bootConfigValues.isNotEmpty()) {
-            val firstBootConfigKey = devSupportInfo.bootConfigValues[0].first
-            composeTestRule.onNodeWithText(firstBootConfigKey).assertIsDisplayed()
+        devSupportInfo.bootConfigSection?.let { (_, items) ->
+            if (items.isNotEmpty()) {
+                val firstBootConfigKey = items[0].first
+                composeTestRule.onNodeWithText(firstBootConfigKey).assertIsDisplayed()
+            }
         }
         
         // Collapse the section
         composeTestRule.onNodeWithText("Boot Configuration").performClick()
         
         // Verify content is hidden again
-        if (devSupportInfo.bootConfigValues.isNotEmpty()) {
-            val firstBootConfigKey = devSupportInfo.bootConfigValues[0].first
-            composeTestRule.onNodeWithText(firstBootConfigKey).assertIsNotDisplayed()
+        devSupportInfo.bootConfigSection?.let { (_, items) ->
+            if (items.isNotEmpty()) {
+                val firstBootConfigKey = items[0].first
+                composeTestRule.onNodeWithText(firstBootConfigKey).assertIsNotDisplayed()
+            }
         }
     }
 
@@ -145,10 +158,12 @@ class DevInfoActivityTest {
             .performClick()
         
         // Verify boot config items are displayed
-        assertTrue("Boot config should not be empty", devSupportInfo.bootConfigValues.isNotEmpty())
-        
-        devSupportInfo.bootConfigValues.forEach { (key, _) ->
-            composeTestRule.onNodeWithText(key).assertIsDisplayed()
+        devSupportInfo.bootConfigSection?.let { (_, items) ->
+            assertTrue("Boot config should not be empty", items.isNotEmpty())
+            
+            items.forEach { (key, _) ->
+                composeTestRule.onNodeWithText(key).assertIsDisplayed()
+            }
         }
     }
 
@@ -162,10 +177,12 @@ class DevInfoActivityTest {
             .performClick()
         
         // Verify runtime config items are displayed
-        assertTrue("Runtime config should not be empty", devSupportInfo.runtimeConfigValues.isNotEmpty())
-        
-        devSupportInfo.runtimeConfigValues.forEach { (key, _) ->
-            composeTestRule.onNodeWithText(key).assertIsDisplayed()
+        devSupportInfo.runtimeConfigSection?.let { (_, items) ->
+            assertTrue("Runtime config should not be empty", items.isNotEmpty())
+            
+            items.forEach { (key, _) ->
+                composeTestRule.onNodeWithText(key).assertIsDisplayed()
+            }
         }
     }
 }

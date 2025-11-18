@@ -123,52 +123,47 @@ fun DevInfoScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(paddingValues),
     ) {
-        // Basic SDK Information (non-collapsible, no header)
-        val basicInfo = listOf(
-            "SDK Version" to devSupportInfo.sdkVersion,
-            "App Type" to devSupportInfo.appType,
-            "User Agent" to devSupportInfo.userAgent,
-            "Authenticated Users" to devSupportInfo.authenticatedUsersString,
-        )
-
-        items(basicInfo) { (name, value) ->
-            DevInfoItem(name, value)
+        // Basic Info List
+        devSupportInfo.basicInfo?.let {
+            items(it) { (name, value) ->
+                DevInfoItem(name, value)
+            }
         }
 
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
         // Auth Config Section
-        item {
-            CollapsibleSection(
-                title = "Authentication Configuration",
-                items = devSupportInfo.authConfig,
-            )
+        devSupportInfo.authConfigSection?.let { (title, items) ->
+            item {
+                CollapsibleSection(title, items)
+            }
         }
 
         // Boot Config Section
-        item {
-            CollapsibleSection(
-                title = "Boot Configuration",
-                items = devSupportInfo.bootConfigValues,
-            )
+        devSupportInfo.bootConfigSection?.let { (title, items) ->
+            item {
+                CollapsibleSection(title, items)
+            }
         }
 
         // Current User Section
-        devSupportInfo.currentUser?.let {
+        devSupportInfo.currentUserSection?.let { (title, items) ->
             item {
-                CollapsibleSection(
-                    title = "Current User",
-                    items = devSupportInfo.currentUserInfo,
-                )
+                CollapsibleSection(title, items)
             }
         }
 
         // Runtime Config Section
-        item {
-            CollapsibleSection(
-                title = "Runtime Configuration",
-                items = devSupportInfo.runtimeConfigValues,
-            )
+        devSupportInfo.runtimeConfigSection?.let { (title, items) ->
+            item {
+                CollapsibleSection(title, items)
+            }
+        }
+
+        devSupportInfo.smartStoreSection?.let { (title, items) ->
+            item {
+                CollapsibleSection(title, items)
+            }
         }
     }
 }

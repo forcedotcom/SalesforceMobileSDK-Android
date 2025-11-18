@@ -102,7 +102,6 @@ import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
-import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -1317,8 +1316,8 @@ open class SalesforceSDKManager protected constructor(
             },
         )
 
-        // Do not show Logout or Switch User options in Dev menu on the Login screen.
-        if (frontActivity !is LoginActivity) {
+        // Do not show Logout or Switch User options in Dev menu on the Login screen or if there is no user(s).
+        if (frontActivity !is LoginActivity && userAccountManager.cachedCurrentUser != null) {
             actions["Logout"] = object : DevActionHandler {
                 override fun onSelected() {
                     logout(frontActivity = frontActivity, reason = LogoutReason.USER_LOGOUT)
@@ -1356,52 +1355,60 @@ open class SalesforceSDKManager protected constructor(
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
-            "Current User", userAccountManager.cachedCurrentUser?.accountName ?: "",
-            "Current User Scopes", userAccountManager.cachedCurrentUser?.scope?.replace(" ", ", ") ?: "",
-            "Access Token Expiration", accessTokenExpiration(),
-            "Authenticated Users", usersToString(userAccountManager.authenticatedUsers)
+            "Authenticated Users", userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
+                "${it.displayName} (${it.username})"
+            } ?: "none",
         ).apply {
-            addAll(
-                getDevInfosFor(
-                    getBootConfig(appContext).asJSON(),
-                    "BootConfig"
-                )
-            )
-            val runtimeConfig = getRuntimeConfig(appContext)
-            addAll(
-                listOf(
-                    "Managed?",
-                    "${runtimeConfig.isManagedApp}"
-                )
-            )
-            if (runtimeConfig.isManagedApp) {
-                addAll(
-                    getDevInfosFor(
-                        runtimeConfig.asJSON(),
-                        "Managed Pref"
-                    )
-                )
+            val bootConfigValues = DevSupportInfo.parseBootConfigInfo(getBootConfig(appContext))
+            addAll(bootConfigValues.flatMap { listOf(it.first, it.second) })
+
+            val currentUserValues = DevSupportInfo.parseUserInfoSection(userAccountManager.cachedCurrentUser)
+            currentUserValues?.let { (_, values) ->
+                addAll(values.flatMap { listOf(it.first, it.second) })
             }
+
+            val runtimeConfigValues = DevSupportInfo.parseRuntimeConfig(getRuntimeConfig(appContext))
+            addAll(runtimeConfigValues.flatMap { listOf(it.first, it.second) })
         }
 
-    open val devSupportInfo
-        get() = DevSupportInfo(
-            SDK_VERSION,
-            appType,
-            userAgent,
-            userAccountManager.authenticatedUsers ?: emptyList(),
-            authConfig = listOf(
-                "Use Web Server Authentication" to "$useWebServerAuthentication",
-                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
-                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
-                "Browser Login Enabled" to "$isBrowserLoginEnabled",
-                "IDP Enabled" to "$isIDPLoginFlowEnabled",
-                "Identity Provider" to "$isIdentityProvider",
-            ),
-            BootConfig.getBootConfig(appContext),
-            userAccountManager.currentUser,
-            getRuntimeConfig(appContext),
-        )
+//    val devSupportInfo: DevSupportInfo
+//        get() {
+//            val userList: String? = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
+//                "${it.displayName} (${it.username})"
+//            }
+//            val basicInfo = listOf(
+//                "SDK Version" to SDK_VERSION,
+//                "App Type" to appType,
+//                "User Agent" to userAgent,
+//                "Authenticated Users" to (userList ?: "None"),
+//            )
+//            val authConfig = listOf(
+//                "Use Web Server Authentication" to "$useWebServerAuthentication",
+//                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+//                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
+//                "Browser Login Enabled" to "$isBrowserLoginEnabled",
+//                "IDP Enabled" to "$isIDPLoginFlowEnabled",
+//                "Identity Provider" to "$isIdentityProvider",
+//            )
+//
+//            return DevSupportInfo(
+//                basicInfo,
+//                authConfig,
+//                getBootConfig(appContext),
+//                userAccountManager.cachedCurrentUser,
+//                getRuntimeConfig(appContext),
+//            )
+//        }
+//
+//  TODO: Replace devSupportInfo with the above implementation when devSupportInfos is removed in 14.0.
+    open val devSupportInfo: DevSupportInfo
+        get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos)
+
+    private fun MutableList<Pair<String, String>>.findValueAndRemove(key: String): String? =
+        find { it.first == key }?.let { pair ->
+            remove(pair)
+            pair.second
+        }
 
     private fun accessTokenExpiration(): String {
         val currentUser = userAccountManager.cachedCurrentUser

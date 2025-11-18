@@ -37,6 +37,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,24 +51,54 @@ class DevSupportInfoTest {
         val sdkVersion = "13.2.0"
         val appType = "app_type_native"
         val userAgent = "fake_user_agent"
-        val devSupportInfo = createBasicDevSupportInfo(
-            sdkVersion = sdkVersion,
-            appType = appType,
-            userAgent = userAgent,
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to sdkVersion,
+                "App Type" to appType,
+                "User Agent" to userAgent,
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
         )
 
-        assertEquals(sdkVersion, devSupportInfo.sdkVersion)
-        assertEquals(appType, devSupportInfo.appType)
-        assertEquals(userAgent, devSupportInfo.userAgent)
-        assertTrue(devSupportInfo.authenticatedUsers.isEmpty())
-        assertTrue(devSupportInfo.authConfig.isNotEmpty())
+        // Verify basic info contains the expected values
+        val basicInfo = devSupportInfo.basicInfo!!
+        assertTrue(basicInfo.any { it.first == "SDK Version" && it.second == sdkVersion })
+        assertTrue(basicInfo.any { it.first == "App Type" && it.second == appType })
+        assertTrue(basicInfo.any { it.first == "User Agent" && it.second == userAgent })
+        
+        // Verify auth config section exists
+        assertTrue(devSupportInfo.authConfigSection != null)
     }
 
     @Test
     fun bootConfigValues_NativeApp_ContainsBasicValues() {
-        val devSupportInfo = createBasicDevSupportInfo(appType = "Native")
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        val bootConfigValues = devSupportInfo.bootConfigValues
+        val bootConfigValues = devSupportInfo.bootConfigSection!!.second
 
         assertTrue(bootConfigValues.any { it.first == "Consumer Key" })
         assertTrue(bootConfigValues.any { it.first == "Redirect URI" })
@@ -81,9 +112,30 @@ class DevSupportInfoTest {
 
     @Test
     fun bootConfigValues_HybridApp_ContainsHybridSpecificValues() {
-        val devSupportInfo = createBasicDevSupportInfo(appType = "Hybrid")
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Hybrid",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web",
+                "Local" to "true",
+                "Start Page" to "index.html",
+                "Unauthenticated Start Page" to "login.html",
+                "Error Page" to "error.html",
+                "Should Authenticate" to "true",
+                "Attempt Offline Load" to "false"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        val bootConfigValues = devSupportInfo.bootConfigValues
+        val bootConfigValues = devSupportInfo.bootConfigSection!!.second
 
         // Should have basic values
         assertTrue(bootConfigValues.any { it.first == "Consumer Key" })
@@ -101,9 +153,30 @@ class DevSupportInfoTest {
 
     @Test
     fun bootConfigValues_HybridApp_ValuesAreCorrect() {
-        val devSupportInfo = createBasicDevSupportInfo(appType = "Hybrid")
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Hybrid",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web",
+                "Local" to "true",
+                "Start Page" to "index.html",
+                "Unauthenticated Start Page" to "login.html",
+                "Error Page" to "error.html",
+                "Should Authenticate" to "true",
+                "Attempt Offline Load" to "false"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        val bootConfigValues = devSupportInfo.bootConfigValues
+        val bootConfigValues = devSupportInfo.bootConfigSection!!.second
 
         assertEquals("test_consumer_key", bootConfigValues.find { it.first == "Consumer Key" }?.second)
         assertEquals("test://redirect", bootConfigValues.find { it.first == "Redirect URI" }?.second)
@@ -115,9 +188,25 @@ class DevSupportInfoTest {
     @Test
     fun runtimeConfigValues_UnmanagedApp_ContainsOnlyManagedFlag() {
         val runtimeConfig = createMockRuntimeConfig(isManagedApp = false)
-        val devSupportInfo = createDevSupportInfoWithRuntimeConfig(runtimeConfig)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to DevSupportInfo.parseRuntimeConfig(runtimeConfig)
+        )
 
-        val runtimeConfigValues = devSupportInfo.runtimeConfigValues
+        val runtimeConfigValues = devSupportInfo.runtimeConfigSection!!.second
 
         assertEquals(1, runtimeConfigValues.size)
         assertEquals("Managed App", runtimeConfigValues[0].first)
@@ -133,9 +222,25 @@ class DevSupportInfoTest {
             requireCertAuth = true,
             onlyShowAuthorizedHosts = false
         )
-        val devSupportInfo = createDevSupportInfoWithRuntimeConfig(runtimeConfig)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to DevSupportInfo.parseRuntimeConfig(runtimeConfig)
+        )
 
-        val runtimeConfigValues = devSupportInfo.runtimeConfigValues
+        val runtimeConfigValues = devSupportInfo.runtimeConfigSection!!.second
 
         assertTrue(runtimeConfigValues.any { it.first == "Managed App" && it.second == "true" })
         assertTrue(runtimeConfigValues.any { it.first == "OAuth ID" && it.second == "managed_oauth_id" })
@@ -151,40 +256,103 @@ class DevSupportInfoTest {
             oauthId = null,
             callbackUrl = null
         )
-        val devSupportInfo = createDevSupportInfoWithRuntimeConfig(runtimeConfig)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to DevSupportInfo.parseRuntimeConfig(runtimeConfig)
+        )
 
-        val runtimeConfigValues = devSupportInfo.runtimeConfigValues
+        val runtimeConfigValues = devSupportInfo.runtimeConfigSection!!.second
 
         assertTrue(runtimeConfigValues.any { it.first == "OAuth ID" && it.second == "N/A" })
         assertTrue(runtimeConfigValues.any { it.first == "Callback URL" && it.second == "N/A" })
     }
 
     @Test
-    fun authenticatedUsersString_EmptyList_ReturnsEmptyString() {
-        val devSupportInfo = createBasicDevSupportInfo()
+    fun basicInfo_ContainsAuthenticatedUsers_EmptyList() {
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        assertEquals("", devSupportInfo.authenticatedUsersString)
+        val basicInfo = devSupportInfo.basicInfo!!
+        val authenticatedUsersValue = basicInfo.find { it.first == "Authenticated Users" }?.second
+        assertEquals("", authenticatedUsersValue)
     }
 
     @Test
-    fun authenticatedUsersString_MultipleUsers_FormatsCorrectly() {
-        val user1 = createMockUserAccount("user1@test.com", "User One")
-        val user2 = createMockUserAccount("user2@test.com", "User Two")
-        val devSupportInfo = createBasicDevSupportInfo(authenticatedUsers = listOf(user1, user2))
+    fun basicInfo_ContainsAuthenticatedUsers_MultipleUsers() {
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to "User One (user1@test.com),\nUser Two (user2@test.com)"
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
+        val basicInfo = devSupportInfo.basicInfo!!
+        val authenticatedUsersValue = basicInfo.find { it.first == "Authenticated Users" }?.second
         val expected = "User One (user1@test.com),\nUser Two (user2@test.com)"
-        assertEquals(expected, devSupportInfo.authenticatedUsersString)
+        assertEquals(expected, authenticatedUsersValue)
     }
 
     @Test
-    fun currentUserInfo_NoCurrentUser_ReturnsEmptyList() {
-        val devSupportInfo = createBasicDevSupportInfo(currentUser = null)
+    fun currentUserSection_NoCurrentUser_ReturnsNull() {
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        assertTrue(devSupportInfo.currentUserInfo.isEmpty())
+        assertTrue(devSupportInfo.currentUserSection == null)
     }
 
     @Test
-    fun currentUserInfo_WithCurrentUser_ContainsAllFields() {
+    fun currentUserSection_WithCurrentUser_ContainsAllFields() {
         val user = createMockUserAccount(
             username = "test@salesforce.com",
             displayName = "Test User",
@@ -193,9 +361,25 @@ class DevSupportInfoTest {
             instanceServer = "https://test.salesforce.com",
             tokenFormat = "oauth2"
         )
-        val devSupportInfo = createBasicDevSupportInfo(currentUser = user)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = DevSupportInfo.parseUserInfoSection(user),
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        val currentUserInfo = devSupportInfo.currentUserInfo
+        val currentUserInfo = devSupportInfo.currentUserSection!!.second
 
         assertTrue(currentUserInfo.any { it.first == "Username" && it.second == "test@salesforce.com" })
         assertTrue(currentUserInfo.any { it.first == "Consumer Key" && it.second == "test_client_id" })
@@ -205,22 +389,55 @@ class DevSupportInfoTest {
     }
 
     @Test
-    fun accessTokenExpiration_NoCurrentUser_ReturnsUnknown() {
-        val devSupportInfo = createBasicDevSupportInfo(currentUser = null)
+    fun currentUserSection_NoCurrentUser_NoAccessTokenExpiration() {
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = null,
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        assertEquals("Unknown", devSupportInfo.accessTokenExpiration)
+        assertTrue(devSupportInfo.currentUserSection == null)
     }
 
     @Test
-    fun accessTokenExpiration_NonJwtToken_ReturnsUnknown() {
+    fun currentUserSection_NonJwtToken_ReturnsUnknown() {
         val user = createMockUserAccount(tokenFormat = "oauth2")
-        val devSupportInfo = createBasicDevSupportInfo(currentUser = user)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = DevSupportInfo.parseUserInfoSection(user),
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        assertEquals("Unknown", devSupportInfo.accessTokenExpiration)
+        val currentUserInfo = devSupportInfo.currentUserSection!!.second
+        val expiration = currentUserInfo.find { it.first == "Access Token Expiration" }?.second
+        assertEquals("Unknown", expiration)
     }
 
     @Test
-    fun accessTokenExpiration_JwtToken_ReturnsFormattedDate() {
+    fun currentUserSection_JwtToken_ReturnsFormattedDate() {
         // Create a JWT token that expires in the future
         val futureTime = Calendar.getInstance().apply {
             add(Calendar.HOUR, 2)
@@ -231,9 +448,26 @@ class DevSupportInfoTest {
             tokenFormat = "jwt",
             authToken = jwtToken
         )
-        val devSupportInfo = createBasicDevSupportInfo(currentUser = user)
+        
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = listOf(
+                "SDK Version" to "test_version",
+                "App Type" to "Native",
+                "User Agent" to "TestUserAgent",
+                "Authenticated Users" to ""
+            ),
+            authConfigSection = "Authentication Configuration" to listOf("Test" to "Config"),
+            bootConfigSection = "Boot Configuration" to listOf(
+                "Consumer Key" to "test_consumer_key",
+                "Redirect URI" to "test://redirect",
+                "Scopes" to "api web"
+            ),
+            currentUserSection = DevSupportInfo.parseUserInfoSection(user),
+            runtimeConfigSection = "Runtime Configuration" to listOf("Managed App" to "false")
+        )
 
-        val expiration = devSupportInfo.accessTokenExpiration
+        val currentUserInfo = devSupportInfo.currentUserSection!!.second
+        val expiration = currentUserInfo.find { it.first == "Access Token Expiration" }?.second!!
         
         // Should not be "Unknown"
         assertNotEquals("Unknown", expiration)
@@ -242,61 +476,247 @@ class DevSupportInfoTest {
         assertTrue(expiration.matches(Regex("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")))
     }
 
-    // Helper methods
+    @Test
+    fun secondaryConstructor_ParsesBootConfigAndRuntimeConfig() {
+        val basicInfo = listOf(
+            "SDK Version" to "test_version",
+            "App Type" to "Native",
+            "User Agent" to "TestUserAgent",
+            "Authenticated Users" to "",
+        )
+        val authConfig = listOf("Test" to "Config")
+        val bootConfig = mockk<BootConfig>(relaxed = true) {
+            every { remoteAccessConsumerKey } returns "secondary_consumer_key"
+            every { oauthRedirectURI } returns "secondary://redirect"
+            every { oauthScopes } returns arrayOf("api", "web", "refresh_token")
+        }
+        val runtimeConfig = createMockRuntimeConfig(isManagedApp = true, oauthId = "secondary_oauth_id")
+        val user = createMockUserAccount(username = "secondary@test.com")
 
-    private fun createBasicDevSupportInfo(
-        sdkVersion: String = "test_version",
-        appType: String = "Native",
-        userAgent: String = "TestUserAgent",
-        authenticatedUsers: List<UserAccount> = emptyList(),
-        authConfig: List<Pair<String, String>> = listOf("Test" to "Config"),
-        currentUser: UserAccount? = null
-    ): DevSupportInfo {
-        val bootConfig = createMockBootConfig()
-        val runtimeConfig = createMockRuntimeConfig(isManagedApp = false)
-
-        return DevSupportInfo(
-            sdkVersion = sdkVersion,
-            appType = appType,
-            userAgent = userAgent,
-            authenticatedUsers = authenticatedUsers,
+        val devSupportInfo = DevSupportInfo(
+            basicInfo = basicInfo,
             authConfig = authConfig,
             bootConfig = bootConfig,
-            currentUser = currentUser,
+            currentUser = user,
             runtimeConfig = runtimeConfig
         )
+
+        // Verify basic info is preserved
+        assertEquals(basicInfo, devSupportInfo.basicInfo)
+
+        // Verify auth config section
+        assertEquals("Authentication Configuration", devSupportInfo.authConfigSection?.first)
+        assertEquals(authConfig, devSupportInfo.authConfigSection?.second)
+
+        // Verify boot config was parsed
+        val bootConfigValues = devSupportInfo.bootConfigSection!!.second
+        assertTrue(bootConfigValues.any { it.first == "Consumer Key" && it.second == "secondary_consumer_key" })
+        assertTrue(bootConfigValues.any { it.first == "Redirect URI" && it.second == "secondary://redirect" })
+        assertTrue(bootConfigValues.any { it.first == "Scopes" && it.second == "api web refresh_token" })
+
+        // Verify current user was parsed
+        val currentUserInfo = devSupportInfo.currentUserSection!!.second
+        assertTrue(currentUserInfo.any { it.first == "Username" && it.second == "secondary@test.com" })
+
+        // Verify runtime config was parsed
+        val runtimeConfigValues = devSupportInfo.runtimeConfigSection!!.second
+        assertTrue(runtimeConfigValues.any { it.first == "Managed App" && it.second == "true" })
+        assertTrue(runtimeConfigValues.any { it.first == "OAuth ID" && it.second == "secondary_oauth_id" })
     }
 
-    private fun createDevSupportInfoWithRuntimeConfig(
-        runtimeConfig: RuntimeConfig
-    ): DevSupportInfo {
-        val bootConfig = createMockBootConfig()
-
-        return DevSupportInfo(
-            sdkVersion = "test_version",
-            appType = "Native",
-            userAgent = "TestUserAgent",
-            authenticatedUsers = emptyList(),
-            authConfig = listOf("Test" to "Config"),
-            bootConfig = bootConfig,
-            currentUser = null,
-            runtimeConfig = runtimeConfig
+    @Test
+    fun createFromLegacyDevInfos_ExtractsSmartStoreSection() {
+        val legacyDevInfos = listOf(
+            "SDK Version", "13.2.0",
+            "App Type", "Native",
+            "User Agent", "TestUserAgent",
+            "SQLCipher version", "4.5.0",
+            "SQLCipher Compile Options", "OPTION1, OPTION2",
+            "SQLCipher Runtime Setting", "SETTING1, SETTING2",
+            "User SmartStores", "store1, store2",
+            "Global SmartStores", "global1",
+            "User Key-Value Stores", "kv1",
+            "Global Key-Value Stores", "kv2",
+            "Consumer Key", "test_key",
+            "Redirect URI", "test://redirect",
         )
+
+        val devSupportInfo = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
+
+        // Verify SmartStore section was extracted
+        assertNotNull(devSupportInfo.smartStoreSection)
+        assertEquals("Smart Store", devSupportInfo.smartStoreSection?.first)
+        
+        val smartStoreValues = devSupportInfo.smartStoreSection!!.second
+        assertEquals(7, smartStoreValues.size)
+        assertTrue(smartStoreValues.any { it.first == "SQLCipher version" && it.second == "4.5.0" })
+        assertTrue(smartStoreValues.any { it.first == "SQLCipher Compile Options" && it.second == "OPTION1, OPTION2" })
+        assertTrue(smartStoreValues.any { it.first == "SQLCipher Runtime Setting" && it.second == "SETTING1, SETTING2" })
+        assertTrue(smartStoreValues.any { it.first == "User SmartStores" && it.second == "store1, store2" })
+        assertTrue(smartStoreValues.any { it.first == "Global SmartStores" && it.second == "global1" })
+        assertTrue(smartStoreValues.any { it.first == "User Key-Value Stores" && it.second == "kv1" })
+        assertTrue(smartStoreValues.any { it.first == "Global Key-Value Stores" && it.second == "kv2" })
+
+        // Verify SmartStore values were removed from basicInfo
+        val basicInfo = devSupportInfo.basicInfo!!
+        assertFalse(basicInfo.any { it.first == "SQLCipher version" })
+        assertFalse(basicInfo.any { it.first == "User SmartStores" })
+        
+        // Verify other values remain in basicInfo
+        assertTrue(basicInfo.any { it.first == "SDK Version" && it.second == "13.2.0" })
+        assertTrue(basicInfo.any { it.first == "App Type" && it.second == "Native" })
+        assertTrue(basicInfo.any { it.first == "User Agent" && it.second == "TestUserAgent" })
     }
 
-    private fun createMockBootConfig(): BootConfig {
-        return object : BootConfig() {
-            override fun getRemoteAccessConsumerKey() = "test_consumer_key"
-            override fun getOauthRedirectURI() = "test://redirect"
-            override fun getOauthScopes() = arrayOf("api", "web")
-            override fun isLocal() = true
-            override fun getStartPage() = "index.html"
-            override fun getUnauthenticatedStartPage() = "login.html"
-            override fun getErrorPage() = "error.html"
-            override fun shouldAuthenticate() = true
-            override fun attemptOfflineLoad() = false
+    @Test
+    fun createFromLegacyDevInfos_RemovesValuesFromBasicInfoWhenMovedToSections() {
+        val legacyDevInfos = listOf(
+            "SDK Version", "13.2.0",
+            "App Type", "Native",
+            "User Agent", "TestUserAgent",
+            "Use Web Server Authentication", "true",
+            "Browser Login Enabled", "false",
+            "Consumer Key", "test_key",
+            "Redirect URI", "test://redirect",
+            "Scopes", "api web",
+            "Username", "test@test.com",
+            "Instance URL", "https://test.salesforce.com",
+            "Managed App", "false",
+        )
+
+        val devSupportInfo = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
+
+        val basicInfo = devSupportInfo.basicInfo!!
+
+        // Verify auth config values were removed from basicInfo
+        assertFalse(basicInfo.any { it.first == "Use Web Server Authentication" })
+        assertFalse(basicInfo.any { it.first == "Browser Login Enabled" })
+
+        // Verify boot config values were removed from basicInfo
+        assertFalse(basicInfo.any { it.first == "Consumer Key" })
+        assertFalse(basicInfo.any { it.first == "Redirect URI" })
+        assertFalse(basicInfo.any { it.first == "Scopes" })
+
+        // Verify current user values were removed from basicInfo
+        assertFalse(basicInfo.any { it.first == "Username" })
+        assertFalse(basicInfo.any { it.first == "Instance URL" })
+
+        // Verify runtime config values were removed from basicInfo
+        assertFalse(basicInfo.any { it.first == "Managed App" })
+
+        // Verify only basic info values remain
+        assertTrue(basicInfo.any { it.first == "SDK Version" && it.second == "13.2.0" })
+        assertTrue(basicInfo.any { it.first == "App Type" && it.second == "Native" })
+        assertTrue(basicInfo.any { it.first == "User Agent" && it.second == "TestUserAgent" })
+        assertEquals(3, basicInfo.size)
+
+        // Verify values were moved to appropriate sections
+        assertNotNull(devSupportInfo.authConfigSection)
+        assertTrue(devSupportInfo.authConfigSection!!.second.any { it.first == "Use Web Server Authentication" })
+        
+        assertNotNull(devSupportInfo.bootConfigSection)
+        assertTrue(devSupportInfo.bootConfigSection!!.second.any { it.first == "Consumer Key" })
+        
+        assertNotNull(devSupportInfo.currentUserSection)
+        assertTrue(devSupportInfo.currentUserSection!!.second.any { it.first == "Username" })
+        
+        assertNotNull(devSupportInfo.runtimeConfigSection)
+        assertTrue(devSupportInfo.runtimeConfigSection!!.second.any { it.first == "Managed App" })
+    }
+
+    @Test
+    fun createFromLegacyDevInfos_ProducesSameResultAsSecondaryConstructor() {
+        // Create mock objects for secondary constructor
+        val bootConfig = mockk<BootConfig>(relaxed = true) {
+            every { remoteAccessConsumerKey } returns "test_consumer_key"
+            every { oauthRedirectURI } returns "test://redirect"
+            every { oauthScopes } returns arrayOf("api", "web")
         }
+        val runtimeConfig = createMockRuntimeConfig(
+            isManagedApp = true,
+            oauthId = "test_oauth_id",
+            callbackUrl = "test://callback",
+            requireCertAuth = true,
+            onlyShowAuthorizedHosts = false
+        )
+        val user = createMockUserAccount(
+            username = "test@salesforce.com",
+            displayName = "Test User",
+            clientId = "test_client_id",
+            scope = "api web",
+            instanceServer = "https://test.salesforce.com",
+            tokenFormat = "oauth2"
+        )
+
+        // Create DevSupportInfo using secondary constructor
+        val basicInfo = listOf(
+            "SDK Version" to "13.2.0",
+            "App Type" to "Native",
+            "User Agent" to "TestUserAgent",
+            "Authenticated Users" to "Test User (test@salesforce.com)",
+        )
+        val authConfig = listOf(
+            "Use Web Server Authentication" to "true",
+            "Browser Login Enabled" to "false",
+        )
+        
+        val fromSecondaryConstructor = DevSupportInfo(
+            basicInfo = basicInfo,
+            authConfig = authConfig,
+            bootConfig = bootConfig,
+            currentUser = user,
+            runtimeConfig = runtimeConfig
+        )
+
+        // Create equivalent legacy dev infos list
+        val legacyDevInfos = mutableListOf<String>()
+        
+        // Add basic info
+        basicInfo.forEach { (key, value) ->
+            legacyDevInfos.add(key)
+            legacyDevInfos.add(value)
+        }
+        
+        // Add auth config
+        authConfig.forEach { (key, value) ->
+            legacyDevInfos.add(key)
+            legacyDevInfos.add(value)
+        }
+        
+        // Add boot config
+        legacyDevInfos.addAll(listOf(
+            "Consumer Key", "test_consumer_key",
+            "Redirect URI", "test://redirect",
+            "Scopes", "api web",
+        ))
+        
+        // Add current user
+        legacyDevInfos.addAll(listOf(
+            "Username", "test@salesforce.com",
+            "Consumer Key", "test_client_id",
+            "Scopes", "api web",
+            "Instance URL", "https://test.salesforce.com",
+            "Token Format", "oauth2",
+            "Access Token Expiration", "Unknown",
+            "Beacon Child Consumer Key", user.beaconChildConsumerKey,
+        ))
+        
+        // Add runtime config
+        legacyDevInfos.addAll(listOf(
+            "Managed App", "true",
+            "OAuth ID", "test_oauth_id",
+            "Callback URL", "test://callback",
+            "Require Cert Auth", "true",
+            "Only Show Authorized Hosts", "false",
+        ))
+
+        val fromLegacy = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
+
+        // Assert the two objects are identical
+        assertEquals(fromSecondaryConstructor, fromLegacy)
     }
+
+    // Helper methods
 
     private fun createMockRuntimeConfig(
         isManagedApp: Boolean,
