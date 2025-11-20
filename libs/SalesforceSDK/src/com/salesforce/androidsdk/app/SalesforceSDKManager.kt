@@ -829,9 +829,6 @@ open class SalesforceSDKManager protected constructor(
      */
     private fun startSwitcherActivityIfRequired() {
 
-        // Clear cookies
-        CookieManager.getInstance().removeAllCookies(null)
-
         /*
          * If the number of accounts remaining is 0, show the login page.
          *
@@ -1130,6 +1127,9 @@ open class SalesforceSDKManager protected constructor(
      * @param showLoginPage When true, shows the login page
      */
     private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason, userAccount: UserAccount?) {
+        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
+        CookieManager.getInstance().removeAllCookies(null)
+
         EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
         sendLogoutCompleteIntent(logoutReason, userAccount)
         if (showLoginPage) {
