@@ -110,12 +110,15 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // endregion
 
     // Public LiveData
+    /** The login server that has been selected by the login server manager, has an authentication configuration and is ready for use */
     val selectedServer = MediatorLiveData<String>()
     val loginUrl = MediatorLiveData<String>()
     var showServerPicker = mutableStateOf(false)
     var loading = mutableStateOf(false)
 
     // Internal LiveData
+    /** The login server that is pending authentication configuration before becoming the selected login server */
+    internal val pendingServer = MediatorLiveData<String>()
     internal val authFinished = mutableStateOf(false)
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
@@ -221,14 +224,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             }
 
     init {
-        // Update selectedServer when the LoginServerManager value changes
-        selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
+        // When the login server manager selects a login server, first fetch its authentication configuration by setting the pending login server. Second, the selected login server will be set afterwards.
+        pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
             trimmedServer?.let { nonNullServer ->
-                if (selectedServer.value == nonNullServer) {
+                if (pendingServer.value == nonNullServer) {
                     reloadWebView()
                 } else {
-                    selectedServer.value = nonNullServer
+                    pendingServer.value = nonNullServer
                 }
             }
         }
@@ -237,7 +240,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         loginUrl.addSource(selectedServer) { newServer: String? ->
             if (!isUsingFrontDoorBridge && newServer != null) {
                 val isNewServer = loginUrl.value?.startsWith(newServer) != true
-                if (isNewServer) {
+                if (isNewServer && !SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
                     viewModelScope.launch {
                         loginUrl.value = getAuthorizationUrl(newServer)
                     }
