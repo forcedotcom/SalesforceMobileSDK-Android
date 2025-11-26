@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
@@ -77,6 +78,7 @@ class LoginViewModelTest {
     @After
     fun teardown() {
         SalesforceSDKManager.getInstance().loginServerManager.reset()
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
@@ -211,6 +213,207 @@ class LoginViewModelTest {
         assertEquals(unchangedUrl, viewModel.getValidServerUrl(unchangedUrl))
         val endingSlash = "$unchangedUrl/"
         assertEquals(unchangedUrl, viewModel.getValidServerUrl(endingSlash))
+    }
+
+    @Test
+    fun getAuthorizationUrl_UsesDebugOverrideAppConfig_WhenSet() {
+        // Set custom OAuth config via debugOverrideAppConfig
+        val customConsumerKey = "custom_consumer_key_123"
+        val customRedirectUri = "custom://redirect"
+        val customScopes = listOf("api", "web", "custom_scope")
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = OAuthConfig(
+            consumerKey = customConsumerKey,
+            redirectUri = customRedirectUri,
+            scopes = customScopes
+        )
+
+        // Trigger URL generation
+        viewModel.reloadWebView()
+        Thread.sleep(200)
+
+        // Verify the URL contains the custom consumer key and redirect URI
+        val loginUrl = viewModel.loginUrl.value!!
+        assertTrue("URL should contain custom consumer key", loginUrl.contains(customConsumerKey))
+        assertTrue("URL should contain custom redirect URI", loginUrl.contains("redirect_uri=custom://redirect"))
+        assertTrue("URL should contain custom scope", loginUrl.contains("custom_scope"))
+    }
+
+    @Test
+    fun getAuthorizationUrl_UsesBootConfig_WhenDebugOverrideAppConfigIsNull() {
+        // Ensure debugOverrideAppConfig is null
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
+
+        // Trigger URL generation
+        viewModel.reloadWebView()
+        Thread.sleep(200)
+
+        // Verify the URL contains the boot config values
+        val loginUrl = viewModel.loginUrl.value!!
+        assertTrue("URL should contain boot config consumer key",
+            loginUrl.contains(bootConfig.remoteAccessConsumerKey))
+        assertTrue("URL should contain boot config redirect URI",
+            loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}"))
+    }
+
+    @Test
+    fun getAuthorizationUrl_UsesAppConfigForLoginHost_WhenDebugOverrideIsNull() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalAppConfigForLoginHost = sdkManager.appConfigForLoginHost
+        
+        try {
+            // Ensure debugOverrideAppConfig is null
+            sdkManager.debugOverrideAppConfig = null
+
+            // Set custom appConfigForLoginHost
+            val customConsumerKey = "app_config_consumer_key_456"
+            val customRedirectUri = "appconfig://redirect"
+            val customScopes = listOf("api", "refresh_token", "app_config_scope")
+            sdkManager.appConfigForLoginHost = { _ ->
+                OAuthConfig(
+                    consumerKey = customConsumerKey,
+                    redirectUri = customRedirectUri,
+                    scopes = customScopes,
+                )
+            }
+
+            // Trigger URL generation
+            viewModel.reloadWebView()
+            Thread.sleep(200)
+
+            // Verify the URL contains the custom app config values
+            val loginUrl = viewModel.loginUrl.value!!
+            assertTrue("URL should contain app config consumer key", loginUrl.contains(customConsumerKey))
+            assertTrue("URL should contain app config redirect URI", 
+                loginUrl.contains("redirect_uri=appconfig://redirect"))
+            assertTrue("URL should contain app config scope", loginUrl.contains("app_config_scope"))
+        } finally {
+            sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
+        }
+    }
+
+    @Test
+    fun getAuthorizationUrl_PrefersDebugOverrideAppConfig_OverAppConfigForLoginHost() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalAppConfigForLoginHost = sdkManager.appConfigForLoginHost
+        
+        try {
+            // Set both debugOverrideAppConfig and appConfigForLoginHost
+            val debugConsumerKey = "debug_override_key_789"
+            val debugRedirectUri = "debug://redirect"
+            val debugScopes = listOf("api", "debug_scope")
+            sdkManager.debugOverrideAppConfig = OAuthConfig(
+                consumerKey = debugConsumerKey,
+                redirectUri = debugRedirectUri,
+                scopes = debugScopes,
+            )
+
+            val appConfigConsumerKey = "app_config_key_should_not_be_used"
+            val appConfigRedirectUri = "appconfig://should_not_be_used"
+            sdkManager.appConfigForLoginHost = { _ ->
+                OAuthConfig(
+                    consumerKey = appConfigConsumerKey,
+                    redirectUri = appConfigRedirectUri,
+                    scopes = listOf("api"),
+                )
+            }
+
+            // Trigger URL generation
+            viewModel.reloadWebView()
+            Thread.sleep(200)
+
+            // Verify the URL contains the debug override values, not app config values
+            val loginUrl = viewModel.loginUrl.value!!
+            assertTrue("URL should contain debug override consumer key", 
+                loginUrl.contains(debugConsumerKey))
+            assertTrue("URL should contain debug override redirect URI", 
+                loginUrl.contains("redirect_uri=debug://redirect"))
+            assertTrue("URL should contain debug scope", loginUrl.contains("debug_scope"))
+            
+            // Verify app config values are NOT in the URL
+            assertFalse("URL should NOT contain app config consumer key", 
+                loginUrl.contains(appConfigConsumerKey))
+            assertFalse("URL should NOT contain app config redirect URI", 
+                loginUrl.contains("should_not_be_used"))
+        } finally {
+            sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
+        }
+    }
+
+    @Test
+    fun getAuthorizationUrl_UsesServerSpecificConfig_FromAppConfigForLoginHost() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalAppConfigForLoginHost = sdkManager.appConfigForLoginHost
+        
+        try {
+            // Ensure debugOverrideAppConfig is null
+            sdkManager.debugOverrideAppConfig = null
+
+            // Set appConfigForLoginHost that returns different configs based on server
+            sdkManager.appConfigForLoginHost = { server ->
+                when {
+                    server.contains("test.salesforce.com") -> OAuthConfig(
+                        consumerKey = "test_consumer_key",
+                        redirectUri = "test://redirect",
+                        scopes = listOf("api", "test_scope"),
+                    )
+                    server.contains("login.salesforce.com") -> OAuthConfig(
+                        consumerKey = "prod_consumer_key",
+                        redirectUri = "prod://redirect",
+                        scopes = listOf("api", "prod_scope"),
+                    )
+                    else -> OAuthConfig(bootConfig)
+                }
+            }
+
+            // Test with test server
+            viewModel.selectedServer.value = "https://test.salesforce.com"
+            Thread.sleep(200)
+            var loginUrl = viewModel.loginUrl.value!!
+            assertTrue("URL should contain test consumer key. URL: $loginUrl", 
+                loginUrl.contains("test_consumer_key"))
+            assertTrue("URL should contain test redirect URI. URL: $loginUrl", 
+                loginUrl.contains("redirect_uri=test://redirect"))
+            assertTrue("URL should contain test scope. URL: $loginUrl", 
+                loginUrl.contains("test_scope"))
+
+            // Test with production server
+            viewModel.selectedServer.value = "https://login.salesforce.com"
+            Thread.sleep(200)
+            loginUrl = viewModel.loginUrl.value!!
+            assertTrue("URL should contain prod consumer key. URL: $loginUrl", 
+                loginUrl.contains("prod_consumer_key"))
+            assertTrue("URL should contain prod redirect URI. URL: $loginUrl", 
+                loginUrl.contains("redirect_uri=prod://redirect"))
+            assertTrue("URL should contain prod scope. URL: $loginUrl", 
+                loginUrl.contains("prod_scope"))
+        } finally {
+            sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
+        }
+    }
+
+    @Test
+    fun getAuthorizationUrl_HandlesNullScopes_InOAuthConfig() {
+        // Set OAuth config with null scopes
+        val customConsumerKey = "no_scopes_consumer_key"
+        val customRedirectUri = "noscopes://redirect"
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = OAuthConfig(
+            consumerKey = customConsumerKey,
+            redirectUri = customRedirectUri,
+            scopes = null,
+        )
+
+        // Trigger URL generation
+        viewModel.reloadWebView()
+        Thread.sleep(200)
+
+        // Verify the URL is generated correctly without scopes
+        val loginUrl = viewModel.loginUrl.value!!
+        assertTrue("URL should contain custom consumer key", loginUrl.contains(customConsumerKey))
+        assertTrue("URL should contain custom redirect URI",
+            loginUrl.contains("redirect_uri=noscopes://redirect"))
+        // URL should still be valid even without explicit scopes
+        assertTrue("URL should be a valid OAuth URL",
+            loginUrl.contains("/services/oauth2/authorize"))
     }
 
     private fun generateExpectedAuthorizationUrl(

@@ -157,7 +157,7 @@ data class DevSupportInfo(
                 "Consumer Key" to currentUser.clientId,
                 "Scopes" to currentUser.scope,
                 "Instance URL" to currentUser.instanceServer,
-                "Token Format" to currentUser.tokenFormat.ifBlank { "Opaque" },
+                "Token Format" to (currentUser.tokenFormat?.ifBlank { "Opaque" } ?: "Opaque"),
                 "Access Token Expiration" to accessTokenExpiration,
                 "Beacon Child Consumer Key" to (currentUser.beaconChildConsumerKey ?: "None"),
             )
