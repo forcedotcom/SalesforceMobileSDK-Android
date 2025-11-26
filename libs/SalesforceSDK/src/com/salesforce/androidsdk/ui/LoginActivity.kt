@@ -910,7 +910,7 @@ open class LoginActivity : FragmentActivity() {
         val uiBridgeApiParametersConsumerKey = uiBridgeApiParameters?.frontdoorBridgeUrl?.toUri()?.getQueryParameter("startURL")?.toUri()?.getQueryParameter("client_id")
 
         // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
-        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
+        val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.oAuthConfig.redirectUri
         viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
 
         // Alert the user if the front door bridge URL is not for this app and was discarded.
@@ -983,7 +983,7 @@ open class LoginActivity : FragmentActivity() {
     ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.bootConfig.remoteAccessConsumerKey
+            viewModel.oAuthConfig.redirectUri,
         )
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
@@ -1138,7 +1138,7 @@ open class LoginActivity : FragmentActivity() {
             }
 
             val formattedUrl = request.url.toString().replace("///", "/").lowercase()
-            val callbackUrl = viewModel.bootConfig.oauthRedirectURI.replace("///", "/").lowercase()
+            val callbackUrl = viewModel.oAuthConfig.redirectUri.replace("///", "/").lowercase()
             val authFlowFinished = formattedUrl.startsWith(callbackUrl)
 
             if (authFlowFinished) {

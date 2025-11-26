@@ -92,7 +92,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
-import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
@@ -107,6 +106,7 @@ import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.developer.support.DevSupportInfo
@@ -149,11 +149,9 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.json.JSONObject
+import org.jetbrains.annotations.Debug
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
-import java.text.SimpleDateFormat
-import java.util.Locale
 import java.util.Locale.US
 import java.util.SortedSet
 import java.util.UUID.randomUUID
@@ -200,7 +198,7 @@ open class SalesforceSDKManager protected constructor(
      *
      * @return The class for the main activity.
      */
-    val mainActivityClass: Class<out Activity>
+    val mainActivityClass: Class<out Activity> = mainActivity
 
     /**
      * Null or an authenticated Activity for private use when developer support
@@ -233,6 +231,16 @@ open class SalesforceSDKManager protected constructor(
      * visual customization without overriding LoginActivity.
      */
     var loginViewModelFactory = LoginViewModel.Factory
+
+    /**
+     * Asynchronously retrieves the app config for the specified login host.  If not set the values
+     * found in the BootConfig file will be used for all servers.
+     */
+    var appConfigForLoginHost: suspend (server: String) -> OAuthConfig = {
+        OAuthConfig(getBootConfig(appContext))
+    }
+
+    internal var debugOverrideAppConfig: OAuthConfig? = null
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -374,7 +382,6 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var useWebServerAuthentication = true
 
-
     /**
      * Whether or not the app supports welcome discovery.  This should only be
      * enabled if the connected app is supported.
@@ -432,6 +439,7 @@ open class SalesforceSDKManager protected constructor(
         return _lightColorScheme ?: sfLightColors().also { _lightColorScheme = it }
     }
 
+    @Suppress("unused")
     fun setLightColorScheme(value: ColorScheme) {
         _lightColorScheme = value
     }
@@ -447,6 +455,7 @@ open class SalesforceSDKManager protected constructor(
         return _darkColorScheme ?: sfDarkColors().also { _darkColorScheme = it }
     }
 
+    @Suppress("unused")
     fun setDarkColorScheme(value: ColorScheme) {
         _darkColorScheme = value
     }
@@ -531,7 +540,6 @@ open class SalesforceSDKManager protected constructor(
 
     /** Initializer */
     init {
-        mainActivityClass = mainActivity
         features = ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER)
 
         /*
@@ -615,7 +623,7 @@ open class SalesforceSDKManager protected constructor(
         communityUrl: String,
         reCaptchaSiteKeyId: String? = null,
         googleCloudProjectId: String? = null,
-        isReCaptchaEnterprise: Boolean = false
+        isReCaptchaEnterprise: Boolean = false,
     ): NativeLoginManagerInterface {
         registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
         nativeLoginManager = NativeLoginManager(

@@ -111,7 +111,9 @@ internal suspend fun onAuthFlowComplete(
     handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit = ::handleDuplicateUserAccount,
-    ) {
+) {
+    // Reset Dev Support LoginOptionsActivity override
+    SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
 
     // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
     val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
@@ -140,14 +142,7 @@ internal suspend fun onAuthFlowComplete(
         w(TAG, "Missing refresh token scope.")
     }
 
-    // Check that the tokenResponse.scope contains the identity scope before calling the identity service
-    val userIdentity = if (scopeParser.hasIdentityScope()) {
-        actualFetchUserIdentity(tokenResponse)
-    } else {
-        w(TAG, "Missing identity scope, skipping identity service call.")
-        null
-    }
-
+    val userIdentity = actualFetchUserIdentity(tokenResponse)
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
     if (mustBeManagedApp && !runtimeConfig.isManagedApp) {
         onAuthFlowError(
