@@ -654,7 +654,7 @@ class DevSupportInfoTest {
             "Instance URL", "https://test.salesforce.com",
             "Token Format", "oauth2",
             "Access Token Expiration", "Unknown",
-            "Beacon Child Consumer Key", user.beaconChildConsumerKey,
+            "Beacon Child Consumer Key", user.beaconChildConsumerKey ?: "None",
         ))
         
         // Add runtime config
