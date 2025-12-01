@@ -73,7 +73,7 @@ class SalesforceSDKManagerAuthConfigTest {
     fun testAppConfigForLoginHostDefaultBehavior() = runBlocking {
         val bootConfig = BootConfig.getBootConfig(InstrumentationRegistry.getInstrumentation().targetContext)
         // Default implementation should return config from BootConfig
-        val config = sdkManager.appConfigForLoginHost("https://login.salesforce.com")
+        val config = sdkManager.appConfigForLoginHost("https://login.salesforce.com")!!
 
         assertNotNull("Config should not be null", config)
         assertEquals(
@@ -105,14 +105,14 @@ class SalesforceSDKManagerAuthConfigTest {
         sdkManager.appConfigForLoginHost = { _ ->
             OAuthConfig("key1", "uri1", listOf("api"))
         }
-        val config1 = sdkManager.appConfigForLoginHost("https://test.com")
+        val config1 = sdkManager.appConfigForLoginHost("https://test.com")!!
         assertEquals("key1", config1.consumerKey)
 
         // Reassign to different implementation
         sdkManager.appConfigForLoginHost = { _ ->
             OAuthConfig("key2", "uri2", listOf("web"))
         }
-        val config2 = sdkManager.appConfigForLoginHost("https://test.com")
+        val config2 = sdkManager.appConfigForLoginHost("https://test.com")!!
         assertEquals("key2", config2.consumerKey)
     }
 

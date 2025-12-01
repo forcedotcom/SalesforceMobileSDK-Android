@@ -30,6 +30,7 @@ import android.Manifest
 import android.os.Build
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextEquals
@@ -293,6 +294,7 @@ class LoginOptionsActivityTest {
         composeTestRule.waitForIdle()
         
         dynamicToggle.assertIsOn()
+        saveButton.performScrollTo()
         consumerKeyField.assertIsDisplayed()
         redirectUriField.assertIsDisplayed()
         scopesField.assertIsDisplayed()
@@ -351,8 +353,9 @@ class LoginOptionsActivityTest {
         composeTestRule.waitForIdle()
 
         // Save button should be disabled when fields are empty
+        saveButton.performScrollTo()
         saveButton.assertIsDisplayed()
-        // Note: Button is enabled/disabled via styling, not actual enabled state
+        saveButton.assertIsNotEnabled()
     }
 
     @Test

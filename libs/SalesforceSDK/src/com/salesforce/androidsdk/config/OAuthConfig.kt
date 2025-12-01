@@ -31,8 +31,8 @@ data class OAuthConfig(
     val redirectUri: String,
     val scopes: List<String>? = null,
 ) {
-
-    constructor(bootConfig: BootConfig): this(
+    
+    internal constructor(bootConfig: BootConfig): this(
         bootConfig.remoteAccessConsumerKey,
         bootConfig.oauthRedirectURI,
         scopes = bootConfig.oauthScopes.ifEmpty { null }?.toList(),

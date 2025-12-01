@@ -372,7 +372,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             oAuthConfig = if (isDebugBuild && debugOverrideAppConfig != null) {
                 debugOverrideAppConfig!!
             } else {
-                appConfigForLoginHost(server)
+                appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
             }
         }
 

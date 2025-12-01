@@ -233,10 +233,10 @@ open class SalesforceSDKManager protected constructor(
     var loginViewModelFactory = LoginViewModel.Factory
 
     /**
-     * Asynchronously retrieves the app config for the specified login host.  If not set the values
-     * found in the BootConfig file will be used for all servers.
+     * Asynchronously retrieves the app config for the specified login host.  If not set or null is
+     * returned the values found in the BootConfig file will be used for all servers.
      */
-    var appConfigForLoginHost: suspend (server: String) -> OAuthConfig = {
+    var appConfigForLoginHost: suspend (server: String) -> OAuthConfig? = {
         OAuthConfig(getBootConfig(appContext))
     }
 
