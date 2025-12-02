@@ -34,7 +34,6 @@ jobs:
         if: ${{ inputs.lib == 'SalesforceHybrid' }}
         run: |
           npm install -g cordova
-          cordova telemetry off
       - name: React Native Dependencies
         if: ${{ inputs.lib  == 'SalesforceReact' }}
         run: npm install -g typescript
