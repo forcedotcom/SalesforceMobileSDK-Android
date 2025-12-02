@@ -11,10 +11,10 @@ This directory contains JSON configuration files that define test shards for ind
 ## Pitfalls
 
 -  Because shards run in parallel, they need to be grouped intelligently.  Many of our "unit tests"   are actually integration tests.  Sharding might save us from database contention, but if tests in seperate shards make API calls to manipulate data in the same org simultaneously this will cause failures.
-- It is now possible for tests to be skipped if we are not careful.
+- It is now possible for tests to run more than once or be skipped if we are not careful.
 
 ## Maintenance
 
 Each confiruration file defines targets using the `class` keyword.  To ensure all tests are run, each config has a "remaining" shard that **only** uses the `notClass` keyword.  New test classes will automatically be included in the "remaining" shard.
 
-However, it is very important that classes added to shards are also added to the "remaining" shard to prevent them from running twice.  Likewise it is important that classes removed from shards are also removed from the "remaining" shard so they are not skipped.
+However, it is very important that classes added to shards are also added to the "remaining" shard to prevent them from running more than once.  Likewise, classes that are removed from shards need to also be removed from the "remaining" shard so they are not skipped.  CI will validate this.

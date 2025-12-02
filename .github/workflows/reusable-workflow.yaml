@@ -74,6 +74,27 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@v2'
         if: success() || failure()
+      - name: Validate Shard Config
+        if: success() || failure()
+        run: |
+          SHARD_CONFIG=".github/test-shards/${{ inputs.lib }}.json"
+          if [ -f "$SHARD_CONFIG" ]; then
+            # Extract sorted class names from non-remaining shards (strip "class " prefix)
+            CLASSES=$(jq -r '[.shards[] | select(.name != "remaining") | .targets[] | select(startswith("class ")) | ltrimstr("class ")] | sort | .[]' "$SHARD_CONFIG")
+            
+            # Extract sorted notClass names from remaining shard (strip "notClass " prefix)
+            NOT_CLASSES=$(jq -r '[.shards[] | select(.name == "remaining") | .targets[] | select(startswith("notClass ")) | ltrimstr("notClass ")] | sort | .[]' "$SHARD_CONFIG")
+            
+            if [ "$CLASSES" != "$NOT_CLASSES" ]; then
+              echo "::error::Shard config mismatch in $SHARD_CONFIG - classes in shards must exactly match notClass entries in remaining shard"
+              echo "Difference:"
+              diff <(echo "$CLASSES") <(echo "$NOT_CLASSES") || true
+              exit 1
+            fi
+            echo "✓ Shard config valid for ${{ inputs.lib }} ($(echo "$CLASSES" | wc -l | tr -d ' ') classes)"
+          else
+            echo "No shard config for ${{ inputs.lib }}, skipping validation"
+          fi
       - name: Run Tests
         continue-on-error: true
         if: success() || failure()
