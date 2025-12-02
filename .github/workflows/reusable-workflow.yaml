@@ -107,7 +107,7 @@ jobs:
           fi
 
           mkdir firebase_results
-          gcloud components install beta
+          gcloud components install beta --quiet
           for LEVEL in $LEVELS_TO_TEST
             do
               GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
