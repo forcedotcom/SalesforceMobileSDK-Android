@@ -1,0 +1,23 @@
+{
+  "description": "Test shards for SalesforceReact library - isolates network tests to prevent server contention",
+  "shards": [
+    {
+      "name": "network",
+      "comment": "OAuth tests that make server calls - isolated",
+      "targets": [
+        "class com.salesforce.androidsdk.reactnative.ReactOAuthTest",
+        "class com.salesforce.androidsdk.reactnative.ReactNetTest",
+        "class com.salesforce.androidsdk.reactnative.ReactMobileSyncTest"
+      ]
+    },
+    {
+      "name": "remaining",
+      "comment": "All remaining tests - uses notClass to exclude network tests",
+      "targets": [
+        "notClass com.salesforce.androidsdk.reactnative.ReactOAuthTest",
+        "notClass com.salesforce.androidsdk.reactnative.ReactNetTest",
+        "notClass com.salesforce.androidsdk.reactnative.ReactMobileSyncTest"
+      ]
+    }
+  ]
+}
