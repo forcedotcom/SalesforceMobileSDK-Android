@@ -1,0 +1,75 @@
+{
+  "description": "Test shards for SalesforceSDK library - isolates network tests to prevent server contention",
+  "shards": [
+    {
+      "name": "network",
+      "comment": "REST client tests that make live server calls - isolated",
+      "targets": [
+        "class com.salesforce.androidsdk.rest.RestClientTest",
+        "class com.salesforce.androidsdk.rest.ClientManagerTest",        
+        "class com.salesforce.androidsdk.auth.OAuth2Test",
+        "class com.salesforce.androidsdk.auth.HttpAccessTest",
+        "class com.salesforce.androidsdk.analytics.SalesforceAnalyticsManagerTest"
+      ]
+    },
+    {
+      "name": "ui",
+      "comment": "UI tests and security tests that may require user interaction",
+      "targets": [
+        "class com.salesforce.androidsdk.ui.LoginViewActivityTest",
+        "class com.salesforce.androidsdk.ui.PickerBottomSheetTest",
+        "class com.salesforce.androidsdk.ui.LoginActivityTest",
+        "class com.salesforce.androidsdk.ui.LoginOptionsActivityTest",
+        "class com.salesforce.androidsdk.ui.PickerBottomSheetActivityTest",
+        "class com.salesforce.androidsdk.ui.DevInfoActivityTest",
+        "class com.salesforce.androidsdk.security.ScreenLockManagerTest",
+        "class com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest"
+      ]
+    },
+    {
+      "name": "rest-unit",
+      "comment": "REST unit tests - no network calls",
+      "targets": [
+        "class com.salesforce.androidsdk.rest.RestRequestTest",
+        "class com.salesforce.androidsdk.rest.ApiVersionStringsTest",
+        "class com.salesforce.androidsdk.rest.ClientManagerMockTest",
+        "class com.salesforce.androidsdk.rest.NotificationsTypesResponseBodyTest",
+        "class com.salesforce.androidsdk.rest.NotificationsApiExceptionTest",
+        "class com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBodyTest",
+        "class com.salesforce.androidsdk.rest.NotificationsActionsResponseBodyTest",
+        "class com.salesforce.androidsdk.rest.files.RenditionTypeTest",
+        "class com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
+        "class com.salesforce.androidsdk.rest.files.FileRequestsTest"
+      ]
+    },
+    {
+      "name": "remaining",
+      "comment": "All remaining tests - uses notClass/notPackage to exclude tests already in other shards",
+      "targets": [
+        "notClass com.salesforce.androidsdk.rest.RestClientTest",
+        "notClass com.salesforce.androidsdk.rest.ClientManagerTest",
+        "notClass com.salesforce.androidsdk.auth.OAuth2Test",
+        "notClass com.salesforce.androidsdk.auth.HttpAccessTest",
+        "notClass com.salesforce.androidsdk.analytics.SalesforceAnalyticsManagerTest",
+        "notClass com.salesforce.androidsdk.ui.LoginViewActivityTest",
+        "notClass com.salesforce.androidsdk.ui.PickerBottomSheetTest",
+        "notClass com.salesforce.androidsdk.ui.LoginActivityTest",
+        "notClass com.salesforce.androidsdk.ui.LoginOptionsActivityTest",
+        "notClass com.salesforce.androidsdk.ui.PickerBottomSheetActivityTest",
+        "notClass com.salesforce.androidsdk.ui.DevInfoActivityTest",
+        "notClass com.salesforce.androidsdk.security.ScreenLockManagerTest",
+        "notClass com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest",
+        "notClass com.salesforce.androidsdk.rest.RestRequestTest",
+        "notClass com.salesforce.androidsdk.rest.ApiVersionStringsTest",
+        "notClass com.salesforce.androidsdk.rest.ClientManagerMockTest",
+        "notClass com.salesforce.androidsdk.rest.NotificationsTypesResponseBodyTest",
+        "notClass com.salesforce.androidsdk.rest.NotificationsApiExceptionTest",
+        "notClass com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBodyTest",
+        "notClass com.salesforce.androidsdk.rest.NotificationsActionsResponseBodyTest",
+        "notClass com.salesforce.androidsdk.rest.files.RenditionTypeTest",
+        "notClass com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
+        "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest"
+      ]
+    }
+  ]
+}

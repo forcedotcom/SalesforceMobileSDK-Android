@@ -92,12 +92,27 @@ jobs:
             RETRIES=1
           fi
 
+          # Build test-targets-for-shard arguments from config file
+          SHARD_CONFIG=".github/test-shards/${{ inputs.lib }}.json"
+          SHARD_ARGS=()
+          if [ -f "$SHARD_CONFIG" ]; then
+            NUM_SHARDS=$(jq '.shards | length' "$SHARD_CONFIG")
+            for i in $(seq 0 $((NUM_SHARDS - 1))); do
+              # Join targets with semicolons for this shard
+              TARGETS=$(jq -r ".shards[$i].targets | join(\";\")" "$SHARD_CONFIG")
+              SHARD_ARGS+=("--test-targets-for-shard=\"${TARGETS}\"")
+            done
+          else
+            SHARD_ARGS=("")
+          fi
+
           mkdir firebase_results
+          gcloud components install beta
           for LEVEL in $LEVELS_TO_TEST
             do
               GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
 
-              gcloud firebase test android run \
+              eval gcloud beta firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
@@ -107,7 +122,8 @@ jobs:
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=${{ inputs.lib }} \
-                --timeout=40m --no-auto-google-login --no-record-video --no-performance-metrics \
+                --timeout=30m --no-auto-google-login --no-record-video --no-performance-metrics \
+                "${SHARD_ARGS[@]}" \
                 --num-flaky-test-attempts=${RETRIES} || true
             done
       - name: Copy Test Results
