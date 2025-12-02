@@ -35,7 +35,7 @@ data class OAuthConfig(
     internal constructor(bootConfig: BootConfig): this(
         bootConfig.remoteAccessConsumerKey,
         bootConfig.oauthRedirectURI,
-        scopes = bootConfig.oauthScopes.ifEmpty { null }?.toList(),
+        scopes = bootConfig.oauthScopes?.ifEmpty { null }?.toList(),
     )
 
     // Used by LoginOptionsActivity
@@ -43,7 +43,7 @@ data class OAuthConfig(
         consumerKey.trim(),
         redirectUri.trim(),
         scopes = with(scopes) {
-            if (isBlank()) return@with null
+            if (isNullOrBlank()) return@with null
 
             return@with if (contains(",")) {
                 split(",")
