@@ -164,17 +164,20 @@ jobs:
           for LEVEL in $LEVELS_TO_TEST
             do
               GCLOUD_RESULTS_DIR=${{ inputs.lib }}-api-${LEVEL}-build-${{github.run_number}}
+              BUCKET_PATH="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR}"
 
-              gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} > /dev/null 2>&1
+              gsutil ls ${BUCKET_PATH} > /dev/null 2>&1
               if [ $? == 0 ] ; then
-                mkdir firebase_${LEVEL}
-                gsutil -m cp -r -U "`gsutil ls gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} | tail -1`*" ./firebase_${LEVEL}/
-                mv firebase_${LEVEL}/test_result_1.xml firebase_results/api_${LEVEL}_test_result.xml
+                # Copy merged XML file from top level for test reporting
+                gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
+
+                # Copy all shard data for code coverage (only needed for one level)
+                if [ "$LEVEL" == "$PR_API_VERSION" ] ; then
+                  mkdir -p firebase
+                  gsutil -m cp -r -U "${BUCKET_PATH}/*" ./firebase/
+                fi
               fi
             done
-
-            # Move one result to the directory expected for code coverge.
-            mv firebase_${PR_API_VERSION} firebase
       - name: Test Report
         uses: mikepenz/action-junit-report@v5
         if: success() || failure()
