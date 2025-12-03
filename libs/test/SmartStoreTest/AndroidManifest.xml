@@ -6,7 +6,7 @@
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
         <!-- Launcher screen -->
-        <activity android:name=".MainActivity"
+        <activity android:name="com.salesforce.androidsdk.MainActivity"
             android:label="@string/app_name"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:exported="false">
@@ -16,11 +16,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Disabling AILTN in tests -->
-        <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false"
-            android:exported="false" />
 	</application>
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
