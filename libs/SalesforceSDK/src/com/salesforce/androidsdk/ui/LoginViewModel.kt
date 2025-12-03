@@ -112,7 +112,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // Public LiveData
     /** The login server that has been selected by the login server manager, has an authentication configuration and is ready for use */
     val selectedServer = MediatorLiveData<String>()
+    /** The selected login server's OAuth authorization URL */
     val loginUrl = MediatorLiveData<String>()
+    /** The URL to be displayed in the web view.  This is the `loginUrl` value when the web view is in use */
+    val webViewUrl = MediatorLiveData<String>()
     var showServerPicker = mutableStateOf(false)
     var loading = mutableStateOf(false)
 
@@ -226,6 +229,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     init {
         // When the login server manager selects a login server, first fetch its authentication configuration by setting the pending login server. Second, the selected login server will be set afterwards.
         pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
+<<<<<<< HEAD
             val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
             trimmedServer?.let { nonNullServer ->
                 if (pendingServer.value == nonNullServer) {
@@ -233,10 +237,18 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 } else {
                     pendingServer.value = nonNullServer
                 }
+=======
+            val trimmedServer = newServer.url.run { trim { it <= ' ' } }
+            if (pendingServer.value == trimmedServer) {
+                reloadWebView()
+            } else {
+                pendingServer.value = trimmedServer
+>>>>>>> e3a3fc499 (@W-20161958: [MSDK 13.1][Android] Cannot login GUS using Welcome endpoint (Re-factored login observables))
             }
         }
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
+<<<<<<< HEAD
         loginUrl.addSource(selectedServer) { newServer: String? ->
             if (!isUsingFrontDoorBridge && newServer != null) {
                 val isNewServer = loginUrl.value?.startsWith(newServer) != true
@@ -245,6 +257,20 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                         loginUrl.value = getAuthorizationUrl(newServer)
                     }
                 }
+=======
+        loginUrl.addSource(selectedServer) { newServer ->
+            val isNewServer = loginUrl.value?.startsWith(newServer) != true
+            if (isNewServer) {
+                loginUrl.value = getAuthorizationUrl(newServer)
+>>>>>>> e3a3fc499 (@W-20161958: [MSDK 13.1][Android] Cannot login GUS using Welcome endpoint (Re-factored login observables))
+            }
+        }
+
+        // Update the web view URL to match the OAuth authorization URL when the web view is applicable
+        webViewUrl.addSource(loginUrl) { newLoginUrl ->
+            // Note the web view does not reload when browser-based authentication or a UI Bridge API front door bridge URL are active.
+            if ((!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge) || newLoginUrl == "about:blank" /* Blank is used during reset states such as when returning to the web view from a custom tab, so it's always eligible */) {
+                webViewUrl.value = newLoginUrl
             }
         }
     }

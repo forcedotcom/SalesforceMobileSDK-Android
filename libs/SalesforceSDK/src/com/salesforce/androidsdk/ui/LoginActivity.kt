@@ -104,7 +104,7 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
@@ -147,7 +147,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.String.format
@@ -287,6 +287,10 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
+        // Add view model observers.
+        viewModel.loginUrl.observe(this, loginUrlObserver)
+        viewModel.pendingServer.observe(this, pendingServerObserver)
+
         // Support magic links
         if (viewModel.jwt != null) {
             swapJWTForAccessToken()
@@ -331,6 +335,7 @@ open class LoginActivity : FragmentActivity() {
         // Store the new intent and apply it to the activity.
         setIntent(intent)
         applyIntent()
+        viewModel.pendingServer.value?.let { applyPendingServer(it) }
     }
 
     private fun clearWebView(showServerPicker: Boolean = true) {
@@ -898,6 +903,9 @@ open class LoginActivity : FragmentActivity() {
     // endregion
     // region Salesforce Welcome Login Private Implementation
 
+    /** The Kotlin Coroutine Job fetching the pending login server's authentication configuration */
+    private var authenticationConfigurationFetchJob: Job? = null
+
     /** The previously observed pending login server for use in switching between default and Salesforce Welcome Discovery log in */
     private var previousPendingLoginServer: String? = null
 
@@ -1027,8 +1035,6 @@ open class LoginActivity : FragmentActivity() {
         uri: Uri
     ): Boolean {
         return if (isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri)) {
-            // Stop observing the pending login server since the newly started default login will do so.
-            viewModel.pendingServer.removeObservers(this)
             startDefaultLoginWithHintAndHost(
                 context = this,
                 loginHint = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT) ?: return false,
@@ -1063,70 +1069,93 @@ open class LoginActivity : FragmentActivity() {
 
         // If the intent is for log in using a UI Bridge API front door URL, apply it to the activity.
         applyUiBridgeApiFrontDoorUrl(intent)
-
-        // Apply the pending login server, if applicable.
-        applyPendingServer()
     }
 
     /**
-     * Applies the pending login server.  The authentication configuration will
-     * be fetched for the pending server and any applicable tasks will be
-     * performed such as browser based authentication.  The pending login
-     * server will be set as the selected login server once the authentication
-     * configuration has been fetched.
+     * An observer for the login URL (OAuth authorization URL) that loads the
+     * authorization URL in a web browser custom tab when the authentication
+     * configuration requires browser-based authentication.
      */
-    private fun applyPendingServer() {
+    private val loginUrlObserver = Observer<String> { authorizationUrl ->
+        if (authorizationUrl == "about:blank") {
+            return@Observer
+        }
 
-        // Reset the observer to consume the current and future values.
-        viewModel.pendingServer.removeObservers(this)
-        viewModel.pendingServer.observe(this) { pendingServer ->
+        startBrowserCustomTabAuthorization(
+            sdkManager = SalesforceSDKManager.getInstance(),
+            authorizationUrl = authorizationUrl,
+            activityResultLauncher = customTabLauncher ?: return@Observer
+        )
+    }
 
-            // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
-            val pendingServerUri = pendingServer.toUri()
-            if (intent.data?.host == pendingServerUri.host) {
-                previousPendingLoginServer = pendingServer
-                return@observe
+    /**
+     * An observer for the pending login server.  The decision to switch between
+     * default login and Salesforce Welcome Discovery will be made before
+     * applying the new value.
+     */
+    private val pendingServerObserver = Observer<String> { pendingLoginServer ->
+
+        // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
+        val pendingServerUri = pendingLoginServer.toUri()
+        if (intent.data?.host == pendingServerUri.host) {
+            previousPendingLoginServer = pendingLoginServer
+            return@Observer
+        }
+
+        // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
+        if (switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
+            previousPendingLoginServer = pendingLoginServer
+            return@Observer
+        }
+
+        applyPendingServer(pendingLoginServer)
+    }
+
+    /**
+     * Applies a new pending login server.  The decision to authenticate in a
+     * web browser-custom tab will be made, which may require fetching the
+     * authentication configuration.  The selected server and login URL (OAuth
+     * authorization URL) will set to continue the flow.
+     */
+    private fun applyPendingServer(pendingLoginServer: String) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+
+        // Recall this pending login server for reference by future updates.
+        previousPendingLoginServer = pendingLoginServer
+
+        // When authorization via a single-server, custom tab activity is requested skip fetching the authorization configuration and immediately set the selected login server to generate the OAuth authorization URL.
+        if (viewModel.singleServerCustomTabActivity) {
+            viewModel.selectedServer.postValue(pendingLoginServer)
+        }
+        // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
+        else {
+            authenticationConfigurationFetchJob?.cancel()
+            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
+                viewModel.selectedServer.postValue(pendingLoginServer)
+                authenticationConfigurationFetchJob = null
             }
+        }
+    }
 
-            // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
-            if (switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
-                previousPendingLoginServer = pendingServer
-                return@observe
-            }
-
-            // Recall this pending login server for reference by future updates.
-            previousPendingLoginServer = pendingServer
-
-            if (viewModel.singleServerCustomTabActivity) {
-                // Skip fetching authorization and show custom tab immediately.
-                viewModel.selectedServer.value = pendingServer
-                viewModel.reloadWebView()
-                viewModel.loginUrl.value?.let { url ->
-                    customTabLauncher?.let { loadLoginPageInCustomTab(url, it) }
-                }
-            } else {
-                with(SalesforceSDKManager.getInstance()) {
-                    // Fetch the authentication configuration and load the login page in a custom tab if required.
-                    fetchAuthenticationConfiguration {
-                        lifecycleScope.launch(Main) {
-                            viewModel.selectedServer.value = pendingServer
-                            /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */
-                            if (isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
-                                if (useWebServerAuthentication) {
-                                    viewModel.loginUrl.value?.let { url ->
-                                        customTabLauncher?.let { loadLoginPageInCustomTab(url, it) }
-                                    }
-                                } else {
-                                    /* Reload the webview now that isBrowserLoginEnabled has been set
-                                       to true so that we generate an authorization URL with PKCE values.  */
-                                    viewModel.reloadWebView()
-                                    viewModel.loginUrl.value?.let { url -> customTabLauncher?.let { loadLoginPageInCustomTab(url, it) } }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    /**
+     * Starts a browser custom tab for the OAuth authorization URL according to
+     * the authentication configuration. The activity only takes action when
+     * browser-based authentication requires a browser custom tab to be started.
+     * @param sdkManager The Salesforce SDK Manager with the selected login
+     * server's authentication configuration
+     * @param authorizationUrl The selected login server's OAuth authorization
+     * URL
+     * @param activityResultLauncher The activity result launcher to use when
+     * browser-based authentication requires a browser custom tab.
+     */
+    private fun startBrowserCustomTabAuthorization(
+        sdkManager: SalesforceSDKManager,
+        authorizationUrl: String,
+        activityResultLauncher: ActivityResultLauncher<Intent>,
+    ) {
+        // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
+        if ((viewModel.singleServerCustomTabActivity || sdkManager.isBrowserLoginEnabled) && !viewModel.isUsingFrontDoorBridge /* UI front-door bridge bypasses the need for browser custom tab */) {
+            loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
         }
     }
 
