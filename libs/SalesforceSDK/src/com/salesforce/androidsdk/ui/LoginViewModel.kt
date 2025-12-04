@@ -59,7 +59,6 @@ import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
-import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -223,9 +222,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     init {
         // Update selectedServer when the LoginServerManager value changes
-        selectedServer.addSource(
-            SalesforceSDKManager.getInstance().loginServerManager.selectedServer
-        ) { newServer: LoginServerManager.LoginServer? ->
+        selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
             if (selectedServer.value == trimmedServer) {
                 reloadWebView()
