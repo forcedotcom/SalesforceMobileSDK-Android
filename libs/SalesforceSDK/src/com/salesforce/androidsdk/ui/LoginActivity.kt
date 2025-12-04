@@ -110,6 +110,7 @@ import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.salesforce_welcome_is_disabled
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
@@ -1051,6 +1052,17 @@ open class LoginActivity : FragmentActivity() {
      * Salesforce Welcome Discovery mobile URL
      */
     private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
+        // Alert the user if the Salesforce Welcome Discovery is disabled.
+        if (!SalesforceSDKManager.getInstance().supportsWelcomeDiscovery) {
+            runOnUiThread {
+                makeText(
+                    this,
+                    getString(salesforce_welcome_is_disabled),
+                    LENGTH_LONG
+                ).show()
+            }
+        }
+
         if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
             viewModel.loginUrl.postValue(uri.toString())
         }
@@ -1559,7 +1571,7 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "'${uri}' is a discovery domain, but welcome discovery isn't enabled.")
             }
 
-            return isDiscovery && discoveryEnabled && uri.queryParameterNames?.contains(
+            return isDiscovery && uri.queryParameterNames?.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
             ) == true && uri.queryParameterNames?.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
