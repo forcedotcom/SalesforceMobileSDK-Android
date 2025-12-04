@@ -416,6 +416,141 @@ class LoginViewModelTest {
             loginUrl.contains("/services/oauth2/authorize"))
     }
 
+    @Test
+    fun reloadWebView_WithFrontDoorBridge_DoesNotReloadUrl() {
+        // Set up front door bridge
+        val frontDoorUrl = "https://test.salesforce.com/frontdoor.jsp?sid=test_session"
+        viewModel.loginWithFrontDoorBridgeUrl(frontDoorUrl, null)
+        
+        // Verify front door bridge is active
+        assertTrue("isUsingFrontDoorBridge should be true", viewModel.isUsingFrontDoorBridge)
+        assertEquals("loginUrl should be front door URL", frontDoorUrl, viewModel.loginUrl.value)
+        
+        // Call reloadWebView
+        viewModel.reloadWebView()
+        Thread.sleep(200)
+        
+        // Verify URL did not change
+        assertEquals("loginUrl should still be front door URL", frontDoorUrl, viewModel.loginUrl.value)
+    }
+
+    @Test
+    fun reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst() {
+        try {
+            // Set to User Agent Flow (not Web Server Flow)
+            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+            
+            // Ensure we're not using front door bridge
+            assertFalse("isUsingFrontDoorBridge should be false", viewModel.isUsingFrontDoorBridge)
+            
+            // Get initial URL
+            val initialUrl = viewModel.loginUrl.value
+            assertNotNull("Initial URL should not be null", initialUrl)
+            assertNotEquals("Initial URL should not be ABOUT_BLANK", ABOUT_BLANK, initialUrl)
+            
+            // Call reloadWebView
+            viewModel.reloadWebView()
+            
+            // Verify URL was set to ABOUT_BLANK for User Agent Flow
+            // NOTE:  If this is flaky we should use Turbine to test the actual state changes.
+            assertEquals("loginUrl should be set to ABOUT_BLANK for User Agent Flow", 
+                ABOUT_BLANK, viewModel.loginUrl.value)
+            
+            // Wait for the new authorization URL to be generated
+            Thread.sleep(200)
+            
+            // Verify a new URL was generated
+            val newUrl = viewModel.loginUrl.value
+            assertNotNull("New URL should not be null", newUrl)
+            assertNotEquals("New URL should not be ABOUT_BLANK", ABOUT_BLANK, newUrl)
+            assertNotEquals("New URL should be different from initial", initialUrl, newUrl)
+        } finally {
+            SalesforceSDKManager.getInstance().useWebServerAuthentication = true
+        }
+    }
+
+    @Test
+    fun reloadWebView_WithWebServerFlow_DoesNotSetAboutBlank() {
+        assert(SalesforceSDKManager.getInstance().useWebServerAuthentication)
+        // Ensure we're not using front door bridge
+        assertFalse("isUsingFrontDoorBridge should be false", viewModel.isUsingFrontDoorBridge)
+
+        // Get initial URL
+        val initialUrl = viewModel.loginUrl.value
+        assertNotNull("Initial URL should not be null", initialUrl)
+
+        // Call reloadWebView
+        viewModel.reloadWebView()
+
+        // Give a brief moment to check if ABOUT_BLANK would be set
+        Thread.sleep(50)
+
+        // Verify URL was NOT set to ABOUT_BLANK for Web Server Flow
+        assertNotEquals("loginUrl should NOT be ABOUT_BLANK for Web Server Flow",
+            ABOUT_BLANK, viewModel.loginUrl.value)
+
+        // Wait for the new authorization URL to be generated
+        Thread.sleep(200)
+
+        // Verify a new URL was generated with different code challenge
+        val newUrl = viewModel.loginUrl.value
+        assertNotNull("New URL should not be null", newUrl)
+        assertNotEquals("New URL should not be ABOUT_BLANK", ABOUT_BLANK, newUrl)
+        assertNotEquals("New URL should be different from initial (different code challenge)",
+            initialUrl, newUrl)
+    }
+
+    @Test
+    fun reloadWebView_WithNullSelectedServer_DoesNothing() {
+        val initialUrl = "test"
+        viewModel.loginUrl.value = initialUrl
+
+        // Set selectedServer to null
+        viewModel.selectedServer.value = null
+        Thread.sleep(100)
+        
+        // Call reloadWebView
+        viewModel.reloadWebView()
+        Thread.sleep(200)
+        
+        // Verify URL did not change
+        assertEquals("loginUrl should not change when selectedServer is null",
+            initialUrl, viewModel.loginUrl.value)
+    }
+
+    @Test
+    fun getAuthorizationUrl_UsesBootConfig_WhenAppConfigForLoginHostReturnsNull() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalAppConfigForLoginHost = sdkManager.appConfigForLoginHost
+        
+        try {
+            // Ensure debugOverrideAppConfig is null
+            sdkManager.debugOverrideAppConfig = null
+
+            // Set appConfigForLoginHost to return null
+            sdkManager.appConfigForLoginHost = { _ -> null }
+
+            // Trigger URL generation
+            viewModel.reloadWebView()
+            Thread.sleep(200)
+
+            // Verify the URL contains the boot config values (fallback)
+            val loginUrl = viewModel.loginUrl.value!!
+            assertTrue("URL should contain boot config consumer key when appConfigForLoginHost returns null",
+                loginUrl.contains(bootConfig.remoteAccessConsumerKey))
+            assertTrue("URL should contain boot config redirect URI when appConfigForLoginHost returns null",
+                loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}"))
+            
+            // Verify boot config scopes are present
+            bootConfig.oauthScopes.forEach { scope ->
+                assertTrue("URL should contain boot config scope '$scope' when appConfigForLoginHost returns null",
+                    loginUrl.contains(scope))
+            }
+        } finally {
+            sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
+        }
+    }
+
     private fun generateExpectedAuthorizationUrl(
         server: String,
         codeChallenge: String,

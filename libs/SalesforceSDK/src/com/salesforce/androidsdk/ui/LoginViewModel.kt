@@ -59,16 +59,15 @@ import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
@@ -224,21 +223,25 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     init {
         // Update selectedServer when the LoginServerManager value changes
-        selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
-            val trimmedServer = newServer.url.run { trim { it <= ' ' } }
+        selectedServer.addSource(
+            SalesforceSDKManager.getInstance().loginServerManager.selectedServer
+        ) { newServer: LoginServerManager.LoginServer? ->
+            val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
             if (selectedServer.value == trimmedServer) {
                 reloadWebView()
-            } else {
+            } else if (trimmedServer != null) {
                 selectedServer.value = trimmedServer
             }
         }
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
-        loginUrl.addSource(selectedServer) { newServer ->
-            val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
-                viewModelScope.launch {
-                    loginUrl.value = getAuthorizationUrl(newServer)
+        loginUrl.addSource(selectedServer) { newServer: String? ->
+            if (!isUsingFrontDoorBridge && newServer != null) {
+                val isNewServer = loginUrl.value?.startsWith(newServer) != true
+                if (isNewServer) {
+                    viewModelScope.launch {
+                        loginUrl.value = getAuthorizationUrl(newServer)
+                    }
                 }
             }
         }
