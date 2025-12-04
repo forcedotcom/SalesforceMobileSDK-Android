@@ -224,10 +224,12 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Update selectedServer when the LoginServerManager value changes
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
             val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
-            if (selectedServer.value == trimmedServer) {
-                reloadWebView()
-            } else if (trimmedServer != null) {
-                selectedServer.value = trimmedServer
+            trimmedServer?.let { nonNullServer ->
+                if (selectedServer.value == nonNullServer) {
+                    reloadWebView()
+                } else {
+                    selectedServer.value = nonNullServer
+                }
             }
         }
 
