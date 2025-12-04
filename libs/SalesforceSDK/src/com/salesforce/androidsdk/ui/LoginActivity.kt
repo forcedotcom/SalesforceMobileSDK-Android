@@ -983,7 +983,7 @@ open class LoginActivity : FragmentActivity() {
     ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.bootConfig.remoteAccessConsumerKey
+            viewModel.oAuthConfig.redirectUri,
         )
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
@@ -1138,7 +1138,7 @@ open class LoginActivity : FragmentActivity() {
             }
 
             val formattedUrl = request.url.toString().replace("///", "/").lowercase()
-            val callbackUrl = viewModel.bootConfig.oauthRedirectURI.replace("///", "/").lowercase()
+            val callbackUrl = viewModel.oAuthConfig.redirectUri.replace("///", "/").lowercase()
             val authFlowFinished = formattedUrl.startsWith(callbackUrl)
 
             if (authFlowFinished) {

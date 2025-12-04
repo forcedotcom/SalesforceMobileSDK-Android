@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -47,8 +51,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.ui.components.CORNER_RADIUS
 import com.salesforce.androidsdk.ui.components.PADDING_SIZE
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
@@ -104,10 +111,16 @@ class LoginOptionsActivity: ComponentActivity() {
                         useWebServer,
                         useHybridToken,
                         supportWelcomeDiscovery,
+                        SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
                 }
             }
         }
+    }
+
+    override fun finish() {
+        super.finish()
+        SalesforceSDKManager.getInstance().loginDevMenuReload = true
     }
 }
 
@@ -129,10 +142,7 @@ fun OptionToggle(
         )
         Switch(
             checked = checked,
-            onCheckedChange = {
-                optionData.value = it
-                SalesforceSDKManager.getInstance().loginDevMenuReload = true
-            },
+            onCheckedChange = { optionData.value = it },
             modifier = Modifier.semantics {
                 this.contentDescription = contentDescription
             }
@@ -141,18 +151,20 @@ fun OptionToggle(
 }
 
 @Composable
-fun BootConfigView() {
-    var dynamicConsumerKey by remember { mutableStateOf("") }
-    var dynamicRedirectUri by remember { mutableStateOf("") }
-    var dynamicScopes by remember { mutableStateOf("") }
+fun BootConfigView(config: OAuthConfig? = null) {
+    var overrideConsumerKey by remember { mutableStateOf(config?.consumerKey ?: "") }
+    var overrideRedirectUri by remember { mutableStateOf(config?.redirectUri ?: "") }
+    var overrideScopes by remember { mutableStateOf(config?.scopesString ?: "") }
     val consumerKeyFieldDesc = stringResource(R.string.sf__login_options_consumer_key_field_content_description)
     val redirectFieldDesc = stringResource(R.string.sf__login_options_redirect_uri_field_content_description)
     val scopesFieldDesc = stringResource(R.string.sf__login_options_scopes_field_content_description)
+    val validInput = overrideConsumerKey.isNotBlank() && overrideRedirectUri.isNotBlank()
+    val activity = LocalActivity.current
 
     Column {
         OutlinedTextField(
-            value = dynamicConsumerKey,
-            onValueChange = { dynamicConsumerKey = it },
+            value = overrideConsumerKey,
+            onValueChange = { overrideConsumerKey = it },
             label = { Text("Consumer Key") },
             singleLine = true,
             modifier = Modifier
@@ -173,8 +185,8 @@ fun BootConfigView() {
         )
 
         OutlinedTextField(
-            value = dynamicRedirectUri,
-            onValueChange = { dynamicRedirectUri = it },
+            value = overrideRedirectUri,
+            onValueChange = { overrideRedirectUri = it },
             label = { Text("Redirect URI") },
             singleLine = true,
             modifier = Modifier
@@ -195,8 +207,8 @@ fun BootConfigView() {
         )
 
         OutlinedTextField(
-            value = dynamicScopes,
-            onValueChange = { dynamicScopes = it },
+            value = overrideScopes,
+            onValueChange = { overrideScopes = it },
             label = { Text("Scopes") },
             singleLine = true,
             modifier = Modifier
@@ -215,6 +227,33 @@ fun BootConfigView() {
                 cursorColor = colorScheme.tertiary,
             ),
         )
+
+        Button(
+            modifier = Modifier.padding(PADDING_SIZE.dp).fillMaxWidth(),
+            shape = RoundedCornerShape(CORNER_RADIUS.dp),
+            contentPadding = PaddingValues(PADDING_SIZE.dp),
+            colors = ButtonColors(
+                containerColor = colorScheme.tertiary,
+                contentColor = colorScheme.tertiary,
+                disabledContainerColor = colorScheme.surfaceVariant,
+                disabledContentColor = colorScheme.surfaceVariant,
+            ),
+            enabled = validInput,
+            onClick = {
+                SalesforceSDKManager.getInstance().debugOverrideAppConfig = OAuthConfig(
+                    overrideConsumerKey,
+                    overrideRedirectUri,
+                    overrideScopes,
+                )
+                activity?.finish()
+            },
+        ) {
+            Text(
+                text = stringResource(sf__server_url_save),
+                fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+                color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
+            )
+        }
     }
 }
 
@@ -245,9 +284,10 @@ fun LoginOptionsScreen(
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
     supportWelcomeDiscovery: MutableLiveData<Boolean>,
+    overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
 ) {
-    var useDynamicConfig by remember { mutableStateOf(false) }
+    var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
 
     Column(
         modifier = Modifier
@@ -296,13 +336,19 @@ fun LoginOptionsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Use Dynamic Boot Config",
+                text = "Override Boot Config",
                 modifier = Modifier.height( 50.dp).wrapContentHeight(align = Alignment.CenterVertically),
             )
             val dynamicConfigToggleDesc = stringResource(R.string.sf__login_options_dynamic_config_toggle_content_description)
             Switch(
                 checked = useDynamicConfig,
-                onCheckedChange = { useDynamicConfig = it },
+                onCheckedChange = {
+                    useDynamicConfig = it
+                    // Reset the stored value on uncheck so it is not used.
+                    if (!useDynamicConfig) {
+                        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
+                    }
+                },
                 modifier = Modifier.semantics {
                     contentDescription = dynamicConfigToggleDesc
                 }
@@ -310,7 +356,7 @@ fun LoginOptionsScreen(
         }
 
         if (useDynamicConfig) {
-            BootConfigView()
+            BootConfigView(overrideConfig)
         }
     }
 }
@@ -332,6 +378,19 @@ fun BootConfigViewPreview() {
 }
 
 @ExcludeFromJacocoGeneratedReport
+@Preview
+@Composable
+fun BootConfigViewFilledPreview() {
+    val config = OAuthConfig(
+        stringResource(R.string.remoteAccessConsumerKey),
+        stringResource(R.string.oauthRedirectURI),
+        listOf("web", "api"),
+    )
+
+    BootConfigView(config)
+}
+
+@ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Composable
 fun LoginOptionsScreenPreview() {
@@ -343,6 +402,7 @@ fun LoginOptionsScreenPreview() {
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
         supportWelcomeDiscovery = MutableLiveData(false),
+        overrideConfig = null,
         bootConfig = object : BootConfig() {
             override fun getRemoteAccessConsumerKey() = consumerKey
             override fun getOauthRedirectURI() = redirect

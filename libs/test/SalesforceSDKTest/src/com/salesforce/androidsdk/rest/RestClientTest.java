@@ -730,7 +730,7 @@ public class RestClientTest {
      * Create new account then look for it using soql.
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 180000) // 3 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
     public void testQueryWithBatchSize() throws Exception {
         cleanup();
         List<IdName> idNames = createAccounts(201, "-testWithBatchSize-");

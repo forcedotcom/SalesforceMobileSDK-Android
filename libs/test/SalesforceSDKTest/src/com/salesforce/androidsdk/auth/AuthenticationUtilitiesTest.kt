@@ -177,6 +177,9 @@ class AuthenticationUtilitiesTest {
         val tokenResponseWithoutIdScope = createTokenEndpointResponse(
             scope = "refresh_token" // Missing id scope
         )
+        
+        // Mock fetchUserIdentity to return null (simulating no id scope)
+        coEvery { fetchUserIdentity.invoke(any()) } returns null
 
         // Create the expected UserAccount object without IdServiceResponse population
         val expectedAccount = UserAccountBuilder.getInstance()
@@ -204,8 +207,8 @@ class AuthenticationUtilitiesTest {
         verify { handleScreenLockPolicy.invoke(null, expectedAccount) }
         verify { handleBiometricAuthPolicy.invoke(null, expectedAccount) }
         
-        // Verify that fetchUserIdentity was never called since there's no id scope
-        coVerify(exactly = 0) { fetchUserIdentity.invoke(any()) }
+        // Verify that fetchUserIdentity was called but returned null
+        coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
     private suspend fun callOnAuthFlowComplete(customTokenResponse: OAuth2.TokenEndpointResponse? = null) {

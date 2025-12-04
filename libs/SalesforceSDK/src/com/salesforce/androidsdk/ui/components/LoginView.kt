@@ -229,20 +229,23 @@ internal fun LoginView(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = topAppBar,
     ) { innerPadding ->
-        if (loading) {
-            loadingIndicator()
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Load the WebView as a composable
+            AndroidView(
+                modifier = Modifier
+                    .background(dynamicBackgroundColor.value)
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+                    .applyImePaddingConditionally()
+                    .graphicsLayer(alpha = alpha),
+                factory = { webView },
+                update = { it.loadUrl(loginUrl.value ?: "") },
+            )
+
+            if (loading) {
+                loadingIndicator()
+            }
         }
-        // Load the WebView as a composable
-        AndroidView(
-            modifier = Modifier
-                .background(dynamicBackgroundColor.value)
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-                .applyImePaddingConditionally()
-                .graphicsLayer(alpha = alpha),
-            factory = { webView },
-            update = { it.loadUrl(loginUrl.value ?: "") },
-        )
 
         if (showServerPicker.value) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)

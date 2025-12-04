@@ -28,7 +28,9 @@ package com.salesforce.androidsdk.ui
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextEquals
@@ -36,20 +38,28 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.OAuthConfig
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+
+private const val CONSUMER_KEY_LABEL = "Consumer Key"
+private const val REDIRECT_URI_LABEL = "Redirect URI"
+private const val SCOPES_LABEL = "Scopes"
 
 @RunWith(AndroidJUnit4::class)
 class LoginOptionsActivityTest {
@@ -68,6 +78,14 @@ class LoginOptionsActivityTest {
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
     private var originalSupportsWelcomeDiscovery: Boolean = false
+    private lateinit var dynamicToggle: SemanticsNodeInteraction
+    private lateinit var consumerKeyField: SemanticsNodeInteraction
+    private lateinit var redirectUriField: SemanticsNodeInteraction
+    private lateinit var scopesField: SemanticsNodeInteraction
+    private lateinit var webserverToggle: SemanticsNodeInteraction
+    private lateinit var hybridToggle: SemanticsNodeInteraction
+    private lateinit var welcomeToggle: SemanticsNodeInteraction
+    private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
     fun setup() {
@@ -76,6 +94,31 @@ class LoginOptionsActivityTest {
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
         originalSupportsWelcomeDiscovery = SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
+
+        dynamicToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_dynamic_config_toggle_content_description),
+        )
+        consumerKeyField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_consumer_key_field_content_description),
+        )
+        redirectUriField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_redirect_uri_field_content_description),
+        )
+        scopesField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_scopes_field_content_description),
+        )
+        webserverToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_webserver_toggle_content_description),
+        )
+        hybridToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description),
+        )
+        welcomeToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_welcome_toggle_content_description),
+        )
+        saveButton = composeTestRule.onNodeWithText(
+            composeTestRule.activity.getString(R.string.sf__server_url_save),
+        )
     }
 
     @After
@@ -84,6 +127,8 @@ class LoginOptionsActivityTest {
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = originalSupportsWelcomeDiscovery
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
+        SalesforceSDKManager.getInstance().loginDevMenuReload = false
     }
 
     @Test
@@ -115,8 +160,6 @@ class LoginOptionsActivityTest {
             SalesforceSDKManager.getInstance().useWebServerAuthentication
         )
 
-        val toggleDescriptor = composeTestRule.activity.getString(R.string.sf__login_options_webserver_toggle_content_description)
-        val webserverToggle = composeTestRule.onNodeWithContentDescription(toggleDescriptor)
         webserverToggle.assertIsDisplayed()
         webserverToggle.assertIsOff()
 
@@ -137,12 +180,6 @@ class LoginOptionsActivityTest {
             "Use Web Server Authentication should be enabled",
             SalesforceSDKManager.getInstance().useWebServerAuthentication
         )
-        
-        // Verify the reload flag was set
-        assertTrue(
-            "loginDevMenuReload should be true after toggle",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
-        )
     }
 
     @Test
@@ -161,8 +198,6 @@ class LoginOptionsActivityTest {
         )
         
         // Find and click the toggle
-        val toggleDescriptor = composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description)
-        val hybridToggle = composeTestRule.onNodeWithContentDescription(toggleDescriptor)
         hybridToggle.assertIsDisplayed()
         hybridToggle.assertIsOff()
 
@@ -183,12 +218,6 @@ class LoginOptionsActivityTest {
             "Use Hybrid Authentication should be enabled",
             SalesforceSDKManager.getInstance().useHybridAuthentication
         )
-        
-        // Verify the reload flag was set
-        assertTrue(
-            "loginDevMenuReload should be true after toggle",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
-        )
     }
 
     @Test
@@ -207,8 +236,6 @@ class LoginOptionsActivityTest {
         )
         
         // Find and click the toggle
-        val toggleDescriptor = composeTestRule.activity.getString(R.string.sf__login_options_welcome_toggle_content_description)
-        val welcomeToggle = composeTestRule.onNodeWithContentDescription(toggleDescriptor)
         welcomeToggle.assertIsDisplayed()
         welcomeToggle.assertIsOff()
 
@@ -228,12 +255,6 @@ class LoginOptionsActivityTest {
         assertTrue(
             "Support Welcome Discovery should be enabled",
             SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
-        )
-        
-        // Verify the reload flag was set
-        assertTrue(
-            "loginDevMenuReload should be true after toggle",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
         )
     }
 
@@ -261,32 +282,19 @@ class LoginOptionsActivityTest {
 
     @Test
     fun loginOptionsActivity_DynamicBootConfigToggle_ShowsInputFields() {
-        // Get content descriptions
-        val dynamicToggleDesc = composeTestRule.activity.getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
-        val consumerKeyFieldDesc = composeTestRule.activity.getString(R.string.sf__login_options_consumer_key_field_content_description)
-        val redirectUriFieldDesc = composeTestRule.activity.getString(R.string.sf__login_options_redirect_uri_field_content_description)
-        val scopesFieldDesc = composeTestRule.activity.getString(R.string.sf__login_options_scopes_field_content_description)
-        
-        // Initially, dynamic config fields should not exist
-        val dynamicToggle = composeTestRule.onNodeWithContentDescription(dynamicToggleDesc)
         dynamicToggle.assertIsDisplayed()
         dynamicToggle.assertIsOff()
         
-        composeTestRule.onNodeWithContentDescription(consumerKeyFieldDesc).assertDoesNotExist()
-        composeTestRule.onNodeWithContentDescription(redirectUriFieldDesc).assertDoesNotExist()
-        composeTestRule.onNodeWithContentDescription(scopesFieldDesc).assertDoesNotExist()
+        consumerKeyField.assertDoesNotExist()
+        redirectUriField.assertDoesNotExist()
+        scopesField.assertDoesNotExist()
         
         // Click to enable dynamic config
         dynamicToggle.performClick()
         composeTestRule.waitForIdle()
         
         dynamicToggle.assertIsOn()
-        
-        // Now the input fields should be visible and accept text input
-        val consumerKeyField = composeTestRule.onNodeWithContentDescription(consumerKeyFieldDesc)
-        val redirectUriField = composeTestRule.onNodeWithContentDescription(redirectUriFieldDesc)
-        val scopesField = composeTestRule.onNodeWithContentDescription(scopesFieldDesc)
-        
+        saveButton.performScrollTo()
         consumerKeyField.assertIsDisplayed()
         redirectUriField.assertIsDisplayed()
         scopesField.assertIsDisplayed()
@@ -299,9 +307,9 @@ class LoginOptionsActivityTest {
         composeTestRule.waitForIdle()
         
         // Verify the text was entered
-        consumerKeyField.assertTextEquals("Consumer Key", "test_consumer_key")
-        redirectUriField.assertTextEquals("Redirect URI", "test://redirect")
-        scopesField.assertTextEquals("Scopes", "api web")
+        consumerKeyField.assertTextEquals(CONSUMER_KEY_LABEL, "test_consumer_key")
+        redirectUriField.assertTextEquals(REDIRECT_URI_LABEL, "test://redirect")
+        scopesField.assertTextEquals(SCOPES_LABEL, "api web")
     }
 
     @Test
@@ -322,35 +330,129 @@ class LoginOptionsActivityTest {
         )
         
         // Toggle web server flow
-        composeTestRule.onNodeWithContentDescription(
-            composeTestRule.activity.getString(R.string.sf__login_options_webserver_toggle_content_description)
-        ).performClick()
+        webserverToggle.performClick()
         composeTestRule.waitForIdle()
         
         // Verify only web server flow changed
         assertTrue(SalesforceSDKManager.getInstance().useWebServerAuthentication)
         assertFalse(SalesforceSDKManager.getInstance().useHybridAuthentication)
         
-        // Verify the reload flag was set
-        assertTrue(
-            "loginDevMenuReload should be true after first toggle",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
-        )
-        
         // Toggle hybrid auth token
-        composeTestRule.onNodeWithContentDescription(
-            composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description)
-        ).performClick()
+        hybridToggle.performClick()
         composeTestRule.waitForIdle()
         
         // Verify both are now enabled
         assertTrue(SalesforceSDKManager.getInstance().useWebServerAuthentication)
         assertTrue(SalesforceSDKManager.getInstance().useHybridAuthentication)
-        
-        // Verify the reload flag is still true
-        assertTrue(
-            "loginDevMenuReload should still be true after second toggle",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
+    }
+
+    @Test
+    fun bootConfigView_WithEmptyFields_DisablesSaveButton() {
+        // Enable dynamic config
+        dynamicToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        // Save button should be disabled when fields are empty
+        saveButton.performScrollTo()
+        saveButton.assertIsDisplayed()
+        saveButton.assertIsNotEnabled()
+    }
+
+    @Test
+    fun bootConfigView_TappingSaveButton_SetsDebugOverrideAppConfig() {
+        // Enable dynamic config
+        dynamicToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        consumerKeyField.performTextInput("override_key")
+        redirectUriField.performTextInput("override://uri")
+        scopesField.performTextInput("api web")
+        composeTestRule.waitForIdle()
+
+        // Click save button
+        saveButton.performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify debugOverrideAppConfig was set
+        val overrideConfig = SalesforceSDKManager.getInstance().debugOverrideAppConfig
+        assertNotNull("debugOverrideAppConfig should be set", overrideConfig)
+        assertEquals("override_key", overrideConfig?.consumerKey)
+        assertEquals("override://uri", overrideConfig?.redirectUri)
+        assertEquals(listOf("api", "web"), overrideConfig?.scopes)
+    }
+
+    @Test
+    fun bootConfigView_SaveWithOnlyRequiredFields_CreatesOAuthConfig() {
+        // Enable dynamic config
+        dynamicToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        consumerKeyField.performTextInput("minimal_key")
+        redirectUriField.performTextInput("minimal://uri")
+        composeTestRule.waitForIdle()
+
+        // Click save button
+        saveButton.performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify debugOverrideAppConfig was set with null scopes
+        val overrideConfig = SalesforceSDKManager.getInstance().debugOverrideAppConfig
+        assertNotNull("debugOverrideAppConfig should be set", overrideConfig)
+        assertEquals("minimal_key", overrideConfig?.consumerKey)
+        assertEquals("minimal://uri", overrideConfig?.redirectUri)
+        assertNull("Scopes should be null when not provided", overrideConfig?.scopes)
+    }
+
+    @Test
+    fun bootConfigView_TogglingOffDebugOverride_ClearsValues() {
+        // Set an override first
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = OAuthConfig(
+            "existing_key",
+            "existing://uri",
+            listOf("api")
         )
+
+        // Recreate the activity to show the config we just set
+        with(composeTestRule.activity) {
+            runOnUiThread { recreate() }
+        }
+
+        // Enable dynamic config
+        dynamicToggle.performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        assertNull("Override should be cleared", SalesforceSDKManager.getInstance().debugOverrideAppConfig)
+
+        // Toggle off dynamic config
+        dynamicToggle.performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+
+        // Verify override was cleared
+        assertNull("Override should be cleared when toggling off", SalesforceSDKManager.getInstance().debugOverrideAppConfig)
+    }
+
+    @Test
+    fun bootConfigView_PrePopulatesWithExistingConfig() {
+        val overrideKey = "existing_key"
+        val overrideUri = "existing://uri"
+        val overrideScopes = listOf("api", "web")
+        val existingConfig = OAuthConfig(overrideKey, overrideUri, overrideScopes)
+        SalesforceSDKManager.getInstance().debugOverrideAppConfig = existingConfig
+
+        // Recreate the activity to show the config we just set
+        with(composeTestRule.activity) {
+            runOnUiThread { recreate() }
+        }
+
+        consumerKeyField.assertTextEquals(CONSUMER_KEY_LABEL, overrideKey)
+        redirectUriField.assertTextEquals(REDIRECT_URI_LABEL, overrideUri)
+        scopesField.assertTextEquals(SCOPES_LABEL, existingConfig.scopesString)
+    }
+
+    @Test
+    fun leavingActivity_Sets_loginDevMenuReload() {
+        assertFalse(SalesforceSDKManager.getInstance().loginDevMenuReload)
+        composeTestRule.activity.finish()
+        assertTrue(SalesforceSDKManager.getInstance().loginDevMenuReload)
     }
 }

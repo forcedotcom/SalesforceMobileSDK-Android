@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.annotation.SuppressLint
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -42,6 +43,7 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
@@ -57,6 +59,7 @@ import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -139,6 +142,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     var jwt: String? = null
 
     /** Connected App/External Client App client Id. */
+    @Deprecated("Will be removed in Mobile SDK 14.0, please use " +
+            "SalesforceSDKManager.getInstance().appConfigForLoginHost.")
     protected open var clientId: String = bootConfig.remoteAccessConsumerKey
 
     /** Authorization Display Type used for login. */
@@ -206,22 +211,37 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal var frontdoorBridgeCodeVerifier: String? = null
 
 
+    // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
+    internal var oAuthConfig = OAuthConfig(bootConfig)
+    private val consumerKey: String
+        get() = if (clientId != bootConfig.remoteAccessConsumerKey) {
+                clientId
+            } else {
+                oAuthConfig.consumerKey
+            }
+
     init {
         // Update selectedServer when the LoginServerManager value changes
         selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
-            val trimmedServer = newServer.url.run { trim { it <= ' ' } }
-            if (selectedServer.value == trimmedServer) {
-                reloadWebView()
-            } else {
-                selectedServer.value = trimmedServer
+            val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
+            trimmedServer?.let { nonNullServer ->
+                if (selectedServer.value == nonNullServer) {
+                    reloadWebView()
+                } else {
+                    selectedServer.value = nonNullServer
+                }
             }
         }
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
-        loginUrl.addSource(selectedServer) { newServer ->
-            val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
-                loginUrl.value = getAuthorizationUrl(newServer)
+        loginUrl.addSource(selectedServer) { newServer: String? ->
+            if (!isUsingFrontDoorBridge && newServer != null) {
+                val isNewServer = loginUrl.value?.startsWith(newServer) != true
+                if (isNewServer) {
+                    viewModelScope.launch {
+                        loginUrl.value = getAuthorizationUrl(newServer)
+                    }
+                }
             }
         }
     }
@@ -229,12 +249,17 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
         if (!isUsingFrontDoorBridge) {
-            // The Web Server Flow code challenge makes the authorization url unique each time,
-            // which triggers recomposition.  For User Agent Flow, change it to blank.
-            if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
-                loginUrl.value = ABOUT_BLANK
+            selectedServer.value?.let { server ->
+                // The Web Server Flow code challenge makes the authorization url unique each time,
+                // which triggers recomposition.  For User Agent Flow, change it to blank.
+                if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                    loginUrl.value = ABOUT_BLANK
+                }
+
+                viewModelScope.launch {
+                    loginUrl.value = getAuthorizationUrl(server)
+                }
             }
-            loginUrl.value = getAuthorizationUrl(selectedServer.value ?: return)
         }
     }
 
@@ -287,6 +312,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * Called when the webview portion of the User Agent flow or the code exchange
      * portion of the Web Server is finished to create and the user.
      */
+    @SuppressLint("VisibleForTests") // onAuthFlowComplete cannot be otherwise internal.
     internal suspend fun onAuthFlowComplete(
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
@@ -299,7 +325,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = selectedServer.value ?: "", // This will never actually be null.
-            consumerKey = clientId,
+            consumerKey = consumerKey,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
@@ -339,7 +365,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }?.removeSuffix("/")
     }
 
-    private fun getAuthorizationUrl(server: String): String {
+    private suspend fun getAuthorizationUrl(server: String): String = withContext(IO) {
+        // Show loading indicator because appConfigForLoginHost could take a noticeable amount of time.
+        loading.value = true
+
+        with(SalesforceSDKManager.getInstance()) {
+            // Check if the OAuth Config has been manually set by dev support LoginOptionsActivity.
+            oAuthConfig = if (isDebugBuild && debugOverrideAppConfig != null) {
+                debugOverrideAppConfig!!
+            } else {
+                appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
+            }
+        }
+
         val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
         val additionalParams = when {
             jwtFlow -> null
@@ -353,16 +391,16 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             useWebServerFlow,
             SalesforceSDKManager.getInstance().useHybridAuthentication,
             URI(server),
-            clientId,
-            bootConfig.oauthRedirectURI,
-            bootConfig.oauthScopes,
+            consumerKey,
+            oAuthConfig.redirectUri,
+            oAuthConfig.scopes?.toTypedArray(),
             loginHint,
             authorizationDisplayType,
             codeChallenge,
             additionalParams
         )
 
-        return when {
+        return@withContext when {
             jwtFlow -> getFrontdoorUrl(
                 authorizationUrl,
                 authCodeForJwtFlow,
@@ -386,10 +424,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
                 URI.create(server),
-                clientId,
+                consumerKey,
                 code,
                 verifier,
-                bootConfig.oauthRedirectURI,
+                oAuthConfig.redirectUri,
             )
 
             onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess)
