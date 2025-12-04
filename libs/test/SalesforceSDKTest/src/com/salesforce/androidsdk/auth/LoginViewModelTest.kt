@@ -68,6 +68,10 @@ class LoginViewModelTest {
     fun setup() {
         // This is required for the LiveData to actually update during the test
         // because it isn't actually being observed since there is no lifecycle.
+        viewModel.pendingServer.observeForever {
+            // This completes the validation of the pending login server usually performed by the login activity before setting selected server.
+            viewModel.selectedServer.value = it
+        }
         viewModel.selectedServer.observeForever { }
         viewModel.loginUrl.observeForever { }
         
