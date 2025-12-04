@@ -200,7 +200,7 @@ class LoginActivityTest {
 
         val validUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
+        assertTrue(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
 
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = true
 

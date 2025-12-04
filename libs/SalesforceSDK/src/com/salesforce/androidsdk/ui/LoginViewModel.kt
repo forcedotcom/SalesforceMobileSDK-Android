@@ -260,7 +260,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 =======
         loginUrl.addSource(selectedServer) { newServer ->
             val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer) {
+            if (isNewServer && !isUsingFrontDoorBridge) {
                 loginUrl.value = getAuthorizationUrl(newServer)
 >>>>>>> e3a3fc499 (@W-20161958: [MSDK 13.1][Android] Cannot login GUS using Welcome endpoint (Re-factored login observables))
             }
