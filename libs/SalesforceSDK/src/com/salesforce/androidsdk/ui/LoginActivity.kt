@@ -958,7 +958,7 @@ open class LoginActivity : FragmentActivity() {
     ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.oAuthConfig.redirectUri,
+            viewModel.oAuthConfig.consumerKey,
         )
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
