@@ -908,7 +908,8 @@ open class LoginActivity : FragmentActivity() {
     private var authenticationConfigurationFetchJob: Job? = null
 
     /** The previously observed pending login server for use in switching between default and Salesforce Welcome Discovery log in */
-    private var previousPendingLoginServer: String? = null
+    @VisibleForTesting
+    internal var previousPendingLoginServer: String? = null
 
     /**
      * If the intent is for Salesforce Welcome Discovery, apply it to the activity.
@@ -990,7 +991,8 @@ open class LoginActivity : FragmentActivity() {
      * @return Boolean true if a switch between default or Salesforce Welcome
      * Discovery log is made, false otherwise.
      */
-    private fun switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingLoginServerUri: Uri) =
+    @VisibleForTesting
+    internal fun switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingLoginServerUri: Uri) =
 
         // If the pending login server is a change to a new Salesforce Welcome Discovery URL and host.
         if (isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)) {

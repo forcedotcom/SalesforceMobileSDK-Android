@@ -30,10 +30,14 @@ import android.content.Intent
 import android.net.Uri.parse
 import android.webkit.WebView
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle.State.RESUMED
+import androidx.lifecycle.Lifecycle.State.STARTED
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
+import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
@@ -239,7 +243,7 @@ class LoginActivityTest {
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
         // Set loginDevMenuReload to false initially
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
-        
+
         launch<LoginActivity>(
             Intent(
                 getApplicationContext(),
@@ -251,18 +255,18 @@ class LoginActivityTest {
             activityScenario.onActivity { activity ->
                 initialUrl = activity.viewModel.loginUrl.value
             }
-            
+
             // Pause the activity (simulating going to dev menu)
-            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
-            
+            activityScenario.moveToState(STARTED)
+
             // Simulate changing login options in dev menu
             activityScenario.onActivity { _ ->
                 SalesforceSDKManager.getInstance().loginDevMenuReload = true
             }
-            
+
             // Resume the activity
-            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
-            
+            activityScenario.moveToState(RESUMED)
+
             // Verify the webview was reloaded (URL should be regenerated)
             activityScenario.onActivity { activity ->
                 // The reload flag should be reset to false
@@ -270,7 +274,7 @@ class LoginActivityTest {
                     "loginDevMenuReload should be reset to false after reload",
                     SalesforceSDKManager.getInstance().loginDevMenuReload
                 )
-                
+
                 // For Web Server Flow, the URL changes each time due to code challenge
                 // Verify that reloadWebView was called by checking the URL changed
                 val newUrl = activity.viewModel.loginUrl.value
@@ -284,4 +288,28 @@ class LoginActivityTest {
             }
         }
     }
+
+    // region Salesforce Welcome Discovery
+
+    @Test
+    fun loginActivity_startsWscDiscovery_onCreateWithSelectedServer() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            activity.previousPendingLoginServer = PRODUCTION_LOGIN_URL
+            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(WELCOME_LOGIN_URL.toUri()))
+
+            activity.previousPendingLoginServer = WELCOME_LOGIN_URL
+            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
+        }
+    }
+
+    // endregion
 }
