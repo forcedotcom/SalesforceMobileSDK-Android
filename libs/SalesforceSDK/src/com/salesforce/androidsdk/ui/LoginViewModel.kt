@@ -245,7 +245,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         loginUrl.addSource(selectedServer) { newServer: String? ->
             if (!isUsingFrontDoorBridge && newServer != null) {
                 val isNewServer = loginUrl.value?.startsWith(newServer) != true
-                if (isNewServer && !SalesforceSDKManager.getInstance().isBrowserLoginEnabled) {
+                if (isNewServer) {
                     viewModelScope.launch {
                         loginUrl.value = getAuthorizationUrl(newServer)
                     }
