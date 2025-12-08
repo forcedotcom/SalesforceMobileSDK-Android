@@ -1107,7 +1107,8 @@ open class LoginActivity : FragmentActivity() {
      * default login and Salesforce Welcome Discovery will be made before
      * applying the new value.
      */
-    private val pendingServerObserver = Observer<String> { pendingLoginServer ->
+    @VisibleForTesting
+    internal val pendingServerObserver = Observer<String> { pendingLoginServer ->
 
         // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
         val pendingServerUri = pendingLoginServer.toUri()

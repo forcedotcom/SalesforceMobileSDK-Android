@@ -317,22 +317,54 @@ class LoginActivityTest {
     }
 
     @Test
+    fun loginActivity_setsPreviousPendingServer_onPendingServerObserve() {
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            // IETF-Reserved Test Domain
+            val intentData = "https://www.example.com"
+
+            activity.intent = Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                data = intentData.toUri()
+            }
+            activity.pendingServerObserver.onChanged(intentData)
+            assertTrue(activity.previousPendingLoginServer == intentData)
+
+            val intentDataForWelcomeDiscovery = "https://welcome.example.com/discovery"
+            activity.pendingServerObserver.onChanged(intentDataForWelcomeDiscovery)
+            assertTrue(activity.previousPendingLoginServer == intentDataForWelcomeDiscovery)
+        }
+    }
+
+    @Test
     fun loginActivity_startsCorrectActivity_onStartDefaultLoginWithHintAndHost() {
+
+        val loginHint = "ExampleUser@Example.com"
+        val loginHost = "https://login.example.com"
 
         val context = mockk<Context>(relaxed = true)
 
         startDefaultLoginWithHintAndHost(
             context = context,
-            loginHint = "ExampleUser@Example.com", // IETF-Reserved Test Domain
-            loginHost = "https://login.example.com" // IETF-Reserved Test Domain
+            loginHint = loginHint, // IETF-Reserved Test Domain
+            loginHost = loginHost // IETF-Reserved Test Domain
         )
 
         verify(exactly = 1) {
             context.startActivity(
                 match {
                     it.component?.className == LoginActivity::class.java.name
-                    it.getStringExtra(EXTRA_KEY_LOGIN_HINT) == "ExampleUser@Example.com"
-                    it.getStringExtra(EXTRA_KEY_LOGIN_HOST) == "https://login.example.com"
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HINT) == loginHint
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HOST) == loginHost
                     it.flags == FLAG_ACTIVITY_SINGLE_TOP
                 }
             )
