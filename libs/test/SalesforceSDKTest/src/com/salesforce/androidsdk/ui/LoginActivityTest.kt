@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.net.Uri.parse
 import android.webkit.WebView
 import androidx.core.net.toUri
@@ -45,6 +47,9 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -308,6 +313,29 @@ class LoginActivityTest {
 
             activity.previousPendingLoginServer = WELCOME_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
+        }
+    }
+
+    @Test
+    fun loginActivity_startsCorrectActivity_onStartDefaultLoginWithHintAndHost() {
+
+        val context = mockk<Context>(relaxed = true)
+
+        startDefaultLoginWithHintAndHost(
+            context = context,
+            loginHint = "ExampleUser@Example.com", // IETF-Reserved Test Domain
+            loginHost = "https://login.example.com" // IETF-Reserved Test Domain
+        )
+
+        verify(exactly = 1) {
+            context.startActivity(
+                match {
+                    it.component?.className == LoginActivity::class.java.name
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HINT) == "ExampleUser@Example.com"
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HOST) == "https://login.example.com"
+                    it.flags == FLAG_ACTIVITY_SINGLE_TOP
+                }
+            )
         }
     }
 

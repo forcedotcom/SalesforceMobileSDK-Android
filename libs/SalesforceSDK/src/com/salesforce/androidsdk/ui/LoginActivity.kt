@@ -1616,7 +1616,8 @@ open class LoginActivity : FragmentActivity() {
          * @param loginHint The Salesforce Welcome login username hint
          * @param loginHost The Salesforce Welcome login host
          */
-        private fun startDefaultLoginWithHintAndHost(
+        @VisibleForTesting
+        internal fun startDefaultLoginWithHintAndHost(
             context: Context,
             loginHint: String,
             loginHost: String,
