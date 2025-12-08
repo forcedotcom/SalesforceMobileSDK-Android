@@ -31,6 +31,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.net.Uri.parse
 import android.webkit.WebView
+import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
@@ -40,6 +41,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
@@ -48,6 +50,7 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -317,32 +320,72 @@ class LoginActivityTest {
     }
 
     @Test
-    fun loginActivity_setsPreviousPendingServer_onPendingServerObserve() {
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
+    fun loginActivityLoginUrlObserver_startsBrowserCustomTabAuthorization_onChange() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
+        every { activity.customTabLauncher } returns activityResultLauncher
+
+        val observer = activity.LoginUrlObserver(activity)
+
+        observer.onChanged(exampleUrl)
+        verify(exactly = -1) {
+            activity.startBrowserCustomTabAuthorization(
+                match { it == SalesforceSDKManager.getInstance() },
+                match { it == exampleUrl },
+                match { it == activityResultLauncher }
             )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            // IETF-Reserved Test Domain
-            val intentData = "https://www.example.com"
-
-            activity.intent = Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                data = intentData.toUri()
-            }
-            activity.pendingServerObserver.onChanged(intentData)
-            assertTrue(activity.previousPendingLoginServer == intentData)
-
-            val intentDataForWelcomeDiscovery = "https://welcome.example.com/discovery"
-            activity.pendingServerObserver.onChanged(intentDataForWelcomeDiscovery)
-            assertTrue(activity.previousPendingLoginServer == intentDataForWelcomeDiscovery)
         }
+    }
+
+    @Test
+    fun loginActivityLoginUrlObserver_returns_onChangeWithAboutBlank() {
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
+        every { activity.customTabLauncher } returns activityResultLauncher
+
+        val observer = activity.LoginUrlObserver(activity)
+
+        observer.onChanged(ABOUT_BLANK)
+        verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
+    }
+
+    @Test
+    fun loginActivityLoginUrlObserver_returns_onChangeWithNullCustomTabLauncher() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val observer = activity.LoginUrlObserver(activity)
+        every { activity.customTabLauncher } returns null
+        observer.onChanged(exampleUrl)
+        verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_appliesPendingServer_onChange() {
+
+        val pendingServerWelcomeDiscovery = "https://welcome.example.com/discovery"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent.data } returns null
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscovery)
+        verify(exactly = 1) { activity.applyPendingServer(pendingServerWelcomeDiscovery) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_returns_onChangeMatchingIntentData() {
+
+        // Pending server observer returns without action value matching intent data
+        val pendingServer = "https://www.example.com" // IETF-Reserved Test Domain
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent.data } returns pendingServer.toUri()
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServer)
+        verify(exactly = 0) { activity.applyPendingServer(any()) }
     }
 
     @Test

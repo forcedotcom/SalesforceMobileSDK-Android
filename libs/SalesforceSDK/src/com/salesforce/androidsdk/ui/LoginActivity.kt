@@ -174,7 +174,8 @@ import java.security.cert.X509Certificate
  * them.
  */
 open class LoginActivity : FragmentActivity() {
-    private var customTabLauncher: ActivityResultLauncher<Intent>? = null
+    @VisibleForTesting
+    internal var customTabLauncher: ActivityResultLauncher<Intent>? = null
 
     // View Model
     @VisibleForTesting(otherwise = PROTECTED)
@@ -289,8 +290,8 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Add view model observers.
-        viewModel.loginUrl.observe(this, loginUrlObserver)
-        viewModel.pendingServer.observe(this, pendingServerObserver)
+        viewModel.loginUrl.observe(this, LoginUrlObserver())
+        viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Support magic links
         if (viewModel.jwt != null) {
@@ -1086,53 +1087,13 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * An observer for the login URL (OAuth authorization URL) that loads the
-     * authorization URL in a web browser custom tab when the authentication
-     * configuration requires browser-based authentication.
-     */
-    private val loginUrlObserver = Observer<String> { authorizationUrl ->
-        if (authorizationUrl == "about:blank") {
-            return@Observer
-        }
-
-        startBrowserCustomTabAuthorization(
-            sdkManager = SalesforceSDKManager.getInstance(),
-            authorizationUrl = authorizationUrl,
-            activityResultLauncher = customTabLauncher ?: return@Observer
-        )
-    }
-
-    /**
-     * An observer for the pending login server.  The decision to switch between
-     * default login and Salesforce Welcome Discovery will be made before
-     * applying the new value.
-     */
-    @VisibleForTesting
-    internal val pendingServerObserver = Observer<String> { pendingLoginServer ->
-
-        // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
-        val pendingServerUri = pendingLoginServer.toUri()
-        if (intent.data?.host == pendingServerUri.host) {
-            previousPendingLoginServer = pendingLoginServer
-            return@Observer
-        }
-
-        // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
-        if (switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
-            previousPendingLoginServer = pendingLoginServer
-            return@Observer
-        }
-
-        applyPendingServer(pendingLoginServer)
-    }
-
-    /**
      * Applies a new pending login server.  The decision to authenticate in a
      * web browser-custom tab will be made, which may require fetching the
      * authentication configuration.  The selected server and login URL (OAuth
      * authorization URL) will set to continue the flow.
      */
-    private fun applyPendingServer(pendingLoginServer: String) {
+    @VisibleForTesting
+    internal fun applyPendingServer(pendingLoginServer: String) {
         val sdkManager = SalesforceSDKManager.getInstance()
 
         // Recall this pending login server for reference by future updates.
@@ -1163,7 +1124,8 @@ open class LoginActivity : FragmentActivity() {
      * @param activityResultLauncher The activity result launcher to use when
      * browser-based authentication requires a browser custom tab.
      */
-    private fun startBrowserCustomTabAuthorization(
+    @VisibleForTesting
+    internal open fun startBrowserCustomTabAuthorization(
         sdkManager: SalesforceSDKManager,
         authorizationUrl: String,
         activityResultLauncher: ActivityResultLauncher<Intent>,
@@ -1633,4 +1595,59 @@ open class LoginActivity : FragmentActivity() {
 
         // endregion
     }
+
+    // region Observer Classes
+
+    /**
+     * An observer for login URL that continues the authentication flow by
+     * loading the login URL in a web browser customer tab when browser-based
+     * authentication is required.
+     * @param activity The login activity. Defaults to the enclosing instance
+     */
+    internal inner class LoginUrlObserver(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            if (value == "about:blank") {
+                return
+            }
+
+            activity.startBrowserCustomTabAuthorization(
+                sdkManager = SalesforceSDKManager.getInstance(),
+                authorizationUrl = value,
+                activityResultLauncher = activity.customTabLauncher ?: return
+            )
+        }
+    }
+
+    /**
+     * An observer for pending login server that continues the authentication
+     * flow by determining the switch between default login and Salesforce
+     * Welcome Discovery before applying the pending login server to the
+     * activity.
+     * @param activity The login activity. Defaults to the enclosing instance
+     */
+    @VisibleForTesting
+    internal inner class PendingServerObserver(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
+            val pendingServerUri = value.toUri()
+            if (activity.intent.data?.host == pendingServerUri.host) {
+                activity.previousPendingLoginServer = value
+                return
+            }
+
+            // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
+            if (activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
+                activity.previousPendingLoginServer = value
+                return
+            }
+
+            activity.applyPendingServer(value)
+        }
+    }
+
+    // endregion
 }
