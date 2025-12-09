@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.core.net.toUri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
@@ -34,6 +35,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -652,6 +654,42 @@ class LoginViewModelTest {
         assert(viewModel.selectedServer.value == exampleUrl)
         verify(exactly = 1) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
         verify(exactly = 1) { job.cancel() }
+    }
+
+    @Test
+    fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsNullOnNullPreviousPendingLoginServer() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        viewModel.previousPendingLoginServer = null
+        assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
+    }
+
+    @Test
+    fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsNullOnUnparsablePreviousPendingLoginServer() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        viewModel.previousPendingLoginServer = "_invalid_uri_"
+        assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
+    }
+
+    @Test
+    fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsTrueOnSwitch() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
+        assertTrue(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
+    }
+
+    @Test
+    fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsFalseOtherPreviousPendingLoginServer() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        viewModel.previousPendingLoginServer = "https://other.example.com" // IETF-Reserved Test Domain
+        assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
     }
 
     private fun generateExpectedAuthorizationUrl(
