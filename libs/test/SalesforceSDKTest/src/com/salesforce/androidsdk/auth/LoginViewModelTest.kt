@@ -644,13 +644,14 @@ class LoginViewModelTest {
         }
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.authenticationConfigurationFetchJob = mockk<Job>()
+        val job = mockk<Job>(relaxed = true)
+        viewModel.authenticationConfigurationFetchJob = job
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
 
         assert(viewModel.previousPendingLoginServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
         verify(exactly = 1) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
-        verify(exactly = 1) { viewModel.authenticationConfigurationFetchJob?.cancel() }
+        verify(exactly = 1) { job.cancel() }
     }
 
     private fun generateExpectedAuthorizationUrl(
