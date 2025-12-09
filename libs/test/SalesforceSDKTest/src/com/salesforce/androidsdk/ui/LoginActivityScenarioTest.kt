@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui
 import android.content.Intent
 import android.net.Uri.parse
 import android.webkit.WebView
+import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
@@ -40,6 +41,9 @@ import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -245,7 +249,7 @@ class LoginActivityScenarioTest {
     // region Salesforce Welcome Discovery
 
     @Test
-    fun loginActivity_startsWscDiscovery_onCreateWithSelectedServer() {
+    fun loginActivity_startBrowserCustomTabAuthorization_launchesActivityResultLauncherWhenIsBrowserLoginEnabled() {
 
         val activityScenario = launch<LoginActivity>(
             Intent(
@@ -256,11 +260,72 @@ class LoginActivityScenarioTest {
 
         activityScenario.onActivity { activity ->
 
-            activity.viewModel.previousPendingLoginServer = PRODUCTION_LOGIN_URL
-            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(WELCOME_LOGIN_URL.toUri()))
+            val sdkManager = mockk<SalesforceSDKManager>()
+            every { sdkManager.isBrowserLoginEnabled } returns true
+            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
 
-            activity.viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
-            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
+            activity.startBrowserCustomTabAuthorization(
+                authorizationUrl = "_authorization_url_",
+                activityResultLauncher = activityResultLauncher,
+                isBrowserLoginEnabled = true,
+                isUsingFrontDoorBridge = false,
+                singleServerCustomTabActivity = false,
+            )
+            verify(exactly = 1) { activityResultLauncher.launch(any()) }
+        }
+    }
+
+    @Test
+    fun loginActivity_startBrowserCustomTabAuthorization_launchesActivityResultLauncherWhenSingleServerCustomTabActivity() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            val sdkManager = mockk<SalesforceSDKManager>()
+            every { sdkManager.isBrowserLoginEnabled } returns true
+            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
+
+            activity.startBrowserCustomTabAuthorization(
+                authorizationUrl = "_authorization_url_",
+                activityResultLauncher = activityResultLauncher,
+                isBrowserLoginEnabled = false,
+                isUsingFrontDoorBridge = false,
+                singleServerCustomTabActivity = true,
+            )
+            verify(exactly = 1) { activityResultLauncher.launch(any()) }
+        }
+    }
+
+    @Test
+    fun loginActivity_startBrowserCustomTabAuthorization_returnsActivityResultLauncherWhenIsUsingFrontDoorBridge() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            val sdkManager = mockk<SalesforceSDKManager>()
+            every { sdkManager.isBrowserLoginEnabled } returns true
+            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
+
+            activity.startBrowserCustomTabAuthorization(
+                authorizationUrl = "_authorization_url_",
+                activityResultLauncher = activityResultLauncher,
+                isBrowserLoginEnabled = true,
+                isUsingFrontDoorBridge = true,
+                singleServerCustomTabActivity = true,
+            )
+            verify(exactly = 0) { activityResultLauncher.launch(any()) }
         }
     }
 
@@ -278,6 +343,26 @@ class LoginActivityScenarioTest {
 
             assertFalse(activity.displayWelcomeUnsupportedToastIfNeeded(true))
             assertTrue(activity.displayWelcomeUnsupportedToastIfNeeded(false))
+        }
+    }
+
+    @Test
+    fun loginActivity_startsWscDiscovery_onCreateWithSelectedServer() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            activity.viewModel.previousPendingLoginServer = PRODUCTION_LOGIN_URL
+            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(WELCOME_LOGIN_URL.toUri()))
+
+            activity.viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
+            assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
         }
     }
 }

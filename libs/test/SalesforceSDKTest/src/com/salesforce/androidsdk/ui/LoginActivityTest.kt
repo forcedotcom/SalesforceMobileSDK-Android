@@ -111,7 +111,6 @@ class LoginActivityTest {
         observer.onChanged(exampleUrl)
         verify(exactly = -1) {
             activity.startBrowserCustomTabAuthorization(
-                match { it == SalesforceSDKManager.getInstance() },
                 match { it == exampleUrl },
                 match { it == activityResultLauncher }
             )

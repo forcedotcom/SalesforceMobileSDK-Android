@@ -1079,21 +1079,27 @@ open class LoginActivity : FragmentActivity() {
      * Starts a browser custom tab for the OAuth authorization URL according to
      * the authentication configuration. The activity only takes action when
      * browser-based authentication requires a browser custom tab to be started.
-     * @param sdkManager The Salesforce SDK Manager with the selected login
-     * server's authentication configuration
      * @param authorizationUrl The selected login server's OAuth authorization
      * URL
      * @param activityResultLauncher The activity result launcher to use when
-     * browser-based authentication requires a browser custom tab.
+     * browser-based authentication requires a browser custom tab
+     * @param isBrowserLoginEnabled Indicates if browser-based authentication is
+     * enabled
+     * @param isUsingFrontDoorBridge Indicates if a UI bridge API front door
+     * bridge URL is in use
+     * @param singleServerCustomTabActivity Indicates single server custom
+     * browser tab authentication is active
      */
     @VisibleForTesting
     internal open fun startBrowserCustomTabAuthorization(
-        sdkManager: SalesforceSDKManager,
         authorizationUrl: String,
         activityResultLauncher: ActivityResultLauncher<Intent>,
+        isBrowserLoginEnabled: Boolean = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
+        isUsingFrontDoorBridge: Boolean = viewModel.isUsingFrontDoorBridge,
+        singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
     ) {
         // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
-        if ((viewModel.singleServerCustomTabActivity || sdkManager.isBrowserLoginEnabled) && !viewModel.isUsingFrontDoorBridge /* UI front-door bridge bypasses the need for browser custom tab */) {
+        if ((singleServerCustomTabActivity || isBrowserLoginEnabled) && !isUsingFrontDoorBridge /* UI front-door bridge bypasses the need for browser custom tab */) {
             loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
         }
     }
@@ -1575,9 +1581,9 @@ open class LoginActivity : FragmentActivity() {
             }
 
             activity.startBrowserCustomTabAuthorization(
-                sdkManager = SalesforceSDKManager.getInstance(),
                 authorizationUrl = value,
-                activityResultLauncher = activity.customTabLauncher ?: return
+                activityResultLauncher = activity.customTabLauncher ?: return,
+                isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
             )
         }
     }
