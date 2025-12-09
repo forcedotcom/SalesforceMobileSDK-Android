@@ -148,7 +148,6 @@ import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.String.format
@@ -185,6 +184,7 @@ open class LoginActivity : FragmentActivity() {
     // Webview and Clients
     @VisibleForTesting(otherwise = PROTECTED)
     open val webViewClient = AuthWebViewClient()
+
     @VisibleForTesting(otherwise = PROTECTED)
     open val webChromeClient = WebChromeClient()
     open val webView: WebView by lazy {
@@ -337,7 +337,7 @@ open class LoginActivity : FragmentActivity() {
         // Store the new intent and apply it to the activity.
         setIntent(intent)
         applyIntent()
-        viewModel.pendingServer.value?.let { applyPendingServer(it) }
+        viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
     }
 
     private fun clearWebView(showServerPicker: Boolean = true) {
@@ -905,13 +905,6 @@ open class LoginActivity : FragmentActivity() {
     // endregion
     // region Salesforce Welcome Login Private Implementation
 
-    /** The Kotlin Coroutine Job fetching the pending login server's authentication configuration */
-    private var authenticationConfigurationFetchJob: Job? = null
-
-    /** The previously observed pending login server for use in switching between default and Salesforce Welcome Discovery log in */
-    @VisibleForTesting
-    internal var previousPendingLoginServer: String? = null
-
     /**
      * If the intent is for Salesforce Welcome Discovery, apply it to the activity.
      * @param intent The intent
@@ -972,20 +965,6 @@ open class LoginActivity : FragmentActivity() {
         .build()
 
     /**
-     * Determines if the provided pending login server URL is a switch from
-     * Salesforce Welcome Discovery back to default log in.
-     * @param pendingLoginServerUri The pending login server URL
-     * @return Boolean true if the provided pending login server URL is a
-     * switch from Salesforce Welcome Discovery back to the default log in,
-     * false otherwise.
-     * */
-    private fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
-        pendingLoginServerUri: Uri
-    ) = previousPendingLoginServer?.toUri()?.let { previousPendingLoginServerUri ->
-        isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri) && !(isSalesforceWelcomeDiscoveryMobileUrl(this, pendingLoginServerUri))
-    } ?: false
-
-    /**
      * Switches between default or Salesforce Welcome Discovery log in as needed
      * using the provided pending login server URL.
      * @param pendingLoginServerUri The pending login server URL
@@ -1011,7 +990,7 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // If the pending login server isn't a Salesforce Welcome Discovery URL but the previous was...
-        else if (isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(pendingLoginServerUri)) {
+        else if (viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(pendingLoginServerUri)) {
 
             // Navigate to default login.
             startActivity(
@@ -1085,33 +1064,6 @@ open class LoginActivity : FragmentActivity() {
 
         // If the intent is for log in using a UI Bridge API front door URL, apply it to the activity.
         applyUiBridgeApiFrontDoorUrl(intent)
-    }
-
-    /**
-     * Applies a new pending login server.  The decision to authenticate in a
-     * web browser-custom tab will be made, which may require fetching the
-     * authentication configuration.  The selected server and login URL (OAuth
-     * authorization URL) will set to continue the flow.
-     */
-    @VisibleForTesting
-    internal fun applyPendingServer(pendingLoginServer: String) {
-        val sdkManager = SalesforceSDKManager.getInstance()
-
-        // Recall this pending login server for reference by future updates.
-        previousPendingLoginServer = pendingLoginServer
-
-        // When authorization via a single-server, custom tab activity is requested skip fetching the authorization configuration and immediately set the selected login server to generate the OAuth authorization URL.
-        if (viewModel.singleServerCustomTabActivity) {
-            viewModel.selectedServer.postValue(pendingLoginServer)
-        }
-        // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
-        else {
-            authenticationConfigurationFetchJob?.cancel()
-            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
-                viewModel.selectedServer.postValue(pendingLoginServer)
-                authenticationConfigurationFetchJob = null
-            }
-        }
     }
 
     /**
@@ -1636,17 +1588,17 @@ open class LoginActivity : FragmentActivity() {
             // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val pendingServerUri = value.toUri()
             if (activity.intent.data?.host == pendingServerUri.host) {
-                activity.previousPendingLoginServer = value
+                activity.viewModel.previousPendingLoginServer = value
                 return
             }
 
             // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
             if (activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
-                activity.previousPendingLoginServer = value
+                activity.viewModel.previousPendingLoginServer = value
                 return
             }
 
-            activity.applyPendingServer(value)
+            activity.viewModel.applyPendingServer(pendingLoginServer = value)
         }
     }
 

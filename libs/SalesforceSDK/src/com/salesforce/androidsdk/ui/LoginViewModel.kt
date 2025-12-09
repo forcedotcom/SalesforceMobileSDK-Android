@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.luminance
+import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -63,9 +65,12 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -122,8 +127,18 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     var loading = mutableStateOf(false)
 
     // Internal LiveData
+
+    /** The Kotlin Coroutine Job fetching the pending login server's authentication configuration */
+    @VisibleForTesting
+    internal var authenticationConfigurationFetchJob: Job? = null
+
     /** The login server that is pending authentication configuration before becoming the selected login server */
     internal val pendingServer = MediatorLiveData<String>()
+
+    /** The previously observed pending login server for use in switching between default and Salesforce Welcome Discovery log in */
+    @VisibleForTesting
+    internal var previousPendingLoginServer: String? = null
+
     internal val authFinished = mutableStateOf(false)
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
@@ -313,6 +328,40 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     ) = defaultBuildAccountName(username, instanceServer)
 
     /**
+     * Applies a new pending login server.  The decision to authenticate in a
+     * web browser-custom tab will be made, which may require fetching the
+     * authentication configuration.  The selected server and login URL (OAuth
+     * authorization URL) will set to continue the flow.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance.
+     * @param pendingLoginServer The new pending login server value
+     */
+    internal fun applyPendingServer(
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        pendingLoginServer: String?
+    ) {
+        if (pendingLoginServer == null) {
+            return
+        }
+
+        // Recall this pending login server for reference by future updates.
+        previousPendingLoginServer = pendingLoginServer
+
+        // When authorization via a single-server, custom tab activity is requested skip fetching the authorization configuration and immediately set the selected login server to generate the OAuth authorization URL.
+        if (singleServerCustomTabActivity) {
+            selectedServer.postValue(pendingLoginServer)
+        }
+        // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
+        else {
+            authenticationConfigurationFetchJob?.cancel()
+            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
+                selectedServer.postValue(pendingLoginServer)
+                authenticationConfigurationFetchJob = null
+            }
+        }
+    }
+
+    /**
      * Called when the webview portion of the Web Server flow is finished.  Code exchange
      * passes the result to [onAuthFlowComplete] on success, which handles user creation.
      */
@@ -452,6 +501,24 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             onAuthFlowError("Token Request Error", throwable.message, throwable)
         }
     }
+
+    // region Salesforce Welcome Discovery
+
+    /**
+     * Determines if the provided pending login server URL is a switch from
+     * Salesforce Welcome Discovery back to default log in.
+     * @param pendingLoginServerUri The pending login server URL
+     * @return Boolean true if the provided pending login server URL is a
+     * switch from Salesforce Welcome Discovery back to the default log in,
+     * false otherwise.
+     * */
+    internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
+        pendingLoginServerUri: Uri
+    ) = previousPendingLoginServer?.toUri()?.let { previousPendingLoginServerUri ->
+        isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri) && !(isSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri))
+    } ?: false
+
+    // endregion
 
     companion object {
 

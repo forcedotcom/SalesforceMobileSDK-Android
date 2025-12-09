@@ -311,10 +311,10 @@ class LoginActivityTest {
 
         activityScenario.onActivity { activity ->
 
-            activity.previousPendingLoginServer = PRODUCTION_LOGIN_URL
+            activity.viewModel.previousPendingLoginServer = PRODUCTION_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(WELCOME_LOGIN_URL.toUri()))
 
-            activity.previousPendingLoginServer = WELCOME_LOGIN_URL
+            activity.viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
         }
     }
@@ -373,7 +373,7 @@ class LoginActivityTest {
         every { activity.intent.data } returns null
         val observer = activity.PendingServerObserver(activity)
         observer.onChanged(pendingServer)
-        verify(exactly = 1) { activity.applyPendingServer(pendingServer) }
+        verify(exactly = 1) { activity.viewModel.applyPendingServer(pendingLoginServer = pendingServer) }
     }
 
     @Test
@@ -381,10 +381,12 @@ class LoginActivityTest {
 
         val pendingServer = "https://www.example.com" // IETF-Reserved Test Domain
         val activity = mockk<LoginActivity>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { activity.viewModel } returns viewModel
         every { activity.intent.data } returns pendingServer.toUri()
         val observer = activity.PendingServerObserver(activity)
         observer.onChanged(pendingServer)
-        verify(exactly = 0) { activity.applyPendingServer(any()) }
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
     }
 
     @Test
@@ -392,10 +394,12 @@ class LoginActivityTest {
 
         val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
         val activity = mockk<LoginActivity>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { activity.viewModel } returns viewModel
         every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
         val observer = activity.PendingServerObserver(activity)
         observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
-        verify(exactly = 0) { activity.applyPendingServer(any()) }
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
     }
 
     @Test
