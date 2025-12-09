@@ -1055,18 +1055,19 @@ open class LoginActivity : FragmentActivity() {
      * Salesforce Welcome Discovery mobile URL
      */
     private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
-        // Alert the user if the Salesforce Welcome Discovery is disabled.
-        if (!SalesforceSDKManager.getInstance().supportsWelcomeDiscovery) {
-            runOnUiThread {
-                makeText(
-                    this,
-                    getString(salesforce_welcome_is_disabled),
-                    LENGTH_LONG
-                ).show()
-            }
-        }
-
         if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
+
+            // Alert the user if the Salesforce Welcome Discovery is disabled.
+            if (!SalesforceSDKManager.getInstance().supportsWelcomeDiscovery) {
+                runOnUiThread {
+                    makeText(
+                        this,
+                        getString(salesforce_welcome_is_disabled),
+                        LENGTH_LONG
+                    ).show()
+                }
+            }
+
             viewModel.loginUrl.postValue(uri.toString())
         }
     }

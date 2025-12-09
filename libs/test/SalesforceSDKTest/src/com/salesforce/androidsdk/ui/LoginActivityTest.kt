@@ -368,23 +368,33 @@ class LoginActivityTest {
     @Test
     fun loginActivityPendingServerObserver_appliesPendingServer_onChange() {
 
-        val pendingServerWelcomeDiscovery = "https://welcome.example.com/discovery"
+        val pendingServer = "https://welcome.example.com/discovery"
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.intent.data } returns null
         val observer = activity.PendingServerObserver(activity)
-        observer.onChanged(pendingServerWelcomeDiscovery)
-        verify(exactly = 1) { activity.applyPendingServer(pendingServerWelcomeDiscovery) }
+        observer.onChanged(pendingServer)
+        verify(exactly = 1) { activity.applyPendingServer(pendingServer) }
     }
 
     @Test
     fun loginActivityPendingServerObserver_returns_onChangeMatchingIntentData() {
 
-        // Pending server observer returns without action value matching intent data
         val pendingServer = "https://www.example.com" // IETF-Reserved Test Domain
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.intent.data } returns pendingServer.toUri()
         val observer = activity.PendingServerObserver(activity)
         observer.onChanged(pendingServer)
+        verify(exactly = 0) { activity.applyPendingServer(any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_switchesDefaultOrSalesforceWelcomeDiscoveryLogin_onChangeIntentDataTogglesWelcomeDiscoveryUrlPath() {
+
+        val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
         verify(exactly = 0) { activity.applyPendingServer(any()) }
     }
 
