@@ -940,6 +940,26 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
+     * Alerts the user if the Salesforce Welcome Discovery is disabled.
+     * @param supportsWelcomeDiscovery Indicates if Salesforce Welcome Discovery
+     * is supported.
+     * @return Boolean true if the alert was displayed, false otherwise
+     */
+    @VisibleForTesting
+    internal fun displayWelcomeUnsupportedToastIfNeeded(
+        supportsWelcomeDiscovery: Boolean
+    ) = if (!supportsWelcomeDiscovery) {
+        runOnUiThread {
+            makeText(
+                this,
+                getString(salesforce_welcome_is_disabled),
+                LENGTH_LONG
+            ).show()
+        }
+        true
+    } else false
+
+    /**
      * Creates a Salesforce Welcome Discovery mobile URL using the provided
      * Salesforce Welcome Discovery host and path URL.
      * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
@@ -1035,18 +1055,7 @@ open class LoginActivity : FragmentActivity() {
      */
     private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
         if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
-
-            // Alert the user if the Salesforce Welcome Discovery is disabled.
-            if (!SalesforceSDKManager.getInstance().supportsWelcomeDiscovery) {
-                runOnUiThread {
-                    makeText(
-                        this,
-                        getString(salesforce_welcome_is_disabled),
-                        LENGTH_LONG
-                    ).show()
-                }
-            }
-
+            displayWelcomeUnsupportedToastIfNeeded(SalesforceSDKManager.getInstance().supportsWelcomeDiscovery)
             viewModel.loginUrl.postValue(uri.toString())
         }
     }

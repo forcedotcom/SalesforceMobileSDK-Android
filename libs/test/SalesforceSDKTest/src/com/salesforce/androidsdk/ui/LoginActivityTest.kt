@@ -320,6 +320,23 @@ class LoginActivityTest {
     }
 
     @Test
+    fun loginActivity_displayWelcomeUnsupportedToastIfNeeded_supportsWelcomeDiscovery() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            assertFalse(activity.displayWelcomeUnsupportedToastIfNeeded(true))
+            assertTrue(activity.displayWelcomeUnsupportedToastIfNeeded(false))
+        }
+    }
+
+    @Test
     fun loginActivityLoginUrlObserver_startsBrowserCustomTabAuthorization_onChange() {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
