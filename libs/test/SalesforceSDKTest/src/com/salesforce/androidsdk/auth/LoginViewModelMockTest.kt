@@ -73,6 +73,10 @@ class LoginViewModelMockTest {
         mockCookieManager = mockk<CookieManager>(relaxed = true)
         every { CookieManager.getInstance() } returns mockCookieManager
 
+        // Mock OAuth2 and AuthenticationUtilities
+        mockkStatic(OAuth2::class)
+        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
+
         // Create view model after mocking
         viewModel = LoginViewModel(bootConfig)
         
@@ -94,7 +98,6 @@ class LoginViewModelMockTest {
     @Test
     fun onAuthFlowComplete_CallsAuthenticationUtilities_WithCorrectParameters() = runBlocking {
         // Mock the AuthenticationUtilities.onAuthFlowComplete function
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         
         // Mock the function to do nothing (just capture parameters)
         coEvery {
@@ -163,7 +166,6 @@ class LoginViewModelMockTest {
     @Test
     fun onAuthFlowComplete_CallsAuthenticationUtilitiesSuccessfully() = runBlocking {
         // Mock the AuthenticationUtilities.onAuthFlowComplete function
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         
         coEvery {
             onAuthFlowComplete(
@@ -230,7 +232,6 @@ class LoginViewModelMockTest {
     @Test
     fun onAuthFlowComplete_ResetsAuthCodeForJwtFlow() = runBlocking {
         // Mock the AuthenticationUtilities.onAuthFlowComplete function
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         
         coEvery {
             onAuthFlowComplete(
@@ -278,7 +279,6 @@ class LoginViewModelMockTest {
     @Test
     fun onAuthFlowComplete_UsesEmptyString_WhenSelectedServerIsNull() = runBlocking {
         // Mock the AuthenticationUtilities.onAuthFlowComplete function
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         
         coEvery {
             onAuthFlowComplete(
@@ -343,9 +343,6 @@ class LoginViewModelMockTest {
 
     @Test
     fun doCodeExchange_CallsExchangeCode_WithCorrectParameters() = runBlocking {
-        // Mock OAuth2.exchangeCode
-        mockkStatic(OAuth2::class)
-        
         val testServer = "https://test.salesforce.com"
         val testCode = "test_auth_code_123"
         val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
@@ -353,7 +350,6 @@ class LoginViewModelMockTest {
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
         // Mock AuthenticationUtilities.onAuthFlowComplete to prevent actual execution
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         coEvery {
             onAuthFlowComplete(
                 tokenResponse = any(),
@@ -408,9 +404,6 @@ class LoginViewModelMockTest {
 
     @Test
     fun doCodeExchange_WithFrontDoorBridge_UsesCorrectServerAndVerifier() = runBlocking {
-        // Mock OAuth2.exchangeCode
-        mockkStatic(OAuth2::class)
-        
         val frontDoorServer = "https://frontdoor.salesforce.com"
         val frontDoorUrl = "$frontDoorServer/frontdoor.jsp?sid=test_session"
         val frontDoorVerifier = "frontdoor_verifier_789"
@@ -420,7 +413,6 @@ class LoginViewModelMockTest {
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
         // Mock AuthenticationUtilities.onAuthFlowComplete
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         coEvery {
             onAuthFlowComplete(
                 tokenResponse = any(),
@@ -482,16 +474,12 @@ class LoginViewModelMockTest {
 
     @Test
     fun doCodeExchange_WithNullCode_PassesNullToExchangeCode() = runBlocking {
-        // Mock OAuth2.exchangeCode
-        mockkStatic(OAuth2::class)
-        
         val testServer = "https://test.salesforce.com"
         val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
         // Mock AuthenticationUtilities.onAuthFlowComplete
-        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
         coEvery {
             onAuthFlowComplete(
                 tokenResponse = any(),
