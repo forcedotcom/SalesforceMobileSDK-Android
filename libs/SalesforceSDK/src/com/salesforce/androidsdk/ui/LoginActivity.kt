@@ -1001,7 +1001,7 @@ open class LoginActivity : FragmentActivity() {
             startActivity(
                 Intent(
                     this,
-                    SalesforceSDKManager.getInstance().loginActivityClass
+                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
                 ).apply {
                     data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
                     flags = FLAG_ACTIVITY_SINGLE_TOP
@@ -1016,7 +1016,7 @@ open class LoginActivity : FragmentActivity() {
             startActivity(
                 Intent(
                     this,
-                    SalesforceSDKManager.getInstance().loginActivityClass
+                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
                 ).apply {
                     flags = FLAG_ACTIVITY_SINGLE_TOP
                 })
@@ -1553,7 +1553,7 @@ open class LoginActivity : FragmentActivity() {
             loginHint: String,
             loginHost: String,
         ) {
-            Intent(context, SalesforceSDKManager.getInstance().loginActivityClass).apply {
+            Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass).apply {
                 putExtra(EXTRA_KEY_LOGIN_HINT, loginHint)
                 putExtra(EXTRA_KEY_LOGIN_HOST, loginHost)
                 flags = FLAG_ACTIVITY_SINGLE_TOP
