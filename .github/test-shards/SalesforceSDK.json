@@ -18,7 +18,7 @@
       "targets": [
         "class com.salesforce.androidsdk.ui.LoginViewActivityTest",
         "class com.salesforce.androidsdk.ui.PickerBottomSheetTest",
-        "class com.salesforce.androidsdk.ui.LoginActivityTest",
+        "class com.salesforce.androidsdk.ui.LoginActivityScenarioTest",
         "class com.salesforce.androidsdk.ui.LoginOptionsActivityTest",
         "class com.salesforce.androidsdk.ui.PickerBottomSheetActivityTest",
         "class com.salesforce.androidsdk.ui.DevInfoActivityTest",
@@ -53,7 +53,7 @@
         "notClass com.salesforce.androidsdk.analytics.SalesforceAnalyticsManagerTest",
         "notClass com.salesforce.androidsdk.ui.LoginViewActivityTest",
         "notClass com.salesforce.androidsdk.ui.PickerBottomSheetTest",
-        "notClass com.salesforce.androidsdk.ui.LoginActivityTest",
+        "notClass com.salesforce.androidsdk.ui.LoginActivityScenarioTest",
         "notClass com.salesforce.androidsdk.ui.LoginOptionsActivityTest",
         "notClass com.salesforce.androidsdk.ui.PickerBottomSheetActivityTest",
         "notClass com.salesforce.androidsdk.ui.DevInfoActivityTest",
