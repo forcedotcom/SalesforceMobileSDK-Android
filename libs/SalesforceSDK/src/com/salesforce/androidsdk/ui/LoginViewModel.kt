@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -65,7 +66,6 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
-import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
@@ -271,6 +271,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Update the web view URL to match the OAuth authorization URL when the web view is applicable
         webViewUrl.addSource(loginUrl) { newLoginUrl ->
             // Note the web view does not reload when browser-based authentication or a UI Bridge API front door bridge URL are active.
+            /* Coverage needed */
             if ((!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge) || newLoginUrl == "about:blank" /* Blank is used during reset states such as when returning to the web view from a custom tab, so it's always eligible */) {
                 webViewUrl.value = newLoginUrl
             }
@@ -436,8 +437,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         with(SalesforceSDKManager.getInstance()) {
             // Check if the OAuth Config has been manually set by dev support LoginOptionsActivity.
+            val debugOverrideAppConfig = debugOverrideAppConfig
             oAuthConfig = if (isDebugBuild && debugOverrideAppConfig != null) {
-                debugOverrideAppConfig!!
+                debugOverrideAppConfig
             } else {
                 appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
             }
@@ -514,9 +516,27 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * */
     internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
         pendingLoginServerUri: Uri
-    ) = previousPendingLoginServer?.toUri()?.let { previousPendingLoginServerUri ->
-        isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri) && !(isSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri))
-    } ?: false
+    ): Boolean {
+        val pPLS = previousPendingLoginServer
+        if (pPLS == null) {
+            Log.i("WSC", "0")
+            return false
+        }
+        val a = isSalesforceWelcomeDiscoveryUrlPath(pPLS.toUri())
+        val b = !isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)
+
+        if ((!a).and(!b)) {
+            Log.i("WSC", "1")
+        } else if (a.and(!b)) {
+            Log.i("WSC", "2")
+        } else if (!a) {
+            Log.i("WSC", "3")
+        } else {
+            Log.i("WSC", "4")
+        }
+
+        return a && b
+    }
 
     // endregion
 
