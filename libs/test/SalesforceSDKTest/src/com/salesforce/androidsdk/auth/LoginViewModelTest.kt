@@ -45,6 +45,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -362,6 +363,52 @@ class LoginViewModelTest {
         } finally {
             sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
         }
+    }
+
+    @Test
+    fun getAuthorizationUrl_ReleaseBuildIgnoresDebugOverrideAppConfig_OverAppConfigForLoginHost() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = false)
+        val appConfigConsumerKey = "app_config_key_should_not_be_used"
+        val appConfigRedirectUri = "appconfig://should_not_be_used"
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ ->
+            OAuthConfig(
+                consumerKey = appConfigConsumerKey,
+                redirectUri = appConfigRedirectUri,
+                scopes = listOf("api"),
+            )
+        }
+        val debugConsumerKey = "debug_override_key_789"
+        val debugRedirectUri = "debug://redirect"
+        val debugScopes = listOf("api", "debug_scope")
+        every { sdkManagerMock.debugOverrideAppConfig } returns OAuthConfig(
+            consumerKey = debugConsumerKey,
+            redirectUri = debugRedirectUri,
+            scopes = debugScopes,
+        )
+
+        // Verify the URL contains the app config values, not the debug override config values
+        val loginUrl = runBlocking { viewModel.getAuthorizationUrl("test.salesforce.com", sdkManagerMock) }
+        assertFalse(
+            "URL should not contain debug override consumer key",
+            loginUrl.contains(debugConsumerKey)
+        )
+        assertFalse(
+            "URL should not contain debug override redirect URI",
+            loginUrl.contains("redirect_uri=debug://redirect")
+        )
+        assertFalse("URL should not contain debug scope", loginUrl.contains("debug_scope"))
+
+        // Verify app config values are in the URL
+        assertTrue(
+            "URL should contain app config consumer key",
+            loginUrl.contains(appConfigConsumerKey)
+        )
+        assertTrue(
+            "URL should contain app config redirect URI",
+            loginUrl.contains("should_not_be_used")
+        )
     }
 
     @Test

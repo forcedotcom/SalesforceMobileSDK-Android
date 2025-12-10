@@ -431,11 +431,15 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }?.removeSuffix("/")
     }
 
-    private suspend fun getAuthorizationUrl(server: String): String = withContext(IO) {
+    @VisibleForTesting
+    internal suspend fun getAuthorizationUrl(
+        server: String,
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+    ) = withContext(IO) {
         // Show loading indicator because appConfigForLoginHost could take a noticeable amount of time.
         loading.value = true
 
-        with(SalesforceSDKManager.getInstance()) {
+        with(sdkManager) {
             // Check if the OAuth Config has been manually set by dev support LoginOptionsActivity.
             val debugOverrideAppConfig = debugOverrideAppConfig
             oAuthConfig = if (isDebugBuild && debugOverrideAppConfig != null) {
@@ -456,7 +460,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             useWebServerFlow,
-            SalesforceSDKManager.getInstance().useHybridAuthentication,
+            sdkManager.useHybridAuthentication,
             URI(server),
             consumerKey,
             oAuthConfig.redirectUri,
@@ -517,6 +521,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
         pendingLoginServerUri: Uri
     ): Boolean {
+        // TODO: Re-compress this logic after CodeCov P.O.C. ECJ20251210
         val pPLS = previousPendingLoginServer
         if (pPLS == null) {
             Log.i("WSC", "0")
