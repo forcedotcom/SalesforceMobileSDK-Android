@@ -9,7 +9,7 @@ on:
 # Run the native libraries first so that the native, Hybrid and React MobileSync tests 
 # don't run simultaniously (to prevents flappers).
 jobs:
-  android-nightly-core:
+  android-nightly:
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +20,7 @@ jobs:
     secrets: inherit
   android-nightly-Hybrid:
     if: success() || failure()
-    needs: [android-nightly-core]
+    needs: [android-nightly]
     strategy:
       fail-fast: false
       matrix:

@@ -168,8 +168,13 @@ jobs:
 
               gsutil ls ${BUCKET_PATH} > /dev/null 2>&1
               if [ $? == 0 ] ; then
-                # Copy merged XML file from top level for test reporting
-                gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
+                # Copy XML file for test reporting
+                if gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
+                  # Sharded runs produce test_results_merged.xml at top level
+                  gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
+                else
+                  gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" firebase_results/api_${LEVEL}_test_result.xml
+                fi
 
                 # Copy all shard data for code coverage (only needed for one level)
                 if [ "$LEVEL" == "$PR_API_VERSION" ] ; then
