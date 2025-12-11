@@ -786,6 +786,12 @@ class LoginViewModelTest {
         assertTrue(viewModel.browserCustomTabUrl.value == null)
     }
 
+    @Test
+    fun loginViewModel_buildAccountName_returnsExpectedValue() {
+
+        assertEquals(viewModel.buildAccountName("Example@Example.com", "https://www.example.com"), "Example@Example.com (https://www.example.com) (SalesforceSDKTest)")
+    }
+
 
     private fun generateExpectedAuthorizationUrl(
         server: String,

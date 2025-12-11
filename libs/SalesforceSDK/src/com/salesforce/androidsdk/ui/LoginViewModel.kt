@@ -33,6 +33,7 @@ import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -324,10 +325,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * The name to be shown for account in Settings -> Accounts & Sync
      * @return name to be shown for account in Settings -> Accounts & Sync
      */
-    protected open fun buildAccountName(
+    @VisibleForTesting(PROTECTED)
+    internal open fun buildAccountName(
         username: String?,
         instanceServer: String?,
-    // TODO: Coverage needed? ECJ20251210
+        // TODO: Coverage needed? ECJ20251210
     ) = defaultBuildAccountName(username, instanceServer)
 
     /**
