@@ -170,7 +170,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Connected App/External Client App client Id. */
     @Deprecated("Will be removed in Mobile SDK 14.0, please use " +
             "SalesforceSDKManager.getInstance().appConfigForLoginHost.")
-    protected open var clientId: String = bootConfig.remoteAccessConsumerKey
+    @VisibleForTesting(PROTECTED)
+    internal open var clientId: String = bootConfig.remoteAccessConsumerKey
 
     /** Authorization Display Type used for login. */
     protected open val authorizationDisplayType =
@@ -239,10 +240,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
     internal var oAuthConfig = OAuthConfig(bootConfig)
-    private val consumerKey: String
-        // TODO: Coverage needed? ECJ20251210
+
+    @VisibleForTesting
+    internal val consumerKey: String
         get() = if (clientId != bootConfig.remoteAccessConsumerKey) {
-            // TODO: Coverage needed? ECJ20251210
             clientId
         } else {
             oAuthConfig.consumerKey

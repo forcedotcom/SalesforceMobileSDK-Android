@@ -794,6 +794,18 @@ class LoginViewModelTest {
         assertEquals(viewModel.buildAccountName("Example@Example.com", "https://www.example.com"), "Example@Example.com (https://www.example.com) (SalesforceSDKTest)")
     }
 
+    @Test
+    fun loginViewModel_consumerKey_returnsExpectedValue() {
+
+        assertEquals("__CONSUMER_KEY__", viewModel.consumerKey)
+    }
+
+    @Test
+    fun loginViewModel_consumerKey_returnsClientIdWhenDifferentThanConsumerKey() {
+
+        viewModel.clientId = "__CLIENT_ID__"
+        assertEquals("__CLIENT_ID__", viewModel.consumerKey)
+    }
 
     private fun generateExpectedAuthorizationUrl(
         server: String,
