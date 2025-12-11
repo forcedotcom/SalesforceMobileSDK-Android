@@ -981,6 +981,7 @@ class LoginViewModelTest {
     @Test
     fun loginViewModel_buildAccountName_returnsExpectedValue() {
 
+        // IETF-Reserved Test Domain
         assertEquals(viewModel.buildAccountName("Example@Example.com", "https://www.example.com"), "Example@Example.com (https://www.example.com) (SalesforceSDKTest)")
     }
 
@@ -995,6 +996,56 @@ class LoginViewModelTest {
 
         viewModel.clientId = "__CLIENT_ID__"
         assertEquals("__CLIENT_ID__", viewModel.consumerKey)
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returns() {
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+
+        assertEquals("https://www.example.com", viewModel.getValidServerUrl(value))
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returnsNullWhenUrlMissingPeriod() {
+
+        val value = "https://www_example_com" // IETF-Reserved Test Domain
+
+        assertNull(viewModel.getValidServerUrl(value))
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returnsNullWhenUrlEndsWithPeriod() {
+
+        val value = "https://www.example." // IETF-Reserved Test Domain
+
+        assertNull(viewModel.getValidServerUrl(value))
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returnsNullWhenUrlUnparsable() {
+
+        val value = "(.*&^@Q#Q@#(*&^@Q#@%)"
+
+        assertNull(viewModel.getValidServerUrl(value))
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returnsForHttpUrl() {
+
+        val value = "http://www.example.com" // IETF-Reserved Test Domain
+        val result = "https://www.example.com" // IETF-Reserved Test Domain
+
+        assertEquals(result, viewModel.getValidServerUrl(value))
+    }
+
+    @Test
+    fun loginViewModel_getValidServerUrl_returnsUrlWithoutScheme() {
+
+        val value = "www.example.com" // IETF-Reserved Test Domain
+        val result = "https://www.example.com" // IETF-Reserved Test Domain
+
+        assertEquals(result, viewModel.getValidServerUrl(value))
     }
 
     private fun generateExpectedAuthorizationUrl(
