@@ -1591,7 +1591,7 @@ open class LoginActivity : FragmentActivity() {
 
             activity.startBrowserCustomTabAuthorization(
                 authorizationUrl = value,
-                activityResultLauncher = activity.customTabLauncher ?: return,
+                activityResultLauncher = activity.customTabLauncher,
                 isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
             )
         }
