@@ -234,7 +234,8 @@ open class LoginActivity : FragmentActivity() {
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
-    private val sharedBrowserSession: Boolean
+    @VisibleForTesting
+    internal val sharedBrowserSession: Boolean
         get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
 
     // KeychainAliasCallback variables

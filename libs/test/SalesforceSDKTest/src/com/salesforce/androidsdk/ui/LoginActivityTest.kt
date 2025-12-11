@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.app.Activity.RESULT_CANCELED
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -87,6 +88,35 @@ class LoginActivityTest {
         customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
 
         verify(exactly = 1) { activity.clearWebView(any()) }
+    }
+
+    @Test
+    fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebViewWithoutShowingServerPicker() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.sharedBrowserSession } returns true
+
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
+
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+
+        verify(exactly = 1) { activity.clearWebView(any()) }
+    }
+
+    @Test
+    fun loginActivityCustomTabLauncher_unexpectedResult_justRuns() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
+
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_OK, Intent()))
+
+        verify(exactly = 0) { activity.clearWebView(any()) }
     }
 
     @Test
