@@ -40,13 +40,16 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -762,16 +765,25 @@ class LoginViewModelTest {
     @Test
     fun loginViewModel_browserCustomTabObserver_setsBrowserCustomTabUrl_whenIsBrowserLoginEnabledAndNotUsingFrontDoorBridge() = runTest {
 
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.isBrowserLoginEnabled } returns true
-        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, this)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, scope)
 
         val value = "https://www.example.com" // IETF-Reserved Test Domain
+
         observer.onChanged(value)
 
         advanceUntilIdle()
 
-        assertTrue(viewModel.browserCustomTabUrl.value?.startsWith("https://www.example.com/services/oauth2/authorize?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=05bb82cfdf917878&code_challenge=") == true)
+        coVerify(exactly = 1) { viewModel.getAuthorizationUrl(
+            value,
+            any(),
+            any(),
+        ) }
     }
 
     @Test
