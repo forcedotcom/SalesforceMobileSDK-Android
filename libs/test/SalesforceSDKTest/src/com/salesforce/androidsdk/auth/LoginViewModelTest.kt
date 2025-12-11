@@ -764,6 +764,38 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun loginViewModel_pendingServerObserver_setsPendingServer() {
+
+        val value = LoginServer("Example", "https://www.example.com", true) // IETF-Reserved Test Domain
+
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val pendingServer = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { pendingServer.value } returns null
+        every { viewModel.pendingServer } returns pendingServer
+        val observer = viewModel.PendingServerSource(viewModel)
+
+        observer.onChanged(value)
+
+        verify(exactly = 1) { pendingServer.value = value.url }
+    }
+
+    @Test
+    fun loginViewModel_pendingServerObserver_reloadsWebViewOnRepeatValue() {
+
+        val value = LoginServer("Example", "https://www.example.com", true) // IETF-Reserved Test Domain
+
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val pendingServer = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { pendingServer.value } returns value.url
+        every { viewModel.pendingServer } returns pendingServer
+        val observer = viewModel.PendingServerSource(viewModel)
+
+        observer.onChanged(value)
+
+        verify(exactly = 1) { viewModel.reloadWebView() }
+    }
+
+    @Test
     fun loginViewModel_loginUrlObserver_setsLoginUrl() = runTest {
 
         val dispatcher = StandardTestDispatcher(testScheduler)
