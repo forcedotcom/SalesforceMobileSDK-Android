@@ -755,6 +755,38 @@ class LoginViewModelTest {
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(WELCOME_LOGIN_URL.toUri()))
     }
 
+    @Test
+    fun loginViewModel_browserCustomTabObserver_setsBrowserCustomTabUrl_whenIsBrowserLoginEnabledAndNotUsingFrontDoorBridge() {
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns true
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+        observer.onChanged(value)
+
+        Thread.sleep(1000)
+
+        assertTrue(viewModel.browserCustomTabUrl.value?.startsWith("https://www.example.com/services/oauth2/authorize?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=05bb82cfdf917878&code_challenge=") == true)
+    }
+
+    @Test
+    fun loginViewModel_browserCustomTabObserver_ignoresBrowserCustomTabUrl_whenIsBrowserLoginEnabledAndUsingFrontDoorBridge() {
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns true
+        viewModel.isUsingFrontDoorBridge = true
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+        observer.onChanged(value)
+
+        Thread.sleep(1000)
+
+        assertTrue(viewModel.browserCustomTabUrl.value == null)
+    }
+
+
     private fun generateExpectedAuthorizationUrl(
         server: String,
         codeChallenge: String,

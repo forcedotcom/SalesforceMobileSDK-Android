@@ -239,7 +239,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
     internal var oAuthConfig = OAuthConfig(bootConfig)
     private val consumerKey: String
+        // TODO: Coverage needed? ECJ20251210
         get() = if (clientId != bootConfig.remoteAccessConsumerKey) {
+            // TODO: Coverage needed? ECJ20251210
             clientId
         } else {
             oAuthConfig.consumerKey
@@ -248,7 +250,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     init {
         // When the login server manager selects a login server, first fetch its authentication configuration by setting the pending login server. Second, the selected login server will be set afterwards.
         pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
+            // TODO: Coverage needed? ECJ20251210
             val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
+            // TODO: Coverage needed? ECJ20251210
             trimmedServer?.let { nonNullServer ->
                 if (pendingServer.value == nonNullServer) {
                     reloadWebView()
@@ -260,6 +264,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer: String? ->
+            // TODO: Coverage needed? ECJ20251210
             if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge && newServer != null) {
                 val isNewServer = loginUrl.value?.startsWith(newServer) != true
                 if (isNewServer) {
@@ -322,6 +327,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     protected open fun buildAccountName(
         username: String?,
         instanceServer: String?,
+    // TODO: Coverage needed? ECJ20251210
     ) = defaultBuildAccountName(username, instanceServer)
 
     /**
@@ -424,6 +430,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             URLUtil.isHttpsUrl(url) -> url
             URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
             else -> "https://$url".toHttpUrlOrNull()?.toString()
+        // TODO: Coverage needed? ECJ20251210
         }?.removeSuffix("/")
     }
 
@@ -574,16 +581,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     @VisibleForTesting
     inner class BrowserCustomTabUrlSource(
         private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-        private val viewModel: LoginViewModel = this@LoginViewModel
+        private val viewModel: LoginViewModel = this@LoginViewModel,
     ) : Observer<String> {
         override fun onChanged(value: String) {
-            if ((sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) || value == "about:blank" /* Blank is used during reset states such as when returning to the web view from a custom tab, so it's always eligible */) {
-                Log.i("WSC", "LoginViewModel.BrowserCustomTabUrlSource.onChanged: Set '$value'.")
+            if (sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
                 viewModelScope.launch {
                     viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(value)
                 }
-            } else {
-                Log.i("WSC", "LoginViewModel.BrowserCustomTabUrlSource.onChanged: Ignore '$value'.")
             }
         }
     }
