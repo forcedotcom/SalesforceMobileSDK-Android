@@ -326,22 +326,20 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
         pendingLoginServer: String?
     ) {
-        if (pendingLoginServer == null) {
-            return
-        }
+        val pendingLoginServerUnwrapped: String = pendingLoginServer ?: return
 
         // Recall this pending login server for reference by future updates.
-        previousPendingLoginServer = pendingLoginServer
+        previousPendingLoginServer = pendingLoginServerUnwrapped
 
         // When authorization via a single-server, custom tab activity is requested skip fetching the authorization configuration and immediately set the selected login server to generate the OAuth authorization URL.
         if (singleServerCustomTabActivity) {
-            selectedServer.postValue(pendingLoginServer)
+            selectedServer.postValue(pendingLoginServerUnwrapped)
         }
         // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
         else {
             authenticationConfigurationFetchJob?.cancel()
             authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
-                selectedServer.postValue(pendingLoginServer)
+                selectedServer.postValue(pendingLoginServerUnwrapped)
                 authenticationConfigurationFetchJob = null
             }
         }
@@ -395,7 +393,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /**
      * Returns a valid HTTPS server URL or null if the provided user input is
-     * invalid.
+     * invalid.  This checks both Android's URI and Kotlin's HttpUrl for
+     * validity.
      * @param url The user input URL to validate and return
      * @return The validated server URL or null if the provided URL wasn't a
      * valid URL
@@ -403,18 +402,26 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal fun getValidServerUrl(url: String): String? {
         if (!url.contains(".")) return null
         if (url.substringAfterLast(".").isEmpty()) return null
-        runCatching {
-            URI(url)
-        }.onFailure {
-            return null
-        }
 
-        return when {
+        // TODO: Re-compress after CodeCov P.O.C. ECJ20251211
+        val result = when {
             URLUtil.isHttpsUrl(url) -> url
             URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
-            else -> "https://$url".toHttpUrlOrNull()?.toString()
-        // TODO: Coverage needed? ECJ20251210
+            else -> {
+                val httpUrl = "https://$url".toHttpUrlOrNull()
+                if (httpUrl == null) {
+                    null
+                } else {
+                    httpUrl.toString()
+                }
+            }
         }?.removeSuffix("/")
+
+        return if (runCatching { URI(url) }.isSuccess) {
+            result
+        } else {
+            null
+        }
     }
 
     @VisibleForTesting

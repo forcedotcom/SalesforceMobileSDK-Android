@@ -1040,6 +1040,11 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun loginViewModel_getValidServerUrl_returnsForHttpUrlUnparsable() {
+        assertNull(viewModel.getValidServerUrl(".!"))
+    }
+
+    @Test
     fun loginViewModel_getValidServerUrl_returnsUrlWithoutScheme() {
 
         val value = "www.example.com" // IETF-Reserved Test Domain
