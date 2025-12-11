@@ -64,6 +64,7 @@ import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -251,31 +252,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     init {
         // When the login server manager selects a login server, first fetch its authentication configuration by setting the pending login server. Second, the selected login server will be set afterwards.
-        pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
-            // TODO: Coverage needed? ECJ20251210
-            val trimmedServer = newServer?.url?.run { trim { it <= ' ' } }
-            // TODO: Coverage needed? ECJ20251210
-            trimmedServer?.let { nonNullServer ->
-                if (pendingServer.value == nonNullServer) {
-                    reloadWebView()
-                } else {
-                    pendingServer.value = nonNullServer
-                }
-            }
-        }
+        pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer, PendingServerSource())
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
-        loginUrl.addSource(selectedServer) { newServer: String? ->
-            // TODO: Coverage needed? ECJ20251210
-            if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge && newServer != null) {
-                val isNewServer = loginUrl.value?.startsWith(newServer) != true
-                if (isNewServer) {
-                    viewModelScope.launch {
-                        loginUrl.value = getAuthorizationUrl(newServer)
-                    }
-                }
-            }
-        }
+        loginUrl.addSource(selectedServer, LoginUrlSource())
 
         // Update the browser custom tab URL to match the OAuth authorization URL when browser-based authentication is active.
         browserCustomTabUrl.addSource(selectedServer, BrowserCustomTabUrlSource())
@@ -581,6 +561,40 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val title: String,
         val onClick: () -> Unit
     )
+
+    @VisibleForTesting
+    inner class LoginUrlSource(
+        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        private val viewModel: LoginViewModel = this@LoginViewModel,
+        private val scope: CoroutineScope = viewModelScope,
+    ) : Observer<String?> {
+        override fun onChanged(value: String?) {
+            if (!sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge && value != null) {
+                val isNewServer = viewModel.loginUrl.value?.startsWith(value) != true
+                if (isNewServer) {
+                    scope.launch {
+                        viewModel.loginUrl.value = viewModel.getAuthorizationUrl(value)
+                    }
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    inner class PendingServerSource(
+        private val viewModel: LoginViewModel = this@LoginViewModel,
+    ) : Observer<LoginServer> {
+        override fun onChanged(value: LoginServer) {
+            val trimmedServer = value.url?.run { trim { it <= ' ' } }
+            trimmedServer?.let { nonNullServer ->
+                if (viewModel.pendingServer.value == nonNullServer) {
+                    viewModel.reloadWebView()
+                } else {
+                    viewModel.pendingServer.value = nonNullServer
+                }
+            }
+        }
+    }
 
     @VisibleForTesting
     inner class BrowserCustomTabUrlSource(

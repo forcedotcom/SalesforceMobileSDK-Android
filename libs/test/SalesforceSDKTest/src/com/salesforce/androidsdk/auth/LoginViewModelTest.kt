@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.core.net.toUri
+import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
@@ -760,6 +761,151 @@ class LoginViewModelTest {
 
         viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(WELCOME_LOGIN_URL.toUri()))
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_setsLoginUrl() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = null
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresWhenBrowserLoginEnabled() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = "https://other.example.com" // IETF-Reserved Test Domain
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns true
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresWhenUsingFrontDoorBridge() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = "https://other.example.com" // IETF-Reserved Test Domain
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.isUsingFrontDoorBridge } returns true
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresRepeatValues() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns value
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(value)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                value,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresNull() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = "https://other.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(null)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                any(),
+                any(),
+                any(),
+            )
+        }
     }
 
     @Test
