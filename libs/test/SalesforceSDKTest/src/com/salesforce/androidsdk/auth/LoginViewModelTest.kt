@@ -44,8 +44,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,6 +66,7 @@ private const val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
 private const val FAKE_JWT = "1234"
 private const val FAKE_JWT_FLOW_AUTH = "5678"
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class LoginViewModelTest {
     @get:Rule
@@ -756,16 +760,16 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun loginViewModel_browserCustomTabObserver_setsBrowserCustomTabUrl_whenIsBrowserLoginEnabledAndNotUsingFrontDoorBridge() {
+    fun loginViewModel_browserCustomTabObserver_setsBrowserCustomTabUrl_whenIsBrowserLoginEnabledAndNotUsingFrontDoorBridge() = runTest {
 
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.isBrowserLoginEnabled } returns true
-        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel)
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, this)
 
         val value = "https://www.example.com" // IETF-Reserved Test Domain
         observer.onChanged(value)
 
-        Thread.sleep(1000)
+        advanceUntilIdle()
 
         assertTrue(viewModel.browserCustomTabUrl.value?.startsWith("https://www.example.com/services/oauth2/authorize?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&redirect_uri=__REDIRECT_URI__&device_id=05bb82cfdf917878&code_challenge=") == true)
     }
@@ -780,8 +784,6 @@ class LoginViewModelTest {
 
         val value = "https://www.example.com" // IETF-Reserved Test Domain
         observer.onChanged(value)
-
-        Thread.sleep(1000)
 
         assertTrue(viewModel.browserCustomTabUrl.value == null)
     }

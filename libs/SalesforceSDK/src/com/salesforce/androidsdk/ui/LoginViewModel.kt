@@ -440,7 +440,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal suspend fun getAuthorizationUrl(
         server: String,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-    ) = withContext(IO) {
+        scope: CoroutineScope = CoroutineScope(IO),
+    ) = withContext(scope.coroutineContext) {
         // Show loading indicator because appConfigForLoginHost could take a noticeable amount of time.
         loading.value = true
 
@@ -584,11 +585,15 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     inner class BrowserCustomTabUrlSource(
         private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
         private val viewModel: LoginViewModel = this@LoginViewModel,
+        private val scope: CoroutineScope = viewModelScope,
     ) : Observer<String> {
         override fun onChanged(value: String) {
             if (sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
-                viewModelScope.launch {
-                    viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(value)
+                scope.launch {
+                    viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(
+                        server = value,
+                        scope = scope
+                    )
                 }
             }
         }
