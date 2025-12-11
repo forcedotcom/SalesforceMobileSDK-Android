@@ -290,7 +290,7 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Add view model observers.
-        viewModel.loginUrl.observe(this, LoginUrlObserver())
+        viewModel.browserCustomTabUrl.observe(this, BrowserCustomTabUrlObserver())
         viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Support magic links
@@ -1567,12 +1567,12 @@ open class LoginActivity : FragmentActivity() {
     // region Observer Classes
 
     /**
-     * An observer for login URL that continues the authentication flow by
-     * loading the login URL in a web browser customer tab when browser-based
-     * authentication is required.
+     * An observer for browser custom tab URL that continues the authentication
+     * flow by loading the login URL in a web browser custom tab when browser-
+     * based authentication is required.
      * @param activity The login activity. Defaults to the enclosing instance
      */
-    internal inner class LoginUrlObserver(
+    internal inner class BrowserCustomTabUrlObserver(
         private val activity: LoginActivity = this@LoginActivity
     ) : Observer<String> {
         override fun onChanged(value: String) {
@@ -1602,7 +1602,7 @@ open class LoginActivity : FragmentActivity() {
         override fun onChanged(value: String) {
             // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val pendingServerUri = value.toUri()
-            if (activity.intent.data?.host == pendingServerUri.host) {
+            if (activity.intent.data?.host == pendingServerUri.host || activity.intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) == pendingServerUri.host) {
                 activity.viewModel.previousPendingLoginServer = value
                 return
             }

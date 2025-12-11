@@ -98,7 +98,7 @@ class LoginActivityTest {
     // region Salesforce Welcome Discovery
 
     @Test
-    fun loginActivityLoginUrlObserver_startsBrowserCustomTabAuthorization_onChange() {
+    fun loginActivityBrowserCustomTabObserver_startsBrowserCustomTabAuthorization_onChange() {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
@@ -106,7 +106,7 @@ class LoginActivityTest {
         val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
         every { activity.customTabLauncher } returns activityResultLauncher
 
-        val observer = activity.LoginUrlObserver(activity)
+        val observer = activity.BrowserCustomTabUrlObserver(activity)
 
         observer.onChanged(exampleUrl)
         verify(exactly = -1) {
@@ -118,25 +118,25 @@ class LoginActivityTest {
     }
 
     @Test
-    fun loginActivityLoginUrlObserver_returns_onChangeWithAboutBlank() {
+    fun loginActivityBrowserCustomTabObserver_returns_onChangeWithAboutBlank() {
 
         val activity = mockk<LoginActivity>(relaxed = true)
         val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
         every { activity.customTabLauncher } returns activityResultLauncher
 
-        val observer = activity.LoginUrlObserver(activity)
+        val observer = activity.BrowserCustomTabUrlObserver(activity)
 
         observer.onChanged(ABOUT_BLANK)
         verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
     }
 
     @Test
-    fun loginActivityLoginUrlObserver_returns_onChangeWithNullCustomTabLauncher() {
+    fun loginActivityBrowserCustomTabObserver_returns_onChangeWithNullCustomTabLauncher() {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
         val activity = mockk<LoginActivity>(relaxed = true)
-        val observer = activity.LoginUrlObserver(activity)
+        val observer = activity.BrowserCustomTabUrlObserver(activity)
         every { activity.customTabLauncher } returns null
         observer.onChanged(exampleUrl)
         verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }

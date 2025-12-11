@@ -197,7 +197,7 @@ fun LoginView() {
 
     LoginView(
         dynamicBackgroundColor = viewModel.dynamicBackgroundColor,
-        loginUrlData = viewModel.webViewUrl,
+        loginUrlData = viewModel.loginUrl,
         topAppBar = topAppBar,
         webView = activity.webView,
         loading = viewModel.loading.value,

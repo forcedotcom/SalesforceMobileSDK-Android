@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.luminance
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -121,8 +122,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** The selected login server's OAuth authorization URL */
     val loginUrl = MediatorLiveData<String>()
 
-    /** The URL to be displayed in the web view.  This is the `loginUrl` value when the web view is in use */
-    val webViewUrl = MediatorLiveData<String>()
+    /** The URL to be displayed in the activity's browser custom tab activity.  This is used for browser-based authentication requires loading the OAuth authorization URL outside the app's web view */
+    val browserCustomTabUrl = MediatorLiveData<String>()
+
     var showServerPicker = mutableStateOf(false)
     var loading = mutableStateOf(false)
 
@@ -258,7 +260,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer) { newServer: String? ->
-            if (!isUsingFrontDoorBridge && newServer != null) {
+            if (!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge && newServer != null) {
                 val isNewServer = loginUrl.value?.startsWith(newServer) != true
                 if (isNewServer) {
                     viewModelScope.launch {
@@ -268,14 +270,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             }
         }
 
-        // Update the web view URL to match the OAuth authorization URL when the web view is applicable
-        webViewUrl.addSource(loginUrl) { newLoginUrl ->
-            // Note the web view does not reload when browser-based authentication or a UI Bridge API front door bridge URL are active.
-            /* Coverage needed */
-            if ((!SalesforceSDKManager.getInstance().isBrowserLoginEnabled && !isUsingFrontDoorBridge) || newLoginUrl == "about:blank" /* Blank is used during reset states such as when returning to the web view from a custom tab, so it's always eligible */) {
-                webViewUrl.value = newLoginUrl
-            }
-        }
+        // Update the browser custom tab URL to match the OAuth authorization URL when browser-based authentication is active.
+        browserCustomTabUrl.addSource(selectedServer, BrowserCustomTabUrlSource())
     }
 
     /** Reloads the WebView with a newly generated authorization URL. */
@@ -471,6 +467,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             additionalParams
         )
 
+        // The Salesforce Welcome login hint is only used once.
+        loginHint = null
+
         return@withContext when {
             jwtFlow -> getFrontdoorUrl(
                 authorizationUrl,
@@ -571,4 +570,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val title: String,
         val onClick: () -> Unit
     )
+
+    @VisibleForTesting
+    inner class BrowserCustomTabUrlSource(
+        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        private val viewModel: LoginViewModel = this@LoginViewModel
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            if ((sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) || value == "about:blank" /* Blank is used during reset states such as when returning to the web view from a custom tab, so it's always eligible */) {
+                Log.i("WSC", "LoginViewModel.BrowserCustomTabUrlSource.onChanged: Set '$value'.")
+                viewModelScope.launch {
+                    viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(value)
+                }
+            } else {
+                Log.i("WSC", "LoginViewModel.BrowserCustomTabUrlSource.onChanged: Ignore '$value'.")
+            }
+        }
+    }
 }
