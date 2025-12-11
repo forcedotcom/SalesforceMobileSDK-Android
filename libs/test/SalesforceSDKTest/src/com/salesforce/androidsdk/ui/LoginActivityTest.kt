@@ -26,11 +26,14 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.app.Activity.RESULT_CANCELED
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
+import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -42,7 +45,9 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertFalse
@@ -52,6 +57,37 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
+
+    @Test
+    fun loginActivityCustomTabLauncher_withSingleServerCustomTabActivity_setsAboutBlank() {
+        val loginUrl = mockk<MediatorLiveData<String>>()
+        every { loginUrl.value = any() } just Runs
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.singleServerCustomTabActivity } returns true
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
+
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+
+        verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
+    }
+
+    @Test
+    fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebView() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
+
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+
+        verify(exactly = 1) { activity.clearWebView(any()) }
+    }
 
     @Test
     fun testIsWelcomeDiscoveryUri() {
@@ -121,24 +157,9 @@ class LoginActivityTest {
     fun loginActivityBrowserCustomTabObserver_returns_onChangeWithAboutBlank() {
 
         val activity = mockk<LoginActivity>(relaxed = true)
-        val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
-        every { activity.customTabLauncher } returns activityResultLauncher
-
         val observer = activity.BrowserCustomTabUrlObserver(activity)
 
         observer.onChanged(ABOUT_BLANK)
-        verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
-    }
-
-    @Test
-    fun loginActivityBrowserCustomTabObserver_returns_onChangeWithNullCustomTabLauncher() {
-
-        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
-
-        val activity = mockk<LoginActivity>(relaxed = true)
-        val observer = activity.BrowserCustomTabUrlObserver(activity)
-        every { activity.customTabLauncher } returns null
-        observer.onChanged(exampleUrl)
         verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
     }
 

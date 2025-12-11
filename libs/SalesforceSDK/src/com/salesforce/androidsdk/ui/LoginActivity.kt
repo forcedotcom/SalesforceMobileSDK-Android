@@ -73,8 +73,9 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -174,7 +175,26 @@ import java.security.cert.X509Certificate
  */
 open class LoginActivity : FragmentActivity() {
     @VisibleForTesting
-    internal var customTabLauncher: ActivityResultLauncher<Intent>? = null
+    internal val customTabLauncher = registerForActivityResult(StartActivityForResult(), CustomTabActivityResult())
+
+    @VisibleForTesting
+    internal inner class CustomTabActivityResult(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : ActivityResultCallback<ActivityResult> {
+
+        override fun onActivityResult(result: ActivityResult) {
+            // Check if the user backed out of the custom tab.
+            if (result.resultCode == RESULT_CANCELED) {
+                if (activity.viewModel.singleServerCustomTabActivity) {
+                    // Show blank page and spinner until PKCE is done.
+                    activity.viewModel.loginUrl.value = ABOUT_BLANK
+                } else {
+                    // Don't show server picker if we are re-authenticating with cookie.
+                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
+                }
+            }
+        }
+    }
 
     // View Model
     @VisibleForTesting(otherwise = PROTECTED)
@@ -274,21 +294,6 @@ open class LoginActivity : FragmentActivity() {
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
-        customTabLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result: ActivityResult ->
-            // Check if the user backed out of the custom tab.
-            if (result.resultCode == RESULT_CANCELED) {
-                if (viewModel.singleServerCustomTabActivity) {
-                    // Show blank page and spinner until PKCE is done.
-                    viewModel.loginUrl.value = ABOUT_BLANK
-                } else {
-                    // Don't show server picker if we are re-authenticating with cookie.
-                    clearWebView(showServerPicker = !sharedBrowserSession)
-                }
-            }
-        }
-
         // Add view model observers.
         viewModel.browserCustomTabUrl.observe(this, BrowserCustomTabUrlObserver())
         viewModel.pendingServer.observe(this, PendingServerObserver())
@@ -340,7 +345,8 @@ open class LoginActivity : FragmentActivity() {
         viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
     }
 
-    private fun clearWebView(showServerPicker: Boolean = true) {
+    @VisibleForTesting
+    internal fun clearWebView(showServerPicker: Boolean = true) {
         runOnUiThread {
             viewModel.loginUrl.value = ABOUT_BLANK
             if (showServerPicker) {
@@ -1099,6 +1105,7 @@ open class LoginActivity : FragmentActivity() {
         singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
     ) {
         // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
+        // TODO: Coverage needed? ECJ20251210
         if ((singleServerCustomTabActivity || isBrowserLoginEnabled) && !isUsingFrontDoorBridge /* UI front-door bridge bypasses the need for browser custom tab */) {
             loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
         }
@@ -1504,6 +1511,7 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "'${uri}' is a discovery domain, but welcome discovery isn't enabled.")
             }
 
+            // TODO: Coverage needed? ECJ20251210
             return isDiscovery && uri.queryParameterNames?.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
             ) == true && uri.queryParameterNames?.contains(
