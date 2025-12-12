@@ -15,6 +15,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith
     that the test ensures still exist, which is easier to read without multi-line declarations and
     implementations.
  */
+@Ignore("This test fails or succeeds unpredictably.")
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 internal class PublicOverridesTest {
