@@ -56,6 +56,7 @@ import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.security.KeyChain.choosePrivateKeyAlias
 import android.security.KeyChain.getCertificateChain
 import android.security.KeyChain.getPrivateKey
+import android.util.Log
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.ViewGroup
@@ -252,6 +253,7 @@ open class LoginActivity : FragmentActivity() {
         applyIntent()
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
+        // TODO: Coverage needed? ECJ20251212
         if (intent.extras?.getBoolean(NEW_USER) == true) {
             newUserIntent = true
         }
@@ -292,6 +294,7 @@ open class LoginActivity : FragmentActivity() {
         // Take control of the back logic if the device is locked.
         // TODO:  Remove SDK_INT check when min API > 33
         if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
+            // TODO: Coverage needed? ECJ20251212
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
@@ -300,6 +303,7 @@ open class LoginActivity : FragmentActivity() {
         viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Support magic links
+        // TODO: Coverage needed? ECJ20251212
         if (viewModel.jwt != null) {
             swapJWTForAccessToken()
         }
@@ -337,6 +341,7 @@ open class LoginActivity : FragmentActivity() {
         // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
         if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isQrCodeLoginUrlIntent(intent) || isSalesforceWelcomeDiscoveryMobileUrl(it)) } != true) {
             completeAdvAuthFlow(intent)
+            // TODO: Coverage needed? ECJ20251212
             return
         }
 
@@ -1106,9 +1111,56 @@ open class LoginActivity : FragmentActivity() {
         singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
     ) {
         // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
-        // TODO: Coverage needed? ECJ20251210
-        if ((singleServerCustomTabActivity || isBrowserLoginEnabled) && !isUsingFrontDoorBridge /* UI front-door bridge bypasses the need for browser custom tab */) {
+        // TODO: Coverage needed - This one is challenging. ECJ20251210
+        if (singleServerCustomTabActivity) {
+            Log.i("WSC", "A.1")
+        } else {
+            Log.i("WSC", "A.2")
+        }
+        if (isBrowserLoginEnabled) {
+            Log.i("WSC", "B.1")
+        } else {
+            Log.i("WSC", "B.2")
+        }
+
+        if ((!singleServerCustomTabActivity).and(!isBrowserLoginEnabled)) {
+            Log.i("WSC", "B.X Both Sides False")
+        }
+
+        if (singleServerCustomTabActivity.and(!isBrowserLoginEnabled)) {
+            Log.i("WSC", "B.3 Right Side")
+        }
+
+        if ((!singleServerCustomTabActivity).and(isBrowserLoginEnabled)) {
+            Log.i("WSC", "B.4 Left Side")
+        }
+
+        val useBrowserLogin = (singleServerCustomTabActivity.or(isBrowserLoginEnabled))
+
+        if (useBrowserLogin.and(isUsingFrontDoorBridge)) {
+            Log.i("WSC", "B.X Both Sides False")
+        }
+
+        if (useBrowserLogin.and(!isUsingFrontDoorBridge)) {
+            Log.i("WSC", "B.X Left/!Right")
+        }
+
+        if (isUsingFrontDoorBridge) {
+            Log.i("WSC", "C.1")
+        } else {
+            Log.i("WSC", "C.2")
+        }
+
+        if (useBrowserLogin.and(isUsingFrontDoorBridge)) {
+            Log.i("WSC", "C.3 Right Side")
+        }
+
+        val useBrowserLoginGuardAgainstFrontDoorBridge = useBrowserLogin.and(!isUsingFrontDoorBridge) /* UI front-door bridge bypasses the need for browser custom tab */
+
+        if (useBrowserLoginGuardAgainstFrontDoorBridge) {
             loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
+        } else {
+            Log.i("WSC", "X")
         }
     }
 

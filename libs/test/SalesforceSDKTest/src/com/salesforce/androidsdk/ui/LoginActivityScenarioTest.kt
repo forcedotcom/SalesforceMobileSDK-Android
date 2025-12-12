@@ -303,6 +303,33 @@ class LoginActivityScenarioTest {
     }
 
     @Test
+    fun loginActivity_startBrowserCustomTabAuthorization_returnsActivityResultLauncherWhenBothBrowserLoginDisabledAndIsUsingFrontDoorBridge() {
+
+        val activityScenario = launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            )
+        )
+
+        activityScenario.onActivity { activity ->
+
+            val sdkManager = mockk<SalesforceSDKManager>()
+            every { sdkManager.isBrowserLoginEnabled } returns true
+            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
+
+            activity.startBrowserCustomTabAuthorization(
+                authorizationUrl = "_authorization_url_",
+                activityResultLauncher = activityResultLauncher,
+                isBrowserLoginEnabled = false,
+                isUsingFrontDoorBridge = true,
+                singleServerCustomTabActivity = false,
+            )
+            verify(exactly = 0) { activityResultLauncher.launch(any()) }
+        }
+    }
+
+    @Test
     fun loginActivity_startBrowserCustomTabAuthorization_returnsActivityResultLauncherWhenIsUsingFrontDoorBridge() {
 
         val activityScenario = launch<LoginActivity>(
