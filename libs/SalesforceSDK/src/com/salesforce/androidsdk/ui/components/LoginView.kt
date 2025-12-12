@@ -114,6 +114,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__clear_cache
 import com.salesforce.androidsdk.R.string.sf__clear_cookies
+import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
 import com.salesforce.androidsdk.R.string.sf__launch_idp
 import com.salesforce.androidsdk.R.string.sf__loading_indicator
 import com.salesforce.androidsdk.R.string.sf__more_options
@@ -125,6 +126,7 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.SFColors
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
 internal const val PADDING_SIZE = 12
 internal const val HEADER_TEXT_SIZE = 20
@@ -148,6 +150,13 @@ fun LoginView() {
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
     }
+    val showDevSupport = with(SalesforceSDKManager.getInstance()) {
+        return@with if (isDebugBuild && isDevSupportEnabled()) {
+            { showDevSupportDialog(activity) }
+        } else {
+            null
+        }
+    }
 
     val topAppBar = viewModel.topAppBar ?: {
         DefaultTopAppBar(
@@ -159,6 +168,7 @@ fun LoginView() {
             clearWebViewCache = { viewModel.clearWebViewCache(activity.webView) },
             reloadWebView = { viewModel.reloadWebView() },
             shouldShowBackButton = viewModel.shouldShowBackButton,
+            showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
         )
     }
@@ -265,6 +275,7 @@ internal fun DefaultTopAppBar(
     clearWebViewCache: () -> Unit,
     reloadWebView: () -> Unit,
     shouldShowBackButton: Boolean,
+    showDevSupport: (() -> Unit)?,
     finish: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -320,6 +331,12 @@ internal fun DefaultTopAppBar(
                     MenuItem(stringResource(sf__reload)) {
                         reloadWebView()
                         showMenu = false
+                    }
+                    showDevSupport?.let {
+                        MenuItem(stringResource(sf__dev_support_title_menu_item)) {
+                            it.invoke()
+                            showMenu = false
+                        }
                     }
                 }
             }
@@ -491,8 +508,8 @@ private fun Modifier.applyImePaddingConditionally() : Modifier =
         this
     }
 
-// Note: the light and dark previews should look the same.
-@Preview
+@ExcludeFromJacocoGeneratedReport
+@Preview // Note: the light and dark previews should look the same.
 @Preview("Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
 @Composable
 private fun AppBarPreview() {
@@ -508,11 +525,13 @@ private fun AppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarLoadingPreview() {
@@ -528,11 +547,13 @@ private fun AppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarBackButtonPreview() {
@@ -548,11 +569,13 @@ private fun AppBarBackButtonPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarDarkPreview() {
@@ -568,11 +591,13 @@ private fun AppBarDarkPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BlueAppBarPreview() {
@@ -588,11 +613,13 @@ private fun BlueAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BlueAppBarLoadingPreview() {
@@ -608,11 +635,13 @@ private fun BlueAppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun CustomTextAppBarPreview() {
@@ -627,11 +656,13 @@ private fun CustomTextAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun CustomTextAppBarLoadingPreview() {
@@ -646,11 +677,13 @@ private fun CustomTextAppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun LongCustomTextAppBarPreview() {
@@ -665,11 +698,13 @@ private fun LongCustomTextAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Light Mode", showBackground = true, widthDp = 100, heightDp = 100)
 @Preview(
     "Dark Mode",
@@ -686,8 +721,8 @@ private fun LoadingIndicatorPreview() {
     }
 }
 
-// Note: the light and dark previews should look the same.
-@Preview
+@ExcludeFromJacocoGeneratedReport
+@Preview // Note: the light and dark previews should look the same.
 @Preview("Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
 @Composable
 private fun BottomBarPreview() {
@@ -705,6 +740,7 @@ private fun BottomBarPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BottomBarRedPreview() {
@@ -722,6 +758,7 @@ private fun BottomBarRedPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Light", showBackground = true, heightDp = 100, widthDp = 100)
 @Preview(
     "Dark", showBackground = true, heightDp = 100, widthDp = 100,

@@ -9,6 +9,7 @@ include("native:NativeSampleApps:AppConfigurator")
 include("native:NativeSampleApps:ConfiguredApp")
 include("hybrid:HybridSampleApps:MobileSyncExplorerHybrid")
 include("native:NativeSampleApps:RestExplorer")
+include("native:NativeSampleApps:AuthFlowTester")
 
 pluginManagement {
     repositories {

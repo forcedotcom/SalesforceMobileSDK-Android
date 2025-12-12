@@ -129,6 +129,7 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -580,6 +581,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     else -> null
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Default", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -589,6 +591,7 @@ private fun AddConnectionPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Values", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -603,6 +606,7 @@ private fun AddConnectionValuesPreview() {
 }
 
 
+@ExcludeFromJacocoGeneratedReport
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
