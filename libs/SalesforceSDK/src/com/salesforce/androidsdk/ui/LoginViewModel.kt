@@ -592,13 +592,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         private val viewModel: LoginViewModel = this@LoginViewModel,
     ) : Observer<LoginServer> {
         override fun onChanged(value: LoginServer) {
-            val trimmedServer = value.url.run { trim { it <= ' ' } }
-            trimmedServer.let { nonNullServer ->
-                if (viewModel.pendingServer.value == nonNullServer) {
-                    viewModel.reloadWebView()
-                } else {
-                    viewModel.pendingServer.value = nonNullServer
-                }
+            val loginServer = value.url.trim()
+            if (viewModel.pendingServer.value == loginServer) {
+                viewModel.reloadWebView()
+            } else {
+                viewModel.pendingServer.value = loginServer
             }
         }
     }
