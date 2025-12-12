@@ -1512,14 +1512,13 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "'${uri}' is a discovery domain, but welcome discovery isn't enabled.")
             }
 
-            // TODO: Coverage needed? ECJ20251210
-            return isDiscovery && uri.queryParameterNames?.contains(
+            return isDiscovery && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
-            ) == true && uri.queryParameterNames?.contains(
+            ) && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
-            ) == true && uri.queryParameterNames?.contains(
+            ) && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
-            ) == true
+            )
         }
 
         /**
