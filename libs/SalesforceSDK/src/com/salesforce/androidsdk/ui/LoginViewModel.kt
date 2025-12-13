@@ -310,7 +310,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal open fun buildAccountName(
         username: String?,
         instanceServer: String?,
-        // TODO: Coverage needed? ECJ20251210
     ) = defaultBuildAccountName(username, instanceServer)
 
     /**
@@ -403,18 +402,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         if (!url.contains(".")) return null
         if (url.substringAfterLast(".").isEmpty()) return null
 
-        // TODO: Re-compress after CodeCov P.O.C. ECJ20251211
         val result = when {
             URLUtil.isHttpsUrl(url) -> url
             URLUtil.isHttpUrl(url) -> url.replace("http://", "https://")
-            else -> {
-                val httpUrl = "https://$url".toHttpUrlOrNull()
-                if (httpUrl == null) {
-                    null
-                } else {
-                    httpUrl.toString()
-                }
-            }
+            else -> "https://$url".toHttpUrlOrNull()?.toString()
         }?.removeSuffix("/")
 
         return if (runCatching { URI(url) }.isSuccess) {
