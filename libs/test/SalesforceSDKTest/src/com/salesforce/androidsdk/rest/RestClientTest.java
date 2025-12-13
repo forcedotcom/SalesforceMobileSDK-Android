@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -46,7 +48,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -70,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 /**
  * Tests for RestClient
@@ -728,7 +730,6 @@ public class RestClientTest {
      * Create new account then look for it using soql.
      * @throws Exception
      */
-    @Ignore("This test fails or succeeds unpredictably.")
     @Test(timeout = 180000) // 3 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
     public void testQueryWithBatchSize() throws Exception {
         cleanup();
