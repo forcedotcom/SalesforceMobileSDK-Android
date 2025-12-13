@@ -269,14 +269,10 @@ class LoginViewModelTest {
 
         // Verify the URL contains the boot config values
         val loginUrl = viewModel.loginUrl.value!!
-        assertTrue(
-            "URL should contain boot config consumer key",
-            loginUrl.contains(bootConfig.remoteAccessConsumerKey)
-        )
-        assertTrue(
-            "URL should contain boot config redirect URI",
-            loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}")
-        )
+        assertTrue("URL should contain boot config consumer key",
+            loginUrl.contains(bootConfig.remoteAccessConsumerKey))
+        assertTrue("URL should contain boot config redirect URI",
+            loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}"))
     }
 
     @Test
@@ -307,10 +303,8 @@ class LoginViewModelTest {
             // Verify the URL contains the custom app config values
             val loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain app config consumer key", loginUrl.contains(customConsumerKey))
-            assertTrue(
-                "URL should contain app config redirect URI",
-                loginUrl.contains("redirect_uri=appconfig://redirect")
-            )
+            assertTrue("URL should contain app config redirect URI",
+                loginUrl.contains("redirect_uri=appconfig://redirect"))
             assertTrue("URL should contain app config scope", loginUrl.contains("app_config_scope"))
         } finally {
             sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
@@ -349,25 +343,17 @@ class LoginViewModelTest {
 
             // Verify the URL contains the debug override values, not app config values
             val loginUrl = viewModel.loginUrl.value!!
-            assertTrue(
-                "URL should contain debug override consumer key",
-                loginUrl.contains(debugConsumerKey)
-            )
-            assertTrue(
-                "URL should contain debug override redirect URI",
-                loginUrl.contains("redirect_uri=debug://redirect")
-            )
+            assertTrue("URL should contain debug override consumer key",
+                loginUrl.contains(debugConsumerKey))
+            assertTrue("URL should contain debug override redirect URI",
+                loginUrl.contains("redirect_uri=debug://redirect"))
             assertTrue("URL should contain debug scope", loginUrl.contains("debug_scope"))
 
             // Verify app config values are NOT in the URL
-            assertFalse(
-                "URL should NOT contain app config consumer key",
-                loginUrl.contains(appConfigConsumerKey)
-            )
-            assertFalse(
-                "URL should NOT contain app config redirect URI",
-                loginUrl.contains("should_not_be_used")
-            )
+            assertFalse("URL should NOT contain app config consumer key",
+                loginUrl.contains(appConfigConsumerKey))
+            assertFalse("URL should NOT contain app config redirect URI",
+                loginUrl.contains("should_not_be_used"))
         } finally {
             sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
         }
@@ -436,13 +422,11 @@ class LoginViewModelTest {
                         redirectUri = "test://redirect",
                         scopes = listOf("api", "test_scope"),
                     )
-
                     server.contains("login.salesforce.com") -> OAuthConfig(
                         consumerKey = "prod_consumer_key",
                         redirectUri = "prod://redirect",
                         scopes = listOf("api", "prod_scope"),
                     )
-
                     else -> OAuthConfig(bootConfig)
                 }
             }
@@ -451,35 +435,23 @@ class LoginViewModelTest {
             viewModel.selectedServer.value = "https://test.salesforce.com"
             Thread.sleep(200)
             var loginUrl = viewModel.loginUrl.value!!
-            assertTrue(
-                "URL should contain test consumer key. URL: $loginUrl",
-                loginUrl.contains("test_consumer_key")
-            )
-            assertTrue(
-                "URL should contain test redirect URI. URL: $loginUrl",
-                loginUrl.contains("redirect_uri=test://redirect")
-            )
-            assertTrue(
-                "URL should contain test scope. URL: $loginUrl",
-                loginUrl.contains("test_scope")
-            )
+            assertTrue("URL should contain test consumer key. URL: $loginUrl",
+                loginUrl.contains("test_consumer_key"))
+            assertTrue("URL should contain test redirect URI. URL: $loginUrl",
+                loginUrl.contains("redirect_uri=test://redirect"))
+            assertTrue("URL should contain test scope. URL: $loginUrl",
+                loginUrl.contains("test_scope"))
 
             // Test with production server
             viewModel.selectedServer.value = "https://login.salesforce.com"
             Thread.sleep(200)
             loginUrl = viewModel.loginUrl.value!!
-            assertTrue(
-                "URL should contain prod consumer key. URL: $loginUrl",
-                loginUrl.contains("prod_consumer_key")
-            )
-            assertTrue(
-                "URL should contain prod redirect URI. URL: $loginUrl",
-                loginUrl.contains("redirect_uri=prod://redirect")
-            )
-            assertTrue(
-                "URL should contain prod scope. URL: $loginUrl",
-                loginUrl.contains("prod_scope")
-            )
+            assertTrue("URL should contain prod consumer key. URL: $loginUrl",
+                loginUrl.contains("prod_consumer_key"))
+            assertTrue("URL should contain prod redirect URI. URL: $loginUrl",
+                loginUrl.contains("redirect_uri=prod://redirect"))
+            assertTrue("URL should contain prod scope. URL: $loginUrl",
+                loginUrl.contains("prod_scope"))
         } finally {
             sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
         }
@@ -503,15 +475,11 @@ class LoginViewModelTest {
         // Verify the URL is generated correctly without scopes
         val loginUrl = viewModel.loginUrl.value!!
         assertTrue("URL should contain custom consumer key", loginUrl.contains(customConsumerKey))
-        assertTrue(
-            "URL should contain custom redirect URI",
-            loginUrl.contains("redirect_uri=noscopes://redirect")
-        )
+        assertTrue("URL should contain custom redirect URI",
+            loginUrl.contains("redirect_uri=noscopes://redirect"))
         // URL should still be valid even without explicit scopes
-        assertTrue(
-            "URL should be a valid OAuth URL",
-            loginUrl.contains("/services/oauth2/authorize")
-        )
+        assertTrue("URL should be a valid OAuth URL",
+            loginUrl.contains("/services/oauth2/authorize"))
     }
 
     @Test
@@ -551,10 +519,8 @@ class LoginViewModelTest {
 
             // Verify URL was set to ABOUT_BLANK for User Agent Flow
             // NOTE:  If this is flaky we should use Turbine to test the actual state changes.
-            assertEquals(
-                "loginUrl should be set to ABOUT_BLANK for User Agent Flow",
-                ABOUT_BLANK, viewModel.loginUrl.value
-            )
+            assertEquals("loginUrl should be set to ABOUT_BLANK for User Agent Flow",
+                ABOUT_BLANK, viewModel.loginUrl.value)
 
             // Wait for the new authorization URL to be generated
             Thread.sleep(200)
@@ -586,10 +552,8 @@ class LoginViewModelTest {
         Thread.sleep(50)
 
         // Verify URL was NOT set to ABOUT_BLANK for Web Server Flow
-        assertNotEquals(
-            "loginUrl should NOT be ABOUT_BLANK for Web Server Flow",
-            ABOUT_BLANK, viewModel.loginUrl.value
-        )
+        assertNotEquals("loginUrl should NOT be ABOUT_BLANK for Web Server Flow",
+            ABOUT_BLANK, viewModel.loginUrl.value)
 
         // Wait for the new authorization URL to be generated
         Thread.sleep(200)
@@ -598,10 +562,8 @@ class LoginViewModelTest {
         val newUrl = viewModel.loginUrl.value
         assertNotNull("New URL should not be null", newUrl)
         assertNotEquals("New URL should not be ABOUT_BLANK", ABOUT_BLANK, newUrl)
-        assertNotEquals(
-            "New URL should be different from initial (different code challenge)",
-            initialUrl, newUrl
-        )
+        assertNotEquals("New URL should be different from initial (different code challenge)",
+            initialUrl, newUrl)
     }
 
     @Test
@@ -618,10 +580,8 @@ class LoginViewModelTest {
         Thread.sleep(200)
 
         // Verify URL did not change
-        assertEquals(
-            "loginUrl should not change when selectedServer is null",
-            initialUrl, viewModel.loginUrl.value
-        )
+        assertEquals("loginUrl should not change when selectedServer is null",
+            initialUrl, viewModel.loginUrl.value)
     }
 
     @Test
@@ -642,21 +602,15 @@ class LoginViewModelTest {
 
             // Verify the URL contains the boot config values (fallback)
             val loginUrl = viewModel.loginUrl.value!!
-            assertTrue(
-                "URL should contain boot config consumer key when appConfigForLoginHost returns null",
-                loginUrl.contains(bootConfig.remoteAccessConsumerKey)
-            )
-            assertTrue(
-                "URL should contain boot config redirect URI when appConfigForLoginHost returns null",
-                loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}")
-            )
+            assertTrue("URL should contain boot config consumer key when appConfigForLoginHost returns null",
+                loginUrl.contains(bootConfig.remoteAccessConsumerKey))
+            assertTrue("URL should contain boot config redirect URI when appConfigForLoginHost returns null",
+                loginUrl.contains("redirect_uri=${bootConfig.oauthRedirectURI}"))
 
             // Verify boot config scopes are present
             bootConfig.oauthScopes.forEach { scope ->
-                assertTrue(
-                    "URL should contain boot config scope '$scope' when appConfigForLoginHost returns null",
-                    loginUrl.contains(scope)
-                )
+                assertTrue("URL should contain boot config scope '$scope' when appConfigForLoginHost returns null",
+                    loginUrl.contains(scope))
             }
         } finally {
             sdkManager.appConfigForLoginHost = originalAppConfigForLoginHost
