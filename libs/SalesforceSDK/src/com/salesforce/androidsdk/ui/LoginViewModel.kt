@@ -508,28 +508,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * */
     internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
         pendingLoginServerUri: Uri
-    ): Boolean {
-        // TODO: Re-compress this logic after CodeCov P.O.C. ECJ20251210
-        val pPLS = previousPendingLoginServer
-        if (pPLS == null) {
-            Log.i("WSC", "0")
-            return false
-        }
-        val a = isSalesforceWelcomeDiscoveryUrlPath(pPLS.toUri())
-        val b = !isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)
-
-        if ((!a).and(!b)) {
-            Log.i("WSC", "1")
-        } else if (a.and(!b)) {
-            Log.i("WSC", "2")
-        } else if (!a) {
-            Log.i("WSC", "3")
-        } else {
-            Log.i("WSC", "4")
-        }
-
-        return a && b
-    }
+    ) = (previousPendingLoginServer?.toUri()?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } ?: false).and(!isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri))
 
     // endregion
 
