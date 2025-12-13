@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -517,26 +516,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
         pendingLoginServerUri: Uri
     ): Boolean {
-        // TODO: Re-compress this logic after CodeCov P.O.C. ECJ20251210
-        val pPLS = previousPendingServer
-        if (pPLS == null) {
-            Log.i("WSC", "0")
-            return false
-        }
-        val a = isSalesforceWelcomeDiscoveryUrlPath(pPLS.toUri())
-        val b = !isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)
+        val previousPendingLoginServerUri = previousPendingServer ?: return false
 
-        if ((!a).and(!b)) {
-            Log.i("WSC", "1")
-        } else if (a.and(!b)) {
-            Log.i("WSC", "2")
-        } else if (!a) {
-            Log.i("WSC", "3")
-        } else {
-            Log.i("WSC", "4")
-        }
-
-        return a && b
+        return isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri.toUri()).and(!isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri))
     }
 
     // endregion
