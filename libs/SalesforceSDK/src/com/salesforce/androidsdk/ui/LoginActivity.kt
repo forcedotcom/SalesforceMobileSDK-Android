@@ -1070,6 +1070,7 @@ open class LoginActivity : FragmentActivity() {
      * Starts a browser custom tab for the OAuth authorization URL according to
      * the authentication configuration. The activity only takes action when
      * browser-based authentication requires a browser custom tab to be started.
+     * UI front-door bridge use bypasses the need for browser custom tab.
      * @param authorizationUrl The selected login server's OAuth authorization
      * URL
      * @param activityResultLauncher The activity result launcher to use when
@@ -1089,12 +1090,7 @@ open class LoginActivity : FragmentActivity() {
         isUsingFrontDoorBridge: Boolean = viewModel.isUsingFrontDoorBridge,
         singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
     ) {
-        // TODO: Re-compress further after CodeCov P.O.C. and log removal. ECJ20251213
-        // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
-        val useBrowserLogin = (singleServerCustomTabActivity.or(isBrowserLoginEnabled))
-        val useBrowserLoginGuardAgainstFrontDoorBridge = useBrowserLogin.and(!isUsingFrontDoorBridge) /* UI front-door bridge bypasses the need for browser custom tab */
-
-        if (useBrowserLoginGuardAgainstFrontDoorBridge) {
+        if ((singleServerCustomTabActivity.or(isBrowserLoginEnabled)).and(!isUsingFrontDoorBridge)) {
             loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
         }
     }
