@@ -669,7 +669,7 @@ class LoginViewModelTest {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
 
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = null)
-        assert(viewModel.previousPendingLoginServer == null)
+        assert(viewModel.previousPendingServer == null)
         verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
     }
 
@@ -685,7 +685,7 @@ class LoginViewModelTest {
 
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
 
-        assert(viewModel.previousPendingLoginServer == exampleUrl)
+        assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
         verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
     }
@@ -705,7 +705,7 @@ class LoginViewModelTest {
         viewModel.authenticationConfigurationFetchJob = job
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
 
-        assert(viewModel.previousPendingLoginServer == exampleUrl)
+        assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
         verify(exactly = 1) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
         verify(exactly = 1) { job.cancel() }
@@ -716,7 +716,7 @@ class LoginViewModelTest {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.previousPendingLoginServer = null
+        viewModel.previousPendingServer = null
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
     }
 
@@ -725,7 +725,7 @@ class LoginViewModelTest {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.previousPendingLoginServer = "_invalid_uri_"
+        viewModel.previousPendingServer = "_invalid_uri_"
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
     }
 
@@ -734,7 +734,7 @@ class LoginViewModelTest {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
+        viewModel.previousPendingServer = WELCOME_LOGIN_URL
         assertTrue(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
     }
 
@@ -743,7 +743,7 @@ class LoginViewModelTest {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.previousPendingLoginServer = exampleUrl
+        viewModel.previousPendingServer = exampleUrl
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(WELCOME_LOGIN_URL.toUri()))
     }
 
@@ -752,14 +752,14 @@ class LoginViewModelTest {
 
         val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
 
-        viewModel.previousPendingLoginServer = "https://other.example.com" // IETF-Reserved Test Domain
+        viewModel.previousPendingServer = "https://other.example.com" // IETF-Reserved Test Domain
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(exampleUrl.toUri()))
     }
 
     @Test
     fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsFalseSwitchBetweenWelcomeLoginUrls() {
 
-        viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
+        viewModel.previousPendingServer = WELCOME_LOGIN_URL
         assertFalse(viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(WELCOME_LOGIN_URL.toUri()))
     }
 

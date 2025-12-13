@@ -385,10 +385,10 @@ class LoginActivityScenarioTest {
 
         activityScenario.onActivity { activity ->
 
-            activity.viewModel.previousPendingLoginServer = PRODUCTION_LOGIN_URL
+            activity.viewModel.previousPendingServer = PRODUCTION_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(WELCOME_LOGIN_URL.toUri()))
 
-            activity.viewModel.previousPendingLoginServer = WELCOME_LOGIN_URL
+            activity.viewModel.previousPendingServer = WELCOME_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
         }
     }

@@ -1663,13 +1663,13 @@ open class LoginActivity : FragmentActivity() {
             // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val pendingServerUri = value.toUri()
             if (activity.intent.data?.host == pendingServerUri.host || activity.intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) == pendingServerUri.host) {
-                activity.viewModel.previousPendingLoginServer = value
+                activity.viewModel.previousPendingServer = value
                 return
             }
 
             // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
             if (activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
-                activity.viewModel.previousPendingLoginServer = value
+                activity.viewModel.previousPendingServer = value
                 return
             }
 
