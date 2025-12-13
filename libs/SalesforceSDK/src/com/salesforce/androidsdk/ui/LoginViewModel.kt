@@ -517,7 +517,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         pendingLoginServerUri: Uri
     ): Boolean {
         val previousPendingLoginServerUri = previousPendingServer ?: return false
-
         return isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri.toUri()).and(!isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri))
     }
 

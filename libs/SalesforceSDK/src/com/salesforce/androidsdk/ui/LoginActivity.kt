@@ -56,7 +56,6 @@ import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.security.KeyChain.choosePrivateKeyAlias
 import android.security.KeyChain.getCertificateChain
 import android.security.KeyChain.getPrivateKey
-import android.util.Log
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.ViewGroup
@@ -175,27 +174,10 @@ import java.security.cert.X509Certificate
  * them.
  */
 open class LoginActivity : FragmentActivity() {
+
+    /** The activity result launcher used when browser-based authentication loads the OAuth authorization URL in the external browser custom tab activity */
     @VisibleForTesting
     internal val customTabLauncher = registerForActivityResult(StartActivityForResult(), CustomTabActivityResult())
-
-    @VisibleForTesting
-    internal inner class CustomTabActivityResult(
-        private val activity: LoginActivity = this@LoginActivity
-    ) : ActivityResultCallback<ActivityResult> {
-
-        override fun onActivityResult(result: ActivityResult) {
-            // Check if the user backed out of the custom tab.
-            if (result.resultCode == RESULT_CANCELED) {
-                if (activity.viewModel.singleServerCustomTabActivity) {
-                    // Show blank page and spinner until PKCE is done.
-                    activity.viewModel.loginUrl.value = ABOUT_BLANK
-                } else {
-                    // Don't show server picker if we are re-authenticating with cookie.
-                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
-                }
-            }
-        }
-    }
 
     // View Model
     @VisibleForTesting(otherwise = PROTECTED)
@@ -235,6 +217,7 @@ open class LoginActivity : FragmentActivity() {
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
+
     @VisibleForTesting
     internal val sharedBrowserSession: Boolean
         get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
@@ -253,7 +236,6 @@ open class LoginActivity : FragmentActivity() {
         applyIntent()
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
-        // TODO: Coverage needed? ECJ20251212
         if (intent.extras?.getBoolean(NEW_USER) == true) {
             newUserIntent = true
         }
@@ -294,7 +276,6 @@ open class LoginActivity : FragmentActivity() {
         // Take control of the back logic if the device is locked.
         // TODO:  Remove SDK_INT check when min API > 33
         if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
-            // TODO: Coverage needed? ECJ20251212
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
@@ -303,7 +284,6 @@ open class LoginActivity : FragmentActivity() {
         viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Support magic links
-        // TODO: Coverage needed? ECJ20251212
         if (viewModel.jwt != null) {
             swapJWTForAccessToken()
         }
@@ -341,7 +321,6 @@ open class LoginActivity : FragmentActivity() {
         // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
         if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isQrCodeLoginUrlIntent(intent) || isSalesforceWelcomeDiscoveryMobileUrl(it)) } != true) {
             completeAdvAuthFlow(intent)
-            // TODO: Coverage needed? ECJ20251212
             return
         }
 
@@ -952,7 +931,7 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * Alerts the user if the Salesforce Welcome Discovery is disabled.
+     * Alerts the user if Salesforce Welcome Discovery is disabled.
      * @param supportsWelcomeDiscovery Indicates if Salesforce Welcome Discovery
      * is supported.
      * @return Boolean true if the alert was displayed, false otherwise
@@ -1110,57 +1089,13 @@ open class LoginActivity : FragmentActivity() {
         isUsingFrontDoorBridge: Boolean = viewModel.isUsingFrontDoorBridge,
         singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
     ) {
+        // TODO: Re-compress further after CodeCov P.O.C. and log removal. ECJ20251213
         // Load the authorization URL in a browser custom tab if required and do nothing otherwise as the view model will load it in the web view.
-        // TODO: Coverage needed - This one is challenging. ECJ20251210
-        if (singleServerCustomTabActivity) {
-            Log.i("WSC", "A.1")
-        } else {
-            Log.i("WSC", "A.2")
-        }
-        if (isBrowserLoginEnabled) {
-            Log.i("WSC", "B.1")
-        } else {
-            Log.i("WSC", "B.2")
-        }
-
-        if ((!singleServerCustomTabActivity).and(!isBrowserLoginEnabled)) {
-            Log.i("WSC", "B.X Both Sides False")
-        }
-
-        if (singleServerCustomTabActivity.and(!isBrowserLoginEnabled)) {
-            Log.i("WSC", "B.3 Right Side")
-        }
-
-        if ((!singleServerCustomTabActivity).and(isBrowserLoginEnabled)) {
-            Log.i("WSC", "B.4 Left Side")
-        }
-
         val useBrowserLogin = (singleServerCustomTabActivity.or(isBrowserLoginEnabled))
-
-        if (useBrowserLogin.and(isUsingFrontDoorBridge)) {
-            Log.i("WSC", "B.X Both Sides False")
-        }
-
-        if (useBrowserLogin.and(!isUsingFrontDoorBridge)) {
-            Log.i("WSC", "B.X Left/!Right")
-        }
-
-        if (isUsingFrontDoorBridge) {
-            Log.i("WSC", "C.1")
-        } else {
-            Log.i("WSC", "C.2")
-        }
-
-        if (useBrowserLogin.and(isUsingFrontDoorBridge)) {
-            Log.i("WSC", "C.3 Right Side")
-        }
-
         val useBrowserLoginGuardAgainstFrontDoorBridge = useBrowserLogin.and(!isUsingFrontDoorBridge) /* UI front-door bridge bypasses the need for browser custom tab */
 
         if (useBrowserLoginGuardAgainstFrontDoorBridge) {
             loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
-        } else {
-            Log.i("WSC", "X")
         }
     }
 
@@ -1624,13 +1559,42 @@ open class LoginActivity : FragmentActivity() {
         // endregion
     }
 
+    // region Activity Result Callback Classes
+
+    /**
+     * An activity result callback used when browser-based authentication loads
+     * the OAuth authorization URL in the external browser custom tab activity.
+     * @param activity The login activity.  This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
+     */
+    @VisibleForTesting
+    internal inner class CustomTabActivityResult(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : ActivityResultCallback<ActivityResult> {
+
+        override fun onActivityResult(result: ActivityResult) {
+            // Check if the user backed out of the custom tab.
+            if (result.resultCode == RESULT_CANCELED) {
+                if (activity.viewModel.singleServerCustomTabActivity) {
+                    // Show blank page and spinner until PKCE is done.
+                    activity.viewModel.loginUrl.value = ABOUT_BLANK
+                } else {
+                    // Don't show server picker if we are re-authenticating with cookie.
+                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
+                }
+            }
+        }
+    }
+
+    // endregion
     // region Observer Classes
 
     /**
      * An observer for browser custom tab URL that continues the authentication
      * flow by loading the login URL in a web browser custom tab when browser-
      * based authentication is required.
-     * @param activity The login activity. Defaults to the enclosing instance
+     * @param activity The login activity. This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
      */
     internal inner class BrowserCustomTabUrlObserver(
         private val activity: LoginActivity = this@LoginActivity
@@ -1653,7 +1617,8 @@ open class LoginActivity : FragmentActivity() {
      * flow by determining the switch between default login and Salesforce
      * Welcome Discovery before applying the pending login server to the
      * activity.
-     * @param activity The login activity. Defaults to the enclosing instance
+     * @param activity The login activity.  This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
      */
     @VisibleForTesting
     internal inner class PendingServerObserver(
