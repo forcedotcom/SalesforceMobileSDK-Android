@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.net.Uri
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebView
@@ -38,10 +39,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.luminance
+import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
@@ -57,12 +61,15 @@ import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -107,12 +114,29 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // endregion
 
     // Public LiveData
+    /** The login server that has been selected by the login server manager, has an authentication configuration and is ready for use */
     val selectedServer = MediatorLiveData<String>()
+
+    /** The selected login server's OAuth authorization URL for use in the web view when browser-based authentication is inactive */
     val loginUrl = MediatorLiveData<String>()
+
+    /** The selected login server's OAuth authorization URL for use in the external browser custom tab when browser-based authentication is active.  This provides the login flow with the requirements for advanced authentication, such as client certificates */
+    val browserCustomTabUrl = MediatorLiveData<String>()
+
     var showServerPicker = mutableStateOf(false)
     var loading = mutableStateOf(false)
 
     // Internal LiveData
+
+    /** The Kotlin Coroutine Job fetching the pending login server's authentication configuration */
+    private var authenticationConfigurationFetchJob: Job? = null
+
+    /** The login server that has been selected by the login server manager and is pending authentication configuration before becoming the selected login server */
+    internal val pendingServer = MediatorLiveData<String>()
+
+    /** The previously observed pending login server for use in switching between default and Salesforce Welcome Discovery log in */
+    internal var previousPendingServer: String? = null
+
     internal val authFinished = mutableStateOf(false)
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
@@ -207,23 +231,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
 
     init {
-        // Update selectedServer when the LoginServerManager value changes
-        selectedServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer) { newServer ->
-            val trimmedServer = newServer.url.run { trim { it <= ' ' } }
-            if (selectedServer.value == trimmedServer) {
-                reloadWebView()
-            } else {
-                selectedServer.value = trimmedServer
-            }
-        }
+        // When the login server manager selects a login server, first fetch its authentication configuration by setting the pending login server. Second, the selected login server will be set afterwards.
+        pendingServer.addSource(SalesforceSDKManager.getInstance().loginServerManager.selectedServer, PendingServerSource())
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
-        loginUrl.addSource(selectedServer) { newServer ->
-            val isNewServer = loginUrl.value?.startsWith(newServer) != true
-            if (isNewServer && !isUsingFrontDoorBridge) {
-                loginUrl.value = getAuthorizationUrl(newServer)
-            }
-        }
+        loginUrl.addSource(selectedServer, LoginUrlSource())
+
+        // When selecting a login server, update the browser custom tab URL to match the OAuth authorization URL when browser-based authentication is active.
+        browserCustomTabUrl.addSource(selectedServer, BrowserCustomTabUrlSource())
     }
 
     /** Reloads the WebView with a newly generated authorization URL. */
@@ -270,6 +285,38 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         username: String?,
         instanceServer: String?,
     ) = defaultBuildAccountName(username, instanceServer)
+
+    /**
+     * Applies a new pending login server.  The decision to authenticate in a
+     * web browser custom tab will be made, which may require fetching the
+     * authentication configuration.  The selected server and login URL (OAuth
+     * authorization URL) will set to continue the flow.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
+     * @param pendingLoginServer The new pending login server value
+     */
+    internal fun applyPendingServer(
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        pendingLoginServer: String?
+    ) {
+        val pendingLoginServerUnwrapped: String = pendingLoginServer ?: return
+
+        // Recall this pending login server for reference by future updates.
+        previousPendingServer = pendingLoginServerUnwrapped
+
+        // When authorization via a single-server, custom tab activity is requested skip fetching the authorization configuration and immediately set the selected login server to generate the OAuth authorization URL.
+        if (singleServerCustomTabActivity) {
+            selectedServer.postValue(pendingLoginServerUnwrapped)
+        }
+        // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
+        else {
+            authenticationConfigurationFetchJob?.cancel()
+            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
+                selectedServer.postValue(pendingLoginServerUnwrapped)
+                authenticationConfigurationFetchJob = null
+            }
+        }
+    }
 
     /**
      * Called when the webview portion of the Web Server flow is finished.  Code exchange
@@ -362,6 +409,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             additionalParams
         )
 
+        // The Salesforce Welcome login hint is only used once.
+        loginHint = null
+
         return when {
             jwtFlow -> getFrontdoorUrl(
                 authorizationUrl,
@@ -399,6 +449,25 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }
     }
 
+    // region Salesforce Welcome Discovery
+
+    /**
+     * Determines if the provided pending login server URL is a switch from
+     * Salesforce Welcome Discovery back to default log in.
+     * @param pendingLoginServerUri The pending login server URL
+     * @return Boolean true if the provided pending login server URL is a
+     * switch from Salesforce Welcome Discovery back to the default log in,
+     * false otherwise.
+     */
+    internal fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
+        pendingLoginServerUri: Uri
+    ): Boolean {
+        val previousPendingLoginServerUri = previousPendingServer ?: return false
+        return isSalesforceWelcomeDiscoveryUrlPath(previousPendingLoginServerUri.toUri()).and(!isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri))
+    }
+
+    // endregion
+
     companion object {
 
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -425,4 +494,76 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val title: String,
         val onClick: () -> Unit
     )
+
+    /**
+     * An observer used to set the web view's OAuth authorization URL from the
+     * selected login server.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
+     * @param viewModel The login activity view model. This parameter is
+     * intended for testing purposes only. Defaults to this inner class receiver
+     * @param scope The Coroutine scope.  This parameter is intended for testing
+     * purposes only. Defaults to the IO scope
+     */
+    private inner class LoginUrlSource(
+        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        private val viewModel: LoginViewModel = this@LoginViewModel,
+        private val scope: CoroutineScope = viewModelScope,
+    ) : Observer<String?> {
+        override fun onChanged(value: String?) {
+            if (!sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge && value != null) {
+                val isNewServer = viewModel.loginUrl.value?.startsWith(value) != true
+                if (isNewServer) {
+                    scope.launch {
+                        viewModel.loginUrl.value = viewModel.getAuthorizationUrl(value)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * An observer used to set the pending login server from the login server
+     * manager's selected login server.
+     * @param viewModel The login activity view model. This parameter is
+     * intended for testing purposes only. Defaults to this inner class receiver
+     */
+    private inner class PendingServerSource(
+        private val viewModel: LoginViewModel = this@LoginViewModel,
+    ) : Observer<LoginServer> {
+        override fun onChanged(value: LoginServer) {
+            val loginServer = value.url.trim()
+            if (viewModel.pendingServer.value == loginServer) {
+                viewModel.reloadWebView()
+            } else {
+                viewModel.pendingServer.value = loginServer
+            }
+        }
+    }
+
+    /**
+     * An observer used to set the external browser custom tab's OAuth
+     * authorization URL from the selected login server.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
+     * @param viewModel The login activity view model. This parameter is
+     * intended for testing purposes only. Defaults to this inner class receiver
+     * @param scope The Coroutine scope.  This parameter is intended for testing
+     * purposes only. Defaults to the IO scope
+     */
+    private inner class BrowserCustomTabUrlSource(
+        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        private val viewModel: LoginViewModel = this@LoginViewModel,
+        private val scope: CoroutineScope = viewModelScope,
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            if (sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
+                scope.launch {
+                    viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(
+                        server = value
+                    )
+                }
+            }
+        }
+    }
 }

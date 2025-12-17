@@ -70,9 +70,15 @@ class LoginViewModelTest {
     fun setup() {
         // This is required for the LiveData to actually update during the test
         // because it isn't actually being observed since there is no lifecycle.
+        viewModel.pendingServer.observeForever {
+            // This completes the validation of the pending login server usually performed by the login activity before setting selected server.
+            viewModel.selectedServer.value = it
+        }
         viewModel.selectedServer.observeForever { }
         viewModel.loginUrl.observeForever { }
 
+        // Give the LiveData sources time to propagate through the MediatorLiveData
+        Thread.sleep(100)
     }
 
     @After
@@ -120,11 +126,19 @@ class LoginViewModelTest {
 
     @Test
     fun loginUrl_UpdatesOn_selectedServerChange() {
+        // Wait for initial values to be set
+        assertNotNull(viewModel.selectedServer.value)
+        assertNotNull(viewModel.loginUrl.value)
+
         assertNotEquals(FAKE_SERVER_URL, viewModel.selectedServer.value)
         assertTrue(viewModel.loginUrl.value!!.startsWith(viewModel.selectedServer.value!!))
         assertFalse(viewModel.loginUrl.value!!.startsWith(FAKE_SERVER_URL))
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
+
+        // Wait for loginUrl to update after selectedServer change (async coroutine)
+        Thread.sleep(200)
+        assertNotNull(viewModel.loginUrl.value)
         assertTrue(viewModel.loginUrl.value!!.startsWith(FAKE_SERVER_URL))
     }
 
@@ -136,6 +150,8 @@ class LoginViewModelTest {
         assertEquals(originalAuthUrl, viewModel.loginUrl.value)
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
+        // Wait for async update
+        Thread.sleep(200)
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
         val newAuthUrl = generateExpectedAuthorizationUrl(FAKE_SERVER_URL, newCodeChallenge)
@@ -148,6 +164,8 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
         viewModel.reloadWebView()
+        // Wait for async update
+        Thread.sleep(200)
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotNull(newCodeChallenge)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
@@ -164,6 +182,8 @@ class LoginViewModelTest {
         viewModel.jwt = FAKE_JWT
         viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
         viewModel.reloadWebView()
+        // Wait for async update
+        Thread.sleep(200)
         assertNotEquals(expectedUrl, viewModel.loginUrl.value)
 
         codeChallenge = getSHA256Hash(viewModel.codeVerifier)
