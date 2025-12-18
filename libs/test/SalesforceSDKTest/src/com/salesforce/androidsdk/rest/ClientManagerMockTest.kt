@@ -307,8 +307,6 @@ class ClientManagerMockTest {
                 }
             }
         }
-        val accountSlot = slot<Account>()
-        val reasonSlot = slot<OAuth2.LogoutReason>()
         val broadcastIntentSlot = slot<Intent>()
         val mockAccount = mockk<Account>(relaxed = true)
         val mockUser = mockk<UserAccount>(relaxed = true) {
@@ -336,11 +334,9 @@ class ClientManagerMockTest {
         }
         verify(exactly = 1) {
             clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN)
-            mockSDKManager.logout(capture(accountSlot), any(), any(), capture(reasonSlot))
+            mockSDKManager.logout(mockAccount, any(), true, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED)
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
-        Assert.assertEquals(mockAccount, accountSlot.captured)
-        Assert.assertEquals(OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED, reasonSlot.captured)
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
     }
 
@@ -409,8 +405,6 @@ class ClientManagerMockTest {
                 }
             }
         }
-        val accountSlot = slot<Account>()
-        val reasonSlot = slot<OAuth2.LogoutReason>()
         val broadcastIntentSlot = slot<Intent>()
         val user2Token = "user2-token"
         val mockAccount = mockk<Account>(relaxed = true)
@@ -425,9 +419,6 @@ class ClientManagerMockTest {
             every { refreshToken } returns "user2Refresh"
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount, mockAccount2)
-        }
         // The account that we are not refreshing for is the current account.
         every { mockUserAccountManager.currentUser } returns mockUser2
         every { mockUserAccountManager.currentAccount } returns mockAccount2
@@ -437,7 +428,7 @@ class ClientManagerMockTest {
         every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns mockk()
         // Use the real clientManager instead of a full mock because revokedTokenShouldLogout is private.
         val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        every { clientManagerSpy.accounts } returns arrayOf(mockAccount, mockAccount2)
         val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
             clientManagerSpy,
             "https://login.salesforce.com",
@@ -447,7 +438,7 @@ class ClientManagerMockTest {
 
         Assert.assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
-            mockClientManager.invalidateToken(user2Token)
+            clientManagerSpy.invalidateToken(user2Token)
             mockUserAccountManager.updateAccount(any(), any())
             mockSDKManager.logout(mockAccount2, any(), any(), any())
             mockSDKManager.logout(null, any(), any(), any())
@@ -456,11 +447,9 @@ class ClientManagerMockTest {
 
         verify(exactly = 1) {
             clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN)
-            mockSDKManager.logout(capture(accountSlot), any(), any(), capture(reasonSlot))
+            mockSDKManager.logout(mockAccount, any(), false, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED)
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
-        Assert.assertEquals(mockAccount, accountSlot.captured)
-        Assert.assertEquals(OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED, reasonSlot.captured)
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
     }
 }
