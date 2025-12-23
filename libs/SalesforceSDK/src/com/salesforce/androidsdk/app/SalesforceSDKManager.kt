@@ -1111,6 +1111,10 @@ open class SalesforceSDKManager protected constructor(
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
+
+        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
+        CookieManager.getInstance().removeAllCookies(null)
+
         notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
         // Revoke the existing refresh token
@@ -1135,9 +1139,6 @@ open class SalesforceSDKManager protected constructor(
      * @param showLoginPage When true, shows the login page
      */
     private fun notifyLogoutComplete(showLoginPage: Boolean, logoutReason: LogoutReason, userAccount: UserAccount?) {
-        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
-        CookieManager.getInstance().removeAllCookies(null)
-
         EventsObservable.get().notifyEvent(LogoutComplete, logoutReason)
         sendLogoutCompleteIntent(logoutReason, userAccount)
         if (showLoginPage) {
