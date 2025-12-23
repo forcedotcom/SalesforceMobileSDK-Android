@@ -149,7 +149,6 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.jetbrains.annotations.Debug
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
 import java.util.Locale.US
@@ -335,6 +334,15 @@ open class SalesforceSDKManager protected constructor(
      * endpoint
      */
     var additionalOauthKeys: List<String>? = null
+
+    /**
+     * Determines if the authentication web view's cookies will be cleared after
+     * authentication.  The default behavior is true to protect against re-use
+     * of authentication related cookies and duplication authentication action.
+     * Only apps the specifically require persistent cookies should set this to
+     * false.
+     */
+    var clearCookiesAfterLogin = true
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.
@@ -829,9 +837,6 @@ open class SalesforceSDKManager protected constructor(
      */
     private fun startSwitcherActivityIfRequired() {
 
-        // Clear cookies
-        CookieManager.getInstance().removeAllCookies(null)
-
         /*
          * If the number of accounts remaining is 0, show the login page.
          *
@@ -1106,6 +1111,10 @@ open class SalesforceSDKManager protected constructor(
         )
         clientMgr.removeAccount(account)
         isLoggingOut = false
+
+        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
+        CookieManager.getInstance().removeAllCookies(null)
+
         notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
         // Revoke the existing refresh token

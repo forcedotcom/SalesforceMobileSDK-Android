@@ -318,9 +318,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     ) {
-        // Clear cookies when we finish auth to prevent automatic re-login
-        // if the user tries to add another user right away.
-        clearCookies()
+        // Clear cookies after successful authentication to prevent automatic re-login if the user tries to add another user right away.
+        if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
+            clearCookies()
+        }
         authCodeForJwtFlow = null
         onAuthFlowComplete(
             tokenResponse = tr,
