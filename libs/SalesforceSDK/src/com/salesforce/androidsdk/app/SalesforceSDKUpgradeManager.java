@@ -103,7 +103,7 @@ public class SalesforceSDKUpgradeManager {
      */
     protected synchronized void upgradeAccMgr() {
         String installedVersionStr = getInstalledAccMgrVersion();
-        if (installedVersionStr.equals(SalesforceSDKManager.SDK_VERSION)) {
+        if (installedVersionStr.equals(SalesforceSDKManager.SDK_VERSION) || installedVersionStr.isEmpty()) {
             return;
         }
 
