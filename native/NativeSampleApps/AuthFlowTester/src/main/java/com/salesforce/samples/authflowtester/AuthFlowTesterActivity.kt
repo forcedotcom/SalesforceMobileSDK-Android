@@ -26,15 +26,50 @@
  */
 package com.salesforce.samples.authflowtester
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.salesforce.androidsdk.app.SalesforceSDKManager
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.ui.CollapsibleSection
 import com.salesforce.androidsdk.ui.SalesforceActivity
+import com.salesforce.androidsdk.ui.theme.sfDarkColors
+import com.salesforce.androidsdk.ui.theme.sfLightColors
+
+const val PADDING = 10
+const val CORNER_PERCENTAGE = 25
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -44,19 +79,107 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         enableEdgeToEdge()
 
         setContent {
-            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
-                TestView()
-            }
+            TesterUI()
         }
-    }
-
-    @Composable
-    fun TestView() {
-        Text("heeelllloooooooo")
     }
 
     override fun onResume(client: RestClient?) {
         // Keeping reference to rest client
         this.client = client
+    }
+
+    @Preview
+    @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+    @Composable
+    fun TesterUI(
+        revokeAction: suspend (client: RestClient) -> RequestResult = { RequestResult(false, "") },
+        apiRequestAction: () -> Unit = {},
+        credentialsDataList: List<Pair<String, String>> = emptyList(),
+        authConfigDataList: List<Pair<String, String>> = emptyList(),
+    ) {
+        MaterialTheme(colorScheme = if (isSystemInDarkTheme()) sfDarkColors() else sfLightColors()) {
+            Scaffold(
+                topBar = { TesterUITopBar() },
+                bottomBar = { TesterUIBottomBar() },
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier.padding(innerPadding)
+                        .padding(start = PADDING.dp, end = PADDING.dp)
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top,
+                ) {
+                    Card(modifier = Modifier.padding(PADDING.dp)) {
+                        Button(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth().padding(PADDING.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error),
+                            shape = RoundedCornerShape(percent = CORNER_PERCENTAGE),
+                        ) {
+                            Text("Revoke Access Token")
+                        }
+                    }
+
+                    Card(modifier = Modifier.padding(PADDING.dp)) {
+                        Button(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth().padding(PADDING.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.tertiary),
+                            shape = RoundedCornerShape(percent = CORNER_PERCENTAGE),
+                        ) {
+                            Text("Make REST API Request")
+                        }
+                    }
+
+                    CollapsibleSection("User Credentials", credentialsDataList)
+
+                    Spacer(Modifier.height(PADDING.dp))
+
+                    CollapsibleSection("OAuth Configuration", authConfigDataList)
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Preview
+    @Composable
+    fun TesterUITopBar() {
+        CenterAlignedTopAppBar(
+            title = { Text("AuthFlowTester") },
+        )
+    }
+
+    @Preview
+    @Composable
+    fun TesterUIBottomBar() {
+        BottomAppBar(
+            actions = {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.Default.Build,
+                            contentDescription = "migrate",
+                        )
+                    }
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.Default.AccountBox,
+                            contentDescription = "switch user",
+                        )
+                    }
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "logout",
+                        )
+                    }
+                }
+            },
+            containerColor = Color(android.graphics.Color.TRANSPARENT),
+        )
     }
 }
