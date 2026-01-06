@@ -193,8 +193,9 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
     when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
             PickerBottomSheet(
-                pickerStyle,
-                sheetState,
+                addButtonVisible = viewModel.serverPickerAddConnectionButtonVisible,
+                pickerStyle = pickerStyle,
+                sheetState = sheetState,
                 list = loginServerManager.loginServers,
                 selectedListItem = loginServerManager.selectedLoginServer,
                 onItemSelected = onNewLoginServerSelected,
@@ -205,8 +206,8 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
 
         PickerStyle.UserAccountPicker ->
             PickerBottomSheet(
-                pickerStyle,
-                sheetState,
+                pickerStyle = pickerStyle,
+                sheetState = sheetState,
                 list = userAccountManager.authenticatedUsers,
                 selectedListItem = userAccountManager.currentUser,
                 onItemSelected = onUserAccountSelected,
@@ -223,6 +224,7 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
 @Composable
 @VisibleForTesting
 internal fun PickerBottomSheet(
+    addButtonVisible: Boolean = true,
     pickerStyle: PickerStyle,
     sheetState: SheetState,
     list: List<Any>,
@@ -427,7 +429,7 @@ internal fun PickerBottomSheet(
                                         )
 
                                         // Add New Connection/Account Button
-                                        if (listItem == mutableList.last()) {
+                                        if (listItem == mutableList.last() && addButtonVisible) {
                                             OutlinedButton(
                                                 onClick = {
                                                     when (pickerStyle) {

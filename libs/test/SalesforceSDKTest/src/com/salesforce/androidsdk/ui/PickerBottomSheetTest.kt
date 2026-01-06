@@ -391,6 +391,16 @@ internal fun PickerBottomSheetTestWrapper(
     removeLoginServer: ((LoginServer) -> Unit)? = { },
     addNewAccount: (() -> Unit)? = { },
 ) {
-    PickerBottomSheet(pickerStyle, sheetState, list, selectedListItem, onItemSelected, getValidServer,
-        addNewLoginServer, removeLoginServer, addNewAccount)
+    PickerBottomSheet(
+        addButtonVisible = true,
+        pickerStyle = pickerStyle,
+        sheetState = sheetState,
+        list = list,
+        selectedListItem = selectedListItem,
+        onItemSelected = onItemSelected,
+        getValidServer = getValidServer,
+        addNewLoginServer = addNewLoginServer,
+        removeLoginServer = removeLoginServer,
+        addNewAccount = addNewAccount,
+    )
 }
