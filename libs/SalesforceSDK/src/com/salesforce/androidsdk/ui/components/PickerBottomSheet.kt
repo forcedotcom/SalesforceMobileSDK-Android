@@ -224,11 +224,11 @@ fun PickerBottomSheet(pickerStyle: PickerStyle) {
 @Composable
 @VisibleForTesting
 internal fun PickerBottomSheet(
-    addButtonVisible: Boolean = true,
     pickerStyle: PickerStyle,
     sheetState: SheetState,
     list: List<Any>,
     selectedListItem: Any?,
+    addButtonVisible: Boolean = true,
     onItemSelected: (Any?, Boolean) -> Unit,
     getValidServer: ((String) -> String?)? = null,
     addNewLoginServer: ((String, String) -> Unit)? = null,
