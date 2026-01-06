@@ -270,6 +270,7 @@ internal fun PickerBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .safeDrawingPadding()
                         .padding(HEADER_PADDING_SIZE.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
