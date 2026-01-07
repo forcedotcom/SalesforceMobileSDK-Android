@@ -251,6 +251,38 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
+    fun serverList_Displays_DisplaysAddNewConnectionButton() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                selectedListItem = serverList[2],
+                addButtonVisible = true,
+            )
+        }
+
+        val button = composeTestRule.onNode(hasText("Add New Connection"))
+
+        button.assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun serverList_Displays_HidesAddNewConnectionButton() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                selectedListItem = serverList[2],
+                addButtonVisible = false,
+            )
+        }
+
+        val button = composeTestRule.onNode(hasText("Add New Connection"))
+
+        button.assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
     fun selectedServer_UpdatesOn_UIServerSelection() {
         var selectedServer = serverList.first()
         val onServerSelected = { server: Any?, _: Boolean ->
@@ -385,6 +417,7 @@ internal fun PickerBottomSheetTestWrapper(
         PickerStyle.UserAccountPicker -> userList
     },
     selectedListItem: Any = list.first(),
+    addButtonVisible: Boolean = true,
     onItemSelected: (Any?, Boolean) -> Unit = { _,_ -> },
     getValidServer: ((String) -> String?)? = { _ -> "" },
     addNewLoginServer: ((String, String) -> Unit)? = { _,_ -> },
@@ -392,11 +425,11 @@ internal fun PickerBottomSheetTestWrapper(
     addNewAccount: (() -> Unit)? = { },
 ) {
     PickerBottomSheet(
-        addButtonVisible = true,
         pickerStyle = pickerStyle,
         sheetState = sheetState,
         list = list,
         selectedListItem = selectedListItem,
+        addButtonVisible = addButtonVisible,
         onItemSelected = onItemSelected,
         getValidServer = getValidServer,
         addNewLoginServer = addNewLoginServer,
