@@ -123,7 +123,9 @@ import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_label
 import com.salesforce.androidsdk.R.string.sf__server_url_default_custom_url
 import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.theme.hintTextColor
@@ -145,10 +147,21 @@ internal const val TEXT_SELECTION_ALPHA = 0.2f
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PickerBottomSheet(pickerStyle: PickerStyle) {
-    val viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
-    val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
-    val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-    val activity = LocalContext.current.getActivity()
+    TestablePickerBottomSheet(
+        pickerStyle = pickerStyle,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@VisibleForTesting
+internal fun TestablePickerBottomSheet(
+    pickerStyle: PickerStyle,
+    viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory),
+    loginServerManager: LoginServerManager = SalesforceSDKManager.getInstance().loginServerManager,
+    userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
+    activity: FragmentActivity? = LocalContext.current.getActivity(),
+) {
     val onNewLoginServerSelected = { newSelectedServer: Any?, closePicker: Boolean ->
         if (newSelectedServer != null && newSelectedServer is LoginServer) {
             viewModel.showServerPicker.value = !closePicker

@@ -49,12 +49,19 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.rule.GrantPermissionRule
+import com.salesforce.androidsdk.R.string.sf__account_selector_text
+import com.salesforce.androidsdk.R.string.sf__custom_url_button
+import com.salesforce.androidsdk.R.string.sf__pick_server
+import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.components.AddConnection
 import com.salesforce.androidsdk.ui.components.PickerBottomSheet
 import com.salesforce.androidsdk.ui.components.PickerStyle
+import com.salesforce.androidsdk.ui.components.TestablePickerBottomSheet
 import com.salesforce.androidsdk.ui.components.UserAccountMock
+import io.mockk.mockk
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -107,6 +114,44 @@ class PickerBottomSheetTest {
     private val user2RowCd = (hasText(user2.displayName) and hasText(user2.loginServer))
 
     // Google's recommended naming scheme for test is "thingUnderTest_TriggerOfTest_ResultOfTest"
+
+    // region Public API Tests
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun pickerBottomSheet_publicApiUserAccountPicker_displaysUserAccountPicker() {
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        composeTestRule.setContent {
+            TestablePickerBottomSheet(
+                pickerStyle = PickerStyle.UserAccountPicker,
+                userAccountManager = userAccountManager
+            )
+        }
+
+        val context = getInstrumentation().targetContext
+        val button = composeTestRule.onNode(hasText(context.getString(sf__account_selector_text)))
+
+        button.assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun pickerBottomSheet_publicApiLoginServerPicker_displaysLoginServerPicker() {
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        composeTestRule.setContent {
+            TestablePickerBottomSheet(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                userAccountManager = userAccountManager
+            )
+        }
+
+        val context = getInstrumentation().targetContext
+        val button = composeTestRule.onNode(hasText(context.getString(sf__pick_server)))
+
+        button.assertIsDisplayed()
+    }
+
+    // endregion
 
     // region Add Connection Tests
     @Test
@@ -251,32 +296,32 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
-    fun serverList_Displays_DisplaysAddNewConnectionButton() {
+    fun serverList_AddButtonVisibleTrue_DisplaysAddNewConnectionButton() {
         composeTestRule.setContent {
             PickerBottomSheetTestWrapper(
                 pickerStyle = PickerStyle.LoginServerPicker,
-                selectedListItem = serverList[2],
                 addButtonVisible = true,
             )
         }
 
-        val button = composeTestRule.onNode(hasText("Add New Connection"))
+        val context = getInstrumentation().targetContext
+        val button = composeTestRule.onNode(hasText(context.getString(sf__custom_url_button)))
 
         button.assertIsDisplayed()
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
-    fun serverList_Displays_HidesAddNewConnectionButton() {
+    fun serverList_AddButtonVisibleFalse_HidesAddNewConnectionButton() {
         composeTestRule.setContent {
             PickerBottomSheetTestWrapper(
                 pickerStyle = PickerStyle.LoginServerPicker,
-                selectedListItem = serverList[2],
                 addButtonVisible = false,
             )
         }
 
-        val button = composeTestRule.onNode(hasText("Add New Connection"))
+        val context = getInstrumentation().targetContext
+        val button = composeTestRule.onNode(hasText(context.getString(sf__custom_url_button)))
 
         button.assertDoesNotExist()
     }
@@ -412,15 +457,15 @@ internal fun PickerBottomSheetTestWrapper(
         initialValue = SheetValue.Expanded,
         skipHiddenState = false,
     ),
-    list: List<Any> = when(pickerStyle) {
+    list: List<Any> = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> serverList
         PickerStyle.UserAccountPicker -> userList
     },
     selectedListItem: Any = list.first(),
     addButtonVisible: Boolean = true,
-    onItemSelected: (Any?, Boolean) -> Unit = { _,_ -> },
+    onItemSelected: (Any?, Boolean) -> Unit = { _, _ -> },
     getValidServer: ((String) -> String?)? = { _ -> "" },
-    addNewLoginServer: ((String, String) -> Unit)? = { _,_ -> },
+    addNewLoginServer: ((String, String) -> Unit)? = { _, _ -> },
     removeLoginServer: ((LoginServer) -> Unit)? = { },
     addNewAccount: (() -> Unit)? = { },
 ) {

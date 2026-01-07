@@ -137,7 +137,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
 
-    internal val serverPickerAddConnectionButtonVisible = getRuntimeConfig(SalesforceSDKManager.getInstance().appContext).getBoolean(OnlyShowAuthorizedHosts)
+    internal val serverPickerAddConnectionButtonVisible = !getRuntimeConfig(SalesforceSDKManager.getInstance().appContext).getBoolean(OnlyShowAuthorizedHosts)
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
