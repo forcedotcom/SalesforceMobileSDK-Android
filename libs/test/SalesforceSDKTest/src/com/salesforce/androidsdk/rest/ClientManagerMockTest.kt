@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.rest
 
 import android.accounts.Account
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -53,6 +54,10 @@ class ClientManagerMockTest {
             every { packageName } returns "packageName"
             every { sendBroadcast(any()) } just runs
             every { externalCacheDir } returns null
+            every { filesDir } returns targetContext.filesDir
+            every { getSharedPreferences(any(), any()) } answers {
+                targetContext.getSharedPreferences(firstArg(), MODE_PRIVATE)
+            }
         }
 
         mockkObject(SalesforceSDKManager)
