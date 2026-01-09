@@ -62,6 +62,8 @@ import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts
+import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -155,6 +157,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) Black else White }
     internal val defaultTitleText: String
         get() = if (loginUrl.value == ABOUT_BLANK) "" else selectedServer.value ?: ""
+
+    internal val serverPickerAddConnectionButtonVisible = !getRuntimeConfig(SalesforceSDKManager.getInstance().appContext).getBoolean(OnlyShowAuthorizedHosts)
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
