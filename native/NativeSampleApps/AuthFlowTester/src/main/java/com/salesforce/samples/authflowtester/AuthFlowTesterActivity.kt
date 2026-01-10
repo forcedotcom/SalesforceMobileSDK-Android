@@ -74,6 +74,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.SalesforceActivity
@@ -129,6 +131,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         val bottomScrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
         var credentialsExpanded by remember { mutableStateOf(false) }
         var oauthConfigExpanded by remember { mutableStateOf(false) }
+        var jwtExpanded by remember { mutableStateOf(false) }
         val isPreview = LocalInspectionMode.current
         var currentUser by remember { mutableStateOf(
             value = if (isPreview) {
@@ -137,6 +140,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 UserAccountManager.getInstance().currentUser
             }
         ) }
+        val jwtTokenInUse by remember { derivedStateOf { currentUser?.authToken == "jwt" } }
 
         Scaffold(
             topBar = { TesterUITopBar(topScrollBehavior) },
@@ -184,7 +188,17 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
                 Spacer(Modifier.height(PADDING.dp))
 
-                // TODO:  Add JWT section
+                if (jwtTokenInUse) {
+                    currentUser?.authToken?.let { token ->
+                        JwtTokenView(
+                            jwtToken = JwtAccessToken(token),
+                            isExpanded = jwtExpanded,
+                            onExpandedChange = { jwtExpanded = it }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(PADDING.dp))
 
                 OAuthConfigurationView(
                     isExpanded = oauthConfigExpanded,

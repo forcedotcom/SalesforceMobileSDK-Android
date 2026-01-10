@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -33,6 +33,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -60,114 +61,100 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParameter
-import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
-import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
+import java.text.DateFormat
+import java.util.Date
 
-private const val CONSUMER_KEY = "Configured Consumer Key"
-private const val CALLBACK_URL = "Configured Callback URL"
-private const val SCOPES = "Configured Scopes"
-internal const val PADDING_SIZE = 12
+// Section titles
+private const val HEADER = "Header"
+private const val PAYLOAD = "Payload"
 
+// Header fields
+private const val ALGORITHM = "Algorithm (alg)"
+private const val TYPE = "Type (typ)"
+private const val KEY_ID = "Key ID (kid)"
+private const val TOKEN_TYPE = "Token Type (tty)"
+private const val TENANT_KEY = "Tenant Key (tnk)"
+private const val VERSION = "Version (ver)"
+
+// Payload fields
+private const val AUDIENCE = "Audience (aud)"
+private const val EXPIRATION_DATE = "Expiration Date (exp)"
+private const val ISSUER = "Issuer (iss)"
+private const val SUBJECT = "Subject (sub)"
+private const val SCOPES = "Scopes (scp)"
+private const val CLIENT_ID = "Client ID (client_id)"
 
 @Composable
-fun OAuthConfigurationView(
+fun JwtTokenView(
+    jwtToken: JwtAccessToken?,
     isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
-    val isPreview = LocalInspectionMode.current
     var showExportAlert by remember { mutableStateOf(false) }
     var exportedJSON by remember { mutableStateOf("") }
-    val bootConfig = if (isPreview) {
-        null
-    } else {
-        BootConfig.getBootConfig(context)
-    }
-    val consumerKey = when {
-        bootConfig == null -> "preview consumer key"
-        bootConfig.remoteAccessConsumerKey.isBlank() -> "(none)"
-        else -> bootConfig.remoteAccessConsumerKey
-    }
-    val redirect = when {
-        bootConfig == null -> "preview redirect uri"
-        bootConfig.remoteAccessConsumerKey.isBlank() -> "(none)"
-        else -> bootConfig.oauthRedirectURI
-    }
-    val scopes = when {
-        bootConfig == null -> "preview scopes"
-        bootConfig.remoteAccessConsumerKey.isBlank() -> "(none)"
-        else -> bootConfig.oauthScopes.toScopeParameter()
-    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { onExpandedChange(!isExpanded) },
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "OAuth Configuration",
+                        text = "JWT Access Token Details",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                
+
                 IconButton(
                     onClick = {
-                        exportedJSON = generateConfigJSON(
-                            consumerKey,
-                            redirect,
-                            scopes,
-                        )
+                        exportedJSON = generateJwtJSON(jwtToken)
                         showExportAlert = true
                     }
                 ) {
                     Icon(
                         Icons.Default.Share,
-                        contentDescription = "Export OAuth Config",
-                        tint = MaterialTheme.colorScheme.primary
+                        contentDescription = "Export JWT Token",
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
-                
+
                 IconButton(
                     onClick = { onExpandedChange(!isExpanded) }
                 ) {
@@ -175,44 +162,59 @@ fun OAuthConfigurationView(
                         Icons.Default.KeyboardArrowDown,
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
                         modifier = Modifier.rotate(if (isExpanded) 180f else 0f),
-                        tint = MaterialTheme.colorScheme.secondary
+                        tint = MaterialTheme.colorScheme.secondary,
                     )
                 }
             }
-            
+
             if (isExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    InfoRowView(
-                        label = CONSUMER_KEY,
-                        value = consumerKey,
-                        isSensitive = true,
-                    )
+                if (jwtToken != null) {
+                    Column(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // JWT Header
+                        Text(
+                            text = "${HEADER}:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
 
-                    InfoRowView(
-                        label = CALLBACK_URL,
-                        value = redirect,
-                    )
+                        JwtHeaderView(token = jwtToken)
 
-                    InfoRowView(
-                        label = SCOPES,
-                        value = scopes.ifEmpty { "(none)" },
+                        // JWT Payload
+                        Text(
+                            text = "${PAYLOAD}:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        JwtPayloadView(token = jwtToken)
+                    }
+                } else {
+                    Text(
+                        text = "No JWT Token available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
         }
     }
-    
+
     if (showExportAlert) {
+
         AlertDialog(
             onDismissRequest = { showExportAlert = false },
-            title = { Text("OAuth Configuration JSON") },
-            text = { Text(
-                text = exportedJSON,
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-            ) },
+            title = { Text("JWT Token JSON") },
+            text = {
+                Text(
+                    text = exportedJSON,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -227,58 +229,86 @@ fun OAuthConfigurationView(
                 TextButton(onClick = { showExportAlert = false }) {
                     Text("OK")
                 }
-            }
+            },
         )
     }
 }
 
 @Composable
-fun InfoItem(name: String, value: String?) {
-    val coroutineScope = rememberCoroutineScope()
-    val clipboard = LocalClipboard.current
-
+fun JwtHeaderView(token: JwtAccessToken) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp, top = PADDING_SIZE.dp)
-            .clickable {
-                // Copy non-null and non-boolean values to clipboard.
-                value?.let {
-                    if (it.toBooleanStrictOrNull() == null) {
-                        val clipData = ClipData.newPlainText(name, it)
-                        coroutineScope.launch {
-                            clipboard.setClipEntry(ClipEntry(clipData))
-                        }
-                    }
-                }
-            }
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(
-            text = name,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Text(
-            text = value ?: "",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier,
-        )
+        val header = token.header
+        header.algorithn?.let { InfoRowView("${ALGORITHM}:", it) }
+        header.type?.let { InfoRowView("${TYPE}:", it) }
+        header.keyId?.let { InfoRowView("${KEY_ID}:", it) }
+        header.tokenType?.let { InfoRowView("${TOKEN_TYPE}:", it) }
+        header.tenantKey?.let { InfoRowView("${TENANT_KEY}:", it) }
+        header.version?.let { InfoRowView("${VERSION}:", it) }
     }
 }
 
-private fun generateConfigJSON(
-    consumerKey: String,
-    callbackUrl: String,
-    scopes: String
-): String {
+@Composable
+fun JwtPayloadView(token: JwtAccessToken) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val payload = token.payload
+        
+        payload.audience?.let { 
+            InfoRowView("${AUDIENCE}:", it.joinToString(", "))
+        }
+        
+        token.expirationDate()?.let {
+            InfoRowView("${EXPIRATION_DATE}:", formatDate(it))
+        }
+
+        payload.issuer?.let { InfoRowView("${ISSUER}:", it) }
+        payload.subject?.let { InfoRowView("${SUBJECT}:", it) }
+        payload.scopes?.let { InfoRowView("${SCOPES}:", it) }
+        payload.clientId?.let { 
+            InfoRowView("${CLIENT_ID}:", it, isSensitive = true)
+        }
+    }
+}
+
+private fun formatDate(date: Date): String {
+    return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM).format(date)
+}
+
+private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
+    if (jwtToken == null) return "{}"
+
     return try {
         val result = buildJsonObject {
-            put(CONSUMER_KEY, consumerKey)
-            put(CALLBACK_URL, callbackUrl)
-            put(SCOPES, scopes)
+            putJsonObject(HEADER) {
+                val header = jwtToken.header
+                header.algorithn?.let { put(ALGORITHM, it) }
+                header.type?.let { put(TYPE, it) }
+                header.keyId?.let { put(KEY_ID, it) }
+                header.tokenType?.let { put(TOKEN_TYPE, it) }
+                header.tenantKey?.let { put(TENANT_KEY, it) }
+                header.version?.let { put(VERSION, it) }
+            }
+            
+            putJsonObject(PAYLOAD) {
+                val payload = jwtToken.payload
+                payload.audience?.let { put(AUDIENCE, it.joinToString(", ")) }
+                jwtToken.expirationDate()?.let { put(EXPIRATION_DATE, formatDate(it)) }
+                payload.issuer?.let { put(ISSUER, it) }
+                payload.subject?.let { put(SUBJECT, it) }
+                payload.scopes?.let { put(SCOPES, it) }
+                payload.clientId?.let { put(CLIENT_ID, it) }
+            }
         }
         Json { prettyPrint = true }.encodeToString(result)
     } catch (_: Exception) {
@@ -288,7 +318,7 @@ private fun generateConfigJSON(
 
 private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("OAuth Configuration JSON", text)
+    val clip = ClipData.newPlainText("JWT Token JSON", text)
     clipboard.setPrimaryClip(clip)
 }
 
@@ -297,48 +327,15 @@ private fun copyToClipboard(context: Context, text: String) {
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
-private fun InfoItemPreview() {
+private fun JwtTokenViewPreview() {
     val scheme = if (isSystemInDarkTheme()) {
         dynamicDarkColorScheme(LocalContext.current)
     } else {
         dynamicLightColorScheme(LocalContext.current)
     }
     MaterialTheme(scheme) {
-        InfoItem("name", "some value")
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview
-@Composable
-private fun OAuthConfigurationViewPreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        OAuthConfigurationView(
-            isExpanded = false,
-            onExpandedChange = {}
-        )
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun OAuthConfigurationViewPreviewExpanded() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        OAuthConfigurationView(
+        JwtTokenView(
+            jwtToken = null,
             isExpanded = true,
             onExpandedChange = {}
         )
@@ -346,17 +343,18 @@ private fun OAuthConfigurationViewPreviewExpanded() {
 }
 
 @ExcludeFromJacocoGeneratedReport
-@Preview
+@Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
-private fun OAuthConfigurationViewFallbackThemePreview() {
+private fun JwtTokenViewFallbackThemePreview() {
     val scheme = if (isSystemInDarkTheme()) {
         sfDarkColors()
     } else {
         sfLightColors()
     }
     MaterialTheme(scheme) {
-        OAuthConfigurationView(
+        JwtTokenView(
+            jwtToken = null,
             isExpanded = true,
             onExpandedChange = {}
         )

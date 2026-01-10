@@ -87,62 +87,60 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-object CredentialsLabels {
-    const val USER_IDENTITY = "User Identity"
-    const val OAUTH_CLIENT_CONFIGURATION = "OAuth Client Configuration"
-    const val TOKENS = "Tokens"
-    const val URLS = "URLs"
-    const val COMMUNITY = "Community"
-    const val DOMAINS_AND_SIDS = "Domains and SIDs"
-    const val COOKIES_AND_SECURITY = "Cookies and Security"
-    const val BEACON = "Beacon"
-    const val OTHER = "Other"
-    
-    const val USERNAME = "Username"
-    const val USER_ID_LABEL = "User ID"
-    const val ORGANIZATION_ID = "Organization ID"
-    
-    const val CLIENT_ID = "Client ID"
-    const val REDIRECT_URI = "Redirect URI"
-    const val PROTOCOL_LABEL = "Protocol"
-    const val DOMAIN = "Domain"
-    const val IDENTIFIER = "Identifier"
-    
-    const val ACCESS_TOKEN = "Access Token"
-    const val REFRESH_TOKEN = "Refresh Token"
-    const val TOKEN_FORMAT = "Token Format"
-    const val JWT = "JWT"
-    const val AUTH_CODE = "Auth Code"
-    const val CHALLENGE_STRING = "Challenge String"
-    const val ISSUED_AT = "Issued At"
-    const val SCOPES = "Scopes"
-    
-    const val INSTANCE_URL = "Instance URL"
-    const val API_INSTANCE_URL = "API Instance URL"
-    const val API_URL = "API URL"
-    const val IDENTITY_URL = "Identity URL"
-    
-    const val COMMUNITY_ID = "Community ID"
-    const val COMMUNITY_URL = "Community URL"
-    
-    const val LIGHTNING_DOMAIN = "Lightning Domain"
-    const val LIGHTNING_SID = "Lightning SID"
-    const val VF_DOMAIN = "VF Domain"
-    const val VF_SID = "VF SID"
-    const val CONTENT_DOMAIN = "Content Domain"
-    const val CONTENT_SID = "Content SID"
-    const val PARENT_SID = "Parent SID"
-    const val SID_COOKIE_NAME = "SID Cookie Name"
-    
-    const val CSRF_TOKEN = "CSRF Token"
-    const val COOKIE_CLIENT_SRC = "Cookie Client Src"
-    const val COOKIE_SID_CLIENT = "Cookie SID Client"
-    
-    const val BEACON_CHILD_CONSUMER_KEY = "Beacon Child Consumer Key"
-    const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
-    
-    const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
-}
+private const val USER_IDENTITY = "User Identity"
+private const val OAUTH_CLIENT_CONFIGURATION = "OAuth Client Configuration"
+private const val TOKENS = "Tokens"
+private const val URLS = "URLs"
+private const val COMMUNITY = "Community"
+private const val DOMAINS_AND_SIDS = "Domains and SIDs"
+private const val COOKIES_AND_SECURITY = "Cookies and Security"
+private const val BEACON = "Beacon"
+private const val OTHER = "Other"
+
+private const val USERNAME = "Username"
+private const val USER_ID_LABEL = "User ID"
+private const val ORGANIZATION_ID = "Organization ID"
+
+private const val CLIENT_ID = "Client ID"
+private const val REDIRECT_URI = "Redirect URI"
+private const val PROTOCOL_LABEL = "Protocol"
+private const val DOMAIN = "Domain"
+private const val IDENTIFIER = "Identifier"
+
+private const val ACCESS_TOKEN = "Access Token"
+private const val REFRESH_TOKEN = "Refresh Token"
+private const val TOKEN_FORMAT = "Token Format"
+private const val JWT = "JWT"
+private const val AUTH_CODE = "Auth Code"
+private const val CHALLENGE_STRING = "Challenge String"
+private const val ISSUED_AT = "Issued At"
+private const val SCOPES = "Scopes"
+
+private const val INSTANCE_URL = "Instance URL"
+private const val API_INSTANCE_URL = "API Instance URL"
+private const val API_URL = "API URL"
+private const val IDENTITY_URL = "Identity URL"
+
+private const val COMMUNITY_ID = "Community ID"
+private const val COMMUNITY_URL = "Community URL"
+
+private const val LIGHTNING_DOMAIN = "Lightning Domain"
+private const val LIGHTNING_SID = "Lightning SID"
+private const val VF_DOMAIN = "VF Domain"
+private const val VF_SID = "VF SID"
+private const val CONTENT_DOMAIN = "Content Domain"
+private const val CONTENT_SID = "Content SID"
+private const val PARENT_SID = "Parent SID"
+private const val SID_COOKIE_NAME = "SID Cookie Name"
+
+private const val CSRF_TOKEN = "CSRF Token"
+private const val COOKIE_CLIENT_SRC = "Cookie Client Src"
+private const val COOKIE_SID_CLIENT = "Cookie SID Client"
+
+private const val BEACON_CHILD_CONSUMER_KEY = "Beacon Child Consumer Key"
+private const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
+
+private const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
 
 @Composable
 fun UserCredentialsView(
@@ -154,15 +152,15 @@ fun UserCredentialsView(
     var showExportAlert by remember { mutableStateOf(false) }
     var exportedJSON by remember { mutableStateOf("") }
     
-    var userIdentityExpanded by remember { mutableStateOf(false) }
-    var oauthConfigExpanded by remember { mutableStateOf(false) }
-    var tokensExpanded by remember { mutableStateOf(false) }
-    var urlsExpanded by remember { mutableStateOf(false) }
-    var communityExpanded by remember { mutableStateOf(false) }
-    var domainsAndSidsExpanded by remember { mutableStateOf(false) }
-    var cookiesAndSecurityExpanded by remember { mutableStateOf(false) }
-    var beaconExpanded by remember { mutableStateOf(false) }
-    var otherExpanded by remember { mutableStateOf(false) }
+    var userIdentityExpanded by remember { mutableStateOf(true) }
+    var oauthConfigExpanded by remember { mutableStateOf(true) }
+    var tokensExpanded by remember { mutableStateOf(true) }
+    var urlsExpanded by remember { mutableStateOf(true) }
+    var communityExpanded by remember { mutableStateOf(true) }
+    var domainsAndSidsExpanded by remember { mutableStateOf(true) }
+    var cookiesAndSecurityExpanded by remember { mutableStateOf(true) }
+    var beaconExpanded by remember { mutableStateOf(true) }
+    var otherExpanded by remember { mutableStateOf(true) }
     
     Card(
         modifier = Modifier
@@ -226,102 +224,102 @@ fun UserCredentialsView(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     InfoSection(
-                        title = CredentialsLabels.USER_IDENTITY,
+                        title = USER_IDENTITY,
                         isExpanded = userIdentityExpanded,
                         onExpandedChange = { userIdentityExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.USERNAME}:", currentUser?.username ?: "")
-                        InfoRowView("${CredentialsLabels.USER_ID_LABEL}:", currentUser?.userId ?: "")
-                        InfoRowView("${CredentialsLabels.ORGANIZATION_ID}:", currentUser?.orgId ?: "")
+                        InfoRowView("${USERNAME}:", currentUser?.username ?: "")
+                        InfoRowView("${USER_ID_LABEL}:", currentUser?.userId ?: "")
+                        InfoRowView("${ORGANIZATION_ID}:", currentUser?.orgId ?: "")
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.OAUTH_CLIENT_CONFIGURATION,
+                        title = OAUTH_CLIENT_CONFIGURATION,
                         isExpanded = oauthConfigExpanded,
                         onExpandedChange = { oauthConfigExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.CLIENT_ID}:", currentUser?.clientId ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.REDIRECT_URI}:", "")
-                        InfoRowView("${CredentialsLabels.PROTOCOL_LABEL}:", "")
-                        InfoRowView("${CredentialsLabels.DOMAIN}:", currentUser?.loginServer ?: "")
-                        InfoRowView("${CredentialsLabels.IDENTIFIER}:", currentUser?.accountName ?: "")
+                        InfoRowView("${CLIENT_ID}:", currentUser?.clientId ?: "", isSensitive = true)
+                        InfoRowView("${REDIRECT_URI}:", "")
+                        InfoRowView("${PROTOCOL_LABEL}:", "")
+                        InfoRowView("${DOMAIN}:", currentUser?.loginServer ?: "")
+                        InfoRowView("${IDENTIFIER}:", currentUser?.accountName ?: "")
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.TOKENS,
+                        title = TOKENS,
                         isExpanded = tokensExpanded,
                         onExpandedChange = { tokensExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.ACCESS_TOKEN}:", currentUser?.authToken ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.REFRESH_TOKEN}:", currentUser?.refreshToken ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.TOKEN_FORMAT}:", currentUser?.tokenFormat ?: "")
-                        InfoRowView("${CredentialsLabels.JWT}:", "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.AUTH_CODE}:", "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.CHALLENGE_STRING}:", "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.ISSUED_AT}:", "")
-                        InfoRowView("${CredentialsLabels.SCOPES}:", formatScopes(currentUser))
+                        InfoRowView("${ACCESS_TOKEN}:", currentUser?.authToken ?: "", isSensitive = true)
+                        InfoRowView("${REFRESH_TOKEN}:", currentUser?.refreshToken ?: "", isSensitive = true)
+                        InfoRowView("${TOKEN_FORMAT}:", currentUser?.tokenFormat ?: "")
+                        InfoRowView("${JWT}:", "", isSensitive = true)
+                        InfoRowView("${AUTH_CODE}:", "", isSensitive = true)
+                        InfoRowView("${CHALLENGE_STRING}:", "", isSensitive = true)
+                        InfoRowView("${ISSUED_AT}:", "")
+                        InfoRowView("${SCOPES}:", formatScopes(currentUser))
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.URLS,
+                        title = URLS,
                         isExpanded = urlsExpanded,
                         onExpandedChange = { urlsExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.INSTANCE_URL}:", currentUser?.instanceServer ?: "")
-                        InfoRowView("${CredentialsLabels.API_INSTANCE_URL}:", currentUser?.apiInstanceServer ?: "")
-                        InfoRowView("${CredentialsLabels.API_URL}:", "")
-                        InfoRowView("${CredentialsLabels.IDENTITY_URL}:", currentUser?.idUrl ?: "")
+                        InfoRowView("${INSTANCE_URL}:", currentUser?.instanceServer ?: "")
+                        InfoRowView("${API_INSTANCE_URL}:", currentUser?.apiInstanceServer ?: "")
+                        InfoRowView("${API_URL}:", "")
+                        InfoRowView("${IDENTITY_URL}:", currentUser?.idUrl ?: "")
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.COMMUNITY,
+                        title = COMMUNITY,
                         isExpanded = communityExpanded,
                         onExpandedChange = { communityExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.COMMUNITY_ID}:", currentUser?.communityId ?: "")
-                        InfoRowView("${CredentialsLabels.COMMUNITY_URL}:", currentUser?.communityUrl ?: "")
+                        InfoRowView("${COMMUNITY_ID}:", currentUser?.communityId ?: "")
+                        InfoRowView("${COMMUNITY_URL}:", currentUser?.communityUrl ?: "")
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.DOMAINS_AND_SIDS,
+                        title = DOMAINS_AND_SIDS,
                         isExpanded = domainsAndSidsExpanded,
                         onExpandedChange = { domainsAndSidsExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.LIGHTNING_DOMAIN}:", currentUser?.lightningDomain ?: "")
-                        InfoRowView("${CredentialsLabels.LIGHTNING_SID}:", currentUser?.lightningSid ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.VF_DOMAIN}:", currentUser?.vfDomain ?: "")
-                        InfoRowView("${CredentialsLabels.VF_SID}:", currentUser?.vfSid ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.CONTENT_DOMAIN}:", currentUser?.contentDomain ?: "")
-                        InfoRowView("${CredentialsLabels.CONTENT_SID}:", currentUser?.contentSid ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.PARENT_SID}:", currentUser?.parentSid ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.SID_COOKIE_NAME}:", currentUser?.sidCookieName ?: "")
+                        InfoRowView("${LIGHTNING_DOMAIN}:", currentUser?.lightningDomain ?: "")
+                        InfoRowView("${LIGHTNING_SID}:", currentUser?.lightningSid ?: "", isSensitive = true)
+                        InfoRowView("${VF_DOMAIN}:", currentUser?.vfDomain ?: "")
+                        InfoRowView("${VF_SID}:", currentUser?.vfSid ?: "", isSensitive = true)
+                        InfoRowView("${CONTENT_DOMAIN}:", currentUser?.contentDomain ?: "")
+                        InfoRowView("${CONTENT_SID}:", currentUser?.contentSid ?: "", isSensitive = true)
+                        InfoRowView("${PARENT_SID}:", currentUser?.parentSid ?: "", isSensitive = true)
+                        InfoRowView("${SID_COOKIE_NAME}:", currentUser?.sidCookieName ?: "")
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.COOKIES_AND_SECURITY,
+                        title = COOKIES_AND_SECURITY,
                         isExpanded = cookiesAndSecurityExpanded,
                         onExpandedChange = { cookiesAndSecurityExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.CSRF_TOKEN}:", currentUser?.csrfToken ?: "", isSensitive = true)
-                        InfoRowView("${CredentialsLabels.COOKIE_CLIENT_SRC}:", currentUser?.cookieClientSrc ?: "")
-                        InfoRowView("${CredentialsLabels.COOKIE_SID_CLIENT}:", currentUser?.cookieSidClient ?: "", isSensitive = true)
+                        InfoRowView("${CSRF_TOKEN}:", currentUser?.csrfToken ?: "", isSensitive = true)
+                        InfoRowView("${COOKIE_CLIENT_SRC}:", currentUser?.cookieClientSrc ?: "")
+                        InfoRowView("${COOKIE_SID_CLIENT}:", currentUser?.cookieSidClient ?: "", isSensitive = true)
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.BEACON,
+                        title = BEACON,
                         isExpanded = beaconExpanded,
                         onExpandedChange = { beaconExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.BEACON_CHILD_CONSUMER_KEY}:", currentUser?.beaconChildConsumerKey ?: "")
-                        InfoRowView("${CredentialsLabels.BEACON_CHILD_CONSUMER_SECRET}:", currentUser?.beaconChildConsumerSecret ?: "", isSensitive = true)
+                        InfoRowView("${BEACON_CHILD_CONSUMER_KEY}:", currentUser?.beaconChildConsumerKey ?: "")
+                        InfoRowView("${BEACON_CHILD_CONSUMER_SECRET}:", currentUser?.beaconChildConsumerSecret ?: "", isSensitive = true)
                     }
                     
                     InfoSection(
-                        title = CredentialsLabels.OTHER,
+                        title = OTHER,
                         isExpanded = otherExpanded,
                         onExpandedChange = { otherExpanded = it }
                     ) {
-                        InfoRowView("${CredentialsLabels.ADDITIONAL_OAUTH_FIELDS}:", formatAdditionalOAuthFields(currentUser))
+                        InfoRowView("${ADDITIONAL_OAUTH_FIELDS}:", formatAdditionalOAuthFields(currentUser))
                     }
                 }
             }
@@ -488,67 +486,67 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
 
     try {
         val result = buildJsonObject {
-            putJsonObject(CredentialsLabels.USER_IDENTITY) {
-                put(CredentialsLabels.USERNAME, user.username ?: "")
-                put(CredentialsLabels.USER_ID_LABEL, user.userId ?: "")
-                put(CredentialsLabels.ORGANIZATION_ID, user.orgId ?: "")
+            putJsonObject(USER_IDENTITY) {
+                put(USERNAME, user.username ?: "")
+                put(USER_ID_LABEL, user.userId ?: "")
+                put(ORGANIZATION_ID, user.orgId ?: "")
             }
 
-            putJsonObject(CredentialsLabels.OAUTH_CLIENT_CONFIGURATION) {
-                put(CredentialsLabels.CLIENT_ID, user.clientId ?: "")
-                put(CredentialsLabels.REDIRECT_URI, "")
-                put(CredentialsLabels.PROTOCOL_LABEL, "")
-                put(CredentialsLabels.DOMAIN, user.loginServer ?: "")
-                put(CredentialsLabels.IDENTIFIER, user.accountName ?: "")
+            putJsonObject(OAUTH_CLIENT_CONFIGURATION) {
+                put(CLIENT_ID, user.clientId ?: "")
+                put(REDIRECT_URI, "")
+                put(PROTOCOL_LABEL, "")
+                put(DOMAIN, user.loginServer ?: "")
+                put(IDENTIFIER, user.accountName ?: "")
             }
 
-            putJsonObject(CredentialsLabels.TOKENS) {
-                put(CredentialsLabels.ACCESS_TOKEN, user.authToken ?: "")
-                put(CredentialsLabels.REFRESH_TOKEN, user.refreshToken ?: "")
-                put(CredentialsLabels.TOKEN_FORMAT, user.tokenFormat ?: "")
-                put(CredentialsLabels.JWT, "")
-                put(CredentialsLabels.AUTH_CODE, "")
-                put(CredentialsLabels.CHALLENGE_STRING, "")
-                put(CredentialsLabels.ISSUED_AT, "")
-                put(CredentialsLabels.SCOPES, formatScopes(user))
+            putJsonObject(TOKENS) {
+                put(ACCESS_TOKEN, user.authToken ?: "")
+                put(REFRESH_TOKEN, user.refreshToken ?: "")
+                put(TOKEN_FORMAT, user.tokenFormat ?: "")
+                put(JWT, "")
+                put(AUTH_CODE, "")
+                put(CHALLENGE_STRING, "")
+                put(ISSUED_AT, "")
+                put(SCOPES, formatScopes(user))
             }
 
-            putJsonObject(CredentialsLabels.URLS) {
-                put(CredentialsLabels.INSTANCE_URL, user.instanceServer ?: "")
-                put(CredentialsLabels.API_INSTANCE_URL, user.apiInstanceServer ?: "")
-                put(CredentialsLabels.API_URL, "")
-                put(CredentialsLabels.IDENTITY_URL, user.idUrl ?: "")
+            putJsonObject(URLS) {
+                put(INSTANCE_URL, user.instanceServer ?: "")
+                put(API_INSTANCE_URL, user.apiInstanceServer ?: "")
+                put(API_URL, "")
+                put(IDENTITY_URL, user.idUrl ?: "")
             }
 
-            putJsonObject(CredentialsLabels.COMMUNITY) {
-                put(CredentialsLabels.COMMUNITY_ID, user.communityId ?: "")
-                put(CredentialsLabels.COMMUNITY_URL, user.communityUrl ?: "")
+            putJsonObject(COMMUNITY) {
+                put(COMMUNITY_ID, user.communityId ?: "")
+                put(COMMUNITY_URL, user.communityUrl ?: "")
             }
 
-            putJsonObject(CredentialsLabels.DOMAINS_AND_SIDS) {
-                put(CredentialsLabels.LIGHTNING_DOMAIN, user.lightningDomain ?: "")
-                put(CredentialsLabels.LIGHTNING_SID, user.lightningSid ?: "")
-                put(CredentialsLabels.VF_DOMAIN, user.vfDomain ?: "")
-                put(CredentialsLabels.VF_SID, user.vfSid ?: "")
-                put(CredentialsLabels.CONTENT_DOMAIN, user.contentDomain ?: "")
-                put(CredentialsLabels.CONTENT_SID, user.contentSid ?: "")
-                put(CredentialsLabels.PARENT_SID, user.parentSid ?: "")
-                put(CredentialsLabels.SID_COOKIE_NAME, user.sidCookieName ?: "")
+            putJsonObject(DOMAINS_AND_SIDS) {
+                put(LIGHTNING_DOMAIN, user.lightningDomain ?: "")
+                put(LIGHTNING_SID, user.lightningSid ?: "")
+                put(VF_DOMAIN, user.vfDomain ?: "")
+                put(VF_SID, user.vfSid ?: "")
+                put(CONTENT_DOMAIN, user.contentDomain ?: "")
+                put(CONTENT_SID, user.contentSid ?: "")
+                put(PARENT_SID, user.parentSid ?: "")
+                put(SID_COOKIE_NAME, user.sidCookieName ?: "")
             }
 
-            putJsonObject(CredentialsLabels.COOKIES_AND_SECURITY) {
-                put(CredentialsLabels.CSRF_TOKEN, user.csrfToken ?: "")
-                put(CredentialsLabels.COOKIE_CLIENT_SRC, user.cookieClientSrc ?: "")
-                put(CredentialsLabels.COOKIE_SID_CLIENT, user.cookieSidClient ?: "")
+            putJsonObject(COOKIES_AND_SECURITY) {
+                put(CSRF_TOKEN, user.csrfToken ?: "")
+                put(COOKIE_CLIENT_SRC, user.cookieClientSrc ?: "")
+                put(COOKIE_SID_CLIENT, user.cookieSidClient ?: "")
             }
 
-            putJsonObject(CredentialsLabels.BEACON) {
-                put(CredentialsLabels.BEACON_CHILD_CONSUMER_KEY, user.beaconChildConsumerKey ?: "")
-                put(CredentialsLabels.BEACON_CHILD_CONSUMER_SECRET, user.beaconChildConsumerSecret ?: "")
+            putJsonObject(BEACON) {
+                put(BEACON_CHILD_CONSUMER_KEY, user.beaconChildConsumerKey ?: "")
+                put(BEACON_CHILD_CONSUMER_SECRET, user.beaconChildConsumerSecret ?: "")
             }
 
-            putJsonObject(CredentialsLabels.OTHER) {
-                put(CredentialsLabels.ADDITIONAL_OAUTH_FIELDS, formatAdditionalOAuthFields(user))
+            putJsonObject(OTHER) {
+                put(ADDITIONAL_OAUTH_FIELDS, formatAdditionalOAuthFields(user))
             }
         }
 
