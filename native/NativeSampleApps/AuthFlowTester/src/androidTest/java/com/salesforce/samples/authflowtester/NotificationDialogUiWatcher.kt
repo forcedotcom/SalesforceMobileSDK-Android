@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,52 +26,25 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.content.Intent
-import android.text.TextWatcher
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SdkSuppress
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.UiWatcher
-import androidx.test.uiautomator.Until
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import pageobjects.loginpageobjects.LoginPageObject
-import testutility.UserUtility
 
-@RunWith(AndroidJUnit4::class)
-class LoginTest {
+class NotificationDialogUiWatcher(val device: UiDevice) : UiWatcher {
 
-    private lateinit var device: UiDevice
-    private val packageName = "com.salesforce.samples.authflowtester"
+    override fun checkForCondition(): Boolean {
+        // TODO: Add this to UI Test Framework
+        // Handle Notification Permission if it appears
+        val allowButton = device.findObject(By.text("Allow"))
+        if (allowButton != null && allowButton.isEnabled) {
+            allowButton.click()
+            return true
+        }
 
-    @Before
-    fun setup() {
-        // Initialize UiDevice instance
-        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
-        // Launch the app
-        val context = InstrumentationRegistry.getInstrumentation().context
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-        intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK) // Clear out any previous instances
-        context.startActivity(intent)
-
-        device.addNotificationWatcher()
+        return false
     }
+}
 
-    @Test
-    fun testLogin() {
-        val loginPage = LoginPageObject()
-        loginPage.setUsername(UserUtility.username)
-        loginPage.setPassword(UserUtility.password)
-        loginPage.tapLogin()
-
-        // Verify we are logged in
-        val successText = device.findObject(UiSelector().text("AuthFlowTester"))
-        Assert.assertTrue(successText.waitForExists(10000))
-    }
+fun UiDevice.addNotificationWatcher() {
+    registerWatcher("NotificationPermission", NotificationDialogUiWatcher(this))
 }

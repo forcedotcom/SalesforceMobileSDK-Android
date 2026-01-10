@@ -7,6 +7,7 @@ dependencies {
     val composeVersion = "1.8.2" // Update requires Kotlin 2.
 
     implementation(project(":libs:SalesforceSDK"))
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("androidx.compose.runtime:runtime-android:1.10.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.tracing:tracing:1.3.0")
