@@ -111,6 +111,7 @@ import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.salesforce_welcome_is_disabled
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
@@ -133,7 +134,6 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
-import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -305,7 +305,7 @@ open class LoginActivity : FragmentActivity() {
         super.onNewIntent(intent)
 
         // If the intent is a callback from Chrome and not another recognized intent URL, process it and do nothing else.
-        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isQrCodeLoginUrlIntent(intent) || isSalesforceWelcomeDiscoveryMobileUrl(this, it)) } != true) {
+        if (isCustomTabAuthFinishedCallback(intent) && intent.data?.let { (isQrCodeLoginUrlIntent(intent) || isSalesforceWelcomeDiscoveryMobileUrl(it)) } != true) {
             completeAdvAuthFlow(intent)
             return
         }
@@ -914,6 +914,26 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
+     * Alerts the user if Salesforce Welcome Discovery is disabled.
+     * @param supportsWelcomeDiscovery Indicates if Salesforce Welcome Discovery
+     * is supported.
+     * @return Boolean true if the alert was displayed, false otherwise
+     */
+    @VisibleForTesting
+    internal fun displayWelcomeUnsupportedToastIfNeeded(
+        supportsWelcomeDiscovery: Boolean
+    ) = if (!supportsWelcomeDiscovery) {
+        runOnUiThread {
+            makeText(
+                this,
+                getString(salesforce_welcome_is_disabled),
+                LENGTH_LONG
+            ).show()
+        }
+        true
+    } else false
+
+    /**
      * Creates a Salesforce Welcome Discovery mobile URL using the provided
      * Salesforce Welcome Discovery host and path URL.
      * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
@@ -1007,7 +1027,8 @@ open class LoginActivity : FragmentActivity() {
      * Salesforce Welcome Discovery mobile URL
      */
     private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
-        if (isSalesforceWelcomeDiscoveryMobileUrl(this, uri)) {
+        if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
+            displayWelcomeUnsupportedToastIfNeeded(SalesforceSDKManager.getInstance().supportsWelcomeDiscovery)
             viewModel.loginUrl.postValue(uri.toString())
         }
     }
@@ -1404,16 +1425,20 @@ open class LoginActivity : FragmentActivity() {
         private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN = "my_domain"
 
         /** The Salesforce Welcome Discovery mobile URL's callback URL query string parameter name */
-        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL = "callback_url"
+        @VisibleForTesting
+        const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL = "callback_url"
 
         /** The Salesforce Welcome Discovery mobile URL's client id (consumer key) query string parameter name */
-        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID = "client_id"
+        @VisibleForTesting
+        const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID = "client_id"
 
         /** The Salesforce Welcome Discovery mobile URL's client version query string parameter name */
-        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION = "client_version"
+        @VisibleForTesting
+        const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION = "client_version"
 
         /** The URL path used by Salesforce Welcome Discovery URLs */
-        private const val SALESFORCE_WELCOME_DISCOVERY_URL_PATH = "/discovery"
+        @VisibleForTesting
+        const val SALESFORCE_WELCOME_DISCOVERY_URL_PATH = "/discovery"
 
         /**
          * Determines if the provided URL has the Salesforce Welcome Discovery
@@ -1440,12 +1465,16 @@ open class LoginActivity : FragmentActivity() {
          * consumer key or false otherwise
          */
         fun isSalesforceWelcomeDiscoveryMobileUrl(
-            context: Context,
             uri: Uri,
         ): Boolean {
             if (!uri.isHierarchical) return false
-            val clientIdParameter = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID)
+
             val isDiscovery = isSalesforceWelcomeDiscoveryUrlPath(uri)
+            val discoveryEnabled = SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
+
+            if (isDiscovery && !discoveryEnabled) {
+                w(TAG, "'${uri}' is a discovery domain, but welcome discovery isn't enabled.")
+            }
 
             return isDiscovery && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
@@ -1453,9 +1482,24 @@ open class LoginActivity : FragmentActivity() {
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
             ) && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
-            ) && clientIdParameter == getBootConfig(context).remoteAccessConsumerKey &&
-                    (clientIdParameter == "SfdcMobileChatterAndroid" || clientIdParameter == "SfdcMobileChatteriOS") // TODO: Keep this list of client ids up to date with those supported by Salesforce Welcome Discovery or remove it when no longer required.
+            )
         }
+
+        /**
+         * Determines if the provided URL has the Salesforce Welcome Discovery
+         * path and parameters for mobile callback.  The client id (consumer
+         * key) of the URL must match the boot config's consumer key.
+         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * path and parameters for mobile callback
+         * @return Boolean true if the URL has the Salesforce Welcome Discovery
+         * path and parameters for mobile callback and matches the boot config's
+         * consumer key or false otherwise
+         */
+        @Deprecated(message = "Deprecated in 13.1.1.  Will be removed in 14.0.0.  Use isSalesforceWelcomeDiscoveryMobileUrl(Uri).")
+        fun isSalesforceWelcomeDiscoveryMobileUrl(
+            @Suppress("unused") context: Context,
+            uri: Uri,
+        ) = isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri)
 
         /**
          * Determines if the provided URL is a Salesforce Welcome Discovery
