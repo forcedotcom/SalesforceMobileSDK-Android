@@ -452,7 +452,9 @@ public class LoginServerManager {
 	 */
 	public static class LoginServer {
 
+        @NonNull
 		public final String name;
+        @NonNull
 		public final String url;
 		public final boolean isCustom;
 
