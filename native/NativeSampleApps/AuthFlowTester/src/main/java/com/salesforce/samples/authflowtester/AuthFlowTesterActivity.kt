@@ -26,8 +26,11 @@
  */
 package com.salesforce.samples.authflowtester
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -65,7 +68,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarColors
@@ -73,10 +79,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -88,22 +97,43 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.rest.ApiVersionStrings
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.SalesforceActivity
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 const val PADDING = 10
-const val CORNER_PERCENTAGE = 25
+const val INNER_CARD_PADDING = 16
+const val CORNER_SHAPE = 12
+const val SPINNER_STROKE_WIDTH = 2
+const val BOTTOM_BAR_SPACING = 20
+const val HALF_ALPHA = 0.5f
+const val RESPONSE_CARD_HEIGHT = 250
+const val ICON_SIZE = 24
+const val JWT = "jwt"
+const val CONSUMER_JSON_KEY = "remoteConsumerKey"
+const val REDIRECT_JSON_KEY = "oauthRedirectURI"
+const val SCOPE_JSON_KEY = "scopes"
+const val CONSUMER_KEY_LABEL = "Consumer Key"
+const val REDIRECT_LABEL = "Callback URL"
+const val SCOPES_LABEL = "Scopes (space-separated)"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -129,18 +159,34 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     fun TesterUI() {
         val topScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         val bottomScrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
-        var credentialsExpanded by remember { mutableStateOf(false) }
-        var oauthConfigExpanded by remember { mutableStateOf(false) }
-        var jwtExpanded by remember { mutableStateOf(false) }
+        var showLogoutDialog by remember { mutableStateOf(false) }
+        var showMigrateBottomSheet by remember { mutableStateOf(false) }
         val isPreview = LocalInspectionMode.current
-        var currentUser by remember { mutableStateOf(
-            value = if (isPreview) {
-                null
-            } else {
-                UserAccountManager.getInstance().currentUser
+        val context = LocalContext.current
+        val currentUser = remember {
+            mutableStateOf(
+                value = if (isPreview) null else UserAccountManager.getInstance().currentUser,
+                // UserAccount's equals() function only compares userId and orgId.
+                policy = neverEqualPolicy(),
+            )
+        }
+        val jwtTokenInUse by remember { derivedStateOf { currentUser.value?.tokenFormat == JWT } }
+
+        // Set current user when it changes to update UI.
+        DisposableEffect(Unit) {
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    currentUser.value = UserAccountManager.getInstance().currentUser
+                }
             }
-        ) }
-        val jwtTokenInUse by remember { derivedStateOf { currentUser?.authToken == "jwt" } }
+            val filter = IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION)
+            filter.addAction(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
+            filter.addAction(ClientManager.INSTANCE_URL_UPDATE_INTENT)
+            ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            onDispose {
+                context.unregisterReceiver(receiver)
+            }
+        }
 
         Scaffold(
             topBar = { TesterUITopBar(topScrollBehavior) },
@@ -151,7 +197,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     with(SalesforceSDKManager.getInstance()) {
                         return@with TesterUIBottomBar(
                             bottomScrollBehavior,
-                            tokenMigrationAction = {},
+                            tokenMigrationAction = { showMigrateBottomSheet = true },
                             switchUserAction = {
                                 appContext.startActivity(Intent(
                                     appContext,
@@ -160,7 +206,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                                     flags = FLAG_ACTIVITY_NEW_TASK
                                 })
                             },
-                            logoutAction = { logout(null) },
+                            logoutAction = { showLogoutDialog = true },
                         )
                     }
                 }
@@ -180,33 +226,53 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 RevokeButtonCard()
                 RequestButtonCard()
 
-                UserCredentialsView(
-                    isExpanded = credentialsExpanded,
-                    onExpandedChange = { credentialsExpanded = it },
-                    currentUser = currentUser
-                )
+                UserCredentialsView(currentUser.value)
 
                 Spacer(Modifier.height(PADDING.dp))
 
                 if (jwtTokenInUse) {
-                    currentUser?.authToken?.let { token ->
-                        JwtTokenView(
-                            jwtToken = JwtAccessToken(token),
-                            isExpanded = jwtExpanded,
-                            onExpandedChange = { jwtExpanded = it }
-                        )
+                    currentUser.value?.authToken?.let { token ->
+                        JwtTokenView(jwtToken = JwtAccessToken(token))
                     }
                 }
 
                 Spacer(Modifier.height(PADDING.dp))
 
-                OAuthConfigurationView(
-                    isExpanded = oauthConfigExpanded,
-                    onExpandedChange = { oauthConfigExpanded = it },
-                )
+                OAuthConfigurationView()
 
                 Spacer(Modifier.height(innerPadding.calculateBottomPadding()))
             }
+        }
+
+        if (showLogoutDialog) {
+            @Suppress("AssignedValueIsNeverRead")
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text(stringResource(R.string.logout)) },
+                text = { Text(stringResource(R.string.logout_body)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            SalesforceSDKManager.getInstance().logout(null)
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.logout),
+                            color = colorScheme.error,
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+            )
+        }
+
+        if (showMigrateBottomSheet) {
+            @Suppress("AssignedValueIsNeverRead")
+            MigrateAppBottomSheet(onDismiss = { showMigrateBottomSheet = false })
         }
     }
 
@@ -219,9 +285,13 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         var showAlertDialog by remember { mutableStateOf(false) }
         var response: RequestResult? by remember { mutableStateOf(null) }
 
-        Card(modifier = Modifier.padding(PADDING.dp)) {
+        Card(
+            modifier = Modifier.padding((INNER_CARD_PADDING/2).dp),
+            shape = RoundedCornerShape(CORNER_SHAPE.dp),
+        ) {
             Button(
                 onClick = {
+                    @Suppress("AssignedValueIsNeverRead")
                     coroutineScope.launch {
                         revokeInProgress = true
                         response = revokeAccessTokenAction(client)
@@ -234,23 +304,23 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     .fillMaxWidth()
                     .padding(PADDING.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error),
-                shape = RoundedCornerShape(percent = CORNER_PERCENTAGE),
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
             ) {
                 if (revokeInProgress) {
                     Row {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
                         )
-                        Spacer(Modifier.width(16.dp))
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
                         Text(
-                            text = "Revoking...",
+                            text = stringResource(R.string.revoking),
                             color = colorScheme.onSurface,
                         )
                     }
                 } else {
                     Text(
-                        text = "Revoke Access Token",
+                        text = stringResource(R.string.revoke_access_token),
                         color = colorScheme.onError,
                     )
                 }
@@ -259,11 +329,12 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         if (showAlertDialog) {
             val title = when {
-                response == null -> "No Response"
-                response?.success == true -> "Revoke Successful"
-                else -> "Revoke Failed"
+                response == null -> stringResource(R.string.no_response)
+                response?.success == true -> stringResource(R.string.revoke_successful)
+                else -> stringResource(R.string.revoke_failed)
             }
 
+            @Suppress("AssignedValueIsNeverRead")
             AlertDialog(
                 onDismissRequest = { showAlertDialog = false },
                 title = { Text(title) },
@@ -273,9 +344,10 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 ) },
                 confirmButton = {
                     TextButton(onClick = { showAlertDialog = false }) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
             )
         }
     }
@@ -284,17 +356,16 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     fun RequestButtonCard(
         initialProgressState: Boolean = false, // Only used for UI Previews
         initialResponse: RequestResult? = null, // Only used for UI Previews
-        initialResponseExpanded: Boolean = false, // Only used for UI Previews
     ) {
         val coroutineScope = rememberCoroutineScope()
         var requestInProgress by remember { mutableStateOf(initialProgressState) }
         var response: RequestResult? by remember { mutableStateOf(initialResponse) }
-        var responseExpanded by remember { mutableStateOf(initialResponseExpanded) }
         var showAlertDialog by remember { mutableStateOf(false) }
 
-        Card(modifier = Modifier.padding(PADDING.dp)) {
+        Card(modifier = Modifier.padding((INNER_CARD_PADDING/2).dp)) {
             Button(
                 onClick = {
+                    @Suppress("AssignedValueIsNeverRead")
                     coroutineScope.launch {
                         response = null
                         requestInProgress = true
@@ -306,41 +377,38 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 enabled = !requestInProgress,
                 modifier = Modifier.fillMaxWidth().padding(PADDING.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorScheme.tertiary),
-                shape = RoundedCornerShape(percent = CORNER_PERCENTAGE),
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
             ) {
                 if (requestInProgress) {
                     Row {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
                         )
-                        Spacer(Modifier.width(16.dp))
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
                         Text(
-                            text = "Making Request...",
+                            text = stringResource(R.string.making_request),
                             color = colorScheme.onSurface,
                         )
                     }
                 } else {
                     Text(
-                        text = "Make REST API Request",
+                        text = stringResource(R.string.make_rest_api_request),
                         color = colorScheme.onTertiary,
                     )
                 }
             }
 
             if (response != null) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    InfoSection(
-                        title = "Response Details",
-                        isExpanded = responseExpanded,
-                        onExpandedChange = { change -> responseExpanded = change }
-                    ) {
+                Column(modifier = Modifier.padding(INNER_CARD_PADDING.dp)) {
+                    val noResponseString = stringResource(R.string.no_response)
+                    InfoSection(title = stringResource(R.string.response_details), defaultExpanded = false) {
                         val textColor = colorScheme.onSurface.toArgb()
                         // This is necessary to prevent scrolling from affecting Top/BottomAppBar behavior.
                         AndroidView(
                             modifier = Modifier
-                                .padding(16.dp)
-                                .height(250.dp)
+                                .padding(INNER_CARD_PADDING.dp)
+                                .height(RESPONSE_CARD_HEIGHT.dp)
                                 .clipToBounds(),
                             factory = { context ->
                                 ScrollView(context).apply {
@@ -351,7 +419,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                             },
                             update = { view ->
                                 (view.getChildAt(0) as TextView).apply {
-                                    text = response?.response ?: "No Response"
+                                    text = response?.response ?: noResponseString
                                 }
                             }
                         )
@@ -362,11 +430,12 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         if (showAlertDialog) {
             val title = when {
-                response == null -> "No Response"
-                response?.success == true -> "Request Successful"
-                else -> "Request Failed"
+                response == null -> stringResource(R.string.no_response)
+                response?.success == true -> stringResource(R.string.request_successful)
+                else -> stringResource(R.string.request_failed)
             }
 
+            @Suppress("AssignedValueIsNeverRead")
             AlertDialog(
                 onDismissRequest = { showAlertDialog = false },
                 title = { Text(title) },
@@ -376,9 +445,159 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 ) },
                 confirmButton = {
                     TextButton(onClick = { showAlertDialog = false }) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
+            )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun MigrateAppBottomSheet(onDismiss: () -> Unit) {
+        var consumerKey by remember { mutableStateOf("") }
+        var callbackUrl by remember { mutableStateOf("") }
+        var scopes by remember { mutableStateOf("") }
+        val validInput = consumerKey.isNotBlank() && callbackUrl.isNotBlank()
+        var showJsonImportDialog by remember { mutableStateOf(false) }
+
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState =  rememberStandardBottomSheetState(
+                initialValue = SheetValue.Expanded,
+                skipHiddenState = false,
+            ),
+            dragHandle = null,
+            shape = RoundedCornerShape(CORNER_SHAPE.dp),
+            containerColor = colorScheme.surfaceContainer,
+        ) {
+            Column(modifier = Modifier.padding(INNER_CARD_PADDING.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(PADDING.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(ICON_SIZE.dp),
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.close),
+                            contentDescription = stringResource(R.string.close_content_description),
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(R.string.migrate_app_title),
+                        fontSize = 20.sp,
+                    )
+
+                    IconButton(
+                        onClick = { showJsonImportDialog = true },
+                        modifier = Modifier.size(ICON_SIZE.dp),
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.json),
+                            contentDescription = stringResource(R.string.json_content_description),
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = consumerKey,
+                    onValueChange = {consumerKey = it},
+                    label = { Text(CONSUMER_KEY_LABEL) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
+                )
+
+                OutlinedTextField(
+                    value = callbackUrl,
+                    onValueChange = {callbackUrl = it},
+                    label = { Text(REDIRECT_LABEL) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
+                )
+
+                OutlinedTextField(
+                    value = scopes,
+                    onValueChange = {scopes = it},
+                    label = { Text(SCOPES_LABEL) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
+                )
+
+                Button(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    enabled = validInput,
+                    onClick = {
+
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.migrate_button),
+                        fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+                        color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+
+        if (showJsonImportDialog) {
+            var jsonInput by remember { mutableStateOf("") }
+            val alertBody = LocalContext.current.getString(
+                /* resId = */ R.string.json_import,
+                /* ...formatArgs = */ CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
+            )
+
+            @Suppress("AssignedValueIsNeverRead")
+            AlertDialog(
+                onDismissRequest = { showJsonImportDialog = false },
+                title = { Text(stringResource(R.string.import_config)) },
+                text = {
+                    Column {
+                        Text(text = alertBody)
+                        Spacer(modifier = Modifier.height(INNER_CARD_PADDING.dp))
+                        OutlinedTextField(
+                            value = jsonInput,
+                            onValueChange = { jsonInput = it },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+               },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            try {
+                                val jsonObject = Json.parseToJsonElement(jsonInput).jsonObject
+                                jsonObject[CONSUMER_JSON_KEY]?.jsonPrimitive?.content?.let {
+                                    consumerKey = it
+                                }
+                                jsonObject[REDIRECT_JSON_KEY]?.jsonPrimitive?.content?.let {
+                                    callbackUrl = it
+                                }
+                                jsonObject[SCOPE_JSON_KEY]?.jsonPrimitive?.content?.let {
+                                    scopes = it
+                                }
+                            } catch (_: Exception) { }
+                            showJsonImportDialog = false
+                        },
+                    ) {
+                        Text(stringResource(R.string.import_button))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showJsonImportDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
             )
         }
     }
@@ -387,10 +606,10 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     @Composable
     fun TesterUITopBar(scrollBehavior: TopAppBarScrollBehavior) {
         CenterAlignedTopAppBar(
-            title = { Text("AuthFlowTester") },
+            title = { Text(stringResource(R.string.app_name)) },
             colors = TopAppBarColors(
                 containerColor = colorScheme.background,
-                scrolledContainerColor = colorScheme.background.copy(alpha = 0.5f),
+                scrolledContainerColor = colorScheme.background.copy(alpha = HALF_ALPHA),
                 navigationIconContentColor = colorScheme.onBackground,
                 titleContentColor = colorScheme.onBackground,
                 actionIconContentColor = colorScheme.onBackground,
@@ -410,30 +629,30 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         BottomAppBar(
             actions = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    modifier = Modifier.fillMaxWidth().padding(BOTTOM_BAR_SPACING.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     IconButton(onClick = tokenMigrationAction) {
                         Icon(
                             painterResource(R.drawable.key),
-                            contentDescription = "migrate access token",
+                            contentDescription = stringResource(R.string.migrate_access_token),
                         )
                     }
                     IconButton(onClick = switchUserAction) {
                         Icon(
-                            painterResource(R.drawable.groups),
-                            contentDescription = "switch user",
+                            painterResource(R.drawable.person_add),
+                            contentDescription = stringResource(R.string.switch_user),
                         )
                     }
                     IconButton(onClick = logoutAction) {
                         Icon(
                             painterResource(R.drawable.logout),
-                            contentDescription = "logout",
+                            contentDescription = stringResource(R.string.logout),
                         )
                     }
                 }
             },
-            containerColor = colorScheme.background.copy(alpha = 0.5f),
+            containerColor = colorScheme.background.copy(alpha = HALF_ALPHA),
             scrollBehavior = scrollBehavior,
         )
     }
@@ -491,7 +710,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     displayValue = "",
                     response = "Preview Request Response!",
                 ),
-                initialResponseExpanded = true,
             )
         }
     }
@@ -545,7 +763,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     displayValue = "",
                     response = "Preview Request Response!",
                 ),
-                initialResponseExpanded = true,
             )
         }
     }
@@ -562,6 +779,36 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
         MaterialTheme(scheme) {
             TesterUI()
+        }
+    }
+
+    @ExcludeFromJacocoGeneratedReport
+    @Preview
+    @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+    @Composable
+    fun MigrateAppPreview() {
+        val scheme = if (isSystemInDarkTheme()) {
+            dynamicDarkColorScheme(LocalContext.current)
+        } else {
+            dynamicLightColorScheme(LocalContext.current)
+        }
+        MaterialTheme(scheme) {
+            MigrateAppBottomSheet {  }
+        }
+    }
+
+    @ExcludeFromJacocoGeneratedReport
+    @Preview
+    @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
+    @Composable
+    fun MigrateAppFallbackThemePreview() {
+        val scheme = if (isSystemInDarkTheme()) {
+            sfDarkColors()
+        } else {
+            sfLightColors()
+        }
+        MaterialTheme(scheme) {
+            MigrateAppBottomSheet {  }
         }
     }
 }

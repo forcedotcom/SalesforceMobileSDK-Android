@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,55 +27,16 @@
 
 package com.salesforce.samples.authflowtester
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
@@ -87,6 +48,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
+private const val CARD_TITLE = "User Credentials"
+
+// Section titles
 private const val USER_IDENTITY = "User Identity"
 private const val OAUTH_CLIENT_CONFIGURATION = "OAuth Client Configuration"
 private const val TOKENS = "Tokens"
@@ -97,33 +61,31 @@ private const val COOKIES_AND_SECURITY = "Cookies and Security"
 private const val BEACON = "Beacon"
 private const val OTHER = "Other"
 
+// User Identity fields
 private const val USERNAME = "Username"
 private const val USER_ID_LABEL = "User ID"
 private const val ORGANIZATION_ID = "Organization ID"
 
+// OAuth Client Configuration fields
 private const val CLIENT_ID = "Client ID"
-private const val REDIRECT_URI = "Redirect URI"
-private const val PROTOCOL_LABEL = "Protocol"
 private const val DOMAIN = "Domain"
-private const val IDENTIFIER = "Identifier"
 
+// Tokens fields
 private const val ACCESS_TOKEN = "Access Token"
 private const val REFRESH_TOKEN = "Refresh Token"
 private const val TOKEN_FORMAT = "Token Format"
-private const val JWT = "JWT"
-private const val AUTH_CODE = "Auth Code"
-private const val CHALLENGE_STRING = "Challenge String"
-private const val ISSUED_AT = "Issued At"
 private const val SCOPES = "Scopes"
 
+// URLs fields
 private const val INSTANCE_URL = "Instance URL"
 private const val API_INSTANCE_URL = "API Instance URL"
-private const val API_URL = "API URL"
 private const val IDENTITY_URL = "Identity URL"
 
+// Community fields
 private const val COMMUNITY_ID = "Community ID"
 private const val COMMUNITY_URL = "Community URL"
 
+// Domains and SIDs fields
 private const val LIGHTNING_DOMAIN = "Lightning Domain"
 private const val LIGHTNING_SID = "Lightning SID"
 private const val VF_DOMAIN = "VF Domain"
@@ -133,342 +95,87 @@ private const val CONTENT_SID = "Content SID"
 private const val PARENT_SID = "Parent SID"
 private const val SID_COOKIE_NAME = "SID Cookie Name"
 
+// Cookies and Security fields
 private const val CSRF_TOKEN = "CSRF Token"
 private const val COOKIE_CLIENT_SRC = "Cookie Client Src"
 private const val COOKIE_SID_CLIENT = "Cookie SID Client"
 
+// Beacon fields
 private const val BEACON_CHILD_CONSUMER_KEY = "Beacon Child Consumer Key"
 private const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
 
+// Other fields
 private const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
 
 @Composable
-fun UserCredentialsView(
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    currentUser: UserAccount?,
-) {
-    val context = LocalContext.current
-    var showExportAlert by remember { mutableStateOf(false) }
-    var exportedJSON by remember { mutableStateOf("") }
-    
-    var userIdentityExpanded by remember { mutableStateOf(true) }
-    var oauthConfigExpanded by remember { mutableStateOf(true) }
-    var tokensExpanded by remember { mutableStateOf(true) }
-    var urlsExpanded by remember { mutableStateOf(true) }
-    var communityExpanded by remember { mutableStateOf(true) }
-    var domainsAndSidsExpanded by remember { mutableStateOf(true) }
-    var cookiesAndSecurityExpanded by remember { mutableStateOf(true) }
-    var beaconExpanded by remember { mutableStateOf(true) }
-    var otherExpanded by remember { mutableStateOf(true) }
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
-        shape = RoundedCornerShape(8.dp)
+fun UserCredentialsView(currentUser: UserAccount?) {
+    ExpandableCard(
+        title = CARD_TITLE,
+        exportedJSON = generateCredentialsJSON(currentUser),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onExpandedChange(!isExpanded) },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "User Credentials",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                IconButton(
-                    onClick = {
-                        exportedJSON = generateCredentialsJSON(currentUser)
-                        showExportAlert = true
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Export Credentials",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                IconButton(
-                    onClick = { onExpandedChange(!isExpanded) }
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        modifier = Modifier.rotate(if (isExpanded) 180f else 0f),
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            }
-            
-            if (isExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    InfoSection(
-                        title = USER_IDENTITY,
-                        isExpanded = userIdentityExpanded,
-                        onExpandedChange = { userIdentityExpanded = it }
-                    ) {
-                        InfoRowView("${USERNAME}:", currentUser?.username ?: "")
-                        InfoRowView("${USER_ID_LABEL}:", currentUser?.userId ?: "")
-                        InfoRowView("${ORGANIZATION_ID}:", currentUser?.orgId ?: "")
-                    }
-                    
-                    InfoSection(
-                        title = OAUTH_CLIENT_CONFIGURATION,
-                        isExpanded = oauthConfigExpanded,
-                        onExpandedChange = { oauthConfigExpanded = it }
-                    ) {
-                        InfoRowView("${CLIENT_ID}:", currentUser?.clientId ?: "", isSensitive = true)
-                        InfoRowView("${REDIRECT_URI}:", "")
-                        InfoRowView("${PROTOCOL_LABEL}:", "")
-                        InfoRowView("${DOMAIN}:", currentUser?.loginServer ?: "")
-                        InfoRowView("${IDENTIFIER}:", currentUser?.accountName ?: "")
-                    }
-                    
-                    InfoSection(
-                        title = TOKENS,
-                        isExpanded = tokensExpanded,
-                        onExpandedChange = { tokensExpanded = it }
-                    ) {
-                        InfoRowView("${ACCESS_TOKEN}:", currentUser?.authToken ?: "", isSensitive = true)
-                        InfoRowView("${REFRESH_TOKEN}:", currentUser?.refreshToken ?: "", isSensitive = true)
-                        InfoRowView("${TOKEN_FORMAT}:", currentUser?.tokenFormat ?: "")
-                        InfoRowView("${JWT}:", "", isSensitive = true)
-                        InfoRowView("${AUTH_CODE}:", "", isSensitive = true)
-                        InfoRowView("${CHALLENGE_STRING}:", "", isSensitive = true)
-                        InfoRowView("${ISSUED_AT}:", "")
-                        InfoRowView("${SCOPES}:", formatScopes(currentUser))
-                    }
-                    
-                    InfoSection(
-                        title = URLS,
-                        isExpanded = urlsExpanded,
-                        onExpandedChange = { urlsExpanded = it }
-                    ) {
-                        InfoRowView("${INSTANCE_URL}:", currentUser?.instanceServer ?: "")
-                        InfoRowView("${API_INSTANCE_URL}:", currentUser?.apiInstanceServer ?: "")
-                        InfoRowView("${API_URL}:", "")
-                        InfoRowView("${IDENTITY_URL}:", currentUser?.idUrl ?: "")
-                    }
-                    
-                    InfoSection(
-                        title = COMMUNITY,
-                        isExpanded = communityExpanded,
-                        onExpandedChange = { communityExpanded = it }
-                    ) {
-                        InfoRowView("${COMMUNITY_ID}:", currentUser?.communityId ?: "")
-                        InfoRowView("${COMMUNITY_URL}:", currentUser?.communityUrl ?: "")
-                    }
-                    
-                    InfoSection(
-                        title = DOMAINS_AND_SIDS,
-                        isExpanded = domainsAndSidsExpanded,
-                        onExpandedChange = { domainsAndSidsExpanded = it }
-                    ) {
-                        InfoRowView("${LIGHTNING_DOMAIN}:", currentUser?.lightningDomain ?: "")
-                        InfoRowView("${LIGHTNING_SID}:", currentUser?.lightningSid ?: "", isSensitive = true)
-                        InfoRowView("${VF_DOMAIN}:", currentUser?.vfDomain ?: "")
-                        InfoRowView("${VF_SID}:", currentUser?.vfSid ?: "", isSensitive = true)
-                        InfoRowView("${CONTENT_DOMAIN}:", currentUser?.contentDomain ?: "")
-                        InfoRowView("${CONTENT_SID}:", currentUser?.contentSid ?: "", isSensitive = true)
-                        InfoRowView("${PARENT_SID}:", currentUser?.parentSid ?: "", isSensitive = true)
-                        InfoRowView("${SID_COOKIE_NAME}:", currentUser?.sidCookieName ?: "")
-                    }
-                    
-                    InfoSection(
-                        title = COOKIES_AND_SECURITY,
-                        isExpanded = cookiesAndSecurityExpanded,
-                        onExpandedChange = { cookiesAndSecurityExpanded = it }
-                    ) {
-                        InfoRowView("${CSRF_TOKEN}:", currentUser?.csrfToken ?: "", isSensitive = true)
-                        InfoRowView("${COOKIE_CLIENT_SRC}:", currentUser?.cookieClientSrc ?: "")
-                        InfoRowView("${COOKIE_SID_CLIENT}:", currentUser?.cookieSidClient ?: "", isSensitive = true)
-                    }
-                    
-                    InfoSection(
-                        title = BEACON,
-                        isExpanded = beaconExpanded,
-                        onExpandedChange = { beaconExpanded = it }
-                    ) {
-                        InfoRowView("${BEACON_CHILD_CONSUMER_KEY}:", currentUser?.beaconChildConsumerKey ?: "")
-                        InfoRowView("${BEACON_CHILD_CONSUMER_SECRET}:", currentUser?.beaconChildConsumerSecret ?: "", isSensitive = true)
-                    }
-                    
-                    InfoSection(
-                        title = OTHER,
-                        isExpanded = otherExpanded,
-                        onExpandedChange = { otherExpanded = it }
-                    ) {
-                        InfoRowView("${ADDITIONAL_OAUTH_FIELDS}:", formatAdditionalOAuthFields(currentUser))
-                    }
-                }
-            }
+        InfoSection(title = USER_IDENTITY) {
+            InfoRowView(label = USERNAME, value = currentUser?.username)
+            InfoRowView(label = USER_ID_LABEL, value = currentUser?.userId)
+            InfoRowView(label = ORGANIZATION_ID, value = currentUser?.orgId)
         }
-    }
-    
-    if (showExportAlert) {
-        AlertDialog(
-            onDismissRequest = { showExportAlert = false },
-            title = { Text("Credentials JSON") },
-            text = { Text(
-                text = exportedJSON,
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-            ) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        copyToClipboard(context, exportedJSON)
-                        showExportAlert = false
-                    }
-                ) {
-                    Text("Copy to Clipboard")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExportAlert = false }) {
-                    Text("OK")
-                }
-            },
-        )
-    }
-}
 
-@Composable
-fun InfoSection(
-    title: String,
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit
-) {
-    val chevronRotation = remember { Animatable(0f) }
-    
-    LaunchedEffect(isExpanded) {
-        chevronRotation.animateTo(if (isExpanded) 180f else 0f)
-    }
-    
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onExpandedChange(!isExpanded) }
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Icon(
-                    Icons.Default.KeyboardArrowDown,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .rotate(chevronRotation.value),
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-            }
-            
-            AnimatedVisibility(visible = isExpanded) {
-                Column(modifier = Modifier.padding(bottom = 12.dp)) {
-                    content()
-                }
-            }
+        InfoSection(title = OAUTH_CLIENT_CONFIGURATION) {
+            InfoRowView(label = CLIENT_ID, value = currentUser?.clientId, isSensitive = true)
+            InfoRowView(label = DOMAIN, value = currentUser?.loginServer)
+        }
+
+        InfoSection(title = TOKENS) {
+            InfoRowView(label = ACCESS_TOKEN, value = currentUser?.authToken, isSensitive = true)
+            InfoRowView(label = REFRESH_TOKEN, value = currentUser?.refreshToken, isSensitive = true)
+            InfoRowView(label = TOKEN_FORMAT, value = currentUser?.tokenFormat)
+            InfoRowView(label = SCOPES, value = formatScopes(currentUser))
+        }
+
+        InfoSection(title = URLS) {
+            InfoRowView(label = INSTANCE_URL, value = currentUser?.instanceServer)
+            InfoRowView(label = API_INSTANCE_URL, value = currentUser?.apiInstanceServer)
+            InfoRowView(label = IDENTITY_URL, value = currentUser?.idUrl)
+        }
+
+        InfoSection(title = COMMUNITY) {
+            InfoRowView(label = COMMUNITY_ID, value = currentUser?.communityId)
+            InfoRowView(label = COMMUNITY_URL, value = currentUser?.communityUrl)
+        }
+
+        InfoSection(title = DOMAINS_AND_SIDS) {
+            InfoRowView(label = LIGHTNING_DOMAIN, value = currentUser?.lightningDomain)
+            InfoRowView(label = LIGHTNING_SID, value = currentUser?.lightningSid, isSensitive = true)
+            InfoRowView(label = VF_DOMAIN, value = currentUser?.vfDomain)
+            InfoRowView(label = VF_SID, value = currentUser?.vfSid, isSensitive = true)
+            InfoRowView(label = CONTENT_DOMAIN, value = currentUser?.contentDomain)
+            InfoRowView(label = CONTENT_SID, value = currentUser?.contentSid, isSensitive = true)
+            InfoRowView(label = PARENT_SID, value = currentUser?.parentSid, isSensitive = true)
+            InfoRowView(label = SID_COOKIE_NAME, value = currentUser?.sidCookieName)
+        }
+
+        InfoSection(title = COOKIES_AND_SECURITY) {
+            InfoRowView(label = CSRF_TOKEN, value = currentUser?.csrfToken, isSensitive = true)
+            InfoRowView(label = COOKIE_CLIENT_SRC, value = currentUser?.cookieClientSrc)
+            InfoRowView(label = COOKIE_SID_CLIENT, value = currentUser?.cookieSidClient, isSensitive = true)
+        }
+
+        InfoSection(title = BEACON) {
+            InfoRowView(label = BEACON_CHILD_CONSUMER_KEY, value = currentUser?.beaconChildConsumerKey)
+            InfoRowView(label = BEACON_CHILD_CONSUMER_SECRET, value = currentUser?.beaconChildConsumerSecret, isSensitive = true)
+        }
+
+        InfoSection(title = OTHER) {
+            InfoRowView(label = ADDITIONAL_OAUTH_FIELDS, value = formatAdditionalOAuthFields(currentUser))
         }
     }
 }
 
-@Composable
-fun InfoRowView(
-    label: String,
-    value: String,
-    isSensitive: Boolean = false,
-) {
-    var isValueVisible by remember { mutableStateOf(!isSensitive) }
-    val displayValue = if (isSensitive && !isValueVisible && value.isNotEmpty()) {
-        "${value.take(5)}...${value.takeLast(5)}"
-    } else {
-        value
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clickable(enabled = isSensitive && value.isNotEmpty()) {
-                isValueVisible = !isValueVisible
-            },
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(0.4f),
-        )
-        
-        Text(
-            text = displayValue,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.6f).padding(end = 12.dp),
-        )
-
-        if (isSensitive && value.isNotEmpty()) {
-            if (isValueVisible) {
-                Icon(
-                    painter = painterResource(id = R.drawable.visibility_off),
-                    contentDescription = "Hide sensitive content.",
-                )
-            } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.visibility),
-                    contentDescription = "Show sensitive content.",
-                )
-            }
-        } else {
-            // Add spacer so sensitive and non-sensitive fields remain aligned.
-            Spacer(modifier = Modifier.width(24.dp))
-        }
-    }
+private fun formatScopes(user: UserAccount?): String? {
+    return user?.scope?.toScopeParser()?.scopesAsString
 }
 
-private fun formatScopes(user: UserAccount?): String {
-    return user?.scope?.toScopeParser()?.scopesAsString ?: ""
-}
-
-private fun formatAdditionalOAuthFields(user: UserAccount?): String {
-    val fields = user?.additionalOauthValues ?: return ""
+private fun formatAdditionalOAuthFields(user: UserAccount?): String? {
+    val fields = user?.additionalOauthValues ?: return null
     return try {
         val json = buildJsonObject {
             fields.forEach { (key, value) ->
@@ -477,7 +184,7 @@ private fun formatAdditionalOAuthFields(user: UserAccount?): String {
         }
         Json { prettyPrint = true }.encodeToString(json)
     } catch (_: Exception) {
-        ""
+        null
     }
 }
 
@@ -487,62 +194,54 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
     try {
         val result = buildJsonObject {
             putJsonObject(USER_IDENTITY) {
-                put(USERNAME, user.username ?: "")
-                put(USER_ID_LABEL, user.userId ?: "")
-                put(ORGANIZATION_ID, user.orgId ?: "")
+                put(USERNAME, user.username)
+                put(USER_ID_LABEL, user.userId)
+                put(ORGANIZATION_ID, user.orgId)
             }
 
             putJsonObject(OAUTH_CLIENT_CONFIGURATION) {
-                put(CLIENT_ID, user.clientId ?: "")
-                put(REDIRECT_URI, "")
-                put(PROTOCOL_LABEL, "")
-                put(DOMAIN, user.loginServer ?: "")
-                put(IDENTIFIER, user.accountName ?: "")
+                put(CLIENT_ID, user.clientId)
+                put(DOMAIN, user.loginServer)
             }
 
             putJsonObject(TOKENS) {
-                put(ACCESS_TOKEN, user.authToken ?: "")
-                put(REFRESH_TOKEN, user.refreshToken ?: "")
-                put(TOKEN_FORMAT, user.tokenFormat ?: "")
-                put(JWT, "")
-                put(AUTH_CODE, "")
-                put(CHALLENGE_STRING, "")
-                put(ISSUED_AT, "")
+                put(ACCESS_TOKEN, user.authToken)
+                put(REFRESH_TOKEN, user.refreshToken)
+                put(TOKEN_FORMAT, user.tokenFormat)
                 put(SCOPES, formatScopes(user))
             }
 
             putJsonObject(URLS) {
-                put(INSTANCE_URL, user.instanceServer ?: "")
-                put(API_INSTANCE_URL, user.apiInstanceServer ?: "")
-                put(API_URL, "")
-                put(IDENTITY_URL, user.idUrl ?: "")
+                put(INSTANCE_URL, user.instanceServer)
+                put(API_INSTANCE_URL, user.apiInstanceServer)
+                put(IDENTITY_URL, user.idUrl)
             }
 
             putJsonObject(COMMUNITY) {
-                put(COMMUNITY_ID, user.communityId ?: "")
-                put(COMMUNITY_URL, user.communityUrl ?: "")
+                put(COMMUNITY_ID, user.communityId)
+                put(COMMUNITY_URL, user.communityUrl)
             }
 
             putJsonObject(DOMAINS_AND_SIDS) {
-                put(LIGHTNING_DOMAIN, user.lightningDomain ?: "")
-                put(LIGHTNING_SID, user.lightningSid ?: "")
-                put(VF_DOMAIN, user.vfDomain ?: "")
-                put(VF_SID, user.vfSid ?: "")
-                put(CONTENT_DOMAIN, user.contentDomain ?: "")
-                put(CONTENT_SID, user.contentSid ?: "")
-                put(PARENT_SID, user.parentSid ?: "")
-                put(SID_COOKIE_NAME, user.sidCookieName ?: "")
+                put(LIGHTNING_DOMAIN, user.lightningDomain)
+                put(LIGHTNING_SID, user.lightningSid)
+                put(VF_DOMAIN, user.vfDomain)
+                put(VF_SID, user.vfSid)
+                put(CONTENT_DOMAIN, user.contentDomain)
+                put(CONTENT_SID, user.contentSid)
+                put(PARENT_SID, user.parentSid)
+                put(SID_COOKIE_NAME, user.sidCookieName)
             }
 
             putJsonObject(COOKIES_AND_SECURITY) {
-                put(CSRF_TOKEN, user.csrfToken ?: "")
-                put(COOKIE_CLIENT_SRC, user.cookieClientSrc ?: "")
-                put(COOKIE_SID_CLIENT, user.cookieSidClient ?: "")
+                put(CSRF_TOKEN, user.csrfToken)
+                put(COOKIE_CLIENT_SRC, user.cookieClientSrc)
+                put(COOKIE_SID_CLIENT, user.cookieSidClient)
             }
 
             putJsonObject(BEACON) {
-                put(BEACON_CHILD_CONSUMER_KEY, user.beaconChildConsumerKey ?: "")
-                put(BEACON_CHILD_CONSUMER_SECRET, user.beaconChildConsumerSecret ?: "")
+                put(BEACON_CHILD_CONSUMER_KEY, user.beaconChildConsumerKey)
+                put(BEACON_CHILD_CONSUMER_SECRET, user.beaconChildConsumerSecret)
             }
 
             putJsonObject(OTHER) {
@@ -553,97 +252,6 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
         return Json { prettyPrint = true }.encodeToString(result)
     } catch (_: Exception) {
         return "{}"
-    }
-}
-
-private fun copyToClipboard(context: Context, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("Credentials JSON", text)
-    clipboard.setPrimaryClip(clip)
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun InfoRowViewPreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        InfoRowView("Label", "Value")
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun InfoRowViewSensitivePreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        InfoRowView("Sensitive Label", "3aZ*GQ!o2^@8QPR", isSensitive = true)
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun InfoRowSectionPreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        InfoSection("Section Title", isExpanded = false, onExpandedChange = {}) {
-            InfoRowView("Sensitive Label", "3aZ*GQ!o2^@8QPR", isSensitive = true)
-        }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun InfoRowSectionExpandedPreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        InfoSection("Expanded Section Title", isExpanded = true, onExpandedChange = {}) {
-            InfoRowView("Sensitive Label", "3aZ*GQ!o2^@8QPR", isSensitive = true)
-        }
-    }
-}
-
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun InfoRowSectionFallbackThemePreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        sfDarkColors()
-    } else {
-        sfLightColors()
-    }
-    MaterialTheme(scheme) {
-        InfoSection("Expanded Section Title", isExpanded = true, onExpandedChange = {}) {
-            InfoRowView("Sensitive Label", "3aZ*GQ!o2^@8QPR", isSensitive = true)
-        }
     }
 }
 
@@ -659,23 +267,7 @@ private fun UserCredentialsViewPreview() {
         dynamicLightColorScheme(LocalContext.current)
     }
     MaterialTheme(scheme) {
-        UserCredentialsView(isExpanded = false, onExpandedChange = {}, currentUser = null)
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
-@Composable
-private fun UserCredentialsViewExpandedPreview() {
-    val scheme = if (isSystemInDarkTheme()) {
-        dynamicDarkColorScheme(LocalContext.current)
-    } else {
-        dynamicLightColorScheme(LocalContext.current)
-    }
-    MaterialTheme(scheme) {
-        UserCredentialsView(isExpanded = true, onExpandedChange = {}, currentUser = null)
+        UserCredentialsView(currentUser = null)
     }
 }
 
@@ -690,6 +282,6 @@ private fun UserCredentialsViewFallbackThemePreview() {
         sfLightColors()
     }
     MaterialTheme(scheme) {
-        UserCredentialsView(isExpanded = true, onExpandedChange = {}, currentUser = null)
+        UserCredentialsView(currentUser = null)
     }
 }

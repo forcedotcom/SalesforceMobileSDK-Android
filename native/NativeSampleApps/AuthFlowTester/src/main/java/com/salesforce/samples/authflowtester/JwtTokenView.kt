@@ -27,48 +27,16 @@
 
 package com.salesforce.samples.authflowtester
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
@@ -78,8 +46,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import java.text.DateFormat
-import java.util.Date
+
+private const val CARD_TITLE = "JWT Details"
 
 // Section titles
 private const val HEADER = "Header"
@@ -102,187 +70,29 @@ private const val SCOPES = "Scopes (scp)"
 private const val CLIENT_ID = "Client ID (client_id)"
 
 @Composable
-fun JwtTokenView(
-    jwtToken: JwtAccessToken?,
-    isExpanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-) {
-    val context = LocalContext.current
-    var showExportAlert by remember { mutableStateOf(false) }
-    var exportedJSON by remember { mutableStateOf("") }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
-        shape = RoundedCornerShape(8.dp),
+fun JwtTokenView(jwtToken: JwtAccessToken?) {
+    ExpandableCard(
+        title = CARD_TITLE,
+        exportedJSON = generateJwtJSON(jwtToken)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onExpandedChange(!isExpanded) },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "JWT Access Token Details",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                IconButton(
-                    onClick = {
-                        exportedJSON = generateJwtJSON(jwtToken)
-                        showExportAlert = true
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "Export JWT Token",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                IconButton(
-                    onClick = { onExpandedChange(!isExpanded) }
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        modifier = Modifier.rotate(if (isExpanded) 180f else 0f),
-                        tint = MaterialTheme.colorScheme.secondary,
-                    )
-                }
-            }
-
-            if (isExpanded) {
-                if (jwtToken != null) {
-                    Column(
-                        modifier = Modifier.padding(top = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // JWT Header
-                        Text(
-                            text = "${HEADER}:",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-
-                        JwtHeaderView(token = jwtToken)
-
-                        // JWT Payload
-                        Text(
-                            text = "${PAYLOAD}:",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-
-                        JwtPayloadView(token = jwtToken)
-                    }
-                } else {
-                    Text(
-                        text = "No JWT Token available",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
-        }
-    }
-
-    if (showExportAlert) {
-
-        AlertDialog(
-            onDismissRequest = { showExportAlert = false },
-            title = { Text("JWT Token JSON") },
-            text = {
-                Text(
-                    text = exportedJSON,
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        copyToClipboard(context, exportedJSON)
-                        showExportAlert = false
-                    }
-                ) {
-                    Text("Copy to Clipboard")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExportAlert = false }) {
-                    Text("OK")
-                }
-            },
-        )
-    }
-}
-
-@Composable
-fun JwtHeaderView(token: JwtAccessToken) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        val header = token.header
-        header.algorithn?.let { InfoRowView("${ALGORITHM}:", it) }
-        header.type?.let { InfoRowView("${TYPE}:", it) }
-        header.keyId?.let { InfoRowView("${KEY_ID}:", it) }
-        header.tokenType?.let { InfoRowView("${TOKEN_TYPE}:", it) }
-        header.tenantKey?.let { InfoRowView("${TENANT_KEY}:", it) }
-        header.version?.let { InfoRowView("${VERSION}:", it) }
-    }
-}
-
-@Composable
-fun JwtPayloadView(token: JwtAccessToken) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        val payload = token.payload
-        
-        payload.audience?.let { 
-            InfoRowView("${AUDIENCE}:", it.joinToString(", "))
-        }
-        
-        token.expirationDate()?.let {
-            InfoRowView("${EXPIRATION_DATE}:", formatDate(it))
+        InfoSection(title = HEADER) {
+            InfoRowView(label = ALGORITHM, value = jwtToken?.header?.algorithn)
+            InfoRowView(label = TYPE, value = jwtToken?.header?.type)
+            InfoRowView(label = KEY_ID, value = jwtToken?.header?.keyId)
+            InfoRowView(label = TOKEN_TYPE, value = jwtToken?.header?.tokenType)
+            InfoRowView(label = TENANT_KEY, value = jwtToken?.header?.tenantKey)
+            InfoRowView(label = VERSION, value = jwtToken?.header?.version)
         }
 
-        payload.issuer?.let { InfoRowView("${ISSUER}:", it) }
-        payload.subject?.let { InfoRowView("${SUBJECT}:", it) }
-        payload.scopes?.let { InfoRowView("${SCOPES}:", it) }
-        payload.clientId?.let { 
-            InfoRowView("${CLIENT_ID}:", it, isSensitive = true)
+        InfoSection(title = PAYLOAD) {
+            InfoRowView(label = AUDIENCE, value = jwtToken?.payload?.audience?.joinToString(", "))
+            InfoRowView(label = EXPIRATION_DATE, value = jwtToken?.expirationDate().toString())
+            InfoRowView(label = ISSUER, value = jwtToken?.payload?.issuer)
+            InfoRowView(label = SUBJECT, value = jwtToken?.payload?.subject)
+            InfoRowView(label = SCOPES, value = jwtToken?.payload?.scopes)
+            InfoRowView(label = CLIENT_ID, value = jwtToken?.payload?.clientId, isSensitive = true)
         }
     }
-}
-
-private fun formatDate(date: Date): String {
-    return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM).format(date)
 }
 
 private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
@@ -291,23 +101,25 @@ private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
     return try {
         val result = buildJsonObject {
             putJsonObject(HEADER) {
-                val header = jwtToken.header
-                header.algorithn?.let { put(ALGORITHM, it) }
-                header.type?.let { put(TYPE, it) }
-                header.keyId?.let { put(KEY_ID, it) }
-                header.tokenType?.let { put(TOKEN_TYPE, it) }
-                header.tenantKey?.let { put(TENANT_KEY, it) }
-                header.version?.let { put(VERSION, it) }
+                with(jwtToken.header) {
+                    put(ALGORITHM, algorithn)
+                    put(TYPE, type)
+                    put(KEY_ID, keyId)
+                    put(TOKEN_TYPE, tokenType)
+                    put(TENANT_KEY, tenantKey)
+                    put(VERSION, version)
+                }
             }
             
             putJsonObject(PAYLOAD) {
-                val payload = jwtToken.payload
-                payload.audience?.let { put(AUDIENCE, it.joinToString(", ")) }
-                jwtToken.expirationDate()?.let { put(EXPIRATION_DATE, formatDate(it)) }
-                payload.issuer?.let { put(ISSUER, it) }
-                payload.subject?.let { put(SUBJECT, it) }
-                payload.scopes?.let { put(SCOPES, it) }
-                payload.clientId?.let { put(CLIENT_ID, it) }
+                with(jwtToken.payload) {
+                    put(AUDIENCE, audience?.joinToString(", "))
+                    put(EXPIRATION_DATE, jwtToken.expirationDate().toString())
+                    put(ISSUER, issuer)
+                    put(SUBJECT, subject)
+                    put(SCOPES, scopes)
+                    put(CLIENT_ID, clientId)
+                }
             }
         }
         Json { prettyPrint = true }.encodeToString(result)
@@ -316,11 +128,6 @@ private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
     }
 }
 
-private fun copyToClipboard(context: Context, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("JWT Token JSON", text)
-    clipboard.setPrimaryClip(clip)
-}
 
 @RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
@@ -333,12 +140,10 @@ private fun JwtTokenViewPreview() {
     } else {
         dynamicLightColorScheme(LocalContext.current)
     }
+
+    // Use Interactive mode to see preview data
     MaterialTheme(scheme) {
-        JwtTokenView(
-            jwtToken = null,
-            isExpanded = true,
-            onExpandedChange = {}
-        )
+        JwtTokenView(jwtToken = null)
     }
 }
 
@@ -352,11 +157,8 @@ private fun JwtTokenViewFallbackThemePreview() {
     } else {
         sfLightColors()
     }
+
     MaterialTheme(scheme) {
-        JwtTokenView(
-            jwtToken = null,
-            isExpanded = true,
-            onExpandedChange = {}
-        )
+        JwtTokenView(jwtToken = null)
     }
 }

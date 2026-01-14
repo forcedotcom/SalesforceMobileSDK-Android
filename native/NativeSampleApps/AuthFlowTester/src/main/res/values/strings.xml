@@ -3,4 +3,40 @@
     <string name="account_type">com.salesforce.samples.authflowtester</string>
     <string name="app_name">AuthFlowTester</string>
     <string name="app_package">com.salesforce.samples.authflowtester</string>
+
+    <!-- AuthFlowTesterActivity -->
+    <string name="revoking">Revoking…</string>
+    <string name="revoke_access_token">Revoke Access Token</string>
+    <string name="no_response">No Response</string>
+    <string name="revoke_successful">Revoke Successful</string>
+    <string name="revoke_failed">Revoke Failed</string>
+    <string name="ok">OK</string>
+    <string name="making_request">Making Request…</string>
+    <string name="make_rest_api_request">Make REST API Request</string>
+    <string name="response_details">Response Details</string>
+    <string name="request_successful">Request Successful</string>
+    <string name="request_failed">Request Failed</string>
+    <string name="migrate_access_token">Migrate Access Token</string>
+    <string name="switch_user">Switch User</string>
+    <string name="logout">Logout</string>
+    <string name="logout_body">Are you sure you want to logout?</string>
+    <string name="cancel">Cancel</string>
+    <string name="migrate_app_title">Migrate to New App</string>
+    <string name="close_content_description">close</string>
+    <string name="json_content_description">import json</string>
+    <string name="migrate_button">Migrate Refresh Token</string>
+    <string name="import_config">Import Configuration</string>
+    <string name="import_button">Import</string>
+    <string name="json_import">Paste json with %1$s, %2$s and %3$s:</string>
+
+
+    <!-- BaseComponents -->
+    <string name="empty_placeholder">(empty)</string>
+    <string name="export_credentials">Export Credentials</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
+    <string name="copy_to_clipboard">Copy to Clipboard</string>
+    <string name="hide_sensitive">Hide sensitive content.</string>
+    <string name="show_sensitive">Show sensitive content.</string>
+    <string name="clipboard_label_format">%1$s JSON</string>
 </resources>

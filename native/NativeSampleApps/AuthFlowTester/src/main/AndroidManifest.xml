@@ -5,7 +5,7 @@
     <application android:icon="@drawable/sf__icon"
         android:name=".AuthFlowTesterApplication"
         android:label="@string/app_name"
-        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpacefActivity">
+        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
         <!-- Launcher screen -->
         <activity
