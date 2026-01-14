@@ -1514,7 +1514,7 @@ open class LoginActivity : FragmentActivity() {
          * path and parameters for mobile callback and matches the boot config's
          * consumer key or false otherwise
          */
-        @Deprecated(message = "Deprecated in 13.2.0.  Will be removed in 14.0.0.  Use isSalesforceWelcomeDiscoveryMobileUrl(Uri).")
+        @Deprecated(message = "Deprecated in 13.1.1.  Will be removed in 14.0.0.  Use isSalesforceWelcomeDiscoveryMobileUrl(Uri).")
         fun isSalesforceWelcomeDiscoveryMobileUrl(
             @Suppress("unused") context: Context,
             uri: Uri,
