@@ -73,8 +73,9 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -104,12 +105,13 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.salesforce_welcome_is_disabled
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
@@ -145,7 +147,6 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -173,6 +174,11 @@ import java.security.cert.X509Certificate
  * them.
  */
 open class LoginActivity : FragmentActivity() {
+
+    /** The activity result launcher used when browser-based authentication loads the OAuth authorization URL in the external browser custom tab activity */
+    @VisibleForTesting
+    internal val customTabLauncher = registerForActivityResult(StartActivityForResult(), CustomTabActivityResult())
+
     // View Model
     @VisibleForTesting(otherwise = PROTECTED)
     open val viewModel: LoginViewModel
@@ -181,6 +187,7 @@ open class LoginActivity : FragmentActivity() {
     // Webview and Clients
     @VisibleForTesting(otherwise = PROTECTED)
     open val webViewClient = AuthWebViewClient()
+
     @VisibleForTesting(otherwise = PROTECTED)
     open val webChromeClient = WebChromeClient()
     open val webView: WebView by lazy {
@@ -210,7 +217,9 @@ open class LoginActivity : FragmentActivity() {
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
-    private val sharedBrowserSession: Boolean
+
+    @VisibleForTesting
+    internal val sharedBrowserSession: Boolean
         get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
 
     // KeychainAliasCallback variables
@@ -224,7 +233,7 @@ open class LoginActivity : FragmentActivity() {
             SalesforceSDKManager.getInstance().setViewNavigationVisibility(this)
         }
 
-        applyIntent(intent)
+        applyIntent()
 
         // Don't let sharedBrowserSession org setting stop a new user from logging in.
         if (intent.extras?.getBoolean(NEW_USER) == true) {
@@ -270,62 +279,9 @@ open class LoginActivity : FragmentActivity() {
             onBackPressedDispatcher.addCallback { handleBackBehavior() }
         }
 
-        val customTabLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result: ActivityResult ->
-            // Check if the user backed out of the custom tab.
-            if (result.resultCode == RESULT_CANCELED) {
-                if (viewModel.singleServerCustomTabActivity) {
-                    // Show blank page and spinner until PKCE is done.
-                    viewModel.loginUrl.value = ABOUT_BLANK
-                } else {
-                    // Don't show server picker if we are re-authenticating with cookie.
-                    clearWebView(showServerPicker = !sharedBrowserSession)
-                }
-            }
-        }
-
-        // Take action on selected server change.
-        viewModel.selectedServer.observe(this) { selectedServer ->
-
-            // Guard against observing a selected server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
-            val selectedServerUri = selectedServer.toUri()
-            if (intent.data?.host == selectedServerUri.host) {
-                return@observe
-            }
-
-            // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
-            if (switchDefaultOrSalesforceWelcomeDiscoveryLogin(selectedServerUri)) {
-                return@observe
-            }
-
-            if (viewModel.singleServerCustomTabActivity) {
-                // Skip fetching authorization and show custom tab immediately.
-                viewModel.reloadWebView()
-                viewModel.loginUrl.value?.let { url ->
-                    loadLoginPageInCustomTab(url, customTabLauncher)
-                }
-            } else {
-                with(SalesforceSDKManager.getInstance()) {
-                    // Fetch well known config and load in custom tab if required.
-                    fetchAuthenticationConfiguration {
-                        /* Browser-based authentication is applicable when not authenticating with a front-door bridge URL */
-                        if (isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
-                            if (useWebServerAuthentication) {
-                                viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
-                            } else {
-                                /* Reload the webview now that isBrowserLoginEnabled has been set
-                                   to true so that we generate an authorization URL with PKCE values.  */
-                                lifecycleScope.launch(Dispatchers.Main) {
-                                    viewModel.reloadWebView()
-                                    viewModel.loginUrl.value?.let { url -> loadLoginPageInCustomTab(url, customTabLauncher) }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Add view model observers.
+        viewModel.browserCustomTabUrl.observe(this, BrowserCustomTabUrlObserver())
+        viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Support magic links
         if (viewModel.jwt != null) {
@@ -368,10 +324,14 @@ open class LoginActivity : FragmentActivity() {
             return
         }
 
-        applyIntent(intent)
+        // Store the new intent and apply it to the activity.
+        setIntent(intent)
+        applyIntent()
+        viewModel.applyPendingServer(pendingLoginServer = viewModel.pendingServer.value)
     }
 
-    private fun clearWebView(showServerPicker: Boolean = true) {
+    @VisibleForTesting
+    internal fun clearWebView(showServerPicker: Boolean = true) {
         runOnUiThread {
             viewModel.loginUrl.value = ABOUT_BLANK
             if (showServerPicker) {
@@ -971,6 +931,26 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
+     * Alerts the user if Salesforce Welcome Discovery is disabled.
+     * @param supportsWelcomeDiscovery Indicates if Salesforce Welcome Discovery
+     * is supported.
+     * @return Boolean true if the alert was displayed, false otherwise
+     */
+    @VisibleForTesting
+    internal fun displayWelcomeUnsupportedToastIfNeeded(
+        supportsWelcomeDiscovery: Boolean
+    ) = if (!supportsWelcomeDiscovery) {
+        runOnUiThread {
+            makeText(
+                this,
+                getString(salesforce_welcome_is_disabled),
+                LENGTH_LONG
+            ).show()
+        }
+        true
+    } else false
+
+    /**
      * Creates a Salesforce Welcome Discovery mobile URL using the provided
      * Salesforce Welcome Discovery host and path URL.
      * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
@@ -983,7 +963,7 @@ open class LoginActivity : FragmentActivity() {
     ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.oAuthConfig.redirectUri,
+            viewModel.oAuthConfig.consumerKey,
         )
         .appendQueryParameter(
             SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
@@ -996,51 +976,38 @@ open class LoginActivity : FragmentActivity() {
         .build()
 
     /**
-     * Determines if the provided proposed selected server URL is a switch from
-     * Salesforce Welcome Discovery back to default log in.
-     * @param proposedSelectedServerUrl The proposed selected server URL
-     * @return Boolean true if the provided proposed selected server URL is a
-     * switch from Salesforce Welcome Discovery back to the default log in,
-     * false otherwise.
-     * */
-    private fun isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(
-        proposedSelectedServerUrl: Uri
-    ) = viewModel.loginUrl.value?.toUri()?.let { loginUrl ->
-        isSalesforceWelcomeDiscoveryMobileUrl(loginUrl) && !(isSalesforceWelcomeDiscoveryMobileUrl(proposedSelectedServerUrl))
-    } ?: false
-
-    /**
      * Switches between default or Salesforce Welcome Discovery log in as needed
-     * using the provided proposed selected server URL.
-     * @param uri The proposed selected server URL
+     * using the provided pending login server URL.
+     * @param pendingLoginServerUri The pending login server URL
      * @return Boolean true if a switch between default or Salesforce Welcome
      * Discovery log is made, false otherwise.
      */
-    private fun switchDefaultOrSalesforceWelcomeDiscoveryLogin(uri: Uri) =
+    @VisibleForTesting
+    internal fun switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingLoginServerUri: Uri) =
 
-        // If the selected server has changed to a new Salesforce Welcome Discovery URL and host.
-        if (isSalesforceWelcomeDiscoveryUrlPath(uri)) {
+        // If the pending login server is a change to a new Salesforce Welcome Discovery URL and host.
+        if (isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)) {
 
             // Navigate to Salesforce Welcome Discovery.
             startActivity(
                 Intent(
                     this,
-                    LoginActivity::class.java
+                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
                 ).apply {
-                    data = generateSalesforceWelcomeDiscoveryMobileUrl(uri)
+                    data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
                     flags = FLAG_ACTIVITY_SINGLE_TOP
                 })
             true
         }
 
-        // If the new selected server isn't a Salesforce Welcome Discovery URL but the previous was...
-        else if (isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(uri)) {
+        // If the pending login server isn't a Salesforce Welcome Discovery URL but the previous was...
+        else if (viewModel.isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin(pendingLoginServerUri)) {
 
-            // Navigate to login.
+            // Navigate to default login.
             startActivity(
                 Intent(
                     this,
-                    LoginActivity::class.java
+                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
                 ).apply {
                     flags = FLAG_ACTIVITY_SINGLE_TOP
                 })
@@ -1079,6 +1046,7 @@ open class LoginActivity : FragmentActivity() {
      */
     private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
         if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
+            displayWelcomeUnsupportedToastIfNeeded(SalesforceSDKManager.getInstance().supportsWelcomeDiscovery)
             viewModel.loginUrl.postValue(uri.toString())
         }
     }
@@ -1086,17 +1054,45 @@ open class LoginActivity : FragmentActivity() {
     // endregion
 
     /**
-     * Applies a new intent to the activity, for instance when the activity is
-     * created or receives a new intent.
-     * @param intent The new intent
+     * (Re-)applies the intent to the activity, for instance when the activity
+     * is created or receives a new intent.
      */
-    private fun applyIntent(intent: Intent) {
+    private fun applyIntent() {
 
         // If the intent is for Salesforce Welcome Discovery, apply it to the activity.
         applySalesforceWelcomeDiscoveryIntent(intent)
 
         // If the intent is for log in using a UI Bridge API front door URL, apply it to the activity.
         applyUiBridgeApiFrontDoorUrl(intent)
+    }
+
+    /**
+     * Starts a browser custom tab for the OAuth authorization URL according to
+     * the authentication configuration. The activity only takes action when
+     * browser-based authentication requires a browser custom tab to be started.
+     * UI front-door bridge use bypasses the need for browser custom tab.
+     * @param authorizationUrl The selected login server's OAuth authorization
+     * URL
+     * @param activityResultLauncher The activity result launcher to use when
+     * browser-based authentication requires a browser custom tab
+     * @param isBrowserLoginEnabled Indicates if browser-based authentication is
+     * enabled
+     * @param isUsingFrontDoorBridge Indicates if a UI bridge API front door
+     * bridge URL is in use
+     * @param singleServerCustomTabActivity Indicates single server custom
+     * browser tab authentication is active
+     */
+    @VisibleForTesting
+    internal open fun startBrowserCustomTabAuthorization(
+        authorizationUrl: String,
+        activityResultLauncher: ActivityResultLauncher<Intent>,
+        isBrowserLoginEnabled: Boolean = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
+        isUsingFrontDoorBridge: Boolean = viewModel.isUsingFrontDoorBridge,
+        singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
+    ) {
+        if ((singleServerCustomTabActivity.or(isBrowserLoginEnabled)).and(!isUsingFrontDoorBridge)) {
+            loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
+        }
     }
 
     /**
@@ -1499,13 +1495,13 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "'${uri}' is a discovery domain, but welcome discovery isn't enabled.")
             }
 
-            return isDiscovery && discoveryEnabled && uri.queryParameterNames?.contains(
+            return isDiscovery && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID
-            ) == true && uri.queryParameterNames?.contains(
+            ) && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
-            ) == true && uri.queryParameterNames?.contains(
+            ) && uri.queryParameterNames.contains(
                 SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
-            ) == true
+            )
         }
 
         /**
@@ -1518,7 +1514,7 @@ open class LoginActivity : FragmentActivity() {
          * path and parameters for mobile callback and matches the boot config's
          * consumer key or false otherwise
          */
-        @Deprecated(message = "Deprecated in 13.2.0.  Will be removed in 14.0.0.  Use isSalesforceWelcomeDiscoveryMobileUrl(Uri).")
+        @Deprecated(message = "Deprecated in 13.1.1.  Will be removed in 14.0.0.  Use isSalesforceWelcomeDiscoveryMobileUrl(Uri).")
         fun isSalesforceWelcomeDiscoveryMobileUrl(
             @Suppress("unused") context: Context,
             uri: Uri,
@@ -1542,12 +1538,13 @@ open class LoginActivity : FragmentActivity() {
          * @param loginHint The Salesforce Welcome login username hint
          * @param loginHost The Salesforce Welcome login host
          */
-        private fun startDefaultLoginWithHintAndHost(
+        @VisibleForTesting
+        internal fun startDefaultLoginWithHintAndHost(
             context: Context,
             loginHint: String,
             loginHost: String,
         ) {
-            Intent(context, LoginActivity::class.java).apply {
+            Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass).apply {
                 putExtra(EXTRA_KEY_LOGIN_HINT, loginHint)
                 putExtra(EXTRA_KEY_LOGIN_HOST, loginHost)
                 flags = FLAG_ACTIVITY_SINGLE_TOP
@@ -1557,4 +1554,89 @@ open class LoginActivity : FragmentActivity() {
 
         // endregion
     }
+
+    // region Activity Result Callback Classes
+
+    /**
+     * An activity result callback used when browser-based authentication loads
+     * the OAuth authorization URL in the external browser custom tab activity.
+     * @param activity The login activity.  This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
+     */
+    @VisibleForTesting
+    internal inner class CustomTabActivityResult(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : ActivityResultCallback<ActivityResult> {
+
+        override fun onActivityResult(result: ActivityResult) {
+            // Check if the user backed out of the custom tab.
+            if (result.resultCode == RESULT_CANCELED) {
+                if (activity.viewModel.singleServerCustomTabActivity) {
+                    // Show blank page and spinner until PKCE is done.
+                    activity.viewModel.loginUrl.value = ABOUT_BLANK
+                } else {
+                    // Don't show server picker if we are re-authenticating with cookie.
+                    activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
+                }
+            }
+        }
+    }
+
+    // endregion
+    // region Observer Classes
+
+    /**
+     * An observer for browser custom tab URL that continues the authentication
+     * flow by loading the login URL in a web browser custom tab when browser-
+     * based authentication is required.
+     * @param activity The login activity. This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
+     */
+    internal inner class BrowserCustomTabUrlObserver(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            if (value == "about:blank") {
+                return
+            }
+
+            activity.startBrowserCustomTabAuthorization(
+                authorizationUrl = value,
+                activityResultLauncher = activity.customTabLauncher,
+                isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
+            )
+        }
+    }
+
+    /**
+     * An observer for pending login server that continues the authentication
+     * flow by determining the switch between default login and Salesforce
+     * Welcome Discovery before applying the pending login server to the
+     * activity.
+     * @param activity The login activity.  This parameter is intended for
+     * testing purposes only. Defaults to this inner class receiver
+     */
+    @VisibleForTesting
+    internal inner class PendingServerObserver(
+        private val activity: LoginActivity = this@LoginActivity
+    ) : Observer<String> {
+        override fun onChanged(value: String) {
+            // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
+            val pendingServerUri = value.toUri()
+            if (activity.intent.data?.host == pendingServerUri.host || activity.intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) == pendingServerUri.host) {
+                activity.viewModel.previousPendingServer = value
+                return
+            }
+
+            // Use the URL to switch between default or Salesforce Welcome Discovery log in, if applicable.
+            if (activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(pendingServerUri)) {
+                activity.viewModel.previousPendingServer = value
+                return
+            }
+
+            activity.viewModel.applyPendingServer(pendingLoginServer = value)
+        }
+    }
+
+    // endregion
 }

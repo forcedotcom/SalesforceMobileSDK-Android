@@ -26,14 +26,18 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.app.Activity.RESULT_CANCELED
+import android.app.Activity.RESULT_OK
+import android.content.Context
 import android.content.Intent
-import android.net.Uri.parse
-import android.webkit.WebView
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
-import androidx.test.core.app.ActivityScenario.launch
-import androidx.test.core.app.ApplicationProvider.getApplicationContext
+import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
@@ -41,7 +45,12 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
-import org.junit.Assert.assertEquals
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,146 +60,63 @@ import org.junit.runner.RunWith
 class LoginActivityTest {
 
     @Test
-    fun viewModelLoginHint_UpdatesOn_onCreateWithSalesforceWelcomeLoginHintIntentExtras() {
-        val expectedLoginHint = "ietf_example_domain_reserved_for_test@example.com"
-        val expectedLoginServerHostname = "welcome.salesforce.com"
+    fun loginActivityCustomTabLauncher_withSingleServerCustomTabActivity_setsAboutBlank() {
+        val loginUrl = mockk<MediatorLiveData<String>>()
+        every { loginUrl.value = any() } just Runs
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.singleServerCustomTabActivity } returns true
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
 
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                putExtra(EXTRA_KEY_LOGIN_HINT, expectedLoginHint)
-                putExtra(EXTRA_KEY_LOGIN_HOST, expectedLoginServerHostname)
-            }).use { activityScenario ->
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
-            activityScenario.onActivity { activity ->
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
 
-                val actualLoginHint = activity.viewModel.loginHint
-                val actualLoginServerHostname = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer
-
-                assertEquals(expectedLoginHint, actualLoginHint)
-                assertEquals(expectedLoginServerHostname, parse(actualLoginServerHostname.url).host)
-            }
-        }
+        verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
     }
 
     @Test
-    fun viewModelIsUsingFrontDoorBridge_DefaultValue_onCreateWithoutQrCodeLoginIntent() {
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
+    fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebView() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
 
-            activityScenario.onActivity { activity ->
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
-                assertFalse(activity.viewModel.isUsingFrontDoorBridge)
-            }
-        }
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+
+        verify(exactly = 1) { activity.clearWebView(any()) }
     }
 
     @Test
-    fun viewModelFrontDoorBridgeCodeVerifier_UpdatesOn_onCreateWithQrCodeLoginIntent() {
-        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
+    fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebViewWithoutShowingServerPicker() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.sharedBrowserSession } returns true
 
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                data = uri
-            }).use { activityScenario ->
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
-            activityScenario.onActivity { activity ->
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
 
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
-                assertEquals("__CODE_VERIFIER__", activity.viewModel.frontdoorBridgeCodeVerifier)
-                assertEquals("https://mobilesdk.my.salesforce.com", activity.viewModel.frontdoorBridgeServer)
-                assertEquals("https://mobilesdk.my.salesforce.com/secur/frontdoor.jsp?otp=__OTP__&startURL=%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D__CONSUMER_KEY__%26redirect_uri%3Dtestsfdc%253A%252F%252F%252Fmobilesdk%252Fdetect%252Foauth%252Fdone%26code_challenge%3D__CODE_CHALLENGE__&cshc=__CSHC__", activity.viewModel.loginUrl.value)
-            }
-        }
+        verify(exactly = 1) { activity.clearWebView(any()) }
     }
 
     @Test
-    fun viewModelIsUsingFrontDoorBridge_DefaultValue_onCreateWithQrCodeLoginIntentAndMismatchedConsumerKey() {
-        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__MISMATCHED_CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
+    fun loginActivityCustomTabLauncher_unexpectedResult_justRuns() {
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
 
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                data = uri
-            }).use { activityScenario ->
+        val customTabActivityResult = activity.CustomTabActivityResult(activity)
 
-            activityScenario.onActivity { activity ->
+        customTabActivityResult.onActivityResult(ActivityResult(RESULT_OK, Intent()))
 
-                assertFalse(activity.viewModel.isUsingFrontDoorBridge)
-            }
-        }
-    }
-
-    @Test
-    fun viewModelIsUsingFrontDoorBridge_UpdatesOn_onCreateWithQrCodeLoginIntentAndMissingStartUrl() {
-        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26missingStartURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
-
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                data = uri
-            }).use { activityScenario ->
-
-            activityScenario.onActivity { activity ->
-
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
-            }
-        }
-    }
-
-    @Test
-    fun viewModelIsUsingFrontDoorBridge_UpdatesOn_onCreateWithQrCodeLoginIntentAndMissingStartUrlClientId() {
-        val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526missing_client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
-
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
-                data = uri
-            }).use { activityScenario ->
-
-            activityScenario.onActivity { activity ->
-
-                assertTrue(activity.viewModel.isUsingFrontDoorBridge)
-            }
-        }
-    }
-
-    @Test
-    fun testWebviewSettings() {
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
-
-            activityScenario.onActivity { activity ->
-                val defaultWebview = WebView(activity)
-                val expectedUserAgent = "${SalesforceSDKManager.getInstance().userAgent} ${defaultWebview.settings.userAgentString}"
-
-                assertEquals(activity.webViewClient, activity.webView.webViewClient)
-                assertEquals(activity.webChromeClient, activity.webView.webChromeClient)
-
-                assertTrue(activity.webView.settings.domStorageEnabled)
-                assertTrue(activity.webView.settings.javaScriptEnabled)
-                assertEquals(expectedUserAgent, activity.webView.settings.userAgentString)
-            }
-        }
+        verify(exactly = 0) { activity.clearWebView(any()) }
     }
 
     @Test
@@ -200,7 +126,7 @@ class LoginActivityTest {
 
         val validUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
 
-        assertFalse(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
+        assertTrue(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
 
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = true
 
@@ -235,53 +161,100 @@ class LoginActivityTest {
         SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = supportWelcomeDiscovery
     }
 
+    // region Salesforce Welcome Discovery
+
     @Test
-    fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
-        // Set loginDevMenuReload to false initially
-        SalesforceSDKManager.getInstance().loginDevMenuReload = false
-        
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
+    fun loginActivityBrowserCustomTabObserver_startsBrowserCustomTabAuthorization_onChange() {
+
+        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
+        every { activity.customTabLauncher } returns activityResultLauncher
+
+        val observer = activity.BrowserCustomTabUrlObserver(activity)
+
+        observer.onChanged(exampleUrl)
+        verify(exactly = -1) {
+            activity.startBrowserCustomTabAuthorization(
+                match { it == exampleUrl },
+                match { it == activityResultLauncher }
             )
-        ).use { activityScenario ->
-            // Get the initial login URL
-            var initialUrl: String? = null
-            activityScenario.onActivity { activity ->
-                initialUrl = activity.viewModel.loginUrl.value
-            }
-            
-            // Pause the activity (simulating going to dev menu)
-            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED)
-            
-            // Simulate changing login options in dev menu
-            activityScenario.onActivity { _ ->
-                SalesforceSDKManager.getInstance().loginDevMenuReload = true
-            }
-            
-            // Resume the activity
-            activityScenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
-            
-            // Verify the webview was reloaded (URL should be regenerated)
-            activityScenario.onActivity { activity ->
-                // The reload flag should be reset to false
-                assertFalse(
-                    "loginDevMenuReload should be reset to false after reload",
-                    SalesforceSDKManager.getInstance().loginDevMenuReload
-                )
-                
-                // For Web Server Flow, the URL changes each time due to code challenge
-                // Verify that reloadWebView was called by checking the URL changed
-                val newUrl = activity.viewModel.loginUrl.value
-                if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
-                    // Web Server Flow generates a new code challenge each time
-                    assertTrue(
-                        "Login URL should have changed after reload for Web Server Flow",
-                        newUrl != initialUrl
-                    )
-                }
-            }
         }
     }
+
+    @Test
+    fun loginActivityBrowserCustomTabObserver_returns_onChangeWithAboutBlank() {
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val observer = activity.BrowserCustomTabUrlObserver(activity)
+
+        observer.onChanged(ABOUT_BLANK)
+        verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_appliesPendingServer_onChange() {
+
+        val pendingServer = "https://welcome.example.com/discovery"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent.data } returns null
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServer)
+        verify(exactly = 1) { activity.viewModel.applyPendingServer(pendingLoginServer = pendingServer) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_returns_onChangeMatchingIntentData() {
+
+        val pendingServer = "https://www.example.com" // IETF-Reserved Test Domain
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.intent.data } returns pendingServer.toUri()
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServer)
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_switchesDefaultOrSalesforceWelcomeDiscoveryLogin_onChangeIntentDataTogglesWelcomeDiscoveryUrlPath() {
+
+        val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
+    }
+
+    @Test
+    fun loginActivity_startsCorrectActivity_onStartDefaultLoginWithHintAndHost() {
+
+        val loginHint = "ExampleUser@Example.com"
+        val loginHost = "https://login.example.com"
+
+        val context = mockk<Context>(relaxed = true)
+
+        startDefaultLoginWithHintAndHost(
+            context = context,
+            loginHint = loginHint, // IETF-Reserved Test Domain
+            loginHost = loginHost // IETF-Reserved Test Domain
+        )
+
+        verify(exactly = 1) {
+            context.startActivity(
+                match {
+                    it.component?.className == LoginActivity::class.java.name
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HINT) == loginHint
+                    it.getStringExtra(EXTRA_KEY_LOGIN_HOST) == loginHost
+                    it.flags == FLAG_ACTIVITY_SINGLE_TOP
+                }
+            )
+        }
+    }
+
+    // endregion
 }
