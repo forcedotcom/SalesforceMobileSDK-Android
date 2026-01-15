@@ -59,7 +59,8 @@ public class SalesforceKeyGenerator {
     private static final String SHARED_PREF_FILE = "identifier.xml";
     private static final String ENCRYPTED_ID_SHARED_PREF_KEY = "encrypted_%s";
     private static final String ID_PREFIX = "id_";
-    private static final String KEYSTORE_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
+    protected static final String LEGACY_KEYPAIR_ALIAS = "com.salesforce.androidsdk.security.KEYPAIR";
+    protected static final String MSDK_KEYPAIR_ALIAS = "com.salesforce.androidsdk.security.MSDK_KEYPAIR";
     private static final String SHA256 = "SHA-256";
     private static final String AES = "AES";
 
@@ -160,10 +161,17 @@ public class SalesforceKeyGenerator {
         // Checks if we have a unique identifier stored.
         final String encryptedUniqueId = readFromSharedPrefs(ID_PREFIX + name);
         if (encryptedUniqueId != null) {
-            final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(KEYSTORE_ALIAS);
-            uniqueId =  Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
+            final PrivateKey msdkPrivateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(MSDK_KEYPAIR_ALIAS);
+            uniqueId =  Encryptor.decryptWithRSA(msdkPrivateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
+            // Decryption failed - must have been encrypted with legacy key (LEGACY_KEYPAIR_ALIAS)
             if (uniqueId == null) {
-                uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_PKCS1);
+                final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(LEGACY_KEYPAIR_ALIAS);
+                uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
+                // Decryption failed - must have been encrypted with legacy key with old cipher mode
+                if (uniqueId == null) {
+                    uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_PKCS1);
+                }
+                // We need to store it with thew new key (MSDK_KEYPAIR_ALIAS)
                 storeUniqueId = true;
             }
         }
@@ -174,15 +182,9 @@ public class SalesforceKeyGenerator {
             storeUniqueId = true;
         }
 
-        // Encrypt and store unique id if it was just created, or if it had to be decrypted with old cipher mode
+        // Encrypt and store unique id if it was just created, or if it had to be decrypted with old key
         if (storeUniqueId) {
-            // Check if existing key supports OAEP padding, recreate if not
-            if (!KeyStoreWrapper.getInstance().keySupportsOAEPPadding(KEYSTORE_ALIAS)) {
-                SalesforceSDKLogger.i(TAG, "Key doesn't support OAEP padding, recreating key pair with OAEP support");
-                KeyStoreWrapper.getInstance().deleteKey(KEYSTORE_ALIAS);
-            }
-            
-            final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(KEYSTORE_ALIAS);
+            final PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(MSDK_KEYPAIR_ALIAS);
             final String encryptedKey = Encryptor.encryptWithRSA(publicKey, uniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
             storeInSharedPrefs(ID_PREFIX + name, encryptedKey);
         }
@@ -208,12 +210,12 @@ public class SalesforceKeyGenerator {
         return uniqueId;
     }
 
-    private static String readFromSharedPrefs(String key) {
+    protected static String readFromSharedPrefs(String key) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         return prefs.getString(getSharedPrefKey(key), null);
     }
 
-    private synchronized static void storeInSharedPrefs(String key, String value) {
+    protected synchronized static void storeInSharedPrefs(String key, String value) {
         final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
         prefs.edit().putString(getSharedPrefKey(key), value).apply();
     }
