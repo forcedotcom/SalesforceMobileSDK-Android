@@ -93,6 +93,7 @@ import com.salesforce.androidsdk.R.string.sf__server_url_delete
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -244,6 +245,7 @@ fun LoginServerListItem(
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Default Server", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -258,6 +260,7 @@ private fun DefaultServerPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Very Long Default Server", showBackground = true)
 @Composable
 private fun LongDefaultServerPreview() {
@@ -275,6 +278,7 @@ private fun LongDefaultServerPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Custom Server", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -289,6 +293,7 @@ private fun CustomServerPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Deleting", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -304,6 +309,7 @@ private fun DeletingLoginServer() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Very Long Custom Server", showBackground = true)
 @Composable
 private fun LongServerPreview() {
@@ -321,6 +327,7 @@ private fun LongServerPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Very Long Custom Server Deleting", showBackground = true)
 @Composable
 private fun LongServerDeletingPreview() {

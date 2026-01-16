@@ -1,0 +1,140 @@
+on:
+  workflow_call:
+    inputs:
+      is_pr:
+        type: boolean
+        default: false
+
+jobs:
+  test-android:
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ inputs.is_pr }}
+        with:
+          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
+          fetch-depth: 100
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@v4
+        if: ${{ ! inputs.is_pr }}
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install Dependencies
+        env:
+          TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+        run: |
+          ./install.sh
+          echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          # This is the actual Gradle version (not AGP), which can be found in the gradle-wrapper.properties file.
+          gradle-version: "8.14.3"
+          add-job-summary: on-failure
+          add-job-summary-as-pr-comment: on-failure
+      - name: Build for Testing
+        if: success() || failure()
+        run: |
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug
+      - name: Build Tests for PR 
+        if: ${{ inputs.is_pr }}
+        run: |
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest --tests "com.salesforce.samples.authflowtester.loginTest"
+      - name: Build Tests for Nightly
+        if: ${{ !inputs.is_pr }}
+        run: |
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest
+      - uses: 'google-github-actions/auth@v2'
+        if: success() || failure()
+        with:
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        if: success() || failure()
+      - name: Run Tests
+        continue-on-error: true
+        if: success() || failure()
+        env:
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          PR_API_VERSION: "35"
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+          IS_PR: ${{ inputs.is_pr }}
+        run: |
+          LEVELS_TO_TEST=$FULL_API_RANGE
+          RETRIES=0
+
+          if $IS_PR ; then
+            LEVELS_TO_TEST=$PR_API_VERSION
+            RETRIES=1
+          fi
+
+          mkdir firebase_results
+          for LEVEL in $LEVELS_TO_TEST
+            do
+              GCLOUD_RESULTS_DIR=authflowtester-api-${LEVEL}-build-${{github.run_number}}
+
+              eval gcloud beta firebase test android run \
+                --project mobile-apps-firebase-test \
+                --type instrumentation \
+                --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+                --test="native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+                --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
+                --environment-variables \
+                --directories-to-pull=/sdcard \
+                --results-dir=${GCLOUD_RESULTS_DIR} \
+                --results-history-name=AuthFlowTester \
+                --timeout=30m --no-performance-metrics \
+                --num-flaky-test-attempts=${RETRIES} || true
+            done
+      - name: Copy Test Results
+        continue-on-error: true
+        if: success() || failure()
+        env:
+          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+          PR_API_VERSION: "35"
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+          IS_PR: ${{ inputs.is_pr }}
+        run: |
+          LEVELS_TO_TEST=$FULL_API_RANGE
+
+          if $IS_PR ; then
+            LEVELS_TO_TEST=$PR_API_VERSION
+          fi
+
+          for LEVEL in $LEVELS_TO_TEST
+            do
+              GCLOUD_RESULTS_DIR=authflowtester-api-${LEVEL}-build-${{github.run_number}}
+              BUCKET_PATH="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR}"
+
+              gsutil ls ${BUCKET_PATH} > /dev/null 2>&1
+              if [ $? == 0 ] ; then
+                # Copy XML file for test reporting
+                if gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
+                  # Sharded runs produce test_results_merged.xml at top level
+                  gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
+                else
+                  gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" firebase_results/api_${LEVEL}_test_result.xml
+                fi
+              fi
+            done
+      - name: Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          check_name: ${{ inputs.lib }} Test Results
+          job_name: ${{ inputs.lib }} Test Results
+          require_tests: true
+          check_retries: true
+          flaky_summary: true
+          fail_on_failure: true
+          group_reports: false
+          include_passed: true
+          include_empty_in_summary: false
+          simplified_summary: true
+          report_paths: 'firebase_results/**.xml'

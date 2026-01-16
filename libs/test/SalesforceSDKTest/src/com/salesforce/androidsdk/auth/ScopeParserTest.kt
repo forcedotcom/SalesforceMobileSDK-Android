@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.auth
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParameter
+import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -231,4 +233,49 @@ class ScopeParserTest {
             ScopeParser.computeScopeParameter(arrayOf("refresh_token")))
     }
 
+    @Test
+    fun testScopeParserStringExtension() {
+        val parser = "api web refresh_token".toScopeParser()
+
+        // Test existing scopes
+        Assert.assertTrue("Should have api scope", parser.hasScope("api"))
+        Assert.assertTrue("Should have web scope", parser.hasScope("web"))
+        Assert.assertTrue("Should have refresh_token scope", parser.hasScope("refresh_token"))
+
+        // Test non-existing scope
+        Assert.assertFalse("Should not have unknown scope", parser.hasScope("unknown"))
+
+        // Test null/empty scope
+        Assert.assertFalse("Should return false for null scope", parser.hasScope(null))
+        Assert.assertFalse("Should return false for empty scope", parser.hasScope(""))
+        Assert.assertFalse("Should return false for whitespace scope", parser.hasScope("  "))
+
+        // Test trimming
+        Assert.assertTrue("Should handle leading/trailing whitespace", parser.hasScope(" api "))
+    }
+
+    @Test
+    fun testArrayToScopeParameterExtension() {
+        // Test with null
+        Assert.assertEquals("Should return empty string for null", "", (null as Array<String>?).toScopeParameter())
+
+        // Test with empty array
+        Assert.assertEquals("Should return empty string for empty array", "", arrayOf<String>().toScopeParameter())
+
+        // Test with single scope
+        Assert.assertEquals("Should add refresh_token to single scope", "api refresh_token",
+            arrayOf("api").toScopeParameter())
+
+        // Test when refresh_token is not included
+        Assert.assertEquals("Should add refresh_token and sort", "api refresh_token visualforce web",
+            arrayOf("web", "api", "visualforce").toScopeParameter())
+
+        // Test when refresh_token already included
+        Assert.assertEquals("Should not duplicate refresh_token", "api refresh_token web",
+            arrayOf("api", "refresh_token", "web").toScopeParameter())
+
+        // Test with only refresh_token
+        Assert.assertEquals("Should return only refresh_token", "refresh_token",
+            arrayOf("refresh_token").toScopeParameter())
+    }
 }

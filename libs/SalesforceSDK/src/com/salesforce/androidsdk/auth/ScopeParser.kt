@@ -49,6 +49,11 @@ class ScopeParser {
         }
 
         /**
+         * String extension to convert to [ScopeParser].
+         */
+        fun String?.toScopeParser(): ScopeParser = ScopeParser(scopeString = this)
+
+        /**
          * Computes the scope parameter from an array of scopes.
          *
          * Behavior:
@@ -74,6 +79,18 @@ class ScopeParser {
             scopesSet.add(REFRESH_TOKEN)
             return scopesSet.joinToString(" ")
         }
+
+        /**
+         *  Computes the scope parameter from an array of scopes.
+         *
+         * Behavior:
+         * - If {@code scopes} is null or empty, returns an empty string. This indicates that all
+         *   scopes assigned to the connected app / external client app will be requested by default
+         *   (no explicit scope parameter is sent).
+         * - If {@code scopes} is non-empty, ensures {@code refresh_token} is present in the set and
+         *   returns a space-delimited string of unique, sorted scopes.
+         */
+        fun Array<String>?.toScopeParameter(): String = computeScopeParameter(this)
     }
 
     private val _scopes: MutableSet<String>
