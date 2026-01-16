@@ -265,6 +265,38 @@ class LoginViewActivityTest {
     }
 
     @Test
+    fun topAppBar_DevSupportButton_OpensSupportMenu() {
+        var devSupportCalled = false
+        androidComposeTestRule.setContent {
+            DefaultTopAppBarTestWrapper(
+                showDevSupport = { devSupportCalled = true },
+            )
+        }
+
+        val backButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
+        )
+        val titleText = androidComposeTestRule.onNodeWithText(DEFAULT_URL)
+        val menu = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__more_options)
+        )
+        val devSupportButton = androidComposeTestRule.onNodeWithText(
+            androidComposeTestRule.activity.getString(R.string.sf__dev_support_title_menu_item)
+        )
+
+        backButton.assertDoesNotExist()
+        titleText.assertIsDisplayed()
+        menu.assertIsDisplayed()
+
+        menu.performClick()
+        devSupportButton.assertIsDisplayed()
+        Assert.assertFalse("Dev support should not be called yet.", devSupportCalled)
+
+        devSupportButton.performClick()
+        Assert.assertTrue("Dev support should be called.", devSupportCalled)
+    }
+
+    @Test
     fun bottomAppBar_WithNoButton_DisplaysCorrectly() {
         androidComposeTestRule.setContent {
             DefaultBottomAppBarTestWrapper()
@@ -419,11 +451,12 @@ class LoginViewActivityTest {
         clearWebViewCache: () -> Unit = { },
         reloadWebView: () -> Unit = { },
         shouldShowBackButton: Boolean = false,
+        showDevSupport: () -> Unit = { },
         finish: () -> Unit = { },
     ) {
         DefaultTopAppBar(
             backgroundColor, titleText, titleTextColor, showServerPicker, clearCookies,
-            clearWebViewCache, reloadWebView, shouldShowBackButton, finish
+            clearWebViewCache, reloadWebView, shouldShowBackButton, showDevSupport, finish
         )
     }
 

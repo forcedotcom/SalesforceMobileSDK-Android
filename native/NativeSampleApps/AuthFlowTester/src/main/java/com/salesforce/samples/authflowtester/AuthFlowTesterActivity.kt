@@ -228,15 +228,11 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
                 UserCredentialsView(currentUser.value)
 
-                Spacer(Modifier.height(PADDING.dp))
-
                 if (jwtTokenInUse) {
                     currentUser.value?.authToken?.let { token ->
                         JwtTokenView(jwtToken = JwtAccessToken(token))
                     }
                 }
-
-                Spacer(Modifier.height(PADDING.dp))
 
                 OAuthConfigurationView()
 
@@ -535,9 +531,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
                     shape = RoundedCornerShape(CORNER_SHAPE.dp),
                     enabled = validInput,
-                    onClick = {
-
-                    },
+                    onClick = { },
                 ) {
                     Text(
                         text = stringResource(R.string.migrate_button),
@@ -782,6 +776,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
