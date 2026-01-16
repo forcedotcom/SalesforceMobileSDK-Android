@@ -297,6 +297,33 @@ class LoginViewActivityTest {
     }
 
     @Test
+    fun topAppBar_NullDevSupport_DoesNotShowDevSupportButton() {
+        androidComposeTestRule.setContent {
+            DefaultTopAppBarTestWrapper(
+                showDevSupport = null,
+            )
+        }
+
+        val backButton = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__back_button_content_description)
+        )
+        val titleText = androidComposeTestRule.onNodeWithText(DEFAULT_URL)
+        val menu = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__more_options)
+        )
+        val devSupportButton = androidComposeTestRule.onNodeWithText(
+            androidComposeTestRule.activity.getString(R.string.sf__dev_support_title_menu_item)
+        )
+
+        backButton.assertDoesNotExist()
+        titleText.assertIsDisplayed()
+        menu.assertIsDisplayed()
+
+        menu.performClick()
+        devSupportButton.assertDoesNotExist()
+    }
+
+    @Test
     fun bottomAppBar_WithNoButton_DisplaysCorrectly() {
         androidComposeTestRule.setContent {
             DefaultBottomAppBarTestWrapper()
@@ -451,7 +478,7 @@ class LoginViewActivityTest {
         clearWebViewCache: () -> Unit = { },
         reloadWebView: () -> Unit = { },
         shouldShowBackButton: Boolean = false,
-        showDevSupport: () -> Unit = { },
+        showDevSupport: (() -> Unit)? = { },
         finish: () -> Unit = { },
     ) {
         DefaultTopAppBar(
