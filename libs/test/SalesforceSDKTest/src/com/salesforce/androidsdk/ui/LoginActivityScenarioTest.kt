@@ -357,23 +357,6 @@ class LoginActivityScenarioTest {
     }
 
     @Test
-    fun loginActivity_displayWelcomeUnsupportedToastIfNeeded_supportsWelcomeDiscovery() {
-
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            assertFalse(activity.displayWelcomeUnsupportedToastIfNeeded(true))
-            assertTrue(activity.displayWelcomeUnsupportedToastIfNeeded(false))
-        }
-    }
-
-    @Test
     fun loginActivity_startsWscDiscovery_onCreateWithSelectedServer() {
 
         val activityScenario = launch<LoginActivity>(

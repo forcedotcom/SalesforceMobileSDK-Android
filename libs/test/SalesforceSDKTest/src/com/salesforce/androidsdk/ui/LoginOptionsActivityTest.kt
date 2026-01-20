@@ -77,14 +77,12 @@ class LoginOptionsActivityTest {
 
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
-    private var originalSupportsWelcomeDiscovery: Boolean = false
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
     private lateinit var scopesField: SemanticsNodeInteraction
     private lateinit var webserverToggle: SemanticsNodeInteraction
     private lateinit var hybridToggle: SemanticsNodeInteraction
-    private lateinit var welcomeToggle: SemanticsNodeInteraction
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
@@ -92,7 +90,6 @@ class LoginOptionsActivityTest {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
-        originalSupportsWelcomeDiscovery = SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -113,9 +110,6 @@ class LoginOptionsActivityTest {
         hybridToggle = composeTestRule.onNodeWithContentDescription(
             composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description),
         )
-        welcomeToggle = composeTestRule.onNodeWithContentDescription(
-            composeTestRule.activity.getString(R.string.sf__login_options_welcome_toggle_content_description),
-        )
         saveButton = composeTestRule.onNodeWithText(
             composeTestRule.activity.getString(R.string.sf__server_url_save),
         )
@@ -126,7 +120,6 @@ class LoginOptionsActivityTest {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
-        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = originalSupportsWelcomeDiscovery
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
     }
@@ -217,44 +210,6 @@ class LoginOptionsActivityTest {
         assertTrue(
             "Use Hybrid Authentication should be enabled",
             SalesforceSDKManager.getInstance().useHybridAuthentication
-        )
-    }
-
-    @Test
-    fun loginOptionsActivity_WelcomeDiscoveryToggle_UpdatesSdkManager() {
-        // Set initial state via the activity's LiveData
-        composeTestRule.activity.runOnUiThread {
-            SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = false
-            composeTestRule.activity.supportWelcomeDiscovery.value = false
-        }
-        composeTestRule.waitForIdle()
-        
-        // Verify initial state
-        assertFalse(
-            "Support Welcome Discovery should be disabled initially",
-            SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
-        )
-        
-        // Find and click the toggle
-        welcomeToggle.assertIsDisplayed()
-        welcomeToggle.assertIsOff()
-
-        // Verify reload flag is initially false
-        assertFalse(
-            "loginDevMenuReload should be false initially",
-            SalesforceSDKManager.getInstance().loginDevMenuReload
-        )
-        
-        // Click
-        welcomeToggle.performClick()
-        composeTestRule.waitForIdle()
-        
-        welcomeToggle.assertIsOn()
-        
-        // Verify the SDK manager was updated
-        assertTrue(
-            "Support Welcome Discovery should be enabled",
-            SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
         )
     }
 

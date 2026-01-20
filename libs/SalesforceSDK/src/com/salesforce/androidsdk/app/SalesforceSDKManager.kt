@@ -394,12 +394,6 @@ open class SalesforceSDKManager protected constructor(
     var useWebServerAuthentication = true
 
     /**
-     * Whether or not the app supports welcome discovery.  This should only be
-     * enabled if the connected app is supported.
-     */
-    var supportsWelcomeDiscovery = false
-
-    /**
      * Optionally, enables the hybrid authentication flow.  Defaults to true
      */
     @get:JvmName("shouldUseHybridAuthentication")
@@ -1371,7 +1365,6 @@ open class SalesforceSDKManager protected constructor(
             "User Agent", userAgent,
             "Use Web Server Authentication", "$useWebServerAuthentication",
             "Use Hybrid Authentication Token", "$useHybridAuthentication",
-            "Support Welcome Discovery", "$supportsWelcomeDiscovery",
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
