@@ -1574,7 +1574,7 @@ open class LoginActivity : FragmentActivity() {
         override fun onChanged(value: String) {
             // Guard against observing a pending login server already provided by the intent data, such as a Salesforce Welcome Discovery mobile URL.
             val pendingServerUri = value.toUri()
-            if (activity.intent.data?.host == pendingServerUri.host || activity.intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) == pendingServerUri.host) {
+            if ((activity.intent.data?.host == pendingServerUri.host && activity.intent.data?.path == pendingServerUri.path) || activity.intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) == pendingServerUri.host) {
                 activity.viewModel.previousPendingServer = value
                 return
             }
