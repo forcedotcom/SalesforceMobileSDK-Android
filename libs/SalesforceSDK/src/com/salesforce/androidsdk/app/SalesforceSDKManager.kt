@@ -372,13 +372,6 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var useWebServerAuthentication = true
 
-
-    /**
-     * Whether or not the app supports welcome discovery.  This should only be
-     * enabled if the connected app is supported.
-     */
-    var supportsWelcomeDiscovery = false
-
     /**
      * Optionally, enables the hybrid authentication flow.  Defaults to true
      */
