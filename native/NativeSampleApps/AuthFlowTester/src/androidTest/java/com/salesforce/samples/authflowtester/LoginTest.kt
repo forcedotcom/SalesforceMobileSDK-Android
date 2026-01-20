@@ -27,15 +27,10 @@
 package com.salesforce.samples.authflowtester
 
 import android.content.Intent
-import android.text.TextWatcher
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
-import androidx.test.uiautomator.UiWatcher
-import androidx.test.uiautomator.Until
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -69,6 +64,14 @@ class LoginTest {
         loginPage.setUsername(UserUtility.username)
         loginPage.setPassword(UserUtility.password)
         loginPage.tapLogin()
+
+        // TODO: Remove this when W-20936283 is resolved or this workaround is added to UITests.
+        val allowButton = device.findObject(UiSelector()
+            .className("android.widget.Button")
+            .textContains("Allow"))
+        if (allowButton.waitForExists(5000)) {
+            allowButton.click()
+        }
 
         // Verify we are logged in
         val successText = device.findObject(UiSelector().text("AuthFlowTester"))

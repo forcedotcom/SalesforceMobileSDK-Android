@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+      CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
+      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -85,7 +87,7 @@ jobs:
                 --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
                 --test="native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
                 --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
-                --environment-variables \
+                --environment-variables username=${CI_USER_USERNAME},password=${CI_USER_PASSWORD} \
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=AuthFlowTester \

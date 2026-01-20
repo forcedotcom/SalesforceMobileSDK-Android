@@ -149,7 +149,6 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.jetbrains.annotations.Debug
 import java.lang.String.CASE_INSENSITIVE_ORDER
 import java.net.URI
 import java.util.Locale.US
@@ -235,6 +234,9 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Asynchronously retrieves the app config for the specified login host.  If not set or null is
      * returned the values found in the BootConfig file will be used for all servers.
+     *
+     * The [com.salesforce.androidsdk.util.urlHostOrNull] String extension function may be
+     * helpful for simple comparisons.
      */
     var appConfigForLoginHost: suspend (server: String) -> OAuthConfig? = {
         OAuthConfig(getBootConfig(appContext))

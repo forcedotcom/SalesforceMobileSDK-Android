@@ -24,41 +24,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.authflowtester
+package com.salesforce.androidsdk.util
 
-import android.app.Application
-import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.config.OAuthConfig
-import com.salesforce.androidsdk.util.urlHostOrNull
+import java.net.URL
+import java.net.MalformedURLException
 
-class AuthFlowTesterApplication : Application() {
-
-    companion object {
-        private const val FEATURE_APP_USES_KOTLIN = "KT"
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        SalesforceSDKManager.initNative(
-            applicationContext,
-            AuthFlowTesterActivity::class.java,
-        )
-
-        with(SalesforceSDKManager.getInstance()) {
-            registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
-            appConfigForLoginHost = { server: String ->
-                when(server.urlHostOrNull()) {
-                    "authflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com" -> OAuthConfig(
-                        consumerKey = "3MVG9H2sjXhorwC_Obi8SL7EU.QskCR_w6cp7QasVmMEnNN61ZmM4ax866BaY00x1ZXGd8.MQts6Ql0oXVk5F",
-                        redirectUri = "cabasicopaque://success/done",
-                    )
-                    "mobilesdk.my.salesforce.com" -> OAuthConfig(
-                        consumerKey ="3MVG9SemV5D80oBcXZ2ЕUzbcJw0taQRkЗsXjGdHz90nо0y6pbKbyQWa9IВWh6HIМoF6Vb48kLMYdMT.tSyERz",
-                        redirectUri = "com.salesforce.mobilesdk.androidunittest://oauth/success",
-                    )
-                    else -> null
-                }
-            }
-        }
+/**
+ *  Returns the host if the string is a valid url.
+ */
+fun String.urlHostOrNull() : String? {
+    return try {
+        URL(this).host
+    } catch (_: MalformedURLException) {
+        null
     }
 }
