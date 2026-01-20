@@ -195,14 +195,7 @@ class LoginActivityTest {
 
     @Test
     fun testIsWelcomeDiscoveryUri() {
-        val supportWelcomeDiscovery = SalesforceSDKManager.getInstance().supportsWelcomeDiscovery
-        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = false
-
         val validUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
-
-        assertTrue(isSalesforceWelcomeDiscoveryMobileUrl(validUrl.toUri()))
-
-        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = true
 
         val nonHierarchicalUri = "mailto:test@example.com"
 
@@ -231,7 +224,5 @@ class LoginActivityTest {
         assertFalse("Missing callback URL parameter should return false", isSalesforceWelcomeDiscoveryMobileUrl(missingCallbackUrl.toUri()))
 
         assertFalse("Non-welcome URL should return false", isSalesforceWelcomeDiscoveryMobileUrl(otherUrl.toUri()))
-
-        SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = supportWelcomeDiscovery
     }
 }
