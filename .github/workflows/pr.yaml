@@ -48,14 +48,21 @@ jobs:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bundle exec danger --dangerfile=.github/DangerFiles/TestOrchestrator.rb --danger_id="TestOrchestrator"
 
-  android-pr:
+  unit-tests-pr:
     needs: [test-orchestrator]
     strategy:
       fail-fast: false
       matrix:
         lib: ${{ fromJson(needs.test-orchestrator.outputs.libs) }}
-    uses: ./.github/workflows/reusable-workflow.yaml
+    uses: ./.github/workflows/reusable-lib-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
+      is_pr: true
+    secrets: inherit
+
+  ui-tests-pr:
+    needs: [test-orchestrator]
+    uses: ./.github/workflows/reusable-ui-workflow.yaml
+    with:
       is_pr: true
     secrets: inherit
