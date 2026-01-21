@@ -36,7 +36,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
@@ -214,6 +213,56 @@ class LoginActivityTest {
         val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
         val activity = mockk<LoginActivity>(relaxed = true)
         val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_switchesDefaultOrSalesforceWelcomeDiscoveryLogin_onChangeIntentDataPathOnlyTogglesWelcomeDiscoveryUrlPath() {
+
+        val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
+        val intent = mockk<Intent>(relaxed = true)
+        every { intent.data } returns "https://welcome.example.com/other".toUri()
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns intent
+        every { activity.viewModel } returns viewModel
+        every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_switchesDefaultOrSalesforceWelcomeDiscoveryLogin_onChangeIntentDataHostOnlyTogglesWelcomeDiscoveryUrlPath() {
+
+        val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
+        val intent = mockk<Intent>(relaxed = true)
+        every { intent.data } returns "https://other.example.com/discovery".toUri()
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns intent
+        every { activity.viewModel } returns viewModel
+        every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
+        val observer = activity.PendingServerObserver(activity)
+        observer.onChanged(pendingServerWelcomeDiscoveryUrlPath)
+        verify(exactly = 0) { viewModel.applyPendingServer(pendingLoginServer = any()) }
+    }
+
+    @Test
+    fun loginActivityPendingServerObserver_switchesDefaultOrSalesforceWelcomeDiscoveryLogin_onChangeIntentDataHostPlusLoginHintExtras() {
+
+        val pendingServerWelcomeDiscoveryUrlPath = "https://welcome.example.com/discovery"
+        val intent = mockk<Intent>(relaxed = true)
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HINT) } returns "example_user@example.com"
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) } returns "welcome.example.com"
+        every { intent.data } returns "https://welcome.example.com/discovery".toUri()
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns intent
         every { activity.viewModel } returns viewModel
         every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } returns true
         val observer = activity.PendingServerObserver(activity)
