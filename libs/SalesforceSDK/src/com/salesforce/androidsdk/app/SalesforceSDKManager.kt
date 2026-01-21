@@ -234,6 +234,9 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Asynchronously retrieves the app config for the specified login host.  If not set or null is
      * returned the values found in the BootConfig file will be used for all servers.
+     *
+     * The [com.salesforce.androidsdk.util.urlHostOrNull] String extension function may be
+     * helpful for simple comparisons.
      */
     var appConfigForLoginHost: suspend (server: String) -> OAuthConfig? = {
         OAuthConfig(getBootConfig(appContext))

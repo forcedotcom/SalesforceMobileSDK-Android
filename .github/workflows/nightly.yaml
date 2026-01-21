@@ -40,3 +40,14 @@ jobs:
     with:
       lib: ${{ matrix.lib }}
     secrets: inherit
+  android-nightly-UI-Tests:
+    if: success() || failure()
+    needs: [android-nightly-React]
+    strategy:
+      fail-fast: false
+      matrix:
+        lib: [App]
+    uses: ./.github/workflows/reusable-workflow.yaml
+    with:
+      lib: ${{ matrix.lib }}
+    secrets: inherit

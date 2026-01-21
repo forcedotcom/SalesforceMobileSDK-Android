@@ -21,3 +21,4 @@ yarn.lock
 index.android.bundle*
 shared/test/test_credentials.json
 .vscode/
+test_config.json
