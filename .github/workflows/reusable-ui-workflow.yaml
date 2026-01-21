@@ -12,6 +12,7 @@ jobs:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
       CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
       CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
+      TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -29,6 +30,7 @@ jobs:
         run: |
           ./install.sh
           echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
+          echo $TEST_CONFIG > ./native/NativeSampleApps/AuthFlowTester/src/main/assets/test_config.json
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
