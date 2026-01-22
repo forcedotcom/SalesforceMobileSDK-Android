@@ -80,6 +80,9 @@ android {
     }
 
     sourceSets {
+        getByName("main") {
+            assets.srcDirs("${rootDir}/shared/test")
+        }
         getByName("androidTest") {
             java.srcDirs(
                 "src/androidTest/java",
