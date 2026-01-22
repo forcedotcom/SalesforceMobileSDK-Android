@@ -56,7 +56,7 @@ class AuthFlowTesterApplication : Application() {
                 var oauthConfig: OAuthConfig? = null
                 val jsonConfig = ResourceReaderHelper.readAssetFile(
                     /* ctx = */ this@AuthFlowTesterApplication,
-                    /* assetFilePath = */ "test_config.json",
+                    /* assetFilePath = */ "ui_test_config.json",
                 )
 
                 if (jsonConfig != null) {

@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
-      CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
-      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
-      TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -27,10 +24,11 @@ jobs:
       - name: Install Dependencies
         env:
           TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+          UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
         run: |
           ./install.sh
           echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
-          echo $TEST_CONFIG > ./native/NativeSampleApps/AuthFlowTester/src/main/assets/test_config.json
+          echo $UI_TEST_CONFIG > ./shared/test/ui_test_config.json
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -69,6 +67,8 @@ jobs:
           PR_API_VERSION: "35"
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
+          CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
+          CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
           RETRIES=0

@@ -1,0 +1,17 @@
+{
+    "loginHost": "__INSERT_LOGIN_URL__",
+    "apps": [
+        {
+            "name": "__INSERT_APP_NAME__",
+            "consumerKey": "__INSERT_CONSUMER_KEY__",
+            "redirectUri": "__INSERT_REDIRECT_URI__",
+            "scopes": "__INSERT_SCOPES__"
+        }
+    ],
+    "users": [
+        {
+            "username": "__INSERT_USERNAME__",
+            "password": "__INSERT_PASSWORD__"
+        }
+    ]
+}
