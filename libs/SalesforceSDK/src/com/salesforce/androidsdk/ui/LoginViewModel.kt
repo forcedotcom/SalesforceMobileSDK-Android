@@ -572,7 +572,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     ) : Observer<String?> {
         override fun onChanged(value: String?) {
             if (!sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge && value != null) {
-                val isNewServer = viewModel.loginUrl.value?.startsWith(value) != true
+                val valueUrl = value.toUri()
+                val loginUrl = viewModel.loginUrl.value?.toUri()
+
+                val isNewServer = (loginUrl?.host?.equals(valueUrl.host) == false).or(!loginUrl?.path.equals(valueUrl.path))
                 if (isNewServer) {
                     scope.launch {
                         viewModel.loginUrl.value = viewModel.getAuthorizationUrl(value)

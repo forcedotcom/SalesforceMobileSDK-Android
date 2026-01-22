@@ -64,7 +64,6 @@ import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
     val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
-    val supportWelcomeDiscovery = MutableLiveData(SalesforceSDKManager.getInstance().supportsWelcomeDiscovery)
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Override
@@ -86,13 +85,6 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().useHybridAuthentication = value
             },
         )
-        supportWelcomeDiscovery.observe(
-            /* owner = */ this,
-            Observer<Boolean> {
-                // onChanged lambda
-                value -> SalesforceSDKManager.getInstance().supportsWelcomeDiscovery = value
-            },
-        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -110,7 +102,6 @@ class LoginOptionsActivity: ComponentActivity() {
                         innerPadding,
                         useWebServer,
                         useHybridToken,
-                        supportWelcomeDiscovery,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
                 }
@@ -131,7 +122,7 @@ fun OptionToggle(
     optionData: MutableLiveData<Boolean>,
 ) {
     val checked by optionData.observeAsState(initial = false)
-    
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,7 +274,6 @@ fun LoginOptionsScreen(
     innerPadding: PaddingValues,
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
-    supportWelcomeDiscovery: MutableLiveData<Boolean>,
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
 ) {
@@ -304,11 +294,6 @@ fun LoginOptionsScreen(
             "Use Hybrid Auth Token",
             stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
             useHybridToken,
-        )
-        OptionToggle(
-            "Support Welcome Discovery",
-            stringResource(R.string.sf__login_options_welcome_toggle_content_description),
-            supportWelcomeDiscovery,
         )
 
         HorizontalDivider()
@@ -401,7 +386,6 @@ fun LoginOptionsScreenPreview() {
         innerPadding = PaddingValues(0.dp),
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
-        supportWelcomeDiscovery = MutableLiveData(false),
         overrideConfig = null,
         bootConfig = object : BootConfig() {
             override fun getRemoteAccessConsumerKey() = consumerKey

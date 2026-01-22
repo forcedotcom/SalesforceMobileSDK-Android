@@ -116,7 +116,6 @@
     <string name="sf__dev_support_login_options_title">Login Options</string>
     <string name="sf__login_options_webserver_toggle_content_description">Toggle Web Server</string>
     <string name="sf__login_options_hybrid_toggle_content_description">Toggle Hybrid Token</string>
-    <string name="sf__login_options_welcome_toggle_content_description">Toggle Welcome Discovery</string>
     <string name="sf__login_options_dynamic_config_toggle_content_description">Toggle Dynamic Config</string>
     <string name="sf__login_options_consumer_key_field_content_description">Consumer Key Field</string>
     <string name="sf__login_options_redirect_uri_field_content_description">Redirect URI Field</string>
