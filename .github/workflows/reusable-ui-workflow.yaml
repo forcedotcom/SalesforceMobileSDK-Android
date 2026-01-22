@@ -45,12 +45,7 @@ jobs:
         if: success() || failure()
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug
-      - name: Build Tests for PR 
-        if: ${{ inputs.is_pr }}
-        run: |
-          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest --tests "com.salesforce.samples.authflowtester.loginTest"
-      - name: Build Tests for Nightly
-        if: ${{ !inputs.is_pr }}
+      - name: Build Tests
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest
       - uses: 'google-github-actions/auth@v2'
@@ -72,10 +67,13 @@ jobs:
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
           RETRIES=0
+          TEST_TARGETS=""
 
           if $IS_PR ; then
             LEVELS_TO_TEST=$PR_API_VERSION
             RETRIES=1
+            # Run only a single test named "testLogin"
+            TEST_TARGETS="--test-targets \"class com.salesforce.samples.authflowtester.LoginTest#testLogin\""
           fi
 
           mkdir firebase_results
@@ -83,17 +81,18 @@ jobs:
             do
               GCLOUD_RESULTS_DIR=authflowtester-api-${LEVEL}-build-${{github.run_number}}
 
-              eval gcloud beta firebase test android run \
+              eval gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-                --test="native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+                --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
                 --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
                 --environment-variables username=${CI_USER_USERNAME},password=${CI_USER_PASSWORD} \
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=AuthFlowTester \
-                --timeout=30m --no-performance-metrics \
+                --timeout=5m --no-performance-metrics \
+                $TEST_TARGETS \
                 --num-flaky-test-attempts=${RETRIES} || true
             done
       - name: Copy Test Results

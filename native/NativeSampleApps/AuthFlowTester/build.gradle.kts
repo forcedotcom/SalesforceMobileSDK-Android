@@ -86,7 +86,8 @@ android {
         getByName("androidTest") {
             java.srcDirs(
                 "src/androidTest/java",
-                "${rootDir}/external/SalesforceMobileSDK-UITests/Android/app/src/androidTest/java"
+                "${rootDir}/external/SalesforceMobileSDK-UITests/Android/app/src/androidTest/java/PageObjects",
+                "${rootDir}/external/SalesforceMobileSDK-UITests/Android/app/src/androidTest/java/TestUtility"
             )
         }
     }
