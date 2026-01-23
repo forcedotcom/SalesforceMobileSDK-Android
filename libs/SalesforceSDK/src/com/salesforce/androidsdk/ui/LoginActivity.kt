@@ -1526,6 +1526,7 @@ open class LoginActivity : FragmentActivity() {
                 if (activity.viewModel.singleServerCustomTabActivity) {
                     // Show blank page and spinner until PKCE is done.
                     activity.viewModel.loginUrl.value = ABOUT_BLANK
+                    finish()
                 } else {
                     // Don't show server picker if we are re-authenticating with cookie.
                     activity.clearWebView(showServerPicker = !activity.sharedBrowserSession)
