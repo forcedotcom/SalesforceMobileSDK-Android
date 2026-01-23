@@ -215,7 +215,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * Since browser based authentication requires PKCE (and therefore the Web Server flow) the User Agent flow
      * cannot be used while in this mode.
      */
-    open val singleServerCustomTabActivity = true
+    open val singleServerCustomTabActivity = false
 
     /** Value representing if the back button should be shown on the login view. */
     open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
@@ -622,7 +622,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         private val scope: CoroutineScope = viewModelScope,
     ) : Observer<String> {
         override fun onChanged(value: String) {
-            if ((sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity) && !viewModel.isUsingFrontDoorBridge) {
+            val useBrowserCustomTab = sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity
+            if (useBrowserCustomTab && !viewModel.isUsingFrontDoorBridge) {
                 scope.launch {
                     viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(
                         server = value,
