@@ -52,16 +52,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
-import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
@@ -227,6 +223,9 @@ internal class TokenMigrationActivity : ComponentActivity() {
                 val migrationFinished = url.startsWith(callbackUrl)
 
                 if (migrationFinished) {
+                    viewModel.authFinished.value = true
+                    viewModel.loading.value = true
+
                     val params = UriFragmentParser.parse(request.url)
                     val error = params["error"]
                     // Did we fail?
@@ -281,14 +280,17 @@ internal class TokenMigrationActivity : ComponentActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                if (!viewModel.authFinished.value) {
-                    viewModel.loading.value = false
-                }
-
                 view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
                     makeStatusBarVisible()
-                    viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
-                        ?: return@evaluateJavascript
+                    validateAndExtractBackgroundColor(result)?.let { color ->
+                        viewModel.dynamicBackgroundColor.value = color
+
+                        // This check is inside validateAndExtractBackgroundColor because we only
+                        // want to stop showing the spinner if WebView UI is actually displayed.
+                        if (!viewModel.authFinished.value) {
+                            viewModel.loading.value = false
+                        }
+                    }
                 }
 
                 super.onPageFinished(view, url)
