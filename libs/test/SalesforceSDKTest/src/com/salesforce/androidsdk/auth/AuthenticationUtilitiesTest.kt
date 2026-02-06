@@ -68,8 +68,6 @@ class AuthenticationUtilitiesTest {
     private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleBiometricAuthPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleDuplicateUserAccount: (UserAccountManager, UserAccount, OAuth2.IdServiceResponse?) -> Unit = mockk()
-    private var blockIntegrationUser: Boolean = false
-    private var nativeLogin: Boolean = false
 
     @Before
     fun setUp() {
@@ -97,16 +95,13 @@ class AuthenticationUtilitiesTest {
         every { mockUserAccountManager.createAccount(any()) } returns mockk<android.os.Bundle>()
         every { mockUserAccountManager.switchToUser(any()) } returns Unit
         every { mockUserAccountManager.sendUserSwitchIntent(any(), any()) } returns Unit
-
     }
 
     @Test
     fun testOnAuthFlowComplete_blockIntegrationUser_shouldCallError() = runTest {
-        // Given
-        blockIntegrationUser = true
 
         // When
-        callOnAuthFlowComplete()
+        callOnAuthFlowComplete(blockIntegrationUser = true)
 
         // Then
         verify { onAuthFlowError.invoke("Error", "Authentication error. Please try again.", null) }
@@ -151,7 +146,7 @@ class AuthenticationUtilitiesTest {
             .accountName(buildAccountName(userIdentity.username, tokenResponse.instanceUrl))
             .loginServer("https://login.salesforce.com")
             .clientId("test_consumer_key")
-            .nativeLogin(nativeLogin)
+            .nativeLogin(false)
             .build()
 
         // When
@@ -177,7 +172,7 @@ class AuthenticationUtilitiesTest {
         val tokenResponseWithoutIdScope = createTokenEndpointResponse(
             scope = "refresh_token" // Missing id scope
         )
-        
+
         // Mock fetchUserIdentity to return null (simulating no id scope)
         coEvery { fetchUserIdentity.invoke(any()) } returns null
 
@@ -188,7 +183,7 @@ class AuthenticationUtilitiesTest {
             .accountName(buildAccountName(null, tokenResponseWithoutIdScope.instanceUrl))
             .loginServer("https://login.salesforce.com")
             .clientId("test_consumer_key")
-            .nativeLogin(nativeLogin)
+            .nativeLogin(false)
             .build()
 
         // When
@@ -206,12 +201,167 @@ class AuthenticationUtilitiesTest {
         verify { startMainActivity.invoke() }
         verify { handleScreenLockPolicy.invoke(null, expectedAccount) }
         verify { handleBiometricAuthPolicy.invoke(null, expectedAccount) }
-        
+
+        // Verify that fetchUserIdentity was called but returned null
+        coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
+    }
+    @Test
+    fun testOnAuthFlowComplete_withNativeLogin_shouldCallSuccess() = runTest {
+        // Given
+        val tokenResponseWithoutIdScope = createTokenEndpointResponse(
+            scope = "refresh_token" // Missing id scope
+        )
+
+        // Mock fetchUserIdentity to return null (simulating no id scope)
+        coEvery { fetchUserIdentity.invoke(any()) } returns null
+
+        // Create the expected UserAccount object without IdServiceResponse population
+        val expectedAccount = UserAccountBuilder.getInstance()
+            .populateFromTokenEndpointResponse(tokenResponseWithoutIdScope)
+            .populateFromIdServiceResponse(null) // No identity service response
+            .accountName(buildAccountName(null, tokenResponseWithoutIdScope.instanceUrl))
+            .loginServer("https://login.salesforce.com")
+            .clientId("test_consumer_key")
+            .nativeLogin(true) // Expect true
+            .build()
+
+        // When
+        callOnAuthFlowComplete(
+            customTokenResponse = tokenResponseWithoutIdScope,
+            nativeLogin = true,
+        )
+
+        // Then
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verify { onAuthFlowSuccess.invoke(expectedAccount) }
+        verify { mockUserAccountManager.createAccount(expectedAccount) }
+        verify { mockUserAccountManager.switchToUser(expectedAccount) }
+        verify { setAdministratorPreferences.invoke(null, expectedAccount) }
+        verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, null) }
+        verify { addAccount.invoke(expectedAccount) }
+        verify { updateLoggingPrefs.invoke(expectedAccount) }
+        verify { startMainActivity.invoke() }
+        verify { handleScreenLockPolicy.invoke(null, expectedAccount) }
+        verify { handleBiometricAuthPolicy.invoke(null, expectedAccount) }
+
         // Verify that fetchUserIdentity was called but returned null
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
-    private suspend fun callOnAuthFlowComplete(customTokenResponse: OAuth2.TokenEndpointResponse? = null) {
+
+    // region Token Migration Tests
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_shouldNotCallStartMainActivity() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        // When - tokenMigration is true
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - startMainActivity should NOT be called during token migration
+        verify(exactly = 0) { startMainActivity.invoke() }
+        // But onAuthFlowSuccess should still be called
+        verify(exactly = 1) { onAuthFlowSuccess.invoke(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_shouldCallSuccess() = runTest {
+        // Given
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        // Create the expected UserAccount object
+        val expectedAccount = UserAccountBuilder.getInstance()
+            .populateFromTokenEndpointResponse(tokenResponse)
+            .populateFromIdServiceResponse(userIdentity)
+            .accountName(buildAccountName(userIdentity.username, tokenResponse.instanceUrl))
+            .loginServer("https://login.salesforce.com")
+            .clientId("test_consumer_key")
+            .nativeLogin(false)
+            .build()
+
+        // When - tokenMigration is true
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - onAuthFlowSuccess should be called with the account
+        verify(exactly = 1) { onAuthFlowSuccess.invoke(expectedAccount) }
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_shouldCreateAccount() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        // When - tokenMigration is true
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - account creation and user switch should still happen
+        verify(exactly = 1) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 1) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 1) { addAccount.invoke(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_shouldHandleLockPolicies() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        // When - tokenMigration is true
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - policies should still be handled
+        verify(exactly = 1) { handleScreenLockPolicy.invoke(any(), any()) }
+        verify(exactly = 1) { handleBiometricAuthPolicy.invoke(any(), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_withBlockedIntegrationUser_shouldCallError() = runTest {
+        // When - tokenMigration is true but user is blocked
+        callOnAuthFlowComplete(
+            blockIntegrationUser = true,
+            tokenMigration = true,
+        )
+
+        // Then - error should still be called for blocked users
+        verify { onAuthFlowError.invoke("Error", "Authentication error. Please try again.", null) }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+        verify(exactly = 0) { startMainActivity.invoke() }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_withManagedAppRequirement_shouldCallError() = runTest {
+        // Given
+        val userIdentityWithManagedAppRequirement = createIdServiceResponse(
+            customPermissions = JSONObject().apply {
+                put("must_be_managed_app", true)
+            }
+        )
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentityWithManagedAppRequirement
+        every { mockRuntimeConfig.isManagedApp } returns false
+
+        // When - tokenMigration is true but managed app required
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - error should still be called
+        verify { onAuthFlowError.invoke("Error", "Authentication only allowed from managed device.", null) }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+        verify(exactly = 0) { startMainActivity.invoke() }
+    }
+
+    // endregion
+
+    private suspend fun callOnAuthFlowComplete(
+        customTokenResponse: OAuth2.TokenEndpointResponse? = null,
+        nativeLogin: Boolean = false,
+        tokenMigration: Boolean = false,
+        blockIntegrationUser: Boolean = false,
+    ) {
         onAuthFlowComplete(
             tokenResponse = customTokenResponse ?: createTokenEndpointResponse(),
             loginServer = "https://login.salesforce.com",
@@ -220,6 +370,7 @@ class AuthenticationUtilitiesTest {
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = buildAccountName,
             nativeLogin = nativeLogin,
+            tokenMigration = tokenMigration,
             context = testContext,
             userAccountManager = mockUserAccountManager,
             blockIntegrationUser = blockIntegrationUser,

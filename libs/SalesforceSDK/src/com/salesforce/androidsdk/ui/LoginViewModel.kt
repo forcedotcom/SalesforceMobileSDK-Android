@@ -489,7 +489,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }.toString()
     }
 
-    private suspend fun doCodeExchange(
+    @VisibleForTesting
+    internal suspend fun doCodeExchange(
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,

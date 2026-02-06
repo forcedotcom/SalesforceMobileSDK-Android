@@ -562,8 +562,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                             onMigrationError = { error, errorDesc, e ->
                                 migrationInProgress = false
                                 migrationError = error +
-                                        errorDesc?.let { " \n\nDesc: $it" } +
-                                        e?.let { "\n\nThrowable: $it" }
+                                        (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                        (e?.let { "\n\nThrowable: $it" } ?: "")
                             },
                         )
                     },
