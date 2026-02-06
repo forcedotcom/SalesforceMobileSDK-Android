@@ -583,7 +583,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         private val scope: CoroutineScope = viewModelScope,
     ) : Observer<String?> {
         override fun onChanged(value: String?) {
-            if (!sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge && value != null) {
+            if (!sdkManager.isBrowserLoginEnabled && !singleServerCustomTabActivity && !viewModel.isUsingFrontDoorBridge && value != null) {
                 val valueUrl = value.toUri()
                 val loginUrl = viewModel.loginUrl.value?.toUri()
 
@@ -634,7 +634,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         private val scope: CoroutineScope = viewModelScope,
     ) : Observer<String> {
         override fun onChanged(value: String) {
-            if (sdkManager.isBrowserLoginEnabled && !viewModel.isUsingFrontDoorBridge) {
+            val useBrowserCustomTab = sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity
+            if (useBrowserCustomTab && !viewModel.isUsingFrontDoorBridge) {
                 scope.launch {
                     viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(
                         server = value,

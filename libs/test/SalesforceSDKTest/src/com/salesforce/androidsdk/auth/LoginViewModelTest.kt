@@ -779,6 +779,132 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun loginViewModel_loginUrlObserver_ignoresLoginUrlWhenBrowserLoginEnabledAndSingleServerCustomTabActivityEnabled() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = null
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns true
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.singleServerCustomTabActivity } returns true
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresLoginUrlWhenBrowserLoginDisabledAndSingleServerCustomTabActivityEnabled() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = null
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.singleServerCustomTabActivity } returns true
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresLoginUrlWhenBrowserLoginDisabledAndSingleServerCustomTabActivityEnabledAndFrontDoorBridgeActive() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = null
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.singleServerCustomTabActivity } returns true
+        every { viewModel.isUsingFrontDoorBridge } returns true
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(valueNew)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_loginUrlObserver_ignoresLoginUrlWhenBrowserLoginDisabledAndSingleServerCustomTabActivityEnabledAndFrontDoorBridgeActiveAndValueNull() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val valueOld = null
+        val valueNew = "https://www.example.com" // IETF-Reserved Test Domain
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        every { loginUrl.value } returns valueOld
+        every { viewModel.singleServerCustomTabActivity } returns true
+        every { viewModel.isUsingFrontDoorBridge } returns true
+        every { viewModel.loginUrl } returns loginUrl
+        val observer = viewModel.LoginUrlSource(sdkManager, viewModel, scope)
+
+        observer.onChanged(null)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                valueNew,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
     fun loginViewModel_loginUrlObserver_ignoresWhenBrowserLoginEnabled() = runTest {
 
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -916,6 +1042,88 @@ class LoginViewModelTest {
             any(),
             any(),
         ) }
+    }
+
+    @Test
+    fun loginViewModel_browserCustomTabObserver_setsBrowserCustomTabUrl_whenSingleServerCustomTabActivityEnabledAndNotUsingFrontDoorBridge() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns true
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, scope)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+
+        observer.onChanged(value)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            viewModel.getAuthorizationUrl(
+                value,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_browserCustomTabObserver_ignoresBrowserCustomTabUrl_whenBrowserLoginDisabledAndSingleServerCustomTabActivityDisabledAndNotUsingFrontDoorBridge() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, scope)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+
+        observer.onChanged(value)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                value,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun loginViewModel_browserCustomTabObserver_ignoresBrowserCustomTabUrl_whenBrowserLoginDisabledAndSingleServerCustomTabActivityDisabledAndUsingFrontDoorBridge() = runTest {
+
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val scope = CoroutineScope(dispatcher)
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.singleServerCustomTabActivity } returns false
+        every { viewModel.isUsingFrontDoorBridge } returns true
+        val observer = viewModel.BrowserCustomTabUrlSource(sdkManager, viewModel, scope)
+
+        val value = "https://www.example.com" // IETF-Reserved Test Domain
+
+        observer.onChanged(value)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            viewModel.getAuthorizationUrl(
+                value,
+                any(),
+                any(),
+            )
+        }
     }
 
     @Test
