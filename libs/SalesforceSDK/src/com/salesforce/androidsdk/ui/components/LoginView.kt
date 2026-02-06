@@ -500,7 +500,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 }
 
 @Composable
-private fun Modifier.applyImePaddingConditionally() : Modifier =
+internal fun Modifier.applyImePaddingConditionally() : Modifier =
     // TODO:  Remove when min API is > 29
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         windowInsetsPadding(WindowInsets.ime)

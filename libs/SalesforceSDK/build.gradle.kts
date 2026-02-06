@@ -8,6 +8,7 @@ plugins {
     `publish-module`
     jacoco
     kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.parcelize")
 }
 
 dependencies {

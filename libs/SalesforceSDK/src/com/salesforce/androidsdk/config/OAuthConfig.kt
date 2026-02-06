@@ -26,11 +26,15 @@
  */
 package com.salesforce.androidsdk.config
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class OAuthConfig(
     val consumerKey: String,
     val redirectUri: String,
     val scopes: List<String>? = null,
-) {
+): Parcelable {
     
     internal constructor(bootConfig: BootConfig): this(
         bootConfig.remoteAccessConsumerKey,

@@ -33,6 +33,7 @@ import android.webkit.WebViewClient
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
@@ -132,7 +133,7 @@ internal class IDPAuthCodeHelper private constructor(
             SalesforceSDKLogger.e(TAG, "Failed to obtain valid front door url", e)
             null
         }
-        return if (restResponse == null || !restResponse.isSuccess) null else restResponse.asJSONObject().getString("frontdoor_uri")
+        return if (restResponse == null || !restResponse.isSuccess) null else restResponse.asJSONObject().getString(FRONTDOOR_URL_KEY)
     }
 
     private fun onError(error: String, exception: java.lang.Exception? = null) {

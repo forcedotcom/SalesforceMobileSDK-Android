@@ -36,6 +36,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
@@ -84,6 +85,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.remember
@@ -94,6 +96,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -105,8 +108,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.migrateRefreshToken
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
@@ -226,11 +231,14 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 RevokeButtonCard()
                 RequestButtonCard()
 
-                UserCredentialsView(currentUser.value)
+                // Use key() to force recomposition when tokens change (UserAccount.equals only compares userId/orgId)
+                key(currentUser.value?.authToken, currentUser.value?.refreshToken) {
+                    UserCredentialsView(currentUser.value)
 
-                if (jwtTokenInUse) {
-                    currentUser.value?.authToken?.let { token ->
-                        JwtTokenView(jwtToken = JwtAccessToken(token))
+                    if (jwtTokenInUse) {
+                        currentUser.value?.authToken?.let { token ->
+                            JwtTokenView(jwtToken = JwtAccessToken(token))
+                        }
                     }
                 }
 
@@ -287,7 +295,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         ) {
             Button(
                 onClick = {
-                    @Suppress("AssignedValueIsNeverRead")
                     coroutineScope.launch {
                         revokeInProgress = true
                         response = revokeAccessTokenAction(client)
@@ -361,7 +368,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         Card(modifier = Modifier.padding((INNER_CARD_PADDING/2).dp)) {
             Button(
                 onClick = {
-                    @Suppress("AssignedValueIsNeverRead")
                     coroutineScope.launch {
                         response = null
                         requestInProgress = true
@@ -457,6 +463,10 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         var scopes by remember { mutableStateOf("") }
         val validInput = consumerKey.isNotBlank() && callbackUrl.isNotBlank()
         var showJsonImportDialog by remember { mutableStateOf(false) }
+        var migrationInProgress by remember { mutableStateOf(false) }
+        var migrationError: String? by remember { mutableStateOf(null) }
+        val clipboard = LocalClipboard.current
+        val context = LocalContext.current
 
         ModalBottomSheet(
             onDismissRequest = onDismiss,
@@ -530,21 +540,66 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 Button(
                     modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
                     shape = RoundedCornerShape(CORNER_SHAPE.dp),
-                    enabled = validInput,
-                    onClick = { },
+                    enabled = validInput && !migrationInProgress,
+                    onClick = {
+                        migrationInProgress = true
+
+                        UserAccountManager.getInstance().migrateRefreshToken(
+                            appConfig = OAuthConfig(
+                                consumerKey = consumerKey,
+                                redirectUri = callbackUrl,
+                            ),
+                            onMigrationSuccess = {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@AuthFlowTesterActivity,
+                                        resources.getString(R.string.migration_success),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
+                                onDismiss.invoke()
+                            },
+                            onMigrationError = { error, errorDesc, e ->
+                                migrationInProgress = false
+                                migrationError = error +
+                                        errorDesc?.let { " \n\nDesc: $it" } +
+                                        e?.let { "\n\nThrowable: $it" }
+                            },
+                        )
+                    },
                 ) {
-                    Text(
-                        text = stringResource(R.string.migrate_button),
-                        fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
-                        color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
-                    )
+                    if (migrationInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
+                        )
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
+                        Text(
+                            text = stringResource(R.string.migration_in_progress),
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.onErrorContainer,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.migrate_button),
+                            fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
+                            color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
+                        )
+                    }
                 }
             }
         }
 
         if (showJsonImportDialog) {
-            var jsonInput by remember { mutableStateOf("") }
-            val alertBody = LocalContext.current.getString(
+            var jsonInput by remember { mutableStateOf(
+                // Default to clipboard text, if available.
+                value = clipboard.nativeClipboard.primaryClip
+                    ?.takeIf { it.itemCount > 0 }
+                    ?.getItemAt(/* index = */ 0)
+                    ?.coerceToText(context)
+                    ?.toString() ?: ""
+            ) }
+            val alertBody = context.getString(
                 /* resId = */ R.string.json_import,
                 /* ...formatArgs = */ CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
             )
@@ -564,7 +619,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-               },
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -589,6 +644,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 dismissButton = {
                     TextButton(onClick = { showJsonImportDialog = false }) {
                         Text(stringResource(R.string.cancel))
+                    }
+                },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
+            )
+        }
+
+        migrationError?.let { errorMessage ->
+            @Suppress("AssignedValueIsNeverRead")
+            AlertDialog(
+                onDismissRequest = { migrationError = null },
+                title = { Text(stringResource(R.string.migration_failure)) },
+                text = { Text(text = errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { migrationError = null }) {
+                        Text("Ok")
                     }
                 },
                 shape = RoundedCornerShape(CORNER_SHAPE.dp),

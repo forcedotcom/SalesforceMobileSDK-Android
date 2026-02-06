@@ -98,6 +98,7 @@ internal suspend fun onAuthFlowComplete(
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
     nativeLogin: Boolean = false,
+    tokenMigration: Boolean = false,
     context: Context = SalesforceSDKManager.getInstance().appContext,
     userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
     blockIntegrationUser: Boolean = (SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
@@ -189,9 +190,11 @@ internal suspend fun onAuthFlowComplete(
     }
     userAccountManager.sendUserSwitchIntent(userSwitchType, null)
 
-    // Kickoff the end of the flow before storing mobile policy to prevent launching
-    // the main activity over/after the screen lock.
-    startMainActivity()
+    if (!tokenMigration) {
+        // Kickoff the end of the flow before storing mobile policy to prevent launching
+        // the main activity over/after the screen lock.
+        startMainActivity()
+    }
 
     // Let the calling process resume
     onAuthFlowSuccess(account)
@@ -375,14 +378,21 @@ private fun handleScreenLockPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount
 ) {
+    val internalScreenLockManager =
+        SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
+
+    // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
-        (SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?)?.storeMobilePolicy(
+        internalScreenLockManager?.storeMobilePolicy(
             account,
-            userIdentity.screenLock,
-            timeoutInMills
+            enabled = userIdentity.screenLock,
+            timeoutInMills,
         )
+    } else if (internalScreenLockManager?.enabled == true) {
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK)
+        internalScreenLockManager.cleanUp(account)
     }
 }
 
@@ -393,14 +403,20 @@ private fun handleBiometricAuthPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
     account: UserAccount
 ) {
+    val internalBiometricAuthenticationManager =
+        SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?
+
     if (userIdentity?.biometricAuth == true) {
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
         val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
-        (SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?)?.storeMobilePolicy(
+        internalBiometricAuthenticationManager?.storeMobilePolicy(
             account,
-            userIdentity.biometricAuth,
+            enabled = userIdentity.biometricAuth,
             timeoutInMills
         )
+    } else if (internalBiometricAuthenticationManager?.enabled == true) {
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        internalBiometricAuthenticationManager.cleanUp(account)
     }
 }
 
@@ -437,6 +453,12 @@ private fun handleDuplicateUserAccount(
             val duplicateUserAccount = existingUsers.removeAt(existingUsers.indexOf(account))
             clearCaches()
             userAccountManager.clearCachedCurrentUser()
+
+            // Remove the existing Account from AccountManager so createAccount can create a fresh one
+            val existingAccount = userAccountManager.buildAccount(duplicateUserAccount)
+            if (existingAccount != null) {
+                SalesforceSDKManager.getInstance().clientManager.removeAccount(existingAccount)
+            }
 
             // Revoke existing refresh token
             if (account.refreshToken != duplicateUserAccount.refreshToken) {
