@@ -13,16 +13,17 @@ git submodule update
 git -C external/shared checkout -- samples/mobilesyncexplorer/bootconfig.json samples/accounteditor/bootconfig.json 2>/dev/null || true
 
 # get react native
-pushd "libs/SalesforceReact"
-rm -rf node_modules
-rm yarn.lock
-yarn install
-./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
-popd
+# pushd "libs/SalesforceReact"
+# rm -rf node_modules
+# rm yarn.lock
+# yarn install
+# ./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
+# popd
 
 # Apply bootconfig placeholder substitution. Usage:
 #   apply_bootconfig_paths [sample_file] path1 path2 ...
-# First arg is sample path (or empty for no sample). If sample is set and a path does not exist, copy sample there. Then substitute env vars.
+# First arg is sample path (or empty for no sample). If sample is set, copy sample over each path (overwriting if present).
+# Then substitute env vars.
 apply_bootconfig_paths() {
     local sample_file=""
     [ -n "$1" ] && [ -f "$1" ] && sample_file="$1"
@@ -30,16 +31,17 @@ apply_bootconfig_paths() {
     while [ $# -gt 0 ]; do
         local bootconfig="$1"
         shift
-        if [ -n "$sample_file" ] && [ ! -f "$bootconfig" ]; then
+        if [ -n "$sample_file" ]; then
             mkdir -p "$(dirname "$bootconfig")"
             cp "$sample_file" "$bootconfig"
         fi
         if [ -f "$bootconfig" ]; then
-            if [ -n "${MSDK_IOS_REMOTE_ACCESS_CLIENT_KEY:-}" ]; then
-                gsed -i "s|__CONSUMER_KEY__|${MSDK_IOS_REMOTE_ACCESS_CLIENT_KEY}|g" "$bootconfig"
+	    # Substitute env vars if set
+	    if [ -n "${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY:-}" ]; then
+                gsed -i "s|__CONSUMER_KEY__|${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY}|g" "$bootconfig"
             fi
-            if [ -n "${MSDK_IOS_REMOTE_ACCESS_CALLBACK_URL:-}" ]; then
-                gsed -i "s|__REDIRECT_URI__|${MSDK_IOS_REMOTE_ACCESS_CALLBACK_URL}|g" "$bootconfig"
+            if [ -n "${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:-}" ]; then
+                gsed -i "s|__REDIRECT_URI__|${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL}|g" "$bootconfig"
             fi
         fi
     done
@@ -60,9 +62,9 @@ BOOTCONFIG_JSON_PATHS=(
 apply_bootconfig_paths "$BOOTCONFIG_SAMPLE" "${BOOTCONFIG_XML_PATHS[@]}"
 apply_bootconfig_paths "" "${BOOTCONFIG_JSON_PATHS[@]}"
 
-if [ -z "${MSDK_IOS_REMOTE_ACCESS_CLIENT_KEY:-}" ] || [ -z "${MSDK_IOS_REMOTE_ACCESS_CALLBACK_URL:-}" ]; then
+if [ -z "${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY:-}" ] || [ -z "${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:-}" ]; then
     echo ""
-    echo "Note: MSDK_IOS_REMOTE_ACCESS_CLIENT_KEY and/or MSDK_IOS_REMOTE_ACCESS_CALLBACK_URL are not set."
+    echo "Note: MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY and/or MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL are not set."
     echo "To run the sample applications, define these environment variables or ensure bootconfig.xml"
     echo "files exist (created from shared/bootconfig.xml.sample) with remoteAccessConsumerKey and oauthRedirectURI set."
     echo ""
