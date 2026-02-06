@@ -107,28 +107,24 @@ internal class TokenMigrationActivity : ComponentActivity() {
 
         // TODO: Move to non-deprecated getParcelableExtra when min API >= 33
         val oAuthConfig = intent.getParcelableExtra<OAuthConfig>(EXTRA_OAUTH_CONFIG) ?: run {
-            resultCallback.onMigrationError("Unable to parse OAuthConfig.", null, null)
-            finish()
+            logMigrationError(resultCallback, "Unable to parse OAuthConfig.", null, null)
             return
         }
 
         val orgId = intent.getStringExtra(EXTRA_ORG_ID)
         val userId = intent.getStringExtra(EXTRA_USER_ID)
         if ( orgId == null || userId == null) {
-            resultCallback.onMigrationError("Unable to parse OAuthConfig.", null, null)
-            finish()
+            logMigrationError(resultCallback, "Unable to parse OAuthConfig.", null, null)
             return
         }
         val user = UserAccountManager.getInstance().getUserFromOrgAndUserId(orgId, userId) ?: run {
-            resultCallback.onMigrationError("Unable to build user account.", null, null)
-            finish()
+            logMigrationError(resultCallback, "Unable to build user account.", null, null)
             return
         }
         val client = runCatching {
             SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
         }.getOrElse { e ->
-            resultCallback.onMigrationError("Unable to build RestClient.", null, e as? Exception)
-            finish()
+            logMigrationError(resultCallback, "Unable to build RestClient.", null, e as? Exception)
             return
         }
 
@@ -152,12 +148,12 @@ internal class TokenMigrationActivity : ComponentActivity() {
                         }
                 }.getOrNull()
             } ?: run {
-                resultCallback.onMigrationError(
-                    /* error = */ "Request for single access bridge url failed.",
-                    /* errorDesc = */ "User's existing token may be invalid.",
-                    /* e = */ null,
+                logMigrationError(
+                    resultCallback = resultCallback,
+                    error = "Request for single access bridge url failed",
+                    errorDesc = "User's existing token may be invalid.",
+                    e = null,
                 )
-                finish()
                 return@launch
             }
             viewModel.dynamicBackgroundColor.value = Color.Transparent.copy(alpha = HALF_ALPHA)
@@ -231,12 +227,12 @@ internal class TokenMigrationActivity : ComponentActivity() {
                     // Did we fail?
                     when {
                         error != null -> {
-                            resultCallback.onMigrationError(
-                                error,
-                                params["error_description"],
-                                null,
+                            logMigrationError(
+                                resultCallback = resultCallback,
+                                error = error,
+                                errorDesc = params["error_description"],
+                                e = null,
                             )
-                            finish()
                         }
 
                         else -> {
@@ -248,7 +244,7 @@ internal class TokenMigrationActivity : ComponentActivity() {
                                 when {
                                     viewModel.useWebServerFlow ->
                                         viewModel.onWebServerFlowComplete(
-                                            params["code"],
+                                            code = params["code"],
                                             onAuthFlowError = resultCallback.onMigrationError,
                                             onAuthFlowSuccess = resultCallback.onMigrationSuccess,
                                             loginServer = instanceServer,
@@ -257,7 +253,7 @@ internal class TokenMigrationActivity : ComponentActivity() {
 
                                     else ->
                                         viewModel.onAuthFlowComplete(
-                                            TokenEndpointResponse(params),
+                                            tr = TokenEndpointResponse(params),
                                             onAuthFlowError = resultCallback.onMigrationError,
                                             onAuthFlowSuccess = resultCallback.onMigrationSuccess,
                                             tokenMigration = true,
@@ -298,6 +294,18 @@ internal class TokenMigrationActivity : ComponentActivity() {
         }
 
         loadUrl(frontDoorUrl)
+    }
+
+    private fun logMigrationError(
+        resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
+        error: String,
+        errorDesc: String?,
+        e: Throwable?,
+    ) {
+        val message = error + (errorDesc?.let { ": $it" } ?: "")
+        SalesforceSDKLogger.e(TAG, message, e)
+        resultCallback.onMigrationError(error, errorDesc, e)
+        finish()
     }
 
     // Ensure Status Bar Icons are readable no matter which OS theme is used.

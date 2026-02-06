@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.accounts
 
 import android.content.Intent
+import com.salesforce.androidsdk.accounts.UserAccountManager.getInstance
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.ui.TokenMigrationActivity
@@ -43,36 +44,32 @@ const val TAG = "UserAccountManager"
  * new app. If successful a new set of credentials (refresh token, access token) are obtained
  * and replace the existing credentials for the user.
  */
+@Suppress("UnusedReceiverParameter")
 fun UserAccountManager.migrateRefreshToken(
-    userAccount: UserAccount? = UserAccountManager.getInstance().currentUser,
+    userAccount: UserAccount? = getInstance().currentUser,
     appConfig: OAuthConfig,
     onMigrationSuccess: (userAccount: UserAccount) -> Unit,
     onMigrationError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
 ) {
     val loggedOnSuccess: (userAccount: UserAccount) -> Unit = { user ->
-        SalesforceSDKLogger.i(TAG, "User ($user) successfully migrated to " +
-                "new OAuthConfig ($appConfig).")
+        SalesforceSDKLogger.i(TAG, "Token Migration Successful \n\nUser ${user.username} " +
+                "(${user.instanceServer}) successfully migrated to: \n$appConfig.")
         onMigrationSuccess.invoke(user)
     }
-    val loggedOnError: (error: String, errorDesc: String?, e: Throwable?) -> Unit = { error, errorDesc, e ->
-        val message = error + errorDesc?.let { "\nDescription: $it" }
-        SalesforceSDKLogger.e(TAG, message, e)
-        onMigrationError.invoke(error, errorDesc, e)
-    }
+    val userId = userAccount?.userId
+    val orgId = userAccount?.orgId
 
-    val userId = userAccount?.userId ?: run {
-        loggedOnError("User account or userId is null.", null, null)
-        return
-    }
-    val orgId = userAccount.orgId ?: run {
-        loggedOnError("OrgId is null.", null, null)
+    if (userId == null || orgId == null) {
+        val message = "User account, userId or orgId is null."
+        SalesforceSDKLogger.e(TAG, message)
+        onMigrationError(message, null, null)
         return
     }
 
     val callbackKey = MigrationCallbackRegistry.register(
         callbacks = MigrationCallbackRegistry.MigrationCallbacks(
             onMigrationSuccess = loggedOnSuccess,
-            onMigrationError = loggedOnError,
+            onMigrationError = onMigrationError,
         )
     )
 
