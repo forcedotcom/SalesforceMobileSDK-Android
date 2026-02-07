@@ -199,6 +199,7 @@ open class LoginActivity : FragmentActivity() {
             webViewClient = this@LoginActivity.webViewClient
             webChromeClient = this@LoginActivity.webChromeClient
             setBackgroundColor(Color.Transparent.toArgb())
+            this@LoginActivity.baseUserAgentString = settings.userAgentString ?: ""
             settings.apply {
                 domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
                 @SuppressLint("SetJavaScriptEnabled")
@@ -206,13 +207,14 @@ open class LoginActivity : FragmentActivity() {
                 userAgentString = format(
                     "%s %s",
                     SalesforceSDKManager.getInstance().userAgent,
-                    userAgentString ?: "",
+                    this@LoginActivity.baseUserAgentString
                 )
             }
         }
     }
 
     // Private variables
+    private var baseUserAgentString = "";
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
@@ -914,7 +916,11 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Re-apply user agent to WebView
-        webView.settings.userAgentString = SalesforceSDKManager.getInstance().userAgent
+        webView.settings.userAgentString = format(
+            "%s %s",
+            SalesforceSDKManager.getInstance().userAgent,
+            baseUserAgentString
+        )
 
         // Apply the intent extras' Salesforce Welcome Login hint and host for use in the OAuth authorize URL, if applicable.
         applySalesforceWelcomeLoginHintAndHost(intent)
@@ -953,7 +959,7 @@ open class LoginActivity : FragmentActivity() {
      */
     private fun isLoginWithWelcomeDiscovery(intent: Intent): Boolean {
         val isWelcomeDiscoveryUrl = intent.data?.let { isSalesforceWelcomeDiscoveryMobileUrl(it) } == true
-        val hasLoginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT) != null
+        val hasLoginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) != null
         return isWelcomeDiscoveryUrl || hasLoginHint
     }
 

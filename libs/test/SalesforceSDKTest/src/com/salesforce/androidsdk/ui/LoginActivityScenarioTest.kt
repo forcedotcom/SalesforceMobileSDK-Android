@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle.State.STARTED
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
@@ -46,6 +47,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -374,5 +376,79 @@ class LoginActivityScenarioTest {
             activity.viewModel.previousPendingServer = WELCOME_LOGIN_URL
             assertTrue(activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(PRODUCTION_LOGIN_URL.toUri()))
         }
+    }
+
+    @Test
+    fun userAgent_hasWelcomeDiscoveryFlag_withWelcomeDiscoveryLoginServer() {
+        val uri = "https://welcome.salesforce.com/discovery?client_id=aaa&callback_url=bbb&client_version=ccc".toUri()
+
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                data = uri
+            }).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+                val userAgentString = activity.webView.settings.userAgentString
+                val featureFlags = extractFeatureFlags(userAgentString)
+                assertTrue(
+                    "WD (Welcome Discovery) should be present in $userAgentString",
+                    featureFlags.contains(Features.FEATURE_WELCOME_DISCOVERY_LOGIN)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun userAgent_hasWelcomeDiscoveryFlag_withLoginHostHint() {
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                putExtra(EXTRA_KEY_LOGIN_HOST, "mobilesdk.my.salesforce.com")
+            }).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+                val userAgentString = activity.webView.settings.userAgentString
+                val featureFlags = extractFeatureFlags(userAgentString)
+                assertTrue(
+                    "WD (Welcome Discovery) should be present in $userAgentString",
+                    featureFlags.contains(Features.FEATURE_WELCOME_DISCOVERY_LOGIN)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun userAgent_doesNotHaveWelcomeDiscoveryFlag_withMyDomainLoginServer() {
+        val uri = "https://mobilesdk.my.salesforce.com".toUri()
+
+        launch<LoginActivity>(
+            Intent(
+                getApplicationContext(),
+                LoginActivity::class.java
+            ).apply {
+                data = uri
+            }).use { activityScenario ->
+
+            activityScenario.onActivity { activity ->
+                val userAgentString = activity.webView.settings.userAgentString
+                val featureFlags = extractFeatureFlags(userAgentString)
+                assertFalse(
+                    "WD (Welcome Discovery) should NOT be present in $userAgentString",
+                    featureFlags.contains(Features.FEATURE_WELCOME_DISCOVERY_LOGIN)
+                )
+            }
+        }
+    }
+
+    fun extractFeatureFlags(userAgentString: String): List<String> {
+        val ftrMatch = Regex("ftr_([^\\s]*)").find(userAgentString)
+        assertNotNull("User agent should contain ftr_ field: $userAgentString", ftrMatch)
+        val ftrValue = ftrMatch!!.groupValues[1]
+        return ftrValue.split(".")
     }
 }
