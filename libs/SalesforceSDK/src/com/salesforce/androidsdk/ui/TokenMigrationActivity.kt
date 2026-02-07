@@ -92,7 +92,6 @@ internal class TokenMigrationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
 
         val callbackKey = intent.getStringExtra(EXTRA_CALLBACK_ID) ?: run {
             SalesforceSDKLogger.e(TAG, "Unable to parse MigrationResult callback id.")
