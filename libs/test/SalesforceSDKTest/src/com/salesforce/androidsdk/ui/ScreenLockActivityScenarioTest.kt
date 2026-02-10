@@ -80,7 +80,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 import com.salesforce.androidsdk.security.ScreenLockManager
-import com.salesforce.androidsdk.ui.ScreenLockActivity.Companion.noOp
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

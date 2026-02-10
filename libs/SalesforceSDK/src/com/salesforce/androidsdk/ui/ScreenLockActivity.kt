@@ -128,7 +128,6 @@ class ScreenLockActivity : FragmentActivity() {
      * intended for testing purposes only. Defaults to the current
      * SalesforceSDKManager instance
      */
-    @SuppressLint("NewApi")
     @VisibleForTesting
     internal fun create(
         build: Int = SDK_INT,
@@ -161,7 +160,6 @@ class ScreenLockActivity : FragmentActivity() {
                         appIcon = rememberDrawablePainter(appIcon),
                         innerPadding = innerPadding,
                         logoutAction = ::logoutScreenLockUsers,
-                        viewModel = viewModel,
                     )
                 }
             }
@@ -230,7 +228,6 @@ class ScreenLockActivity : FragmentActivity() {
      * @param build The Android SDK build. This parameter is intended for
      * testing purposes only. Defaults to the current Android SDK build
      */
-    @SuppressLint("InlinedApi") // TODO: Remove when min API > 29.
     @VisibleForTesting
     internal fun presentBiometricAuthentication(
         biometricManager: BiometricManager = BiometricManager.from(this),
@@ -281,7 +278,6 @@ class ScreenLockActivity : FragmentActivity() {
      * This parameter is intended for testing purposes only. Defaults to the
      * current package manager
      */
-    @SuppressLint("InlinedApi") // TODO: Remove when min API > 28.
     @VisibleForTesting
     internal fun getBiometricPromptInfo(
         build: Int = SDK_INT,
@@ -425,7 +421,6 @@ class ScreenLockActivity : FragmentActivity() {
      * testing purposes only. Defaults to the current Android SDK build
      * @param eventText The event text
      */
-    @SuppressLint("NewApi")
     @VisibleForTesting
     internal fun sendAccessibilityEvent(
         accessibilityManager: AccessibilityManager = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager,
@@ -451,11 +446,6 @@ class ScreenLockActivity : FragmentActivity() {
 
     companion object {
         private const val TAG = "ScreenLockActivity"
-
-        /**
-         * An empty function.
-         */
-        internal fun noOp() {}
     }
 
     /**

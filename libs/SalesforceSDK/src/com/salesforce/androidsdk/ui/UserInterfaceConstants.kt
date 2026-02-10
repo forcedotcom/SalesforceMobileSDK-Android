@@ -28,3 +28,8 @@ package com.salesforce.androidsdk.ui
 
 internal const val CORNER_RADIUS = 12
 internal const val PADDING_SIZE = 12
+
+/**
+ * An empty function which has automated test code coverage.
+ */
+internal fun noOp() {}

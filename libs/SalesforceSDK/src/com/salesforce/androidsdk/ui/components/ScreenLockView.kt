@@ -43,10 +43,14 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Normal
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__application_icon
 import com.salesforce.androidsdk.R.string.sf__logout
 import com.salesforce.androidsdk.R.string.sf__screen_lock_setup_button
@@ -54,7 +58,9 @@ import com.salesforce.androidsdk.R.string.sf__screen_lock_setup_required
 import com.salesforce.androidsdk.ui.CORNER_RADIUS
 import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.ScreenLockViewModel
+import com.salesforce.androidsdk.ui.noOp
 import com.salesforce.androidsdk.ui.theme.hintTextColor
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
 /**
  * The set up view when screen lock is required and not enrolled.
@@ -65,7 +71,7 @@ internal fun ScreenLockView(
     appName: String,
     innerPadding: PaddingValues,
     logoutAction: () -> Unit,
-    viewModel: ScreenLockViewModel,
+    viewModel: ScreenLockViewModel = viewModel(),
 ) {
     Column(
         modifier = Modifier
@@ -131,4 +137,17 @@ internal fun ScreenLockView(
 
         Spacer(modifier = Modifier.weight(1f))
     }
+}
+
+@ExcludeFromJacocoGeneratedReport
+@Preview(showBackground = true)
+@Composable
+fun ScreenLockViewPreview() {
+    ScreenLockView(
+        appName = "App",
+        innerPadding = PaddingValues.Absolute(0.dp),
+        appIcon = painterResource(id = sf__salesforce_logo),
+        viewModel = ScreenLockViewModel(),
+        logoutAction = ::noOp,
+    )
 }
