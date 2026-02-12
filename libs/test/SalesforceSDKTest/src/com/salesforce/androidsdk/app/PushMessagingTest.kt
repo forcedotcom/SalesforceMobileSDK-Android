@@ -208,8 +208,6 @@ class PushMessagingTest {
             notificationsTypes = fromJson(NOTIFICATIONS_TYPES_JSON)
         )
 
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
-
         // Test once for coverage only with the default REST client.
         assertThrows(SSLPeerUnverifiedException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
@@ -273,6 +271,8 @@ class PushMessagingTest {
             notificationsTypes = fromJson(NOTIFICATIONS_TYPES_JSON)
         )
 
+        ApiVersionStrings.VERSION_NUMBER_TEST = "v63.0"
+
         val notificationsActionsResponseBody = salesforceSdkManager.invokeServerNotificationAction(
             notificationId = "test_notification_id",
             actionKey = "test_action_key",
@@ -298,8 +298,6 @@ class PushMessagingTest {
             userAccount = user,
             notificationsTypes = fromJson(NOTIFICATIONS_TYPES_JSON)
         )
-
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
@@ -329,8 +327,6 @@ class PushMessagingTest {
             userAccount = user,
             notificationsTypes = fromJson(NOTIFICATIONS_TYPES_JSON)
         )
-
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
@@ -368,9 +364,6 @@ class PushMessagingTest {
         every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
-        // Setup.
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
-
         assertThrows(NotificationsApiException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
@@ -395,9 +388,6 @@ class PushMessagingTest {
         val restClient = mockk<RestClient>()
         every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
-
-        // Setup.
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
@@ -430,9 +420,6 @@ class PushMessagingTest {
         val restClient = mockk<RestClient>()
         every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
-
-        // Setup.
-        ApiVersionStrings.VERSION_NUMBER_TEST = "v64.0"
 
         assertThrows(NotificationsApiException::class.java) {
             salesforceSdkManager.invokeServerNotificationAction(
