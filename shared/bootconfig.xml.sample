@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <!-- Replace placeholders via install script env vars or edit manually -->
+    <string name="remoteAccessConsumerKey">__CONSUMER_KEY__</string>
+    <string name="oauthRedirectURI">__REDIRECT_URI__</string>
+    <string-array name="oauthScopes" />
+</resources>
