@@ -24,7 +24,8 @@
         "class com.salesforce.androidsdk.ui.DevInfoActivityTest",
         "class com.salesforce.androidsdk.security.ScreenLockManagerTest",
         "class com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest",
-        "class com.salesforce.androidsdk.ui.TokenMigrationActivityTest"
+        "class com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
+        "class com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     },
     {
@@ -70,7 +71,8 @@
         "notClass com.salesforce.androidsdk.rest.files.RenditionTypeTest",
         "notClass com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
         "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest",
-        "notClass com.salesforce.androidsdk.ui.TokenMigrationActivityTest"
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
+        "nonClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     }
   ]

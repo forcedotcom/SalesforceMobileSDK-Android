@@ -28,27 +28,109 @@ package com.salesforce.androidsdk.ui
 
 import android.content.Intent
 import androidx.lifecycle.Lifecycle.State.DESTROYED
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker
+import com.salesforce.androidsdk.analytics.logger.SalesforceLogger
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.rest.RestClient
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+internal const val VALID_ORG = "valid-org"
+internal const val VALID_USER = "valid-user"
+internal const val INVALID_ORG = "invalid-org"
+internal const val INVALID_USER = "invalid-user"
+
 /**
  * Tests for TokenMigrationActivity using ActivityScenario.
  */
 @RunWith(AndroidJUnit4::class)
-@SmallTest
 class TokenMigrationActivityTest {
 
-    // region onCreate Error Handling Tests
+    val mockOAuthConfig = OAuthConfig(
+        consumerKey = "test_consumer_key",
+        redirectUri = "testapp://oauth/callback",
+        scopes = listOf("api", "refresh_token"),
+    )
+
+    private lateinit var mockUserAccountManager: UserAccountManager
+    private lateinit var mockSdkManager: SalesforceSDKManager
+    private lateinit var mockRestClient: RestClient
+    private lateinit var mockUser: UserAccount
+
+    @Before
+    fun setUp() {
+        // Mock SalesforceLogger.getLogger to prevent readLoggerPrefs from being called
+        val mockLogger: SalesforceLogger = mockk(relaxed = true)
+        mockkStatic(SalesforceLogger::class)
+        every { SalesforceLogger.getLogger(any(), any()) } returns mockLogger
+        every { SalesforceLogger.getLogger(any(), any(), any()) } returns mockLogger
+
+        // Reset logger prefs as backup
+        SalesforceLogger.flushComponents()
+        SalesforceLogger.resetLoggerPrefs(getApplicationContext())
+
+        mockUserAccountManager = mockk(relaxed = true)
+        mockSdkManager = mockk(relaxed = true)
+        mockRestClient = mockk(relaxed = true)
+        mockUser = mockk(relaxed = true)
+
+        // Mock user properties needed for getAuthorizationUrl
+        every { mockUser.instanceServer } returns "https://test.salesforce.com"
+
+        mockkStatic(UserAccountManager::class)
+        every { UserAccountManager.getInstance() } returns mockUserAccountManager
+        every {
+            mockUserAccountManager.getUserFromOrgAndUserId(VALID_ORG, VALID_USER)
+        } returns mockUser
+        every {
+            mockUserAccountManager.getUserFromOrgAndUserId(INVALID_ORG, INVALID_USER)
+        } returns null
+
+        mockkObject(SalesforceSDKManager)
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.getInstance() } returns mockSdkManager
+        every { mockSdkManager.appContext } returns getApplicationContext()
+        every { mockSdkManager.clientManager.peekRestClient(any<UserAccount>()) } returns mockRestClient
+        every { mockSdkManager.useHybridAuthentication } returns false
+        every { mockSdkManager.userAgent } returns "MockUserAgent"
+
+        // Default mock for sendSync to prevent hanging - tests can override this
+        val mockResponse = mockk<com.salesforce.androidsdk.rest.RestResponse>(relaxed = true)
+        every { mockResponse.isSuccess } returns true
+        every { mockResponse.asString() } returns """{"$FRONTDOOR_URL_KEY": "https://test.salesforce.com/frontdoor"}"""
+        every { mockRestClient.sendSync(any()) } returns mockResponse
+
+        // Mock AnalyticsPublishingWorker to prevent NPE during activity lifecycle
+        mockkObject(AnalyticsPublishingWorker.Companion)
+        every { AnalyticsPublishingWorker.enqueueAnalyticsPublishWorkRequest(any(), any()) } returns null
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun onCreate_withMissingCallbackId_finishesActivity() {
@@ -57,14 +139,14 @@ class TokenMigrationActivityTest {
         // No EXTRA_CALLBACK_ID set
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then - Activity should finish immediately
-        assertEquals(
-            "Activity should be destroyed when callback ID is missing",
-            DESTROYED,
-            scenario.state,
-        )
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then - Activity should finish immediately
+            assertEquals(
+                "Activity should be destroyed when callback ID is missing",
+                DESTROYED,
+                scenario.state,
+            )
+        }
     }
 
     @Test
@@ -75,14 +157,14 @@ class TokenMigrationActivityTest {
         }
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then - Activity should finish because callback is not in registry
-        assertEquals(
-            "Activity should be destroyed when callback ID is invalid",
-            DESTROYED,
-            scenario.state,
-        )
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then - Activity should finish because callback is not in registry
+            assertEquals(
+                "Activity should be destroyed when callback ID is invalid",
+                DESTROYED,
+                scenario.state,
+            )
+        }
     }
 
     @Test
@@ -109,13 +191,13 @@ class TokenMigrationActivityTest {
         }
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then
-        latch.await(2, TimeUnit.SECONDS)
-        assertTrue("Error callback should be called", errorCalled)
-        assertEquals("Unable to parse OAuthConfig.", errorMessage)
-        assertEquals(DESTROYED, scenario.state)
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(ERROR_PARSE_OAUTH_CONFIG, errorMessage)
+            assertEquals(DESTROYED, scenario.state)
+        }
     }
 
     @Test
@@ -134,26 +216,20 @@ class TokenMigrationActivityTest {
             )
         )
 
-        val mockOAuthConfig = OAuthConfig(
-            consumerKey = "test_consumer_key",
-            redirectUri = "testapp://oauth/callback",
-            scopes = listOf("api", "refresh_token"),
-        )
-
         val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
             putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
             putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
-            putExtra(TokenMigrationActivity.EXTRA_USER_ID, "testUserId")
+            putExtra(TokenMigrationActivity.EXTRA_USER_ID, VALID_USER)
             // No EXTRA_ORG_ID set
         }
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then
-        latch.await(2, TimeUnit.SECONDS)
-        assertTrue("Error callback should be called", errorCalled)
-        assertEquals(DESTROYED, scenario.state)
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(DESTROYED, scenario.state)
+        }
     }
 
     @Test
@@ -172,26 +248,20 @@ class TokenMigrationActivityTest {
             )
         )
 
-        val mockOAuthConfig = OAuthConfig(
-            consumerKey = "test_consumer_key",
-            redirectUri = "testapp://oauth/callback",
-            scopes = listOf("api", "refresh_token")
-        )
-
         val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
             putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
             putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
-            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, "testOrgId")
+            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, VALID_ORG)
             // No EXTRA_USER_ID set
         }
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then
-        latch.await(2, TimeUnit.SECONDS)
-        assertTrue("Error callback should be called", errorCalled)
-        assertEquals(DESTROYED, scenario.state)
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(DESTROYED, scenario.state)
+        }
     }
 
     @Test
@@ -208,32 +278,116 @@ class TokenMigrationActivityTest {
                     errorCalled = true
                     errorMessage = error
                     latch.countDown()
-                }
+                },
             )
-        )
-
-        val mockOAuthConfig = OAuthConfig(
-            consumerKey = "test_consumer_key",
-            redirectUri = "testapp://oauth/callback",
-            scopes = listOf("api", "refresh_token")
         )
 
         val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
             putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
             putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
-            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, "nonexistent-org")
-            putExtra(TokenMigrationActivity.EXTRA_USER_ID, "nonexistent-user")
+            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, INVALID_ORG)
+            putExtra(TokenMigrationActivity.EXTRA_USER_ID, INVALID_USER)
         }
 
         // When
-        val scenario = launch<TokenMigrationActivity>(intent)
-
-        // Then
-        latch.await(2, TimeUnit.SECONDS)
-        assertTrue("Error callback should be called", errorCalled)
-        assertEquals("Unable to build user account.", errorMessage)
-        assertEquals(DESTROYED, scenario.state)
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(ERROR_BUILD_USER_ACCOUNT, errorMessage)
+            assertEquals(DESTROYED, scenario.state)
+        }
     }
 
-    // endregion
+    @Test
+    fun onCreate_withClientException_callsErrorCallbackAndFinishes() {
+        // Given
+        var errorCalled = false
+        var errorMessage: String? = null
+        val latch = CountDownLatch(1)
+
+        val callbackKey = MigrationCallbackRegistry.register(
+            MigrationCallbackRegistry.MigrationCallbacks(
+                onMigrationSuccess = { },
+                onMigrationError = { error, _, _ ->
+                    errorCalled = true
+                    errorMessage = error
+                    latch.countDown()
+                },
+            )
+        )
+
+        val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
+            putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
+            putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
+            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, VALID_ORG)
+            putExtra(TokenMigrationActivity.EXTRA_USER_ID, VALID_USER)
+        }
+
+        // Throw exception when getting client
+        every {
+            mockSdkManager.clientManager.peekRestClient(any<UserAccount>())
+        } throws RuntimeException("Account not found")
+
+        // When
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(ERROR_BUILD_REST_CLIENT, errorMessage)
+            assertEquals(DESTROYED, scenario.state)
+        }
+    }
+
+    @Test
+    fun onCreate_withNullFrontDoorUrl_callsErrorCallbackAndFinishes() {
+        // Given
+        var errorCalled = false
+        var errorMessage: String? = null
+        var errorDesc: String? = null
+        val latch = CountDownLatch(1)
+
+        val callbackKey = MigrationCallbackRegistry.register(
+            MigrationCallbackRegistry.MigrationCallbacks(
+                onMigrationSuccess = { },
+                onMigrationError = { error, desc, _ ->
+                    errorCalled = true
+                    errorMessage = error
+                    errorDesc = desc
+                    latch.countDown()
+                },
+            )
+        )
+
+        val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
+            putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
+            putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
+            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, VALID_ORG)
+            putExtra(TokenMigrationActivity.EXTRA_USER_ID, VALID_USER)
+        }
+
+        // Mock response without frontdoor_uri key
+        every { mockRestClient.sendSync(any()) } returns mockk(relaxed = true) {
+            every { isSuccess } returns true
+            every { asString() } returns "{}"
+        }
+
+        // Mock loginViewModelFactory
+        every { mockSdkManager.loginViewModelFactory } returns object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+                return mockk<LoginViewModel>(relaxed = true) as T
+            }
+        }
+
+        // When
+        launch<TokenMigrationActivity>(intent).use { scenario ->
+            // Then
+            latch.await(500, TimeUnit.MILLISECONDS)
+            assertTrue("Error callback should be called", errorCalled)
+            assertEquals(ERROR_SINGLE_ACCESS_FAILED, errorMessage)
+            assertEquals(ERROR_TOKEN_INVALID_DESC, errorDesc)
+            assertEquals(DESTROYED, scenario.state)
+        }
+    }
 }

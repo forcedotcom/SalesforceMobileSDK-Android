@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026-pffsent, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.webkit.WebResourceRequest
@@ -37,7 +38,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
-import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -82,10 +82,26 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val HALF_ALPHA = 0.5f
+private const val HALF_ALPHA = 0.5f
+
+// Error messages - internal for testing
+@VisibleForTesting
+internal const val ERROR_PARSE_CALLBACK_ID = "Unable to parse MigrationResult callback id."
+@VisibleForTesting
+internal const val ERROR_RETRIEVE_CALLBACK = "Unable to retrieve MigrationResult callback."
+@VisibleForTesting
+internal const val ERROR_PARSE_OAUTH_CONFIG = "Unable to parse OAuthConfig."
+@VisibleForTesting
+internal const val ERROR_BUILD_USER_ACCOUNT = "Unable to build user account."
+@VisibleForTesting
+internal const val ERROR_BUILD_REST_CLIENT = "Unable to build RestClient."
+@VisibleForTesting
+internal const val ERROR_SINGLE_ACCESS_FAILED = "Request for single access bridge url failed"
+@VisibleForTesting
+internal const val ERROR_TOKEN_INVALID_DESC = "User's existing token may be invalid."
+
 internal class TokenMigrationActivity : ComponentActivity() {
 
-    @VisibleForTesting(otherwise = PROTECTED)
     private val viewModel: LoginViewModel
             by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
 
@@ -94,36 +110,36 @@ internal class TokenMigrationActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val callbackKey = intent.getStringExtra(EXTRA_CALLBACK_ID) ?: run {
-            SalesforceSDKLogger.e(TAG, "Unable to parse MigrationResult callback id.")
+            SalesforceSDKLogger.e(TAG, ERROR_PARSE_CALLBACK_ID)
             finish()
             return
         }
         val resultCallback = MigrationCallbackRegistry.consume(callbackKey) ?: run {
-            SalesforceSDKLogger.e(TAG, "Unable to retrieve MigrationResult callback.")
+            SalesforceSDKLogger.e(TAG, ERROR_RETRIEVE_CALLBACK)
             finish()
             return
         }
 
         // TODO: Move to non-deprecated getParcelableExtra when min API >= 33
         val oAuthConfig = intent.getParcelableExtra<OAuthConfig>(EXTRA_OAUTH_CONFIG) ?: run {
-            logMigrationError(resultCallback, "Unable to parse OAuthConfig.", null, null)
+            logMigrationError(resultCallback, ERROR_PARSE_OAUTH_CONFIG, null, null)
             return
         }
 
         val orgId = intent.getStringExtra(EXTRA_ORG_ID)
         val userId = intent.getStringExtra(EXTRA_USER_ID)
         if ( orgId == null || userId == null) {
-            logMigrationError(resultCallback, "Unable to parse OAuthConfig.", null, null)
+            logMigrationError(resultCallback, ERROR_PARSE_OAUTH_CONFIG, null, null)
             return
         }
         val user = UserAccountManager.getInstance().getUserFromOrgAndUserId(orgId, userId) ?: run {
-            logMigrationError(resultCallback, "Unable to build user account.", null, null)
+            logMigrationError(resultCallback, ERROR_BUILD_USER_ACCOUNT, null, null)
             return
         }
         val client = runCatching {
             SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
         }.getOrElse { e ->
-            logMigrationError(resultCallback, "Unable to build RestClient.", null, e as? Exception)
+            logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, e as? Exception)
             return
         }
 
@@ -149,8 +165,8 @@ internal class TokenMigrationActivity : ComponentActivity() {
             } ?: run {
                 logMigrationError(
                     resultCallback = resultCallback,
-                    error = "Request for single access bridge url failed",
-                    errorDesc = "User's existing token may be invalid.",
+                    error = ERROR_SINGLE_ACCESS_FAILED,
+                    errorDesc = ERROR_TOKEN_INVALID_DESC,
                     e = null,
                 )
                 return@launch
@@ -199,100 +215,105 @@ internal class TokenMigrationActivity : ComponentActivity() {
         frontDoorUrl: String,
         resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
         instanceServer: String,
-    ): WebView = WebView(this@TokenMigrationActivity).apply {
+    ): WebView = webViewFactory(this@TokenMigrationActivity).apply {
         @SuppressLint("SetJavaScriptEnabled") // Required by Salesforce
         settings.javaScriptEnabled = true
         settings.userAgentString = SalesforceSDKManager.getInstance().userAgent
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-        // This implementation is very similar to [LoginActivity.AuthWebViewClient] but the
-        // code cannot be shared due to the heavy reliance on the ViewModel.
-        webViewClient = object : WebViewClient() {
-
-            override fun shouldOverrideUrlLoading(
-                view: WebView,
-                request: WebResourceRequest,
-            ): Boolean {
-                val url = request.url.toString().replace("///", "/").lowercase()
-                val callbackUrl = viewModel.oAuthConfig.redirectUri.replace("///", "/").lowercase()
-                val migrationFinished = url.startsWith(callbackUrl)
-
-                if (migrationFinished) {
-                    viewModel.authFinished.value = true
-                    viewModel.loading.value = true
-
-                    val params = UriFragmentParser.parse(request.url)
-                    val error = params["error"]
-                    // Did we fail?
-                    when {
-                        error != null -> {
-                            logMigrationError(
-                                resultCallback = resultCallback,
-                                error = error,
-                                errorDesc = params["error_description"],
-                                e = null,
-                            )
-                        }
-
-                        else -> {
-                            // Show loading while we PKCE and/or create user account.
-                            viewModel.authFinished.value = true
-                            viewModel.loading.value = true
-
-                            CoroutineScope(Default).launch {
-                                when {
-                                    viewModel.useWebServerFlow ->
-                                        viewModel.onWebServerFlowComplete(
-                                            code = params["code"],
-                                            onAuthFlowError = resultCallback.onMigrationError,
-                                            onAuthFlowSuccess = resultCallback.onMigrationSuccess,
-                                            loginServer = instanceServer,
-                                            tokenMigration = true,
-                                        ).join()
-
-                                    else ->
-                                        viewModel.onAuthFlowComplete(
-                                            tr = TokenEndpointResponse(params),
-                                            onAuthFlowError = resultCallback.onMigrationError,
-                                            onAuthFlowSuccess = resultCallback.onMigrationSuccess,
-                                            tokenMigration = true,
-                                        )
-                                }
-
-                                // Wait until we are completely finished so progress indicator is shown.
-                                finish()
-                            }
-                        }
-                    }
-                }
-
-                return migrationFinished
-            }
-
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                super.onPageStarted(view, url, favicon)
-                viewModel.loading.value = true
-            }
-
-            override fun onPageFinished(view: WebView?, url: String?) {
-                view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
-                    makeStatusBarVisible()
-                    validateAndExtractBackgroundColor(result)?.let { color ->
-                        viewModel.dynamicBackgroundColor.value = color
-
-                        // This check is inside validateAndExtractBackgroundColor because we only
-                        // want to stop showing the spinner if WebView UI is actually displayed.
-                        if (!viewModel.authFinished.value) {
-                            viewModel.loading.value = false
-                        }
-                    }
-                }
-
-                super.onPageFinished(view, url)
-            }
-        }
+        webViewClient = TokenMigrationClientManager(resultCallback, instanceServer)
 
         loadUrl(frontDoorUrl)
+    }
+
+    // This implementation is very similar to [LoginActivity.AuthWebViewClient] but the
+    // code cannot be shared due to the heavy reliance on the ViewModel.
+    @VisibleForTesting
+    internal inner class TokenMigrationClientManager(
+        val resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
+        val instanceServer: String,
+    ) : WebViewClient() {
+
+        override fun shouldOverrideUrlLoading(
+            view: WebView,
+            request: WebResourceRequest,
+        ): Boolean {
+            val url = request.url.toString().replace("///", "/").lowercase()
+            val callbackUrl = viewModel.oAuthConfig.redirectUri.replace("///", "/").lowercase()
+            val migrationFinished = url.startsWith(callbackUrl)
+
+            if (migrationFinished) {
+                viewModel.authFinished.value = true
+                viewModel.loading.value = true
+
+                val params = UriFragmentParser.parse(request.url)
+                val error = params["error"]
+                // Did we fail?
+                when {
+                    error != null -> {
+                        logMigrationError(
+                            resultCallback = resultCallback,
+                            error = error,
+                            errorDesc = params["error_description"],
+                            e = null,
+                        )
+                    }
+
+                    else -> {
+                        // Show loading while we PKCE and/or create user account.
+                        viewModel.authFinished.value = true
+                        viewModel.loading.value = true
+
+                        CoroutineScope(Default).launch {
+                            when {
+                                viewModel.useWebServerFlow ->
+                                    viewModel.onWebServerFlowComplete(
+                                        code = params["code"],
+                                        onAuthFlowError = resultCallback.onMigrationError,
+                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
+                                        loginServer = instanceServer,
+                                        tokenMigration = true,
+                                    ).join()
+
+                                else ->
+                                    viewModel.onAuthFlowComplete(
+                                        tr = TokenEndpointResponse(params),
+                                        onAuthFlowError = resultCallback.onMigrationError,
+                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
+                                        tokenMigration = true,
+                                    )
+                            }
+
+                            // Wait until we are completely finished so progress indicator is shown.
+                            finish()
+                        }
+                    }
+                }
+            }
+
+            return migrationFinished
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            viewModel.loading.value = true
+        }
+
+        override fun onPageFinished(view: WebView?, url: String?) {
+            view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
+                makeStatusBarVisible()
+                validateAndExtractBackgroundColor(result)?.let { color ->
+                    viewModel.dynamicBackgroundColor.value = color
+
+                    // This check is inside validateAndExtractBackgroundColor because we only
+                    // want to stop showing the spinner if WebView UI is actually displayed.
+                    if (!viewModel.authFinished.value) {
+                        viewModel.loading.value = false
+                    }
+                }
+            }
+
+            super.onPageFinished(view, url)
+        }
     }
 
     private fun logMigrationError(
@@ -320,5 +341,8 @@ internal class TokenMigrationActivity : ComponentActivity() {
         const val EXTRA_CALLBACK_ID = "MIGRATION_CALLBACK"
 
         const val TAG = "TokenMigrationActivity"
+
+        // Used for mocking the webview in tests.
+        var webViewFactory = { context: Context -> WebView(context) }
     }
 }

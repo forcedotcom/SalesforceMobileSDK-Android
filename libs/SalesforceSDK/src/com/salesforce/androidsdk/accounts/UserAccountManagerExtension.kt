@@ -73,14 +73,17 @@ fun UserAccountManager.migrateRefreshToken(
         )
     )
 
-    val context = SalesforceSDKManager.getInstance().appContext
-    val intent = Intent(context, TokenMigrationActivity::class.java)
-    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    intent.putExtra(TokenMigrationActivity.EXTRA_ORG_ID, orgId)
-    intent.putExtra(TokenMigrationActivity.EXTRA_USER_ID, userId)
-    intent.putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, appConfig)
-    intent.putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
-    context.startActivity(intent)
+    with(SalesforceSDKManager.getInstance().appContext) {
+        startActivity(
+            Intent(/* packageContext = */ this, TokenMigrationActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(TokenMigrationActivity.EXTRA_ORG_ID, orgId)
+                putExtra(TokenMigrationActivity.EXTRA_USER_ID, userId)
+                putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, appConfig)
+                putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
+            }
+        )
+    }
 }
 
 /*
