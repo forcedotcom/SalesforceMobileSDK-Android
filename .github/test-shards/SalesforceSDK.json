@@ -72,7 +72,7 @@
         "notClass com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
         "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest",
         "notClass com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
-        "nonClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     }
   ]

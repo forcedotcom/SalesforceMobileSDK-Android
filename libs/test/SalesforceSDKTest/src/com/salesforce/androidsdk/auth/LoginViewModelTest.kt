@@ -406,6 +406,63 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun getAuthorizationUrl_UsesMigrationConfig_OverAppConfigForLoginHost() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = false)
+        val appConfigConsumerKey = "app_config_key_should_not_be_used"
+        val appConfigRedirectUri = "appconfig://should_not_be_used"
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ ->
+            OAuthConfig(
+                consumerKey = appConfigConsumerKey,
+                redirectUri = appConfigRedirectUri,
+                scopes = listOf("api"),
+            )
+        }
+        val debugConsumerKey = "debug_override_key_789"
+        val debugRedirectUri = "debug://redirect"
+        val debugScopes = listOf("api", "debug_scope")
+        every { sdkManagerMock.debugOverrideAppConfig } returns OAuthConfig(
+            consumerKey = debugConsumerKey,
+            redirectUri = debugRedirectUri,
+            scopes = debugScopes,
+        )
+        val migrationConsumerKey = "migration_override_key_789"
+        val migrationRedirectUri = "migration://redirect"
+        val migrationScopes = listOf("api", "migration_scope")
+
+        // Verify the URL contains the app config values, not the debug override config values
+        val loginUrl = runBlocking {
+            viewModel.getAuthorizationUrl(
+                server = "test.salesforce.com",
+                sdkManagerMock,
+                migrationOAuthConfig = OAuthConfig(
+                    migrationConsumerKey,
+                    migrationRedirectUri,
+                    migrationScopes,
+                )
+            )
+        }
+        assertFalse(
+            "URL should not contain debug override consumer key",
+            loginUrl.contains(debugConsumerKey)
+        )
+        assertFalse(
+            "URL should not contain debug override redirect URI",
+            loginUrl.contains("redirect_uri=debug://redirect")
+        )
+        assertFalse("URL should not contain debug scope", loginUrl.contains("debug_scope"))
+
+        // Verify migration config values are in the URL
+        assertTrue(
+            "URL should contain migration consumer key",
+            loginUrl.contains(migrationConsumerKey)
+        )
+        migrationScopes.forEach { scope ->
+            assertTrue(loginUrl.contains(scope))
+        }
+    }
+
+    @Test
     fun getAuthorizationUrl_UsesServerSpecificConfig_FromAppConfigForLoginHost() {
         val sdkManager = SalesforceSDKManager.getInstance()
         val originalAppConfigForLoginHost = sdkManager.appConfigForLoginHost

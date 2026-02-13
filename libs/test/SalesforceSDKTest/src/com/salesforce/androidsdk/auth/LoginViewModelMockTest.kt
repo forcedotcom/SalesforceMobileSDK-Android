@@ -38,8 +38,10 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
@@ -72,8 +74,7 @@ class LoginViewModelMockTest {
         mockCookieManager = mockk<CookieManager>(relaxed = true)
         every { CookieManager.getInstance() } returns mockCookieManager
 
-        // Mock OAuth2 and AuthenticationUtilities
-        mockkStatic(OAuth2::class)
+        // Mock AuthenticationUtilities
         mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
 
         // Create view model after mocking
@@ -385,6 +386,50 @@ class LoginViewModelMockTest {
     }
 
     @Test
+    fun onTokenMigration_CallsDoCodeExchange_WithCorrectParameters() = runBlocking {
+        val testServer = "https://test.salesforce.com"
+        val testCode = "test_auth_code_123"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val migrationLoginServer = "migration_login_server"
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
+        // Set up the view model state
+        spyViewModel.selectedServer.value = testServer
+        Thread.sleep(100)
+
+        // Call the method under test
+        spyViewModel.onWebServerFlowComplete(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+            migrationLoginServer,
+            tokenMigration = true,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        // Verify doCodeExchange was called with correct parameters
+        coVerify {
+            spyViewModel.doCodeExchange(
+                testCode,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = migrationLoginServer,
+                tokenMigration = true,
+            )
+        }
+    }
+
+    @Test
     fun onWebServerFlowComplete_WithFrontDoorBridge_UsesCorrectServerAndVerifier() = runBlocking {
         val frontDoorServer = "https://frontdoor.salesforce.com"
         val frontDoorUrl = "$frontDoorServer/frontdoor.jsp?sid=test_session"
@@ -566,6 +611,103 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = customLoginServer,
                 tokenMigration = true,
+            )
+        }
+    }
+
+    @Test
+    fun doCodeExchange_UtilizesOAuth2_AndFinishesAuth() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } returns mockTokenResponse
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        // Set up required state
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        // Call function under test
+        spyViewModel.doCodeExchange(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        coVerify {
+            spyViewModel.onAuthFlowComplete(
+                mockTokenResponse,
+                mockOnError,
+                mockOnSuccess,
+                tokenMigration = false,
+                loginServer = "https://test.salesforce.com",
+            )
+        }
+    }
+
+    @Test
+    fun doCodeExchange_TokenMigration_PassesCorrectValues() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
+        val migrationServer = "migration_server"
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } returns mockTokenResponse
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        // Set up required state
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        // Call function under test
+        spyViewModel.doCodeExchange(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+            migrationServer,
+            tokenMigration = true,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        coVerify {
+            spyViewModel.onAuthFlowComplete(
+                mockTokenResponse,
+                mockOnError,
+                mockOnSuccess,
+                tokenMigration = true,
+                loginServer = migrationServer,
             )
         }
     }

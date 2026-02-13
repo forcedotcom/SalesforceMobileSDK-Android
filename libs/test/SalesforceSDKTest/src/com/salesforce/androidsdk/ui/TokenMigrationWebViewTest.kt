@@ -1,7 +1,10 @@
 package com.salesforce.androidsdk.ui
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.compose.runtime.MutableState
@@ -15,22 +18,12 @@ import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
-import com.salesforce.androidsdk.accounts.UserAccount
-import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
-import com.salesforce.androidsdk.analytics.logger.SalesforceLogger
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.OAuthConfig
-import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.RestClient
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -42,7 +35,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class TokenMigrationWebViewTest {
@@ -53,65 +47,21 @@ class TokenMigrationWebViewTest {
         scopes = listOf("api", "refresh_token"),
     )
 
-    private lateinit var mockUserAccountManager: UserAccountManager
-    private lateinit var mockSdkManager: SalesforceSDKManager
-    private lateinit var mockClientManager: ClientManager
-    private lateinit var mockRestClient: RestClient
-    private lateinit var mockUser: UserAccount
+    private lateinit var savedFactory: ViewModelProvider.Factory
     private lateinit var mockViewModel: LoginViewModel
-    private lateinit var mockColorState: MutableState<Color>
     private lateinit var mockWebView: WebView
+    private var testActivity: TokenMigrationActivity? = null
 
 
     @Before
     fun setUp() {
-        // Mock SalesforceLogger.getLogger to prevent readLoggerPrefs from being called
-        val mockLogger: SalesforceLogger = mockk(relaxed = true)
-        mockkStatic(SalesforceLogger::class)
-        every { SalesforceLogger.getLogger(any(), any()) } returns mockLogger
-        every { SalesforceLogger.getLogger(any(), any(), any()) } returns mockLogger
+        // Save the real loginViewModelFactory so it can be restored in tearDown
+        savedFactory = SalesforceSDKManager.getInstance().loginViewModelFactory
 
-        // Reset logger prefs as backup
-        SalesforceLogger.flushComponents()
-        SalesforceLogger.resetLoggerPrefs(getApplicationContext())
-
-        mockUserAccountManager = mockk(relaxed = true)
-        mockSdkManager = mockk(relaxed = true)
-        mockClientManager = mockk(relaxed = true)
-        mockRestClient = mockk(relaxed = true)
-        mockUser = mockk(relaxed = true)
-
-        // Mock user properties needed for getAuthorizationUrl
-        every { mockUser.instanceServer } returns "https://test.salesforce.com"
-
-        mockkStatic(UserAccountManager::class)
-        every { UserAccountManager.getInstance() } returns mockUserAccountManager
-        every {
-            mockUserAccountManager.getUserFromOrgAndUserId(VALID_ORG, VALID_USER)
-        } returns mockUser
-        every {
-            mockUserAccountManager.getUserFromOrgAndUserId(INVALID_ORG, INVALID_USER)
-        } returns null
-
-        mockkObject(SalesforceSDKManager)
-        mockkObject(SalesforceSDKManager.Companion)
-        every { SalesforceSDKManager.getInstance() } returns mockSdkManager
-        every { mockSdkManager.appContext } returns getApplicationContext()
-        every { mockSdkManager.clientManager.peekRestClient(any<UserAccount>()) } returns mockRestClient
-        every { mockSdkManager.useHybridAuthentication } returns false
-        every { mockSdkManager.userAgent } returns "MockUserAgent"
-        every { mockSdkManager.isBrowserLoginEnabled } returns false
-        every { mockSdkManager.useWebServerAuthentication } returns false
-
-        mockColorState = mockk(relaxed = true)
-        every { mockColorState.value } returns Color.White
-
-        // Mock loginViewModelFactory to return a new mock LoginViewModel each time
+        // Mock loginViewModelFactory to return a mock LoginViewModel
         mockViewModel = mockk<LoginViewModel>(relaxed = true) {
-            coEvery {
-                getAuthorizationUrl(any(), any(), any(), any())
-            } returns "https://test.salesforce.com/authorize"
-            every { dynamicBackgroundColor } returns mockColorState
+            every { dynamicBackgroundColor } returns mutableStateOf(Color.White)
+            every { loading } returns mutableStateOf(false)
             every { authFinished } returns mutableStateOf(false)
             every { loadingIndicator } returns null
             every { oAuthConfig } returns mockOAuthConfig
@@ -119,26 +69,14 @@ class TokenMigrationWebViewTest {
         }
 
         // Wire up the factory so the activity's `by viewModels` delegate returns mockViewModel
-        every { mockSdkManager.loginViewModelFactory } returns object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                return mockViewModel as T
+        SalesforceSDKManager.getInstance().loginViewModelFactory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(
+                    modelClass: Class<T>,
+                    extras: CreationExtras,
+                ): T = mockViewModel as T
             }
-        }
-
-        // Default mock for sendSync to prevent hanging - tests can override this
-        val mockResponse = mockk<com.salesforce.androidsdk.rest.RestResponse>(relaxed = true)
-        every { mockResponse.isSuccess } returns true
-        every { mockResponse.asString() } returns """{"frontdoor_uri": "https://test.salesforce.com/frontdoor"}"""
-        every { mockRestClient.sendSync(any()) } returns mockResponse
-
-        // Mock AnalyticsPublishingWorker to prevent NPE during activity lifecycle
-        mockkObject(AnalyticsPublishingWorker.Companion)
-        every {
-            AnalyticsPublishingWorker.enqueueAnalyticsPublishWorkRequest(any(), any())
-        } returns UUID.randomUUID()
-
-        SalesforceAnalyticsManager.setAnalyticsPublishingType(SalesforceAnalyticsManager.SalesforceAnalyticsPublishingType.PublishDisabled)
 
         TokenMigrationActivity.webViewFactory = { context -> TestWebView(context) }
 
@@ -150,7 +88,17 @@ class TokenMigrationWebViewTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        testActivity?.let { activity ->
+            if (!activity.isFinishing && !activity.isDestroyed) {
+                InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                    activity.finish()
+                }
+            }
+        }
+        testActivity = null
+        // Restore the real loginViewModelFactory
+        SalesforceSDKManager.getInstance().loginViewModelFactory = savedFactory
+        unmockkAll()  // cleans up any mockk() instances created in tests
     }
 
     /**
@@ -316,6 +264,11 @@ class TokenMigrationWebViewTest {
 
     @Test
     fun onPageStarted_setsLoadingTrue() {
+        val loadingState: MutableState<Boolean> = mockk(relaxed = true)
+        val authFinishedState: MutableState<Boolean> = mockk(relaxed = true)
+        every { mockViewModel.loading } returns loadingState
+        every { mockViewModel.authFinished } returns authFinishedState
+
         val activity = launchActivity()
         val mockResultCallback = createMockResultCallback()
         val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "https://test.salesforce.com")
@@ -324,8 +277,32 @@ class TokenMigrationWebViewTest {
             clientManager.onPageStarted(mockWebView, "https://test.salesforce.com/page", null)
         }
 
-        verify { mockViewModel.loading.value = true }
-        verify(exactly = 0) { mockViewModel.authFinished.value = true }
+        verify { loadingState.value = true }
+        verify(exactly = 0) { authFinishedState.value = true }
+    }
+
+    @Test
+    fun onPageFinished_setsBackgroundColor() {
+        val purpleColor = "rgb(128, 0, 128)"
+        val loadingState: MutableState<Boolean> = mockk(relaxed = true)
+        val backgroundColor: MutableState<Color> = mockk(relaxed = true)
+        every { mockViewModel.loading } returns loadingState
+        every { mockViewModel.authFinished } returns mutableStateOf(false)
+        every { mockViewModel.dynamicBackgroundColor } returns backgroundColor
+        every { mockWebView.evaluateJavascript(any(), any()) } answers {
+            secondArg<android.webkit.ValueCallback<String>>().onReceiveValue(purpleColor)
+        }
+
+        val activity = launchActivity()
+        val mockResultCallback = createMockResultCallback()
+        val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "https://test.salesforce.com")
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            clientManager.onPageFinished(mockWebView, "https://test.salesforce.com/page")
+        }
+
+        verify { backgroundColor.value = Color(128, 0, 128) }
+        verify { loadingState.value = false }
     }
 
     // endregion
@@ -364,8 +341,10 @@ class TokenMigrationWebViewTest {
                     instanceServer = "https://test.salesforce.com",
                 )
                 assertTrue(
-                    "User agent should contain MockUserAgent",
-                    webView.settings.userAgentString?.contains("MockUserAgent") == true,
+                    "User agent should contain SDK user agent",
+                    webView.settings.userAgentString?.contains(
+                        SalesforceSDKManager.getInstance().userAgent
+                    ) == true,
                 )
             } catch (e: Throwable) {
                 Assert.fail(e.stackTraceToString())
@@ -437,16 +416,57 @@ class TokenMigrationWebViewTest {
     // region Helpers
 
     /**
-     * Launches a bare [TokenMigrationActivity] via [startActivitySync] (instrumentation thread)
-     * and returns the activity instance.  The activity's [onCreate] will exit early because no
-     * intent extras are provided, but the instance is still usable for direct method calls.
+     * Launches [TokenMigrationActivity] with intent extras.  [UserAccountManager]
+     * returns null for any user lookup, so the activity finishes in [onCreate]
+     * before reaching [clientManager.peekRestClient] or the lifecycleScope
+     * coroutine.  This avoids Compose rendering and coroutine-related hangs entirely.
+     *
+     * Uses [Application.ActivityLifecycleCallbacks] to capture the activity
+     * instance because [ActivityScenario.onActivity] cannot be used on
+     * activities that have already reached the DESTROYED state.
      */
     private fun launchActivity(): TokenMigrationActivity {
+        val callbackKey = MigrationCallbackRegistry.register(
+            MigrationCallbackRegistry.MigrationCallbacks(
+                onMigrationSuccess = { },
+                onMigrationError = { _, _, _ -> },
+            )
+        )
         val intent = Intent(getApplicationContext(), TokenMigrationActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(TokenMigrationActivity.EXTRA_CALLBACK_ID, callbackKey)
+            putExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG, mockOAuthConfig)
+            putExtra(TokenMigrationActivity.EXTRA_ORG_ID, VALID_ORG)
+            putExtra(TokenMigrationActivity.EXTRA_USER_ID, VALID_USER)
         }
-        return InstrumentationRegistry.getInstrumentation()
-            .startActivitySync(intent) as TokenMigrationActivity
+
+        var capturedActivity: TokenMigrationActivity? = null
+        val latch = CountDownLatch(1)
+        val app = getApplicationContext<Application>()
+
+        val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                if (activity is TokenMigrationActivity) {
+                    capturedActivity = activity
+                    latch.countDown()
+                }
+            }
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        }
+
+        app.registerActivityLifecycleCallbacks(lifecycleCallbacks)
+        getApplicationContext<Context>().startActivity(intent)
+        latch.await(10, TimeUnit.SECONDS)
+        app.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
+
+        testActivity = capturedActivity
+            ?: throw RuntimeException("TokenMigrationActivity was not created within timeout")
+        return testActivity!!
     }
 
     private fun createMockResultCallback(): MigrationCallbackRegistry.MigrationCallbacks =
