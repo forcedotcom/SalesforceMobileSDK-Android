@@ -374,9 +374,10 @@ private fun updateLoggingPrefsHelper(account: UserAccount) {
 /**
  * Helper method to handle screen lock mobile policy.
  */
-private fun handleScreenLockPolicy(
+@VisibleForTesting
+internal fun handleScreenLockPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
-    account: UserAccount
+    account: UserAccount,
 ) {
     val internalScreenLockManager =
         SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
@@ -399,9 +400,10 @@ private fun handleScreenLockPolicy(
 /**
  * Helper method to handle biometric authentication mobile policy.
  */
-private fun handleBiometricAuthPolicy(
+@VisibleForTesting
+internal fun handleBiometricAuthPolicy(
     userIdentity: OAuth2.IdServiceResponse?,
-    account: UserAccount
+    account: UserAccount,
 ) {
     val internalBiometricAuthenticationManager =
         SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?
@@ -442,10 +444,11 @@ private fun addAccountHelper(
  * - Unlocking biometric authentication for the duplicate user
  * - Signing out other users with biometric auth when a new biometric user is added
  */
-private fun handleDuplicateUserAccount(
+@VisibleForTesting
+internal fun handleDuplicateUserAccount(
     userAccountManager: UserAccountManager,
     account: UserAccount,
-    userIdentity: OAuth2.IdServiceResponse?
+    userIdentity: OAuth2.IdServiceResponse?,
 ) {
     userAccountManager.authenticatedUsers?.let { existingUsers ->
         // Check if the user already exists

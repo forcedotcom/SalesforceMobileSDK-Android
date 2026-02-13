@@ -38,21 +38,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -66,11 +53,7 @@ import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.BACKGROUND_COLOR_JAVASCRIPT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.validateAndExtractBackgroundColor
-import com.salesforce.androidsdk.ui.components.DefaultLoadingIndicator
-import com.salesforce.androidsdk.ui.components.LOADING_ALPHA
-import com.salesforce.androidsdk.ui.components.SLOW_ANIMATION_MS
-import com.salesforce.androidsdk.ui.components.VISIBLE_ALPHA
-import com.salesforce.androidsdk.ui.components.applyImePaddingConditionally
+import com.salesforce.androidsdk.ui.components.TokenMigrationView
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.util.UriFragmentParser
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +64,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.lang.String.format
 
 private const val HALF_ALPHA = 0.5f
 
@@ -171,6 +155,9 @@ internal class TokenMigrationActivity : ComponentActivity() {
                 )
                 return@launch
             }
+
+            // Initially set background to transparent, it will react to the webview
+            // background if/when the WebView loads an actual page we want to show.
             viewModel.dynamicBackgroundColor.value = Color.Transparent.copy(alpha = HALF_ALPHA)
             makeStatusBarVisible()
 
@@ -180,31 +167,9 @@ internal class TokenMigrationActivity : ComponentActivity() {
                         background = viewModel.dynamicBackgroundColor.value
                     )
                 ) {
-                    Scaffold(
-                        contentWindowInsets = WindowInsets.safeDrawing,
-                        modifier = Modifier.fillMaxSize(),
-                    ) { innerPadding ->
-                        val alpha: Float by animateFloatAsState(
-                            targetValue = if (viewModel.loading.value) LOADING_ALPHA else VISIBLE_ALPHA,
-                            animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
-                        )
-
-                        AndroidView(
-                            modifier = Modifier
-                                .background(Color.Transparent)
-                                .padding(innerPadding)
-                                .consumeWindowInsets(innerPadding)
-                                .applyImePaddingConditionally()
-                                .graphicsLayer(alpha = alpha),
-                            factory = {
-                                buildAuthWebview(frontDoorUrl, resultCallback, user.instanceServer)
-                            },
-                        )
-
-                        if (viewModel.loading.value) {
-                            viewModel.loadingIndicator ?: DefaultLoadingIndicator()
-                        }
-                    }
+                    TokenMigrationView(
+                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, user.instanceServer) }
+                    )
                 }
             }
         }
@@ -218,7 +183,11 @@ internal class TokenMigrationActivity : ComponentActivity() {
     ): WebView = webViewFactory(this@TokenMigrationActivity).apply {
         @SuppressLint("SetJavaScriptEnabled") // Required by Salesforce
         settings.javaScriptEnabled = true
-        settings.userAgentString = SalesforceSDKManager.getInstance().userAgent
+        settings.userAgentString = format(
+            "%s %s",
+            SalesforceSDKManager.getInstance().userAgent,
+            settings.userAgentString,
+        )
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
         webViewClient = TokenMigrationClientManager(resultCallback, instanceServer)
 
