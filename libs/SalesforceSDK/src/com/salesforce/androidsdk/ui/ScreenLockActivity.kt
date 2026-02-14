@@ -26,17 +26,12 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.annotation.SuppressLint
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
-import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
@@ -119,19 +114,20 @@ class ScreenLockActivity : FragmentActivity() {
 
     /**
      * Implements the creation of the activity.
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
      * @param packageManager The PackageManager to use. This parameter is
      * intended for testing purposes only. Defaults to the current
      * PackageManager instance
+     * @param sdkConfiguration The Android SDK configuration. This parameter is
+     * intended for testing purposes only. Defaults to the current Android SDK
+     * build
      * @param sdkManager The SalesforceSDKManager to use. This parameter is
      * intended for testing purposes only. Defaults to the current
      * SalesforceSDKManager instance
      */
     @VisibleForTesting
     internal fun create(
-        build: Int = SDK_INT,
         packageManager: PackageManager = this.packageManager,
+        sdkConfiguration: AndroidSdkConfiguration = AndroidSdkConfiguration,
         sdkManager: SalesforceSDKManager = getInstance(),
     ) {
         enableEdgeToEdge()
@@ -167,7 +163,7 @@ class ScreenLockActivity : FragmentActivity() {
 
         // TODO: Remove this when min API > 33
         // Disable back navigation.
-        if (build >= TIRAMISU) {
+        if (sdkConfiguration.isTiramisu) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                 PRIORITY_DEFAULT, ::noOp
             )
@@ -225,15 +221,16 @@ class ScreenLockActivity : FragmentActivity() {
      * @param biometricSetupActivityResultLauncher The activity result launcher
      * to use for biometric setup. This parameter is intended for testing
      * purposes only.  Defaults to the biometric setup activity result launcher
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
+     * @param sdkConfiguration The Android SDK configuration. This parameter is
+     * intended for testing purposes only. Defaults to the current Android SDK
+     * build
      */
     @VisibleForTesting
     internal fun presentBiometricAuthentication(
         biometricManager: BiometricManager = BiometricManager.from(this),
         biometricPrompt: BiometricPrompt = getBiometricPrompt(),
         biometricSetupActivityResultLauncher: ActivityResultLauncher<Intent> = this.biometricSetupActivityResultLauncher,
-        build: Int = SDK_INT,
+        sdkConfiguration: AndroidSdkConfiguration = AndroidSdkConfiguration,
     ) {
         when (biometricManager.canAuthenticate(viewModel.biometricAuthenticators())) {
             BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN -> {
@@ -247,8 +244,8 @@ class ScreenLockActivity : FragmentActivity() {
             BIOMETRIC_ERROR_NONE_ENROLLED -> {
                 setErrorMessage(getString(sf__screen_lock_setup_required, viewModel.appName()))
 
-                // Prompts the user to setup the operating system screen lock and biometrics.
-                if (build >= R) { // TODO: Remove when min API > 29.
+                // Prompts the user to set up the operating system screen lock and biometrics.
+                if (sdkConfiguration.isR) { // TODO: Remove when min API > 29.
                     viewModel.setupButtonAction.value = {
                         biometricSetupActivityResultLauncher.launch(Intent(ACTION_BIOMETRIC_ENROLL).apply {
                             putExtra(EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, viewModel.biometricAuthenticators())
@@ -272,18 +269,19 @@ class ScreenLockActivity : FragmentActivity() {
 
     /**
      * Determines how the biometric prompt should appear and behave.
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
      * @param packageManager The package manager to use for authentication.
      * This parameter is intended for testing purposes only. Defaults to the
      * current package manager
+     * @param sdkConfiguration The Android SDK configuration. This parameter is
+     * intended for testing purposes only. Defaults to the current Android SDK
+     * build
      */
     @VisibleForTesting
     internal fun getBiometricPromptInfo(
-        build: Int = SDK_INT,
         packageManager: PackageManager = this.packageManager,
+        sdkConfiguration: AndroidSdkConfiguration = AndroidSdkConfiguration,
     ): PromptInfo {
-        val hasFaceUnlock = if (build >= Q) { // TODO: Remove when min API > 28.
+        val hasFaceUnlock = if (sdkConfiguration.isQ) { // TODO: Remove when min API > 28.
             packageManager.hasSystemFeature(FEATURE_FACE) || (packageManager.hasSystemFeature(FEATURE_IRIS))
         } else {
             false
@@ -340,23 +338,24 @@ class ScreenLockActivity : FragmentActivity() {
      * @param accessibilityManager The accessibility manager to use for sending
      * the event. This parameter is intended for testing purposes only. Defaults
      * to the current accessibility manager
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
      * @param screenLockManager The screen lock manager to use for
      * authentication. This parameter is intended for testing purposes only.
      * Defaults to the current screen lock manager
+     * @param sdkConfiguration The Android SDK configuration. This parameter is
+     * intended for testing purposes only. Defaults to the current Android SDK
+     * build
      */
     @VisibleForTesting
     internal fun finishSuccess(
-        build: Int = SDK_INT,
         accessibilityManager: AccessibilityManager = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager,
         screenLockManager: ScreenLockManager? = getInstance().screenLockManager as ScreenLockManager?,
+        sdkConfiguration: AndroidSdkConfiguration = AndroidSdkConfiguration,
     ) {
         resetUI()
         sendAccessibilityEvent(
             accessibilityManager = accessibilityManager,
-            build = build,
             eventText = getString(sf__screen_lock_auth_success),
+            sdkConfiguration = sdkConfiguration,
         )
         screenLockManager?.onUnlock()
         finish()
@@ -417,19 +416,20 @@ class ScreenLockActivity : FragmentActivity() {
      * @param accessibilityManager The accessibility manager to use for sending
      * the event. This parameter is intended for testing purposes only. Defaults
      * to the current accessibility manager
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
      * @param eventText The event text
+     * @param sdkConfiguration The Android SDK configuration. This parameter is
+     * intended for testing purposes only. Defaults to the current Android SDK
+     * build
      */
     @VisibleForTesting
     internal fun sendAccessibilityEvent(
         accessibilityManager: AccessibilityManager = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager,
-        build: Int = SDK_INT,
         eventText: String?,
+        sdkConfiguration: AndroidSdkConfiguration = AndroidSdkConfiguration,
     ) {
         if (accessibilityManager.isEnabled) {
             accessibilityManager.sendAccessibilityEvent(
-                if (build >= R) {
+                if (sdkConfiguration.isR) {
                     AccessibilityEvent()
                 } else {
                     // TODO: Remove when min API > 29.
@@ -438,7 +438,9 @@ class ScreenLockActivity : FragmentActivity() {
                 }.apply {
                     setEventType(TYPE_WINDOW_STATE_CHANGED)
                     setClassName(this@ScreenLockActivity.javaClass.getName())
-                    setPackageName(this@ScreenLockActivity::javaClass.get().packageName)
+                    if (sdkConfiguration.isS) {
+                        setPackageName(this@ScreenLockActivity::javaClass.get().packageName)
+                    }
                     text.add(eventText)
                 })
         }

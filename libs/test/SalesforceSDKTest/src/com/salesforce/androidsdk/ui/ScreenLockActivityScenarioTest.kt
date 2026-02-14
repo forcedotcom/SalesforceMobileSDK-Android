@@ -39,10 +39,6 @@ import android.content.pm.PackageManager.NameNotFoundException
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.os.Build.VERSION_CODES.P
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
-import android.os.Build.VERSION_CODES.S_V2
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
 import android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
@@ -139,7 +135,7 @@ class ScreenLockActivityScenarioTest {
                 val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
                 every { sdkManager.isDarkTheme } returns false
 
-                activity.create(build = S_V2, sdkManager = sdkManager)
+                activity.create(sdkConfiguration = AndroidSdkConfigurationS, sdkManager = sdkManager)
 
                 assertTrue(activity.window.attributes.flags and FLAG_SECURE != 0)
 
@@ -411,8 +407,8 @@ class ScreenLockActivityScenarioTest {
                 activity.presentBiometricAuthentication(
                     biometricManager = biometricManager,
                     biometricPrompt = biometricPrompt,
-                    build = R,
                     biometricSetupActivityResultLauncher = biometricSetupActivityResultLauncher,
+                    sdkConfiguration = AndroidSdkConfigurationR,
                 )
                 activity.viewModel.setupButtonAction.value()
 
@@ -445,8 +441,8 @@ class ScreenLockActivityScenarioTest {
                 activity.presentBiometricAuthentication(
                     biometricManager = biometricManager,
                     biometricPrompt = biometricPrompt,
-                    build = Q,
                     biometricSetupActivityResultLauncher = biometricSetupActivityResultLauncher,
+                    sdkConfiguration = AndroidSdkConfigurationQ,
                 )
                 activity.viewModel.setupButtonAction.value()
 
@@ -476,8 +472,8 @@ class ScreenLockActivityScenarioTest {
                 every { packageManager.hasSystemFeature(FEATURE_FACE) } returns false
                 every { packageManager.hasSystemFeature(FEATURE_IRIS) } returns false
                 val result = activity.getBiometricPromptInfo(
-                    build = Q,
                     packageManager = packageManager,
+                    sdkConfiguration = AndroidSdkConfigurationQ,
                 )
                 assertEquals(activity.getString(sf__screen_lock_title, activity.viewModel.appName()), result.title)
                 assertEquals(activity.getString(sf__screen_lock_subtitle, activity.viewModel.appName()), result.subtitle)
@@ -502,8 +498,8 @@ class ScreenLockActivityScenarioTest {
                 every { packageManager.hasSystemFeature(FEATURE_FACE) } returns true
                 every { packageManager.hasSystemFeature(FEATURE_IRIS) } returns false
                 val result = activity.getBiometricPromptInfo(
-                    build = Q,
                     packageManager = packageManager,
+                    sdkConfiguration = AndroidSdkConfigurationQ,
                 )
                 assertEquals(activity.getString(sf__screen_lock_title, activity.viewModel.appName()), result.title)
                 assertEquals(activity.getString(sf__screen_lock_subtitle, activity.viewModel.appName()), result.subtitle)
@@ -528,8 +524,8 @@ class ScreenLockActivityScenarioTest {
                 every { packageManager.hasSystemFeature(FEATURE_FACE) } returns false
                 every { packageManager.hasSystemFeature(FEATURE_IRIS) } returns true
                 val result = activity.getBiometricPromptInfo(
-                    build = Q,
                     packageManager = packageManager,
+                    sdkConfiguration = AndroidSdkConfigurationQ,
                 )
                 assertEquals(activity.getString(sf__screen_lock_title, activity.viewModel.appName()), result.title)
                 assertEquals(activity.getString(sf__screen_lock_subtitle, activity.viewModel.appName()), result.subtitle)
@@ -554,8 +550,8 @@ class ScreenLockActivityScenarioTest {
                 every { packageManager.hasSystemFeature(FEATURE_FACE) } returns true
                 every { packageManager.hasSystemFeature(FEATURE_IRIS) } returns true
                 val result = activity.getBiometricPromptInfo(
-                    build = Q,
                     packageManager = packageManager,
+                    sdkConfiguration = AndroidSdkConfigurationQ,
                 )
                 assertEquals(activity.getString(sf__screen_lock_title, activity.viewModel.appName()), result.title)
                 assertEquals(activity.getString(sf__screen_lock_subtitle, activity.viewModel.appName()), result.subtitle)
@@ -581,8 +577,8 @@ class ScreenLockActivityScenarioTest {
                 every { packageManager.hasSystemFeature(FEATURE_FACE) } returns true
                 every { packageManager.hasSystemFeature(FEATURE_IRIS) } returns true
                 val result = activity.getBiometricPromptInfo(
-                    build = P,
                     packageManager = packageManager,
+                    sdkConfiguration = AndroidSdkConfigurationP,
                 )
                 assertEquals(activity.getString(sf__screen_lock_title, activity.viewModel.appName()), result.title)
                 assertEquals(activity.getString(sf__screen_lock_subtitle, activity.viewModel.appName()), result.subtitle)
@@ -736,15 +732,15 @@ class ScreenLockActivityScenarioTest {
                 val screenLockManager = mockk<ScreenLockManager>(relaxed = true)
                 activity.finishSuccess(
                     accessibilityManager = accessibilityManager,
-                    build = Q,
                     screenLockManager = screenLockManager,
+                    sdkConfiguration = AndroidSdkConfigurationQ
                 )
 
                 verify(exactly = 1) { accessibilityManager.sendAccessibilityEvent(capture(capturingSlot)) }
                 assertTrue(capturingSlot.captured.text.toString().contains(activity.getString(sf__screen_lock_auth_success)))
                 assertEquals(TYPE_WINDOW_STATE_CHANGED, capturingSlot.captured.eventType)
                 assertEquals(ScreenLockActivity::class.java.name, capturingSlot.captured.className)
-                assertEquals(ScreenLockActivity::class.java.packageName, capturingSlot.captured.packageName)
+                assertEquals(null, capturingSlot.captured.packageName)
 
                 verify(exactly = 1) { screenLockManager.onUnlock() }
 
@@ -889,9 +885,9 @@ class ScreenLockActivityScenarioTest {
 
         verify(exactly = 1) {
             activity.finishSuccess(
-                build = any(),
                 accessibilityManager = any(),
-                screenLockManager = any()
+                screenLockManager = any(),
+                sdkConfiguration = any(),
             )
         }
     }
@@ -913,8 +909,8 @@ class ScreenLockActivityScenarioTest {
         verify(exactly = 1) {
             activity.sendAccessibilityEvent(
                 accessibilityManager = any(),
-                build = any(),
-                eventText = capture(sendAccessibilityCapturingSlot)
+                eventText = capture(sendAccessibilityCapturingSlot),
+                sdkConfiguration = any(),
             )
         }
         assertTrue(sendAccessibilityCapturingSlot.captured.contains(activity.getString(sf__screen_lock_auth_failed)))
@@ -932,4 +928,36 @@ class ScreenLockActivityScenarioTest {
 
         return bitmap
     }
+}
+
+val AndroidSdkConfigurationP = mockk<AndroidSdkConfiguration>().apply {
+    every { isP } returns true
+    every { isQ } returns false
+    every { isR } returns false
+    every { isS } returns false
+    every { isTiramisu } returns false
+}
+
+val AndroidSdkConfigurationQ = mockk<AndroidSdkConfiguration>().apply {
+    every { isP } returns true
+    every { isQ } returns true
+    every { isR } returns false
+    every { isS } returns false
+    every { isTiramisu } returns false
+}
+
+val AndroidSdkConfigurationR = mockk<AndroidSdkConfiguration>().apply {
+    every { isP } returns true
+    every { isQ } returns true
+    every { isR } returns true
+    every { isS } returns false
+    every { isTiramisu } returns false
+}
+
+val AndroidSdkConfigurationS = mockk<AndroidSdkConfiguration>().apply {
+    every { isP } returns true
+    every { isQ } returns true
+    every { isR } returns true
+    every { isS } returns true
+    every { isTiramisu } returns false
 }
