@@ -165,7 +165,7 @@ class LoginActivityTest {
         val observer = activity.BrowserCustomTabUrlObserver(activity)
 
         observer.onChanged(exampleUrl)
-        verify(exactly = -1) {
+        verify {
             activity.startBrowserCustomTabAuthorization(
                 match { it == exampleUrl },
                 match { it == activityResultLauncher }

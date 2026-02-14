@@ -127,7 +127,7 @@ fun UserCredentialsView(currentUser: UserAccount?) {
         InfoSection(title = TOKENS) {
             InfoRowView(label = ACCESS_TOKEN, value = currentUser?.authToken, isSensitive = true)
             InfoRowView(label = REFRESH_TOKEN, value = currentUser?.refreshToken, isSensitive = true)
-            InfoRowView(label = TOKEN_FORMAT, value = currentUser?.tokenFormat)
+            InfoRowView(label = TOKEN_FORMAT, value = currentUser?.tokenFormat?.ifBlank { "Opaque" })
             InfoRowView(label = SCOPES, value = formatScopes(currentUser))
         }
 

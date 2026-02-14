@@ -45,6 +45,12 @@
             android:configChanges="orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="true" />
 
+        <!-- Token Migration Activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.TokenMigrationActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/AccountSwitcher"
+            android:exported="false" />
+
         <!-- Screen Lock Activity-->
         <activity android:name="com.salesforce.androidsdk.ui.ScreenLockActivity"
             android:exported="false"

@@ -355,8 +355,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
+        loginServer: String? = null,
+        tokenMigration: Boolean = false,
     ) = CoroutineScope(IO).launch {
-        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess)
+        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess, loginServer, tokenMigration)
     }
 
     /**
@@ -368,6 +370,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         tr: TokenEndpointResponse,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
+        tokenMigration: Boolean = false,
+        loginServer: String? = null,
     ) {
         // Clear cookies after successful authentication to prevent automatic re-login if the user tries to add another user right away.
         if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
@@ -376,11 +380,12 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         authCodeForJwtFlow = null
         onAuthFlowComplete(
             tokenResponse = tr,
-            loginServer = selectedServer.value ?: "", // This will never actually be null.
+            loginServer = loginServer ?: selectedServer.value ?: "",
             consumerKey = consumerKey,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
+            tokenMigration = tokenMigration,
         )
     }
 
@@ -427,22 +432,23 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param scope The Coroutine scope.  This parameter is intended for testing
      * purposes only. Defaults to the IO scope
      */
-    @VisibleForTesting
     internal suspend fun getAuthorizationUrl(
         server: String,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
         scope: CoroutineScope = CoroutineScope(IO),
+        migrationOAuthConfig: OAuthConfig? = null,
     ) = withContext(scope.coroutineContext) {
         // Show loading indicator because appConfigForLoginHost could take a noticeable amount of time.
         loading.value = true
 
         with(sdkManager) {
-            // Check if the OAuth Config has been manually set by dev support LoginOptionsActivity.
-            val debugOverrideAppConfig = debugOverrideAppConfig
-            oAuthConfig = if (isDebugBuild && debugOverrideAppConfig != null) {
-                debugOverrideAppConfig
-            } else {
-                appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
+            oAuthConfig = when {
+                // Used by UserAccountManager.migrateRefreshToken/TokenMigrationActivity
+                migrationOAuthConfig != null -> migrationOAuthConfig
+                // Used by LoginOptions
+                isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
+                // Check if app has a config and fallback to bootconfig file.
+                else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
             }
         }
 
@@ -483,13 +489,20 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         }.toString()
     }
 
-    private suspend fun doCodeExchange(
+    @VisibleForTesting
+    internal suspend fun doCodeExchange(
         code: String?,
         onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
+        loginServer: String? = null,
+        tokenMigration: Boolean = false,
     ) = withContext(IO) {
         runCatching {
-            val server = if (isUsingFrontDoorBridge) frontdoorBridgeServer else selectedServer.value
+            val server = when {
+                loginServer != null -> loginServer
+                isUsingFrontDoorBridge -> frontdoorBridgeServer
+                else -> selectedServer.value
+            }
             val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
 
             val tokenResponse = exchangeCode(
@@ -501,7 +514,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 oAuthConfig.redirectUri,
             )
 
-            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess)
+            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)

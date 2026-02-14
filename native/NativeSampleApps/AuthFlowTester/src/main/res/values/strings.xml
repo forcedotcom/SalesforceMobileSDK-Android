@@ -25,10 +25,12 @@
     <string name="close_content_description">close</string>
     <string name="json_content_description">import json</string>
     <string name="migrate_button">Migrate Refresh Token</string>
+    <string name="migration_in_progress">Migrating…</string>
     <string name="import_config">Import Configuration</string>
     <string name="import_button">Import</string>
     <string name="json_import">Paste json with %1$s, %2$s and %3$s:</string>
-
+    <string name="migration_success">Migration Success</string>
+    <string name="migration_failure">Migration Failure</string>
 
     <!-- BaseComponents -->
     <string name="empty_placeholder">(empty)</string>
