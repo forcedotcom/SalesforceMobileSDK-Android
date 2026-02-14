@@ -121,17 +121,17 @@ import com.salesforce.androidsdk.R.string.sf__more_options
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__reload
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.CORNER_RADIUS
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.SFColors
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
-internal const val PADDING_SIZE = 12
 internal const val HEADER_TEXT_SIZE = 20
 internal const val TEXT_SIZE = 16
-internal const val CORNER_RADIUS = 12
 internal const val STROKE_WIDTH = 1
 internal const val BUTTON_HEIGHT = 48
 internal const val LEVEL_3_ELEVATION = 6

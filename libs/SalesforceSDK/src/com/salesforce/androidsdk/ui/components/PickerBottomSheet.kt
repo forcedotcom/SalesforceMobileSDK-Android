@@ -127,7 +127,9 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.ui.CORNER_RADIUS
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
