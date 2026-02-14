@@ -47,7 +47,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
-import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.RuntimeConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -111,7 +110,8 @@ internal suspend fun onAuthFlowComplete(
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
     handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
-    handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit = ::handleDuplicateUserAccount,
+    handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
+        = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
 ) {
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
@@ -449,6 +449,7 @@ internal fun handleDuplicateUserAccount(
     userAccountManager: UserAccountManager,
     account: UserAccount,
     userIdentity: OAuth2.IdServiceResponse?,
+    revokeRefreshToken: (HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit = OAuth2::revokeRefreshToken,
 ) {
     userAccountManager.authenticatedUsers?.let { existingUsers ->
         // Check if the user already exists
@@ -456,12 +457,6 @@ internal fun handleDuplicateUserAccount(
             val duplicateUserAccount = existingUsers.removeAt(existingUsers.indexOf(account))
             clearCaches()
             userAccountManager.clearCachedCurrentUser()
-
-            // Remove the existing Account from AccountManager so createAccount can create a fresh one
-            val existingAccount = userAccountManager.buildAccount(duplicateUserAccount)
-            if (existingAccount != null) {
-                SalesforceSDKManager.getInstance().clientManager.removeAccount(existingAccount)
-            }
 
             // Revoke existing refresh token
             if (account.refreshToken != duplicateUserAccount.refreshToken) {
@@ -476,14 +471,12 @@ internal fun handleDuplicateUserAccount(
                                 as? BiometricAuthenticationManager)?.onUnlock()
                     }
                     CoroutineScope(IO).launch {
-                        CoroutineScope(IO).launch {
-                            revokeRefreshToken(
-                                HttpAccess.DEFAULT,
-                                uri,
-                                duplicateUserAccount.refreshToken,
-                                OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
-                            )
-                        }
+                        revokeRefreshToken(
+                            HttpAccess.DEFAULT,
+                            uri,
+                            duplicateUserAccount.refreshToken,
+                            OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
+                        )
                     }
                 }
             }

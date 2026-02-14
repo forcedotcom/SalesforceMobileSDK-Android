@@ -55,6 +55,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URI
 
 /**
  * Tests for AuthenticationUtilities.
@@ -622,10 +623,8 @@ class AuthenticationUtilitiesTest {
         setupMockSdkManager(clientManager = mockClientManager)
 
         val duplicateUser = buildTestUserAccount(refreshToken = "same_token")
-        val mockAccount = mockk<Account>()
         val mockUam = mockk<UserAccountManager>(relaxed = true) {
             every { authenticatedUsers } returns mutableListOf(duplicateUser)
-            every { buildAccount(duplicateUser) } returns mockAccount
         }
         val account = buildTestUserAccount(refreshToken = "same_token")
 
@@ -634,8 +633,6 @@ class AuthenticationUtilitiesTest {
 
         // Then
         verify { mockUam.clearCachedCurrentUser() }
-        verify { mockUam.buildAccount(duplicateUser) }
-        verify { mockClientManager.removeAccount(mockAccount) }
     }
 
     @Test
@@ -643,6 +640,7 @@ class AuthenticationUtilitiesTest {
         // Given
         val mockClientManager = mockk<ClientManager>(relaxed = true)
         setupMockSdkManager(clientManager = mockClientManager)
+        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit>(relaxed = true)
 
         val duplicateUser = buildTestUserAccount(
             refreshToken = "old_token",
@@ -656,11 +654,19 @@ class AuthenticationUtilitiesTest {
         val account = buildTestUserAccount(refreshToken = "new_token")
 
         // When
-        com.salesforce.androidsdk.auth.handleDuplicateUserAccount(mockUam, account, null)
+        com.salesforce.androidsdk.auth.handleDuplicateUserAccount(mockUam, account, null, mockRevokeRefreshToken)
+        Thread.sleep(500)
 
         // Then
         verify { mockUam.clearCachedCurrentUser() }
-        verify { mockClientManager.removeAccount(mockAccount) }
+        verify {
+            mockRevokeRefreshToken.invoke(
+                any(),
+                any(),
+                eq("old_token"),
+                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED)
+            )
+        }
     }
 
     @Test
@@ -673,6 +679,7 @@ class AuthenticationUtilitiesTest {
             clientManager = mockClientManager
         )
         setupBiometricEnabledPrefs(mockSdkManager)
+        val mockRevokeRefreshToken = mockk<(HttpAccess, URI, String, OAuth2.LogoutReason) -> Unit>(relaxed = true)
 
         val duplicateUser = buildTestUserAccount(
             refreshToken = "old_token",
@@ -686,10 +693,19 @@ class AuthenticationUtilitiesTest {
         val account = buildTestUserAccount(refreshToken = "new_token")
 
         // When
-        com.salesforce.androidsdk.auth.handleDuplicateUserAccount(mockUam, account, null)
+        com.salesforce.androidsdk.auth.handleDuplicateUserAccount(mockUam, account, null, mockRevokeRefreshToken)
+        Thread.sleep(500)
 
         // Then
         verify { mockBioAuthManager.onUnlock() }
+        verify {
+            mockRevokeRefreshToken.invoke(
+                any(),
+                any(),
+                eq("old_token"),
+                eq(OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED)
+            )
+        }
     }
 
     @Test
