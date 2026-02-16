@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.config;
 
+import static java.lang.String.format;
+import static java.util.Locale.US;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -130,7 +133,7 @@ public class LoginServerManager {
 		if (name != null && url != null) {
 			LoginServer server = new LoginServer(name, url, isCustom);
 
-			// Only notify livedata consumers if the value has changed.
+			// Only notify live data consumers if the value has changed.
 			if (!server.equals(selectedServer.getValue())) {
 				selectedServer.postValue(server);
 			}
@@ -321,6 +324,95 @@ public class LoginServerManager {
 	 */
 	public List<LoginServer> getLoginServersFromPreferences() {
 		return getLoginServersFromPreferences(settings);
+	}
+
+	/**
+	 * Reorders a custom login server in the list of login servers.
+	 *
+	 * @param originalIndex The original index of the custom login server.  If this is not the index
+	 *                      of a custom login server, this method will do nothing
+	 * @param updatedIndex  The new index of the custom login server.  This must be after the last
+	 *                      non-custom login server and within the updatable bounds of the list.  If
+	 *                      it is not it will be automatically corrected
+	 */
+	@SuppressWarnings("unused")
+	public void reorderCustomLoginServer(
+			final int originalIndex,
+			int updatedIndex
+	) {
+		// Get the login server at the original index.
+		final List<LoginServer> loginServers = getLoginServers();
+		final LoginServer originalLoginServer = loginServers.get(originalIndex);
+
+		// Guard against reordering a non-custom login server.
+		if (!originalLoginServer.isCustom) {
+			return;
+		}
+
+		// Determine the last non-custom login server index.
+		final List<LoginServer> servers = getLoginServers();
+		int lastNonCustomIndex = -1;
+		for (int i = servers.size() - 1; i >= 0; i--) {
+			if (!servers.get(i).isCustom) {
+				lastNonCustomIndex = i;
+				break;
+			}
+		}
+
+		// Adjust the re-ordered custom login server index to be within bounds.
+		if (updatedIndex <= lastNonCustomIndex) {
+			updatedIndex = lastNonCustomIndex + 1;
+		} else if (updatedIndex >= servers.size()) {
+			updatedIndex = servers.size() - 1;
+		}
+
+		// Update the login server list.
+		loginServers.remove(originalIndex);
+		loginServers.add(updatedIndex, originalLoginServer);
+
+		// Edit each login server indexed after the updated index.
+		final Editor editor = settings.edit();
+		for (int i = updatedIndex; i < loginServers.size(); i++) {
+			final LoginServer loginServer = loginServers.get(i);
+			editor.remove(format(US, SERVER_NAME, i))
+					.remove(format(US, SERVER_URL, i))
+					.remove(format(US, IS_CUSTOM, i))
+					.putString(format(US, SERVER_NAME, i), loginServer.name)
+					.putString(format(US, SERVER_URL, i), loginServer.url)
+					.putBoolean(format(US, IS_CUSTOM, i), loginServer.isCustom);
+		}
+		editor.apply();
+	}
+
+	/**
+	 * Replaces one custom login server with another.
+	 *
+	 * @param originalCustomLoginServer The original custom login server.  If this is not a custom
+	 *                                  login server or doesn't match an existing login server this
+	 *                                  method will do nothing.
+	 * @param updatedCustomLoginServer  The updated custom login server.  If this is not a custom
+	 *                                  login server this method will do nothing.
+	 */
+	@SuppressWarnings("unused")
+	public void replaceCustomLoginServer(
+			final LoginServer originalCustomLoginServer,
+			final LoginServer updatedCustomLoginServer
+	) {
+		// Guard against replacing a non-custom login server.
+		if (!originalCustomLoginServer.isCustom || !updatedCustomLoginServer.isCustom) {
+			return;
+		}
+
+		final int originalIndex = getLoginServers().indexOf(originalCustomLoginServer);
+
+		// Guard against an original login server that doesn't exist.
+		if (originalIndex == -1) {
+			return;
+		}
+
+		removeServer(originalCustomLoginServer);
+		addCustomLoginServer(updatedCustomLoginServer.name, updatedCustomLoginServer.url);
+		reorderCustomLoginServer(getLoginServers().size() - 1, originalIndex);
 	}
 
 	/**
