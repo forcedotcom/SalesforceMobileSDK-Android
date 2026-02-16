@@ -23,6 +23,7 @@ dependencies {
     api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
     api("androidx.work:work-runtime-ktx:2.10.3")
 
+    implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")

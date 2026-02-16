@@ -125,6 +125,7 @@ import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
@@ -198,6 +199,7 @@ open class LoginActivity : FragmentActivity() {
             webViewClient = this@LoginActivity.webViewClient
             webChromeClient = this@LoginActivity.webChromeClient
             setBackgroundColor(Color.Transparent.toArgb())
+            this@LoginActivity.baseUserAgentString = settings.userAgentString ?: ""
             settings.apply {
                 domStorageEnabled = true /* Salesforce Welcome Discovery requires this */
                 @SuppressLint("SetJavaScriptEnabled")
@@ -205,13 +207,14 @@ open class LoginActivity : FragmentActivity() {
                 userAgentString = format(
                     "%s %s",
                     SalesforceSDKManager.getInstance().userAgent,
-                    userAgentString ?: "",
+                    this@LoginActivity.baseUserAgentString
                 )
             }
         }
     }
 
     // Private variables
+    private var baseUserAgentString = "";
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
@@ -902,6 +905,24 @@ open class LoginActivity : FragmentActivity() {
      */
     private fun applySalesforceWelcomeDiscoveryIntent(intent: Intent) {
 
+        // Set welcome discovery feature flag if applicable
+        if (isLoginWithWelcomeDiscovery(intent)) {
+            SalesforceSDKManager.getInstance()
+                .registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN);
+        }
+        else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(
+                FEATURE_WELCOME_DISCOVERY_LOGIN
+            );
+        }
+
+        // Re-apply user agent to WebView
+        webView.settings.userAgentString = format(
+            "%s %s",
+            SalesforceSDKManager.getInstance().userAgent,
+            baseUserAgentString
+        )
+
         // Apply the intent extras' Salesforce Welcome Login hint and host for use in the OAuth authorize URL, if applicable.
         applySalesforceWelcomeLoginHintAndHost(intent)
 
@@ -928,6 +949,19 @@ open class LoginActivity : FragmentActivity() {
             val loginUrl = "https://$loginHost"
             loginServerManager.addCustomLoginServer(loginHost, loginUrl)
         }
+    }
+
+    /**
+     * Returns true if intent is for a login with Welcome discovery
+     * - either because the the login url is Welcome discovery (part 1 of the flow)
+     * - there is a login hint (part 2 of the flow)
+     *
+     * @return true when the intent is for a login with Welcome discovery
+     */
+    private fun isLoginWithWelcomeDiscovery(intent: Intent): Boolean {
+        val isWelcomeDiscoveryUrl = intent.data?.let { isSalesforceWelcomeDiscoveryMobileUrl(it) } == true
+        val hasLoginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) != null
+        return isWelcomeDiscoveryUrl || hasLoginHint
     }
 
     /**

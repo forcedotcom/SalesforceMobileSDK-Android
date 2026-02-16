@@ -26,4 +26,11 @@
  */
 package com.salesforce.androidsdk.auth;
 
-class LegacyAuthenticatorService extends AuthenticatorService { }
+/**
+ * Android requires service classes to be public.  Do not use.
+ *
+ * @deprecated This class is used to migrate legacy accounts and will be removed in Mobile SDK 15.0.0.
+ */
+@Deprecated
+@SuppressWarnings("DeprecatedIsStillUsed")
+public final class LegacyAuthenticatorService extends AuthenticatorService { }

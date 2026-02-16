@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,25 +24,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.app;
+package com.salesforce.androidsdk.ui
+
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.P
+import android.os.Build.VERSION_CODES.Q
+import android.os.Build.VERSION_CODES.R
+import android.os.Build.VERSION_CODES.S
+import android.os.Build.VERSION_CODES.TIRAMISU
+import androidx.annotation.ChecksSdkIntAtLeast
+
+internal const val CORNER_RADIUS = 12
+internal const val PADDING_SIZE = 12
 
 /**
- * Flags for ftr_ field in user agent
+ * An empty function which has automated test code coverage.
  */
-public class Features {
-    public static final String FEATURE_AILTN_ENABLED = "AI";
-    public static final String FEATURE_APP_IS_IDP = "IP";
-    public static final String FEATURE_APP_IS_SP = "SP";
-    public static final String FEATURE_BROWSER_LOGIN = "BW";
-    public static final String FEATURE_CERT_AUTH = "CT";
-    public static final String FEATURE_LOCALHOST = "LH";
-    public static final String FEATURE_MDM = "MM";
-    public static final String FEATURE_MULTI_USERS = "MU";
-    public static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
-    public static final String FEATURE_USER_AUTH = "UA";
-    public static final String FEATURE_SCREEN_LOCK = "SL";
-    public static final String FEATURE_BIOMETRIC_AUTH = "BA";
-    public static final String FEATURE_NATIVE_LOGIN = "NL";
-    public static final String FEATURE_QR_CODE_LOGIN = "QR";
-    public static final String FEATURE_WELCOME_DISCOVERY_LOGIN = "WD";
+internal fun noOp() {}
+
+/**
+ * The Android SDK configuration.
+ */
+object AndroidSdkConfiguration {
+
+    @get:ChecksSdkIntAtLeast(api = P)
+    val isP = true
+
+    @get:ChecksSdkIntAtLeast(api = Q)
+    val isQ
+        get() = SDK_INT >= Q
+
+    @get:ChecksSdkIntAtLeast(api = R)
+    val isR
+        get() = SDK_INT >= R
+
+    @get:ChecksSdkIntAtLeast(api = S)
+    val isS
+        get() = SDK_INT >= S
+
+    @get:ChecksSdkIntAtLeast(api = TIRAMISU)
+    val isTiramisu
+        get() = SDK_INT >= TIRAMISU
 }

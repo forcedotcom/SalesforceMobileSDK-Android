@@ -82,7 +82,6 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.developer.support.DevSupportInfo
 import com.salesforce.androidsdk.ui.components.ICON_SIZE
-import com.salesforce.androidsdk.ui.components.PADDING_SIZE
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors

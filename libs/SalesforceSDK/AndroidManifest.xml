@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
-    <application>
+    <application android:supportsRtl="true">
 
         <!-- Metadata for supported app restrictions -->
         <meta-data android:name="android.content.APP_RESTRICTIONS"
