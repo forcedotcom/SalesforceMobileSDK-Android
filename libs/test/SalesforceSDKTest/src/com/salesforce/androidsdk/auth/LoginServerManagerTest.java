@@ -387,6 +387,7 @@ public class LoginServerManagerTest {
 		Assert.assertFalse(loginServerManager.getLoginServers().contains(originalCustomLoginServer));
 		Assert.assertFalse(loginServerManager.getLoginServers().contains(otherCustomLoginServer));
 
+
 		// Add the original and other custom login server.
 		loginServerManager.addCustomLoginServer(originalName, originalUrl);
 		loginServerManager.addCustomLoginServer(otherName, otherUrl);
@@ -395,24 +396,29 @@ public class LoginServerManagerTest {
 		Assert.assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
 		Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
 
+
 		// Prepare for negative tests.
 		final LoginServer production = new LoginServer("Production", "https://login.salesforce.com", false);
-		final LoginServer productionMismatch = new LoginServer("Production", "https://login.salesforce.com", true);
+		final LoginServer productionMismatch = new LoginServer("Production?", "https://login.salesforce.com", true);
 		final LoginServer productionReplacement = new LoginServer("Production Replaced", "https://login.salesforce.com", false);
+		final LoginServer productionReplacementMismatch = new LoginServer("Production Replaced?", "https://login.salesforce.com", true);
 
 		// Attempt the prohibited replacement of a non-custom login server where the original matches.
 		loginServerManager.replaceCustomLoginServer(production, productionReplacement);
 		Assert.assertTrue(loginServerManager.getLoginServers().contains(production));
 		Assert.assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
 
+
 		// Attempt the prohibited replacement of a non-custom login server where the original doesn't exit.
-		loginServerManager.replaceCustomLoginServer(productionMismatch, productionReplacement);
+		loginServerManager.replaceCustomLoginServer(productionMismatch, productionReplacementMismatch);
 		Assert.assertTrue(loginServerManager.getLoginServers().contains(production));
 		Assert.assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
+
 
 		// Attempt the prohibited reordering of a non-custom login server.
 		loginServerManager.reorderCustomLoginServer(0, 1);
 		Assert.assertEquals(loginServerManager.getLoginServers().get(0), production);
+
 
 		// Replace the original custom login server with a non-custom server.
 		loginServerManager.replaceCustomLoginServer(originalCustomLoginServer, nonCustomLoginServer);
@@ -421,6 +427,7 @@ public class LoginServerManagerTest {
 		Assert.assertFalse(loginServerManager.getLoginServers().contains(nonCustomLoginServer));
 		Assert.assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
 		Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
+
 
 		// Replace the original custom login server.
 		loginServerManager.replaceCustomLoginServer(originalCustomLoginServer, updatedCustomLoginServer);
@@ -431,6 +438,33 @@ public class LoginServerManagerTest {
 		// Verify the updated and other custom login servers are present.
 		Assert.assertEquals(updatedCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
 		Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
+
+		// Attempt to move the updated custom login server above the non-custom login servers.
+		loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), 0);
+
+		// Verify the updated custom login server is actually immediately following the last non-custom login server.
+		final List<LoginServer> loginServers = loginServerManager.getLoginServers();
+		int lastNonCustomIndex = -1;
+		for (int i = 0; i < loginServers.size(); i++) {
+			final LoginServer loginServer = loginServers.get(i);
+			if (!loginServer.isCustom) {
+				lastNonCustomIndex = i;
+			}
+		}
+		Assert.assertEquals(loginServers.get(lastNonCustomIndex + 1), updatedCustomLoginServer);
+
+
+ 		// Attempt to move the updated custom login server one greater than the upper bounds of the login servers list.
+		loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), loginServerManager.getLoginServers().size());
+
+		// Attempt to move the updated custom login server more than one greater than the upper bounds of the login servers list.
+		loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), loginServerManager.getLoginServers().size() + 1);
+
+		// Attempt to move the updated custom login server more than one less than the upper bounds of the login servers list.
+		loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), loginServerManager.getLoginServers().size() - 1);
+
+		// Verify the updated custom login server is now the last login server in the list.
+		Assert.assertEquals(loginServerManager.getLoginServers().getLast(), updatedCustomLoginServer);
 	}
 
 	private void assertProduction(LoginServer server) {

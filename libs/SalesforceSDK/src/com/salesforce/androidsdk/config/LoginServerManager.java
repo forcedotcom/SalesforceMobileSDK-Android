@@ -351,17 +351,16 @@ public class LoginServerManager {
 
 		// Determine the last non-custom login server index.
 		final List<LoginServer> servers = getLoginServers();
-		int lastNonCustomIndex = -1;
+		int firstCustomLoginServerIndex = -1;
 		for (int i = servers.size() - 1; i >= 0; i--) {
-			if (!servers.get(i).isCustom) {
-				lastNonCustomIndex = i;
-				break;
+			if (servers.get(i).isCustom) {
+				firstCustomLoginServerIndex = i;
 			}
 		}
 
 		// Adjust the re-ordered custom login server index to be within bounds.
-		if (updatedIndex <= lastNonCustomIndex) {
-			updatedIndex = lastNonCustomIndex + 1;
+		if (updatedIndex <= firstCustomLoginServerIndex) {
+			updatedIndex = firstCustomLoginServerIndex;
 		} else if (updatedIndex >= servers.size()) {
 			updatedIndex = servers.size() - 1;
 		}
