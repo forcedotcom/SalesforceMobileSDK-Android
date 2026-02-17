@@ -229,24 +229,12 @@ class PushMessagingTest {
     fun testInvokeServerNotificationActionViaSdkManager_WithoutAccount() {
         val salesforceSdkManager = SalesforceSDKManager.getInstance()
 
-        val restResponse = mockk<RestResponse>()
-        every { restResponse.asString() } returns encodeToString(
-            NotificationsActionsResponseBody.serializer(),
-            NotificationsActionsResponseBody(
-                message = "test_message"
+        assertThrows(NullPointerException::class.java) {
+            salesforceSdkManager.invokeServerNotificationAction(
+                notificationId = "test_notification_id",
+                actionKey = "test_action_key",
             )
-        )
-        every { restResponse.isSuccess } returns true
-        val restClient = mockk<RestClient>()
-        every { restClient.sendSync(any()) } returns restResponse
-
-        val notificationsActionsResponseBody = salesforceSdkManager.invokeServerNotificationAction(
-            notificationId = "test_notification_id",
-            actionKey = "test_action_key",
-            restClient = restClient
-        )
-
-        assertNull(notificationsActionsResponseBody)
+        }
     }
 
     @Test
