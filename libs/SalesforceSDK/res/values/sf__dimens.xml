@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
-    <!-- Dimensions used in sf__screen_lock.xml -->
-    <dimen name="sf__screenlock_error_margin_top">10dp</dimen>
-    <dimen name="sf__screenlock_error_margin_left">20dp</dimen>
-    <dimen name="sf__screenlock_error_margin_right">20dp</dimen>
-
     <!-- Biometric Enrollment Prompt -->
     <dimen name="sf__dialog_layout_padding">0dp</dimen>
 </resources>

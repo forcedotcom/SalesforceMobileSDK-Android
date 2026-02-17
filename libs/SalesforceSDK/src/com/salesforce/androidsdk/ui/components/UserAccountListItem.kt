@@ -61,6 +61,7 @@ import com.salesforce.androidsdk.R.drawable.sf__android_astro
 import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__account_selector_click_label
 import com.salesforce.androidsdk.R.string.sf__profile_photo_content_description
+import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport

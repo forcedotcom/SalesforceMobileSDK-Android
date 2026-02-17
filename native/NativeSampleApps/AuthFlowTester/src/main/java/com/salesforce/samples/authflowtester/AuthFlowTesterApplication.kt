@@ -52,6 +52,9 @@ class AuthFlowTesterApplication : Application() {
         with(SalesforceSDKManager.getInstance()) {
             registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
 
+            // TODO: remove when W-20524841 is fixed
+            useHybridAuthentication = false
+
             appConfigForLoginHost = { server: String ->
                 var oauthConfig: OAuthConfig? = null
                 val jsonConfig = ResourceReaderHelper.readAssetFile(

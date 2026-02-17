@@ -242,6 +242,7 @@ open class LoginActivity : FragmentActivity() {
             newUserIntent = true
         }
 
+        // TODO: Move to non-deprecated getParcelableExtra when min API >= 33
         accountAuthenticatorResponse = intent.getParcelableExtra<AccountAuthenticatorResponse?>(
             KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
         )?.apply {
@@ -1251,18 +1252,6 @@ open class LoginActivity : FragmentActivity() {
             d(TAG, "Received client certificate request from server")
             request.proceed(key, certChain)
         }
-
-        private fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
-            val rgbMatch = rgbTextPattern.find(javaScriptResult)
-
-            // groupValues[0] is the entire match.  [1] is red, [2] is green, [3] is green.
-            rgbMatch?.groupValues?.get(3) ?: return null
-            val red = rgbMatch.groupValues[1].toIntOrNull() ?: return null
-            val green = rgbMatch.groupValues[2].toIntOrNull() ?: return null
-            val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
-
-            return Color(red, green, blue)
-        }
     }
 
     companion object {
@@ -1279,14 +1268,26 @@ open class LoginActivity : FragmentActivity() {
         private const val RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION"
 
         // This parses the expected "rgb(x, x, x)" string.
-        private val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
+        internal val rgbTextPattern = "rgb\\((\\d{1,3}), (\\d{1,3}), (\\d{1,3})\\)".toRegex()
 
         // endregion
         // region LoginWebviewClient Constants
 
         internal const val ABOUT_BLANK = "about:blank"
-        private const val BACKGROUND_COLOR_JAVASCRIPT =
+        internal const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
+
+        internal fun validateAndExtractBackgroundColor(javaScriptResult: String): Color? {
+            val rgbMatch = rgbTextPattern.find(javaScriptResult)
+
+            // groupValues[0] is the entire match.  [1] is red, [2] is green, [3] is green.
+            rgbMatch?.groupValues?.get(3) ?: return null
+            val red = rgbMatch.groupValues[1].toIntOrNull() ?: return null
+            val green = rgbMatch.groupValues[2].toIntOrNull() ?: return null
+            val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
+
+            return Color(red, green, blue)
+        }
 
         // endregion
         // region Log In Via Salesforce Identity API UI Bridge Front Door URL Public Implementation

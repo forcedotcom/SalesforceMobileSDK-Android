@@ -3,7 +3,7 @@
   "shards": [
     {
       "name": "network",
-      "comment": "REST client tests that make live server calls - isolated",
+      "comment": "REST client tests that make live server calls",
       "targets": [
         "class com.salesforce.androidsdk.rest.RestClientTest",
         "class com.salesforce.androidsdk.rest.ClientManagerTest",        
@@ -14,7 +14,7 @@
     },
     {
       "name": "ui",
-      "comment": "UI tests and security tests that may require user interaction",
+      "comment": "Tests that exercise Activities/UI",
       "targets": [
         "class com.salesforce.androidsdk.ui.LoginViewActivityTest",
         "class com.salesforce.androidsdk.ui.PickerBottomSheetTest",
@@ -23,7 +23,9 @@
         "class com.salesforce.androidsdk.ui.PickerBottomSheetActivityTest",
         "class com.salesforce.androidsdk.ui.DevInfoActivityTest",
         "class com.salesforce.androidsdk.security.ScreenLockManagerTest",
-        "class com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest"
+        "class com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest",
+        "class com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
+        "class com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     },
     {
@@ -68,7 +70,9 @@
         "notClass com.salesforce.androidsdk.rest.NotificationsActionsResponseBodyTest",
         "notClass com.salesforce.androidsdk.rest.files.RenditionTypeTest",
         "notClass com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
-        "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest"
+        "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest",
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     }
   ]

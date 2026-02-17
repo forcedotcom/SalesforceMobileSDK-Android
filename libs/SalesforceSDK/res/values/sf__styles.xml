@@ -206,16 +206,6 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <style name="SalesforceSDK.ScreenLock.ErrorMessage">
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:gravity">center</item>
-        <item name="android:layout_gravity">center_horizontal</item>
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_marginTop">@dimen/sf__screenlock_error_margin_top</item>
-        <item name="android:layout_marginLeft">@dimen/sf__screenlock_error_margin_left</item>
-        <item name="android:layout_marginRight">@dimen/sf__screenlock_error_margin_right</item>
-    </style>
-
     <style name="SalesforceSDK_Fullscreen" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>

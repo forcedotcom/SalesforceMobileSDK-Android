@@ -133,6 +133,7 @@ public class OAuth2 {
     private static final String QUESTION = "?";
     private static final String TOUCH = "touch";
     private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
+    public static final String FRONTDOOR_URL_KEY = "frontdoor_uri";
     private static final String SID = "sid";
     private static final String RETURL = "retURL";
     protected static final String AUTHORIZATION = "Authorization";

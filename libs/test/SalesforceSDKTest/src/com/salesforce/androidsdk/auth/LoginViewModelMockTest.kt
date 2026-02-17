@@ -38,10 +38,12 @@ import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.runs
+import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertNotNull
@@ -50,7 +52,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.net.URI
 
 /**
  * Tests for LoginViewModel that require mocking.
@@ -73,8 +74,7 @@ class LoginViewModelMockTest {
         mockCookieManager = mockk<CookieManager>(relaxed = true)
         every { CookieManager.getInstance() } returns mockCookieManager
 
-        // Mock OAuth2 and AuthenticationUtilities
-        mockkStatic(OAuth2::class)
+        // Mock AuthenticationUtilities
         mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
 
         // Create view model after mocking
@@ -109,6 +109,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = any(),
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -140,13 +141,14 @@ class LoginViewModelMockTest {
         // Verify AuthenticationUtilities.onAuthFlowComplete was called with correct parameters
         coVerify {
             onAuthFlowComplete(
-                tokenResponse = eq(mockTokenResponse),
-                loginServer = eq(testServer),
-                consumerKey = eq(bootConfig.remoteAccessConsumerKey),
+                tokenResponse = mockTokenResponse,
+                loginServer = testServer,
+                consumerKey = bootConfig.remoteAccessConsumerKey,
                 onAuthFlowError = any(),
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = false,
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -176,6 +178,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = any(),
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -213,6 +216,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = false,
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -242,6 +246,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = any(),
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -289,6 +294,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = any(),
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -318,13 +324,14 @@ class LoginViewModelMockTest {
         // Verify empty string is used when selectedServer is null
         coVerify {
             onAuthFlowComplete(
-                tokenResponse = eq(mockTokenResponse),
-                loginServer = eq(""),
+                tokenResponse = mockTokenResponse,
+                loginServer = "",
                 consumerKey = any(),
                 onAuthFlowError = any(),
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = false,
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -342,144 +349,166 @@ class LoginViewModelMockTest {
     }
 
     @Test
-    fun doCodeExchange_CallsExchangeCode_WithCorrectParameters() = runBlocking {
+    fun onWebServerFlowComplete_CallsDoCodeExchange_WithCorrectParameters() = runBlocking {
         val testServer = "https://test.salesforce.com"
         val testCode = "test_auth_code_123"
-        val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
-        // Mock AuthenticationUtilities.onAuthFlowComplete to prevent actual execution
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+        
+        // Mock doCodeExchange to prevent actual execution
         coEvery {
-            onAuthFlowComplete(
-                tokenResponse = any(),
-                loginServer = any(),
-                consumerKey = any(),
-                onAuthFlowError = any(),
-                onAuthFlowSuccess = any(),
-                buildAccountName = any(),
-                nativeLogin = any(),
-                context = any(),
-                userAccountManager = any(),
-                blockIntegrationUser = any(),
-                runtimeConfig = any(),
-                updateLoggingPrefs = any(),
-                fetchUserIdentity = any(),
-                startMainActivity = any(),
-                setAdministratorPreferences = any(),
-                addAccount = any(),
-                handleScreenLockPolicy = any(),
-                handleBiometricAuthPolicy = any(),
-                handleDuplicateUserAccount = any(),
-            )
-        } returns Unit
-        
-        // Mock exchangeCode to return our mock token response
-        every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
-        } returns mockTokenResponse
-        
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
         // Set up the view model state
-        viewModel.selectedServer.value = testServer
+        spyViewModel.selectedServer.value = testServer
         Thread.sleep(100)
         
-        // Call the method under test via onWebServerFlowComplete
-        viewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
+        // Call the method under test
+        spyViewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
         
         // Give time for the coroutine to execute
         Thread.sleep(200)
         
-        // Verify exchangeCode was called with correct parameters
-        verify {
-            OAuth2.exchangeCode(
-                HttpAccess.DEFAULT,
-                URI.create(testServer),
-                bootConfig.remoteAccessConsumerKey,
+        // Verify doCodeExchange was called with correct parameters
+        coVerify {
+            spyViewModel.doCodeExchange(
                 testCode,
-                viewModel.codeVerifier,
-                bootConfig.oauthRedirectURI,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = null,
+                tokenMigration = false,
             )
         }
     }
 
     @Test
-    fun doCodeExchange_WithFrontDoorBridge_UsesCorrectServerAndVerifier() = runBlocking {
+    fun onTokenMigration_CallsDoCodeExchange_WithCorrectParameters() = runBlocking {
+        val testServer = "https://test.salesforce.com"
+        val testCode = "test_auth_code_123"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val migrationLoginServer = "migration_login_server"
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
+        // Set up the view model state
+        spyViewModel.selectedServer.value = testServer
+        Thread.sleep(100)
+
+        // Call the method under test
+        spyViewModel.onWebServerFlowComplete(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+            migrationLoginServer,
+            tokenMigration = true,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        // Verify doCodeExchange was called with correct parameters
+        coVerify {
+            spyViewModel.doCodeExchange(
+                testCode,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = migrationLoginServer,
+                tokenMigration = true,
+            )
+        }
+    }
+
+    @Test
+    fun onWebServerFlowComplete_WithFrontDoorBridge_UsesCorrectServerAndVerifier() = runBlocking {
         val frontDoorServer = "https://frontdoor.salesforce.com"
         val frontDoorUrl = "$frontDoorServer/frontdoor.jsp?sid=test_session"
         val frontDoorVerifier = "frontdoor_verifier_789"
         val testCode = "test_auth_code_123"
-        val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
-        // Mock AuthenticationUtilities.onAuthFlowComplete
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+        
+        // Mock doCodeExchange to prevent actual execution
         coEvery {
-            onAuthFlowComplete(
-                tokenResponse = any(),
-                loginServer = any(),
-                consumerKey = any(),
-                onAuthFlowError = any(),
-                onAuthFlowSuccess = any(),
-                buildAccountName = any(),
-                nativeLogin = any(),
-                context = any(),
-                userAccountManager = any(),
-                blockIntegrationUser = any(),
-                runtimeConfig = any(),
-                updateLoggingPrefs = any(),
-                fetchUserIdentity = any(),
-                startMainActivity = any(),
-                setAdministratorPreferences = any(),
-                addAccount = any(),
-                handleScreenLockPolicy = any(),
-                handleBiometricAuthPolicy = any(),
-                handleDuplicateUserAccount = any(),
-            )
-        } returns Unit
-        
-        // Mock exchangeCode
-        every {
-            OAuth2.exchangeCode(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } returns mockTokenResponse
-        
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
         // Set up front door bridge
-        viewModel.loginWithFrontDoorBridgeUrl(frontDoorUrl, frontDoorVerifier)
+        spyViewModel.loginWithFrontDoorBridgeUrl(frontDoorUrl, frontDoorVerifier)
         Thread.sleep(100)
         
         // Call the method under test
-        viewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
+        spyViewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
         
         // Give time for the coroutine to execute
         Thread.sleep(200)
-        
-        // Verify exchangeCode uses frontdoor server and verifier
-        verify {
-            OAuth2.exchangeCode(
-                HttpAccess.DEFAULT,
-                URI.create(frontDoorServer),
-                bootConfig.remoteAccessConsumerKey,
+
+        // Verify doCodeExchange was called with null loginServer and false tokenMigration
+        coVerify {
+            spyViewModel.doCodeExchange(
                 testCode,
-                frontDoorVerifier,
-                bootConfig.oauthRedirectURI,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = null,
+                tokenMigration = false,
             )
         }
     }
 
     @Test
-    fun doCodeExchange_WithNullCode_PassesNullToExchangeCode() = runBlocking {
+    fun onWebServerFlowComplete_WithNullCode_CallsDoCodeExchangeWithNull() = runBlocking {
         val testServer = "https://test.salesforce.com"
-        val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         
-        // Mock AuthenticationUtilities.onAuthFlowComplete
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+        
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
+        // Set up the view model state
+        spyViewModel.selectedServer.value = testServer
+        Thread.sleep(100)
+        
+        // Call with null code
+        spyViewModel.onWebServerFlowComplete(null, mockOnError, mockOnSuccess)
+        
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        // Verify doCodeExchange was called with null code, null loginServer, and false tokenMigration
+        coVerify {
+            spyViewModel.doCodeExchange(
+                null,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = null,
+                tokenMigration = false,
+            )
+        }
+    }
+
+    // region Token Migration Tests
+
+    @Test
+    fun onAuthFlowComplete_WithTokenMigration_PassesCorrectParameters() = runBlocking {
+        // Mock the AuthenticationUtilities.onAuthFlowComplete function
         coEvery {
             onAuthFlowComplete(
                 tokenResponse = any(),
@@ -489,6 +518,7 @@ class LoginViewModelMockTest {
                 onAuthFlowSuccess = any(),
                 buildAccountName = any(),
                 nativeLogin = any(),
+                tokenMigration = any(),
                 context = any(),
                 userAccountManager = any(),
                 blockIntegrationUser = any(),
@@ -503,39 +533,184 @@ class LoginViewModelMockTest {
                 handleDuplicateUserAccount = any(),
             )
         } returns Unit
-        
-        // Mock exchangeCode
-        every {
-            OAuth2.exchangeCode(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } returns mockTokenResponse
-        
+
+        val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+
         // Set up the view model state
-        viewModel.selectedServer.value = testServer
+        viewModel.selectedServer.value = "https://test.salesforce.com"
         Thread.sleep(100)
-        
-        // Call with null code
-        viewModel.onWebServerFlowComplete(null, mockOnError, mockOnSuccess)
-        
-        // Give time for the coroutine to execute
-        Thread.sleep(200)
-        
-        // Verify exchangeCode was called with null code
-        verify {
-            OAuth2.exchangeCode(
-                HttpAccess.DEFAULT,
-                URI.create(testServer),
-                bootConfig.remoteAccessConsumerKey,
-                null,
-                viewModel.codeVerifier,
-                bootConfig.oauthRedirectURI,
+
+        // Call the method under test with tokenMigration = true
+        viewModel.onAuthFlowComplete(mockTokenResponse, mockOnError, mockOnSuccess, tokenMigration = true)
+
+        // Verify tokenMigration parameter is passed as true
+        coVerify {
+            onAuthFlowComplete(
+                tokenResponse = mockTokenResponse,
+                loginServer = any(),
+                consumerKey = any(),
+                onAuthFlowError = any(),
+                onAuthFlowSuccess = any(),
+                buildAccountName = any(),
+                nativeLogin = any(),
+                tokenMigration = true,
+                context = any(),
+                userAccountManager = any(),
+                blockIntegrationUser = any(),
+                runtimeConfig = any(),
+                updateLoggingPrefs = any(),
+                fetchUserIdentity = any(),
+                startMainActivity = any(),
+                setAdministratorPreferences = any(),
+                addAccount = any(),
+                handleScreenLockPolicy = any(),
+                handleBiometricAuthPolicy = any(),
+                handleDuplicateUserAccount = any(),
             )
         }
     }
+
+    @Test
+    fun onWebServerFlowComplete_WithTokenMigration_PassesCorrectParameters() = runBlocking {
+        val customLoginServer = "https://custom.salesforce.com"
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+        
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+        } returns Result.success(Unit)
+
+        // Set up the view model state with different server
+        spyViewModel.selectedServer.value = "https://different.salesforce.com"
+        Thread.sleep(100)
+
+        // Call the method under test with custom loginServer and tokenMigration
+        spyViewModel.onWebServerFlowComplete(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+            loginServer = customLoginServer,
+            tokenMigration = true
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        // Verify doCodeExchange was called with the correct loginServer and tokenMigration
+        coVerify {
+            spyViewModel.doCodeExchange(
+                testCode,
+                mockOnError,
+                mockOnSuccess,
+                loginServer = customLoginServer,
+                tokenMigration = true,
+            )
+        }
+    }
+
+    @Test
+    fun doCodeExchange_UtilizesOAuth2_AndFinishesAuth() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } returns mockTokenResponse
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        // Set up required state
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        // Call function under test
+        spyViewModel.doCodeExchange(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        coVerify {
+            spyViewModel.onAuthFlowComplete(
+                mockTokenResponse,
+                mockOnError,
+                mockOnSuccess,
+                tokenMigration = false,
+                loginServer = "https://test.salesforce.com",
+            )
+        }
+    }
+
+    @Test
+    fun doCodeExchange_TokenMigration_PassesCorrectValues() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
+        val migrationServer = "migration_server"
+
+        // Create a spy of viewModel to verify and mock doCodeExchange
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } returns mockTokenResponse
+
+        // Mock doCodeExchange to prevent actual execution
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        // Set up required state
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        // Call function under test
+        spyViewModel.doCodeExchange(
+            testCode,
+            mockOnError,
+            mockOnSuccess,
+            migrationServer,
+            tokenMigration = true,
+        )
+
+        // Give time for the coroutine to execute
+        Thread.sleep(200)
+
+        coVerify {
+            spyViewModel.onAuthFlowComplete(
+                mockTokenResponse,
+                mockOnError,
+                mockOnSuccess,
+                tokenMigration = true,
+                loginServer = migrationServer,
+            )
+        }
+    }
+
+    // endregion
 }

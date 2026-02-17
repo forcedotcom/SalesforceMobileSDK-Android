@@ -8,6 +8,7 @@ plugins {
     `publish-module`
     jacoco
     kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.parcelize")
 }
 
 dependencies {
@@ -22,6 +23,7 @@ dependencies {
     api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
     api("androidx.work:work-runtime-ktx:2.10.3")
 
+    implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
@@ -48,6 +50,7 @@ dependencies {
 
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")

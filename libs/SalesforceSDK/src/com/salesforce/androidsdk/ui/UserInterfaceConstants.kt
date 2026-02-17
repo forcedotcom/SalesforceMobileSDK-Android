@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,40 +24,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.config
+package com.salesforce.androidsdk.ui
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.P
+import android.os.Build.VERSION_CODES.Q
+import android.os.Build.VERSION_CODES.R
+import android.os.Build.VERSION_CODES.S
+import android.os.Build.VERSION_CODES.TIRAMISU
+import androidx.annotation.ChecksSdkIntAtLeast
 
-@Parcelize
-data class OAuthConfig(
-    val consumerKey: String,
-    val redirectUri: String,
-    val scopes: List<String>? = null,
-): Parcelable {
-    
-    internal constructor(bootConfig: BootConfig): this(
-        bootConfig.remoteAccessConsumerKey,
-        bootConfig.oauthRedirectURI,
-        scopes = bootConfig.oauthScopes?.ifEmpty { null }?.toList(),
-    )
+internal const val CORNER_RADIUS = 12
+internal const val PADDING_SIZE = 12
 
-    // Used by LoginOptionsActivity
-    internal constructor(consumerKey: String, redirectUri: String, scopes: String): this(
-        consumerKey.trim(),
-        redirectUri.trim(),
-        scopes = with(scopes) {
-            if (isNullOrBlank()) return@with null
+/**
+ * An empty function which has automated test code coverage.
+ */
+internal fun noOp() {}
 
-            return@with if (contains(",")) {
-                split(",")
-            } else {
-                split(" ")
-            }.map { it.trim() }
-        }
-    )
+/**
+ * The Android SDK configuration.
+ */
+object AndroidSdkConfiguration {
 
-    // Used by LoginOptionsActivity
-    internal val scopesString
-        get() = scopes?.joinToString(separator = " ") ?: ""
+    @get:ChecksSdkIntAtLeast(api = P)
+    val isP = true
+
+    @get:ChecksSdkIntAtLeast(api = Q)
+    val isQ
+        get() = SDK_INT >= Q
+
+    @get:ChecksSdkIntAtLeast(api = R)
+    val isR
+        get() = SDK_INT >= R
+
+    @get:ChecksSdkIntAtLeast(api = S)
+    val isS
+        get() = SDK_INT >= S
+
+    @get:ChecksSdkIntAtLeast(api = TIRAMISU)
+    val isTiramisu
+        get() = SDK_INT >= TIRAMISU
 }

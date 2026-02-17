@@ -1,0 +1,317 @@
+/*
+ * Copyright (c) 2026-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.salesforce.androidsdk.ui
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Bitmap
+import android.os.Bundle
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.lifecycleScope
+import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
+import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.rest.RestRequest
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.BACKGROUND_COLOR_JAVASCRIPT
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.validateAndExtractBackgroundColor
+import com.salesforce.androidsdk.ui.components.TokenMigrationView
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import com.salesforce.androidsdk.util.UriFragmentParser
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.lang.String.format
+
+private const val HALF_ALPHA = 0.5f
+
+// Error messages - internal for testing
+@VisibleForTesting
+internal const val ERROR_PARSE_CALLBACK_ID = "Unable to parse MigrationResult callback id."
+@VisibleForTesting
+internal const val ERROR_RETRIEVE_CALLBACK = "Unable to retrieve MigrationResult callback."
+@VisibleForTesting
+internal const val ERROR_PARSE_OAUTH_CONFIG = "Unable to parse OAuthConfig."
+@VisibleForTesting
+internal const val ERROR_BUILD_USER_ACCOUNT = "Unable to build user account."
+@VisibleForTesting
+internal const val ERROR_BUILD_REST_CLIENT = "Unable to build RestClient."
+@VisibleForTesting
+internal const val ERROR_SINGLE_ACCESS_FAILED = "Request for single access bridge url failed"
+@VisibleForTesting
+internal const val ERROR_TOKEN_INVALID_DESC = "User's existing token may be invalid."
+
+internal class TokenMigrationActivity : ComponentActivity() {
+
+    private val viewModel: LoginViewModel
+            by viewModels { SalesforceSDKManager.getInstance().loginViewModelFactory }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        val callbackKey = intent.getStringExtra(EXTRA_CALLBACK_ID) ?: run {
+            SalesforceSDKLogger.e(TAG, ERROR_PARSE_CALLBACK_ID)
+            finish()
+            return
+        }
+        val resultCallback = MigrationCallbackRegistry.consume(callbackKey) ?: run {
+            SalesforceSDKLogger.e(TAG, ERROR_RETRIEVE_CALLBACK)
+            finish()
+            return
+        }
+
+        // TODO: Move to non-deprecated getParcelableExtra when min API >= 33
+        val oAuthConfig = intent.getParcelableExtra<OAuthConfig>(EXTRA_OAUTH_CONFIG) ?: run {
+            logMigrationError(resultCallback, ERROR_PARSE_OAUTH_CONFIG, null, null)
+            return
+        }
+
+        val orgId = intent.getStringExtra(EXTRA_ORG_ID)
+        val userId = intent.getStringExtra(EXTRA_USER_ID)
+        if ( orgId == null || userId == null) {
+            logMigrationError(resultCallback, ERROR_PARSE_OAUTH_CONFIG, null, null)
+            return
+        }
+        val user = UserAccountManager.getInstance().getUserFromOrgAndUserId(orgId, userId) ?: run {
+            logMigrationError(resultCallback, ERROR_BUILD_USER_ACCOUNT, null, null)
+            return
+        }
+        val client = runCatching {
+            SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+        }.getOrElse { e ->
+            logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, e as? Exception)
+            return
+        }
+
+        lifecycleScope.launch {
+            val frontDoorUrl = withContext(IO) {
+                runCatching {
+                    val authorizationUrl = viewModel.getAuthorizationUrl(
+                        server = user.instanceServer,
+                        migrationOAuthConfig = oAuthConfig,
+                    )
+                    val authorizationPath = with(authorizationUrl.toUri()) { "$path?$query" }
+                    val request = RestRequest.getRequestForSingleAccess(authorizationPath)
+                    val singleAccessResponse = client.sendSync(request)
+
+                    singleAccessResponse
+                        ?.takeIf { it.isSuccess }
+                        ?.let {
+                            Json.parseToJsonElement(it.asString())
+                                .jsonObject[FRONTDOOR_URL_KEY]
+                                ?.jsonPrimitive?.content
+                        }
+                }.getOrNull()
+            } ?: run {
+                logMigrationError(
+                    resultCallback = resultCallback,
+                    error = ERROR_SINGLE_ACCESS_FAILED,
+                    errorDesc = ERROR_TOKEN_INVALID_DESC,
+                    e = null,
+                )
+                return@launch
+            }
+
+            // Initially set background to transparent, it will react to the webview
+            // background if/when the WebView loads an actual page we want to show.
+            viewModel.dynamicBackgroundColor.value = Color.Transparent.copy(alpha = HALF_ALPHA)
+            makeStatusBarVisible()
+
+            setContent {
+                MaterialTheme(
+                    colorScheme = SalesforceSDKManager.getInstance().colorScheme().copy(
+                        background = viewModel.dynamicBackgroundColor.value
+                    )
+                ) {
+                    TokenMigrationView(
+                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, user.instanceServer) }
+                    )
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    internal fun buildAuthWebview(
+        frontDoorUrl: String,
+        resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
+        instanceServer: String,
+    ): WebView = webViewFactory(this@TokenMigrationActivity).apply {
+        @SuppressLint("SetJavaScriptEnabled") // Required by Salesforce
+        settings.javaScriptEnabled = true
+        settings.userAgentString = format(
+            "%s %s",
+            SalesforceSDKManager.getInstance().userAgent,
+            settings.userAgentString,
+        )
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        webViewClient = TokenMigrationClientManager(resultCallback, instanceServer)
+
+        loadUrl(frontDoorUrl)
+    }
+
+    // This implementation is very similar to [LoginActivity.AuthWebViewClient] but the
+    // code cannot be shared due to the heavy reliance on the ViewModel.
+    @VisibleForTesting
+    internal inner class TokenMigrationClientManager(
+        val resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
+        val instanceServer: String,
+    ) : WebViewClient() {
+
+        override fun shouldOverrideUrlLoading(
+            view: WebView,
+            request: WebResourceRequest,
+        ): Boolean {
+            val url = request.url.toString().replace("///", "/").lowercase()
+            val callbackUrl = viewModel.oAuthConfig.redirectUri.replace("///", "/").lowercase()
+            val migrationFinished = url.startsWith(callbackUrl)
+
+            if (migrationFinished) {
+                viewModel.authFinished.value = true
+                viewModel.loading.value = true
+
+                val params = UriFragmentParser.parse(request.url)
+                val error = params["error"]
+                // Did we fail?
+                when {
+                    error != null -> {
+                        logMigrationError(
+                            resultCallback = resultCallback,
+                            error = error,
+                            errorDesc = params["error_description"],
+                            e = null,
+                        )
+                    }
+
+                    else -> {
+                        // Show loading while we PKCE and/or create user account.
+                        viewModel.authFinished.value = true
+                        viewModel.loading.value = true
+
+                        CoroutineScope(Default).launch {
+                            when {
+                                viewModel.useWebServerFlow ->
+                                    viewModel.onWebServerFlowComplete(
+                                        code = params["code"],
+                                        onAuthFlowError = resultCallback.onMigrationError,
+                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
+                                        loginServer = instanceServer,
+                                        tokenMigration = true,
+                                    ).join()
+
+                                else ->
+                                    viewModel.onAuthFlowComplete(
+                                        tr = TokenEndpointResponse(params),
+                                        onAuthFlowError = resultCallback.onMigrationError,
+                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
+                                        tokenMigration = true,
+                                    )
+                            }
+
+                            // Wait until we are completely finished so progress indicator is shown.
+                            finish()
+                        }
+                    }
+                }
+            }
+
+            return migrationFinished
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            viewModel.loading.value = true
+        }
+
+        override fun onPageFinished(view: WebView?, url: String?) {
+            view?.evaluateJavascript(BACKGROUND_COLOR_JAVASCRIPT) { result ->
+                makeStatusBarVisible()
+                validateAndExtractBackgroundColor(result)?.let { color ->
+                    viewModel.dynamicBackgroundColor.value = color
+
+                    // This check is inside validateAndExtractBackgroundColor because we only
+                    // want to stop showing the spinner if WebView UI is actually displayed.
+                    if (!viewModel.authFinished.value) {
+                        viewModel.loading.value = false
+                    }
+                }
+            }
+
+            super.onPageFinished(view, url)
+        }
+    }
+
+    private fun logMigrationError(
+        resultCallback: MigrationCallbackRegistry.MigrationCallbacks,
+        error: String,
+        errorDesc: String?,
+        e: Throwable?,
+    ) {
+        val message = error + (errorDesc?.let { ": $it" } ?: "")
+        SalesforceSDKLogger.e(TAG, message, e)
+        resultCallback.onMigrationError(error, errorDesc, e)
+        finish()
+    }
+
+    // Ensure Status Bar Icons are readable no matter which OS theme is used.
+    private fun makeStatusBarVisible() {
+        val usingDarkTheme = viewModel.dynamicBackgroundTheme.value == DARK
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = usingDarkTheme
+    }
+
+    companion object {
+        const val EXTRA_OAUTH_CONFIG = "MIGRATION_OAUTH_CONFIG"
+        const val EXTRA_ORG_ID = "MIGRATION_ORG_ID"
+        const val EXTRA_USER_ID = "MIGRATION_USER_ID"
+        const val EXTRA_CALLBACK_ID = "MIGRATION_CALLBACK"
+
+        const val TAG = "TokenMigrationActivity"
+
+        // Used for mocking the webview in tests.
+        var webViewFactory = { context: Context -> WebView(context) }
+    }
+}
