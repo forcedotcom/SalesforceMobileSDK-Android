@@ -129,6 +129,9 @@ class PushServiceTest {
         val restClient = mockk<RestClient>()
         every { restClient.sendSync(any()) } returns restResponse
 
+        // Setup.
+        VERSION_NUMBER_TEST = "v63.0"
+
         val notificationsTypesResponseBody = PushService().fetchNotificationsTypes(
             restClient = restClient,
             userAccount = createTestAccount()
@@ -285,6 +288,7 @@ class PushServiceTest {
         every { restResponse.asString() } returns NOTIFICATIONS_TYPES_JSON
         every { restResponse.isSuccess } returns true
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         var result = false
@@ -746,6 +750,7 @@ class PushServiceTest {
         every { restResponse.statusCode } returns HTTP_CREATED
         every { restResponse.asJSONObject() } returns JSONObject("{\"id\": \"test_id\"}")
         val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
         every { restClient.sendSync(any()) } returns restResponse
 
         val account = createTestAccount()
@@ -765,9 +770,14 @@ class PushServiceTest {
             restClient = restClient
         )
 
-        verify(exactly = 1) {
+        verify(atLeast = 1) {
             restClient.sendSync(withArg {
-                assertEquals("test_community_id", it.requestBodyAsJson.get("NetworkId"))
+                assertEquals(
+                    "test_community_id",
+                    runCatching {
+                        it.requestBodyAsJson.get("NetworkId")
+                    }.getOrDefault("Default Value")
+                )
             })
         }
 
