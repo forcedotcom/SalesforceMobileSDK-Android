@@ -23,5 +23,6 @@ shared/test/test_credentials.json
 shared/test/ui_test_config.json
 **/bootconfig.xml
 !libs/test/**/bootconfig.xml
+!libs/SalesforceSDK/**/bootconfig.xml
 native/NativeSampleApps/AuthFlowTester/src/main/assets/
 .vscode/
