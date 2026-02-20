@@ -49,7 +49,6 @@ apply_bootconfig_paths() {
 
 BOOTCONFIG_SAMPLE="shared/bootconfig.xml.sample"
 BOOTCONFIG_XML_PATHS=(
-    "libs/SalesforceSDK/res/values/bootconfig.xml"
     "native/NativeSampleApps/RestExplorer/res/values/bootconfig.xml"
     "native/NativeSampleApps/AuthFlowTester/src/main/res/values/bootconfig.xml"
     "native/NativeSampleApps/ConfiguredApp/res/values/bootconfig.xml"
