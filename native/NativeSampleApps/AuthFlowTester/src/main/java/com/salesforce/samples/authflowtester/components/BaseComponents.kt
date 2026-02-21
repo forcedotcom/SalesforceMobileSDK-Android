@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.authflowtester
+package com.salesforce.samples.authflowtester.components
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -76,6 +76,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -83,6 +85,9 @@ import androidx.compose.ui.unit.sp
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
+import com.salesforce.samples.authflowtester.CORNER_SHAPE
+import com.salesforce.samples.authflowtester.INNER_CARD_PADDING
+import com.salesforce.samples.authflowtester.R
 
 const val SECTION_TITLE_SIZE = 16
 const val ROW_FONT_SIZE = 14
@@ -100,6 +105,7 @@ const val VISIBILITY_ICON_SIZE = 24
 fun ExpandableCard(
     title: String,
     exportedJSON: String,
+    contentDescription: String,
     defaultExpanded: Boolean = false, // Only used for Previews
     content: @Composable (() -> Unit),
 ) {
@@ -107,14 +113,16 @@ fun ExpandableCard(
     var showExportAlert by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth().padding((INNER_CARD_PADDING/2).dp),
+        modifier = Modifier.fillMaxWidth()
+            .padding((INNER_CARD_PADDING /2).dp)
+            .semantics { this.contentDescription = contentDescription },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ),
         shape = RoundedCornerShape(CORNER_SHAPE.dp)
     ) {
         Column(
-            modifier = Modifier.padding(INNER_CARD_PADDING.dp)
+            modifier = Modifier.Companion.padding(INNER_CARD_PADDING.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -161,8 +169,8 @@ fun ExpandableCard(
 
             AnimatedVisibility(visible = isExpanded) {
                 Column(
-                    modifier = Modifier.padding(top = (INNER_CARD_PADDING/2).dp),
-                    verticalArrangement = Arrangement.spacedBy((INNER_CARD_PADDING/2).dp)
+                    modifier = Modifier.padding(top = (INNER_CARD_PADDING /2).dp),
+                    verticalArrangement = Arrangement.spacedBy((INNER_CARD_PADDING /2).dp)
                 ) {
                     // Inner content here
                     content.invoke()
@@ -252,7 +260,7 @@ fun InfoSection(
             }
 
             AnimatedVisibility(visible = isExpanded) {
-                Column(modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp)) {
+                Column(modifier = Modifier.padding(bottom = (INNER_CARD_PADDING /2).dp)) {
                     content()
                 }
             }
@@ -279,7 +287,7 @@ fun InfoRowView(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = INNER_CARD_PADDING.dp, vertical = (INNER_CARD_PADDING/4).dp)
+            .padding(horizontal = INNER_CARD_PADDING.dp, vertical = (INNER_CARD_PADDING /4).dp)
             .clickable(enabled = isSensitive && !value.isNullOrEmpty()) {
                 isValueVisible = !isValueVisible
             }
@@ -307,13 +315,15 @@ fun InfoRowView(
         )
 
         // Ensure some space between label and values.
-        Spacer(modifier = Modifier.width((INNER_CARD_PADDING/4).dp))
+        Spacer(modifier = Modifier.Companion.width((INNER_CARD_PADDING /4).dp))
 
         Text(
             text = displayValue?.ifEmpty { emptyText } ?: emptyText,
             fontSize = ROW_FONT_SIZE.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(VALUE_WEIGHT).padding(end = (INNER_CARD_PADDING/2).dp),
+            modifier = Modifier.weight(VALUE_WEIGHT)
+                .padding(end = (INNER_CARD_PADDING /2).dp)
+                .semantics { contentDescription = label },
         )
 
         if (isSensitive && !value.isNullOrEmpty()) {
@@ -426,6 +436,7 @@ private fun UserCredentialsViewPreview() {
         ExpandableCard(
             title = "Card Title",
             exportedJSON = "",
+            contentDescription = "",
         ) { }
     }
 }
@@ -444,6 +455,7 @@ private fun UserCredentialsViewFallbackThemePreview() {
         ExpandableCard(
             title = "Card Title",
             exportedJSON = "",
+            contentDescription = "",
         ) { }
     }
 }
@@ -463,6 +475,7 @@ private fun UserCredentialsViewExpandedPreview() {
         ExpandableCard(
             title = "Card Title",
             exportedJSON = "",
+            contentDescription = "",
             defaultExpanded = true,
         ) {
             InfoSection("Section Title") {
@@ -486,6 +499,7 @@ private fun UserCredentialsViewFallbackThemeExpandedPreview() {
         ExpandableCard(
             title = "Card Title",
             exportedJSON = "",
+            contentDescription = "",
             defaultExpanded = true,
         ) {
             InfoSection("Section Title") {

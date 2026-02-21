@@ -28,13 +28,6 @@ package com.salesforce.samples.authflowtester
 
 import android.app.Application
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.config.OAuthConfig
-import com.salesforce.androidsdk.util.ResourceReaderHelper
-import com.salesforce.androidsdk.util.urlHostOrNull
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 class AuthFlowTesterApplication : Application() {
 
@@ -54,45 +47,6 @@ class AuthFlowTesterApplication : Application() {
 
             // TODO: remove when W-20524841 is fixed
             useHybridAuthentication = false
-
-            appConfigForLoginHost = { server: String ->
-                var oauthConfig: OAuthConfig? = null
-                val jsonConfig = ResourceReaderHelper.readAssetFile(
-                    /* ctx = */ this@AuthFlowTesterApplication,
-                    /* assetFilePath = */ "ui_test_config.json",
-                )
-
-                if (jsonConfig != null) {
-                    try {
-                        val jsonObject = Json.parseToJsonElement(jsonConfig).jsonObject
-                        val loginHost = jsonObject["loginHost"]?.jsonPrimitive?.content
-
-                        // Check if server matches the loginHost from config
-                        if (loginHost != null && server.urlHostOrNull() == loginHost.urlHostOrNull()) {
-                            val apps = jsonObject["apps"]?.jsonArray
-
-                            // Find the ca_basic_opaque app
-                            val basicApp = apps?.firstOrNull { app ->
-                                app.jsonObject["name"]?.jsonPrimitive?.content == "ca_basic_opaque"
-                            }?.jsonObject
-
-                            basicApp?.let { app ->
-                                val consumerKey = app["consumerKey"]?.jsonPrimitive?.content
-                                val redirectUri = app["redirectUri"]?.jsonPrimitive?.content
-
-                                if (consumerKey != null && redirectUri != null) {
-                                    oauthConfig = OAuthConfig(
-                                        consumerKey = consumerKey,
-                                        redirectUri = redirectUri,
-                                    )
-                                }
-                            }
-                        }
-                    } catch (_: Exception) { }
-                }
-
-                oauthConfig
-            }
         }
     }
 }

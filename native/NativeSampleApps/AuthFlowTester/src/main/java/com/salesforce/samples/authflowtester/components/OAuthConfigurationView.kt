@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.samples.authflowtester
+package com.salesforce.samples.authflowtester.components
 
 import android.content.res.Configuration
 import android.os.Build
@@ -36,91 +36,59 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
-import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParameter
+import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
+import com.salesforce.samples.authflowtester.OAUTH_SECTION_CONTENT_DESC
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
 
-private const val CARD_TITLE = "JWT Details"
+private const val CARD_TITLE = "OAuth Configuration"
+private const val CONSUMER_KEY = "Configured Consumer Key"
+private const val CALLBACK_URL = "Configured Callback URL"
+private const val CONFIGURED_SCOPES = "Configured Scopes"
 
-// Section titles
-private const val HEADER = "Header"
-private const val PAYLOAD = "Payload"
-
-// Header fields
-private const val ALGORITHM = "Algorithm (alg)"
-private const val TYPE = "Type (typ)"
-private const val KEY_ID = "Key ID (kid)"
-private const val TOKEN_TYPE = "Token Type (tty)"
-private const val TENANT_KEY = "Tenant Key (tnk)"
-private const val VERSION = "Version (ver)"
-
-// Payload fields
-private const val AUDIENCE = "Audience (aud)"
-private const val EXPIRATION_DATE = "Expiration Date (exp)"
-private const val ISSUER = "Issuer (iss)"
-private const val SUBJECT = "Subject (sub)"
-private const val SCOPES = "Scopes (scp)"
-private const val CLIENT_ID = "Client ID (client_id)"
 
 @Composable
-fun JwtTokenView(jwtToken: JwtAccessToken?) {
+fun OAuthConfigurationView() {
+    val bootConfig = if (LocalInspectionMode.current) {
+        null
+    } else {
+        BootConfig.getBootConfig(LocalContext.current)
+    }
+    val consumerKey = bootConfig?.remoteAccessConsumerKey
+    val redirect = bootConfig?.oauthRedirectURI
+    val scopes = bootConfig?.oauthScopes.toScopeParameter()
+
     ExpandableCard(
         title = CARD_TITLE,
-        exportedJSON = generateJwtJSON(jwtToken)
+        exportedJSON = generateConfigJSON(consumerKey, redirect, scopes),
+        contentDescription = OAUTH_SECTION_CONTENT_DESC,
     ) {
-        InfoSection(title = HEADER) {
-            InfoRowView(label = ALGORITHM, value = jwtToken?.header?.algorithn)
-            InfoRowView(label = TYPE, value = jwtToken?.header?.type)
-            InfoRowView(label = KEY_ID, value = jwtToken?.header?.keyId)
-            InfoRowView(label = TOKEN_TYPE, value = jwtToken?.header?.tokenType)
-            InfoRowView(label = TENANT_KEY, value = jwtToken?.header?.tenantKey)
-            InfoRowView(label = VERSION, value = jwtToken?.header?.version)
-        }
-
-        InfoSection(title = PAYLOAD) {
-            InfoRowView(label = AUDIENCE, value = jwtToken?.payload?.audience?.joinToString(", "))
-            InfoRowView(label = EXPIRATION_DATE, value = jwtToken?.expirationDate().toString())
-            InfoRowView(label = ISSUER, value = jwtToken?.payload?.issuer)
-            InfoRowView(label = SUBJECT, value = jwtToken?.payload?.subject)
-            InfoRowView(label = SCOPES, value = jwtToken?.payload?.scopes)
-            InfoRowView(label = CLIENT_ID, value = jwtToken?.payload?.clientId, isSensitive = true)
+        InfoSection(title = "") {
+            InfoRowView(label = CONSUMER_KEY, value = consumerKey)
+            InfoRowView(label = CALLBACK_URL, value = redirect)
+            InfoRowView(label = CONFIGURED_SCOPES, value = scopes)
         }
     }
 }
 
-private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
-    if (jwtToken == null) return "{}"
-
+private fun generateConfigJSON(
+    consumerKey: String?,
+    callbackUrl: String?,
+    scopes: String?,
+): String {
     return try {
         val result = buildJsonObject {
-            putJsonObject(HEADER) {
-                with(jwtToken.header) {
-                    put(ALGORITHM, algorithn)
-                    put(TYPE, type)
-                    put(KEY_ID, keyId)
-                    put(TOKEN_TYPE, tokenType)
-                    put(TENANT_KEY, tenantKey)
-                    put(VERSION, version)
-                }
-            }
-            
-            putJsonObject(PAYLOAD) {
-                with(jwtToken.payload) {
-                    put(AUDIENCE, audience?.joinToString(", "))
-                    put(EXPIRATION_DATE, jwtToken.expirationDate().toString())
-                    put(ISSUER, issuer)
-                    put(SUBJECT, subject)
-                    put(SCOPES, scopes)
-                    put(CLIENT_ID, clientId)
-                }
-            }
+            put(CONSUMER_KEY, consumerKey)
+            put(CALLBACK_URL, callbackUrl)
+            put(CONFIGURED_SCOPES, scopes)
         }
         Json { prettyPrint = true }.encodeToString(result)
     } catch (_: Exception) {
@@ -128,37 +96,33 @@ private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
     }
 }
 
-
 @RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
+@Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
-private fun JwtTokenViewPreview() {
+private fun OAuthConfigurationViewPreview() {
     val scheme = if (isSystemInDarkTheme()) {
         dynamicDarkColorScheme(LocalContext.current)
     } else {
         dynamicLightColorScheme(LocalContext.current)
     }
-
-    // Use Interactive mode to see preview data
     MaterialTheme(scheme) {
-        JwtTokenView(jwtToken = null)
+        OAuthConfigurationView()
     }
 }
 
 @ExcludeFromJacocoGeneratedReport
-@Preview(showBackground = true)
+@Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
-private fun JwtTokenViewFallbackThemePreview() {
+private fun OAuthConfigurationViewFallbackThemePreview() {
     val scheme = if (isSystemInDarkTheme()) {
         sfDarkColors()
     } else {
         sfLightColors()
     }
-
     MaterialTheme(scheme) {
-        JwtTokenView(jwtToken = null)
+        OAuthConfigurationView()
     }
 }
