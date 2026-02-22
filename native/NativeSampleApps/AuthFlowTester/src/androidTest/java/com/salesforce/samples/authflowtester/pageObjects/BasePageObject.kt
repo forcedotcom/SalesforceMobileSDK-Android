@@ -26,48 +26,11 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import android.content.Context
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiScrollable
-import androidx.test.uiautomator.UiSelector
-import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
 
-private const val TIMEOUT = 10_000L
-private const val RETRY_INTERVAL = 500L
-
-/**
- * Handles the OAuth authorization "Allow" button and Chrome Custom Tab
- * interactions that occur after login.
- */
-class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject(composeTestRule) {
-
-    fun tapAllowIfPresent() {
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val allowButton = device.findObject(UiSelector()
-            .className("android.widget.Button")
-            .textContains("Allow")
-        )
-
-        // Scroll to bottom in case the Allow button is off screen
-        UiScrollable(UiSelector().scrollable(true)).scrollToEnd(1)
-
-        // Poll for the Allow button in the WebView, checking Compose in between
-        val endTime = System.currentTimeMillis() + TIMEOUT
-        while (System.currentTimeMillis() < endTime) {
-            if (isAppLoaded()) return
-
-            if (allowButton.waitForExists(RETRY_INTERVAL)) {
-                allowButton.click()
-                return
-            }
-        }
-    }
-
-    /** Fast Compose check: is the main app UI already visible? */
-    private fun isAppLoaded(): Boolean = composeTestRule
-        .onAllNodesWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-        .fetchSemanticsNodes()
-        .isNotEmpty()
+abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
+    val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
+    fun getString(id: Int) = context.getString(id)
 }

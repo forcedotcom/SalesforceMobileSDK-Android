@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2026-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.samples.authflowtester.pageObjects
 
 import android.content.ClipData
@@ -12,7 +38,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
@@ -21,22 +46,32 @@ import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
+import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
+import com.salesforce.samples.authflowtester.components.USERNAME
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
+import com.salesforce.samples.authflowtester.testUtility.testConfig
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.junit.Assert.assertEquals
 
-data class TokenInfo(
+data class Tokens(
     val accessToken: String,
     val refreshToken: String,
-    val tokenFormat: String,
-    val scopes: String,
 )
 
-class AuthFlowTesterPageObject(
-    private val composeTestRule: ComposeTestRule,
-) {
-    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
-    private fun getString(id: Int) = context.getString(id)
+const val TIMEOUT_MS: Long = 2_000
+
+class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
+
+    fun waitForAppLoad() {
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 3)
+    }
 
     fun revokeAccessToken() {
         waitForNode(REVOKE_BUTTON_CONTENT_DESC)
@@ -55,7 +90,7 @@ class AuthFlowTesterPageObject(
         composeTestRule.waitForIdle()
     }
 
-    fun makeApiRequest() {
+    fun validateApiRequest() {
         waitForNode(REQUEST_BUTTON_CONTENT_DESC)
         composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
@@ -69,32 +104,40 @@ class AuthFlowTesterPageObject(
         composeTestRule.waitForIdle()
     }
 
-    fun getTokens(): TokenInfo {
-        // Expand creds section
-        waitForNode(CREDS_SECTION_CONTENT_DESC)
-        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-            .performClick()
-        composeTestRule.waitForIdle()
+    fun getTokens(): Tokens {
+        expandUserCredentialsSection()
 
-        // Wait for expanded content
-        waitForNode(ACCESS_TOKEN)
-
-        val tokens = TokenInfo(
+        return Tokens(
             getSensitiveValue(ACCESS_TOKEN),
             getSensitiveValue(REFRESH_TOKEN),
-            getText(TOKEN_FORMAT),
-            getText(SCOPES),
         )
-
-        // Collapse to guarantee consistent state
-        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-            .performClick()
-        composeTestRule.waitForIdle()
-
-        return tokens
     }
 
-    fun migrateToNewApp(jsonApp: String) {
+    fun validateUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
+
+        expandUserCredentialsSection()
+        assertEquals(expected.username, getText(USERNAME))
+    }
+
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
+        val expected = testConfig.getApp(knownAppConfig)
+
+        expandUserCredentialsSection()
+        assertEquals(expected.consumerKey, getSensitiveValue(CLIENT_ID))
+        assertEquals(expected.expectedScopesGranted(scopeSelection), getText(SCOPES))
+        assertEquals(expected.expectedTokenFormat, getText(TOKEN_FORMAT))
+    }
+
+    fun migrateToNewApp(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
+        val (_, consumerKey, redirectUri, scopes) =
+            testConfig.getAppWithRequestScopes(knownAppConfig, scopeSelection)
+        val jsonApp = buildJsonObject {
+            put("remoteConsumerKey", consumerKey)
+            put("oauthRedirectURI", redirectUri)
+            put("oauthScopes", scopes)
+        }.toString()
+
         // Copy JSON to clipboard
         (context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(
             ClipData.newPlainText("label", jsonApp)
@@ -134,25 +177,38 @@ class AuthFlowTesterPageObject(
         waitForNodeGone(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
     }
 
+    private fun expandUserCredentialsSection() {
+        waitForNode(CREDS_SECTION_CONTENT_DESC)
+
+        val alreadyExpanded = composeTestRule.onAllNodesWithContentDescription(ACCESS_TOKEN)
+            .fetchSemanticsNodes().isNotEmpty()
+        if (!alreadyExpanded) {
+            composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
+                .performClick()
+            composeTestRule.waitForIdle()
+            waitForNode(ACCESS_TOKEN)
+        }
+    }
+
     /** Wait for a node with the given content description to exist. */
-    fun waitForNode(contentDesc: String, timeoutMillis: Long = 30_000) {
+    private fun waitForNode(contentDesc: String, timeoutMillis: Long = TIMEOUT_MS) {
         composeTestRule.waitUntil(timeoutMillis) {
             try {
                 composeTestRule.onAllNodesWithContentDescription(contentDesc)
                     .fetchSemanticsNodes().isNotEmpty()
-            } catch (e: IllegalStateException) {
+            } catch (_: IllegalStateException) {
                 false // Compose hierarchy temporarily unavailable
             }
         }
     }
 
     /** Wait for a node with the given content description to disappear. */
-    fun waitForNodeGone(contentDesc: String, timeoutMillis: Long = 30_000) {
+    private fun waitForNodeGone(contentDesc: String, timeoutMillis: Long = TIMEOUT_MS) {
         composeTestRule.waitUntil(timeoutMillis) {
             try {
                 composeTestRule.onAllNodesWithContentDescription(contentDesc)
                     .fetchSemanticsNodes().isEmpty()
-            } catch (e: IllegalStateException) {
+            } catch (_: IllegalStateException) {
                 false
             }
         }

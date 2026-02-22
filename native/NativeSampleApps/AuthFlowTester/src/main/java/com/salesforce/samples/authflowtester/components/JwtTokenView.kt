@@ -68,7 +68,7 @@ private const val EXPIRATION_DATE = "Expiration Date (exp)"
 private const val ISSUER = "Issuer (iss)"
 private const val SUBJECT = "Subject (sub)"
 private const val SCOPES_SCP = "Scopes (scp)"
-private const val CLIENT_ID = "Client ID (client_id)"
+private const val CLIENT_ID_JWT = "Client ID (client_id)"
 
 @Composable
 fun JwtTokenView(jwtToken: JwtAccessToken?) {
@@ -92,7 +92,7 @@ fun JwtTokenView(jwtToken: JwtAccessToken?) {
             InfoRowView(label = ISSUER, value = jwtToken?.payload?.issuer)
             InfoRowView(label = SUBJECT, value = jwtToken?.payload?.subject)
             InfoRowView(label = SCOPES_SCP, value = jwtToken?.payload?.scopes)
-            InfoRowView(label = CLIENT_ID, value = jwtToken?.payload?.clientId, isSensitive = true)
+            InfoRowView(label = CLIENT_ID_JWT, value = jwtToken?.payload?.clientId, isSensitive = true)
         }
     }
 }
@@ -120,7 +120,7 @@ private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
                     put(ISSUER, issuer)
                     put(SUBJECT, subject)
                     put(SCOPES_SCP, scopes)
-                    put(CLIENT_ID, clientId)
+                    put(CLIENT_ID_JWT, clientId)
                 }
             }
         }

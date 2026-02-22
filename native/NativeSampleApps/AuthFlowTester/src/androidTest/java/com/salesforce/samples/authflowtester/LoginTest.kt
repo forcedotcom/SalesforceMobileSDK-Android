@@ -27,6 +27,7 @@
 package com.salesforce.samples.authflowtester
 
 import android.Manifest
+import android.os.Build
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,7 +35,8 @@ import androidx.test.filters.LargeTest
 import androidx.test.rule.GrantPermissionRule
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
-import com.salesforce.samples.authflowtester.testUtility.testConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,9 +46,11 @@ import org.junit.runner.RunWith
 class LoginTest {
 
     @get:Rule(order = 0)
-    val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(
-        Manifest.permission.POST_NOTIFICATIONS
-    )
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
+    }
 
     @get:Rule(order = 1)
     val composeTestRule = createEmptyComposeRule()
@@ -54,17 +58,14 @@ class LoginTest {
     @get:Rule(order = 2)
     val activityRule = ActivityScenarioRule(AuthFlowTesterActivity::class.java)
 
+    val loginPage = LoginPageObject(composeTestRule)
+    val app = AuthFlowTesterPageObject(composeTestRule)
+
     @Test
     fun testLogin() {
-        val loginPage = LoginPageObject()
-        with(testConfig.loginHosts.first().users.first()) {
-            loginPage.setUsername(username)
-            loginPage.setPassword(password)
-        }
-        loginPage.tapLogin()
-
-        // Verify we are logged in by waiting for the main UI
-        val app = AuthFlowTesterPageObject(composeTestRule)
-        app.waitForNode(CREDS_SECTION_CONTENT_DESC)
+        loginPage.login(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+        app.waitForAppLoad()
+        app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+        app.validateApiRequest()
     }
 }

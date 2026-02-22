@@ -25,3 +25,5 @@ shared/test/ui_test_config.json
 !libs/test/**/bootconfig.xml
 native/NativeSampleApps/AuthFlowTester/src/main/assets/
 .vscode/
+Test*.html
+keep.xml

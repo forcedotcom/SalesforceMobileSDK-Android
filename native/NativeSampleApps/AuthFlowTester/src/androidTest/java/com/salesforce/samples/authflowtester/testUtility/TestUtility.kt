@@ -24,50 +24,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.authflowtester.pageObjects
+package com.salesforce.samples.authflowtester.testUtility
 
-import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
+import android.content.Intent
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiScrollable
-import androidx.test.uiautomator.UiSelector
-import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
-
-private const val TIMEOUT = 10_000L
-private const val RETRY_INTERVAL = 500L
 
 /**
- * Handles the OAuth authorization "Allow" button and Chrome Custom Tab
- * interactions that occur after login.
+ * Kills the app process and relaunches from scratch.
+ * This forces Application.onCreate() to re-run, ensuring tokens
+ * are read from persistent storage rather than held in memory.
  */
-class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject(composeTestRule) {
+fun coldRestart() {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val packageName = context.packageName
 
-    fun tapAllowIfPresent() {
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val allowButton = device.findObject(UiSelector()
-            .className("android.widget.Button")
-            .textContains("Allow")
-        )
+    // Press Home so the app goes to background (am kill only works on background apps)
+    device.pressHome()
+    Thread.sleep(1_000)
 
-        // Scroll to bottom in case the Allow button is off screen
-        UiScrollable(UiSelector().scrollable(true)).scrollToEnd(1)
+    // Kill the app process (not force-stop, so instrumentation survives)
+    device.executeShellCommand("am kill $packageName")
+    Thread.sleep(1_000)
 
-        // Poll for the Allow button in the WebView, checking Compose in between
-        val endTime = System.currentTimeMillis() + TIMEOUT
-        while (System.currentTimeMillis() < endTime) {
-            if (isAppLoaded()) return
-
-            if (allowButton.waitForExists(RETRY_INTERVAL)) {
-                allowButton.click()
-                return
-            }
-        }
-    }
-
-    /** Fast Compose check: is the main app UI already visible? */
-    private fun isAppLoaded(): Boolean = composeTestRule
-        .onAllNodesWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-        .fetchSemanticsNodes()
-        .isNotEmpty()
+    // Relaunch the app
+    val intent = context.packageManager.getLaunchIntentForPackage(packageName)!!
+        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
 }

@@ -63,12 +63,12 @@ private const val BEACON = "Beacon"
 private const val OTHER = "Other"
 
 // User Identity fields
-private const val USERNAME = "Username"
+internal const val USERNAME = "Username"
 private const val USER_ID_LABEL = "User ID"
 private const val ORGANIZATION_ID = "Organization ID"
 
 // OAuth Client Configuration fields
-private const val CLIENT_ID = "Client ID"
+internal const val CLIENT_ID = "Client ID"
 private const val DOMAIN = "Domain"
 
 // Tokens fields
