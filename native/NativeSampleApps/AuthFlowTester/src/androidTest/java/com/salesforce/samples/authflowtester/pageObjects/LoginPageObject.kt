@@ -27,6 +27,7 @@
 package com.salesforce.samples.authflowtester.pageObjects
 
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -87,7 +88,13 @@ class LoginPageObject(
         onView(withText(getString(R.string.sf__dev_support_login_options_title)))
             .inRoot(isDialog())
             .perform(click())
-        composeTestRule.waitForIdle()
+
+        // Wait for LoginOptionsActivity's Compose content to render.
+        composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+            composeTestRule.onAllNodesWithContentDescription(
+                getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     private fun setUsername(name: String) {
