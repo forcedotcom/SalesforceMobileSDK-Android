@@ -39,7 +39,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
  */
 public class ApiVersionStrings {
 
-    public static final String VERSION_NUMBER = "v63.0";
+    public static final String VERSION_NUMBER = "v66.0";
 
     /** A version number override exclusively to support unit tests */
     @VisibleForTesting

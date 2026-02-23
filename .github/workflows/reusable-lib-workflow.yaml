@@ -184,7 +184,7 @@ jobs:
               fi
             done
       - name: Test Report
-        uses: mikepenz/action-junit-report
+        uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
           check_name: ${{ inputs.lib }} Test Results

@@ -59,7 +59,7 @@ class NotificationsApiClient(
         val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
-        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
+        if (apiVersion < "v64.0") {
             SalesforceSDKLogger.w(TAG, "Cannot request Salesforce push notifications types with API less than v64.0")
             return null
         }
@@ -98,7 +98,7 @@ class NotificationsApiClient(
         val apiVersion = ApiVersionStrings.getVersionNumber(context)
 
         // Submit the request.
-        if (apiVersion < "v64.0") { // TODO: Remove once MSDK default API version is 64 or greater.
+        if (apiVersion < "v64.0") {
             SalesforceSDKLogger.w(TAG, "Cannot submit Salesforce Notifications API action with API less than v64.0")
             return null
         }
