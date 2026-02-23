@@ -61,7 +61,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
         repeat(MAX_RETRIES) {
             // "More Options" is in the LoginActivity top bar.
             // Once it disappears, we've left the login screen.
-            if (!moreOptionsExists()) {
+            if (!loginActivityExists()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
             }
@@ -115,7 +115,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
         }
 
     /** True when the "More Options" button is in the LoginActivity top bar. */
-    private fun moreOptionsExists(): Boolean =
+    private fun loginActivityExists(): Boolean =
         try {
             composeTestRule
                 .onAllNodesWithContentDescription(getString(sdkR.string.sf__more_options))

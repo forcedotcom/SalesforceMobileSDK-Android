@@ -66,7 +66,7 @@ class LoginPageObject(
         tapLogin()
 
         if (isAdvancedAuth) {
-            ChromePageObject().handleSignIn()
+            CustomTabPageObject().handleSignIn()
         }
 
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin()

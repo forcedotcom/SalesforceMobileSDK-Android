@@ -33,11 +33,11 @@ import androidx.test.uiautomator.UiSelector
 private const val TIMEOUT = 5_000L
 
 /**
- * Handles Chrome Custom Tab interactions.
- * UiAutomator is required here because Chrome runs in a separate process
- * that Espresso and Compose Test APIs cannot access.
+ * Handles Custom Tab interactions.
+ * UiAutomator is required here because the browser (often Chrome) runs in a
+ * separate process that Espresso and Compose Test APIs cannot access.
  */
-class ChromePageObject {
+class CustomTabPageObject {
 
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 

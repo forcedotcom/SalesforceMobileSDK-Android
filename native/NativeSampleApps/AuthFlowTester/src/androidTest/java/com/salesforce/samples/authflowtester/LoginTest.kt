@@ -62,7 +62,7 @@ class LoginTest {
     val app = AuthFlowTesterPageObject(composeTestRule)
 
     @Test
-    fun testLogin() {
+    fun testBasicLogin() {
         loginPage.login(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
         app.waitForAppLoad()
         app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)

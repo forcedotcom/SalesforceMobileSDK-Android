@@ -65,6 +65,9 @@ data class Tokens(
     val refreshToken: String,
 )
 
+/**
+ * Page object for the AuthFlowTester app.
+ */
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {

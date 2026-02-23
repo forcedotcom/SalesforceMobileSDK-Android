@@ -32,9 +32,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
@@ -42,7 +40,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,13 +53,6 @@ class TokenMigrationTest {
         GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
     } else {
         GrantPermissionRule.grant()
-    }
-
-    @After
-    fun cleanup() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            SalesforceSDKManager.getInstance().logout(frontActivity = null, showLoginPage = false)
-        }
     }
 
     @get:Rule(order = 1)
@@ -79,7 +69,7 @@ class TokenMigrationTest {
 
     // Migrate within same CA (scope upgrade).
     @Test
-    fun testMigrateCA_AddMoreScopes() {
+    fun testMigrate_CA_AddMoreScopes() {
         loginAndValidate(
             KnownAppConfig.CA_JWT,
             scopeSelection = ScopeSelection.SUBSET,
@@ -93,7 +83,7 @@ class TokenMigrationTest {
 
     // Migrate within same ECA (scope upgrade).
     @Test
-    fun testMigrateECA_AddMoreScopes() {
+    fun testMigrate_ECA_AddMoreScopes() {
         loginAndValidate(
             KnownAppConfig.ECA_JWT,
             scopeSelection = ScopeSelection.SUBSET,
@@ -107,7 +97,7 @@ class TokenMigrationTest {
 
     // Migrate within same Beacon (scope upgrade).
     @Test
-    fun testMigrateBeacon_AddMoreScopes() {
+    fun testMigrate_Beacon_AddMoreScopes() {
         loginAndValidate(
             KnownAppConfig.BEACON_JWT,
             scopeSelection = ScopeSelection.SUBSET,
@@ -124,7 +114,7 @@ class TokenMigrationTest {
 
     // Migrate from CA to Beacon
     @Test
-    fun testMigrateCAToBeacon() {
+    fun testMigrateCA_To_Beacon() {
         loginAndValidate(
             KnownAppConfig.CA_OPAQUE,
         )
@@ -135,7 +125,7 @@ class TokenMigrationTest {
 
     // Migrate from Beacon to CA
     @Test
-    fun testMigrateBeaconToCA() {
+    fun testMigrateBeacon_To_CA() {
         loginAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
         )
@@ -149,7 +139,7 @@ class TokenMigrationTest {
 
     // Migrate from CA to ECA and back to CA
     @Test
-    fun testMigrateCAToECA() {
+    fun testMigrateCA_To_ECA() {
         loginAndValidate(
             KnownAppConfig.CA_OPAQUE,
         )
@@ -163,7 +153,7 @@ class TokenMigrationTest {
 
     // Migrate from CA to Beacon and back to CA
     @Test
-    fun testMigrateCAToBeaconAndBack() {
+    fun testMigrateCA_To_BeaconAndBack() {
         loginAndValidate(
             KnownAppConfig.CA_OPAQUE
         )
@@ -177,7 +167,7 @@ class TokenMigrationTest {
 
     // Migrate from Beacon opaque to Beacon JWT and back to Beacon opaque
     @Test
-    fun testMigrateBeaconOpaqueToJWTAndBack() {
+    fun testMigrateBeaconOpaque_To_JWTAndBack() {
         loginAndValidate(
             KnownAppConfig.BEACON_OPAQUE
         )

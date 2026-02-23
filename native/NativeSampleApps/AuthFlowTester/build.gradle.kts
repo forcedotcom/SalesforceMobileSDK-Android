@@ -29,6 +29,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-web:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     androidTestImplementation("androidx.compose.ui:ui-test:1.10.3")
+    androidTestUtil("androidx.test:orchestrator:1.6.1")
 
     implementation("androidx.compose.material3:material3-android:1.3.2")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
@@ -51,6 +52,11 @@ android {
         targetSdk = 36
         minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     buildFeatures {

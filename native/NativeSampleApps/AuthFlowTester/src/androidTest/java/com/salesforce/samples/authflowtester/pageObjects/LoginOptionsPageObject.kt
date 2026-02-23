@@ -41,8 +41,6 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
 
 /**
  * Page object for the SDK's Login Options screen.
- * The login options UI is fully Compose (LoginOptionsActivity),
- * so all interactions use the Compose Test API via [ComposeTestRule].
  */
 class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
