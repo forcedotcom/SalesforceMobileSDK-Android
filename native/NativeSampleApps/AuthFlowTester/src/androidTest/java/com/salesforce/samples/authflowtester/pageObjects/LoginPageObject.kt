@@ -45,6 +45,10 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
+private const val USERNAME_ID = "username"
+private const val PASSWORD_ID = "password"
+private const val LOGIN_BUTTON_ID = "Login"
+
 /**
  * Page object for the Salesforce login WebView.
  * Uses Espresso WebView APIs since the login form is an in-app WebView
@@ -65,7 +69,7 @@ class LoginPageObject(
             ChromePageObject().handleSignIn()
         }
 
-        AuthorizationPageObject(composeTestRule).tapAllowIfPresent()
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin()
     }
 
     fun openLoginOptions() {
@@ -103,7 +107,6 @@ class LoginPageObject(
     }
 
     private fun tapLogin() {
-        Thread.sleep(BRIEF_DELAY)
         retryWebAction {
             onWebView().withElement(findElement(Locator.ID, LOGIN_BUTTON_ID))
                 .perform(webClick())
@@ -112,7 +115,7 @@ class LoginPageObject(
 
     /** Retries a WebView action until it succeeds or times out. */
     private fun <T> retryWebAction(
-        timeoutMs: Long = DEFAULT_TIMEOUT,
+        timeoutMs: Long = TIMEOUT_MS * 5,
         action: () -> T,
     ): T {
         val endTime = System.currentTimeMillis() + timeoutMs
@@ -122,21 +125,12 @@ class LoginPageObject(
                 return action()
             } catch (e: Exception) {
                 lastException = e
-                Thread.sleep(RETRY_INTERVAL)
+                Thread.sleep(TIMEOUT_MS / 4)
             }
         }
         throw AssertionError(
             "WebView action failed after ${timeoutMs}ms",
             lastException,
         )
-    }
-
-    companion object {
-        private const val USERNAME_ID = "username"
-        private const val PASSWORD_ID = "password"
-        private const val LOGIN_BUTTON_ID = "Login"
-        private const val DEFAULT_TIMEOUT = 30_000L
-        private const val RETRY_INTERVAL = 500L
-        private const val BRIEF_DELAY = 2_000L
     }
 }

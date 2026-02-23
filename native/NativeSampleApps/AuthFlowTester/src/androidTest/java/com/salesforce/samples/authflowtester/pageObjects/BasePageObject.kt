@@ -31,6 +31,11 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 
 abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
+
     val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
     fun getString(id: Int) = context.getString(id)
+
+    companion object {
+        const val TIMEOUT_MS: Long = 2_000
+    }
 }

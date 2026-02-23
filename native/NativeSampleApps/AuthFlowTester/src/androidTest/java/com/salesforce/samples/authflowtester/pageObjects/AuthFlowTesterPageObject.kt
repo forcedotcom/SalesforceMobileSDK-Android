@@ -65,12 +65,10 @@ data class Tokens(
     val refreshToken: String,
 )
 
-const val TIMEOUT_MS: Long = 2_000
-
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {
-        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 3)
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
     }
 
     fun revokeAccessToken() {
@@ -173,8 +171,13 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         composeTestRule.onNodeWithContentDescription(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
             .performClick()
 
+        AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
+
         // Wait for migration to complete (bottom sheet dismisses)
         waitForNodeGone(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
+
+        // Wait for the app UI to refresh with new token data
+        waitForAppLoad()
     }
 
     private fun expandUserCredentialsSection() {

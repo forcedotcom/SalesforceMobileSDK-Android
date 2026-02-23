@@ -27,11 +27,14 @@
 package com.salesforce.samples.authflowtester
 
 import android.Manifest
+import android.os.Build
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
@@ -39,7 +42,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
-import com.salesforce.samples.authflowtester.testUtility.coldRestart
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,9 +52,18 @@ import org.junit.runner.RunWith
 class TokenMigrationTest {
 
     @get:Rule(order = 0)
-    val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(
-        Manifest.permission.POST_NOTIFICATIONS
-    )
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
+    }
+
+    @After
+    fun cleanup() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            SalesforceSDKManager.getInstance().logout(frontActivity = null, showLoginPage = false)
+        }
+    }
 
     @get:Rule(order = 1)
     val composeTestRule = createEmptyComposeRule()
@@ -63,31 +75,153 @@ class TokenMigrationTest {
     val loginOptions = LoginOptionsPageObject(composeTestRule)
     val app = AuthFlowTesterPageObject(composeTestRule)
 
+    // region Migration within same app (scope upgrade)
+
+    // Migrate within same CA (scope upgrade).
     @Test
     fun testMigrateCA_AddMoreScopes() {
+        loginAndValidate(
+            KnownAppConfig.CA_JWT,
+            scopeSelection = ScopeSelection.SUBSET,
+        )
+
+        migrateAndValidate(
+            KnownAppConfig.CA_JWT,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // Migrate within same ECA (scope upgrade).
+    @Test
+    fun testMigrateECA_AddMoreScopes() {
+        loginAndValidate(
+            KnownAppConfig.ECA_JWT,
+            scopeSelection = ScopeSelection.SUBSET,
+        )
+
+        migrateAndValidate(
+            KnownAppConfig.ECA_JWT,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // Migrate within same Beacon (scope upgrade).
+    @Test
+    fun testMigrateBeacon_AddMoreScopes() {
+        loginAndValidate(
+            KnownAppConfig.BEACON_JWT,
+            scopeSelection = ScopeSelection.SUBSET,
+        )
+
+        migrateAndValidate(
+            KnownAppConfig.BEACON_JWT,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // endregion
+    // region Migration to or from beacon
+
+    // Migrate from CA to Beacon
+    @Test
+    fun testMigrateCAToBeacon() {
+        loginAndValidate(
+            KnownAppConfig.CA_OPAQUE,
+        )
+        migrateAndValidate(
+            KnownAppConfig.BEACON_OPAQUE,
+        )
+    }
+
+    // Migrate from Beacon to CA
+    @Test
+    fun testMigrateBeaconToCA() {
+        loginAndValidate(
+            KnownAppConfig.BEACON_OPAQUE,
+        )
+        migrateAndValidate(
+            KnownAppConfig.CA_OPAQUE
+        )
+    }
+
+    // endregion
+    // region Cross-App Migrations with rollbacks
+
+    // Migrate from CA to ECA and back to CA
+    @Test
+    fun testMigrateCAToECA() {
+        loginAndValidate(
+            KnownAppConfig.CA_OPAQUE,
+        )
+        migrateAndValidate(
+            KnownAppConfig.ECA_OPAQUE,
+        )
+        migrateAndValidate(
+            KnownAppConfig.CA_OPAQUE
+        )
+    }
+
+    // Migrate from CA to Beacon and back to CA
+    @Test
+    fun testMigrateCAToBeaconAndBack() {
+        loginAndValidate(
+            KnownAppConfig.CA_OPAQUE
+        )
+        migrateAndValidate(
+            KnownAppConfig.BEACON_OPAQUE
+        )
+        migrateAndValidate(
+            KnownAppConfig.CA_OPAQUE
+        )
+    }
+
+    // Migrate from Beacon opaque to Beacon JWT and back to Beacon opaque
+    @Test
+    fun testMigrateBeaconOpaqueToJWTAndBack() {
+        loginAndValidate(
+            KnownAppConfig.BEACON_OPAQUE
+        )
+        migrateAndValidate(
+            KnownAppConfig.BEACON_JWT
+        )
+        migrateAndValidate(
+            KnownAppConfig.BEACON_OPAQUE
+        )
+    }
+
+    // endregion
+
+    private fun loginAndValidate(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = KnownUserConfig.FIRST,
+        scopeSelection: ScopeSelection = ScopeSelection.EMPTY,
+    ) {
         loginPage.openLoginOptions()
-        loginOptions.setOverrideBootConfig(KnownAppConfig.CA_JWT, ScopeSelection.SUBSET)
-        loginPage.login(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+        loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection)
+        loginPage.login(knownLoginHostConfig, knownUserConfig)
         app.waitForAppLoad()
 
-        app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
-        app.validateOAuthValues(KnownAppConfig.CA_JWT, ScopeSelection.SUBSET)
-        val preMigrationTokenInfo = app.getTokens()
+        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateOAuthValues(knownAppConfig, scopeSelection)
+    }
 
-        // Migrate
-        app.migrateToNewApp(KnownAppConfig.CA_JWT, ScopeSelection.ALL)
-
-        // Cold restart to verify tokens are persisted, not just in memory
-        coldRestart()
-        app.waitForAppLoad()
-
-        app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
-        app.validateOAuthValues(KnownAppConfig.CA_JWT, ScopeSelection.ALL)
-        val postMigrationTokens = app.getTokens()
+    private fun migrateAndValidate(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = KnownUserConfig.FIRST,
+        scopeSelection: ScopeSelection = ScopeSelection.EMPTY,
+    ) {
+        val (preAccessToken, preRefreshToken) = app.getTokens()
+        app.migrateToNewApp(knownAppConfig, scopeSelection)
+        val (postAccessToken, postRefreshToken) = app.getTokens()
 
         // Assert tokens are new
-        assert(preMigrationTokenInfo.accessToken != postMigrationTokens.accessToken)
-        assert(preMigrationTokenInfo.refreshToken != postMigrationTokens.refreshToken)
+        assert(preAccessToken != postAccessToken)
+        assert(preRefreshToken != postRefreshToken)
+
+        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
         app.revokeAccessToken()

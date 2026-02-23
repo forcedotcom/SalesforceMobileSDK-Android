@@ -26,48 +26,102 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import android.util.Log
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
-import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
+import com.salesforce.androidsdk.R as sdkR
 
-private const val TIMEOUT = 10_000L
-private const val RETRY_INTERVAL = 500L
+private const val TAG = "AuthorizationPageObject"
+private const val MAX_RETRIES = 5
 
 /**
- * Handles the OAuth authorization "Allow" button and Chrome Custom Tab
- * interactions that occur after login.
+ * Handles the OAuth authorization "Allow" button that may appear
+ * after login or token migration.
  */
 class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject(composeTestRule) {
 
-    fun tapAllowIfPresent() {
-        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        val allowButton = device.findObject(UiSelector()
-            .className("android.widget.Button")
-            .textContains("Allow")
-        )
+    val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val allowButton = device.findObject(
+        UiSelector().className("android.widget.Button").textContains("Allow")
+    )
 
-        // Scroll to bottom in case the Allow button is off screen
-        UiScrollable(UiSelector().scrollable(true)).scrollToEnd(1)
+    /**
+     * After login: the authorization WebView is expected.  Scrolls and
+     * polls for the Allow button.  Returns early if the main app UI
+     * appears (approval was auto-granted or previously remembered).
+     */
+    fun tapAllowAfterLogin() {
+        // Let the WebView redirect to authorization page.
+        Thread.sleep(TIMEOUT_MS * 2)
+        swipeUp()
 
-        // Poll for the Allow button in the WebView, checking Compose in between
-        val endTime = System.currentTimeMillis() + TIMEOUT
-        while (System.currentTimeMillis() < endTime) {
-            if (isAppLoaded()) return
+        repeat(MAX_RETRIES) {
+            // "More Options" is in the LoginActivity top bar.
+            // Once it disappears, we've left the login screen.
+            if (!moreOptionsExists()) {
+                Log.i(TAG, "Left login screen — no approval needed.")
+                return
+            }
 
-            if (allowButton.waitForExists(RETRY_INTERVAL)) {
+            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
                 allowButton.click()
+                Log.i(TAG, "Tapped Allow after login.")
                 return
             }
         }
+        Log.w(TAG, "Allow button not found after login within retry limit.")
     }
 
-    /** Fast Compose check: is the main app UI already visible? */
-    private fun isAppLoaded(): Boolean = composeTestRule
-        .onAllNodesWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-        .fetchSemanticsNodes()
-        .isNotEmpty()
+    /**
+     * After migration: approval may or may not be required.  If no
+     * visible WebView appeared, returns immediately.  Otherwise scrolls
+     * and taps Allow.
+     */
+    fun tapAllowAfterMigration() {
+        // Wait for the page to load, swipe, then poll for the Allow button.
+        allowButton.waitForExists(TIMEOUT_MS * 5)
+        swipeUp()
+
+        repeat(MAX_RETRIES) {
+            // WebView dismissed means approval completed without us clicking
+            val webView = device.findObject(UiSelector().className("android.webkit.WebView"))
+            if (!webView.exists()) {
+                Log.i(TAG, "WebView gone — approval no longer needed.")
+                return
+            }
+
+            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+                allowButton.click()
+                Log.i(TAG, "Tapped Allow after migration.")
+                return
+            }
+        }
+        Log.w(TAG, "Migration approval check completed without action.")
+    }
+
+    /** Swipe up from the bottom half of the screen. */
+    private fun swipeUp() =
+        with(device) {
+            swipe(
+                /* startX = */ displayWidth / 2,
+                /* startY = */ displayHeight * 3 / 4,
+                /* endX = */ displayWidth / 2,
+                /* endY = */ displayHeight / 4,
+                /* steps = */ 10,
+            )
+        }
+
+    /** True when the "More Options" button is in the LoginActivity top bar. */
+    private fun moreOptionsExists(): Boolean =
+        try {
+            composeTestRule
+                .onAllNodesWithContentDescription(getString(sdkR.string.sf__more_options))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
 }
