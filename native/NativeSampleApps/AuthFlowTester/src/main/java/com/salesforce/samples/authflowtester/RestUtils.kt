@@ -31,7 +31,6 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -39,7 +38,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import kotlin.coroutines.resume
 
 const val FAILED_OPERATION = "The operation could not be completed."
 const val UNKNOWN_ERROR = "An unexpected error has occurred."
@@ -114,20 +112,14 @@ suspend fun makeRestRequest(client: RestClient?, apiVersion: String): RequestRes
 }
 
 suspend fun RestClient.sendAsync(request: RestRequest): Result<RestResponse> {
-    return suspendCancellableCoroutine { continuation ->
-        sendAsync(request, object : RestClient.AsyncRequestCallback {
-            override fun onSuccess(request: RestRequest?, response: RestResponse?) {
-                val result: Result<RestResponse> = if (response == null) {
-                    Result.failure(Exception(UNKNOWN_ERROR))
-                } else {
-                    Result.success(response)
-                }
-                continuation.resume(result)
+    return withContext(Dispatchers.IO) {
+        try {
+            when (val response = sendSync(request)) {
+                null -> Result.failure(Exception(UNKNOWN_ERROR))
+                else -> Result.success(response)
             }
-
-            override fun onError(exception: Exception?) {
-                continuation.resume(Result.failure(exception ?: Exception(UNKNOWN_ERROR)))
-            }
-        })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
