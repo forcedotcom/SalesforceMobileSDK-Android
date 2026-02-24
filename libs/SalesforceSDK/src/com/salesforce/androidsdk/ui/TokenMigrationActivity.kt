@@ -82,7 +82,7 @@ internal const val ERROR_BUILD_REST_CLIENT = "Unable to build RestClient."
 @VisibleForTesting
 internal const val ERROR_SINGLE_ACCESS_FAILED = "Request for single access bridge url failed"
 @VisibleForTesting
-internal const val ERROR_TOKEN_INVALID_DESC = "User's existing token may be invalid."
+internal const val ERROR_TOKEN_INVALID_DESC = "Current refresh token may be invalid or missing web scope."
 
 internal class TokenMigrationActivity : ComponentActivity() {
 

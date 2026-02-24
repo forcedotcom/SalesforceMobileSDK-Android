@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.samples.authflowtester
+package com.salesforce.samples.authflowtester.components
 
 import android.content.res.Configuration
 import android.os.Build
@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
+import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -62,19 +63,19 @@ private const val BEACON = "Beacon"
 private const val OTHER = "Other"
 
 // User Identity fields
-private const val USERNAME = "Username"
+internal const val USERNAME = "Username"
 private const val USER_ID_LABEL = "User ID"
 private const val ORGANIZATION_ID = "Organization ID"
 
 // OAuth Client Configuration fields
-private const val CLIENT_ID = "Client ID"
+internal const val CLIENT_ID = "Client ID"
 private const val DOMAIN = "Domain"
 
 // Tokens fields
-private const val ACCESS_TOKEN = "Access Token"
-private const val REFRESH_TOKEN = "Refresh Token"
-private const val TOKEN_FORMAT = "Token Format"
-private const val SCOPES = "Scopes"
+internal const val ACCESS_TOKEN = "Access Token"
+internal const val REFRESH_TOKEN = "Refresh Token"
+internal const val TOKEN_FORMAT = "Token Format"
+internal const val SCOPES = "Scopes"
 
 // URLs fields
 private const val INSTANCE_URL = "Instance URL"
@@ -112,6 +113,7 @@ fun UserCredentialsView(currentUser: UserAccount?) {
     ExpandableCard(
         title = CARD_TITLE,
         exportedJSON = generateCredentialsJSON(currentUser),
+        contentDescription = CREDS_SECTION_CONTENT_DESC,
     ) {
         InfoSection(title = USER_IDENTITY) {
             InfoRowView(label = USERNAME, value = currentUser?.username)

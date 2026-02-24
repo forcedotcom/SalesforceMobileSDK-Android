@@ -394,6 +394,7 @@ internal fun MenuItem(
             )
         },
         onClick = onClick,
+        modifier = Modifier.semantics { contentDescription = text }
     )
 }
 

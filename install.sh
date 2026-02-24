@@ -38,10 +38,11 @@ apply_bootconfig_paths() {
         if [ -f "$bootconfig" ]; then
 	    # Substitute env vars if set
 	    if [ -n "${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY:-}" ]; then
-                gsed -i "s|__CONSUMER_KEY__|${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY}|g" "$bootconfig"
+	              # sed -i.bak works identically on both BSD sed (macOS) and GNU sed (Linux)
+                sed -i.bak "s|__CONSUMER_KEY__|${MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY}|g" "$bootconfig" && rm -f "$bootconfig.bak"
             fi
             if [ -n "${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:-}" ]; then
-                gsed -i "s|__REDIRECT_URI__|${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL}|g" "$bootconfig"
+                sed -i.bak "s|__REDIRECT_URI__|${MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL}|g" "$bootconfig" && rm -f "$bootconfig.bak"
             fi
         fi
     done

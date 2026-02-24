@@ -101,6 +101,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -119,6 +121,10 @@ import com.salesforce.androidsdk.ui.SalesforceActivity
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
+import com.salesforce.samples.authflowtester.components.InfoSection
+import com.salesforce.samples.authflowtester.components.JwtTokenView
+import com.salesforce.samples.authflowtester.components.OAuthConfigurationView
+import com.salesforce.samples.authflowtester.components.UserCredentialsView
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -139,6 +145,18 @@ const val SCOPE_JSON_KEY = "scopes"
 const val CONSUMER_KEY_LABEL = "Consumer Key"
 const val REDIRECT_LABEL = "Callback URL"
 const val SCOPES_LABEL = "Scopes (space-separated)"
+
+// For UI Tests
+internal const val TITLE_CONTENT_DESC = "app_title"
+internal const val REVOKE_BUTTON_CONTENT_DESC = "revoke_button"
+internal const val REQUEST_BUTTON_CONTENT_DESC = "request_button"
+internal const val CREDS_SECTION_CONTENT_DESC = "user_creds_section"
+internal const val JWT_SECTION_CONTENT_DESC = "jwt_section"
+internal const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
+internal const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
+internal const val ALERT_TITLE_CONTENT_DESC = "alert_title"
+internal const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
+internal const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -223,6 +241,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     .nestedScroll(topScrollBehavior.nestedScrollConnection)
                     .nestedScroll(bottomScrollBehavior.nestedScrollConnection)
                     .verticalScroll(rememberScrollState())
+                    .semantics { contentDescription = SCROLL_CONTAINER_CONTENT_DESC }
                     .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
@@ -267,7 +286,10 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showLogoutDialog = false }) {
+                    TextButton(
+                        onClick = { showLogoutDialog = false },
+                        modifier = Modifier.semantics { contentDescription = ALERT_POSITIVE_BUTTON_CONTENT_DESC },
+                    ) {
                         Text(stringResource(R.string.cancel))
                     }
                 },
@@ -305,7 +327,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 enabled = !revokeInProgress,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(PADDING.dp),
+                    .padding(PADDING.dp)
+                    .semantics{ contentDescription = REVOKE_BUTTON_CONTENT_DESC },
                 colors = ButtonDefaults.buttonColors(containerColor = colorScheme.error),
                 shape = RoundedCornerShape(CORNER_SHAPE.dp),
             ) {
@@ -340,13 +363,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             @Suppress("AssignedValueIsNeverRead")
             AlertDialog(
                 onDismissRequest = { showAlertDialog = false },
-                title = { Text(title) },
+                title = {
+                    Text(
+                        text = title,
+                        modifier = Modifier.semantics { contentDescription = ALERT_TITLE_CONTENT_DESC },
+                    )
+                },
                 text = { Text(
                     text = response?.displayValue ?: "",
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) },
                 confirmButton = {
-                    TextButton(onClick = { showAlertDialog = false }) {
+                    TextButton(
+                        onClick = { showAlertDialog = false },
+                        modifier = Modifier.semantics { contentDescription = ALERT_POSITIVE_BUTTON_CONTENT_DESC },
+                    ) {
                         Text(stringResource(R.string.ok))
                     }
                 },
@@ -377,7 +408,9 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     }
                 },
                 enabled = !requestInProgress,
-                modifier = Modifier.fillMaxWidth().padding(PADDING.dp),
+                modifier = Modifier.fillMaxWidth()
+                    .padding(PADDING.dp)
+                    .semantics{ contentDescription = REQUEST_BUTTON_CONTENT_DESC },
                 colors = ButtonDefaults.buttonColors(containerColor = colorScheme.tertiary),
                 shape = RoundedCornerShape(CORNER_SHAPE.dp),
             ) {
@@ -440,14 +473,22 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             @Suppress("AssignedValueIsNeverRead")
             AlertDialog(
                 onDismissRequest = { showAlertDialog = false },
-                title = { Text(title) },
+                title = {
+                    Text(
+                        text = title,
+                        modifier = Modifier.semantics { contentDescription = ALERT_TITLE_CONTENT_DESC },
+                    )
+                },
                 text = { Text(
                     text = response?.displayValue ?: "",
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) },
                 confirmButton = {
                     TextButton(onClick = { showAlertDialog = false }) {
-                        Text(stringResource(R.string.ok))
+                        Text(
+                            stringResource(R.string.ok),
+                            modifier = Modifier.semantics { contentDescription = ALERT_POSITIVE_BUTTON_CONTENT_DESC },
+                        )
                     }
                 },
                 shape = RoundedCornerShape(CORNER_SHAPE.dp),
@@ -538,7 +579,9 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 )
 
                 Button(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = (INNER_CARD_PADDING/2).dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = (INNER_CARD_PADDING/2).dp)
+                        .semantics { contentDescription = MIGRATE_TOKEN_BUTTON_CONTENT_DESC },
                     shape = RoundedCornerShape(CORNER_SHAPE.dp),
                     enabled = validInput && !migrationInProgress,
                     onClick = {
@@ -637,6 +680,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                             } catch (_: Exception) { }
                             showJsonImportDialog = false
                         },
+                        modifier = Modifier.semantics { contentDescription = ALERT_POSITIVE_BUTTON_CONTENT_DESC },
                     ) {
                         Text(stringResource(R.string.import_button))
                     }
@@ -670,7 +714,12 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     @Composable
     fun TesterUITopBar(scrollBehavior: TopAppBarScrollBehavior) {
         CenterAlignedTopAppBar(
-            title = { Text(stringResource(R.string.app_name)) },
+            title = {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    modifier = Modifier.semantics{ contentDescription = TITLE_CONTENT_DESC }
+                )
+            },
             colors = TopAppBarColors(
                 containerColor = colorScheme.background,
                 scrolledContainerColor = colorScheme.background.copy(alpha = HALF_ALPHA),

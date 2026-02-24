@@ -1,17 +1,94 @@
 {
-    "loginHost": "__INSERT_LOGIN_URL__",
-    "apps": [
+  "loginHosts": [
+    {
+      "name": "regular_auth",
+      "url": "https://authflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com",
+      "users": [
         {
-            "name": "__INSERT_APP_NAME__",
-            "consumerKey": "__INSERT_CONSUMER_KEY__",
-            "redirectUri": "__INSERT_REDIRECT_URI__",
-            "scopes": "__INSERT_SCOPES__"
-        }
-    ],
-    "users": [
+          "username": "testandroid1@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
         {
-            "username": "__INSERT_USERNAME__",
-            "password": "__INSERT_PASSWORD__"
+          "username": "testandroid2@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid3@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid4@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid5@authflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
         }
-    ]
+      ]
+    },
+    {
+      "name": "advanced_auth",
+      "url": "https://advauthflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com",
+      "users": [
+        {
+          "username": "testandroid1@advauthflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid2@advauthflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid3@advauthflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid4@advauthflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        },
+        {
+          "username": "testandroid5@advauthflowtesting.msdk.sdb38.com",
+          "password": "yourPasswordHere"
+        }
+      ]
+    }
+  ],
+  "apps": [
+    {
+      "name": "ca_opaque",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "caadvancedopaque://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+    },
+    {
+      "name": "ca_jwt",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "caadvancedjwt://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+    },
+    {
+      "name": "eca_opaque",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "ecaadvancedopaque://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+    },
+    {
+      "name": "eca_jwt",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "ecaadvancedjwt://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+    },
+    {
+      "name": "beacon_opaque",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "beaconadvancedopaque://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api web"
+    },
+    {
+      "name": "beacon_jwt",
+      "consumerKey": "your_consumer_key_here",
+      "redirectUri": "beaconadvancedjwt://success/done",
+      "scopes": "api content id lightning refresh_token sfap_api web"
+    }
+  ]
 }

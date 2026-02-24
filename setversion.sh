@@ -49,14 +49,15 @@ update_top_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/version = \"[0-9\.]*\"/version = \"${versionName}\"/g" ${file}
+    # sed -i.bak works identically on both BSD sed (macOS) and GNU sed (Linux)
+    sed -i.bak "s/version = \"[0-9\.]*\"/version = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/\[\"PUBLISH_VERSION\"\] = \"[0-9\.]*\"/\[\"PUBLISH_VERSION\"\] = \"${versionName}\"/g" ${file}
+    sed -i.bak "s/\[\"PUBLISH_VERSION\"\] = \"[0-9\.]*\"/\[\"PUBLISH_VERSION\"\] = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_manifest ()
@@ -64,22 +65,23 @@ update_manifest ()
     local file=$1
     local versionName=$2
     local versionCode=$3
-    gsed -i "s/android\:versionCode=\"[^\"]*\"/android:versionCode=\"${versionCode}\"/g" ${file}
-    gsed -i "s/android\:versionName=\"[^\"]*\"/android:versionName=\"${versionName}\"/g" ${file}
+    # sed -i.bak works identically on both BSD sed (macOS) and GNU sed (Linux)
+    sed -i.bak "s/android\:versionCode=\"[^\"]*\"/android:versionCode=\"${versionCode}\"/g" "${file}" && rm -f "${file}.bak"
+    sed -i.bak "s/android\:versionName=\"[^\"]*\"/android:versionName=\"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_config_xml ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/version.*=.*\"[^\"]*\">/version   = \"${versionName}\">/g" ${file}
+    sed -i.bak "s/version.*=.*\"[^\"]*\">/version   = \"${versionName}\">/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_salesforcesdkmanager_kt ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/SDK_VERSION.*=.*\"[^\"]*\"/SDK_VERSION = \"${versionName}\"/g" ${file}
+    sed -i.bak "s/SDK_VERSION.*=.*\"[^\"]*\"/SDK_VERSION = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 
 }
 
@@ -87,7 +89,7 @@ update_generate_doc ()
 {
     local file=$1
     local versionName=$2
-    gsed -i "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" ${file}
+    sed -i.bak "s/SalesforceSDK [0-9\.]* API/SalesforceSDK ${versionName} API/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_react_package_json ()
@@ -104,16 +106,17 @@ update_react_package_json ()
         sdkTag="v${versionName}"
     fi
 
-    gsed -i "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" ${file}
-    gsed -i "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${sdkTag}\"/g" ${file}
+    sed -i.bak "s/\"version\":.*\"[^\"]*\"/\"version\": \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
+    sed -i.bak "s/SalesforceMobileSDK-ReactNative.git\#[^\"]*\"/SalesforceMobileSDK-ReactNative.git\#${sdkTag}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_readme ()
 {
     local file=$1
     local version=$2
-    gsed -i "s/\#\#\# What's New.*/### What's New in ${version}/g" ${file}
-    gsed -i "s/releases\/tag\/.*[)]/releases\/tag\/v${version}\)/g" ${file}
+    # sed -i.bak works identically on both BSD sed (macOS) and GNU sed (Linux)
+    sed -i.bak "s/\#\#\# What's New.*/### What's New in ${version}/g" "${file}" && rm -f "${file}.bak"
+    sed -i.bak "s/releases\/tag\/.*[)]/releases\/tag\/v${version}\)/g" "${file}" && rm -f "${file}.bak"
 }
 
 parse_opts "$@"

@@ -23,11 +23,11 @@ jobs:
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
         env:
-          TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+          MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+          MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
           UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
         run: |
           ./install.sh
-          echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json
           echo $UI_TEST_CONFIG > ./shared/test/ui_test_config.json
       - uses: actions/setup-java@v4
         with:
@@ -62,8 +62,6 @@ jobs:
           PR_API_VERSION: "35"
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
-          CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
-          CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
           RETRIES=0
@@ -72,8 +70,9 @@ jobs:
           if $IS_PR ; then
             LEVELS_TO_TEST=$PR_API_VERSION
             RETRIES=1
-            # Run only a single test named "testLogin"
-            TEST_TARGETS="--test-targets \"class com.salesforce.samples.authflowtester.LoginTest#testLogin\""
+            # Run only a handful of smoke tests.
+            TEST_TARGETS="--test-targets \"class com.salesforce.samples.authflowtester.LoginTest#testBasicLogin\""
+            TEST_TARGETS+=",\"class com.salesforce.samples.authflowtester.TokenMigrationTest#testMigrate_ECA_AddMoreScopes\""
           fi
 
           mkdir firebase_results
@@ -84,14 +83,15 @@ jobs:
               eval gcloud firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
+                --use-orchestrator \
+                --environment-variables clearPackageData=true \
                 --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
                 --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
                 --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
-                --environment-variables username=${CI_USER_USERNAME},password=${CI_USER_PASSWORD} \
                 --directories-to-pull=/sdcard \
                 --results-dir=${GCLOUD_RESULTS_DIR} \
                 --results-history-name=AuthFlowTester \
-                --timeout=5m --no-performance-metrics \
+                --timeout=10m --no-performance-metrics \
                 $TEST_TARGETS \
                 --num-flaky-test-attempts=${RETRIES} || true
             done

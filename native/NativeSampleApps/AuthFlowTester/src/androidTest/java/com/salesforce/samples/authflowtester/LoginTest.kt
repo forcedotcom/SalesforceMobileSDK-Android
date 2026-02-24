@@ -26,55 +26,46 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.content.Intent
+import android.Manifest
+import android.os.Build
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiSelector
-import org.junit.Assert
-import org.junit.Before
+import androidx.test.filters.LargeTest
+import androidx.test.rule.GrantPermissionRule
+import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
+import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import pageobjects.loginpageobjects.LoginPageObject
-import testutility.UserUtility
 
 @RunWith(AndroidJUnit4::class)
+@LargeTest
 class LoginTest {
 
-    private lateinit var device: UiDevice
-    private val packageName = "com.salesforce.samples.authflowtester"
-
-    @Before
-    fun setup() {
-        // Initialize UiDevice instance
-        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
-        // Launch the app
-        val context = InstrumentationRegistry.getInstrumentation().context
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-        intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK) // Clear out any previous instances
-        context.startActivity(intent)
-
-        device.addNotificationWatcher()
+    @get:Rule(order = 0)
+    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        GrantPermissionRule.grant()
     }
 
+    @get:Rule(order = 1)
+    val composeTestRule = createEmptyComposeRule()
+
+    @get:Rule(order = 2)
+    val activityRule = ActivityScenarioRule(AuthFlowTesterActivity::class.java)
+
+    val loginPage = LoginPageObject(composeTestRule)
+    val app = AuthFlowTesterPageObject(composeTestRule)
+
     @Test
-    fun testLogin() {
-        val loginPage = LoginPageObject()
-        loginPage.setUsername(UserUtility.username)
-        loginPage.setPassword(UserUtility.password)
-        loginPage.tapLogin()
-
-        // TODO: Remove this when W-20936283 is resolved or this workaround is added to UITests.
-        val allowButton = device.findObject(UiSelector()
-            .className("android.widget.Button")
-            .textContains("Allow"))
-        if (allowButton.waitForExists(5000)) {
-            allowButton.click()
-        }
-
-        // Verify we are logged in
-        val successText = device.findObject(UiSelector().text("AuthFlowTester"))
-        Assert.assertTrue(successText.waitForExists(10000))
+    fun testBasicLogin() {
+        loginPage.login(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+        app.waitForAppLoad()
+        app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+        app.validateApiRequest()
     }
 }

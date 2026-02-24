@@ -1,32 +1,35 @@
 plugins {
     android
     `kotlin-android`
+    kotlin("plugin.serialization") version "1.9.24"
 }
 
 dependencies {
     val composeVersion = "1.8.2" // Update requires Kotlin 2.
 
     implementation(project(":libs:SalesforceSDK"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.compose.runtime:runtime-android:1.10.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.tracing:tracing:1.3.0")
     implementation("com.google.android.material:material:1.13.0")
-    androidTestImplementation("androidx.test:runner:1.5.1") {
+    androidTestImplementation("androidx.test:runner:1.7.0") {
         exclude("com.android.support", "support-annotations")
     }
 
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.appcompat:appcompat-resources:1.7.1")
 
-    androidTestImplementation("androidx.test:rules:1.5.0") {
-        exclude("com.android.support", "support-annotations")
-    }
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0") {
+    androidTestImplementation("androidx.test:rules:1.6.1") {
         exclude("com.android.support", "support-annotations")
     }
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-web:3.7.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    androidTestImplementation("androidx.compose.ui:ui-test:1.10.3")
+    androidTestUtil("androidx.test:orchestrator:1.6.1")
 
     implementation("androidx.compose.material3:material3-android:1.3.2")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
@@ -49,6 +52,11 @@ android {
         targetSdk = 36
         minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     buildFeatures {
@@ -86,12 +94,23 @@ android {
         getByName("androidTest") {
             java.srcDirs(
                 "src/androidTest/java",
-                "${rootDir}/external/SalesforceMobileSDK-UITests/Android/app/src/androidTest/java/PageObjects",
-                "${rootDir}/external/SalesforceMobileSDK-UITests/Android/app/src/androidTest/java/TestUtility"
             )
         }
     }
 
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.6.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.3")
+        force("androidx.test:runner:1.7.0")
+        force("androidx.test:rules:1.6.1")
+        force("androidx.test.espresso:espresso-core:3.7.0")
+        force("androidx.test.espresso:espresso-web:3.7.0")
+    }
 }
 
 repositories {

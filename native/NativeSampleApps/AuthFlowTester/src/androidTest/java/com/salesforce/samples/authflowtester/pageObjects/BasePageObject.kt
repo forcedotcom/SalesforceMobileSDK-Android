@@ -24,27 +24,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.authflowtester
+package com.salesforce.samples.authflowtester.pageObjects
 
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiWatcher
+import android.content.Context
+import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.test.platform.app.InstrumentationRegistry
 
-class NotificationDialogUiWatcher(val device: UiDevice) : UiWatcher {
+abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
 
-    override fun checkForCondition(): Boolean {
-        // TODO: Add this to UI Test Framework
-        // Handle Notification Permission if it appears
-        val allowButton = device.findObject(By.text("Allow"))
-        if (allowButton != null && allowButton.isEnabled) {
-            allowButton.click()
-            return true
-        }
+    val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
+    fun getString(id: Int) = context.getString(id)
 
-        return false
+    companion object {
+        const val TIMEOUT_MS: Long = 2_000
     }
-}
-
-fun UiDevice.addNotificationWatcher() {
-    registerWatcher("NotificationPermission", NotificationDialogUiWatcher(this))
 }

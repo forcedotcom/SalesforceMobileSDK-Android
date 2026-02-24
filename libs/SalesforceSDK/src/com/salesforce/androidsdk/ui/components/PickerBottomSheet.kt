@@ -113,8 +113,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__account_picker_content_description
 import com.salesforce.androidsdk.R.string.sf__account_selector_text
 import com.salesforce.androidsdk.R.string.sf__add_new_account
+import com.salesforce.androidsdk.R.string.sf__add_new_account_content_description
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__custom_url_button
+import com.salesforce.androidsdk.R.string.sf__custom_url_button_content_description
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
 import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
@@ -256,6 +258,11 @@ internal fun PickerBottomSheet(
         PickerStyle.LoginServerPicker -> stringResource(sf__server_picker_content_description)
         PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
     }
+    val addButtonContentDescription = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button_content_description)
+        PickerStyle.UserAccountPicker -> stringResource(sf__add_new_account_content_description)
+    }
+
     val themeRippleConfiguration = RippleConfiguration(color = colorScheme.onSecondary)
     val coroutineScope = rememberCoroutineScope()
 
@@ -455,7 +462,8 @@ internal fun PickerBottomSheet(
                                                 },
                                                 modifier = Modifier
                                                     .padding(PADDING_SIZE.dp)
-                                                    .fillMaxWidth(),
+                                                    .fillMaxWidth()
+                                                    .semantics { contentDescription = addButtonContentDescription },
                                                 shape = RoundedCornerShape(CORNER_RADIUS.dp),
                                                 contentPadding = PaddingValues(PADDING_SIZE.dp),
                                                 border = BorderStroke(STROKE_WIDTH.dp, colorScheme.outline),
