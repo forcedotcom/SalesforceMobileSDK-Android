@@ -23,6 +23,8 @@ jobs:
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
         env:
+          MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+          MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
           UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
         run: |
           ./install.sh
@@ -60,8 +62,6 @@ jobs:
           PR_API_VERSION: "35"
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
-          CI_USER_USERNAME: ${{ secrets.CI_USER_USERNAME }}
-          CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
         run: |
           LEVELS_TO_TEST=$FULL_API_RANGE
           RETRIES=0
