@@ -50,7 +50,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -92,7 +91,14 @@ public class LoginServerManager {
 				Context.MODE_PRIVATE);
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
 				Context.MODE_PRIVATE);
+
+		// Reset non-custom servers from mobile device management (MDM) and servers XML.
+		resetNonCustomLoginServers(runtimePrefs);
+		resetNonCustomLoginServers(settings);
+
+		// Refresh non-custom servers from MDM or servers.xml
 		initSharedPrefFile();
+
 		getSelectedLoginServer();
 	}
 
@@ -228,32 +234,48 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Removes a login server from the list.
+	 * Removes a custom login server from the list.
 	 *
-	 * @param server the server to remove
+	 * @param server The server to remove.  If the server is not custom, this method does nothing
 	 */
 	public void removeServer(LoginServer server) {
+		removeServer(server, settings, false);
+	}
+
+	/**
+	 * Removes a login server from the list.
+	 *
+	 * @param server                The server to remove
+	 * @param sharedPreferences     The shared preferences to remove the server from
+	 * @param allowNonCustomRemoval Boolean true allows the removal of non-custom login servers and
+	 *                              false does not
+	 */
+	private void removeServer(
+			final LoginServer server,
+			final SharedPreferences sharedPreferences,
+			final boolean allowNonCustomRemoval
+	) {
 		List<LoginServer> servers = getLoginServers();
 		int index = servers.indexOf(server);
 
-		if (server.isCustom && index != -1) {
-			int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
-			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index+1, numServers));
+		if (allowNonCustomRemoval || server.isCustom && index != -1) {
+			int numServers = servers.size();
+			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index + 1, numServers));
 
-			final Editor edit = settings.edit();
+			final Editor edit = sharedPreferences.edit();
 			edit.remove(String.format(Locale.US, SERVER_NAME, index))
-				.remove(String.format(Locale.US, SERVER_URL, index))
-				.remove(String.format(Locale.US, IS_CUSTOM, index));
+					.remove(String.format(Locale.US, SERVER_URL, index))
+					.remove(String.format(Locale.US, IS_CUSTOM, index));
 
 			// Re-index servers after the one removed from the list.
 			for (int i = (index + 1); i < numServers; i++) {
 				LoginServer reIndexServer = stack.pop();
 				edit.remove(String.format(Locale.US, SERVER_NAME, i))
-					.remove(String.format(Locale.US, SERVER_URL, i))
-					.remove(String.format(Locale.US, IS_CUSTOM, i))
-					.putString(String.format(Locale.US, SERVER_NAME, i-1), reIndexServer.name)
-					.putString(String.format(Locale.US, SERVER_URL, i-1), reIndexServer.url)
-					.putBoolean(String.format(Locale.US, IS_CUSTOM, i-1), reIndexServer.isCustom);
+						.remove(String.format(Locale.US, SERVER_URL, i))
+						.remove(String.format(Locale.US, IS_CUSTOM, i))
+						.putString(String.format(Locale.US, SERVER_NAME, i - 1), reIndexServer.name)
+						.putString(String.format(Locale.US, SERVER_URL, i - 1), reIndexServer.url)
+						.putBoolean(String.format(Locale.US, IS_CUSTOM, i - 1), reIndexServer.isCustom);
 			}
 
 			edit.putInt(NUMBER_OF_ENTRIES, --numServers).apply();
@@ -467,16 +489,17 @@ public class LoginServerManager {
 	 * first time a user is upgrading to a newer version of the Mobile SDK.
 	 */
 	private void initSharedPrefFile() {
-		final Map<String, ?> values = settings.getAll();
-		if (values != null && !values.isEmpty()) {
-			return;
-		}
+		final List<LoginServer> loginServersFromXml = getLoginServersFromXML();
+
 		List<LoginServer> servers = getLoginServers();
 		if (servers == null || servers.isEmpty()) {
-			servers = getLoginServersFromXML();
+			servers = loginServersFromXml;
 			if (servers == null || servers.isEmpty()) {
 				servers = getLegacyLoginServers();
 			}
+		} else {
+			loginServersFromXml.addAll(servers);
+			servers = loginServersFromXml;
 		}
 		int numServers = servers.size();
 		final Editor edit = settings.edit();
@@ -536,6 +559,25 @@ public class LoginServerManager {
 			}
 		}
 		return (!allServers.isEmpty() ? allServers : null);
+	}
+
+	/**
+	 * Resets the list of non-custom login servers in the provided shared preferences.
+	 *
+	 * @param sharedPreferences The shared preferences
+	 */
+	private void resetNonCustomLoginServers(
+			final SharedPreferences sharedPreferences
+	) {
+		final List<LoginServer> loginServersFromPreferences = getLoginServersFromPreferences(sharedPreferences);
+		if (loginServersFromPreferences != null) {
+			for (int i = 0; i < loginServersFromPreferences.size(); i++) {
+				final LoginServer loginServer = loginServersFromPreferences.get(i);
+				if (!loginServer.isCustom) {
+					removeServer(loginServer, sharedPreferences, true);
+				}
+			}
+		}
 	}
 
 	/**
