@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.config;
 
+import static android.content.Context.MODE_PRIVATE;
+import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHostLabels;
+import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHosts;
+import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
 import static java.lang.String.format;
 import static java.util.Locale.US;
 
@@ -34,12 +38,12 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
 
 import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -47,9 +51,10 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -88,18 +93,29 @@ public class LoginServerManager {
 	public LoginServerManager(Context ctx) {
 		this.ctx = ctx;
 		settings = ctx.getSharedPreferences(SERVER_URL_FILE,
-				Context.MODE_PRIVATE);
+				MODE_PRIVATE);
 		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
-				Context.MODE_PRIVATE);
+				MODE_PRIVATE);
 
-		// Reset non-custom servers from mobile device management (MDM) and servers XML.
-		resetNonCustomLoginServers(runtimePrefs);
+		// TODO: Remove Diagnostic. ECJ20260227
+		Log.i("LSM", "INITIAL SETTINGS SHARED PREFERENCES.");
+		logSharedPreferences(settings);
+
+		// Reset non-custom servers from resources login servers provided by servers.xml.
 		resetNonCustomLoginServers(settings);
 
-		// Refresh non-custom servers from MDM or servers.xml
+		// TODO: Remove Diagnostic. ECJ20260227
+		Log.i("LSM", "AFTER RESET MANAGED SERVERS FROM SETTINGS SHARED PREFERENCES.");
+		logSharedPreferences(settings);
+
 		initSharedPrefFile();
 
+		// Select a default login server.
 		getSelectedLoginServer();
+
+		// TODO: Remove Diagnostic. ECJ20260227
+		Log.i("LSM", "UPDATED SETTINGS SHARED PREFERENCES.");
+		logSharedPreferences(settings);
 	}
 
 	/**
@@ -124,20 +140,29 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Returns the selected login server to display.
+	 * Returns the selected login server. This will set a default login server if needed and ensure
+	 * the selected login server is available in the current list of login servers.
 	 *
-	 * @return LoginServer instance.
+	 * @return The selected login server
 	 */
 	public LoginServer getSelectedLoginServer() {
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				Context.MODE_PRIVATE);
+				MODE_PRIVATE);
 		final String name = selectedServerPrefs.getString(SERVER_NAME, null);
 		final String url = selectedServerPrefs.getString(SERVER_URL, null);
 		boolean isCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
 
-		// Selection has been saved before.
-		if (name != null && url != null) {
-			LoginServer server = new LoginServer(name, url, isCustom);
+		// Refresh the list of mobile device management (MDM) servers from the runtime config.
+		if (isRuntimeConfigAppServiceHostsSet()) {
+			resetLoginServersFromRuntimeConfig();
+		}
+
+		// Get the active list of login servers.
+		final List<LoginServer> loginServers = getLoginServers();
+
+		// Selection has been saved before and is available in the active list of login servers.
+		if (name != null && url != null && loginServers.stream().anyMatch(server -> server.name.equals(name) && server.url.equals(url))) {
+			final LoginServer server = new LoginServer(name, url, isCustom);
 
 			// Only notify live data consumers if the value has changed.
 			if (!server.equals(selectedServer.getValue())) {
@@ -146,9 +171,8 @@ public class LoginServerManager {
 		} else {
 
 			// First time selection defaults to the first server on the list.
-			final List<LoginServer> allServers = getLoginServers();
-			if (allServers != null) {
-				final LoginServer server = allServers.get(0);
+			if (loginServers != null) {
+				final LoginServer server = loginServers.get(0);
 				if (server != null) {
 					selectedServer.postValue(server);
 				}
@@ -170,7 +194,7 @@ public class LoginServerManager {
 			return;
 		}
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				Context.MODE_PRIVATE);
+				MODE_PRIVATE);
 		final Editor edit = selectedServerPrefs.edit();
 		edit.clear();
 		edit.putString(SERVER_NAME, server.name);
@@ -207,11 +231,12 @@ public class LoginServerManager {
 			}
 		}
 
-		if (getLoginServersFromRuntimeConfig() == null) {
-			persistLoginServer(name, url, true, settings);
-		} else {
-			persistLoginServer(name, url, true, runtimePrefs);
-		}
+		persistLoginServer(
+				name,
+				url,
+				true /* Custom */,
+				getSharedPreferences() /* Active Shared Preferences */
+		);
 		setSelectedLoginServer(new LoginServer(name, url, true));
 	}
 
@@ -226,7 +251,7 @@ public class LoginServerManager {
 		edit.clear();
 		edit.apply();
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				Context.MODE_PRIVATE);
+				MODE_PRIVATE);
 		edit = selectedServerPrefs.edit();
 		edit.clear();
 		edit.apply();
@@ -238,7 +263,7 @@ public class LoginServerManager {
 	 *
 	 * @param server The server to remove.  If the server is not custom, this method does nothing
 	 */
-	public void removeServer(LoginServer server) {
+	public void removeServer(final LoginServer server) {
 		removeServer(server, settings, false);
 	}
 
@@ -255,7 +280,8 @@ public class LoginServerManager {
 			final SharedPreferences sharedPreferences,
 			final boolean allowNonCustomRemoval
 	) {
-		List<LoginServer> servers = getLoginServers();
+		final List<LoginServer> servers = getLoginServersFromPreferences(sharedPreferences);
+
 		int index = servers.indexOf(server);
 
 		if (allowNonCustomRemoval || server.isCustom && index != -1) {
@@ -263,19 +289,19 @@ public class LoginServerManager {
 			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index + 1, numServers));
 
 			final Editor edit = sharedPreferences.edit();
-			edit.remove(String.format(Locale.US, SERVER_NAME, index))
-					.remove(String.format(Locale.US, SERVER_URL, index))
-					.remove(String.format(Locale.US, IS_CUSTOM, index));
+			edit.remove(format(US, SERVER_NAME, index))
+					.remove(format(US, SERVER_URL, index))
+					.remove(format(US, IS_CUSTOM, index));
 
 			// Re-index servers after the one removed from the list.
 			for (int i = (index + 1); i < numServers; i++) {
 				LoginServer reIndexServer = stack.pop();
-				edit.remove(String.format(Locale.US, SERVER_NAME, i))
-						.remove(String.format(Locale.US, SERVER_URL, i))
-						.remove(String.format(Locale.US, IS_CUSTOM, i))
-						.putString(String.format(Locale.US, SERVER_NAME, i - 1), reIndexServer.name)
-						.putString(String.format(Locale.US, SERVER_URL, i - 1), reIndexServer.url)
-						.putBoolean(String.format(Locale.US, IS_CUSTOM, i - 1), reIndexServer.isCustom);
+				edit.remove(format(US, SERVER_NAME, i))
+						.remove(format(US, SERVER_URL, i))
+						.remove(format(US, IS_CUSTOM, i))
+						.putString(format(US, SERVER_NAME, i - 1), reIndexServer.name)
+						.putString(format(US, SERVER_URL, i - 1), reIndexServer.url)
+						.putBoolean(format(US, IS_CUSTOM, i - 1), reIndexServer.isCustom);
 			}
 
 			edit.putInt(NUMBER_OF_ENTRIES, --numServers).apply();
@@ -283,41 +309,60 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Returns the list of login servers.
-	 * Checks run time configuration first.
-	 * Reads from preferences if no runtime configuration found.
+	 * Returns the list of login servers.  Defaults to mobile device management (MDM) login servers
+	 * from the runtime configuration, if available, or resources login servers from the
+	 * servers.xml.  MDM and resources login servers are not custom and cannot be removed by the
+	 * user. A separate list of custom login servers is stored in a shared preferences for each of
+	 * MDM and resources.
 	 *
-	 * @return List of login servers.
+	 * @return The list of login servers
 	 */
 	public List<LoginServer> getLoginServers() {
-		List<LoginServer> allServers = getLoginServersFromRuntimeConfig();
-		if (allServers == null) {
-			allServers = getLoginServersFromPreferences();
-		} else {
-			allServers = getLoginServersFromPreferences(runtimePrefs);
-		}
-		return allServers;
+		return getLoginServersFromPreferences(getSharedPreferences());
 	}
 
 	/**
-	 * Returns the list of login servers from runtime configuration
-	 * (from MDM provider), if any.
+	 * Returns the active shared preferences when using mobile device management (MDM) or otherwise.
 	 *
-	 * @return List of login servers or null.
+	 * @return SharedPreferences The active shared preferences
 	 */
-	public List<LoginServer> getLoginServersFromRuntimeConfig() {
-		final RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
+	private SharedPreferences getSharedPreferences() {
+		return isRuntimeConfigAppServiceHostsSet() ? runtimePrefs : settings;
+	}
+
+	/**
+	 * Determines if managed (non-custom) login servers are provided by mobile device management
+	 * (MDM).
+	 *
+	 * @return boolean True indicates managed login servers are provided by MDM and false otherwise
+	 */
+	private boolean isRuntimeConfigAppServiceHostsSet() {
+		try {
+					return true; // TODO: Remove MDM testing diagnostic. ECJ20260227
+//			return getRuntimeConfig(ctx).getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Resets the list of Mobile Device Management (MDM) login servers from the runtime
+	 * configuration. This does not remove the user's custom login servers.
+	 */
+	private void resetLoginServersFromRuntimeConfig() {
+		final RuntimeConfig runtimeConfig = getRuntimeConfig(ctx);
 		String[] mdmLoginServers = null;
 		try {
-			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(ConfigKey.AppServiceHosts);
+			mdmLoginServers = new String[]{"https://mdm.example.com", "https://mdm2.example.com/2"}; // TODO: Remove MDM testing diagnostic. ECJ20260227
+//			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		} catch (Exception e) {
 			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 		}
-		final List<LoginServer> allServers = new ArrayList<>();
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = null;
 			try {
-				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(ConfigKey.AppServiceHostLabels);
+				mdmLoginServersLabels = new String[]{"MDM", "MDM2.1"}; // TODO: Remove MDM testing diagnostic. ECJ20260227
+//				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			} catch (Exception e) {
 				SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 			}
@@ -325,25 +370,40 @@ public class LoginServerManager {
 				SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
-			final List<LoginServer> storedServers = getLoginServersFromPreferences(runtimePrefs);
+
+			// TODO: Remove Diagnostic. ECJ20260227
+			Log.i("LSM", "INITIAL RUNTIME SHARED PREFERENCES.");
+			logSharedPreferences(runtimePrefs);
+
+			// Reset non-custom servers from Mobile Device Management (MDM).
+			resetNonCustomLoginServers(runtimePrefs);
+
+			// TODO: Remove Diagnostic. ECJ20260227
+			Log.i("LSM", "AFTER RESET MANAGED SERVERS FROM RUNTIME SHARED PREFERENCES.");
+			logSharedPreferences(runtimePrefs);
+
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
 				final String url = mdmLoginServers[i];
-				final LoginServer server = new LoginServer(name, url, false);
-				if (storedServers == null || !storedServers.contains(server)) {
-					persistLoginServer(name, url, false, runtimePrefs);
-				}
-				allServers.add(server);
+				persistLoginServer(
+						name,
+						url,
+						false, /* Non-Custom */
+						runtimePrefs
+				);
 			}
 		}
-		return (!allServers.isEmpty() ? allServers : null);
 	}
 
 	/**
-	 * Returns the list of all saved servers, including custom servers.
+	 * Returns the list of login servers from resources (servers.xml) and the user's custom servers.
+	 * Note this does not consider login servers the runtime config provides from Mobile Device
+	 * Management (MDM).  Consider using getLoginServers() instead if you need to consider MDM
+	 * login servers.
 	 *
-	 * @return List of all saved servers.
+	 * @return The list of login servers from resources (servers.xml) and the user's custom servers
 	 */
+	@SuppressWarnings("unused")
 	public List<LoginServer> getLoginServersFromPreferences() {
 		return getLoginServersFromPreferences(settings);
 	}
@@ -371,28 +431,16 @@ public class LoginServerManager {
 			return;
 		}
 
-		// Determine the last non-custom login server index.
-		final List<LoginServer> servers = getLoginServers();
-		int firstCustomLoginServerIndex = -1;
-		for (int i = servers.size() - 1; i >= 0; i--) {
-			if (servers.get(i).isCustom) {
-				firstCustomLoginServerIndex = i;
-			}
-		}
-
 		// Adjust the re-ordered custom login server index to be within bounds.
-		if (updatedIndex <= firstCustomLoginServerIndex) {
-			updatedIndex = firstCustomLoginServerIndex;
-		} else if (updatedIndex >= servers.size()) {
-			updatedIndex = servers.size() - 1;
-		}
+		final List<LoginServer> servers = getLoginServers();
+		updatedIndex = getIndexAdjustedToCustomLoginServerBounds(updatedIndex, getSharedPreferences());
 
 		// Update the login server list.
 		loginServers.remove(originalIndex);
 		loginServers.add(updatedIndex, originalLoginServer);
 
 		// Edit each login server indexed after the updated index.
-		final Editor editor = settings.edit();
+		final Editor editor = getSharedPreferences().edit();
 		for (int i = updatedIndex; i < loginServers.size(); i++) {
 			final LoginServer loginServer = loginServers.get(i);
 			editor.remove(format(US, SERVER_NAME, i))
@@ -434,6 +482,32 @@ public class LoginServerManager {
 		removeServer(originalCustomLoginServer);
 		addCustomLoginServer(updatedCustomLoginServer.name, updatedCustomLoginServer.url);
 		reorderCustomLoginServer(getLoginServers().size() - 1, originalIndex);
+	}
+
+	/**
+	 * Adjusts a login server index to be within the bounds of the custom login servers.
+	 *
+	 * @param index The login server index
+	 * @param sharedPreferences The login server shared preferences
+	 * @return The adjusted login server index
+	 */
+	private int getIndexAdjustedToCustomLoginServerBounds(
+			final Integer index,
+			final SharedPreferences sharedPreferences
+	) {
+		// Determine the last non-custom login server index.
+		int firstCustomLoginServerIndex = getNextNonCustomLoginServerIndex(sharedPreferences);
+
+		final List<LoginServer> servers = getLoginServers();
+		if (index == null) {
+			return servers.size();
+		} else if (index <= firstCustomLoginServerIndex) {
+			return firstCustomLoginServerIndex;
+		} else if (index >= servers.size()) {
+			return servers.size() - 1;
+		} else {
+			return index;
+		}
 	}
 
 	/**
@@ -484,57 +558,121 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Initializes the shared pref file with all available servers for
-	 * the first time, if necessary. This is required primarily for the
-	 * first time a user is upgrading to a newer version of the Mobile SDK.
+	 * Returns the next available non-custom login server index which suffixes the non-custom login
+	 * servers and prefixes the custom login servers.
+	 *
+	 * @param sharedPreferences The login server shared preferences
+	 * @return The next available non-custom login server index
+	 */
+	private Integer getNextNonCustomLoginServerIndex(final SharedPreferences sharedPreferences) {
+		final List<LoginServer> servers = getLoginServersFromPreferences(sharedPreferences);
+		int result = servers.size();
+		for (int i = result - 1; i >= 0; i--) {
+			if (servers.get(i).isCustom) {
+				result = i;
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Resets the list of resources login servers from the server.xml. This does not remove the
+	 * user's custom login servers.
 	 */
 	private void initSharedPrefFile() {
-		final List<LoginServer> loginServersFromXml = getLoginServersFromXML();
-
-		List<LoginServer> servers = getLoginServers();
+		if (isRuntimeConfigAppServiceHostsSet()) {
+			return;
+		}
+		List<LoginServer> servers = getLoginServersFromXML();
 		if (servers == null || servers.isEmpty()) {
-			servers = loginServersFromXml;
-			if (servers == null || servers.isEmpty()) {
-				servers = getLegacyLoginServers();
-			}
-		} else {
-			loginServersFromXml.addAll(servers);
-			servers = loginServersFromXml;
+			servers = getLegacyLoginServers();
 		}
 		int numServers = servers.size();
 		final Editor edit = settings.edit();
 		for (int i = 0; i < numServers; i++) {
 			final LoginServer curServer = servers.get(i);
-			edit.putString(String.format(Locale.US, SERVER_NAME, i), curServer.name.trim());
-			edit.putString(String.format(Locale.US, SERVER_URL, i), curServer.url.trim());
-			edit.putBoolean(String.format(Locale.US, IS_CUSTOM, i), curServer.isCustom);
-			if (i == 0) {
+			persistLoginServer(
+					curServer.name,
+					curServer.url,
+					curServer.isCustom,
+					settings
+			);
+
+			// Set the default login server to the first entry once.
+			if (i == 0 && ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE).getAll().isEmpty()) {
 				setSelectedLoginServer(curServer);
 			}
 		}
-		edit.putInt(NUMBER_OF_ENTRIES, numServers);
 		edit.apply();
 	}
 
 	/**
-	 * Adds a custom login server to the specified shared pref file.
+	 * Persists a login server the specified shared preferences file.
 	 *
-	 * @param name Server name.
-	 * @param url Server URL.
-	 * @param isCustom True - if it is a custom server, False - otherwise.
-	 * @param sharedPrefs SharedPreferences file.
+	 * @param name              The login server name
+	 * @param url               The login server URL
+	 * @param isCustom          boolean true for non-custom (managed) login servers, false for
+	 *                          custom (user-entered) login servers
+	 * @param sharedPreferences SharedPreferences file
 	 */
-	private void persistLoginServer(String name, String url, boolean isCustom, SharedPreferences sharedPrefs) {
+	private void persistLoginServer(final String name,
+									final String url,
+									final boolean isCustom,
+									final SharedPreferences sharedPreferences
+	) {
+		// Guards.
 		if (name == null || url == null) {
 			return;
 		}
-		int numServers = sharedPrefs.getInt(NUMBER_OF_ENTRIES, 0);
-		final Editor edit = sharedPrefs.edit();
-		edit.putString(String.format(Locale.US, SERVER_NAME, numServers), name.trim());
-		edit.putString(String.format(Locale.US, SERVER_URL, numServers), url.trim());
-		edit.putBoolean(String.format(Locale.US, IS_CUSTOM, numServers), isCustom);
-		edit.putInt(NUMBER_OF_ENTRIES, ++numServers);
-		edit.apply();
+
+		// Fetch the current number of servers.
+		final int numberOfServers = sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0);
+
+		// Adjust the requested index to the bounds of the non-custom (managed) or custom servers.
+		Integer adjustedIndex;
+		if (isCustom) {
+			adjustedIndex = getIndexAdjustedToCustomLoginServerBounds(null, sharedPreferences);
+		} else {
+			adjustedIndex = getNextNonCustomLoginServerIndex(sharedPreferences);
+		}
+
+		Log.i("LSM", "Persisting Login Server: '" + name + "', URL: '" + url + "', isCustom: '" + isCustom + "', Index: '" + null + "', adjustedIndex: '" + adjustedIndex + "'.");
+
+		final Editor editor = sharedPreferences.edit();
+
+		// Increment existing login servers as needed.
+		if (adjustedIndex != null) {
+			for (int i = numberOfServers - 1; i >= adjustedIndex; i--) {
+				final int incrementedIndex = i + 1;
+				final String loginServerNameKey = format(US, SERVER_NAME, i);
+				final String loginServerUrlKey = format(US, SERVER_URL, i);
+				final String loginServerIsCustomKey = format(US, IS_CUSTOM, i);
+
+				final String loginServerName = sharedPreferences.getString(loginServerNameKey, null);
+				final String loginServerUrl = sharedPreferences.getString(loginServerUrlKey, null);
+				final boolean loginServerIsCustom = sharedPreferences.getBoolean(loginServerIsCustomKey, false);
+
+				Log.i("LSM", "Incrementing Login Server: '" + loginServerName + "', URL: '" + loginServerUrl + "', isCustom: '" + loginServerIsCustom + "', Index: '" + i + "'/'" + incrementedIndex + "'.");
+
+				editor
+						.remove(loginServerNameKey)
+						.remove(loginServerUrlKey)
+						.remove(loginServerIsCustomKey)
+						.putString(format(US, SERVER_NAME, incrementedIndex), loginServerName)
+						.putString(format(US, SERVER_URL, incrementedIndex), loginServerUrl)
+						.putBoolean(format(US, IS_CUSTOM, incrementedIndex), loginServerIsCustom);
+			}
+		}
+
+		// Insert the new login server.
+		Log.i("LSM", "Inserting Login Server: '" + name + "', URL: '" + url + "', isCustom: '" + isCustom + "', Index: '" + adjustedIndex + "'.");
+		editor.putString(format(US, SERVER_NAME, adjustedIndex), name.trim());
+		editor.putString(format(US, SERVER_URL, adjustedIndex), url.trim());
+		editor.putBoolean(format(US, IS_CUSTOM, adjustedIndex), isCustom);
+
+		editor.putInt(NUMBER_OF_ENTRIES, numberOfServers + 1);
+
+		editor.apply();
 	}
 
 	/**
@@ -543,22 +681,33 @@ public class LoginServerManager {
 	 * @param prefs SharedPreferences file.
 	 * @return List of all saved servers.
 	 */
-	private List<LoginServer> getLoginServersFromPreferences(SharedPreferences prefs) {
+	private @NonNull List<LoginServer> getLoginServersFromPreferences(final SharedPreferences prefs) {
 		int numServers = prefs.getInt(NUMBER_OF_ENTRIES, 0);
 		if (numServers == 0) {
-			return null;
+			return new ArrayList<>();
 		}
 		final List<LoginServer> allServers = new ArrayList<>();
 		for (int i = 0; i < numServers; i++) {
-			final String name = prefs.getString(String.format(Locale.US, SERVER_NAME, i), null);
-			final String url = prefs.getString(String.format(Locale.US, SERVER_URL, i), null);
-			boolean isCustom = prefs.getBoolean(String.format(Locale.US, IS_CUSTOM, i), false);
+			final String name = prefs.getString(format(US, SERVER_NAME, i), null);
+			final String url = prefs.getString(format(US, SERVER_URL, i), null);
+			boolean isCustom = prefs.getBoolean(format(US, IS_CUSTOM, i), false);
 			if (name != null && url != null) {
 				final LoginServer server = new LoginServer(name, url.trim(), isCustom);
 				allServers.add(server);
 			}
 		}
-		return (!allServers.isEmpty() ? allServers : null);
+		return !allServers.isEmpty() ? allServers : new ArrayList<>();
+	}
+
+	// TODO: Remove Diagnostic. ECJ20260227
+	private void logSharedPreferences(final SharedPreferences sharedPreferences) {
+		final Map<String, ?> preferences = sharedPreferences.getAll();
+		final ArrayList<String> keys = new ArrayList<>(preferences.keySet());
+		Collections.sort(keys);
+		for (int i = 0; i < preferences.size(); i++) {
+			final Object key = keys.toArray()[i];
+			Log.i("LSM", "Settings: '" + key + "'/'" + preferences.get(key) + "'.");
+		}
 	}
 
 	/**
@@ -570,12 +719,10 @@ public class LoginServerManager {
 			final SharedPreferences sharedPreferences
 	) {
 		final List<LoginServer> loginServersFromPreferences = getLoginServersFromPreferences(sharedPreferences);
-		if (loginServersFromPreferences != null) {
-			for (int i = 0; i < loginServersFromPreferences.size(); i++) {
-				final LoginServer loginServer = loginServersFromPreferences.get(i);
-				if (!loginServer.isCustom) {
-					removeServer(loginServer, sharedPreferences, true);
-				}
+		for (int i = 0; i < loginServersFromPreferences.size(); i++) {
+			final LoginServer loginServer = loginServersFromPreferences.get(i);
+			if (!loginServer.isCustom) {
+				removeServer(loginServer, sharedPreferences, true);
 			}
 		}
 	}
