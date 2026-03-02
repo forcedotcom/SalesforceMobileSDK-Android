@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.config;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.salesforce.androidsdk.R.xml.servers;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHostLabels;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHosts;
 import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
@@ -38,7 +39,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -51,10 +51,8 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -82,7 +80,15 @@ public class LoginServerManager {
 	private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
 	private final Context ctx;
+
+	/**
+	 * Shared preferences when non-custom resources login servers are provided by servers.xml and associated custom login servers added by the user
+	 */
 	private final SharedPreferences settings;
+
+	/**
+	 * Shared preferences when non-custom resources login servers are provided by the runtime configuration (Mobile Device Management) and associated custom login servers added by the user
+	 */
 	private final SharedPreferences runtimePrefs;
 
 	/**
@@ -92,30 +98,15 @@ public class LoginServerManager {
 	 */
 	public LoginServerManager(Context ctx) {
 		this.ctx = ctx;
-		settings = ctx.getSharedPreferences(SERVER_URL_FILE,
-				MODE_PRIVATE);
-		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
-				MODE_PRIVATE);
+		settings = ctx.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE);
+		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE);
 
-		// TODO: Remove Diagnostic. ECJ20260227
-		Log.i("LSM", "INITIAL SETTINGS SHARED PREFERENCES.");
-		logSharedPreferences(settings);
-
-		// Reset non-custom servers from resources login servers provided by servers.xml.
+		// (Re-)initialize non-custom servers provided by the servers.xml.
 		resetNonCustomLoginServers(settings);
-
-		// TODO: Remove Diagnostic. ECJ20260227
-		Log.i("LSM", "AFTER RESET MANAGED SERVERS FROM SETTINGS SHARED PREFERENCES.");
-		logSharedPreferences(settings);
-
 		initSharedPrefFile();
 
 		// Select a default login server.
 		getSelectedLoginServer();
-
-		// TODO: Remove Diagnostic. ECJ20260227
-		Log.i("LSM", "UPDATED SETTINGS SHARED PREFERENCES.");
-		logSharedPreferences(settings);
 	}
 
 	/**
@@ -146,8 +137,7 @@ public class LoginServerManager {
 	 * @return The selected login server
 	 */
 	public LoginServer getSelectedLoginServer() {
-		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				MODE_PRIVATE);
+		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
 		final String name = selectedServerPrefs.getString(SERVER_NAME, null);
 		final String url = selectedServerPrefs.getString(SERVER_URL, null);
 		boolean isCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
@@ -193,8 +183,7 @@ public class LoginServerManager {
 		if (server == null) {
 			return;
 		}
-		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				MODE_PRIVATE);
+		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
 		final Editor edit = selectedServerPrefs.edit();
 		edit.clear();
 		edit.putString(SERVER_NAME, server.name);
@@ -250,8 +239,7 @@ public class LoginServerManager {
 		edit = runtimePrefs.edit();
 		edit.clear();
 		edit.apply();
-		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE,
-				MODE_PRIVATE);
+		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
 		edit = selectedServerPrefs.edit();
 		edit.clear();
 		edit.apply();
@@ -338,8 +326,7 @@ public class LoginServerManager {
 	 */
 	private boolean isRuntimeConfigAppServiceHostsSet() {
 		try {
-					return true; // TODO: Remove MDM testing diagnostic. ECJ20260227
-//			return getRuntimeConfig(ctx).getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
+			return getRuntimeConfig(ctx).getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -353,16 +340,14 @@ public class LoginServerManager {
 		final RuntimeConfig runtimeConfig = getRuntimeConfig(ctx);
 		String[] mdmLoginServers = null;
 		try {
-			mdmLoginServers = new String[]{"https://mdm.example.com", "https://mdm2.example.com/2"}; // TODO: Remove MDM testing diagnostic. ECJ20260227
-//			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
+			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		} catch (Exception e) {
 			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 		}
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = null;
 			try {
-				mdmLoginServersLabels = new String[]{"MDM", "MDM2.1"}; // TODO: Remove MDM testing diagnostic. ECJ20260227
-//				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
+				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			} catch (Exception e) {
 				SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 			}
@@ -371,16 +356,8 @@ public class LoginServerManager {
 				mdmLoginServersLabels = mdmLoginServers;
 			}
 
-			// TODO: Remove Diagnostic. ECJ20260227
-			Log.i("LSM", "INITIAL RUNTIME SHARED PREFERENCES.");
-			logSharedPreferences(runtimePrefs);
-
 			// Reset non-custom servers from Mobile Device Management (MDM).
 			resetNonCustomLoginServers(runtimePrefs);
-
-			// TODO: Remove Diagnostic. ECJ20260227
-			Log.i("LSM", "AFTER RESET MANAGED SERVERS FROM RUNTIME SHARED PREFERENCES.");
-			logSharedPreferences(runtimePrefs);
 
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
@@ -532,10 +509,9 @@ public class LoginServerManager {
 	 */
 	private List<LoginServer> getLoginServersFromXML() {
 		List<LoginServer> loginServers = null;
-		int id = ctx.getResources().getIdentifier("servers", "xml", ctx.getPackageName());
-		if (id != 0) {
+		if (servers != 0) {
 			loginServers = new ArrayList<>();
-			final XmlResourceParser xml = ctx.getResources().getXml(id);
+			final XmlResourceParser xml = ctx.getResources().getXml(servers);
 			int eventType = -1;
 			while (eventType != XmlResourceParser.END_DOCUMENT) {
 				if (eventType == XmlResourceParser.START_TAG) {
@@ -636,8 +612,6 @@ public class LoginServerManager {
 			adjustedIndex = getNextNonCustomLoginServerIndex(sharedPreferences);
 		}
 
-		Log.i("LSM", "Persisting Login Server: '" + name + "', URL: '" + url + "', isCustom: '" + isCustom + "', Index: '" + null + "', adjustedIndex: '" + adjustedIndex + "'.");
-
 		final Editor editor = sharedPreferences.edit();
 
 		// Increment existing login servers as needed.
@@ -652,8 +626,6 @@ public class LoginServerManager {
 				final String loginServerUrl = sharedPreferences.getString(loginServerUrlKey, null);
 				final boolean loginServerIsCustom = sharedPreferences.getBoolean(loginServerIsCustomKey, false);
 
-				Log.i("LSM", "Incrementing Login Server: '" + loginServerName + "', URL: '" + loginServerUrl + "', isCustom: '" + loginServerIsCustom + "', Index: '" + i + "'/'" + incrementedIndex + "'.");
-
 				editor
 						.remove(loginServerNameKey)
 						.remove(loginServerUrlKey)
@@ -665,7 +637,6 @@ public class LoginServerManager {
 		}
 
 		// Insert the new login server.
-		Log.i("LSM", "Inserting Login Server: '" + name + "', URL: '" + url + "', isCustom: '" + isCustom + "', Index: '" + adjustedIndex + "'.");
 		editor.putString(format(US, SERVER_NAME, adjustedIndex), name.trim());
 		editor.putString(format(US, SERVER_URL, adjustedIndex), url.trim());
 		editor.putBoolean(format(US, IS_CUSTOM, adjustedIndex), isCustom);
@@ -697,17 +668,6 @@ public class LoginServerManager {
 			}
 		}
 		return !allServers.isEmpty() ? allServers : new ArrayList<>();
-	}
-
-	// TODO: Remove Diagnostic. ECJ20260227
-	private void logSharedPreferences(final SharedPreferences sharedPreferences) {
-		final Map<String, ?> preferences = sharedPreferences.getAll();
-		final ArrayList<String> keys = new ArrayList<>(preferences.keySet());
-		Collections.sort(keys);
-		for (int i = 0; i < preferences.size(); i++) {
-			final Object key = keys.toArray()[i];
-			Log.i("LSM", "Settings: '" + key + "'/'" + preferences.get(key) + "'.");
-		}
 	}
 
 	/**
