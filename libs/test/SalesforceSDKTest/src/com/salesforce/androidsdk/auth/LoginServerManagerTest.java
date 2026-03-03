@@ -113,6 +113,24 @@ public class LoginServerManagerTest {
     }
 
     /**
+     * Test for testGetLegacyDefaultLoginServersWhenResourcesAreMissing.
+     */
+    @Test
+    public void testGetLegacyDefaultLoginServersWhenResourcesAreMissing() {
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                0);
+
+        final List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 2, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
      * Test for getDefaultLoginServer.
      */
     @Test

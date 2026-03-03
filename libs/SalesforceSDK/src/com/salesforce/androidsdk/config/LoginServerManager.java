@@ -37,6 +37,7 @@ import static java.util.Locale.US;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.os.Looper;
 
@@ -83,10 +84,17 @@ public class LoginServerManager {
 	@VisibleForTesting
 	public static final String RUNTIME_PREFS_FILE = "runtime_prefs_file";
 
-	private static final String NUMBER_OF_ENTRIES = "number_of_entries";
-	private static final String SERVER_NAME = "server_name_%d";
-	private static final String SERVER_URL = "server_url_%d";
-	private static final String IS_CUSTOM = "is_custom_%d";
+	@VisibleForTesting
+	public static final String NUMBER_OF_ENTRIES = "number_of_entries";
+
+	@VisibleForTesting
+	public static final String SERVER_NAME = "server_name_%d";
+
+	@VisibleForTesting
+	public static final String SERVER_URL = "server_url_%d";
+
+	@VisibleForTesting
+	public static final String IS_CUSTOM = "is_custom_%d";
 
 	/**
 	 * Shared preferences for the selected login server
@@ -204,9 +212,8 @@ public class LoginServerManager {
 
 			// First time selection defaults to the first server on the list.
 			if (loginServers != null) {
-				final LoginServer server = loginServers.get(0);
-				if (server != null) {
-					selectedServer.postValue(server);
+				if (!loginServers.isEmpty()) {
+					selectedServer.postValue(loginServers.get(0));
 				}
 			}
 
@@ -248,12 +255,12 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Adds a custom login server to the shared pref file.
+	 * Adds a custom login server.
 	 *
-	 * @param name Server name.
-	 * @param url Server URL.
+	 * @param name The login server name
+	 * @param url The login server URL
 	 */
-	public void addCustomLoginServer(String name, String url) {
+	public void addCustomLoginServer(@NonNull String name, @NonNull String url) {
 		// Prevent duplicate servers.
 		for (LoginServer existingServer : getLoginServers()) {
 			if (url.equals(existingServer.url)) {
@@ -369,11 +376,7 @@ public class LoginServerManager {
 	 * server.xml when false
 	 */
 	private boolean isRuntimeConfigAppServiceHostsSet() {
-		try {
-			return runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
-		} catch (Exception e) {
-			return false;
-		}
+		return runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
 	}
 
 	/**
@@ -382,20 +385,10 @@ public class LoginServerManager {
 	 */
 	@SuppressWarnings("UnusedReturnValue")
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
-		String[] mdmLoginServers = null;
-		try {
-			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
-		} catch (Exception e) {
-			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
-		}
+		String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<>();
 		if (mdmLoginServers != null) {
-			String[] mdmLoginServersLabels = null;
-			try {
-				mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
-			} catch (Exception e) {
-				SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
-			}
+			String[] mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
 				SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
@@ -407,6 +400,8 @@ public class LoginServerManager {
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
 				final String url = mdmLoginServers[i];
+				if (name == null || url == null) { continue; }
+
 				final LoginServer server = new LoginServer(name, url, false);
 				persistLoginServer(
 						name,
@@ -516,7 +511,7 @@ public class LoginServerManager {
 	 * @param sharedPreferences The login server shared preferences
 	 * @return The adjusted login server index
 	 */
-	private int getIndexAdjustedToCustomLoginServerBounds(
+	private @NonNull Integer getIndexAdjustedToCustomLoginServerBounds(
 			final Integer index,
 			final SharedPreferences sharedPreferences
 	) {
@@ -556,26 +551,31 @@ public class LoginServerManager {
 	 * @return Login servers defined in 'res/xml/servers.xml', or null.
 	 */
 	private List<LoginServer> getLoginServersFromXML() {
-		List<LoginServer> loginServers = null;
-		if (servers != 0) {
-			loginServers = new ArrayList<>();
-			final XmlResourceParser xml = ctx.getResources().getXml(serversXmlResourceId);
-			int eventType = -1;
-			while (eventType != XmlResourceParser.END_DOCUMENT) {
-				if (eventType == XmlResourceParser.START_TAG) {
-					if (xml.getName().equals("server")) {
-						final String name = xml.getAttributeValue(null, "name");
-						final String url = xml.getAttributeValue(null, "url");
-						final LoginServer loginServer = new LoginServer(name,
-								url, false);
+		final List<LoginServer> loginServers = new ArrayList<>();
+
+		XmlResourceParser xml;
+		try {
+			xml = ctx.getResources().getXml(serversXmlResourceId);
+		} catch (Resources.NotFoundException e) {
+			return loginServers;
+		}
+
+		int eventType = -1;
+		while (eventType != XmlResourceParser.END_DOCUMENT) {
+			if (eventType == XmlResourceParser.START_TAG) {
+				if (xml.getName().equals("server")) {
+					final String name = xml.getAttributeValue(null, "name");
+					final String url = xml.getAttributeValue(null, "url");
+					if (name != null && url != null) {
+						final LoginServer loginServer = new LoginServer(name, url, false);
 						loginServers.add(loginServer);
 					}
 				}
-				try {
-					eventType = xml.next();
-				} catch (XmlPullParserException | IOException e) {
-					SalesforceSDKLogger.w(TAG, "Exception thrown while parsing XML", e);
-				}
+			}
+			try {
+				eventType = xml.next();
+			} catch (XmlPullParserException | IOException e) {
+				SalesforceSDKLogger.w(TAG, "Exception thrown while parsing XML", e);
 			}
 		}
 		return loginServers;
@@ -588,7 +588,7 @@ public class LoginServerManager {
 	 * @param sharedPreferences The login server shared preferences
 	 * @return The next available non-custom login server index
 	 */
-	private Integer getNextNonCustomLoginServerIndex(final SharedPreferences sharedPreferences) {
+	private @NonNull Integer getNextNonCustomLoginServerIndex(final SharedPreferences sharedPreferences) {
 		final List<LoginServer> servers = getLoginServersFromPreferences(sharedPreferences);
 		int result = servers.size();
 		for (int i = result - 1; i >= 0; i--) {
@@ -608,7 +608,7 @@ public class LoginServerManager {
 			return;
 		}
 		List<LoginServer> servers = getLoginServersFromXML();
-		if (servers == null || servers.isEmpty()) {
+		if (servers.isEmpty()) {
 			servers = getLegacyLoginServers();
 		}
 		int numServers = servers.size();
@@ -639,21 +639,17 @@ public class LoginServerManager {
 	 *                          custom (user-entered) login servers
 	 * @param sharedPreferences The shared preferences
 	 */
-	private void persistLoginServer(final String name,
-									final String url,
+	private void persistLoginServer(final @NonNull String name,
+									final @NonNull String url,
 									final boolean isCustom,
 									final SharedPreferences sharedPreferences
 	) {
-		// Guards.
-		if (name == null || url == null) {
-			return;
-		}
-
 		// Fetch the current number of servers.
 		final int numberOfServers = sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0);
 
 		// Adjust the requested index to the bounds of the non-custom (managed) or custom servers.
-		Integer adjustedIndex;
+		@SuppressWarnings("WrapperTypeMayBePrimitive")
+		@NonNull Integer adjustedIndex;
 		if (isCustom) {
 			adjustedIndex = getIndexAdjustedToCustomLoginServerBounds(null, sharedPreferences);
 		} else {
@@ -663,25 +659,23 @@ public class LoginServerManager {
 		final Editor editor = sharedPreferences.edit();
 
 		// Increment existing login servers as needed.
-		if (adjustedIndex != null) {
-			for (int i = numberOfServers - 1; i >= adjustedIndex; i--) {
-				final int incrementedIndex = i + 1;
-				final String loginServerNameKey = format(US, SERVER_NAME, i);
-				final String loginServerUrlKey = format(US, SERVER_URL, i);
-				final String loginServerIsCustomKey = format(US, IS_CUSTOM, i);
+		for (int i = numberOfServers - 1; i >= adjustedIndex; i--) {
+			final int incrementedIndex = i + 1;
+			final String loginServerNameKey = format(US, SERVER_NAME, i);
+			final String loginServerUrlKey = format(US, SERVER_URL, i);
+			final String loginServerIsCustomKey = format(US, IS_CUSTOM, i);
 
-				final String loginServerName = sharedPreferences.getString(loginServerNameKey, null);
-				final String loginServerUrl = sharedPreferences.getString(loginServerUrlKey, null);
-				final boolean loginServerIsCustom = sharedPreferences.getBoolean(loginServerIsCustomKey, false);
+			final String loginServerName = sharedPreferences.getString(loginServerNameKey, null);
+			final String loginServerUrl = sharedPreferences.getString(loginServerUrlKey, null);
+			final boolean loginServerIsCustom = sharedPreferences.getBoolean(loginServerIsCustomKey, false);
 
-				editor
-						.remove(loginServerNameKey)
-						.remove(loginServerUrlKey)
-						.remove(loginServerIsCustomKey)
-						.putString(format(US, SERVER_NAME, incrementedIndex), loginServerName)
-						.putString(format(US, SERVER_URL, incrementedIndex), loginServerUrl)
-						.putBoolean(format(US, IS_CUSTOM, incrementedIndex), loginServerIsCustom);
-			}
+			editor
+					.remove(loginServerNameKey)
+					.remove(loginServerUrlKey)
+					.remove(loginServerIsCustomKey)
+					.putString(format(US, SERVER_NAME, incrementedIndex), loginServerName)
+					.putString(format(US, SERVER_URL, incrementedIndex), loginServerUrl)
+					.putBoolean(format(US, IS_CUSTOM, incrementedIndex), loginServerIsCustom);
 		}
 
 		// Insert the new login server.
@@ -700,7 +694,8 @@ public class LoginServerManager {
 	 * @param prefs SharedPreferences file.
 	 * @return List of all saved servers.
 	 */
-	private @NonNull List<LoginServer> getLoginServersFromPreferences(final SharedPreferences prefs) {
+	@VisibleForTesting
+	public @NonNull List<LoginServer> getLoginServersFromPreferences(final SharedPreferences prefs) {
 		int numServers = prefs.getInt(NUMBER_OF_ENTRIES, 0);
 		if (numServers == 0) {
 			return new ArrayList<>();
@@ -715,7 +710,7 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
-		return !allServers.isEmpty() ? allServers : new ArrayList<>();
+		return allServers;
 	}
 
 	/**
