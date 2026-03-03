@@ -71,16 +71,38 @@ public class LoginServerManager {
 	public static final String WELCOME_LOGIN_URL = "https://welcome.salesforce.com/discovery";
 	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
 
-	// Keys used in shared preferences.
-	private static final String SERVER_URL_FILE = "server_url_file";
-	private static final String RUNTIME_PREFS_FILE = "runtime_prefs_file";
+	/**
+	 * Shared preferences when non-custom login servers are provided by resources servers.xml
+	 */
+	@VisibleForTesting
+	public static final String SERVER_URL_FILE = "server_url_file";
+
+	/**
+	 * Shared preferences when non-custom login servers are provided by runtime config Mobile Device Management (MDM)
+	 */
+	@VisibleForTesting
+	public static final String RUNTIME_PREFS_FILE = "runtime_prefs_file";
+
 	private static final String NUMBER_OF_ENTRIES = "number_of_entries";
 	private static final String SERVER_NAME = "server_name_%d";
 	private static final String SERVER_URL = "server_url_%d";
 	private static final String IS_CUSTOM = "is_custom_%d";
-	private static final String SERVER_SELECTION_FILE = "server_selection_file";
 
+	/**
+	 * Shared preferences for the selected login server
+	 */
+	@VisibleForTesting
+	public static final String SERVER_SELECTION_FILE = "server_selection_file";
+
+	/**
+	 * The Android context used for shared preferences access
+	 */
 	private final Context ctx;
+
+	/**
+	 * The Android runtime configuration used for Mobile Device Management (MDM)
+	 */
+	private final RuntimeConfig runtimeConfig;
 
 	/** The resource id of the servers.xml file */
 	private final int serversXmlResourceId;
@@ -101,7 +123,32 @@ public class LoginServerManager {
 	 * @param ctx The context
 	 */
 	public LoginServerManager(final Context ctx) {
-		this(ctx, servers);
+		this(ctx, getRuntimeConfig(ctx), servers);
+	}
+
+	/**
+	 * Constructs a new login server manager.
+	 *
+	 * @param ctx The context
+	 */
+	@VisibleForTesting
+	public LoginServerManager(
+			final Context ctx,
+			final RuntimeConfig runtimeConfig,
+			final int serversXmlResourceId
+	) {
+		this.ctx = ctx;
+		this.runtimeConfig = runtimeConfig;
+		this.serversXmlResourceId = serversXmlResourceId;
+		settings = ctx.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE);
+		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE);
+
+		// (Re-)initialize non-custom login servers provided by the resources servers.xml.
+		resetNonCustomLoginServers(settings);
+		initSharedPrefFile();
+
+		// Select a default login server.
+		getSelectedLoginServer();
 	}
 
 	/**
@@ -123,26 +170,6 @@ public class LoginServerManager {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Constructs a new login server manager.
-	 *
-	 * @param ctx The context
-	 */
-	@VisibleForTesting
-	public LoginServerManager(final Context ctx, final int servers) {
-		this.ctx = ctx;
-		this.serversXmlResourceId = servers;
-		settings = ctx.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE);
-		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE);
-
-		// (Re-)initialize non-custom servers provided by the servers.xml.
-		resetNonCustomLoginServers(settings);
-		initSharedPrefFile();
-
-		// Select a default login server.
-		getSelectedLoginServer();
 	}
 
 	/**
@@ -343,7 +370,7 @@ public class LoginServerManager {
 	 */
 	private boolean isRuntimeConfigAppServiceHostsSet() {
 		try {
-			return getRuntimeConfig(ctx).getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
+			return runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -355,7 +382,6 @@ public class LoginServerManager {
 	 */
 	@SuppressWarnings("UnusedReturnValue")
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
-		final RuntimeConfig runtimeConfig = getRuntimeConfig(ctx);
 		String[] mdmLoginServers = null;
 		try {
 			mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);

@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
 import static com.salesforce.androidsdk.tests.R.xml.servers_addition;
 import static com.salesforce.androidsdk.tests.R.xml.servers_empty;
 import static com.salesforce.androidsdk.tests.R.xml.servers_remove;
@@ -37,7 +38,6 @@ import static org.junit.Assert.assertFalse;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
@@ -53,31 +53,6 @@ import java.util.List;
 
 /**
  * Tests for LoginServerManager.
- * <p>
- * TODO: ✅Each test should include a cold start. ECJ20260302
- * <p>
- * TODO: ✅Default servers from legacy defaults. ECJ20260302
- * <p>
- * TODO: ✅Default servers from resources server.xml. ECJ20260302
- * <p>
- * TODO: ✅Add server from resources server.xml WITH NO custom servers. ECJ20260302
- * TODO: ✅Update server from resources server.xml WITH NO custom servers. ECJ20260302
- * TODO: ✅Remove server from resources server.xml WITH NO custom servers. ECJ20260302
- * <p>
- * TODO: ✅Add server from resources server.xml WITH custom servers. ECJ20260302
- * TODO: ✅Update server from resources server.xml WITH custom servers. ECJ20260302
- * TODO: ✅Remove server from resources server.xml WITH custom servers. ECJ20260302
- * <p>
- * TODO: Default servers from runtime config. ECJ20260302
- * <p>
- * TODO: Add server from runtime config WITH NO custom servers. ECJ20260302
- * TODO: Update server from runtime config WITH NO custom servers. ECJ20260302
- * TODO: Remove server from runtime config WITH NO custom servers. ECJ20260302
- * <p>
- * TODO: Add server from runtime config WITH custom servers. ECJ20260302
- * TODO: Update server from runtime config WITH custom servers. ECJ20260302
- * TODO: Remove server from runtime config WITH custom servers. ECJ20260302
- * TODO: ECJ20260302
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -124,7 +99,10 @@ public class LoginServerManagerTest {
      */
     @Test
     public void testGetLegacyDefaultLoginServers() {
-        loginServerManager = new LoginServerManager(getInstrumentation().getTargetContext(), servers_empty);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_empty);
 
         final List<LoginServer> servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 2, servers.size());
@@ -162,7 +140,10 @@ public class LoginServerManagerTest {
 
         assertProduction(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_addition);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
@@ -182,7 +163,10 @@ public class LoginServerManagerTest {
     @Test
     public void testUpdateDefaultLoginServers() {
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_addition);
         List<LoginServer> servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
         assertProduction(servers.get(0));
@@ -194,7 +178,10 @@ public class LoginServerManagerTest {
 
         assertProduction(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_update);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
@@ -214,7 +201,10 @@ public class LoginServerManagerTest {
     @Test
     public void testRemoveDefaultLoginServers() {
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_update);
         List<LoginServer> servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
         assertProduction(servers.get(0));
@@ -226,7 +216,10 @@ public class LoginServerManagerTest {
 
         assertProduction(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_remove);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_remove);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 2, servers.size());
@@ -254,7 +247,10 @@ public class LoginServerManagerTest {
         assertCustom(loginServerManager.getLoginServers().getLast());
         assertCustom(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_addition);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 5, servers.size());
@@ -275,7 +271,10 @@ public class LoginServerManagerTest {
     @Test
     public void testUpdateDefaultLoginServersWithCustomServers() {
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_addition);
         List<LoginServer> servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
         assertProduction(servers.get(0));
@@ -291,7 +290,10 @@ public class LoginServerManagerTest {
         assertCustom(loginServerManager.getLoginServers().getLast());
         assertCustom(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_update);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 5, servers.size());
@@ -312,7 +314,10 @@ public class LoginServerManagerTest {
     @Test
     public void testRemoveDefaultLoginServersWithCustomServers() {
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_update);
         List<LoginServer> servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 4, servers.size());
         assertProduction(servers.get(0));
@@ -328,7 +333,10 @@ public class LoginServerManagerTest {
         assertCustom(loginServerManager.getLoginServers().getLast());
         assertCustom(loginServerManager.getSelectedLoginServer());
 
-        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_remove);
+        loginServerManager = new LoginServerManager(
+                getInstrumentation().getTargetContext(),
+                getRuntimeConfig(getInstrumentation().getTargetContext()),
+                servers_remove);
 
         servers = loginServerManager.getLoginServers();
         assertEquals("Wrong number of servers", 3, servers.size());
@@ -686,31 +694,31 @@ public class LoginServerManagerTest {
         assertEquals(loginServerManager.getLoginServers().getLast(), updatedCustomLoginServer);
     }
 
-    private void assertProduction(LoginServer server) {
+    public static void assertProduction(LoginServer server) {
         assertEquals("Expected production's name", "Production", server.name);
         assertEquals("Expected production's url", PRODUCTION_URL, server.url);
         assertFalse("Expected production to be marked as not custom", server.isCustom);
     }
 
-    private void assertSandbox(LoginServer server) {
+    public static void assertSandbox(LoginServer server) {
         assertEquals("Expected sandbox's name", "Sandbox", server.name);
         assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
         assertFalse("Expected sandbox to be marked as not custom", server.isCustom);
     }
 
-    private void assertOther(LoginServer server) {
+    public static void assertOther(LoginServer server) {
         assertEquals("Expected other's name", "Other", server.name);
         assertEquals("Expected other's url", OTHER_URL, server.url);
         assertFalse("Expected other to be marked as not custom", server.isCustom);
     }
 
-    private void assertCustom(LoginServer server) {
+    public static void assertCustom(LoginServer server) {
         assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
         assertEquals("Expected custom's url", CUSTOM_URL, server.url);
         Assert.assertTrue("Expected custom to be marked as not custom", server.isCustom);
     }
 
-    private void assertCustom2(LoginServer server) {
+    public static void assertCustom2(LoginServer server) {
         assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
         assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
         Assert.assertTrue("Expected custom2 to be marked as not custom", server.isCustom);
