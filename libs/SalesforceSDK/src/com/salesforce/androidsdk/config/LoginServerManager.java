@@ -41,6 +41,7 @@ import android.content.res.XmlResourceParser;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.MutableLiveData;
 
 import com.salesforce.androidsdk.R;
@@ -81,6 +82,9 @@ public class LoginServerManager {
 
 	private final Context ctx;
 
+	/** The resource id of the servers.xml file */
+	private final int serversXmlResourceId;
+
 	/**
 	 * Shared preferences when non-custom resources login servers are provided by servers.xml and associated custom login servers added by the user
 	 */
@@ -92,21 +96,12 @@ public class LoginServerManager {
 	private final SharedPreferences runtimePrefs;
 
 	/**
-	 * Parameterized constructor.
+	 * Constructs a new login server manager.
 	 *
-	 * @param ctx Context.
+	 * @param ctx The context
 	 */
-	public LoginServerManager(Context ctx) {
-		this.ctx = ctx;
-		settings = ctx.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE);
-		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE);
-
-		// (Re-)initialize non-custom servers provided by the servers.xml.
-		resetNonCustomLoginServers(settings);
-		initSharedPrefFile();
-
-		// Select a default login server.
-		getSelectedLoginServer();
+	public LoginServerManager(final Context ctx) {
+		this(ctx, servers);
 	}
 
 	/**
@@ -128,6 +123,26 @@ public class LoginServerManager {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Constructs a new login server manager.
+	 *
+	 * @param ctx The context
+	 */
+	@VisibleForTesting
+	public LoginServerManager(final Context ctx, final int servers) {
+		this.ctx = ctx;
+		this.serversXmlResourceId = servers;
+		settings = ctx.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE);
+		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE);
+
+		// (Re-)initialize non-custom servers provided by the servers.xml.
+		resetNonCustomLoginServers(settings);
+		initSharedPrefFile();
+
+		// Select a default login server.
+		getSelectedLoginServer();
 	}
 
 	/**
@@ -518,7 +533,7 @@ public class LoginServerManager {
 		List<LoginServer> loginServers = null;
 		if (servers != 0) {
 			loginServers = new ArrayList<>();
-			final XmlResourceParser xml = ctx.getResources().getXml(servers);
+			final XmlResourceParser xml = ctx.getResources().getXml(serversXmlResourceId);
 			int eventType = -1;
 			while (eventType != XmlResourceParser.END_DOCUMENT) {
 				if (eventType == XmlResourceParser.START_TAG) {

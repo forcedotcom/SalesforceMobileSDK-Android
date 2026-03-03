@@ -27,10 +27,17 @@
 package com.salesforce.androidsdk.auth;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+import static com.salesforce.androidsdk.tests.R.xml.servers_addition;
+import static com.salesforce.androidsdk.tests.R.xml.servers_empty;
+import static com.salesforce.androidsdk.tests.R.xml.servers_remove;
+import static com.salesforce.androidsdk.tests.R.xml.servers_update;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
@@ -47,17 +54,19 @@ import java.util.List;
 /**
  * Tests for LoginServerManager.
  * <p>
- * TODO: Each test should include a cold start. ECJ20260302
+ * TODO: ✅Each test should include a cold start. ECJ20260302
  * <p>
- * TODO: Default servers from resources server.xml. ECJ20260302
+ * TODO: ✅Default servers from legacy defaults. ECJ20260302
  * <p>
- * TODO: Add server from resources server.xml WITH NO custom servers. ECJ20260302
- * TODO: Update server from resources server.xml WITH NO custom servers. ECJ20260302
- * TODO: Remove server from resources server.xml WITH NO custom servers. ECJ20260302
+ * TODO: ✅Default servers from resources server.xml. ECJ20260302
  * <p>
- * TODO: Add server from resources server.xml WITH custom servers. ECJ20260302
- * TODO: Update server from resources server.xml WITH custom servers. ECJ20260302
- * TODO: Remove server from resources server.xml WITH custom servers. ECJ20260302
+ * TODO: ✅Add server from resources server.xml WITH NO custom servers. ECJ20260302
+ * TODO: ✅Update server from resources server.xml WITH NO custom servers. ECJ20260302
+ * TODO: ✅Remove server from resources server.xml WITH NO custom servers. ECJ20260302
+ * <p>
+ * TODO: ✅Add server from resources server.xml WITH custom servers. ECJ20260302
+ * TODO: ✅Update server from resources server.xml WITH custom servers. ECJ20260302
+ * TODO: ✅Remove server from resources server.xml WITH custom servers. ECJ20260302
  * <p>
  * TODO: Default servers from runtime config. ECJ20260302
  * <p>
@@ -111,15 +120,223 @@ public class LoginServerManagerTest {
     }
 
     /**
+     * Test for testGetLegacyDefaultLoginServers.
+     */
+    @Test
+    public void testGetLegacyDefaultLoginServers() {
+        loginServerManager = new LoginServerManager(getInstrumentation().getTargetContext(), servers_empty);
+
+        final List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 2, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
      * Test for getDefaultLoginServer.
      */
     @Test
     public void testGetDefaultLoginServers() {
         final List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Wrong number of servers", 3, servers.size());
+        assertEquals("Wrong number of servers", 3, servers.size());
         assertProduction(servers.get(0));
         assertSandbox(servers.get(1));
         assertOther(servers.get(2));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testAddDefaultLoginServers.
+     */
+    @Test
+    public void testAddDefaultLoginServers() {
+
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 3, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertOther(servers.get(2));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertEquals("Added", servers.get(2).name);
+        assertEquals("https://added.salesforce.com", servers.get(2).url);
+        assertFalse(servers.get(2).isCustom);
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testUpdateDefaultLoginServers.
+     */
+    @Test
+    public void testUpdateDefaultLoginServers() {
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertEquals("Added", servers.get(2).name);
+        assertEquals("https://added.salesforce.com", servers.get(2).url);
+        assertFalse(servers.get(2).isCustom);
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertEquals("Updated", servers.get(1).name);
+        assertEquals("https://updated.salesforce.com", servers.get(1).url);
+        assertFalse(servers.get(1).isCustom);
+        assertSandbox(servers.get(2));
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testRemoveDefaultLoginServers.
+     */
+    @Test
+    public void testRemoveDefaultLoginServers() {
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertEquals("Updated", servers.get(1).name);
+        assertEquals("https://updated.salesforce.com", servers.get(1).url);
+        assertFalse(servers.get(1).isCustom);
+        assertSandbox(servers.get(2));
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_remove);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 2, servers.size());
+        assertProduction(servers.get(0));
+        assertOther(servers.get(1));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testAddDefaultLoginServersWithCustomServers.
+     */
+    @Test
+    public void testAddDefaultLoginServersWithCustomServers() {
+
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 3, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertOther(servers.get(2));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 5, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertEquals("Added", servers.get(2).name);
+        assertEquals("https://added.salesforce.com", servers.get(2).url);
+        assertFalse(servers.get(2).isCustom);
+        assertOther(servers.get(3));
+
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testUpdateDefaultLoginServersWithCustomServers.
+     */
+    @Test
+    public void testUpdateDefaultLoginServersWithCustomServers() {
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_addition);
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertSandbox(servers.get(1));
+        assertEquals("Added", servers.get(2).name);
+        assertEquals("https://added.salesforce.com", servers.get(2).url);
+        assertFalse(servers.get(2).isCustom);
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 5, servers.size());
+        assertProduction(servers.get(0));
+        assertEquals("Updated", servers.get(1).name);
+        assertEquals("https://updated.salesforce.com", servers.get(1).url);
+        assertFalse(servers.get(1).isCustom);
+        assertSandbox(servers.get(2));
+        assertOther(servers.get(3));
+
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
+    }
+
+    /**
+     * Test for testRemoveDefaultLoginServersWithCustomServers.
+     */
+    @Test
+    public void testRemoveDefaultLoginServersWithCustomServers() {
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_update);
+        List<LoginServer> servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 4, servers.size());
+        assertProduction(servers.get(0));
+        assertEquals("Updated", servers.get(1).name);
+        assertEquals("https://updated.salesforce.com", servers.get(1).url);
+        assertFalse(servers.get(1).isCustom);
+        assertSandbox(servers.get(2));
+        assertOther(servers.get(3));
+
+        assertProduction(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
+
+        loginServerManager = new LoginServerManager(InstrumentationRegistry.getInstrumentation().getTargetContext(), servers_remove);
+
+        servers = loginServerManager.getLoginServers();
+        assertEquals("Wrong number of servers", 3, servers.size());
+        assertProduction(servers.get(0));
+        assertOther(servers.get(1));
+
+        assertCustom(loginServerManager.getLoginServers().getLast());
+        assertCustom(loginServerManager.getSelectedLoginServer());
     }
 
     /**
@@ -169,17 +386,17 @@ public class LoginServerManagerTest {
 
         // Starting point, only 3 servers.
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
+        assertEquals("Expected no custom login servers", 3, servers.size());
 
         // Adding first custom server.
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", 4, servers.size());
+        assertEquals("Expected one custom login server", 4, servers.size());
 
         // Adding second custom server.
         loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", 5, servers.size());
+        assertEquals("Expected one custom login server", 5, servers.size());
     }
 
     /**
@@ -222,12 +439,12 @@ public class LoginServerManagerTest {
 
         // Starting point, only 3 servers.
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
+        assertEquals("Expected no custom login servers", 3, servers.size());
 
         // Adding custom server.
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", 4, servers.size());
+        assertEquals("Expected one custom login server", 4, servers.size());
 
         // Selecting sandbox.
         loginServerManager.useSandbox();
@@ -239,7 +456,7 @@ public class LoginServerManagerTest {
          */
         loginServerManager.reset();
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected no custom login servers", 3, servers.size());
+        assertEquals("Expected no custom login servers", 3, servers.size());
         assertProduction(loginServerManager.getSelectedLoginServer());
     }
 
@@ -266,14 +483,14 @@ public class LoginServerManagerTest {
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
         int originalServerSize = 4; // 3 default servers + 1 custom
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+        assertEquals("Expected one custom login server", originalServerSize, servers.size());
         LoginServer lastServer = servers.get(3);
 
         // Remove
         loginServerManager.removeServer(lastServer);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("", (originalServerSize - 1), servers.size());
-        Assert.assertFalse("List should not contain removed server.", servers.contains(lastServer));
+        assertEquals("", (originalServerSize - 1), servers.size());
+        assertFalse("List should not contain removed server.", servers.contains(lastServer));
     }
 
     /**
@@ -285,14 +502,14 @@ public class LoginServerManagerTest {
         loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
         int originalServerSize = 5; // 3 default servers + 2 custom
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+        assertEquals("Expected one custom login server", originalServerSize, servers.size());
         LoginServer serverToDelete = servers.get(3);
 
         // Remove
         loginServerManager.removeServer(serverToDelete);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("No servers removed.", (originalServerSize - 1), servers.size());
-        Assert.assertFalse("List should not contain removed server.", servers.contains(serverToDelete));
+        assertEquals("No servers removed.", (originalServerSize - 1), servers.size());
+        assertFalse("List should not contain removed server.", servers.contains(serverToDelete));
 
         // Assert Reorder
         assertProduction(servers.get(0));
@@ -308,13 +525,13 @@ public class LoginServerManagerTest {
     public void testRemoveNonCustomServer() {
         int originalServerSize = 3; // 3 default servers
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+        assertEquals("Expected one custom login server", originalServerSize, servers.size());
         LoginServer serverToDelete = servers.get(0);
 
         // Remove
         loginServerManager.removeServer(serverToDelete);
         servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Servers should not be removed.", originalServerSize, servers.size());
+        assertEquals("Servers should not be removed.", originalServerSize, servers.size());
     }
 
     /**
@@ -324,28 +541,28 @@ public class LoginServerManagerTest {
     public void testAddingDuplicateServers() {
         int originalServerSize = 3; // 3 default servers
         List<LoginServer> servers = loginServerManager.getLoginServers();
-        Assert.assertEquals("Expected one custom login server", originalServerSize, servers.size());
+        assertEquals("Expected one custom login server", originalServerSize, servers.size());
         LoginServer prodServer = loginServerManager.getLoginServerFromURL(PRODUCTION_URL);
 
         // Attempt to add a default server as a custom server.
         loginServerManager.addCustomLoginServer(prodServer.name, prodServer.url);
-        Assert.assertEquals("Duplicate server should not be added.", originalServerSize,
+        assertEquals("Duplicate server should not be added.", originalServerSize,
                 loginServerManager.getLoginServers().size());
 
         // Attempt to add a duplicate custom server.
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-        Assert.assertEquals("Custom server should be added.", (originalServerSize + 1),
+        assertEquals("Custom server should be added.", (originalServerSize + 1),
                 loginServerManager.getLoginServers().size());
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-        Assert.assertEquals("Duplicate custom server should not be added.", (originalServerSize + 1),
+        assertEquals("Duplicate custom server should not be added.", (originalServerSize + 1),
                 loginServerManager.getLoginServers().size());
 
         // Ensure servers with duplicate names but unique URLs are allowed.
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL_2);
-        Assert.assertEquals("Custom server should be added.", (originalServerSize + 2),
+        assertEquals("Custom server should be added.", (originalServerSize + 2),
                 loginServerManager.getLoginServers().size());
         loginServerManager.addCustomLoginServer(prodServer.name, "https://custom3.com");
-        Assert.assertEquals("Custom server should be added..", (originalServerSize + 3),
+        assertEquals("Custom server should be added..", (originalServerSize + 3),
                 loginServerManager.getLoginServers().size());
     }
 
@@ -386,8 +603,8 @@ public class LoginServerManagerTest {
         );
 
         // Verify the original and other custom login servers are not present.
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(originalCustomLoginServer));
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(otherCustomLoginServer));
+        assertFalse(loginServerManager.getLoginServers().contains(originalCustomLoginServer));
+        assertFalse(loginServerManager.getLoginServers().contains(otherCustomLoginServer));
 
 
         // Add the original and other custom login server.
@@ -395,8 +612,8 @@ public class LoginServerManagerTest {
         loginServerManager.addCustomLoginServer(otherName, otherUrl);
 
         // Verify the original and other custom login servers were added.
-        Assert.assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
-        Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
+        assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
+        assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
 
 
         // Prepare for negative tests.
@@ -408,38 +625,38 @@ public class LoginServerManagerTest {
         // Attempt the prohibited replacement of a non-custom login server where the original matches.
         loginServerManager.replaceCustomLoginServer(production, productionReplacement);
         Assert.assertTrue(loginServerManager.getLoginServers().contains(production));
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
+        assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
 
 
         // Attempt the prohibited replacement of a non-custom login server where the original doesn't exit.
         loginServerManager.replaceCustomLoginServer(productionMismatch, productionReplacementMismatch);
         Assert.assertTrue(loginServerManager.getLoginServers().contains(production));
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
+        assertFalse(loginServerManager.getLoginServers().contains(productionReplacement));
 
 
         // Attempt the prohibited reordering of a non-custom login server.
         loginServerManager.reorderCustomLoginServer(0, 1);
-        Assert.assertEquals(loginServerManager.getLoginServers().get(0), production);
+        assertEquals(loginServerManager.getLoginServers().get(0), production);
 
 
         // Replace the original custom login server with a non-custom server.
         loginServerManager.replaceCustomLoginServer(originalCustomLoginServer, nonCustomLoginServer);
 
         // Verify the original and other custom login servers weren't changed.
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(nonCustomLoginServer));
-        Assert.assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
-        Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
+        assertFalse(loginServerManager.getLoginServers().contains(nonCustomLoginServer));
+        assertEquals(originalCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
+        assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
 
 
         // Replace the original custom login server.
         loginServerManager.replaceCustomLoginServer(originalCustomLoginServer, updatedCustomLoginServer);
 
         // Verify the original custom login server is not present.
-        Assert.assertFalse(loginServerManager.getLoginServers().contains(originalCustomLoginServer));
+        assertFalse(loginServerManager.getLoginServers().contains(originalCustomLoginServer));
 
         // Verify the updated and other custom login servers are present.
-        Assert.assertEquals(updatedCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
-        Assert.assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
+        assertEquals(updatedCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 2));
+        assertEquals(otherCustomLoginServer, loginServerManager.getLoginServers().get(loginServerManager.getLoginServers().size() - 1));
 
         // Attempt to move the updated custom login server above the non-custom login servers.
         loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), 0);
@@ -453,7 +670,7 @@ public class LoginServerManagerTest {
                 lastNonCustomIndex = i;
             }
         }
-        Assert.assertEquals(loginServers.get(lastNonCustomIndex + 1), updatedCustomLoginServer);
+        assertEquals(loginServers.get(lastNonCustomIndex + 1), updatedCustomLoginServer);
 
 
         // Attempt to move the updated custom login server one greater than the upper bounds of the login servers list.
@@ -466,40 +683,40 @@ public class LoginServerManagerTest {
         loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), loginServerManager.getLoginServers().size() - 1);
 
         // Verify the updated custom login server is now the last login server in the list.
-        Assert.assertEquals(loginServerManager.getLoginServers().getLast(), updatedCustomLoginServer);
+        assertEquals(loginServerManager.getLoginServers().getLast(), updatedCustomLoginServer);
     }
 
     private void assertProduction(LoginServer server) {
-        Assert.assertEquals("Expected production's name", "Production", server.name);
-        Assert.assertEquals("Expected production's url", PRODUCTION_URL, server.url);
-        Assert.assertFalse("Expected production to be marked as not custom", server.isCustom);
+        assertEquals("Expected production's name", "Production", server.name);
+        assertEquals("Expected production's url", PRODUCTION_URL, server.url);
+        assertFalse("Expected production to be marked as not custom", server.isCustom);
     }
 
     private void assertSandbox(LoginServer server) {
-        Assert.assertEquals("Expected sandbox's name", "Sandbox", server.name);
-        Assert.assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
-        Assert.assertFalse("Expected sandbox to be marked as not custom", server.isCustom);
+        assertEquals("Expected sandbox's name", "Sandbox", server.name);
+        assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
+        assertFalse("Expected sandbox to be marked as not custom", server.isCustom);
     }
 
     private void assertOther(LoginServer server) {
-        Assert.assertEquals("Expected other's name", "Other", server.name);
-        Assert.assertEquals("Expected other's url", OTHER_URL, server.url);
-        Assert.assertFalse("Expected other to be marked as not custom", server.isCustom);
+        assertEquals("Expected other's name", "Other", server.name);
+        assertEquals("Expected other's url", OTHER_URL, server.url);
+        assertFalse("Expected other to be marked as not custom", server.isCustom);
     }
 
     private void assertCustom(LoginServer server) {
-        Assert.assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
-        Assert.assertEquals("Expected custom's url", CUSTOM_URL, server.url);
+        assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
+        assertEquals("Expected custom's url", CUSTOM_URL, server.url);
         Assert.assertTrue("Expected custom to be marked as not custom", server.isCustom);
     }
 
     private void assertCustom2(LoginServer server) {
-        Assert.assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
-        Assert.assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
+        assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
+        assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
         Assert.assertTrue("Expected custom2 to be marked as not custom", server.isCustom);
     }
 
     private void assertLiveData() {
-        Assert.assertEquals(loginServerManager.getSelectedLoginServer(), loginServerManager.selectedServer.getValue());
+        assertEquals(loginServerManager.getSelectedLoginServer(), loginServerManager.selectedServer.getValue());
     }
 }
