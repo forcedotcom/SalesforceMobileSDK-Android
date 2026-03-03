@@ -708,6 +708,9 @@ public class LoginServerManager {
 			if (name != null && url != null) {
 				final LoginServer server = new LoginServer(name, url.trim(), isCustom);
 				allServers.add(server);
+			} else {
+				// TODO: Coverage Needed. ECJ20260303
+				SalesforceSDKLogger.w(TAG, "Invalid login server found in preferences");
 			}
 		}
 		return allServers;

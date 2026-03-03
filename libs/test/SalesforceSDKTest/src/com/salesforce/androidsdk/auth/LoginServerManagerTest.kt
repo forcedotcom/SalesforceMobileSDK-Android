@@ -21,9 +21,9 @@ import com.salesforce.androidsdk.tests.R.xml.servers
 import com.salesforce.androidsdk.tests.R.xml.servers_nulls
 import io.mockk.every
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
 import org.junit.After
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,6 +49,27 @@ class LoginServerManagerTestKt {
     }
 
     /**
+     * Test for testGetLoginServersFromRuntimeConfigWhenRuntimeConfigHasNull.
+     */
+    @Test
+    fun testGetLoginServersFromRuntimeConfigWhenRuntimeConfigHasNull() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns null
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns null
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val servers = loginServerManager?.loginServersFromRuntimeConfig
+
+        assertNull(servers)
+    }
+
+    /**
      * Test for testGetRuntimeConfigLoginServers.
      */
     @Test
@@ -66,7 +87,7 @@ class LoginServerManagerTestKt {
 
         val servers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals("Wrong number of servers", 2, servers?.size)
         assertEquals("MDM 1", servers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
         assertEquals(false, servers?.get(0)?.isCustom)
@@ -75,6 +96,68 @@ class LoginServerManagerTestKt {
         assertEquals(false, servers?.get(1)?.isCustom)
 
         assertEquals("MDM 1", loginServerManager?.getSelectedLoginServer()?.name)
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
+        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
+    }
+
+    /**
+     * Test for testGetRuntimeConfigLoginServersWithoutLabels.
+     */
+    @Test
+    fun testGetRuntimeConfigLoginServersWithoutLabels() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf("https://mdm1.example.com/1", "https://mdm2.example.com/2")
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns null
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals(servers?.get(0)?.url, servers?.get(0)?.name)
+        assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
+        assertEquals(false, servers?.get(0)?.isCustom)
+        assertEquals(servers?.get(1)?.url, servers?.get(1)?.name)
+        assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
+        assertEquals(false, servers?.get(1)?.isCustom)
+
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.name)
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
+        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
+    }
+
+    /**
+     * Test for testGetRuntimeConfigLoginServersWithoutIncorrectLabelCount.
+     */
+    @Test
+    fun testGetRuntimeConfigLoginServersWithoutIncorrectLabelCount() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf("https://mdm1.example.com/1", "https://mdm2.example.com/2")
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns arrayOf("MDM 1")
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals(servers?.get(0)?.url, servers?.get(0)?.name)
+        assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
+        assertEquals(false, servers?.get(0)?.isCustom)
+        assertEquals(servers?.get(1)?.url, servers?.get(1)?.name)
+        assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
+        assertEquals(false, servers?.get(1)?.isCustom)
+
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.name)
         assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
         assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
     }
@@ -97,7 +180,7 @@ class LoginServerManagerTestKt {
 
         var loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 2, loginServers?.size)
+        assertEquals("Wrong number of servers", 2, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -117,7 +200,7 @@ class LoginServerManagerTestKt {
 
         loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 3, loginServers?.size)
+        assertEquals("Wrong number of servers", 3, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -151,7 +234,7 @@ class LoginServerManagerTestKt {
 
         var loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 3, loginServers?.size)
+        assertEquals("Wrong number of servers", 3, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -174,7 +257,7 @@ class LoginServerManagerTestKt {
 
         loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 3, loginServers?.size)
+        assertEquals("Wrong number of servers", 3, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -208,7 +291,7 @@ class LoginServerManagerTestKt {
 
         var loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 3, loginServers?.size)
+        assertEquals("Wrong number of servers", 3, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -231,7 +314,7 @@ class LoginServerManagerTestKt {
 
         loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 2, loginServers?.size)
+        assertEquals("Wrong number of servers", 2, loginServers?.size)
         assertEquals("MDM 1", loginServers?.get(0)?.name)
         assertEquals("https://mdm1.example.com/1", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -263,7 +346,7 @@ class LoginServerManagerTestKt {
 
         val loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 1, loginServers?.size)
+        assertEquals("Wrong number of servers", 1, loginServers?.size)
         assertEquals("Example Login Server", loginServers?.get(0)?.name)
         assertEquals("https://www.example.com", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -306,11 +389,11 @@ class LoginServerManagerTestKt {
 
         var loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 1, loginServers?.size)
+        assertEquals("Wrong number of servers", 1, loginServers?.size)
 
         loginServers = loginServerManager?.getLoginServersFromPreferences(sharedPreferences)
 
-        Assert.assertEquals("Wrong number of servers", 1, loginServers?.size)
+        assertEquals("Wrong number of servers", 1, loginServers?.size)
         assertEquals("Example Login Server", loginServers?.get(0)?.name)
         assertEquals("https://login.example.com", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
@@ -353,11 +436,11 @@ class LoginServerManagerTestKt {
 
         var loginServers = loginServerManager?.loginServers
 
-        Assert.assertEquals("Wrong number of servers", 1, loginServers?.size)
+        assertEquals("Wrong number of servers", 1, loginServers?.size)
 
         loginServers = loginServerManager?.getLoginServersFromPreferences(sharedPreferences)
 
-        Assert.assertEquals("Wrong number of servers", 1, loginServers?.size)
+        assertEquals("Wrong number of servers", 1, loginServers?.size)
         assertEquals("Example Login Server", loginServers?.get(0)?.name)
         assertEquals("https://login.example.com", loginServers?.get(0)?.url)
         assertEquals(false, loginServers?.get(0)?.isCustom)
