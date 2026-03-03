@@ -144,7 +144,7 @@ public class LoginServerManager {
 
 		// Refresh the list of mobile device management (MDM) servers from the runtime config.
 		if (isRuntimeConfigAppServiceHostsSet()) {
-			resetLoginServersFromRuntimeConfig();
+			getLoginServersFromRuntimeConfig();
 		}
 
 		// Get the active list of login servers.
@@ -310,7 +310,8 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Returns the active shared preferences when using mobile device management (MDM) or otherwise.
+	 * Returns the active shared preferences when using login servers from mobile device management
+	 * (MDM) or the resources server.xml.
 	 *
 	 * @return SharedPreferences The active shared preferences
 	 */
@@ -322,7 +323,8 @@ public class LoginServerManager {
 	 * Determines if managed (non-custom) login servers are provided by mobile device management
 	 * (MDM).
 	 *
-	 * @return boolean True indicates managed login servers are provided by MDM and false otherwise
+	 * @return boolean True indicates managed login servers are provided by MDM or the resources
+	 * server.xml when false
 	 */
 	private boolean isRuntimeConfigAppServiceHostsSet() {
 		try {
@@ -336,7 +338,8 @@ public class LoginServerManager {
 	 * Resets the list of Mobile Device Management (MDM) login servers from the runtime
 	 * configuration. This does not remove the user's custom login servers.
 	 */
-	private void resetLoginServersFromRuntimeConfig() {
+	@SuppressWarnings("UnusedReturnValue")
+    public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		final RuntimeConfig runtimeConfig = getRuntimeConfig(ctx);
 		String[] mdmLoginServers = null;
 		try {
@@ -344,6 +347,7 @@ public class LoginServerManager {
 		} catch (Exception e) {
 			SalesforceSDKLogger.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead", e);
 		}
+		final List<LoginServer> allServers = new ArrayList<>();
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = null;
 			try {
@@ -362,14 +366,17 @@ public class LoginServerManager {
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
 				final String url = mdmLoginServers[i];
+				final LoginServer server = new LoginServer(name, url, false);
 				persistLoginServer(
 						name,
 						url,
 						false, /* Non-Custom */
 						runtimePrefs
 				);
+				allServers.add(server);
 			}
 		}
+		return (!allServers.isEmpty() ? allServers : null);
 	}
 
 	/**
@@ -583,13 +590,13 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Persists a login server the specified shared preferences file.
+	 * Persists a login server to the specified shared preferences.
 	 *
 	 * @param name              The login server name
 	 * @param url               The login server URL
 	 * @param isCustom          boolean true for non-custom (managed) login servers, false for
 	 *                          custom (user-entered) login servers
-	 * @param sharedPreferences SharedPreferences file
+	 * @param sharedPreferences The shared preferences
 	 */
 	private void persistLoginServer(final String name,
 									final String url,
