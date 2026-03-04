@@ -32,6 +32,7 @@ import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServic
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHosts;
 import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.Locale.US;
 
 import android.content.Context;
@@ -52,6 +53,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -396,7 +398,7 @@ public class LoginServerManager {
 	 */
 	@SuppressWarnings("UnusedReturnValue")
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
-		String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
+		final String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<>();
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
@@ -408,10 +410,15 @@ public class LoginServerManager {
 			// Reset non-custom servers from Mobile Device Management (MDM).
 			resetNonCustomLoginServers(runtimePrefs);
 
-			for (int i = 0; i < mdmLoginServers.length; i++) {
-				final String name = mdmLoginServersLabels[i];
-				final String url = mdmLoginServers[i];
-				if (name == null || url == null) { continue; }
+			// Null-cleanse MDM login server URLs and names.
+			final List<String> mdmLoginServersList = asList(mdmLoginServers);
+			mdmLoginServersList.removeIf(Objects::isNull);
+			final List<String> mdmLoginServersLabelsList = asList(mdmLoginServersLabels);
+			mdmLoginServersLabelsList.removeIf(Objects::isNull);
+
+			for (int i = 0; i < mdmLoginServersList.size(); i++) {
+				final String name = mdmLoginServersLabelsList.get(i);
+				final String url = mdmLoginServersList.get(i);
 
 				final LoginServer server = new LoginServer(name, url, false);
 				persistLoginServer(
