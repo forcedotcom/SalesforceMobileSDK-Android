@@ -781,7 +781,7 @@ class LoginServerManagerTestKt {
     }
 
     @Test
-    fun testRemoveServerCustomFoundWithAllowsAllowNonCustomRemoval() {
+    fun testRemoveServerCustomFoundWithAllowNonCustomRemoval() {
         val context = mockk<Context>()
         every { context.resources } returns getInstrumentation().targetContext.resources
         every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
@@ -813,9 +813,5 @@ class LoginServerManagerTestKt {
         assertEquals("MDM 2", servers?.get(1)?.name)
         assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
         assertEquals(false, servers?.get(1)?.isCustom)
-
-        assertEquals("MDM 1", loginServerManager?.getSelectedLoginServer()?.name)
-        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
-        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
     }
 }

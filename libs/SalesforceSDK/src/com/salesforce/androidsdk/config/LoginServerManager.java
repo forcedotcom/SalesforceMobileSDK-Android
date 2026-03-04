@@ -31,6 +31,8 @@ import static com.salesforce.androidsdk.R.xml.servers;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHostLabels;
 import static com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.AppServiceHosts;
 import static com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig;
+import static org.xmlpull.v1.XmlPullParser.END_DOCUMENT;
+import static org.xmlpull.v1.XmlPullParser.START_TAG;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Locale.US;
@@ -38,7 +40,7 @@ import static java.util.Locale.US;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.content.res.Resources;
+import android.content.res.Resources.NotFoundException;
 import android.content.res.XmlResourceParser;
 import android.os.Looper;
 
@@ -395,6 +397,9 @@ public class LoginServerManager {
 	/**
 	 * Resets the list of Mobile Device Management (MDM) login servers from the runtime
 	 * configuration. This does not remove the user's custom login servers.
+	 *
+	 * @return The list of login servers from the runtime configuration, not
+	 * including the user's custom login servers
 	 */
 	@SuppressWarnings("UnusedReturnValue")
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
@@ -574,13 +579,13 @@ public class LoginServerManager {
 		XmlResourceParser xml;
 		try {
 			xml = ctx.getResources().getXml(serversXmlResourceId);
-		} catch (Resources.NotFoundException e) {
+		} catch (NotFoundException e) {
 			return loginServers;
 		}
 
 		int eventType = -1;
-		while (eventType != XmlResourceParser.END_DOCUMENT) {
-			if (eventType == XmlResourceParser.START_TAG) {
+		while (eventType != END_DOCUMENT) {
+			if (eventType == START_TAG) {
 				if (xml.getName().equals("server")) {
 					final String name = xml.getAttributeValue(null, "name");
 					final String url = xml.getAttributeValue(null, "url");
@@ -727,8 +732,6 @@ public class LoginServerManager {
 			if (name != null && url != null) {
 				final LoginServer server = new LoginServer(name, url.trim(), isCustom);
 				allServers.add(server);
-			} else {
-				SalesforceSDKLogger.w(TAG, "Invalid login server found in preferences");
 			}
 		}
 		return allServers;
