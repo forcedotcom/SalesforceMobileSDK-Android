@@ -48,9 +48,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
-import org.xmlpull.v1.XmlPullParserException;
-
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -187,10 +184,12 @@ public class LoginServerManager {
 	 * @return The selected login server
 	 */
 	public LoginServer getSelectedLoginServer() {
+		// Fetch the selected login server.
 		final SharedPreferences selectedServerPrefs = ctx.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE);
-		final String name = selectedServerPrefs.getString(SERVER_NAME, null);
-		final String url = selectedServerPrefs.getString(SERVER_URL, null);
-		boolean isCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
+		final String selectedServerName = selectedServerPrefs.getString(SERVER_NAME, null);
+		final String selectedServerUrl = selectedServerPrefs.getString(SERVER_URL, null);
+		final boolean selectedServerIsCustom = selectedServerPrefs.getBoolean(IS_CUSTOM, false);
+		final boolean selectedServerHasValidNameAndUrl = selectedServerName != null && selectedServerUrl != null;
 
 		// Refresh the list of mobile device management (MDM) servers from the runtime config.
 		if (isRuntimeConfigAppServiceHostsSet()) {
@@ -200,26 +199,36 @@ public class LoginServerManager {
 		// Get the active list of login servers.
 		final List<LoginServer> loginServers = getLoginServers();
 
-		// Selection has been saved before and is available in the active list of login servers.
-		if (name != null && url != null && loginServers.stream().anyMatch(server -> server.name.equals(name) && server.url.equals(url))) {
-			final LoginServer server = new LoginServer(name, url, isCustom);
+		// Check if the selected login server is available in the active list of login servers.
+		final boolean selectedLoginServerIsAvailable = loginServers.stream().anyMatch(server ->
+				server.name.equals(selectedServerName) && server.url.equals(selectedServerUrl)
+		);
 
-			// Only notify live data consumers if the value has changed.
-			if (!server.equals(selectedServer.getValue())) {
-				selectedServer.postValue(server);
-			}
-		} else {
+		// If the selected login server is valid and is available in the active list of login servers.
+		LoginServer selectedLoginServer = null;
+		if (selectedServerHasValidNameAndUrl) {
+			if (selectedLoginServerIsAvailable) {
+				selectedLoginServer = new LoginServer(selectedServerName, selectedServerUrl, selectedServerIsCustom);
 
-			// First time selection defaults to the first server on the list.
-			if (loginServers != null) {
-				if (!loginServers.isEmpty()) {
-					selectedServer.postValue(loginServers.get(0));
+				// Notify live data consumers if the value has changed.
+				if (!selectedLoginServer.equals(selectedServer.getValue())) {
+					selectedServer.postValue(selectedLoginServer);
 				}
 			}
+		}
 
-			// Stores the selection for the future.
+		// If the selected login server is invalid or not available in the active list of login servers.
+		if (selectedLoginServer == null) {
+
+			// Default to the first login server on the list.
+			if (!loginServers.isEmpty()) {
+				selectedServer.postValue(loginServers.get(0));
+			}
+
+			// Store the selected login server.
 			setSelectedLoginServer(selectedServer.getValue());
 		}
+
 		return selectedServer.getValue();
 	}
 
@@ -321,6 +330,7 @@ public class LoginServerManager {
 
 		int index = servers.indexOf(server);
 
+		// TODO: Unrelated Coverage Needed. ECJ20260303
 		if (allowNonCustomRemoval || server.isCustom && index != -1) {
 			int numServers = servers.size();
 			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index + 1, numServers));
@@ -387,10 +397,13 @@ public class LoginServerManager {
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<>();
+		// TODO: Coverage Needed. ECJ20260303
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
+				// TODO: Coverage Needed. ECJ20260303
 				SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
+				// TODO: Coverage Needed. ECJ20260303
 				mdmLoginServersLabels = mdmLoginServers;
 			}
 
@@ -400,6 +413,7 @@ public class LoginServerManager {
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
 				final String url = mdmLoginServers[i];
+				// TODO: Coverage Needed. ECJ20260303
 				if (name == null || url == null) { continue; }
 
 				final LoginServer server = new LoginServer(name, url, false);
@@ -412,6 +426,7 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
+		// TODO: Coverage Needed. ECJ20260303
 		return (!allServers.isEmpty() ? allServers : null);
 	}
 
@@ -574,8 +589,9 @@ public class LoginServerManager {
 			}
 			try {
 				eventType = xml.next();
-			} catch (XmlPullParserException | IOException e) {
+			} catch (Exception e) {
 				SalesforceSDKLogger.w(TAG, "Exception thrown while parsing XML", e);
+				break;
 			}
 		}
 		return loginServers;
