@@ -12,6 +12,7 @@ import com.salesforce.androidsdk.R.string.sf__auth_login_production
 import com.salesforce.androidsdk.R.string.sf__auth_login_sandbox
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.IS_CUSTOM
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.NUMBER_OF_ENTRIES
 import com.salesforce.androidsdk.config.LoginServerManager.RUNTIME_PREFS_FILE
 import com.salesforce.androidsdk.config.LoginServerManager.SERVER_NAME
@@ -494,8 +495,75 @@ class LoginServerManagerTestKt {
     }
 
     /**
+     * Test for testRemovedNameSelectedLoginServer.
+     */
+    @Test
+    fun testRemovedNameSelectedLoginServer() {
+
+        val sharedPreferencesSelectedServer = mockk<SharedPreferences>(relaxed = true)
+        every { sharedPreferencesSelectedServer.getString(SERVER_NAME, null) } returns "Selected Login Server"
+        every { sharedPreferencesSelectedServer.getString(SERVER_URL, null) } returns "https://selected.example.com"
+        every { sharedPreferencesSelectedServer.getBoolean(IS_CUSTOM, false) } returns false
+
+        val sharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        every { sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0) } returns 1
+        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns "Default Login Server"
+        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns "https://selected.example.com"
+        every { sharedPreferences.getBoolean(String.format(IS_CUSTOM, 0), false) } returns false
+
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns sharedPreferencesSelectedServer
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns sharedPreferences
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns null
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns null
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val selectedLoginServer = loginServerManager?.selectedLoginServer
+
+        assertEquals("Default Login Server", selectedLoginServer?.name)
+        assertEquals("https://selected.example.com", selectedLoginServer?.url)
+    }
+
+    /**
+     * Test for testRemovedUrlSelectedLoginServer.
+     */
+    @Test
+    fun testRemovedUrlSelectedLoginServer() {
+
+        val sharedPreferencesSelectedServer = mockk<SharedPreferences>(relaxed = true)
+        every { sharedPreferencesSelectedServer.getString(SERVER_NAME, null) } returns "Selected Login Server"
+        every { sharedPreferencesSelectedServer.getString(SERVER_URL, null) } returns "https://selected.example.com"
+        every { sharedPreferencesSelectedServer.getBoolean(IS_CUSTOM, false) } returns false
+
+        val sharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        every { sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0) } returns 1
+        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns "Selected Login Server"
+        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns "https://default.example.com"
+        every { sharedPreferences.getBoolean(String.format(IS_CUSTOM, 0), false) } returns false
+
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns sharedPreferencesSelectedServer
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns sharedPreferences
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns null
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns null
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val selectedLoginServer = loginServerManager?.selectedLoginServer
+
+        assertEquals("Selected Login Server", selectedLoginServer?.name)
+        assertEquals("https://default.example.com", selectedLoginServer?.url)
+    }
+
+    /**
      * Test for testNullSelectedLoginServer.
-     * TODO: Correct this test. ECJ20260303
      */
     @Test
     fun testNullSelectedLoginServer() {
@@ -648,5 +716,106 @@ class LoginServerManagerTestKt {
 
         val loginServers = loginServerManager?.loginServers
         assertEquals("Wrong number of servers", 2, loginServers?.size)
+    }
+
+    @Test
+    fun testRemoveServerNonCustomNotFound() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf("https://mdm1.example.com/1", "https://mdm2.example.com/2")
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns arrayOf("MDM 1", "MDM 2")
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val loginServer = LoginServer("MDM 3", "https://mdm3.example.com/3", false)
+        loginServerManager?.removeServer(loginServer)
+
+        val servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals("MDM 1", servers?.get(0)?.name)
+        assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
+        assertEquals(false, servers?.get(0)?.isCustom)
+        assertEquals("MDM 2", servers?.get(1)?.name)
+        assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
+        assertEquals(false, servers?.get(1)?.isCustom)
+
+        assertEquals("MDM 1", loginServerManager?.getSelectedLoginServer()?.name)
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
+        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
+    }
+
+    @Test
+    fun testRemoveServerCustomNotFound() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf("https://mdm1.example.com/1", "https://mdm2.example.com/2")
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns arrayOf("MDM 1", "MDM 2")
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+
+        val loginServer = LoginServer("MDM 3", "https://mdm3.example.com/3", true)
+        loginServerManager?.removeServer(loginServer)
+
+        val servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals("MDM 1", servers?.get(0)?.name)
+        assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
+        assertEquals(false, servers?.get(0)?.isCustom)
+        assertEquals("MDM 2", servers?.get(1)?.name)
+        assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
+        assertEquals(false, servers?.get(1)?.isCustom)
+
+        assertEquals("MDM 1", loginServerManager?.getSelectedLoginServer()?.name)
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
+        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
+    }
+
+    @Test
+    fun testRemoveServerCustomFoundWithAllowsAllowNonCustomRemoval() {
+        val context = mockk<Context>()
+        every { context.resources } returns getInstrumentation().targetContext.resources
+        every { context.getSharedPreferences(SERVER_SELECTION_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_SELECTION_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(SERVER_URL_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(SERVER_URL_FILE, MODE_PRIVATE)
+        every { context.getSharedPreferences(RUNTIME_PREFS_FILE, any()) } returns getInstrumentation().targetContext.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE)
+        val runtimeConfig = mockk<RuntimeConfig>()
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts) } returns arrayOf("https://mdm1.example.com/1", "https://mdm2.example.com/2")
+        every { runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels) } returns arrayOf("MDM 1", "MDM 2")
+
+        loginServerManager = LoginServerManager(context, runtimeConfig, servers)
+        loginServerManager?.addCustomLoginServer("MDM 3", "https://mdm3.example.com/3")
+
+        var servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 3, servers?.size)
+        assertEquals("MDM 3", servers?.get(2)?.name)
+        assertEquals("https://mdm3.example.com/3", servers?.get(2)?.url)
+        assertEquals(true, servers?.get(2)?.isCustom)
+
+        val loginServer = LoginServer("MDM 3", "https://mdm3.example.com/3", true)
+        loginServerManager?.removeServer(loginServer, context.getSharedPreferences(RUNTIME_PREFS_FILE, MODE_PRIVATE), true)
+
+        servers = loginServerManager?.loginServers
+
+        assertEquals("Wrong number of servers", 2, servers?.size)
+        assertEquals("MDM 1", servers?.get(0)?.name)
+        assertEquals("https://mdm1.example.com/1", servers?.get(0)?.url)
+        assertEquals(false, servers?.get(0)?.isCustom)
+        assertEquals("MDM 2", servers?.get(1)?.name)
+        assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
+        assertEquals(false, servers?.get(1)?.isCustom)
+
+        assertEquals("MDM 1", loginServerManager?.getSelectedLoginServer()?.name)
+        assertEquals("https://mdm1.example.com/1", loginServerManager?.getSelectedLoginServer()?.url)
+        assertEquals(false, loginServerManager?.getSelectedLoginServer()?.isCustom)
     }
 }

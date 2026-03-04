@@ -321,7 +321,8 @@ public class LoginServerManager {
 	 * @param allowNonCustomRemoval Boolean true allows the removal of non-custom login servers and
 	 *                              false does not
 	 */
-	private void removeServer(
+	@VisibleForTesting
+	public void removeServer(
 			final LoginServer server,
 			final SharedPreferences sharedPreferences,
 			final boolean allowNonCustomRemoval
@@ -330,8 +331,8 @@ public class LoginServerManager {
 
 		int index = servers.indexOf(server);
 
-		// TODO: Unrelated Coverage Needed. ECJ20260303
-		if (allowNonCustomRemoval || server.isCustom && index != -1) {
+		boolean removalAlwaysAllowed = server.isCustom && index != -1;
+		if (allowNonCustomRemoval || removalAlwaysAllowed) {
 			int numServers = servers.size();
 			Deque<LoginServer> stack = new ArrayDeque<>(servers.subList(index + 1, numServers));
 
@@ -397,13 +398,10 @@ public class LoginServerManager {
     public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		String[] mdmLoginServers = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<>();
-		// TODO: Coverage Needed. ECJ20260303
 		if (mdmLoginServers != null) {
 			String[] mdmLoginServersLabels = runtimeConfig.getStringArrayStoredAsArrayOrCSV(AppServiceHostLabels);
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
-				// TODO: Coverage Needed. ECJ20260303
 				SalesforceSDKLogger.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - using URLs for the labels");
-				// TODO: Coverage Needed. ECJ20260303
 				mdmLoginServersLabels = mdmLoginServers;
 			}
 
@@ -413,7 +411,6 @@ public class LoginServerManager {
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				final String name = mdmLoginServersLabels[i];
 				final String url = mdmLoginServers[i];
-				// TODO: Coverage Needed. ECJ20260303
 				if (name == null || url == null) { continue; }
 
 				final LoginServer server = new LoginServer(name, url, false);
@@ -426,7 +423,6 @@ public class LoginServerManager {
 				allServers.add(server);
 			}
 		}
-		// TODO: Coverage Needed. ECJ20260303
 		return (!allServers.isEmpty() ? allServers : null);
 	}
 
@@ -725,7 +721,6 @@ public class LoginServerManager {
 				final LoginServer server = new LoginServer(name, url.trim(), isCustom);
 				allServers.add(server);
 			} else {
-				// TODO: Coverage Needed. ECJ20260303
 				SalesforceSDKLogger.w(TAG, "Invalid login server found in preferences");
 			}
 		}
