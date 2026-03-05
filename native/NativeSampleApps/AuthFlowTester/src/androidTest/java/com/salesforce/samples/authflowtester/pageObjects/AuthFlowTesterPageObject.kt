@@ -38,10 +38,16 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_TOKEN_BUTTON_CONTENT_DESC
+import com.salesforce.samples.authflowtester.MIGRATE_USER_RADIO_CONTENT_DESC
 import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
@@ -59,6 +65,10 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
+import com.salesforce.androidsdk.R as sdkR
+
+const val OPAQUE_ACCESS_TOKEN_LENGTH = 112
+const val REFRESH_TOKEN_LENGTH = 87
 
 data class Tokens(
     val accessToken: String,
@@ -74,15 +84,99 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
     }
 
+    fun switchToUser(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
+    ) {
+        openUserPicker()
+
+        // Find the user's display name from authenticated accounts
+        val expectedUsername = testConfig.getUser(knownLoginHostConfig, knownUserConfig).username
+        val authenticatedUsers = UserAccountManager.getInstance().authenticatedUsers
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val displayName = authenticatedUsers?.find { it.username == expectedUsername }?.displayName
+            ?: throw AssertionError("User '$expectedUsername' not found in authenticated accounts")
+
+        // Tap the user row in the picker
+        val userRow = device.findObject(UiSelector().textContains(displayName))
+        if (!userRow.waitForExists(TIMEOUT_MS * 2)) {
+            throw AssertionError("User '$displayName' not found on user picker")
+        }
+        userRow.click()
+
+        // Wait for app to resume after picker closes, then re-send the user
+        // switch broadcast. The original broadcast fires while the activity is
+        // stopped (Recomposer paused), so the Compose state update may not
+        // trigger recomposition. Re-sending ensures Compose processes it.
+        waitForAppLoad()
+        UserAccountManager.getInstance().sendUserSwitchIntent(
+            UserAccountManager.USER_SWITCH_TYPE_DEFAULT, null
+        )
+        composeTestRule.waitForIdle()
+    }
+
+    fun addNewAccount() {
+        openUserPicker()
+
+        // Tap "Add New Account" on the user picker (separate activity — use UiAutomator)
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val addNewAccountDesc = context.getString(sdkR.string.sf__add_new_account_content_description)
+        val addNewAccountButton = device.findObject(UiSelector().descriptionContains(addNewAccountDesc))
+        if (!addNewAccountButton.waitForExists(TIMEOUT_MS * 5)) {
+            throw AssertionError("Add New Account button not found on user picker")
+        }
+        addNewAccountButton.click()
+    }
+
+    private fun openUserPicker() {
+        val switchUserDesc = getString(R.string.switch_user)
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val pickerDesc = context.getString(sdkR.string.sf__account_picker_content_description)
+        val picker = device.findObject(UiSelector().descriptionContains(pickerDesc))
+
+        var found = false
+        for (i in 1..3) {
+            if (picker.exists()) {
+                found = true
+                break
+            }
+
+            try {
+                waitForNode(switchUserDesc)
+                composeTestRule.onNodeWithContentDescription(switchUserDesc)
+                    .performSemanticsAction(SemanticsActions.OnClick)
+                composeTestRule.waitForIdle()
+            } catch (e: Throwable) {
+                // The icon might not be found if the picker is already slowly opening and covering the screen
+            }
+
+            if (picker.waitForExists(TIMEOUT_MS * 5)) {
+                found = true
+                break
+            }
+        }
+        if (!found) {
+            throw AssertionError("User picker not found")
+        }
+    }
+
+    fun isAppLoaded(): Boolean =
+        try {
+            composeTestRule.onAllNodesWithContentDescription(CREDS_SECTION_CONTENT_DESC)
+                .fetchSemanticsNodes().isNotEmpty()
+        } catch (_: IllegalStateException) {
+            false // Compose hierarchy temporarily unavailable
+        }
+
     fun revokeAccessToken() {
-        waitForNode(REVOKE_BUTTON_CONTENT_DESC)
+        waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
         // Use performSemanticsAction instead of performClick because
         // performScrollTo doesn't trigger nested scroll, leaving the button
         // behind the collapsed top bar where touch input gets intercepted.
         composeTestRule.onNodeWithContentDescription(REVOKE_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
 
-        waitForNode(ALERT_TITLE_CONTENT_DESC)
+        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 15)
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.revoke_successful))
 
@@ -92,11 +186,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     fun validateApiRequest() {
-        waitForNode(REQUEST_BUTTON_CONTENT_DESC)
+        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
         composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
 
-        waitForNode(ALERT_TITLE_CONTENT_DESC)
+        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 15)
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.request_successful))
 
@@ -118,19 +212,42 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         expandUserCredentialsSection()
+        
+        // Wait for the UI to update asynchronously after login or user switch
+        composeTestRule.waitUntil(TIMEOUT_MS * 5) {
+            val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                val config = nodes.first().config
+                if (config.contains(SemanticsProperties.Text)) {
+                    config[SemanticsProperties.Text].last().text == expected.username
+                } else false
+            } else false
+        }
         assertEquals(expected.username, getText(USERNAME))
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
         val expected = testConfig.getApp(knownAppConfig)
+        val (accessToken, refreshToken) = getTokens()
 
-        expandUserCredentialsSection()
+        expandUserCredentialsSection(targetNode = CLIENT_ID)
         assertEquals(expected.consumerKey, getSensitiveValue(CLIENT_ID))
         assertEquals(expected.expectedScopesGranted(scopeSelection), getText(SCOPES))
         assertEquals(expected.expectedTokenFormat, getText(TOKEN_FORMAT))
+        if (expected.issuesJwt) {
+            assert(accessToken.length > OPAQUE_ACCESS_TOKEN_LENGTH)
+        } else {
+            assertEquals(OPAQUE_ACCESS_TOKEN_LENGTH, accessToken.length)
+        }
+        assertEquals(REFRESH_TOKEN_LENGTH, refreshToken.length)
     }
 
-    fun migrateToNewApp(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
+    fun migrateToNewApp(
+        knownAppConfig: KnownAppConfig,
+        scopeSelection: ScopeSelection,
+        knownUserConfig: KnownUserConfig? = null,
+        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
+    ) {
         val (_, consumerKey, redirectUri, scopes) =
             testConfig.getAppWithRequestScopes(knownAppConfig, scopeSelection)
         val jsonApp = buildJsonObject {
@@ -156,6 +273,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             .performClick()
         composeTestRule.waitForIdle()
 
+        // Select the target user if specified (user list only visible with multiple users)
+        if (knownUserConfig != null) {
+            val expectedUsername = testConfig.getUser(knownLoginHostConfig, knownUserConfig).username
+            val radioDesc = MIGRATE_USER_RADIO_CONTENT_DESC + expectedUsername
+            waitForNode(radioDesc)
+            composeTestRule.onNodeWithContentDescription(radioDesc)
+                .performClick()
+            composeTestRule.waitForIdle()
+        }
+
         // Wait for bottom sheet, then tap JSON import
         val jsonDesc = getString(R.string.json_content_description)
         waitForNode(jsonDesc)
@@ -176,23 +303,41 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
 
-        // Wait for migration to complete (bottom sheet dismisses)
-        waitForNodeGone(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
+        // Wait for migration to complete and sheet to auto-dismiss.
+        // For background user migration, the sheet won't auto-dismiss
+        // (compose recomposer was paused), so tap the close button instead.
+        val closeDesc = getString(R.string.close_content_description)
+        try {
+            waitForNodeGone(closeDesc)
+        } catch (_: Exception) {
+            composeTestRule.onNodeWithContentDescription(closeDesc).performClick()
+            composeTestRule.waitForIdle()
+            waitForNodeGone(closeDesc)
+        }
 
         // Wait for the app UI to refresh with new token data
         waitForAppLoad()
     }
 
-    private fun expandUserCredentialsSection() {
+    private fun expandUserCredentialsSection(targetNode: String = ACCESS_TOKEN) {
         waitForNode(CREDS_SECTION_CONTENT_DESC)
 
-        val alreadyExpanded = composeTestRule.onAllNodesWithContentDescription(ACCESS_TOKEN)
-            .fetchSemanticsNodes().isNotEmpty()
-        if (!alreadyExpanded) {
-            composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-                .performClick()
-            composeTestRule.waitForIdle()
-            waitForNode(ACCESS_TOKEN)
+        // Wait until the target node is visible, expanding the card if needed.
+        // The key() block in TesterUI may recreate UserCredentialsView (collapsing
+        // the card) between expansion and access, so poll until it stabilizes.
+        composeTestRule.waitUntil(TIMEOUT_MS * 3) {
+            try {
+                val visible = composeTestRule.onAllNodesWithContentDescription(targetNode)
+                    .fetchSemanticsNodes().isNotEmpty()
+                if (!visible) {
+                    composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
+                        .performClick()
+                    composeTestRule.waitForIdle()
+                }
+                visible
+            } catch (_: Exception) {
+                false
+            }
         }
     }
 

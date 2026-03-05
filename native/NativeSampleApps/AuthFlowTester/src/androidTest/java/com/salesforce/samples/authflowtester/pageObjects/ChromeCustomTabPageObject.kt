@@ -26,54 +26,85 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 
-private const val TIMEOUT = 5_000L
+private const val RETRY_COUNT = 3
 
 /**
  * Handles Custom Tab interactions.
  * UiAutomator is required here because the browser (often Chrome) runs in a
  * separate process that Espresso and Compose Test APIs cannot access.
  */
-class CustomTabPageObject {
+class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObject(composeTestRule) {
 
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
-    fun handleSignIn() {
+    override fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        skipGoogleSignIn()
+        super.login(knownLoginHostConfig, knownUserConfig)
+    }
+
+    override fun setUsername(name: String) {
+        val usernameField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(0)
+        )
+        if (!usernameField.waitForExists(TIMEOUT_MS * 5)) {
+            throw AssertionError("Username field not found in Custom Tab")
+        }
+        usernameField.clearTextField()
+        usernameField.setText(name)
+    }
+
+    override fun setPassword(password: String) {
+        val passwordField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(1)
+        )
+        if (!passwordField.waitForExists(TIMEOUT_MS)) {
+            throw AssertionError("Password field not found in Custom Tab")
+        }
+        passwordField.clearTextField()
+        passwordField.setText(password)
+    }
+
+    override fun tapLogin() {
+        val loginButton = device.findObject(
+            UiSelector().className("android.widget.Button").textContains("Log In")
+        )
+        if (!loginButton.waitForExists(TIMEOUT_MS)) {
+            throw AssertionError("Log In button not found in Custom Tab")
+        }
+        loginButton.click()
+    }
+
+    fun skipGoogleSignIn() {
         val continueButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/signin_fre_dismiss_button")
         )
         val noButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/negative_button")
         )
-        val toolbar = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/toolbar")
+        val legacyContinueButton = device.findObject(
+            UiSelector().resourceId("com.android.chrome:id/terms_accept")
         )
 
-        if (continueButton.waitForExists(TIMEOUT * 2)) {
-            continueButton.click()
-            if (noButton.waitForExists(TIMEOUT)) {
-                noButton.click()
+        repeat(times = RETRY_COUNT) {
+            if (continueButton.waitForExists(TIMEOUT_MS)) {
+                continueButton.click()
+                return@repeat
+            } else if (legacyContinueButton.waitForExists(TIMEOUT_MS)) {
+                legacyContinueButton.click()
+                return@repeat
             }
         }
 
-        if (toolbar.waitForExists(TIMEOUT)) {
-            dismissSavePasswordDialog()
-        }
-    }
-
-    fun dismissSavePasswordDialog() {
-        val infoBar = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/infobar_message")
-        )
-        val neverButton = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/button_secondary")
-        )
-        infoBar.waitForExists(TIMEOUT)
-        if (neverButton.waitForExists(TIMEOUT)) {
-            neverButton.click()
+        if (noButton.waitForExists(TIMEOUT_MS * 2)) {
+            noButton.click()
+            return
         }
     }
 
@@ -81,7 +112,7 @@ class CustomTabPageObject {
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
-        if (closeButton.waitForExists(TIMEOUT)) {
+        if (closeButton.waitForExists(TIMEOUT_MS)) {
             closeButton.click()
         }
     }

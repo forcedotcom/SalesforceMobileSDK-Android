@@ -34,6 +34,7 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -52,6 +53,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -69,8 +71,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -126,6 +130,7 @@ import com.salesforce.samples.authflowtester.components.JwtTokenView
 import com.salesforce.samples.authflowtester.components.OAuthConfigurationView
 import com.salesforce.samples.authflowtester.components.UserCredentialsView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -147,16 +152,17 @@ const val REDIRECT_LABEL = "Callback URL"
 const val SCOPES_LABEL = "Scopes (space-separated)"
 
 // For UI Tests
-internal const val TITLE_CONTENT_DESC = "app_title"
-internal const val REVOKE_BUTTON_CONTENT_DESC = "revoke_button"
-internal const val REQUEST_BUTTON_CONTENT_DESC = "request_button"
-internal const val CREDS_SECTION_CONTENT_DESC = "user_creds_section"
-internal const val JWT_SECTION_CONTENT_DESC = "jwt_section"
-internal const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
-internal const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
-internal const val ALERT_TITLE_CONTENT_DESC = "alert_title"
-internal const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
-internal const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
+const val TITLE_CONTENT_DESC = "app_title"
+const val REVOKE_BUTTON_CONTENT_DESC = "revoke_button"
+const val REQUEST_BUTTON_CONTENT_DESC = "request_button"
+const val CREDS_SECTION_CONTENT_DESC = "user_creds_section"
+const val JWT_SECTION_CONTENT_DESC = "jwt_section"
+const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
+const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
+const val MIGRATE_USER_RADIO_CONTENT_DESC = "migrate_user_radio"
+const val ALERT_TITLE_CONTENT_DESC = "alert_title"
+const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
+const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -298,7 +304,14 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         if (showMigrateBottomSheet) {
             @Suppress("AssignedValueIsNeverRead")
-            MigrateAppBottomSheet(onDismiss = { showMigrateBottomSheet = false })
+            MigrateAppBottomSheet(
+                onDismiss = {
+                    Log.i("bptest", "Migration complete \n -> currentUser.value: ${currentUser.value!!.username}" +
+                            "\n -> Mgr Current User: ${UserAccountManager.getInstance().currentUser.username}")
+                    currentUser.value = UserAccountManager.getInstance().currentUser
+                    showMigrateBottomSheet = false
+                }
+            )
         }
     }
 
@@ -319,9 +332,12 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 onClick = {
                     coroutineScope.launch {
                         revokeInProgress = true
-                        response = revokeAccessTokenAction(client)
-                        revokeInProgress = false
-                        showAlertDialog = true
+                        val res = revokeAccessTokenAction(client)
+                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            response = res
+                            revokeInProgress = false
+                            showAlertDialog = true
+                        }
                     }
                 },
                 enabled = !revokeInProgress,
@@ -402,9 +418,12 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     coroutineScope.launch {
                         response = null
                         requestInProgress = true
-                        response = makeRestRequest(client, ApiVersionStrings.VERSION_NUMBER)
-                        requestInProgress = false
-                        showAlertDialog = true
+                        val res = makeRestRequest(client, ApiVersionStrings.VERSION_NUMBER)
+                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            response = res
+                            requestInProgress = false
+                            showAlertDialog = true
+                        }
                     }
                 },
                 enabled = !requestInProgress,
@@ -508,6 +527,9 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         var migrationError: String? by remember { mutableStateOf(null) }
         val clipboard = LocalClipboard.current
         val context = LocalContext.current
+        val isPreview = LocalInspectionMode.current
+        val userAccountManager = if (isPreview) null else UserAccountManager.getInstance()
+        var selectedUser by remember { mutableStateOf(userAccountManager?.currentUser) }
 
         ModalBottomSheet(
             onDismissRequest = onDismiss,
@@ -551,6 +573,40 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     }
                 }
 
+                userAccountManager?.authenticatedUsers?.takeIf { it.size > 1 }?.let { authenticatedUsers ->
+                    authenticatedUsers.forEach { user ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedUser = user }
+                                .padding(horizontal = PADDING.dp, vertical = (PADDING / 2).dp)
+                                .semantics {
+                                    contentDescription = MIGRATE_USER_RADIO_CONTENT_DESC + user.username
+                                },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = selectedUser == user,
+                                onClick = { selectedUser = user },
+                            )
+                            Spacer(Modifier.width((PADDING / 2).dp))
+                            Column {
+                                Text(
+                                    text = user.displayName ?: user.username ?: "",
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                user.username?.let {
+                                    Text(
+                                        text = it,
+                                        fontSize = 12.sp,
+                                        color = colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = consumerKey,
                     onValueChange = {consumerKey = it},
@@ -587,7 +643,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     onClick = {
                         migrationInProgress = true
 
-                        UserAccountManager.getInstance().migrateRefreshToken(
+                        userAccountManager?.migrateRefreshToken(
+                            userAccount = selectedUser,
                             appConfig = OAuthConfig(
                                 consumerKey = consumerKey,
                                 redirectUri = callbackUrl,
@@ -599,14 +656,16 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                                         resources.getString(R.string.migration_success),
                                         Toast.LENGTH_LONG,
                                     ).show()
+                                    onDismiss.invoke()
                                 }
-                                onDismiss.invoke()
                             },
                             onMigrationError = { error, errorDesc, e ->
-                                migrationInProgress = false
-                                migrationError = error +
-                                        (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
-                                        (e?.let { "\n\nThrowable: $it" } ?: "")
+                                runOnUiThread {
+                                    migrationInProgress = false
+                                    migrationError = error +
+                                            (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                            (e?.let { "\n\nThrowable: $it" } ?: "")
+                                }
                             },
                         )
                     },

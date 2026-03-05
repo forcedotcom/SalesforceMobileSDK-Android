@@ -26,9 +26,12 @@
  */
 package com.salesforce.androidsdk.auth
 
+import android.accounts.Account
+import android.accounts.AccountManager
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.os.Bundle
 import androidx.annotation.VisibleForTesting
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
@@ -44,6 +47,7 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
@@ -170,27 +174,30 @@ internal suspend fun onAuthFlowComplete(
 
     // Save the user account
     addAccount(account)
-    userAccountManager.createAccount(account)
-    userAccountManager.switchToUser(account)
 
-    // Init user logging
-    updateLoggingPrefs(account)
+    if (tokenMigration) {
+        userAccountManager.persistAccount(account)
+    } else {
+        userAccountManager.createAccount(account)
+        userAccountManager.switchToUser(account)
 
-    // Send User Switch Intent, create user and switch to user.
-    val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
-    val userSwitchType = when {
-        // We've already authenticated the first user, so there should be one
-        numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
+        // Init user logging
+        updateLoggingPrefs(account)
 
-        // Otherwise we're logging in with an additional user
-        numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
+        // Send User Switch Intent, create user and switch to user.
+        val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
+        val userSwitchType = when {
+            // We've already authenticated the first user, so there should be one
+            numAuthenticatedUsers == 1 -> USER_SWITCH_TYPE_FIRST_LOGIN
 
-        // This should never happen but if it does, pass in the "unknown" value
-        else -> USER_SWITCH_TYPE_DEFAULT
-    }
-    userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+            // Otherwise we're logging in with an additional user
+            numAuthenticatedUsers > 1 -> USER_SWITCH_TYPE_LOGIN
 
-    if (!tokenMigration) {
+            // This should never happen but if it does, pass in the "unknown" value
+            else -> USER_SWITCH_TYPE_DEFAULT
+        }
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+
         // Kickoff the end of the flow before storing mobile policy to prevent launching
         // the main activity over/after the screen lock.
         startMainActivity()
@@ -494,4 +501,35 @@ internal fun handleDuplicateUserAccount(
             })
         }
     }
+}
+
+/**
+ * Persists account data to the Android AccountManager without changing
+ * the current user. This is needed for token migration of background
+ * users where [UserAccountManager.createAccount] cannot be used because
+ * it unconditionally calls [UserAccountManager.storeCurrentUserInfo].
+ */
+private fun UserAccountManager.persistAccount(
+    userAccount: UserAccount,
+    accountType: String = SalesforceSDKManager.getInstance().accountType,
+    acctManager: AccountManager = AccountManager.get(SalesforceSDKManager.getInstance().appContext),
+) {
+    val account = Account(userAccount.accountName, accountType)
+    val password = SalesforceSDKManager.encrypt(userAccount.refreshToken, encryptionKey)
+    val created = acctManager.addAccountExplicitly(account, password, /* userdata = */ Bundle())
+
+    // addAccountExplicitly fails if the account already exists, so update the refresh token.
+    if (!created) {
+        acctManager.setPassword(account, password)
+    }
+
+    // Cache auth token to avoid an unnecessary refresh on first access.
+    acctManager.setAuthToken(
+        account,
+        /* authTokenType = */ AccountManager.KEY_AUTHTOKEN,
+        /* authToken = */ SalesforceSDKManager.encrypt(userAccount.authToken, encryptionKey),
+    )
+
+    // Persist all remaining user data via the existing public helper.
+    updateAccount(account, userAccount)
 }

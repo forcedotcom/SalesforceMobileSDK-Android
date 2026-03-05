@@ -879,7 +879,7 @@ public class OAuth2 {
                 cookieSidClient = callbackUrlParams.get(COOKIE_SID_CLIENT);
                 sidCookieName = callbackUrlParams.get(SID_COOKIE_NAME);
                 parentSid = callbackUrlParams.get(PARENT_SID);
-                tokenFormat = callbackUrlParams.get(TOKEN_FORMAT);
+                tokenFormat = callbackUrlParams.getOrDefault(TOKEN_FORMAT, "");
                 scope = callbackUrlParams.get(SCOPE);
 
                 // NB: beacon apps not supported with user agent flow so no beacon child fields expected

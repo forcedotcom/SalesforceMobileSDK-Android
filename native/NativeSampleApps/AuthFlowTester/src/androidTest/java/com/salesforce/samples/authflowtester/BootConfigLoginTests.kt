@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,24 +26,50 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.app.Application
-import com.salesforce.androidsdk.app.SalesforceSDKManager
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
+import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
+import org.junit.Test
+import org.junit.runner.RunWith
 
-class AuthFlowTesterApplication : Application() {
-
-    companion object {
-        private const val FEATURE_APP_USES_KOTLIN = "KT"
+/**
+ * Legacy login tests using default scopes (CA opaque) from the BootConfig file.
+ */
+@RunWith(AndroidJUnit4::class)
+@LargeTest
+class BootConfigLoginTests: AuthFlowTest() {
+    // Login with CA opaque using default scopes and web server flow.
+    @Test
+    fun testCAOpaque_DefaultScopes_WebServerFlow() {
+        loginAndValidate(knownAppConfig = CA_OPAQUE)
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        SalesforceSDKManager.initNative(
-            applicationContext,
-            AuthFlowTesterActivity::class.java,
+    // Login with CA opaque using default scopes and (non-hybrid) web server flow.
+    @Test
+    fun testCAOpaque_DefaultScopes_WebServerFlow_NotHybrid() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            useHybridAuthToken = false,
         )
+    }
 
-        with(SalesforceSDKManager.getInstance()) {
-            registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
-        }
+    // Login with CA opaque using default scopes and user agent flow.
+    @Test
+    fun testCAOpaque_DefaultScopes_UserAgentFlow() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            useWebServerFlow = false,
+        )
+    }
+
+    // Login with CA opaque using default scopes and (non-hybrid) user agent flow.
+    @Test
+    fun testCAOpaque_DefaultScopes_UserAgentFlow_NotHybrid() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            useWebServerFlow = false,
+            useHybridAuthToken = false,
+        )
     }
 }
