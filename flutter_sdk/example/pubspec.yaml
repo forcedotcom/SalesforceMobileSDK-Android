@@ -1,0 +1,17 @@
+name: salesforce_sdk_example
+description: Example app for the Salesforce Flutter SDK
+
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  salesforce_sdk:
+    path: ../
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,38 @@
+name: salesforce_sdk
+description: A comprehensive Flutter SDK for Salesforce Mobile, providing OAuth authentication, REST client, SmartStore (local encrypted storage), MobileSync (offline sync), and analytics instrumentation.
+version: 1.0.0
+homepage: https://github.com/forcedotcom/SalesforceMobileSDK-Flutter
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  sqflite: ^2.3.0
+  path: ^1.8.0
+  shared_preferences: ^2.2.0
+  flutter_secure_storage: ^9.0.0
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  url_launcher: ^6.1.0
+  connectivity_plus: ^5.0.0
+  uuid: ^4.1.0
+  json_annotation: ^4.8.0
+  logging: ^1.2.0
+  webview_flutter: ^4.4.0
+  path_provider: ^2.1.0
+  local_auth: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.0
+  json_serializable: ^6.7.0
+  mockito: ^5.4.0
+
+flutter:
+  uses-material-design: true
