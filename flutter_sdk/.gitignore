@@ -1,0 +1,18 @@
+# Dart/Flutter generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Example app generated files
+example/.dart_tool/
+example/.flutter-plugins
+example/.flutter-plugins-dependencies
+example/build/
+example/pubspec.lock
