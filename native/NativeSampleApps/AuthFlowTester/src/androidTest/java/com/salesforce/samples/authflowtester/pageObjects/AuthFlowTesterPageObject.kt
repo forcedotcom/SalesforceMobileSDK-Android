@@ -32,11 +32,13 @@ import android.content.Context.CLIPBOARD_SERVICE
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
@@ -50,6 +52,7 @@ import com.salesforce.samples.authflowtester.MIGRATE_USER_RADIO_CONTENT_DESC
 import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
+import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
@@ -168,6 +171,9 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
 
     fun revokeAccessToken() {
+        composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
+            .performScrollToNode(hasContentDescription(REVOKE_BUTTON_CONTENT_DESC))
+
         waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
         // Use performSemanticsAction instead of performClick because
         // performScrollTo doesn't trigger nested scroll, leaving the button

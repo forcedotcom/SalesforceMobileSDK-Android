@@ -41,11 +41,11 @@ jobs:
           gradle-version: "8.14.3"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
-      - name: Build for Testing
+      - name: Build App for Testing
         if: success() || failure()
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug
-      - name: Build Single User Tests
+      - name: Build UI Tests
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest
       - uses: 'google-github-actions/auth@v2'
@@ -209,39 +209,34 @@ jobs:
           mkdir -p firebase_results
           BUCKET="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw"
 
-          copy_results() {
-            local RESULTS_DIR=$1
-            local OUTPUT_NAME=$2
-            local BUCKET_PATH="${BUCKET}/${RESULTS_DIR}"
+          copy_results_by_api_level() {
+            local BUCKET_PATH=$1
+            local OUTPUT_PREFIX=$2
 
-            if ! gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
-              return
-            fi
-
-            if gsutil ls "${BUCKET_PATH}/test_results_merged.xml" > /dev/null 2>&1; then
-              gsutil cp "${BUCKET_PATH}/test_results_merged.xml" "firebase_results/${OUTPUT_NAME}.xml"
-            elif gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
-              gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" "firebase_results/${OUTPUT_NAME}.xml"
-            else
-              gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" "firebase_results/${OUTPUT_NAME}.xml"
-            fi
+            for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null); do
+              # Extract API level from device dir name (e.g. MediumPhone.arm-28-en-portrait)
+              DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
+              API_LEVEL=$(echo "${DEVICE_DIR}" | sed 's/.*-\([0-9]*\)-.*/\1/')
+              gsutil cp "${RESULT_FILE}" "firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
+            done
           }
 
           if $IS_PR ; then
-            copy_results \
-              "authflowtester-pr-build-${{github.run_number}}" \
-              "pr_test_result"
+            BUCKET_PATH="${BUCKET}/authflowtester-pr-build-${{github.run_number}}"
+            if gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${BUCKET_PATH}" "pr"
+            fi
           else
             for PREFIX in "single-user" "multi-user"; do
               BATCH_NUM=1
               while true; do
-                RESULTS_DIR="authflowtester-${PREFIX}-build-${{github.run_number}}-batch-${BATCH_NUM}"
+                BUCKET_PATH="${BUCKET}/authflowtester-${PREFIX}-build-${{github.run_number}}-batch-${BATCH_NUM}"
 
-                if ! gsutil ls "${BUCKET}/${RESULTS_DIR}" > /dev/null 2>&1; then
+                if ! gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
                   break
                 fi
 
-                copy_results "${RESULTS_DIR}" "${PREFIX}_batch_${BATCH_NUM}_test_result"
+                copy_results_by_api_level "${BUCKET_PATH}" "${PREFIX}"
                 BATCH_NUM=$(( BATCH_NUM + 1 ))
               done
             done

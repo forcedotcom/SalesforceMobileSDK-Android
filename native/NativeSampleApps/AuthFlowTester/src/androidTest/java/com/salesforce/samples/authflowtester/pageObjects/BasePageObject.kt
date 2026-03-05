@@ -44,11 +44,11 @@ abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
             ) == "true"
         }
         val TIMEOUT_MS: Long by lazy {
-            if (isFtl) 10_000 else 2_000
+            if (isFtl) 15_000 else 5_000
         }
 
         val SLEEP_TIME_MS: Long by lazy {
-            if (isFtl) 4_000 else 2_000
+            if (isFtl) 5_000 else 2_500
         }
     }
 }
