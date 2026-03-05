@@ -13,14 +13,12 @@ class EventStoreManager {
 
   final FlutterSecureStorage _secureStorage;
   final String _storeId;
-  final String _encryptionKey;
 
   EventStoreManager({
     required String storeId,
     required String encryptionKey,
     FlutterSecureStorage? secureStorage,
   })  : _storeId = storeId,
-        _encryptionKey = encryptionKey,
         _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   String _eventKey(String eventId) => '${_eventPrefix}${_storeId}_$eventId';

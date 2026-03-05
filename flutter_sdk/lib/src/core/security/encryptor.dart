@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:encrypt/encrypt.dart' as enc;
 
 /// Provides encryption and decryption utilities for the SDK.
 ///
@@ -12,9 +12,9 @@ class Encryptor {
   static String encryptString(String data, String key) {
     final keyBytes = _deriveKey(key);
     final iv = _generateIV();
-    final encrypter = encrypt.Encryptor(encrypt.AES(
-      encrypt.Key(keyBytes),
-      mode: encrypt.AESMode.cbc,
+    final encrypter = enc.Encrypter(enc.AES(
+      enc.Key(keyBytes),
+      mode: enc.AESMode.cbc,
     ));
     final encrypted = encrypter.encrypt(data, iv: iv);
     // Prepend IV to ciphertext
@@ -28,13 +28,13 @@ class Encryptor {
   static String decryptString(String encryptedData, String key) {
     final keyBytes = _deriveKey(key);
     final combined = base64Decode(encryptedData);
-    final iv = encrypt.IV(Uint8List.fromList(combined.sublist(0, 16)));
+    final iv = enc.IV(Uint8List.fromList(combined.sublist(0, 16)));
     final ciphertext = combined.sublist(16);
-    final encrypter = encrypt.Encryptor(encrypt.AES(
-      encrypt.Key(keyBytes),
-      mode: encrypt.AESMode.cbc,
+    final encrypter = enc.Encrypter(enc.AES(
+      enc.Key(keyBytes),
+      mode: enc.AESMode.cbc,
     ));
-    return encrypter.decrypt(encrypt.Encrypted(ciphertext), iv: iv);
+    return encrypter.decrypt(enc.Encrypted(ciphertext), iv: iv);
   }
 
   /// Generates a SHA-256 hash of the input string.
@@ -59,10 +59,10 @@ class Encryptor {
   }
 
   /// Generates a random 16-byte initialization vector.
-  static encrypt.IV _generateIV() {
+  static enc.IV _generateIV() {
     final random = Random.secure();
     final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-    return encrypt.IV(Uint8List.fromList(bytes));
+    return enc.IV(Uint8List.fromList(bytes));
   }
 
   /// Generates a unique ID (can be used as encryption key name).

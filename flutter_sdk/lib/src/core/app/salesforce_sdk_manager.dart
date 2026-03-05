@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import '../../analytics/logger/salesforce_logger.dart';
-import '../../analytics/manager/analytics_manager.dart';
 import '../../analytics/model/device_app_attributes.dart';
 import '../accounts/user_account.dart';
 import '../accounts/user_account_manager.dart';

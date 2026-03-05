@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../rest/rest_client.dart';
 
 /// Represents a single authenticated Salesforce user account.

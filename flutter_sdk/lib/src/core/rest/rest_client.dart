@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../auth/oauth2.dart';
 import '../../analytics/logger/salesforce_logger.dart';

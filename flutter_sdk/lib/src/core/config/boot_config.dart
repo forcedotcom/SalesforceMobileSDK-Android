@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 /// Boot configuration for the Salesforce SDK.
 ///

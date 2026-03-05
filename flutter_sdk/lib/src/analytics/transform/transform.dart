@@ -19,7 +19,6 @@ class AILTNTransform implements EventTransform {
   static const String _durationKey = 'duration';
   static const String _pageKey = 'page';
   static const String _previousPageKey = 'previousPage';
-  static const String _marksKey = 'marks';
   static const String _locatorKey = 'locator';
   static const String _clientSessionIdKey = 'clientSessionId';
   static const String _sequenceKey = 'sequence';

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../analytics/logger/salesforce_logger.dart';
-import '../auth/oauth2.dart';
 import '../rest/rest_client.dart';
 import 'user_account.dart';
 

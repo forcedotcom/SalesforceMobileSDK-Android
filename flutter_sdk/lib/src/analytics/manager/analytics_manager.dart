@@ -33,7 +33,6 @@ class SalesforceAnalyticsManager {
 
   static final Map<String, SalesforceAnalyticsManager> _instances = {};
 
-  final String _uniqueId;
   final EventStoreManager _eventStoreManager;
   final DeviceAppAttributes _deviceAppAttributes;
   final SalesforceLogger _logger = SalesforceLogger.getLogger('Analytics');
@@ -51,8 +50,7 @@ class SalesforceAnalyticsManager {
     required String uniqueId,
     required EventStoreManager eventStoreManager,
     required DeviceAppAttributes deviceAppAttributes,
-  })  : _uniqueId = uniqueId,
-        _eventStoreManager = eventStoreManager,
+  })  : _eventStoreManager = eventStoreManager,
         _deviceAppAttributes = deviceAppAttributes;
 
   /// Gets or creates an instance for the given unique ID.

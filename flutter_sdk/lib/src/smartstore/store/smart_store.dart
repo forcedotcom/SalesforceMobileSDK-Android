@@ -490,7 +490,7 @@ class SmartStore {
     return smartSql.replaceAllMapped(
       RegExp(r'\{(\w+):(\w+)\}'),
       (match) {
-        final soupName = match.group(1)!;
+        // match.group(1) is the soup name
         final field = match.group(2)!;
         if (field == '_soup') return 'soup';
         if (field == soupEntryId) return 'id';

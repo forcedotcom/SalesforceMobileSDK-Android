@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_lib;
@@ -23,7 +22,6 @@ class KeyValueEncryptedFileStore {
   final String storeName;
   String _encryptionKey;
   late Directory _storeDir;
-  bool _initialized = false;
 
   KeyValueEncryptedFileStore._({
     required this.storeName,
@@ -165,7 +163,6 @@ class KeyValueEncryptedFileStore {
     if (!_storeDir.existsSync()) {
       await _storeDir.create(recursive: true);
     }
-    _initialized = true;
   }
 
   File _getFile(String key) {
