@@ -53,7 +53,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val usernameField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(0)
         )
-        if (!usernameField.waitForExists(TIMEOUT_MS * 5)) {
+        if (!usernameField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Username field not found in Custom Tab")
         }
         usernameField.clearTextField()
@@ -102,7 +102,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             }
         }
 
-        if (noButton.waitForExists(TIMEOUT_MS * 2)) {
+        if (noButton.waitForExists(TIMEOUT_MS)) {
             noButton.click()
             return
         }

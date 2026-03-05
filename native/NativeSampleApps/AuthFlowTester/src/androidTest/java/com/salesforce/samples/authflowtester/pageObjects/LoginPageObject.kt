@@ -46,7 +46,6 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
@@ -156,7 +155,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         val usernameField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(0)
         )
-        if (!usernameField.waitForExists(TIMEOUT_MS * 5)) {
+        if (!usernameField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Username field not found in Custom Tab")
         }
         usernameField.clearTextField()
@@ -165,7 +164,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         val passwordField = device.findObject(
             UiSelector().className("android.widget.EditText").instance(1)
         )
-        if (!passwordField.waitForExists(TIMEOUT_MS * 5)) {
+        if (!passwordField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Password field not found in Custom Tab")
         }
         passwordField.clearTextField()
@@ -174,7 +173,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         val loginButton = device.findObject(
             UiSelector().className("android.widget.Button").textContains("Log In")
         )
-        if (!loginButton.waitForExists(TIMEOUT_MS * 5)) {
+        if (!loginButton.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Log In button not found in Custom Tab")
         }
         loginButton.click()
@@ -182,7 +181,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     /** Retries a WebView action until it succeeds or times out. */
     private fun <T> retryWebAction(
-        timeoutMs: Long = TIMEOUT_MS * 5,
+        timeoutMs: Long = TIMEOUT_MS,
         action: () -> T,
     ): T {
         val endTime = System.currentTimeMillis() + timeoutMs

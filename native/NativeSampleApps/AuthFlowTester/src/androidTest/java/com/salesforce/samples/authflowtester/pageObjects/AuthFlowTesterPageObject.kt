@@ -42,7 +42,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.accounts.UserAccountManager
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
@@ -81,7 +80,7 @@ data class Tokens(
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {
-        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
     }
 
     fun switchToUser(
@@ -99,7 +98,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Tap the user row in the picker
         val userRow = device.findObject(UiSelector().textContains(displayName))
-        if (!userRow.waitForExists(TIMEOUT_MS * 2)) {
+        if (!userRow.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("User '$displayName' not found on user picker")
         }
         userRow.click()
@@ -122,7 +121,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val addNewAccountDesc = context.getString(sdkR.string.sf__add_new_account_content_description)
         val addNewAccountButton = device.findObject(UiSelector().descriptionContains(addNewAccountDesc))
-        if (!addNewAccountButton.waitForExists(TIMEOUT_MS * 5)) {
+        if (!addNewAccountButton.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Add New Account button not found on user picker")
         }
         addNewAccountButton.click()
@@ -150,7 +149,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 // The icon might not be found if the picker is already slowly opening and covering the screen
             }
 
-            if (picker.waitForExists(TIMEOUT_MS * 5)) {
+            if (picker.waitForExists(TIMEOUT_MS)) {
                 found = true
                 break
             }
@@ -169,14 +168,14 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
 
     fun revokeAccessToken() {
-        waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
+        waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
         // Use performSemanticsAction instead of performClick because
         // performScrollTo doesn't trigger nested scroll, leaving the button
         // behind the collapsed top bar where touch input gets intercepted.
         composeTestRule.onNodeWithContentDescription(REVOKE_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
 
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 15)
+        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.revoke_successful))
 
@@ -186,11 +185,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     fun validateApiRequest() {
-        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 5)
+        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
         composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
 
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS * 15)
+        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.request_successful))
 
@@ -214,7 +213,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         expandUserCredentialsSection()
         
         // Wait for the UI to update asynchronously after login or user switch
-        composeTestRule.waitUntil(TIMEOUT_MS * 5) {
+        composeTestRule.waitUntil(TIMEOUT_MS) {
             val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
             if (nodes.isNotEmpty()) {
                 val config = nodes.first().config
@@ -270,7 +269,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val migrateDesc = getString(R.string.migrate_access_token)
         waitForNode(migrateDesc)
         composeTestRule.onNodeWithContentDescription(migrateDesc)
-            .performClick()
+            .performSemanticsAction(SemanticsActions.OnClick)
         composeTestRule.waitForIdle()
 
         // Select the target user if specified (user list only visible with multiple users)
@@ -279,7 +278,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             val radioDesc = MIGRATE_USER_RADIO_CONTENT_DESC + expectedUsername
             waitForNode(radioDesc)
             composeTestRule.onNodeWithContentDescription(radioDesc)
-                .performClick()
+                .performSemanticsAction(SemanticsActions.OnClick)
             composeTestRule.waitForIdle()
         }
 
@@ -287,19 +286,19 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val jsonDesc = getString(R.string.json_content_description)
         waitForNode(jsonDesc)
         composeTestRule.onNodeWithContentDescription(jsonDesc)
-            .performClick()
+            .performSemanticsAction(SemanticsActions.OnClick)
         composeTestRule.waitForIdle()
 
         // Tap import button
         waitForNode(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
         composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
-            .performClick()
+            .performSemanticsAction(SemanticsActions.OnClick)
         composeTestRule.waitForIdle()
 
         // Tap migrate button
         waitForNode(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
         composeTestRule.onNodeWithContentDescription(MIGRATE_TOKEN_BUTTON_CONTENT_DESC)
-            .performClick()
+            .performSemanticsAction(SemanticsActions.OnClick)
 
         AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
 
@@ -310,7 +309,8 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         try {
             waitForNodeGone(closeDesc)
         } catch (_: Exception) {
-            composeTestRule.onNodeWithContentDescription(closeDesc).performClick()
+            composeTestRule.onNodeWithContentDescription(closeDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
             composeTestRule.waitForIdle()
             waitForNodeGone(closeDesc)
         }
@@ -325,7 +325,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         // Wait until the target node is visible, expanding the card if needed.
         // The key() block in TesterUI may recreate UserCredentialsView (collapsing
         // the card) between expansion and access, so poll until it stabilizes.
-        composeTestRule.waitUntil(TIMEOUT_MS * 3) {
+        composeTestRule.waitUntil(TIMEOUT_MS) {
             try {
                 val visible = composeTestRule.onAllNodesWithContentDescription(targetNode)
                     .fetchSemanticsNodes().isNotEmpty()

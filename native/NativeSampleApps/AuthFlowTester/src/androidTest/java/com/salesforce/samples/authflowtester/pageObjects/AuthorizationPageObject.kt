@@ -58,7 +58,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      */
     fun tapAllowAfterLogin(knownLoginHostConfig: KnownLoginHostConfig) {
         // Let the WebView redirect to authorization page.
-        Thread.sleep(TIMEOUT_MS * 2)
+        Thread.sleep(SLEEP_TIME_MS)
 
         when(knownLoginHostConfig) {
             REGULAR_AUTH -> tapAllowInWebView()
@@ -93,7 +93,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after login.")
                 return
@@ -111,7 +111,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after login.")
                 return
@@ -127,7 +127,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      */
     fun tapAllowAfterMigration() {
         // Wait for the page to load, swipe, then poll for the Allow button.
-        allowButton.waitForExists(TIMEOUT_MS * 5)
+        allowButton.waitForExists(TIMEOUT_MS)
         swipeUp()
 
         repeat(MAX_RETRIES) {
@@ -138,7 +138,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after migration.")
                 return
