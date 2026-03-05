@@ -175,7 +175,7 @@ jobs:
                 DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
               done
               
-              GCLOUD_RESULTS_DIR=authflowtester-multi-user-${{github.run_number}}-batch-${BATCH_NUM}
+              GCLOUD_RESULTS_DIR=authflowtester-multi-user-build-${{github.run_number}}-batch-${BATCH_NUM}
               echo "Running Multi User Batch $BATCH_NUM with levels: ${BATCH_LEVELS[*]}"
               
               gcloud firebase test android run \
@@ -218,7 +218,9 @@ jobs:
               return
             fi
 
-            if gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
+            if gsutil ls "${BUCKET_PATH}/test_results_merged.xml" > /dev/null 2>&1; then
+              gsutil cp "${BUCKET_PATH}/test_results_merged.xml" "firebase_results/${OUTPUT_NAME}.xml"
+            elif gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
               gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" "firebase_results/${OUTPUT_NAME}.xml"
             else
               gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" "firebase_results/${OUTPUT_NAME}.xml"
@@ -248,8 +250,8 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
-          check_name: ${{ inputs.lib }} Test Results
-          job_name: ${{ inputs.lib }} Test Results
+          check_name: AuthFlowTester Test Results
+          job_name: AuthFlowTester Test Results
           require_tests: true
           check_retries: true
           flaky_summary: true
@@ -259,3 +261,15 @@ jobs:
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
+      - name: Archive APK
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuthFlowTester-debug-${{ github.run_number }}
+          path: native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: ui-test-results
+          path: 'firebase_results/**.xml'

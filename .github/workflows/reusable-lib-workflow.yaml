@@ -198,6 +198,12 @@ jobs:
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-${{ inputs.lib }}
+          path: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()
         run: ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
