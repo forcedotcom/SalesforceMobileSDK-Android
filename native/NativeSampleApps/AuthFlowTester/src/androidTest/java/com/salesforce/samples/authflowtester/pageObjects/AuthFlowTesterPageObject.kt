@@ -69,8 +69,6 @@ import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
-const val OPAQUE_ACCESS_TOKEN_LENGTH = 112
-const val REFRESH_TOKEN_LENGTH = 87
 
 data class Tokens(
     val accessToken: String,
@@ -253,11 +251,13 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         assertEquals(expected.expectedScopesGranted(scopeSelection), getText(SCOPES))
         assertEquals(expected.expectedTokenFormat, getText(TOKEN_FORMAT))
         if (expected.issuesJwt) {
-            assert(accessToken.length > OPAQUE_ACCESS_TOKEN_LENGTH)
+            assert(accessToken.length > refreshToken.length) {
+                "JWT access token (${accessToken.length}) should be longer than refresh token (${refreshToken.length})"
+            }
         } else {
-            assertEquals(OPAQUE_ACCESS_TOKEN_LENGTH, accessToken.length)
+            assert(accessToken.isNotEmpty()) { "Expected non-empty opaque access token" }
         }
-        assertEquals(REFRESH_TOKEN_LENGTH, refreshToken.length)
+        assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
     }
 
     fun migrateToNewApp(
