@@ -306,8 +306,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             @Suppress("AssignedValueIsNeverRead")
             MigrateAppBottomSheet(
                 onDismiss = {
-                    Log.i("bptest", "Migration complete \n -> currentUser.value: ${currentUser.value!!.username}" +
-                            "\n -> Mgr Current User: ${UserAccountManager.getInstance().currentUser.username}")
                     currentUser.value = UserAccountManager.getInstance().currentUser
                     showMigrateBottomSheet = false
                 }
