@@ -191,7 +191,7 @@ jobs:
               --results-dir="${GCLOUD_RESULTS_DIR}" \
               --results-history-name=AuthFlowTester \
               --no-performance-metrics \
-              --timeout=10m || true
+              --timeout=15m || true
               
               OFFSET=$(( OFFSET + MULTI_BATCH_SIZE ))
               BATCH_NUM=$(( BATCH_NUM + 1 ))

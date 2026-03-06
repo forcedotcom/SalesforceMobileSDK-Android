@@ -216,17 +216,30 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     fun validateUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
-        expandUserCredentialsSection()
+        waitForNode(CREDS_SECTION_CONTENT_DESC)
         
-        // Wait for the UI to update asynchronously after login or user switch
+        // Wait for the UI to update asynchronously after login or user switch.
+        // The view may be recreated and collapsed when the current user state updates.
         composeTestRule.waitUntil(TIMEOUT_MS) {
-            val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
-            if (nodes.isNotEmpty()) {
-                val config = nodes.first().config
-                if (config.contains(SemanticsProperties.Text)) {
-                    config[SemanticsProperties.Text].last().text == expected.username
-                } else false
-            } else false
+            try {
+                val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
+                val isVisible = nodes.isNotEmpty()
+                var isMatch = false
+
+                if (isVisible) {
+                    val config = nodes.first().config
+                    if (config.contains(SemanticsProperties.Text)) {
+                        isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                    }
+                } else {
+                    composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
+                    composeTestRule.waitForIdle()
+                }
+
+                isMatch
+            } catch (_: Exception) {
+                false
+            }
         }
         assertEquals(expected.username, getText(USERNAME))
     }
