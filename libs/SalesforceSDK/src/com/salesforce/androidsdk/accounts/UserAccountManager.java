@@ -767,4 +767,16 @@ public class UserAccountManager {
 	private String decryptUserData(Account account, String key, String encryptionKey) {
 		return  SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
 	}
+
+	/**
+	 * Clears the stored current user info from shared preferences. This should be called
+	 * when the last user logs out to ensure no user information remains on the device.
+	 */
+	public void clearStoredCurrentUserInfo() {
+		clearCachedCurrentUser();
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+		sp.edit().clear().apply();
+		SalesforceSDKLogger.d(TAG, "Cleared current user info from shared preferences");
+	}
 }
