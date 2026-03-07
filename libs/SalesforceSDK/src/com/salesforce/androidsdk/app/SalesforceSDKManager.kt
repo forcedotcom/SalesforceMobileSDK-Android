@@ -128,6 +128,7 @@ import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity
@@ -790,6 +791,10 @@ open class SalesforceSDKManager protected constructor(
             (screenLockManager as ScreenLockManager?)?.reset()
             screenLockManager = null
             biometricAuthenticationManager = null
+
+            // Clear stored identifiers and user info from shared preferences
+            SalesforceKeyGenerator.clearAll()
+            userAccountManager.clearStoredCurrentUserInfo()
         }
     }
 

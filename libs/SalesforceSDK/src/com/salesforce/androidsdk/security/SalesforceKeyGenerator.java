@@ -224,4 +224,15 @@ public class SalesforceKeyGenerator {
         final String suffix = TextUtils.isEmpty(name) ? "" : name;
         return String.format(Locale.US, ENCRYPTED_ID_SHARED_PREF_KEY, suffix);
     }
+
+    /**
+     * Clears all stored identifiers from shared preferences. This should be called
+     * when the last user logs out to ensure no encrypted identifiers remain on the device.
+     */
+    public synchronized static void clearAll() {
+        final SharedPreferences prefs = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(SHARED_PREF_FILE, 0);
+        prefs.edit().clear().apply();
+        CACHED_ENCRYPTION_KEYS.clear();
+        SalesforceSDKLogger.d(TAG, "Cleared all identifiers from shared preferences");
+    }
 }
