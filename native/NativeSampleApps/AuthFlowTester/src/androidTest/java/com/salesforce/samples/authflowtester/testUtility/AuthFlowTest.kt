@@ -33,6 +33,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
@@ -43,6 +44,7 @@ import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
+import org.junit.After
 import org.junit.Rule
 
 abstract class AuthFlowTest {
@@ -73,6 +75,19 @@ abstract class AuthFlowTest {
     val otherUser: KnownUserConfig by lazy {
         val userNumber = (user.ordinal + 1) % KnownUserConfig.values().count()
         KnownUserConfig.values()[userNumber]
+    }
+
+    @After
+    open fun cleanup() {
+        with(SalesforceSDKManager.getInstance()) {
+            userAccountManager.authenticatedUsers.forEach { userAccount ->
+                logout(
+                    account = userAccountManager.buildAccount(userAccount),
+                    frontActivity = null,
+                    showLoginPage = false,
+                )
+            }
+        }
     }
 
     open fun loginAndValidate(

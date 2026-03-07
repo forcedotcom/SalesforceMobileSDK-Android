@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -218,26 +219,30 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         
         // Wait for the UI to update asynchronously after login or user switch.
         // The view may be recreated and collapsed when the current user state updates.
-        composeTestRule.waitUntil(TIMEOUT_MS) {
-            try {
-                val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
-                val isVisible = nodes.isNotEmpty()
-                var isMatch = false
+        try {
+            composeTestRule.waitUntil(TIMEOUT_MS) {
+                try {
+                    val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
+                    val isVisible = nodes.isNotEmpty()
+                    var isMatch = false
 
-                if (isVisible) {
-                    val config = nodes.first().config
-                    if (config.contains(SemanticsProperties.Text)) {
-                        isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                    if (isVisible) {
+                        val config = nodes.first().config
+                        if (config.contains(SemanticsProperties.Text)) {
+                            isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                        }
+                    } else {
+                        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
+                        composeTestRule.waitForIdle()
                     }
-                } else {
-                    composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
-                    composeTestRule.waitForIdle()
-                }
 
-                isMatch
-            } catch (_: Exception) {
-                false
+                    isMatch
+                } catch (_: Exception) {
+                    false
+                }
             }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
         }
         assertEquals(expected.username, getText(USERNAME))
     }
@@ -344,43 +349,55 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         // Wait until the target node is visible, expanding the card if needed.
         // The key() block in TesterUI may recreate UserCredentialsView (collapsing
         // the card) between expansion and access, so poll until it stabilizes.
-        composeTestRule.waitUntil(TIMEOUT_MS) {
-            try {
-                val visible = composeTestRule.onAllNodesWithContentDescription(targetNode)
-                    .fetchSemanticsNodes().isNotEmpty()
-                if (!visible) {
-                    composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
-                        .performClick()
-                    composeTestRule.waitForIdle()
+        try {
+            composeTestRule.waitUntil(TIMEOUT_MS) {
+                try {
+                    val visible = composeTestRule.onAllNodesWithContentDescription(targetNode)
+                        .fetchSemanticsNodes().isNotEmpty()
+                    if (!visible) {
+                        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC)
+                            .performClick()
+                        composeTestRule.waitForIdle()
+                    }
+                    visible
+                } catch (_: Exception) {
+                    false
                 }
-                visible
-            } catch (_: Exception) {
-                false
             }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting to expand credentials section for node: \"$targetNode\"", e)
         }
     }
 
     /** Wait for a node with the given content description to exist. */
     private fun waitForNode(contentDesc: String, timeoutMillis: Long = TIMEOUT_MS) {
-        composeTestRule.waitUntil(timeoutMillis) {
-            try {
-                composeTestRule.onAllNodesWithContentDescription(contentDesc)
-                    .fetchSemanticsNodes().isNotEmpty()
-            } catch (_: IllegalStateException) {
-                false // Compose hierarchy temporarily unavailable
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                try {
+                    composeTestRule.onAllNodesWithContentDescription(contentDesc)
+                        .fetchSemanticsNodes().isNotEmpty()
+                } catch (_: IllegalStateException) {
+                    false // Compose hierarchy temporarily unavailable
+                }
             }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${timeoutMillis}ms waiting for node: \"$contentDesc\"", e)
         }
     }
 
     /** Wait for a node with the given content description to disappear. */
     private fun waitForNodeGone(contentDesc: String, timeoutMillis: Long = TIMEOUT_MS) {
-        composeTestRule.waitUntil(timeoutMillis) {
-            try {
-                composeTestRule.onAllNodesWithContentDescription(contentDesc)
-                    .fetchSemanticsNodes().isEmpty()
-            } catch (_: IllegalStateException) {
-                false
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                try {
+                    composeTestRule.onAllNodesWithContentDescription(contentDesc)
+                        .fetchSemanticsNodes().isEmpty()
+                } catch (_: IllegalStateException) {
+                    false
+                }
             }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${timeoutMillis}ms waiting for node to disappear: \"$contentDesc\"", e)
         }
     }
 

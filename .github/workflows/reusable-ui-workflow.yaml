@@ -90,116 +90,54 @@ jobs:
         env:
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
         run: |
-          CREDENTIALS_FILE="shared/test/ui_test_config.json"
-          BATCH_SIZE=$(jq '.loginHosts[0].users | length' "$CREDENTIALS_FILE")
-        
-          IFS=' ' read -r -a ALL_LEVELS <<< "$FULL_API_RANGE"
-          TOTAL_LEVELS=${#ALL_LEVELS[@]}
-          OFFSET=0
-          BATCH_NUM=1
-        
-          if [ -z "$BATCH_SIZE" ] || [ "$BATCH_SIZE" -le 0 ] 2>/dev/null; then
-            echo "Error: BATCH_SIZE is 0 or invalid. Check $CREDENTIALS_FILE"
-            exit 1
-          fi
-        
-          while [ $OFFSET -lt "$TOTAL_LEVELS" ]; do
-            BATCH_LEVELS=("${ALL_LEVELS[@]:$OFFSET:$BATCH_SIZE}")
-            
-            DEVICE_ARGS=()
-            for LEVEL in "${BATCH_LEVELS[@]}"; do
-              DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
-            done
-            
-            GCLOUD_RESULTS_DIR=authflowtester-single-user-build-${{github.run_number}}-batch-${BATCH_NUM}
-            echo "Running Batch $BATCH_NUM with levels: ${BATCH_LEVELS[*]}"
-  
-            gcloud firebase test android run \
-              --project mobile-apps-firebase-test \
-              --type instrumentation \
-              --use-orchestrator \
-              --environment-variables clearPackageData=true \
-              --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-              --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-              --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests" \
-              "${DEVICE_ARGS[@]}" \
-              --directories-to-pull=/sdcard \
-              --results-dir="${GCLOUD_RESULTS_DIR}" \
-              --results-history-name=AuthFlowTester \
-              --no-performance-metrics \
-              --timeout=30m  || true
-
-            OFFSET=$(( OFFSET + BATCH_SIZE ))
-            BATCH_NUM=$(( BATCH_NUM + 1 ))
+          GCLOUD_RESULTS_DIR=authflowtester-single-user-build-${{github.run_number}}
+          DEVICE_ARGS=()
+          for LEVEL in $FULL_API_RANGE; do
+            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
           done
+          
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests" \
+            "${DEVICE_ARGS[@]}" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --num-flaky-test-attempts=1 \
+            --timeout=30m || true
       - name: Run All Multi User Tests
         continue-on-error: true
         if: ${{ ! inputs.is_pr }}
         env:
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
         run: |
-          CREDENTIALS_FILE="shared/test/ui_test_config.json"
-          NUM_USERS=$(jq '.loginHosts[0].users | length' "$CREDENTIALS_FILE")
-          MULTI_BATCH_SIZE=$(( NUM_USERS / 2 ))
-          
-          if [ -z "$MULTI_BATCH_SIZE" ] || [ "$MULTI_BATCH_SIZE" -le 0 ] 2>/dev/null; then
-            echo "Error: MULTI_BATCH_SIZE is 0 or invalid. Check $CREDENTIALS_FILE"
-            exit 1
-          fi
-          
-          IFS=' ' read -r -a ALL_LEVELS <<< "$FULL_API_RANGE"
-          TOTAL_LEVELS=${#ALL_LEVELS[@]}
-          
-          # Split into even-indexed and odd-indexed sublists so that
-          # no two API levels within a sublist are 1 apart.
-          EVEN_INDEXED=()
-          ODD_INDEXED=()
-          for (( i=0; i<TOTAL_LEVELS; i++ )); do
-            if (( i % 2 == 0 )); then
-              EVEN_INDEXED+=("${ALL_LEVELS[$i]}")
-            else
-              ODD_INDEXED+=("${ALL_LEVELS[$i]}")
-            fi
+          GCLOUD_RESULTS_DIR=authflowtester-multi-user-build-${{github.run_number}}
+          DEVICE_ARGS=()
+          for LEVEL in $FULL_API_RANGE; do
+            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
           done
           
-          BATCH_NUM=1
-          
-          run_multi_batches() {
-            local SUBLIST_LEVELS=("$@")
-            local OFFSET=0
-            while [ $OFFSET -lt ${#SUBLIST_LEVELS[@]} ]; do
-              BATCH_LEVELS=("${SUBLIST_LEVELS[@]:$OFFSET:$MULTI_BATCH_SIZE}")
-              
-              DEVICE_ARGS=()
-              for LEVEL in "${BATCH_LEVELS[@]}"; do
-                DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
-              done
-              
-              GCLOUD_RESULTS_DIR=authflowtester-multi-user-build-${{github.run_number}}-batch-${BATCH_NUM}
-              echo "Running Multi User Batch $BATCH_NUM with levels: ${BATCH_LEVELS[*]}"
-              
-              gcloud firebase test android run \
-              --project mobile-apps-firebase-test \
-              --type instrumentation \
-              --use-orchestrator \
-              --environment-variables clearPackageData=true \
-              --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-              --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-              --test-targets "class com.salesforce.samples.authflowtester.MultiUserLoginTests" \
-              "${DEVICE_ARGS[@]}" \
-              --directories-to-pull=/sdcard \
-              --results-dir="${GCLOUD_RESULTS_DIR}" \
-              --results-history-name=AuthFlowTester \
-              --no-performance-metrics \
-              --timeout=15m || true
-              
-              OFFSET=$(( OFFSET + MULTI_BATCH_SIZE ))
-              BATCH_NUM=$(( BATCH_NUM + 1 ))
-            done
-          }
-
-          run_multi_batches "${EVEN_INDEXED[@]}"
-          run_multi_batches "${ODD_INDEXED[@]}"
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --test-targets "class com.salesforce.samples.authflowtester.MultiUserLoginTests" \
+            "${DEVICE_ARGS[@]}" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --num-flaky-test-attempts=1 \
+            --timeout=15m || true
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()
@@ -227,19 +165,15 @@ jobs:
               copy_results_by_api_level "${BUCKET_PATH}" "pr"
             fi
           else
-            for PREFIX in "single-user" "multi-user"; do
-              BATCH_NUM=1
-              while true; do
-                BUCKET_PATH="${BUCKET}/authflowtester-${PREFIX}-build-${{github.run_number}}-batch-${BATCH_NUM}"
+            SINGLE_PATH="${BUCKET}/authflowtester-single-user-build-${{github.run_number}}"
+            if gsutil ls "${SINGLE_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${SINGLE_PATH}" "single-user"
+            fi
 
-                if ! gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
-                  break
-                fi
-
-                copy_results_by_api_level "${BUCKET_PATH}" "${PREFIX}"
-                BATCH_NUM=$(( BATCH_NUM + 1 ))
-              done
-            done
+            MULTI_PATH="${BUCKET}/authflowtester-multi-user-build-${{github.run_number}}"
+            if gsutil ls "${MULTI_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${MULTI_PATH}" "multi-user"
+            fi
           fi
       - name: Test Report
         uses: mikepenz/action-junit-report@v6

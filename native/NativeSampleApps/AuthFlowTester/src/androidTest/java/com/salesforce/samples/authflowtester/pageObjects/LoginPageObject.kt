@@ -26,6 +26,7 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -82,11 +83,15 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         composeTestRule.waitForIdle()
 
         // Wait for the AlertDialog to be fully rendered and ready
-        composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
                 onView(withText(getString(R.string.sf__dev_support_login_options_title)))
                     .inRoot(isDialog())
                     .check { _, _ -> }
                 true
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Developer Support dialog to appear", e)
         }
 
         // Tap "Login Options" in the native AlertDialog (not Compose)
@@ -95,10 +100,14 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             .perform(click())
 
         // Wait for LoginOptionsActivity's Compose content to render.
-        composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-            composeTestRule.onAllNodesWithContentDescription(
-                getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
-            ).fetchSemanticsNodes().isNotEmpty()
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule.onAllNodesWithContentDescription(
+                    getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
+                ).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Login Options screen to render", e)
         }
         Thread.sleep(TIMEOUT_MS / 4)
     }
@@ -116,10 +125,14 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             .performClick()
 
         // Wait for server picker bottom sheet to appear
-        composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-            composeTestRule.onAllNodesWithContentDescription(
-                getString(R.string.sf__server_picker_content_description)
-            ).fetchSemanticsNodes().isNotEmpty()
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule.onAllNodesWithContentDescription(
+                    getString(R.string.sf__server_picker_content_description)
+                ).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
         }
 
         // Select the server matching the URL
