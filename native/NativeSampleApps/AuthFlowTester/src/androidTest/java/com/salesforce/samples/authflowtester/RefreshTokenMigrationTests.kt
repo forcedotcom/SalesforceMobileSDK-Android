@@ -26,44 +26,21 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.Manifest
-import android.os.Build
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.rule.GrantPermissionRule
-import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
-import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
-import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// TODO: remove loginAndValidate override when W-20524841 is fixed.
+
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class TokenMigrationTest {
-
-    @get:Rule(order = 0)
-    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-    } else {
-        GrantPermissionRule.grant()
-    }
-
-    @get:Rule(order = 1)
-    val composeTestRule = createEmptyComposeRule()
-
-    @get:Rule(order = 2)
-    val activityRule = ActivityScenarioRule(AuthFlowTesterActivity::class.java)
-
-    val loginPage = LoginPageObject(composeTestRule)
-    val loginOptions = LoginOptionsPageObject(composeTestRule)
-    val app = AuthFlowTesterPageObject(composeTestRule)
+class RefreshTokenMigrationTests: AuthFlowTest() {
 
     // region Migration within same app (scope upgrade)
 
@@ -71,7 +48,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrate_CA_AddMoreScopes() {
         loginAndValidate(
-            KnownAppConfig.CA_JWT,
+            knownAppConfig = KnownAppConfig.CA_JWT,
             scopeSelection = ScopeSelection.SUBSET,
         )
 
@@ -85,7 +62,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrate_ECA_AddMoreScopes() {
         loginAndValidate(
-            KnownAppConfig.ECA_JWT,
+            knownAppConfig = KnownAppConfig.ECA_JWT,
             scopeSelection = ScopeSelection.SUBSET,
         )
 
@@ -99,7 +76,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrate_Beacon_AddMoreScopes() {
         loginAndValidate(
-            KnownAppConfig.BEACON_JWT,
+            knownAppConfig = KnownAppConfig.BEACON_JWT,
             scopeSelection = ScopeSelection.SUBSET,
         )
 
@@ -116,7 +93,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrateCA_To_Beacon() {
         loginAndValidate(
-            KnownAppConfig.CA_OPAQUE,
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
@@ -127,7 +104,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrateBeacon_To_CA() {
         loginAndValidate(
-            KnownAppConfig.BEACON_OPAQUE,
+            knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
         )
         migrateAndValidate(
             KnownAppConfig.CA_OPAQUE
@@ -141,7 +118,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrateCA_To_ECA() {
         loginAndValidate(
-            KnownAppConfig.CA_OPAQUE,
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
         )
         migrateAndValidate(
             KnownAppConfig.ECA_OPAQUE,
@@ -155,7 +132,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrateCA_To_BeaconAndBack() {
         loginAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            knownAppConfig = KnownAppConfig.CA_OPAQUE
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE
@@ -169,7 +146,7 @@ class TokenMigrationTest {
     @Test
     fun testMigrateBeaconOpaque_To_JWTAndBack() {
         loginAndValidate(
-            KnownAppConfig.BEACON_OPAQUE
+            knownAppConfig = KnownAppConfig.BEACON_OPAQUE
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_JWT
@@ -181,40 +158,21 @@ class TokenMigrationTest {
 
     // endregion
 
-    private fun loginAndValidate(
+    override fun loginAndValidate(
         knownAppConfig: KnownAppConfig,
-        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
-        knownUserConfig: KnownUserConfig = KnownUserConfig.FIRST,
-        scopeSelection: ScopeSelection = ScopeSelection.EMPTY,
+        scopeSelection: ScopeSelection,
+        useWebServerFlow: Boolean,
+        useHybridAuthToken: Boolean,
+        knownLoginHostConfig: KnownLoginHostConfig,
+        knownUserConfig: KnownUserConfig,
     ) {
-        loginPage.openLoginOptions()
-        loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection)
-        loginPage.login(knownLoginHostConfig, knownUserConfig)
-        app.waitForAppLoad()
-
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
-    }
-
-    private fun migrateAndValidate(
-        knownAppConfig: KnownAppConfig,
-        knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH,
-        knownUserConfig: KnownUserConfig = KnownUserConfig.FIRST,
-        scopeSelection: ScopeSelection = ScopeSelection.EMPTY,
-    ) {
-        val (preAccessToken, preRefreshToken) = app.getTokens()
-        app.migrateToNewApp(knownAppConfig, scopeSelection)
-        val (postAccessToken, postRefreshToken) = app.getTokens()
-
-        // Assert tokens are new
-        assert(preAccessToken != postAccessToken)
-        assert(preRefreshToken != postRefreshToken)
-
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
-
-        // Assert new tokens work
-        app.revokeAccessToken()
-        app.validateApiRequest()
+        super.loginAndValidate(
+            knownAppConfig,
+            scopeSelection,
+            useWebServerFlow,
+            useHybridAuthToken = false,
+            knownLoginHostConfig,
+            knownUserConfig = user,
+        )
     }
 }

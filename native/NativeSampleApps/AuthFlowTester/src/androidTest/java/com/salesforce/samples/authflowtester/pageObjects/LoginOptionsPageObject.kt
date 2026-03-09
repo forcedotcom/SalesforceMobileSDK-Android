@@ -37,6 +37,8 @@ import androidx.test.espresso.Espresso.closeSoftKeyboard
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
 /**
@@ -60,7 +62,7 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         getString(R.string.sf__login_options_hybrid_toggle_content_description)
     )
 
-    fun setOverrideBootConfig(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection = ScopeSelection.ALL) {
+    fun setOverrideBootConfig(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection = ALL) {
         enableOverrideBootConfig()
 
         with(testConfig.getApp(knownAppConfig)) {
@@ -72,9 +74,11 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
                 getString(R.string.sf__login_options_redirect_uri_field_content_description)
             ).performTextReplacement(redirectUri)
 
-            composeTestRule.onNodeWithContentDescription(
-                getString(R.string.sf__login_options_scopes_field_content_description)
-            ).performTextReplacement(scopesToRequest(scopeSelection))
+            if (scopeSelection != EMPTY) {
+                composeTestRule.onNodeWithContentDescription(
+                    getString(R.string.sf__login_options_scopes_field_content_description)
+                ).performTextReplacement(scopesToRequest(scopeSelection))
+            }
         }
 
         saveOverrideBootConfig()

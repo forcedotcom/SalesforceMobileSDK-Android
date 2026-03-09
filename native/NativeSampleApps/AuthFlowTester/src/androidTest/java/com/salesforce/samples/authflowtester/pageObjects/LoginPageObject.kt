@@ -26,6 +26,7 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -41,6 +42,9 @@ import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
 import androidx.test.espresso.web.webdriver.DriverAtoms.webKeys
 import androidx.test.espresso.web.webdriver.Locator
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -55,22 +59,16 @@ private const val LOGIN_BUTTON_ID = "Login"
  * Uses Espresso WebView APIs since the login form is an in-app WebView
  * embedded via AndroidView in the SDK's LoginActivity Compose layout.
  */
-class LoginPageObject(
-    composeTestRule: ComposeTestRule,
-    val isAdvancedAuth: Boolean = false,
-): BasePageObject(composeTestRule) {
+open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
-    fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+    private val device by lazy { UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()) }
+
+    open fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         setUsername(username)
         setPassword(password)
         tapLogin()
-
-        if (isAdvancedAuth) {
-            CustomTabPageObject().handleSignIn()
-        }
-
-        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin()
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
 
     fun openLoginOptions() {
@@ -84,20 +82,65 @@ class LoginPageObject(
             .performClick()
         composeTestRule.waitForIdle()
 
+        // Wait for the AlertDialog to be fully rendered and ready
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                onView(withText(getString(R.string.sf__dev_support_login_options_title)))
+                    .inRoot(isDialog())
+                    .check { _, _ -> }
+                true
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Developer Support dialog to appear", e)
+        }
+
         // Tap "Login Options" in the native AlertDialog (not Compose)
         onView(withText(getString(R.string.sf__dev_support_login_options_title)))
             .inRoot(isDialog())
             .perform(click())
 
         // Wait for LoginOptionsActivity's Compose content to render.
-        composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-            composeTestRule.onAllNodesWithContentDescription(
-                getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
-            ).fetchSemanticsNodes().isNotEmpty()
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule.onAllNodesWithContentDescription(
+                    getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
+                ).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Login Options screen to render", e)
         }
+        Thread.sleep(TIMEOUT_MS / 4)
     }
 
-    private fun setUsername(name: String) {
+    fun changeServer(knownLoginHostConfig: KnownLoginHostConfig) {
+        val url = testConfig.getLoginHost(knownLoginHostConfig).url
+
+        // Tap "More Options" three-dot menu (Compose IconButton)
+        composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
+            .performClick()
+        composeTestRule.waitForIdle()
+
+        // Tap "Change Server" dropdown menu item
+        composeTestRule.onNodeWithText(getString(R.string.sf__pick_server))
+            .performClick()
+
+        // Wait for server picker bottom sheet to appear
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule.onAllNodesWithContentDescription(
+                    getString(R.string.sf__server_picker_content_description)
+                ).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
+        }
+
+        // Select the server matching the URL
+        composeTestRule.onNodeWithText(url, substring = true).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    open fun setUsername(name: String) {
         retryWebAction {
             onWebView().withElement(findElement(Locator.ID, USERNAME_ID))
                 .perform(clearElement())
@@ -105,7 +148,7 @@ class LoginPageObject(
         }
     }
 
-    private fun setPassword(password: String) {
+    open fun setPassword(password: String) {
         retryWebAction {
             onWebView().withElement(findElement(Locator.ID, PASSWORD_ID))
                 .perform(clearElement())
@@ -113,16 +156,45 @@ class LoginPageObject(
         }
     }
 
-    private fun tapLogin() {
+    open fun tapLogin() {
         retryWebAction {
             onWebView().withElement(findElement(Locator.ID, LOGIN_BUTTON_ID))
                 .perform(webClick())
         }
     }
 
+    /** Enters credentials and taps login in a Chrome Custom Tab via UIAutomator. */
+    private fun loginInCustomTab(username: String, password: String) {
+        val usernameField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(0)
+        )
+        if (!usernameField.waitForExists(TIMEOUT_MS)) {
+            throw AssertionError("Username field not found in Custom Tab")
+        }
+        usernameField.clearTextField()
+        usernameField.setText(username)
+
+        val passwordField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(1)
+        )
+        if (!passwordField.waitForExists(TIMEOUT_MS)) {
+            throw AssertionError("Password field not found in Custom Tab")
+        }
+        passwordField.clearTextField()
+        passwordField.setText(password)
+
+        val loginButton = device.findObject(
+            UiSelector().className("android.widget.Button").textContains("Log In")
+        )
+        if (!loginButton.waitForExists(TIMEOUT_MS)) {
+            throw AssertionError("Log In button not found in Custom Tab")
+        }
+        loginButton.click()
+    }
+
     /** Retries a WebView action until it succeeds or times out. */
     private fun <T> retryWebAction(
-        timeoutMs: Long = TIMEOUT_MS * 5,
+        timeoutMs: Long = TIMEOUT_MS,
         action: () -> T,
     ): T {
         val endTime = System.currentTimeMillis() + timeoutMs

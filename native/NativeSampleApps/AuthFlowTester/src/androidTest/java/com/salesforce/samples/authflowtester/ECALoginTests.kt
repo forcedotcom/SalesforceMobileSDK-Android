@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,46 +26,61 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.Manifest
-import android.os.Build
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.rule.GrantPermissionRule
-import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
-import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
-import org.junit.Rule
+import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Tests for login flows using External Client App (ECA) configurations.
+ * ECA apps are first-party Salesforce apps that use enhanced authentication flows.
+ */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class LoginTest {
+class ECALoginTests: AuthFlowTest() {
 
-    @get:Rule(order = 0)
-    val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-    } else {
-        GrantPermissionRule.grant()
+    // region ECA Opaque Tests
+
+    // Login with ECA opaque using default scopes and web server flow.
+    @Test
+fun testECAOpaque_DefaultScopes() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE)
     }
 
-    @get:Rule(order = 1)
-    val composeTestRule = createEmptyComposeRule()
-
-    @get:Rule(order = 2)
-    val activityRule = ActivityScenarioRule(AuthFlowTesterActivity::class.java)
-
-    val loginPage = LoginPageObject(composeTestRule)
-    val app = AuthFlowTesterPageObject(composeTestRule)
-
+    // Login with ECA opaque using subset of scopes and web server flow.
     @Test
-    fun testBasicLogin() {
-        loginPage.login(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
-        app.waitForAppLoad()
-        app.validateUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
-        app.validateApiRequest()
+fun testECAOpaque_SubsetScopes() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE, scopeSelection = SUBSET)
+    }
+
+    // Login with ECA opaque using all scopes and web server flow.
+    @Test
+fun testECAOpaque_AllScopes() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE, scopeSelection = ALL)
+    }
+
+    // region ECA JWT Tests
+
+    // Login with ECA JWT using default scopes and web server flow.
+    @Test
+fun testECAJwt_DefaultScopes() {
+        loginAndValidate(knownAppConfig = ECA_JWT)
+    }
+
+    // Login with ECA JWT using subset of scopes and web server flow.
+    @Test
+fun testECAJwt_SubsetScopes_NotHybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = SUBSET)
+    }
+
+    // Login with ECA JWT using all scopes and web server flow.
+    @Test
+fun testECAJwt_AllScopes() {
+        loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
 }

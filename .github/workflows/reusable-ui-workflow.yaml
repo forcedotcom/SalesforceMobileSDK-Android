@@ -41,11 +41,11 @@ jobs:
           gradle-version: "8.14.3"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
-      - name: Build for Testing
+      - name: Build App for Testing
         if: success() || failure()
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug
-      - name: Build Tests
+      - name: Build UI Tests
         run: |
           ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest
       - uses: 'google-github-actions/auth@v2'
@@ -54,84 +54,163 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@v2'
         if: success() || failure()
-      - name: Run Tests
+      - name: Run PR Tests
         continue-on-error: true
-        if: success() || failure()
+        if: ${{ inputs.is_pr }}
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           PR_API_VERSION: "35"
-          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
-          IS_PR: ${{ inputs.is_pr }}
         run: |
-          LEVELS_TO_TEST=$FULL_API_RANGE
-          RETRIES=0
-          TEST_TARGETS=""
-
-          if $IS_PR ; then
-            LEVELS_TO_TEST=$PR_API_VERSION
-            RETRIES=1
-            # Run only a handful of smoke tests.
-            TEST_TARGETS="--test-targets \"class com.salesforce.samples.authflowtester.LoginTest#testBasicLogin\""
-            TEST_TARGETS+=",\"class com.salesforce.samples.authflowtester.TokenMigrationTest#testMigrate_ECA_AddMoreScopes\""
-          fi
-
-          mkdir firebase_results
-          for LEVEL in $LEVELS_TO_TEST
-            do
-              GCLOUD_RESULTS_DIR=authflowtester-api-${LEVEL}-build-${{github.run_number}}
-
-              eval gcloud firebase test android run \
-                --project mobile-apps-firebase-test \
-                --type instrumentation \
-                --use-orchestrator \
-                --environment-variables clearPackageData=true \
-                --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
-                --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-                --device model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait \
-                --directories-to-pull=/sdcard \
-                --results-dir=${GCLOUD_RESULTS_DIR} \
-                --results-history-name=AuthFlowTester \
-                --timeout=10m --no-performance-metrics \
-                $TEST_TARGETS \
-                --num-flaky-test-attempts=${RETRIES} || true
-            done
+          GCLOUD_RESULTS_DIR=authflowtester-pr-build-${{github.run_number}}
+          
+          PR_TESTS="class com.salesforce.samples.authflowtester.BootConfigLoginTests#testCAOpaque_DefaultScopes_WebServerFlow, \
+            class com.salesforce.samples.authflowtester.ECALoginTests#testECAOpaque_DefaultScopes, \
+            class com.salesforce.samples.authflowtester.ECALoginTests#testECAJwt_AllScopes, \
+            class com.salesforce.samples.authflowtester.TokenMigrationTest#testMigrate_ECA_AddMoreScopes, \
+            class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens"
+          
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --device model=MediumPhone.arm,version="${PR_API_VERSION}",locale=en,orientation=portrait \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --test-targets="${PR_TESTS}" \
+            --timeout=10m \ 
+            --num-flaky-test-attempts=1
+      - name: Run All Single User Tests
+        continue-on-error: true
+        if: ${{ ! inputs.is_pr }}
+        env:
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+        run: |
+          GCLOUD_RESULTS_DIR=authflowtester-single-user-build-${{github.run_number}}
+          DEVICE_ARGS=()
+          for LEVEL in $FULL_API_RANGE; do
+            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
+          done
+          
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests" \
+            "${DEVICE_ARGS[@]}" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --num-flaky-test-attempts=1 \
+            --timeout=30m || true
+      - name: Run All Multi User Tests
+        continue-on-error: true
+        if: ${{ ! inputs.is_pr }}
+        env:
+          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+        run: |
+          GCLOUD_RESULTS_DIR=authflowtester-multi-user-build-${{github.run_number}}
+          DEVICE_ARGS=()
+          for LEVEL in $FULL_API_RANGE; do
+            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
+          done
+          
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --test-targets "class com.salesforce.samples.authflowtester.MultiUserLoginTests" \
+            "${DEVICE_ARGS[@]}" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --num-flaky-test-attempts=1 \
+            --timeout=15m || true
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()
         env:
-          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "35"
-          FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
         run: |
-          LEVELS_TO_TEST=$FULL_API_RANGE
+          mkdir -p firebase_results
+          BUCKET="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw"
+
+          copy_results_by_api_level() {
+            local BUCKET_PATH=$1
+            local OUTPUT_PREFIX=$2
+
+            # Pass 1: copy original (non-rerun) results
+            for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep -v "rerun"); do
+              DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
+              API_LEVEL=$(echo "${DEVICE_DIR}" | sed 's/.*-\([0-9]*\)-.*/\1/')
+              gsutil cp "${RESULT_FILE}" "firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
+            done
+            # Pass 2: merge rerun testcases into originals so check_retries detects flaky tests
+            for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep "rerun"); do
+              DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
+              API_LEVEL=$(echo "${DEVICE_DIR}" | sed 's/.*-\([0-9]*\)-.*/\1/')
+              RERUN_TMP="firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_rerun_tmp.xml"
+              ORIG_FILE="firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
+              gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
+              python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
+          import sys, xml.etree.ElementTree as ET
+          orig = ET.parse(sys.argv[1])
+          rerun = ET.parse(sys.argv[2])
+          def suite(t):
+            r = t.getroot()
+            return r if r.tag == 'testsuite' else r.find('testsuite')
+          os_el, rs_el = suite(orig), suite(rerun)
+          failed_keys = set()
+          for tc in os_el.findall('testcase'):
+            if tc.find('failure') is not None or tc.find('error') is not None:
+              failed_keys.add(f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}")
+          added = 0
+          for tc in rs_el.findall('testcase'):
+            if f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}" in failed_keys:
+              os_el.append(tc)
+              added += 1
+          os_el.set('tests', str(int(os_el.get('tests','0')) + added))
+          with open(sys.argv[3], 'w') as f:
+            f.write(ET.tostring(orig.getroot(), encoding='unicode'))
+          PYEOF
+              rm "${RERUN_TMP}"
+            done
+          }
 
           if $IS_PR ; then
-            LEVELS_TO_TEST=$PR_API_VERSION
+            BUCKET_PATH="${BUCKET}/authflowtester-pr-build-${{github.run_number}}"
+            if gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${BUCKET_PATH}" "pr"
+            fi
+          else
+            SINGLE_PATH="${BUCKET}/authflowtester-single-user-build-${{github.run_number}}"
+            if gsutil ls "${SINGLE_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${SINGLE_PATH}" "single-user"
+            fi
+
+            MULTI_PATH="${BUCKET}/authflowtester-multi-user-build-${{github.run_number}}"
+            if gsutil ls "${MULTI_PATH}" > /dev/null 2>&1; then
+              copy_results_by_api_level "${MULTI_PATH}" "multi-user"
+            fi
           fi
-
-          for LEVEL in $LEVELS_TO_TEST
-            do
-              GCLOUD_RESULTS_DIR=authflowtester-api-${LEVEL}-build-${{github.run_number}}
-              BUCKET_PATH="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR}"
-
-              gsutil ls ${BUCKET_PATH} > /dev/null 2>&1
-              if [ $? == 0 ] ; then
-                # Copy XML file for test reporting
-                if gsutil ls "${BUCKET_PATH}/*test_results_merged.xml" > /dev/null 2>&1; then
-                  # Sharded runs produce test_results_merged.xml at top level
-                  gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
-                else
-                  gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" firebase_results/api_${LEVEL}_test_result.xml
-                fi
-              fi
-            done
       - name: Test Report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
-          check_name: ${{ inputs.lib }} Test Results
-          job_name: ${{ inputs.lib }} Test Results
+          check_name: AuthFlowTester Test Results
+          job_name: AuthFlowTester Test Results
           require_tests: true
           check_retries: true
           flaky_summary: true
@@ -141,3 +220,15 @@ jobs:
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
+      - name: Archive APK
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuthFlowTester-debug-${{ github.run_number }}
+          path: native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: ui-test-results
+          path: 'firebase_results/**.xml'

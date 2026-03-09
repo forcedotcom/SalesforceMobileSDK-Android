@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth
 
 import android.accounts.Account
+import android.accounts.AccountManager
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
@@ -46,6 +47,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -272,6 +274,7 @@ class AuthenticationUtilitiesTest {
         // Given
         val userIdentity = createIdServiceResponse()
         coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        setupPersistAccountMocks()
 
         // When - tokenMigration is true
         callOnAuthFlowComplete(tokenMigration = true)
@@ -288,6 +291,7 @@ class AuthenticationUtilitiesTest {
         val tokenResponse = createTokenEndpointResponse()
         val userIdentity = createIdServiceResponse()
         coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        setupPersistAccountMocks()
 
         // Create the expected UserAccount object
         val expectedAccount = UserAccountBuilder.getInstance()
@@ -308,18 +312,20 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testOnAuthFlowComplete_tokenMigration_shouldCreateAccount() = runTest {
+    fun testOnAuthFlowComplete_tokenMigration_shouldPersistAccount() = runTest {
         // Given
         val userIdentity = createIdServiceResponse()
         coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        setupPersistAccountMocks()
 
         // When - tokenMigration is true
         callOnAuthFlowComplete(tokenMigration = true)
 
-        // Then - account creation and user switch should still happen
-        verify(exactly = 1) { mockUserAccountManager.createAccount(any()) }
-        verify(exactly = 1) { mockUserAccountManager.switchToUser(any()) }
+        // Then - persistAccount should be used instead of createAccount/switchToUser
         verify(exactly = 1) { addAccount.invoke(any()) }
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(any<Account>(), any<UserAccount>()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
     }
 
     @Test
@@ -327,6 +333,7 @@ class AuthenticationUtilitiesTest {
         // Given
         val userIdentity = createIdServiceResponse()
         coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        setupPersistAccountMocks()
 
         // When - tokenMigration is true
         callOnAuthFlowComplete(tokenMigration = true)
@@ -368,6 +375,60 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowError.invoke("Error", "Authentication only allowed from managed device.", null) }
         verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
         verify(exactly = 0) { startMainActivity.invoke() }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_persistsNewAccountToAccountManager() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        val mockAcctManager = setupPersistAccountMocks(addAccountExplicitlyReturns = true)
+
+        // When
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - new account should be added to AccountManager
+        verify { mockAcctManager.addAccountExplicitly(
+            match { it.name == "test@example.com (https://test.salesforce.com)" && it.type == "test_account_type" },
+            any(),
+            any()
+        ) }
+        verify(exactly = 0) { mockAcctManager.setPassword(any(), any()) }
+        verify { mockAcctManager.setAuthToken(any(), eq(AccountManager.KEY_AUTHTOKEN), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_existingAccount_updatesPassword() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        val mockAcctManager = setupPersistAccountMocks(addAccountExplicitlyReturns = false)
+
+        // When
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - existing account should have password updated
+        verify { mockAcctManager.setPassword(any(), any()) }
+        verify { mockAcctManager.setAuthToken(any(), eq(AccountManager.KEY_AUTHTOKEN), any()) }
+        verify { mockUserAccountManager.updateAccount(any<Account>(), any<UserAccount>()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_tokenMigration_doesNotCallNonMigrationFlowSteps() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        setupPersistAccountMocks()
+
+        // When
+        callOnAuthFlowComplete(tokenMigration = true)
+
+        // Then - non-migration flow steps should NOT be called
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+        verify(exactly = 0) { startMainActivity.invoke() }
+        verify(exactly = 0) { updateLoggingPrefs.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.sendUserSwitchIntent(any(), any()) }
     }
 
     // endregion
@@ -768,6 +829,26 @@ class AuthenticationUtilitiesTest {
             .idUrl("https://test.salesforce.com/id/$orgId/$userId")
             .accountName("test_account")
             .build()
+    }
+
+    private fun setupPersistAccountMocks(addAccountExplicitlyReturns: Boolean = true): AccountManager {
+        val mockAcctManager = mockk<AccountManager>(relaxed = true)
+
+        mockkObject(SalesforceSDKManager)
+        val mockSdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { SalesforceSDKManager.getInstance() } returns mockSdkManager
+        every { mockSdkManager.accountType } returns "test_account_type"
+        every { mockSdkManager.appContext } returns testContext
+        every { SalesforceSDKManager.encryptionKey } returns "test_encryption_key"
+        every { SalesforceSDKManager.encrypt(any(), any()) } answers { firstArg<String?>() }
+
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns mockAcctManager
+        every { mockAcctManager.addAccountExplicitly(any(), any(), any()) } returns addAccountExplicitlyReturns
+
+        every { mockUserAccountManager.updateAccount(any<Account>(), any<UserAccount>()) } returns mockk<android.os.Bundle>()
+
+        return mockAcctManager
     }
 
     private fun setupBiometricEnabledPrefs(mockSdkManager: SalesforceSDKManager) {

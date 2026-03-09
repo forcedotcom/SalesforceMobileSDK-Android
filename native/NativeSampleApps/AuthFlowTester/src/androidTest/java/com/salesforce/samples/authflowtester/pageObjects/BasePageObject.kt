@@ -27,6 +27,7 @@
 package com.salesforce.samples.authflowtester.pageObjects
 
 import android.content.Context
+import android.provider.Settings
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 
@@ -36,6 +37,18 @@ abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
     fun getString(id: Int) = context.getString(id)
 
     companion object {
-        const val TIMEOUT_MS: Long = 2_000
+        val isFtl: Boolean by lazy {
+            Settings.System.getString(
+                InstrumentationRegistry.getInstrumentation().targetContext.contentResolver,
+                /* name = */ "firebase.test.lab"
+            ) == "true"
+        }
+        val TIMEOUT_MS: Long by lazy {
+            if (isFtl) 15_000 else 5_000
+        }
+
+        val SLEEP_TIME_MS: Long by lazy {
+            if (isFtl) 5_000 else 2_500
+        }
     }
 }

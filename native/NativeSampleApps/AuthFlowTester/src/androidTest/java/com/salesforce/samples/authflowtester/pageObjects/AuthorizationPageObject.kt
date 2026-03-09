@@ -32,6 +32,9 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.androidsdk.R as sdkR
 
 private const val TAG = "AuthorizationPageObject"
@@ -53,20 +56,62 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      * polls for the Allow button.  Returns early if the main app UI
      * appears (approval was auto-granted or previously remembered).
      */
-    fun tapAllowAfterLogin() {
+    fun tapAllowAfterLogin(knownLoginHostConfig: KnownLoginHostConfig) {
         // Let the WebView redirect to authorization page.
-        Thread.sleep(TIMEOUT_MS * 2)
+        Thread.sleep(SLEEP_TIME_MS)
+
+        when(knownLoginHostConfig) {
+            REGULAR_AUTH -> tapAllowInWebView()
+            ADVANCED_AUTH -> {
+                dismissSavePasswordDialog()
+                tapAllowInCustomTab()
+            }
+        }
+    }
+
+    private fun dismissSavePasswordDialog() {
+        val infoBar = device.findObject(
+            UiSelector().resourceId("com.android.chrome:id/infobar_message")
+        )
+        val neverButton = device.findObject(
+            UiSelector().resourceId("com.android.chrome:id/button_secondary")
+        )
+        infoBar.waitForExists(TIMEOUT_MS)
+        if (neverButton.waitForExists(TIMEOUT_MS)) {
+            neverButton.click()
+        }
+    }
+
+    /** Scrolls within the Custom Tab to find and tap Allow. */
+    private fun tapAllowInCustomTab() {
+        val app = AuthFlowTesterPageObject(composeTestRule)
         swipeUp()
 
         repeat(MAX_RETRIES) {
-            // "More Options" is in the LoginActivity top bar.
-            // Once it disappears, we've left the login screen.
+            if (app.isAppLoaded()) {
+                Log.i(TAG, "Left login screen — no approval needed.")
+                return
+            }
+
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
+                allowButton.click()
+                Log.i(TAG, "Tapped Allow after login.")
+                return
+            }
+        }
+    }
+
+    /** Original flow: scrolls and polls for Allow in the in-app WebView. */
+    private fun tapAllowInWebView() {
+        swipeUp()
+
+        repeat(MAX_RETRIES) {
             if (!loginActivityExists()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after login.")
                 return
@@ -82,7 +127,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      */
     fun tapAllowAfterMigration() {
         // Wait for the page to load, swipe, then poll for the Allow button.
-        allowButton.waitForExists(TIMEOUT_MS * 5)
+        allowButton.waitForExists(TIMEOUT_MS)
         swipeUp()
 
         repeat(MAX_RETRIES) {
@@ -93,7 +138,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS * 2)) {
+            if (allowButton.waitForExists(TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after migration.")
                 return
@@ -110,7 +155,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 /* startY = */ displayHeight * 3 / 4,
                 /* endX = */ displayWidth / 2,
                 /* endY = */ displayHeight / 4,
-                /* steps = */ 10,
+                /* steps = */ 30,
             )
         }
 

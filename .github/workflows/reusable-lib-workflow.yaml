@@ -173,7 +173,38 @@ jobs:
                   # Sharded runs produce test_results_merged.xml at top level
                   gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
                 else
-                  gsutil cp "${BUCKET_PATH}/*/test_result_1.xml" firebase_results/api_${LEVEL}_test_result.xml
+                  # Pass 1: copy original (non-rerun) results
+                  for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep -v "rerun"); do
+                    gsutil cp "${RESULT_FILE}" "firebase_results/api_${LEVEL}_test_result.xml"
+                  done
+                  # Pass 2: merge rerun testcases into originals so check_retries detects flaky tests
+                  for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep "rerun"); do
+                    RERUN_TMP="firebase_results/api_${LEVEL}_rerun_tmp.xml"
+                    ORIG_FILE="firebase_results/api_${LEVEL}_test_result.xml"
+                    gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
+                    python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
+          import sys, xml.etree.ElementTree as ET
+          orig = ET.parse(sys.argv[1])
+          rerun = ET.parse(sys.argv[2])
+          def suite(t):
+            r = t.getroot()
+            return r if r.tag == 'testsuite' else r.find('testsuite')
+          os_el, rs_el = suite(orig), suite(rerun)
+          failed_keys = set()
+          for tc in os_el.findall('testcase'):
+            if tc.find('failure') is not None or tc.find('error') is not None:
+              failed_keys.add(f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}")
+          added = 0
+          for tc in rs_el.findall('testcase'):
+            if f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}" in failed_keys:
+              os_el.append(tc)
+              added += 1
+          os_el.set('tests', str(int(os_el.get('tests','0')) + added))
+          with open(sys.argv[3], 'w') as f:
+            f.write(ET.tostring(orig.getroot(), encoding='unicode'))
+          PYEOF
+                    rm "${RERUN_TMP}"
+                  done
                 fi
 
                 # Copy all shard data for code coverage (only needed for one level)
@@ -198,6 +229,12 @@ jobs:
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'firebase_results/**.xml'
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-${{ inputs.lib }}
+          path: 'firebase_results/**.xml'
       - name: Convert Code Coverage
         if: success() || failure()
         run: ./gradlew libs:${{ inputs.lib }}:convertCodeCoverage
