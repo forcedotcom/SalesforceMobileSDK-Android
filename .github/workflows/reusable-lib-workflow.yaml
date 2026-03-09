@@ -173,8 +173,11 @@ jobs:
                   # Sharded runs produce test_results_merged.xml at top level
                   gsutil cp "${BUCKET_PATH}/*test_results_merged.xml" firebase_results/api_${LEVEL}_test_result.xml
                 else
-                  for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_*.xml" 2>/dev/null); do
-                    ATTEMPT=$(echo "${RESULT_FILE}" | sed 's|.*test_result_\([0-9]*\)\.xml|\1|')
+                  for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null); do
+                    DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
+                    # Firebase retries appear as -rerun_N directories; use that as the attempt suffix
+                    RERUN_SUFFIX=$(echo "${DEVICE_DIR}" | sed -n 's/.*\(rerun_[0-9]*\).*/\1/p')
+                    ATTEMPT=${RERUN_SUFFIX:-1}
                     gsutil cp "${RESULT_FILE}" "firebase_results/api_${LEVEL}_test_result_${ATTEMPT}.xml"
                   done
                 fi
