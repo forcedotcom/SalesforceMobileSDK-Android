@@ -53,7 +53,9 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_ID
@@ -162,7 +164,9 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
+        val authorizationAttestationValue = getInstance().testOAuthAuthorizationAttestationRequest()
         val authRequestBody = createRequestBody(
+            ATTESTATION to authorizationAttestationValue,
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,
@@ -220,11 +224,13 @@ internal class NativeLoginManager(
 
     @VisibleForTesting
     internal fun isValidPassword(password: String): Boolean {
-        val containsNumber = password.contains("[0-9]".toRegex())
-        val containsLetter = password.contains("[A-Za-z]".toRegex())
+        // TODO: Revert this change after testing with administrator-created accounts that have non-compliant passwords. ECJ20260312
+//        val containsNumber = password.contains("[0-9]".toRegex())
+//        val containsLetter = password.contains("[A-Za-z]".toRegex())
 
-        return containsNumber && containsLetter && password.length >= MIN_PASSWORD_LENGTH
-                && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
+//        return containsNumber && containsLetter && password.length >= MIN_PASSWORD_LENGTH
+//                && password.toByteArray().size <= MAX_PASSWORD_LENGTH_BYTES
+        return true
     }
 
     private suspend fun suspendFinishAuthFlow(tokenResponse: RestResponse): NativeLoginResult {
@@ -272,7 +278,9 @@ internal class NativeLoginManager(
         }
     }
 
-    private fun createRequestBody(vararg kvPairs: Pair<String, String>): RequestBody {
+    private fun createRequestBody(vararg kvPairs: Pair<String, String?>): RequestBody {
+        // TODO: Review this. If the request body is treated immutably, then filtering null values is a convenient way to handle optional values. ECJ20260312
+        kvPairs.filter { it.second != null }
         val requestBodyString = kvPairs.joinToString("&") { (key, value) -> "$key=$value" }
         val mediaType = CONTENT_TYPE_VALUE_HTTP_POST.toMediaTypeOrNull()
         return requestBodyString.toRequestBody(mediaType)

@@ -103,6 +103,9 @@ public class OAuth2 {
     private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
     public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
+
+    /// OAuth 2.0 authorization endpoint request body parameter names: Google Play Integrity API Token
+    protected static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     protected static final String REDIRECT_URI = "redirect_uri";
@@ -308,11 +311,17 @@ public class OAuth2 {
             String codeChallenge,
             Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
+
+        final String authorizationAttestationValue = SalesforceSDKManager.getInstance().testOAuthAuthorizationAttestationRequest();
+
         final String responseType = useWebServerAuthentication
                 ? CODE
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
+        if (authorizationAttestationValue != null) {
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAttestationValue);
+        }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
@@ -540,9 +549,17 @@ public class OAuth2 {
                                                                   URI loginServer,
                                                                   FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
+
+        final String authorizationAttestationValue = SalesforceSDKManager.getInstance().testOAuthAuthorizationAttestationRequest();
+
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+
+        if (authorizationAttestationValue != null) {
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAttestationValue);
+        }
+
         final String refreshPath = sb.toString();
         final RequestBody body = formBodyBuilder.build();
         final Request request = new Request.Builder().url(refreshPath).post(body).build();
