@@ -1480,32 +1480,8 @@ open class SalesforceSDKManager protected constructor(
 
     /** Indicates if this is a debug build */
     internal val isDebugBuild
-        get() = getBuildConfigValue(
-            appContext,
-            "DEBUG"
-        ) as Boolean
+        get() = DEBUG
 
-    /**
-     * Gets a field from the project's build configuration.
-     *
-     * @param context An Android context providing the build configuration's
-     * package
-     * @param fieldName The name of the build configuration field
-     * @return The value of the build configuration field or null if the field
-     * is not found
-     */
-    private fun getBuildConfigValue(
-        context: Context,
-        @Suppress("SameParameterValue") fieldName: String
-    ) = runCatching {
-        Class.forName(
-            "${context.packageName ?: ""}.BuildConfig"
-        ).getField(
-            fieldName
-        )[null]
-    }.onFailure { e ->
-        e(TAG, "getBuildConfigValue failed", e)
-    }.getOrDefault(DEBUG)
 
     /**
      * Indicates if the The Salesforce Mobile SDK user interface dark theme is
