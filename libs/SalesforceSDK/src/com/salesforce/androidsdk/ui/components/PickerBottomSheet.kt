@@ -98,6 +98,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -115,6 +116,9 @@ import com.salesforce.androidsdk.R.string.sf__account_selector_text
 import com.salesforce.androidsdk.R.string.sf__add_new_account
 import com.salesforce.androidsdk.R.string.sf__add_new_account_content_description
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__connection_apply_button_content_description
+import com.salesforce.androidsdk.R.string.sf__connection_name_field_content_description
+import com.salesforce.androidsdk.R.string.sf__connection_url_field_content_description
 import com.salesforce.androidsdk.R.string.sf__custom_url_button
 import com.salesforce.androidsdk.R.string.sf__custom_url_button_content_description
 import com.salesforce.androidsdk.R.string.sf__pick_server
@@ -510,6 +514,9 @@ internal fun AddConnection(
         handleColor = colorScheme.tertiary,
         backgroundColor = colorScheme.tertiary.copy(alpha = TEXT_SELECTION_ALPHA),
     )
+    val nameFieldDesc = stringResource(sf__connection_name_field_content_description)
+    val urlFieldDesc = stringResource(sf__connection_url_field_content_description)
+    val applyButtonDesc = stringResource(sf__connection_apply_button_content_description)
 
     Column {
         CompositionLocalProvider(LocalTextSelectionColors provides sfTextSection) {
@@ -522,7 +529,9 @@ internal fun AddConnection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(PADDING_SIZE.dp)
-                    .focusRequester(focusRequester),
+                    .focusRequester(focusRequester)
+                    .testTag("sf__picker_custom_label")
+                    .semantics { contentDescription = nameFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
                     focusedLabelColor = colorScheme.tertiary,
@@ -544,7 +553,9 @@ internal fun AddConnection(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp),
+                    .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp)
+                    .testTag("sf__picker_custom_url")
+                    .semantics { contentDescription = urlFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
                     focusedLabelColor = colorScheme.tertiary,
@@ -566,7 +577,9 @@ internal fun AddConnection(
         Button(
             modifier = Modifier
                 .padding(PADDING_SIZE.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .testTag("sf__apply_button")
+                .semantics { contentDescription = applyButtonDesc },
             shape = RoundedCornerShape(CORNER_RADIUS.dp),
             contentPadding = PaddingValues(PADDING_SIZE.dp),
             colors = ButtonColors(

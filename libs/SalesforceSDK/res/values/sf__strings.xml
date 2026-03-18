@@ -47,6 +47,9 @@
     <string name="sf__server_delete_content_description">Confirm Delete</string>
     <string name="sf__server_picker_click_label">Select login server</string>
     <string name="sf__custom_url_button_content_description">Add New Connection</string>
+    <string name="sf__connection_name_field_content_description">Connection Name Field</string>
+    <string name="sf__connection_url_field_content_description">Connection URL Field</string>
+    <string name="sf__connection_apply_button_content_description">Apply Connection Button</string>
 
     <!-- Manage space activity -->
     <string name="sf__manage_space_title">Clear User Data?</string>
