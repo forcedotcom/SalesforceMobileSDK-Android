@@ -67,7 +67,9 @@ jobs:
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAOpaque_DefaultScopes, \
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAJwt_AllScopes, \
             class com.salesforce.samples.authflowtester.TokenMigrationTest#testMigrate_ECA_AddMoreScopes, \
-            class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens"
+            class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens, \
+            class com.salesforce.samples.authflowtester.BeaconLoginTests#testBeaconOpaque_DefaultScopes, \
+            class com.salesforce.samples.authflowtester.AdvancedAuthBeaconLoginTests#testBeaconOpaque_DefaultScopes"
           
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
