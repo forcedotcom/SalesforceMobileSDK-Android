@@ -29,13 +29,29 @@ package com.salesforce.androidsdk.auth
 import android.accounts.AccountManager.KEY_INTENT
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import android.content.pm.PackageManager.FEATURE_FACE
+import android.content.pm.PackageManager.FEATURE_IRIS
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.Q
+import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
 import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
 import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
+import androidx.biometric.BiometricPrompt
+import androidx.biometric.BiometricPrompt.AuthenticationCallback
+import androidx.biometric.BiometricPrompt.AuthenticationResult
+import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.os.bundleOf
+import androidx.fragment.app.FragmentActivity
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
@@ -71,6 +87,7 @@ import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
@@ -166,13 +183,66 @@ internal class NativeLoginManager(
     }
 
     override fun getFallbackWebAuthenticationIntent(): Intent {
+        // Unlock biometric auth since the user is choosing webview auth instead.
+        (SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as? BiometricAuthenticationManager)?.onUnlock()
+
         val context = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
-        intent.putExtras(bundleOf(SHOW_BIOMETRIC to bioAuthLocked))
+        intent.putExtras(bundleOf(SHOW_BIOMETRIC to false))
         Bundle().putParcelable(KEY_INTENT, intent)
 
         return intent
+    }
+
+    override fun presentBiometricAuth(activity: FragmentActivity): Boolean {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as? BiometricAuthenticationManager ?: return false
+
+        if (!bioAuthManager.locked || !bioAuthManager.hasBiometricOptedIn()) {
+            return false
+        }
+
+        val biometricManager = BiometricManager.from(activity)
+        // TODO: Remove when min API > 29.
+        val authenticators = when {
+            SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+            else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
+        }
+
+        if (biometricManager.canAuthenticate(authenticators) != BIOMETRIC_SUCCESS) {
+            return false
+        }
+
+        val biometricPrompt = BiometricPrompt(
+            activity,
+            getMainExecutor(activity),
+            object : AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    bioAuthManager.onUnlock()
+                    activity.finish()
+                }
+            }
+        )
+
+        val username = accountManager.currentUser?.username ?: ""
+        var hasFaceUnlock = false
+        if (SDK_INT >= Q) {
+            hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
+                    || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
+        }
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(activity.resources.getString(sf__biometric_opt_in_title))
+            .setSubtitle(username)
+            .setAllowedAuthenticators(authenticators)
+            .setConfirmationRequired(hasFaceUnlock)
+            .build()
+
+        biometricPrompt.authenticate(promptInfo)
+        return true
     }
 
     @VisibleForTesting

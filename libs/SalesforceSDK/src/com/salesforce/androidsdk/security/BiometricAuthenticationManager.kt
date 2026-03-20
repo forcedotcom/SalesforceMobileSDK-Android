@@ -60,16 +60,22 @@ internal class BiometricAuthenticationManager: AppLockManager(
     }
 
     override fun lock() {
-        currentUser?.let {
+        currentUser?.let { user ->
             locked = true
-            val ctx = SalesforceSDKManager.getInstance().appContext
-            val intent = Intent(ctx, SalesforceSDKManager.getInstance().loginActivityClass)
-            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.putExtras(bundleOf(SHOW_BIOMETRIC to true))
-            ctx.startActivity(intent)
-            EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
+            with(SalesforceSDKManager.getInstance()) {
+                val activityClass = if (user.nativeLogin == true) {
+                    loginActivityClass
+                } else {
+                    webViewLoginActivityClass
+                }
+                val intent = Intent(appContext, activityClass)
+                intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.putExtras(bundleOf(SHOW_BIOMETRIC to true))
+                appContext.startActivity(intent)
+                EventsObservable.get().notifyEvent(EventsObservable.EventType.AppLocked)
+            }
         }
     }
 
