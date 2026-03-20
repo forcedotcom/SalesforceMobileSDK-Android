@@ -56,7 +56,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         if (!usernameField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Username field not found in Custom Tab")
         }
-        usernameField.clearTextField()
+        usernameField.click()
         usernameField.setText(name)
     }
 
@@ -67,7 +67,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         if (!passwordField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Password field not found in Custom Tab")
         }
-        passwordField.clearTextField()
+        passwordField.click()
         passwordField.setText(password)
     }
 
@@ -108,12 +108,15 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         }
     }
 
-    fun tapCloseButton() {
+    fun tapCloseButton(): Boolean {
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
-        if (closeButton.waitForExists(TIMEOUT_MS)) {
+        return if (closeButton.waitForExists(TIMEOUT_MS)) {
             closeButton.click()
+            true
+        } else {
+            false
         }
     }
 }
