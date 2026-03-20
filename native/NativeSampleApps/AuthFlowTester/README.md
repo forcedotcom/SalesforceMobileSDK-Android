@@ -59,6 +59,18 @@ Beacon app login tests for lightweight authentication use cases, covering both o
 | `testBeaconJwt_SubsetScopes` | Beacon JWT | Subset |
 | `testBeaconJwt_AllScopes` | Beacon JWT | All |
 
+#### AdvancedAuthBeaconLoginTests
+Tests for Beacon app login flows using advanced authentication with Chrome Custom Tabs. This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host. Requires intent filters in AndroidManifest.xml matching the beacon redirect URIs (`beaconadvancedopaque://success/done` and `beaconadvancedjwt://success/done`).
+
+| Test | App Config | Scopes | Login Host |
+|------|-----------|--------|------------|
+| `testBeaconOpaque_DefaultScopes` | Beacon Opaque | Default | Advanced Auth |
+| `testBeaconOpaque_SubsetScopes` | Beacon Opaque | Subset | Advanced Auth |
+| `testBeaconOpaque_AllScopes` | Beacon Opaque | All | Advanced Auth |
+| `testBeaconJwt_DefaultScopes` | Beacon JWT | Default | Advanced Auth |
+| `testBeaconJwt_SubsetScopes` | Beacon JWT | Subset | Advanced Auth |
+| `testBeaconJwt_AllScopes` | Beacon JWT | All | Advanced Auth |
+
 #### AdvancedAuthLoginTests (WIP)
 Tests login via advanced authentication hosts that use Chrome Custom Tabs instead of the in-app WebView. Skipped on API ≤ 31 in Firebase Test Lab due to outdated Chrome.
 

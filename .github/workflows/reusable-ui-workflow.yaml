@@ -67,7 +67,9 @@ jobs:
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAOpaque_DefaultScopes, \
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAJwt_AllScopes, \
             class com.salesforce.samples.authflowtester.TokenMigrationTest#testMigrate_ECA_AddMoreScopes, \
-            class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens"
+            class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens, \
+            class com.salesforce.samples.authflowtester.BeaconLoginTests#testBeaconOpaque_DefaultScopes, \
+            class com.salesforce.samples.authflowtester.AdvancedAuthBeaconLoginTests#testBeaconOpaque_DefaultScopes"
           
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
@@ -82,7 +84,7 @@ jobs:
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
             --test-targets="${PR_TESTS}" \
-            --timeout=10m \ 
+            --timeout=10m \
             --num-flaky-test-attempts=1
       - name: Run All Single User Tests
         continue-on-error: true

@@ -27,8 +27,11 @@
 package com.salesforce.samples.authflowtester.pageObjects
 
 import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -135,8 +138,10 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
         }
 
-        // Select the server matching the URL
-        composeTestRule.onNodeWithText(url, substring = true).performClick()
+        // Select the server matching the URL (filter for clickable node if multiple matches)
+        composeTestRule.onAllNodesWithText(url, substring = true)
+            .filterToOne(hasClickAction())
+            .performClick()
         composeTestRule.waitForIdle()
     }
 

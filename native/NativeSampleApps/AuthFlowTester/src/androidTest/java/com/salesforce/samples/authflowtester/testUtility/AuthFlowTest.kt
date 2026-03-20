@@ -80,13 +80,34 @@ abstract class AuthFlowTest {
     @After
     open fun cleanup() {
         with(SalesforceSDKManager.getInstance()) {
-            userAccountManager.authenticatedUsers.forEach { userAccount ->
+            userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
                     account = userAccountManager.buildAccount(userAccount),
                     frontActivity = null,
                     showLoginPage = false,
                 )
             }
+        }
+    }
+
+    /**
+     * Ensures we're on REGULAR_AUTH server before opening Login Options.
+     * Server selection is "sticky" so previous test might have left it on ADVANCED_AUTH.
+     */
+    private fun ensureRegularAuthServer() {
+        // Close any Chrome Custom Tab that might be open from previous test
+        val chromeTab = ChromeCustomTabPageObject(composeTestRule)
+        if (chromeTab.tapCloseButton()) {
+            Thread.sleep(500)  // Wait for Chrome tab to close
+        }
+
+        // Switch back to REGULAR_AUTH using LoginServerManager
+        val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        val regularAuthServer = loginServerManager.getLoginServerFromURL(regularAuthUrl)
+        if (regularAuthServer != null) {
+            loginServerManager.setSelectedLoginServer(regularAuthServer)
+            Thread.sleep(500)  // Wait for server change to take effect
         }
     }
 
@@ -102,6 +123,8 @@ abstract class AuthFlowTest {
             REGULAR_AUTH -> LoginPageObject(composeTestRule)
             ADVANCED_AUTH -> ChromeCustomTabPageObject(composeTestRule)
         }
+
+        ensureRegularAuthServer()
 
         if (!useWebServerFlow || !useHybridAuthToken ||
             knownAppConfig != CA_OPAQUE || scopeSelection != EMPTY) {

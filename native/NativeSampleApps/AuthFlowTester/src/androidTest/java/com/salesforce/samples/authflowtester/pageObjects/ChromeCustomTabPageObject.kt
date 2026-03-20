@@ -34,6 +34,12 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 
 private const val RETRY_COUNT = 3
+/**
+ * Short timeout for checking optional local Chrome UI elements that either appear
+ * immediately or not at all (e.g., first-run dialogs, password save prompts).
+ * These are not dependent on server-side rendering.
+ */
+private const val QUICK_CHECK_TIMEOUT_MS = 500L
 
 /**
  * Handles Custom Tab interactions.
@@ -56,7 +62,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         if (!usernameField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Username field not found in Custom Tab")
         }
-        usernameField.clearTextField()
+        usernameField.click()
         usernameField.setText(name)
     }
 
@@ -67,7 +73,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         if (!passwordField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Password field not found in Custom Tab")
         }
-        passwordField.clearTextField()
+        passwordField.click()
         passwordField.setText(password)
     }
 
@@ -93,27 +99,30 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         )
 
         repeat(times = RETRY_COUNT) {
-            if (continueButton.waitForExists(TIMEOUT_MS)) {
+            if (continueButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
                 continueButton.click()
                 return@repeat
-            } else if (legacyContinueButton.waitForExists(TIMEOUT_MS)) {
+            } else if (legacyContinueButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
                 legacyContinueButton.click()
                 return@repeat
             }
         }
 
-        if (noButton.waitForExists(TIMEOUT_MS)) {
+        if (noButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
             noButton.click()
             return
         }
     }
 
-    fun tapCloseButton() {
+    fun tapCloseButton(): Boolean {
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
-        if (closeButton.waitForExists(TIMEOUT_MS)) {
+        return if (closeButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
             closeButton.click()
+            true
+        } else {
+            false
         }
     }
 }

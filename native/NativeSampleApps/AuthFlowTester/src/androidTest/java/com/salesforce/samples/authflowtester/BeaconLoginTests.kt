@@ -31,36 +31,75 @@ import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
-import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Tests for login flows using Beacon app configurations.
  * Beacon apps are lightweight authentication apps for specific use cases.
+ *
+ * NB: Tests use the first user from ui_test_config.json
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class BeaconLoginTests: AuthFlowTest() {
+open class BeaconLoginTests: AuthFlowTest() {
+
+    // region Test Configuration
+
+    /**
+     * Returns the login host configuration to use for tests.
+     * Subclasses can override this to use a different login host.
+     */
+    open fun loginHostConfig(): KnownLoginHostConfig {
+        return KnownLoginHostConfig.REGULAR_AUTH
+    }
+
+    /**
+     * Returns the user configuration to use for tests.
+     * Subclasses can override this to use a different user.
+     */
+    open fun userConfig(): KnownUserConfig {
+        return KnownUserConfig.FIRST
+    }
+
+    // endregion
+
     // region Beacon Opaque Tests
 
     // Login with Beacon opaque using default scopes and web server flow.
     @Test
-    fun testBeaconOpaque_DefaultScopes() {
-        loginAndValidate(knownAppConfig = BEACON_OPAQUE)
+    open fun testBeaconOpaque_DefaultScopes() {
+        loginAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // Login with Beacon opaque using subset of scopes and web server flow.
     @Test
-    fun testBeaconOpaque_SubsetScopes() {
-        loginAndValidate(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
+    open fun testBeaconOpaque_SubsetScopes() {
+        loginAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+            scopeSelection = SUBSET,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // Login with Beacon opaque using all scopes and web server flow.
     @Test
-    fun testBeaconOpaque_AllScopes() {
-        loginAndValidate(knownAppConfig = BEACON_OPAQUE, scopeSelection = ALL)
+    open fun testBeaconOpaque_AllScopes() {
+        loginAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+            scopeSelection = ALL,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // endregion
@@ -69,20 +108,34 @@ class BeaconLoginTests: AuthFlowTest() {
 
     // Login with Beacon JWT using default scopes and web server flow.
     @Test
-    fun testBeaconJwt_DefaultScopes() {
-        loginAndValidate(knownAppConfig = KnownAppConfig.BEACON_JWT)
+    open fun testBeaconJwt_DefaultScopes() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.BEACON_JWT,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // Login with Beacon JWT using subset of scopes and web server flow.
     @Test
-    fun testBeaconJwt_SubsetScopes() {
-        loginAndValidate(knownAppConfig = KnownAppConfig.BEACON_JWT, scopeSelection = SUBSET)
+    open fun testBeaconJwt_SubsetScopes() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.BEACON_JWT,
+            scopeSelection = SUBSET,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // Login with Beacon JWT using all scopes and web server flow.
     @Test
-    fun testBeaconJwt_AllScopes() {
-        loginAndValidate(knownAppConfig = KnownAppConfig.BEACON_JWT, scopeSelection = ALL)
+    open fun testBeaconJwt_AllScopes() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.BEACON_JWT,
+            scopeSelection = ALL,
+            knownLoginHostConfig = loginHostConfig(),
+            knownUserConfig = userConfig()
+        )
     }
 
     // endregion

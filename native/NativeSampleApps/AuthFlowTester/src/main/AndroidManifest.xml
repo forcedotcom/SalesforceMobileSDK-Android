@@ -32,6 +32,26 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!-- Intent filter for advanced authentication with Beacon Opaque app -->
+            <intent-filter>
+                <data android:scheme="beaconadvancedopaque"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Intent filter for advanced authentication with Beacon JWT app -->
+            <intent-filter>
+                <data android:scheme="beaconadvancedjwt"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
