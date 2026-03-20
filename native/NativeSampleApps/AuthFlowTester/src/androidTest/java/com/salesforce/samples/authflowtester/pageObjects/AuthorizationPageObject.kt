@@ -39,6 +39,13 @@ import com.salesforce.androidsdk.R as sdkR
 
 private const val TAG = "AuthorizationPageObject"
 private const val MAX_RETRIES = 5
+/**
+ * Short timeout for checking optional UI elements. Used for:
+ * - Local Chrome UI (password save dialog) that appears immediately or not at all
+ * - Server-rendered Allow button polling (500ms × 5 retries = 2.5s total, combined
+ *   with SLEEP_TIME_MS initial wait = ~5s total for server-side rendering)
+ */
+private const val QUICK_CHECK_TIMEOUT_MS = 500L
 
 /**
  * Handles the OAuth authorization "Allow" button that may appear
@@ -52,12 +59,13 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
     )
 
     /**
-     * After login: the authorization WebView is expected.  Scrolls and
-     * polls for the Allow button.  Returns early if the main app UI
-     * appears (approval was auto-granted or previously remembered).
+     * After login: the OAuth authorization page is expected (in WebView for REGULAR_AUTH,
+     * or Chrome Custom Tab for ADVANCED_AUTH). Scrolls and polls for the Allow button.
+     * Returns early if the main app UI appears (approval was auto-granted or previously
+     * remembered).
      */
     fun tapAllowAfterLogin(knownLoginHostConfig: KnownLoginHostConfig) {
-        // Let the WebView redirect to authorization page.
+        // Let the browser/WebView redirect to OAuth authorization page.
         Thread.sleep(SLEEP_TIME_MS)
 
         when(knownLoginHostConfig) {
@@ -76,8 +84,8 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
         val neverButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/button_secondary")
         )
-        infoBar.waitForExists(TIMEOUT_MS)
-        if (neverButton.waitForExists(TIMEOUT_MS)) {
+        if (infoBar.waitForExists(QUICK_CHECK_TIMEOUT_MS) &&
+            neverButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
             neverButton.click()
         }
     }
@@ -87,13 +95,18 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
         val app = AuthFlowTesterPageObject(composeTestRule)
         swipeUp()
 
+        // Note: The Allow button is server-rendered on Salesforce's OAuth page.
+        // We use a short timeout (500ms) per check but loop MAX_RETRIES times,
+        // giving us 5 × 500ms = 2.5s of total polling. Combined with the
+        // SLEEP_TIME_MS (2.5s) before this method, we have ~5s total to find
+        // the button, balancing speed with reliability for server-side rendering.
         repeat(MAX_RETRIES) {
             if (app.isAppLoaded()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS)) {
+            if (allowButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after login.")
                 return
@@ -105,13 +118,16 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
     private fun tapAllowInWebView() {
         swipeUp()
 
+        // Note: Short timeout per check (500ms) × MAX_RETRIES = 2.5s total polling.
+        // Combined with SLEEP_TIME_MS (2.5s) before this method = ~5s total for
+        // server-rendered Allow button to appear.
         repeat(MAX_RETRIES) {
             if (!loginActivityExists()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS)) {
+            if (allowButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after login.")
                 return
@@ -127,7 +143,9 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      */
     fun tapAllowAfterMigration() {
         // Wait for the page to load, swipe, then poll for the Allow button.
-        allowButton.waitForExists(TIMEOUT_MS)
+        // Note: Short timeout (500ms) per check × MAX_RETRIES = 2.5s total
+        // polling for server-rendered Allow button.
+        allowButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)
         swipeUp()
 
         repeat(MAX_RETRIES) {
@@ -138,7 +156,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
 
-            if (allowButton.waitForExists(TIMEOUT_MS)) {
+            if (allowButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
                 allowButton.click()
                 Log.i(TAG, "Tapped Allow after migration.")
                 return
