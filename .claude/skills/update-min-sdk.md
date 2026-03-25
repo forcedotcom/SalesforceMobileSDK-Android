@@ -95,7 +95,55 @@ When moving from 24 to 26:
 - Simplified system UI visibility settings
 - Removed SalesforceSDK_AccessibleNav style fallback
 
-### 5. Update AndroidManifest.xml (if needed)
+### 5. Review New API Features and Opportunities
+
+**Purpose:** Proactively identify modernization opportunities based on new APIs available at NEW_MIN_SDK.
+
+**Process:**
+1. **Review Android documentation** for the new minimum API level:
+   - Feature summary: `https://developer.android.com/about/versions/{VERSION}/summary`
+   - Migration guide: `https://developer.android.com/about/versions/{VERSION}/migration`
+   - Behavior changes: `https://developer.android.com/about/versions/{VERSION}/behavior-changes-all`
+
+   Replace `{VERSION}` with the Android version number (e.g., 16 for API 36)
+
+2. **Focus areas to investigate:**
+   - **Security enhancements:** New cryptography APIs, biometric improvements, permission changes
+   - **Performance improvements:** Background execution optimizations, battery management
+   - **Deprecated API replacements:** APIs that should be replaced now that min SDK increased
+   - **SDK-relevant features:** Authentication, storage, networking, notifications, push messaging
+
+3. **Search codebase for modernization opportunities:**
+   - Look for deprecated API usage that can now be replaced
+   - Identify workarounds that are no longer needed
+   - Check if new APIs offer better alternatives for existing functionality
+
+4. **Document findings and suggestions:**
+   - List specific APIs or patterns that could be modernized
+   - Note any security or performance improvements available
+   - Flag breaking behavior changes that need testing
+   - Add suggestions as TODO comments if changes are non-trivial
+
+**Example scenarios:**
+
+When moving to API 30+ (Android 11):
+- Review biometric authentication changes (BiometricPrompt enhancements)
+- Check for scoped storage migration opportunities
+- Review package visibility changes
+
+When moving to API 33+ (Android 13):
+- Review notification permission requirements (POST_NOTIFICATIONS)
+- Check for themed icon support opportunities
+- Review per-app language preferences
+
+When moving to API 34+ (Android 14):
+- Review credential management APIs
+- Check for partial screen sharing improvements
+- Review grammatical inflection API for localization
+
+**Note:** This step may not find immediate action items, but helps future-proof the SDK by identifying modernization paths.
+
+### 6. Update AndroidManifest.xml (if needed)
 
 Check `libs/SalesforceSDK/AndroidManifest.xml` for permissions that are no longer needed:
 
@@ -105,7 +153,7 @@ Check `libs/SalesforceSDK/AndroidManifest.xml` for permissions that are no longe
 <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 ```
 
-### 6. Search and Update TODO Comments
+### 7. Search and Update TODO Comments
 
 Search for TODO comments related to minimum API and update or remove them:
 
@@ -122,7 +170,7 @@ Common TODOs to address:
 - `libs/SalesforceSDK/src/com/salesforce/androidsdk/app/SalesforceSDKManager.kt`
 - `libs/SalesforceSDK/src/com/salesforce/androidsdk/push/PushMessaging.kt`
 
-### 7. Verify Changes
+### 8. Verify Changes
 
 After making all changes:
 
@@ -131,7 +179,7 @@ After making all changes:
 3. **API check:** Run `grep -r "SDK_INT.*VERSION_CODES\." --include="*.java" --include="*.kt"` to find remaining API level checks
 4. **TODO check:** Run `grep -r "TODO.*min.*API" --include="*.java" --include="*.kt"` to find remaining TODOs
 
-### 8. Create Pull Request
+### 9. Create Pull Request
 
 When creating the PR:
 - **Title:** "Changing min SDK from {OLD_MIN_SDK} to {NEW_MIN_SDK}"
@@ -139,6 +187,7 @@ When creating the PR:
   - Reason for the update (Android version market share, deprecated APIs, etc.)
   - List of files changed
   - Code cleanup performed (removed API level checks, updated TODOs)
+  - Modernization opportunities identified (new APIs that could be adopted)
   - CI/CD updates made
 
 ## API Version Reference
