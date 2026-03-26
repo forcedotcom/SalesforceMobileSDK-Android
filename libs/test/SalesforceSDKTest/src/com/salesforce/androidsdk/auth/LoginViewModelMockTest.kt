@@ -31,9 +31,13 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,8 +50,10 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -710,6 +716,96 @@ class LoginViewModelMockTest {
                 loginServer = migrationServer,
             )
         }
+    }
+
+    // endregion
+
+    // region showBiometricAuthenticationButton Tests
+
+    @Test
+    fun showBiometricAuthenticationButton_ReturnsFalse_ByDefault() {
+        assertFalse(
+            "Should not be biometric locked by default.",
+            viewModel.showBiometricAuthenticationButton.value
+        )
+    }
+
+    @Test
+    fun showBiometricAuthenticationButton_ReturnsFalse_ForNativeLoginUser() {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        val nativeLoginUser = UserAccountBuilder.getInstance()
+            .populateFromUserAccount(UserAccountTest.createTestAccount())
+            .nativeLogin(isNativeLogin = true)
+            .build()
+        UserAccountManager.getInstance().createAccount(nativeLoginUser)
+        bioAuthManager.storeMobilePolicy(nativeLoginUser, enabled = true, timeout = 15)
+        bioAuthManager.biometricOptIn(true)
+        bioAuthManager.lock()
+
+        assertFalse(
+            "Should not report biometric locked for native login user.",
+            viewModel.showBiometricAuthenticationButton.value
+        )
+
+        bioAuthManager.locked = false
+        bioAuthManager.cleanUp(nativeLoginUser)
+    }
+
+    @Test
+    fun showBiometricAuthenticationButton_ReturnsTrue_ForNonNativeLoginUser() {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        val account = UserAccountTest.createTestAccount()
+        UserAccountManager.getInstance().createAccount(account)
+        bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
+        bioAuthManager.biometricOptIn(true)
+        bioAuthManager.lock()
+
+        assertTrue(
+            "Should report biometric locked for non-native login user.",
+            viewModel.showBiometricAuthenticationButton.value
+        )
+
+        bioAuthManager.locked = false
+        bioAuthManager.cleanUp(account)
+    }
+
+    @Test
+    fun showBiometricAuthenticationButton_ReturnsFalse_WhenNotOptedIn() {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        val account = UserAccountTest.createTestAccount()
+        UserAccountManager.getInstance().createAccount(account)
+        bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
+        // Not opted in.
+        bioAuthManager.lock()
+
+        assertFalse(
+            "Should not report biometric locked when not opted in.",
+            viewModel.showBiometricAuthenticationButton.value
+        )
+
+        bioAuthManager.locked = false
+        bioAuthManager.cleanUp(account)
+    }
+
+    @Test
+    fun showBiometricAuthenticationButton_ReturnsFalse_WhenNotLocked() {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        val account = UserAccountTest.createTestAccount()
+        UserAccountManager.getInstance().createAccount(account)
+        bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
+        bioAuthManager.biometricOptIn(true)
+        // Not locked.
+
+        assertFalse(
+            "Should not report biometric locked when not locked.",
+            viewModel.showBiometricAuthenticationButton.value
+        )
+
+        bioAuthManager.cleanUp(account)
     }
 
     // endregion

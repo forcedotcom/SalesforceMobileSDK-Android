@@ -148,7 +148,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
     }
-    internal val isBiometricAuthenticationLocked = derivedStateOf {
+    internal val showBiometricAuthenticationButton = derivedStateOf {
         with(SalesforceSDKManager.getInstance()) {
             biometricAuthenticationManager?.let { mgr ->
                 mgr.locked && mgr.hasBiometricOptedIn()

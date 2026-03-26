@@ -31,8 +31,11 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_TIMEOUT
@@ -192,5 +195,47 @@ class BiometricAuthenticationManagerTest {
 
         bioAuthManager.lock()
         Assert.assertTrue("Should be locked by lock() API.", bioAuthManager.locked)
+    }
+
+    @Test
+    fun testLockWithNativeLoginUser() {
+        bioAuthManager.cleanUp(userAccount)
+        val nativeLoginUser = UserAccountBuilder.getInstance()
+            .populateFromUserAccount(UserAccountTest.createTestAccount())
+            .nativeLogin(isNativeLogin = true)
+            .build()
+        UserAccountManager.getInstance().createAccount(nativeLoginUser)
+        bioAuthManager.storeMobilePolicy(nativeLoginUser, enabled = true, timeout = 1)
+
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
+        bioAuthManager.lock()
+        Assert.assertTrue("Should be locked by lock() API for native login user.", bioAuthManager.locked)
+
+        bioAuthManager.locked = false
+        Assert.assertFalse("Should be unlocked.", bioAuthManager.locked)
+        bioAuthManager.cleanUp(nativeLoginUser)
+    }
+
+    @Test
+    fun testLockWithNonNativeLoginUser() {
+        bioAuthManager.storeMobilePolicy(userAccount, enabled = true, timeout = 1)
+
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
+        bioAuthManager.lock()
+        Assert.assertTrue("Should be locked by lock() API for non-native login user.", bioAuthManager.locked)
+    }
+
+    @Test
+    fun testLockWithNoCurrentUser() {
+        bioAuthManager.cleanUp(userAccount)
+        SalesforceSDKManager.getInstance().userAccountManager
+            .signoutCurrentUser(/* frontActivity = */ null, /* showLoginPage = */ true, OAuth2.LogoutReason.USER_LOGOUT)
+
+        Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
+        bioAuthManager.lock()
+        Assert.assertFalse("Should not be locked when there is no current user.", bioAuthManager.locked)
+
+        // Re-create the account for tearDown.
+        UserAccountManager.getInstance().createAccount(userAccount)
     }
 }
