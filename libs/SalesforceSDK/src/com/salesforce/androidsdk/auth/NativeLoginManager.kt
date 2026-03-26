@@ -92,6 +92,7 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -183,10 +184,6 @@ internal class NativeLoginManager(
     }
 
     override fun getFallbackWebAuthenticationIntent(): Intent {
-        // Unlock biometric auth since the user is choosing webview auth instead.
-        (SalesforceSDKManager.getInstance().biometricAuthenticationManager
-                as? BiometricAuthenticationManager)?.onUnlock()
-
         val context = SalesforceSDKManager.getInstance().appContext
         val intent = Intent(context, SalesforceSDKManager.getInstance().webViewLoginActivityClass)
         intent.setFlags(FLAG_ACTIVITY_SINGLE_TOP)
@@ -221,8 +218,18 @@ internal class NativeLoginManager(
             object : AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    bioAuthManager.onUnlock()
-                    activity.finish()
+
+                    SalesforceSDKManager.getInstance().clientManager.getRestClient(
+                        activity
+                    ) { client ->
+                        runCatching {
+                            client.oAuthRefreshInterceptor.refreshAccessToken()
+                        }.onFailure { e ->
+                            e(TAG, "Error encountered while unlocking.", e)
+                        }
+                        bioAuthManager.onUnlock()
+                        activity.finish()
+                    }
                 }
             }
         )
