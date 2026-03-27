@@ -32,6 +32,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
+import com.salesforce.samples.authflowtester.testUtility.testConfig
 
 private const val RETRY_COUNT = 3
 /**
@@ -52,7 +53,14 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
 
     override fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         skipGoogleSignIn()
-        super.login(knownLoginHostConfig, knownUserConfig)
+        val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
+        // Fill password first so username field remains visible above the keyboard
+        setPassword(password)
+        // Now fill username (visible above keyboard)
+        setUsername(username)
+        // Press Enter to submit the form instead of tapping login button
+        device.pressEnter()
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
 
     override fun setUsername(name: String) {
