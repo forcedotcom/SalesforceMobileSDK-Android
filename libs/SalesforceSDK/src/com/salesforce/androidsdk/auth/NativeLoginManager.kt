@@ -82,6 +82,7 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.Success
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -194,62 +195,18 @@ internal class NativeLoginManager(
     }
 
     override fun presentBiometricAuth(activity: FragmentActivity): Boolean {
-        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
-                as? BiometricAuthenticationManager ?: return false
-
-        if (!bioAuthManager.locked || !bioAuthManager.hasBiometricOptedIn()) {
-            return false
-        }
-
         val biometricManager = BiometricManager.from(activity)
-        // TODO: Remove when min API > 29.
-        val authenticators = when {
-            SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-            else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-        }
-
-        if (biometricManager.canAuthenticate(authenticators) != BIOMETRIC_SUCCESS) {
-            return false
-        }
-
         val biometricPrompt = BiometricPrompt(
             activity,
             getMainExecutor(activity),
             object : AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-
-                    SalesforceSDKManager.getInstance().clientManager.getRestClient(
-                        activity
-                    ) { client ->
-                        runCatching {
-                            client.oAuthRefreshInterceptor.refreshAccessToken()
-                        }.onFailure { e ->
-                            e(TAG, "Error encountered while unlocking.", e)
-                        }
-                        bioAuthManager.onUnlock()
-                        activity.finish()
-                    }
+                    onBiometricAuthenticationSucceeded(activity)
                 }
             }
         )
-
-        val username = accountManager.currentUser?.username ?: ""
-        var hasFaceUnlock = false
-        if (SDK_INT >= Q) {
-            hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
-                    || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
-        }
-
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(activity.resources.getString(sf__biometric_opt_in_title))
-            .setSubtitle(username)
-            .setAllowedAuthenticators(authenticators)
-            .setConfirmationRequired(hasFaceUnlock)
-            .build()
-
-        biometricPrompt.authenticate(promptInfo)
-        return true
+        return buildAndShowBiometricAuth(activity, biometricManager, biometricPrompt)
     }
 
     @VisibleForTesting
@@ -967,6 +924,70 @@ internal class NativeLoginManager(
             !isValidUsername(trim()) -> InvalidUsername
             else -> null
         }
+
+    // endregion
+
+    // region Biometric Authentication Helpers
+
+    @VisibleForTesting
+    internal fun buildAndShowBiometricAuth(
+        activity: FragmentActivity,
+        biometricManager: BiometricManager,
+        biometricPrompt: BiometricPrompt,
+    ): Boolean {
+        val bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as? BiometricAuthenticationManager ?: return false
+
+        if (!bioAuthManager.locked || !bioAuthManager.hasBiometricOptedIn()) {
+            return false
+        }
+
+        // TODO: Remove when min API > 29.
+        val authenticators = when {
+            SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+            else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
+        }
+
+        if (biometricManager.canAuthenticate(authenticators) != BIOMETRIC_SUCCESS) {
+            return false
+        }
+
+        val username = accountManager.currentUser?.username ?: ""
+        var hasFaceUnlock = false
+        if (SDK_INT >= Q) {
+            hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
+                    || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
+        }
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(activity.resources.getString(sf__biometric_opt_in_title))
+            .setSubtitle(username)
+            .setAllowedAuthenticators(authenticators)
+            .setConfirmationRequired(hasFaceUnlock)
+            .build()
+
+        biometricPrompt.authenticate(promptInfo)
+        return true
+    }
+
+    @VisibleForTesting
+    internal fun onBiometricAuthenticationSucceeded(
+        activity: FragmentActivity,
+        clientManager: ClientManager = SalesforceSDKManager.getInstance().clientManager,
+    ) {
+        val bioAuthManager = SalesforceSDKManager.getInstance()
+            .biometricAuthenticationManager as? BiometricAuthenticationManager
+
+        clientManager.getRestClient(activity) { client ->
+            runCatching {
+                client.oAuthRefreshInterceptor.refreshAccessToken()
+            }.onFailure { e ->
+                e(TAG, "Error encountered while unlocking.", e)
+            }
+            bioAuthManager?.onUnlock()
+            activity.finish()
+        }
+    }
 
     // endregion
 

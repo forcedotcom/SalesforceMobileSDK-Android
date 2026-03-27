@@ -150,9 +150,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
     internal val showBiometricAuthenticationButton = derivedStateOf {
         with(SalesforceSDKManager.getInstance()) {
-            biometricAuthenticationManager?.let { mgr ->
-                mgr.locked && mgr.hasBiometricOptedIn()
-                        && userAccountManager.currentUser?.nativeLogin != true
+            biometricAuthenticationManager?.run {
+                locked && hasBiometricOptedIn()
+                    && userAccountManager.currentUser?.nativeLogin != true
             }
         } ?: false
     }
