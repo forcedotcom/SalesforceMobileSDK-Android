@@ -66,6 +66,7 @@ import org.junit.Test
 
 private const val DEFAULT_URL = "https://login.salesforce.com"
 private const val BUTTON_TITLE = "Test Button"
+private const val BIO_AUTH_BUTTON_TITLE = "Log In with Biometric"
 
 class LoginViewActivityTest {
 
@@ -331,6 +332,37 @@ class LoginViewActivityTest {
 
         val button = androidComposeTestRule.onNodeWithText(BUTTON_TITLE)
         button.assertDoesNotExist()
+    }
+
+    @Test
+    fun bottomAppBar_WithBiometricButton_DisplaysCorrectly() {
+        var bioAuthClicked = false
+        androidComposeTestRule.setContent {
+            DefaultBottomAppBarTestWrapper(
+                button = LoginViewModel.BottomBarButton(BIO_AUTH_BUTTON_TITLE) {
+                    bioAuthClicked = true
+                }
+            )
+        }
+
+        val bioButton = androidComposeTestRule.onNodeWithText(BIO_AUTH_BUTTON_TITLE)
+        bioButton.assertExists()
+        bioButton.assertIsDisplayed()
+        bioButton.assertIsEnabled()
+        Assert.assertFalse("Bio auth button should not be clicked yet.", bioAuthClicked)
+
+        bioButton.performClick()
+        Assert.assertTrue("Bio auth button should have been clicked.", bioAuthClicked)
+    }
+
+    @Test
+    fun bottomAppBar_WithoutBiometricButton_DoesNotShowBiometricText() {
+        androidComposeTestRule.setContent {
+            DefaultBottomAppBarTestWrapper(button = null)
+        }
+
+        val bioButton = androidComposeTestRule.onNodeWithText(BIO_AUTH_BUTTON_TITLE)
+        bioButton.assertDoesNotExist()
     }
 
     @Test

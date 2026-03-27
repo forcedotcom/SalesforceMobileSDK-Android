@@ -1551,7 +1551,7 @@ open class SalesforceSDKManager protected constructor(
         // Publish analytics one-time on app background, if enabled.
         if (SalesforceAnalyticsManager.analyticsPublishingType() == PublishOnAppBackground) {
             enqueueAnalyticsPublishWorkRequest(
-                getInstance().appContext
+                appContext
             )
         }
 

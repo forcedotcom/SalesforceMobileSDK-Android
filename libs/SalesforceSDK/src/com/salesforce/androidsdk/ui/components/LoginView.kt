@@ -175,7 +175,7 @@ fun LoginView() {
 
     // Possible Buttons to show in BottomAppBar
     val bioAuthButton: LoginViewModel.BottomBarButton? =
-        if (viewModel.isBiometricAuthenticationLocked.value) {
+        if (viewModel.showBiometricAuthenticationButton.value) {
             LoginViewModel.BottomBarButton(
                 stringResource(viewModel.biometricAuthenticationButtonText.intValue)
             ) {
