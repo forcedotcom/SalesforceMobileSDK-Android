@@ -262,7 +262,8 @@ public class LoginServerManagerTest {
         assertProduction(loginServerManager.getSelectedLoginServer());
 
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> addedServers = loginServerManager.getLoginServers();
+        assertCustom(addedServers.get(addedServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
 
         loginServerManager = new LoginServerManager(
@@ -279,7 +280,8 @@ public class LoginServerManagerTest {
         assertFalse(servers.get(2).isCustom);
         assertOther(servers.get(3));
 
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> finalAddServers = loginServerManager.getLoginServers();
+        assertCustom(finalAddServers.get(finalAddServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
     }
 
@@ -305,7 +307,8 @@ public class LoginServerManagerTest {
         assertProduction(loginServerManager.getSelectedLoginServer());
 
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> addedServers = loginServerManager.getLoginServers();
+        assertCustom(addedServers.get(addedServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
 
         loginServerManager = new LoginServerManager(
@@ -322,7 +325,8 @@ public class LoginServerManagerTest {
         assertSandbox(servers.get(2));
         assertOther(servers.get(3));
 
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> finalUpdateServers = loginServerManager.getLoginServers();
+        assertCustom(finalUpdateServers.get(finalUpdateServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
     }
 
@@ -348,7 +352,8 @@ public class LoginServerManagerTest {
         assertProduction(loginServerManager.getSelectedLoginServer());
 
         loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> addedServers = loginServerManager.getLoginServers();
+        assertCustom(addedServers.get(addedServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
 
         loginServerManager = new LoginServerManager(
@@ -361,7 +366,8 @@ public class LoginServerManagerTest {
         assertProduction(servers.get(0));
         assertOther(servers.get(1));
 
-        assertCustom(loginServerManager.getLoginServers().getLast());
+        List<LoginServer> finalRemoveServers = loginServerManager.getLoginServers();
+        assertCustom(finalRemoveServers.get(finalRemoveServers.size() - 1));
         assertCustom(loginServerManager.getSelectedLoginServer());
     }
 
@@ -709,7 +715,8 @@ public class LoginServerManagerTest {
         loginServerManager.reorderCustomLoginServer(loginServerManager.getLoginServers().indexOf(updatedCustomLoginServer), loginServerManager.getLoginServers().size() - 1);
 
         // Verify the updated custom login server is now the last login server in the list.
-        assertEquals(loginServerManager.getLoginServers().getLast(), updatedCustomLoginServer);
+        List<LoginServer> reorderedServers = loginServerManager.getLoginServers();
+        assertEquals(reorderedServers.get(reorderedServers.size() - 1), updatedCustomLoginServer);
     }
 
     public static void assertProduction(LoginServer server) {
