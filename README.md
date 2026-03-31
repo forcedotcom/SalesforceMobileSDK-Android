@@ -34,310 +34,42 @@ HTML5 is quickly emerging as dominant technology for developing cross-platform m
 
 ## Libraries
 
-The SDK consists of six libraries under `libs/`:
+| Library | Purpose |
+|---------|---------|
+| **SalesforceAnalytics** | Telemetry and event tracking |
+| **SalesforceSDK** | OAuth2 authentication, REST API, account management |
+| **SmartStore** | Encrypted local storage (SQLCipher) |
+| **MobileSync** | Data synchronization framework |
+| **SalesforceHybrid** | Cordova integration for hybrid apps |
+| **SalesforceReact** | React Native bridge modules |
 
-| Library | Purpose | Key Features |
-|---------|---------|--------------|
-| **SalesforceAnalytics** | Telemetry and analytics | Event tracking, instrumentation |
-| **SalesforceSDK** | Authentication and REST API | OAuth2, REST client, account management, identity, push notifications |
-| **SmartStore** | Encrypted local storage | SQLCipher-backed storage, indexing, Smart SQL queries |
-| **MobileSync** | Data synchronization | Sync up/down, conflict resolution, offline-first patterns |
-| **SalesforceHybrid** | Hybrid app support | Cordova integration, JavaScript bridge |
-| **SalesforceReact** | React Native support | React Native bridge modules |
+## Getting Started
 
-### Library Dependencies
-
-```
-MobileSync
-  └── SmartStore
-       └── SalesforceSDK
-            └── SalesforceAnalytics
-
-SalesforceHybrid
-  └── SalesforceSDK
-
-SalesforceReact
-  └── SalesforceSDK
-```
-
-## Usage
-
-### Authentication (OAuth2)
-
-```kotlin
-import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2
-
-// Configure SDK in your Application class
-class MyApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        SalesforceSDKManager.initNative(
-            applicationContext,
-            MainActivity::class.java
-        ) { config ->
-            config.oauthClientId = "YOUR_CONSUMER_KEY"
-            config.oauthRedirectURI = "YOUR_CALLBACK_URL"
-            config.oauthScopes = arrayOf("web", "api", "refresh_token")
-
-            // Optional: customize login host
-            config.loginServerUrl = "https://login.salesforce.com"
-        }
-    }
-}
-
-// Get current user
-val userAccount = SalesforceSDKManager.getInstance().userAccountManager.currentUser
-println("Logged in as: ${userAccount.username}")
-println("Organization: ${userAccount.orgId}")
-
-// Logout
-SalesforceSDKManager.getInstance().logout(null)
-```
-
-### REST API
-
-```kotlin
-import com.salesforce.androidsdk.rest.RestClient
-import com.salesforce.androidsdk.rest.RestRequest
-
-// Query records
-val request = RestRequest.getRequestForQuery(
-    SalesforceSDKManager.getInstance().apiVersion,
-    "SELECT Id, Name FROM Account LIMIT 10"
-)
-
-restClient.sendAsync(request) { response ->
-    val records = response.asJSONObject().getJSONArray("records")
-    for (i in 0 until records.length()) {
-        val record = records.getJSONObject(i)
-        println("Account: ${record.getString("Name")}")
-    }
-}
-
-// Create a record
-val fields = JSONObject().apply {
-    put("Name", "Acme Corp")
-    put("Industry", "Technology")
-}
-
-val request = RestRequest.getRequestForCreate(
-    SalesforceSDKManager.getInstance().apiVersion,
-    "Account",
-    fields
-)
-
-restClient.sendAsync(request) { response ->
-    val id = response.asJSONObject().getString("id")
-    println("Created account with ID: $id")
-}
-
-// Update a record
-val fields = JSONObject().put("Name", "Updated Name")
-
-val request = RestRequest.getRequestForUpdate(
-    SalesforceSDKManager.getInstance().apiVersion,
-    "Account",
-    recordId,
-    fields
-)
-
-// Delete a record
-val request = RestRequest.getRequestForDelete(
-    SalesforceSDKManager.getInstance().apiVersion,
-    "Account",
-    recordId
-)
-```
-
-### SmartStore (Encrypted Storage)
-
-```kotlin
-import com.salesforce.androidsdk.smartstore.store.SmartStore
-import com.salesforce.androidsdk.smartstore.store.IndexSpec
-import com.salesforce.androidsdk.smartstore.store.QuerySpec
-
-// Get store instance
-val store = SalesforceSDKManager.getInstance().getSmartStore()
-
-// Register a soup (table)
-val indexSpecs = arrayOf(
-    IndexSpec("Name", SmartStore.Type.string),
-    IndexSpec("LastModifiedDate", SmartStore.Type.string)
-)
-
-store.registerSoup("accounts", indexSpecs)
-
-// Insert/update entries
-val entry = JSONObject().apply {
-    put("Name", "Acme Corp")
-    put("Industry", "Technology")
-}
-
-store.upsert("accounts", entry)
-
-// Query entries
-val querySpec = QuerySpec.buildSmartQuerySpec(
-    "SELECT {accounts:Name}, {accounts:Industry} FROM {accounts} ORDER BY {accounts:Name}",
-    10
-)
-
-val results = store.query(querySpec, 0)
-val cursor = results.getJSONArray("rows")
-for (i in 0 until cursor.length()) {
-    val entry = cursor.getJSONObject(i)
-    println("Account: ${entry.getString("Name")}")
-}
-
-// Delete entries
-store.delete("accounts", entryId)
-```
-
-### MobileSync (Data Synchronization)
-
-```kotlin
-import com.salesforce.androidsdk.mobilesync.manager.SyncManager
-import com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTarget
-import com.salesforce.androidsdk.mobilesync.target.SyncUpTarget
-import com.salesforce.androidsdk.mobilesync.util.SyncOptions
-
-// Get sync manager
-val syncManager = SyncManager.getInstance()
-
-// Sync down from Salesforce
-val target = SoqlSyncDownTarget(
-    "SELECT Id, Name, Industry FROM Account WHERE LastModifiedDate > {LastModifiedDate}"
-)
-
-val options = SyncOptions.optionsForSyncDown(SyncOptions.MergeMode.OVERWRITE)
-
-syncManager.syncDown(target, "accounts", null, options) { syncState ->
-    when {
-        syncState.isDone -> {
-            println("Sync down complete: ${syncState.totalSize} records")
-        }
-        syncState.hasFailed() -> {
-            println("Sync failed: ${syncState.error}")
-        }
-    }
-}
-
-// Sync up to Salesforce
-val target = SyncUpTarget()
-val options = SyncOptions.optionsForSyncUp(
-    listOf("Name", "Industry"),
-    SyncOptions.MergeMode.OVERWRITE
-)
-
-syncManager.syncUp(target, "accounts", null, options) { syncState ->
-    if (syncState.isDone) {
-        println("Sync up complete: ${syncState.totalSize} records")
-    }
-}
-```
-
-## Building from Source
-
-### Prerequisites
-
-- **Android Studio**: Electric Eel or higher
-- **JDK**: 17 or higher
-- **Gradle**: 8.14.3 (managed by wrapper)
-- **Android SDK**: API 35 (compileSdk), API 28 minimum (minSdk)
-- **Git**: 2.13 or higher
-
-### Setup
+### Using the SDK (via forcedroid)
 
 ```bash
-# Clone the repository
-git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
-cd SalesforceMobileSDK-Android
-
-# Install dependencies (submodules)
-./install.sh  # macOS/Linux
-# or
-cscript install.vbs  # Windows
-
-# Open in Android Studio
-# File → Open → Select SalesforceMobileSDK-Android directory
-```
-
-### Building
-
-```bash
-# Build all libraries
-./gradlew build
-
-# Build specific library
-./gradlew :libs:SalesforceSDK:build
-./gradlew :libs:SmartStore:build
-./gradlew :libs:MobileSync:build
-
-# Run lint checks
-./gradlew :libs:SalesforceSDK:lint
-```
-
-### Running Tests
-
-```bash
-# Run tests for SalesforceSDK (requires connected device or emulator)
-./gradlew :libs:SalesforceSDK:connectedAndroidTest
-
-# Run SmartStore tests
-./gradlew :libs:SmartStore:connectedAndroidTest
-
-# Run MobileSync tests
-./gradlew :libs:MobileSync:connectedAndroidTest
-
-# Run all instrumented tests
-./gradlew connectedAndroidTest
-```
-
-## Distribution
-
-The SDK is distributed via:
-
-- **Maven Central**: Published artifacts for all libraries
-- **npm**: CLI tool [forcedroid](https://www.npmjs.com/package/forcedroid) for generating apps from templates
-
-### Using Gradle Dependencies
-
-```kotlin
-// build.gradle.kts (app module)
-dependencies {
-    implementation("com.salesforce.mobilesdk:SalesforceSDK:13.2.0")
-    implementation("com.salesforce.mobilesdk:SmartStore:13.2.0")
-    implementation("com.salesforce.mobilesdk:MobileSync:13.2.0")
-
-    // For hybrid apps
-    implementation("com.salesforce.mobilesdk:SalesforceHybrid:13.2.0")
-
-    // For React Native apps
-    implementation("com.salesforce.mobilesdk:SalesforceReact:13.2.0")
-}
-```
-
-### Creating Apps with forcedroid
-
-```bash
-# Install forcedroid CLI
+# Install CLI
 npm install -g forcedroid
 
-# Create a new app
-forcedroid create \
-  --appname MyApp \
-  --packagename com.mycompany.myapp \
-  --organization "My Company"
+# Create app from template
+forcedroid create --appname MyApp --packagename com.mycompany.myapp --organization "My Company"
+```
 
-# List available templates
-forcedroid listtemplates
+See templates for complete usage examples.
 
-# Create from specific template
-forcedroid createwithtemplate \
-  --templaterepouri AndroidNativeKotlinTemplate \
-  --appname MyApp \
-  --packagename com.mycompany.myapp
+### Building from Source
+
+```bash
+# Clone and setup
+git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
+cd SalesforceMobileSDK-Android
+./install.sh
+
+# Build
+./gradlew build
+
+# Run tests
+./gradlew connectedAndroidTest
 ```
 
 Setting up your Development Environment
