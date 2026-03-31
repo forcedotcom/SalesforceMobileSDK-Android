@@ -6,6 +6,8 @@
 
 The Salesforce Mobile SDK is a public, open-source SDK that enables developers to build mobile apps that integrate with the Salesforce platform. It is consumed by ISVs, SI partners, and internal Salesforce teams.
 
+**For user-facing overview and quick start**: See [README.md](README.md)
+
 **Key constraint**: This is a **public SDK**. Every change is visible to external developers. Backward compatibility, deprecation cycles, and semver discipline are non-negotiable.
 
 ## Android Library Architecture
@@ -52,6 +54,9 @@ SalesforceReact
 - **Kotlin version**: 1.9.24 with API/language version 1.6 for backward compatibility
 
 ### Android Build & Test Commands
+
+See [README.md](README.md) for basic setup. Commands below are for contributors running tests and analysis.
+
 ```bash
 # Initial setup (after clone)
 ./install.sh
