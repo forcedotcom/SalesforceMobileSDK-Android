@@ -6,7 +6,6 @@ import '../../analytics/logger/salesforce_logger.dart';
 import 'http_client_factory.dart';
 import 'rest_request.dart';
 import 'rest_response.dart';
-import 'salesforce_error.dart';
 
 /// Information about the authenticated client.
 class ClientInfo {
