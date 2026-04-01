@@ -77,6 +77,9 @@ class UserAccount {
   /// CSRF token.
   final String? csrfToken;
 
+  /// When the current access token expires.
+  final DateTime? tokenExpiresAt;
+
   /// Additional OAuth values.
   final Map<String, String> additionalOauthValues;
 
@@ -105,6 +108,7 @@ class UserAccount {
     this.contentDomain,
     this.contentSid,
     this.csrfToken,
+    this.tokenExpiresAt,
     this.additionalOauthValues = const {},
   });
 
@@ -172,6 +176,7 @@ class UserAccount {
     String? contentDomain,
     String? contentSid,
     String? csrfToken,
+    DateTime? tokenExpiresAt,
     Map<String, String>? additionalOauthValues,
   }) {
     return UserAccount(
@@ -199,6 +204,7 @@ class UserAccount {
       contentDomain: contentDomain ?? this.contentDomain,
       contentSid: contentSid ?? this.contentSid,
       csrfToken: csrfToken ?? this.csrfToken,
+      tokenExpiresAt: tokenExpiresAt ?? this.tokenExpiresAt,
       additionalOauthValues:
           additionalOauthValues ?? this.additionalOauthValues,
     );
@@ -229,6 +235,7 @@ class UserAccount {
         'contentDomain': contentDomain,
         'contentSid': contentSid,
         'csrfToken': csrfToken,
+        'tokenExpiresAt': tokenExpiresAt?.toIso8601String(),
         'additionalOauthValues': additionalOauthValues,
       };
 
@@ -258,6 +265,9 @@ class UserAccount {
       contentDomain: json['contentDomain'],
       contentSid: json['contentSid'],
       csrfToken: json['csrfToken'],
+      tokenExpiresAt: json['tokenExpiresAt'] != null
+          ? DateTime.parse(json['tokenExpiresAt'])
+          : null,
       additionalOauthValues: json['additionalOauthValues'] != null
           ? Map<String, String>.from(json['additionalOauthValues'])
           : {},

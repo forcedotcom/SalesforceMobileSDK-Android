@@ -62,7 +62,13 @@ class LoginServerManager {
   }
 
   /// Adds a custom login server.
+  ///
+  /// Throws [ArgumentError] if the URL does not use HTTPS.
   Future<void> addCustomServer(String name, Uri url) async {
+    if (url.scheme != 'https') {
+      throw ArgumentError(
+          'Custom login server URL must use HTTPS, got: ${url.scheme}://${url.host}');
+    }
     final server = LoginServer(name: name, url: url, isCustom: true);
     _customServers.add(server);
     await _saveCustomServers();

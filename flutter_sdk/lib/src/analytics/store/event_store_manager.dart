@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../model/instrumentation_event.dart';
 
 /// Manages persistent storage of instrumentation events.
@@ -16,7 +15,6 @@ class EventStoreManager {
 
   EventStoreManager({
     required String storeId,
-    required String encryptionKey,
     FlutterSecureStorage? secureStorage,
   })  : _storeId = storeId,
         _secureStorage = secureStorage ?? const FlutterSecureStorage();
@@ -118,13 +116,18 @@ class EventStoreManager {
   }
 
   Future<Set<String>> _getEventIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_listKey) ?? [];
-    return list.toSet();
+    final json = await _secureStorage.read(key: _listKey);
+    if (json == null) return {};
+    try {
+      final list = (jsonDecode(json) as List<dynamic>).cast<String>();
+      return list.toSet();
+    } catch (_) {
+      return {};
+    }
   }
 
   Future<void> _saveEventIds(Set<String> ids) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_listKey, ids.toList());
+    await _secureStorage.write(
+        key: _listKey, value: jsonEncode(ids.toList()));
   }
 }

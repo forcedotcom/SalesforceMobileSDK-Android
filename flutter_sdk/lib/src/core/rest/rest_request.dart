@@ -255,12 +255,23 @@ class RestRequest {
 
   // ===== Collection Operations =====
 
+  /// Maximum records per collection API call.
+  static const int maxCollectionSize = 200;
+
+  /// Maximum subrequests per composite/batch API call.
+  static const int maxCompositeSubrequests = 25;
+
   /// Request for creating multiple records in a single call.
+  /// [records] must not exceed [maxCollectionSize] (200).
   static RestRequest getRequestForCollectionCreate(
     String apiVersion,
     bool allOrNone,
     List<Map<String, dynamic>> records,
   ) {
+    if (records.length > maxCollectionSize) {
+      throw ArgumentError(
+          'Collection create limited to $maxCollectionSize records, got ${records.length}');
+    }
     return RestRequest(
       method: RestMethod.post,
       path: '$servicesData/v$apiVersion/composite/sobjects',
@@ -272,12 +283,17 @@ class RestRequest {
   }
 
   /// Request for retrieving multiple records by IDs.
+  /// [objectIds] must not exceed [maxCollectionSize] (200).
   static RestRequest getRequestForCollectionRetrieve(
     String apiVersion,
     String objectType,
     List<String> objectIds,
     List<String> fieldList,
   ) {
+    if (objectIds.length > maxCollectionSize) {
+      throw ArgumentError(
+          'Collection retrieve limited to $maxCollectionSize IDs, got ${objectIds.length}');
+    }
     return RestRequest(
       method: RestMethod.post,
       path: '$servicesData/v$apiVersion/composite/sobjects/$objectType',
@@ -289,11 +305,16 @@ class RestRequest {
   }
 
   /// Request for updating multiple records.
+  /// [records] must not exceed [maxCollectionSize] (200).
   static RestRequest getRequestForCollectionUpdate(
     String apiVersion,
     bool allOrNone,
     List<Map<String, dynamic>> records,
   ) {
+    if (records.length > maxCollectionSize) {
+      throw ArgumentError(
+          'Collection update limited to $maxCollectionSize records, got ${records.length}');
+    }
     return RestRequest(
       method: RestMethod.patch,
       path: '$servicesData/v$apiVersion/composite/sobjects',
@@ -305,6 +326,7 @@ class RestRequest {
   }
 
   /// Request for upserting multiple records.
+  /// [records] must not exceed [maxCollectionSize] (200).
   static RestRequest getRequestForCollectionUpsert(
     String apiVersion,
     bool allOrNone,
@@ -312,6 +334,10 @@ class RestRequest {
     String externalIdField,
     List<Map<String, dynamic>> records,
   ) {
+    if (records.length > maxCollectionSize) {
+      throw ArgumentError(
+          'Collection upsert limited to $maxCollectionSize records, got ${records.length}');
+    }
     return RestRequest(
       method: RestMethod.patch,
       path:
@@ -324,11 +350,16 @@ class RestRequest {
   }
 
   /// Request for deleting multiple records.
+  /// [objectIds] must not exceed [maxCollectionSize] (200).
   static RestRequest getRequestForCollectionDelete(
     String apiVersion,
     bool allOrNone,
     List<String> objectIds,
   ) {
+    if (objectIds.length > maxCollectionSize) {
+      throw ArgumentError(
+          'Collection delete limited to $maxCollectionSize IDs, got ${objectIds.length}');
+    }
     final ids = objectIds.join(',');
     return RestRequest(
       method: RestMethod.delete,
@@ -340,11 +371,16 @@ class RestRequest {
   // ===== Composite / Batch =====
 
   /// Request for composite API (multiple related requests).
+  /// [refIdToRequests] must not exceed [maxCompositeSubrequests] (25).
   static RestRequest getCompositeRequest(
     String apiVersion,
     bool allOrNone,
     Map<String, RestRequest> refIdToRequests,
   ) {
+    if (refIdToRequests.length > maxCompositeSubrequests) {
+      throw ArgumentError(
+          'Composite request limited to $maxCompositeSubrequests subrequests, got ${refIdToRequests.length}');
+    }
     final compositeRequests = refIdToRequests.entries.map((entry) {
       final req = entry.value;
       final subrequest = <String, dynamic>{
@@ -370,11 +406,16 @@ class RestRequest {
   }
 
   /// Request for batch API (multiple independent requests).
+  /// [requests] must not exceed [maxCompositeSubrequests] (25).
   static RestRequest getBatchRequest(
     String apiVersion,
     bool haltOnError,
     List<RestRequest> requests,
   ) {
+    if (requests.length > maxCompositeSubrequests) {
+      throw ArgumentError(
+          'Batch request limited to $maxCompositeSubrequests subrequests, got ${requests.length}');
+    }
     final batchRequests = requests.map((req) {
       final subrequest = <String, dynamic>{
         'method': req.method.name.toUpperCase(),

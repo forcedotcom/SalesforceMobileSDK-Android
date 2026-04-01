@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
-import 'package:http/http.dart' as http;
 import '../../analytics/logger/salesforce_logger.dart';
 import '../../analytics/model/device_app_attributes.dart';
 import '../accounts/user_account.dart';
@@ -9,11 +8,13 @@ import '../auth/auth_helper.dart';
 import '../auth/oauth2.dart';
 import '../config/boot_config.dart';
 import '../config/login_server_manager.dart';
+import '../network/connectivity_manager.dart';
+import '../rest/http_client_factory.dart';
 import '../rest/rest_client.dart';
 import '../security/screen_lock_manager.dart';
 
 /// SDK version string.
-const String sdkVersion = '1.0.0';
+const String sdkVersion = '2.0.0';
 
 /// Feature flags for tracking enabled features.
 class Features {
@@ -73,6 +74,7 @@ class SalesforceSDKManager with WidgetsBindingObserver {
   late LoginServerManager _loginServerManager;
   late UserAccountManager _userAccountManager;
   late ScreenLockManager _screenLockManager;
+  late ConnectivityManager _connectivityManager;
 
   bool _isInitialized = false;
   DeviceAppAttributes? _deviceAppAttributes;
@@ -99,6 +101,9 @@ class SalesforceSDKManager with WidgetsBindingObserver {
 
   /// The screen lock manager.
   ScreenLockManager get screenLockManager => _screenLockManager;
+
+  /// The connectivity manager.
+  ConnectivityManager get connectivityManager => _connectivityManager;
 
   /// The device app attributes (for analytics).
   DeviceAppAttributes? get deviceAppAttributes => _deviceAppAttributes;
@@ -127,6 +132,9 @@ class SalesforceSDKManager with WidgetsBindingObserver {
     await _userAccountManager.initialize();
 
     _screenLockManager = ScreenLockManager.instance;
+
+    _connectivityManager = ConnectivityManager.instance;
+    await _connectivityManager.initialize();
 
     _loginManager = LoginManager(
       config: OAuthConfig(
@@ -190,6 +198,7 @@ class SalesforceSDKManager with WidgetsBindingObserver {
       contentDomain: tokenResponse.contentDomain,
       contentSid: tokenResponse.contentSid,
       csrfToken: tokenResponse.csrfToken,
+      tokenExpiresAt: tokenResponse.expiresAt,
     );
 
     await _userAccountManager.addAccount(account);
@@ -222,6 +231,13 @@ class SalesforceSDKManager with WidgetsBindingObserver {
     await _screenLockManager.cleanUp(
         accountSuffix: currentUser.userLevelFilenameSuffix);
     await _userAccountManager.logout(currentUser);
+
+    // Clear WebView session data if no users remain
+    final remaining = await _userAccountManager.getAuthenticatedUsers();
+    if (remaining.isEmpty) {
+      await LoginManager.clearSessionData();
+    }
+
     _notifyEvent(SdkEvent.logoutComplete, currentUser);
   }
 
@@ -237,6 +253,7 @@ class SalesforceSDKManager with WidgetsBindingObserver {
       }
     }
     await _userAccountManager.logoutAll();
+    await LoginManager.clearSessionData();
     _notifyEvent(SdkEvent.logoutComplete, null);
   }
 
@@ -315,7 +332,8 @@ class SalesforceSDKManager with WidgetsBindingObserver {
     }
   }
 
-  static http.Client _createHttpClient() => http.Client();
+  static SalesforceHttpClient _createHttpClient() =>
+      SalesforceHttpClient(config: HttpClientConfig.production);
 
   /// Disposes the SDK manager and cleans up resources.
   void dispose() {

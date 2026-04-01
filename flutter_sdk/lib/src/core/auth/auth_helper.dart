@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
+import '../rest/http_client_factory.dart';
 import 'oauth2.dart';
 
 /// Configuration for OAuth authentication.
@@ -24,6 +25,9 @@ class OAuthConfig {
   /// Additional OAuth parameters.
   final Map<String, String>? additionalParams;
 
+  /// Additional allowed domains for WebView navigation.
+  final List<String> additionalAllowedDomains;
+
   const OAuthConfig({
     required this.loginServer,
     required this.clientId,
@@ -31,6 +35,7 @@ class OAuthConfig {
     required this.scopes,
     this.useWebServerAuthentication = true,
     this.additionalParams,
+    this.additionalAllowedDomains = const [],
   });
 
   /// Production login server.
@@ -45,7 +50,7 @@ class OAuthConfig {
 /// Manages the complete OAuth login flow using WebView.
 ///
 /// Handles PKCE code generation, authorization URL building,
-/// WebView-based login, and code exchange for tokens.
+/// WebView-based login with domain allowlisting, and code exchange for tokens.
 class LoginManager {
   final OAuthConfig config;
   String? _codeVerifier;
@@ -53,9 +58,6 @@ class LoginManager {
   LoginManager({required this.config});
 
   /// Starts the OAuth login flow and returns the token response.
-  ///
-  /// Opens a WebView login page, handles the OAuth callback,
-  /// and exchanges the authorization code for tokens.
   Future<TokenEndpointResponse> login(BuildContext context) async {
     _codeVerifier = OAuth2.generateCodeVerifier();
     final codeChallenge = OAuth2.generateCodeChallenge(_codeVerifier!);
@@ -75,6 +77,8 @@ class LoginManager {
         builder: (_) => _LoginWebView(
           authUrl: authUrl,
           callbackUrl: config.callbackUrl,
+          loginServerHost: config.loginServer.host,
+          additionalAllowedDomains: config.additionalAllowedDomains,
         ),
       ),
     );
@@ -124,7 +128,13 @@ class LoginManager {
     );
   }
 
-  static http.Client _createHttpClient() => http.Client();
+  /// Clears all WebView session data (cookies, cache).
+  static Future<void> clearSessionData() async {
+    await WebViewCookieManager().clearCookies();
+  }
+
+  static http.Client _createHttpClient() =>
+      SalesforceHttpClient(config: HttpClientConfig.production);
 }
 
 class _AuthResult {
@@ -134,14 +144,32 @@ class _AuthResult {
   _AuthResult({this.code, this.params, this.error});
 }
 
+/// Known Salesforce domain suffixes allowed in the login WebView.
+const _salesforceDomains = [
+  '.salesforce.com',
+  '.force.com',
+  '.sfdc.net',
+  '.salesforce-sites.com',
+  '.documentforce.com',
+  '.visualforce.com',
+  '.cloudforce.com',
+  '.salesforceliveagent.com',
+  '.my.salesforce.com',
+  '.lightning.force.com',
+];
+
 /// Internal WebView widget for the OAuth login flow.
 class _LoginWebView extends StatefulWidget {
   final Uri authUrl;
   final String callbackUrl;
+  final String loginServerHost;
+  final List<String> additionalAllowedDomains;
 
   const _LoginWebView({
     required this.authUrl,
     required this.callbackUrl,
+    required this.loginServerHost,
+    this.additionalAllowedDomains = const [],
   });
 
   @override
@@ -159,10 +187,17 @@ class _LoginWebViewState extends State<_LoginWebView> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (request) {
+            // Always allow the callback URL
             if (request.url.startsWith(widget.callbackUrl)) {
               _handleCallback(request.url);
               return NavigationDecision.prevent;
             }
+
+            // Validate navigation against Salesforce domain allowlist
+            if (!_isAllowedUrl(request.url)) {
+              return NavigationDecision.prevent;
+            }
+
             return NavigationDecision.navigate;
           },
         ),
@@ -170,14 +205,34 @@ class _LoginWebViewState extends State<_LoginWebView> {
       ..loadRequest(widget.authUrl);
   }
 
+  bool _isAllowedUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+
+    final host = uri.host.toLowerCase();
+
+    // Allow the configured login server
+    if (host == widget.loginServerHost.toLowerCase()) return true;
+
+    // Allow known Salesforce domains
+    for (final domain in _salesforceDomains) {
+      if (host.endsWith(domain) || host == domain.substring(1)) return true;
+    }
+
+    // Allow additional configured domains
+    for (final domain in widget.additionalAllowedDomains) {
+      if (host.endsWith(domain) || host == domain) return true;
+    }
+
+    return false;
+  }
+
   void _handleCallback(String url) {
     final uri = Uri.parse(url);
     final params = <String, String>{};
 
-    // Check query params (web server flow)
     params.addAll(uri.queryParameters);
 
-    // Check fragment params (user-agent flow)
     if (uri.fragment.isNotEmpty) {
       params.addAll(Uri.splitQueryString(uri.fragment));
     }

@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../auth/oauth2.dart';
+import '../network/connectivity_manager.dart';
 import '../../analytics/logger/salesforce_logger.dart';
+import 'http_client_factory.dart';
 import 'rest_request.dart';
 import 'rest_response.dart';
+import 'salesforce_error.dart';
 
 /// Information about the authenticated client.
 class ClientInfo {
@@ -62,7 +65,14 @@ class ClientInfo {
 
   /// Resolves a path to a full URL.
   Uri resolveUrl(String path, {RestEndpoint endpoint = RestEndpoint.instance}) {
-    if (path.startsWith('http')) return Uri.parse(path);
+    if (path.startsWith('http')) {
+      final uri = Uri.parse(path);
+      // Enforce HTTPS for absolute URLs
+      if (uri.scheme != 'https') {
+        throw ArgumentError('HTTPS required but got ${uri.scheme}://${uri.host}');
+      }
+      return uri;
+    }
     final baseUrl =
         endpoint == RestEndpoint.login ? loginUrl : instanceUrl;
     return baseUrl.replace(path: path);
@@ -137,6 +147,7 @@ abstract class AuthTokenProvider {
   Future<String?> getNewAuthToken();
   String? getRefreshToken();
   DateTime? getLastRefreshTime();
+  DateTime? getTokenExpiresAt();
 }
 
 /// Exception thrown when refresh token is revoked.
@@ -149,18 +160,27 @@ class RefreshTokenRevokedException implements Exception {
 
 /// Salesforce REST API client with automatic token refresh.
 ///
-/// Provides sync and async methods for sending REST requests,
-/// automatic OAuth token refresh on 401 responses, and
-/// configurable HTTP client.
+/// Provides:
+/// - Sync and async methods for sending REST requests
+/// - Automatic OAuth token refresh on 401 responses
+/// - Proactive token refresh before expiration
+/// - Connectivity-aware request handling
+/// - HTTPS enforcement
+/// - Configurable HTTP client with timeouts and retry
 class RestClient {
   static const String _tag = 'RestClient';
   static final SalesforceLogger _logger =
       SalesforceLogger.getLogger('RestClient');
 
+  /// Buffer time before token expiry to trigger proactive refresh.
+  static const Duration _proactiveRefreshBuffer = Duration(minutes: 5);
+
   ClientInfo clientInfo;
   String _authToken;
+  DateTime? _tokenExpiresAt;
   final AuthTokenProvider? _authTokenProvider;
   http.Client _httpClient;
+  ConnectivityManager? _connectivityManager;
   DateTime? _lastRefreshTime;
 
   static const Duration _minRefreshInterval = Duration(seconds: 30);
@@ -170,9 +190,13 @@ class RestClient {
     required String authToken,
     AuthTokenProvider? authTokenProvider,
     http.Client? httpClient,
+    DateTime? tokenExpiresAt,
+    ConnectivityManager? connectivityManager,
   })  : _authToken = authToken,
+        _tokenExpiresAt = tokenExpiresAt,
         _authTokenProvider = authTokenProvider,
-        _httpClient = httpClient ?? http.Client();
+        _httpClient = httpClient ?? SalesforceHttpClient(),
+        _connectivityManager = connectivityManager;
 
   /// Gets the current auth token.
   String get authToken => _authToken;
@@ -180,14 +204,36 @@ class RestClient {
   /// Gets the refresh token (if available via provider).
   String? get refreshToken => _authTokenProvider?.getRefreshToken();
 
+  /// Whether the current token is expired.
+  bool get isTokenExpired =>
+      _tokenExpiresAt != null && DateTime.now().isAfter(_tokenExpiresAt!);
+
+  /// Whether the token will expire within the proactive refresh buffer.
+  bool get isTokenExpiringSoon =>
+      _tokenExpiresAt != null &&
+      DateTime.now()
+          .isAfter(_tokenExpiresAt!.subtract(_proactiveRefreshBuffer));
+
   /// Sets a custom HTTP client.
   set httpClient(http.Client client) => _httpClient = client;
 
   /// Gets the HTTP client.
   http.Client get httpClient => _httpClient;
 
+  /// Sets the connectivity manager.
+  set connectivityManager(ConnectivityManager? manager) =>
+      _connectivityManager = manager;
+
   /// Sends a request asynchronously.
   Future<RestResponse> sendAsync(RestRequest request) async {
+    // Check connectivity
+    _connectivityManager?.requireOnline();
+
+    // Proactively refresh token if expiring soon
+    if (isTokenExpiringSoon && _authTokenProvider != null) {
+      await _refreshAccessToken();
+    }
+
     try {
       var response = await _sendRequest(request);
 
@@ -206,7 +252,6 @@ class RestClient {
   }
 
   /// Sends a request synchronously (blocking).
-  /// Note: In Dart, this is still async but named for API compatibility.
   Future<RestResponse> sendSync(RestRequest request) => sendAsync(request);
 
   /// Sends a request with a callback.
@@ -225,7 +270,6 @@ class RestClient {
     final httpRequest =
         http.Request(request.method.name.toUpperCase(), url);
 
-    // Set headers
     httpRequest.headers['Authorization'] = 'Bearer $_authToken';
     httpRequest.headers['Content-Type'] = 'application/json; charset=utf-8';
     httpRequest.headers['Accept'] = 'application/json';
@@ -234,7 +278,6 @@ class RestClient {
       httpRequest.headers.addAll(request.additionalHttpHeaders!);
     }
 
-    // Set body
     final body = request.bodyAsString;
     if (body != null) {
       httpRequest.body = body;
@@ -289,7 +332,6 @@ class RestClient {
   Future<bool> _refreshAccessToken() async {
     if (_authTokenProvider == null) return false;
 
-    // Throttle refresh attempts
     if (_lastRefreshTime != null) {
       final elapsed = DateTime.now().difference(_lastRefreshTime!);
       if (elapsed < _minRefreshInterval) return false;
@@ -300,6 +342,7 @@ class RestClient {
       if (newToken != null) {
         _authToken = newToken;
         _lastRefreshTime = DateTime.now();
+        _tokenExpiresAt = _authTokenProvider!.getTokenExpiresAt();
         _logger.i(_tag, 'Access token refreshed successfully');
         return true;
       }
@@ -314,9 +357,7 @@ class RestClient {
   }
 
   /// Clears cached data.
-  void clearCaches() {
-    // Clear any cached data
-  }
+  void clearCaches() {}
 
   /// Disposes the client and releases resources.
   void dispose() {
@@ -324,6 +365,8 @@ class RestClient {
   }
 
   /// Gets JSON credentials for passing to WebView or other components.
+  ///
+  /// Warning: This exposes sensitive tokens. Use with care.
   Map<String, dynamic> getJsonCredentials() {
     return {
       'accessToken': _authToken,

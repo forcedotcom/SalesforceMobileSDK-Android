@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'salesforce_error.dart';
 
 /// Represents a response from a Salesforce REST API call.
 ///
@@ -84,6 +85,34 @@ class RestResponse {
       return true;
     }
   }
+
+  /// Throws a [SalesforceApiException] if the response is not successful.
+  void throwIfError() {
+    if (!isSuccess) {
+      throw SalesforceApiException.fromResponse(this);
+    }
+  }
+
+  /// Parses the response body as Salesforce API errors.
+  List<SalesforceApiError> get errors {
+    try {
+      final decoded = jsonDecode(rawResponse.body);
+      if (decoded is List) {
+        return decoded
+            .cast<Map<String, dynamic>>()
+            .map(SalesforceApiError.fromJson)
+            .toList();
+      }
+      if (decoded is Map<String, dynamic>) {
+        return [SalesforceApiError.fromJson(decoded)];
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Whether this error response indicates an expired session.
+  bool get isSessionExpired =>
+      !isSuccess && errors.any((e) => e.isSessionExpired);
 
   @override
   String toString() => 'RestResponse(status=$statusCode, body=${rawResponse.body.length > 200 ? '${rawResponse.body.substring(0, 200)}...' : rawResponse.body})';

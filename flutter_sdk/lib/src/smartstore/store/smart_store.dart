@@ -1,10 +1,12 @@
 import 'dart:convert';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:path/path.dart' as path_lib;
 import '../../analytics/logger/salesforce_logger.dart';
 import '../../core/security/encryptor.dart';
 import 'index_spec.dart';
 import 'query_spec.dart';
+import 'schema_migration.dart';
+import 'smart_sql_validator.dart';
 
 /// SmartStore entry ID field name.
 const String soupEntryId = '_soupEntryId';
@@ -23,11 +25,12 @@ const String soupField = '_soup';
 /// - Full CRUD operations on JSON documents
 /// - Query support (exact, range, LIKE, match, smart SQL)
 /// - Pagination
-/// - Encryption support
+/// - Full-database encryption via SQLCipher
+/// - Application-layer encryption for JSON data
 ///
 /// Usage:
 /// ```dart
-/// final store = await SmartStore.getInstance();
+/// final store = await SmartStore.getInstance(encryptionKey: 'my-key');
 /// store.registerSoup('Accounts', [IndexSpec.json1('Name')]);
 /// final id = await store.create('Accounts', {'Name': 'Acme'});
 /// ```
@@ -42,23 +45,40 @@ class SmartStore {
 
   final String _dbName;
   final String? _encryptionKey;
+  final String? _dbPassword;
   Database? _database;
 
   SmartStore._({
     required String dbName,
     String? encryptionKey,
+    String? dbPassword,
   })  : _dbName = dbName,
-        _encryptionKey = encryptionKey;
+        _encryptionKey = encryptionKey,
+        _dbPassword = dbPassword;
 
   /// Gets or creates a SmartStore instance.
+  ///
+  /// [dbPassword] is the SQLCipher database encryption password.
+  /// [encryptionKey] is an additional application-layer encryption key
+  /// for the JSON data stored in soups.
+  ///
+  /// For maximum security, provide both. [dbPassword] encrypts the
+  /// entire database file, while [encryptionKey] adds a second layer
+  /// of encryption to the stored JSON documents.
   static Future<SmartStore> getInstance({
     String dbName = 'smartstore',
     String? encryptionKey,
+    String? dbPassword,
   }) async {
     if (_instances.containsKey(dbName)) {
       return _instances[dbName]!;
     }
-    final store = SmartStore._(dbName: dbName, encryptionKey: encryptionKey);
+    if (dbPassword == null && encryptionKey == null) {
+      _logger.w(_tag,
+          'SmartStore created without encryption. Data will be stored in plaintext.');
+    }
+    final store = SmartStore._(
+        dbName: dbName, encryptionKey: encryptionKey, dbPassword: dbPassword);
     await store._openDatabase();
     _instances[dbName] = store;
     return store;
@@ -72,6 +92,8 @@ class SmartStore {
   /// Registers a new soup with the given index specifications.
   Future<void> registerSoup(
       String soupName, List<IndexSpec> indexSpecs) async {
+    SmartSqlValidator.validateSoupName(soupName);
+
     if (await hasSoup(soupName)) {
       _logger.w(_tag, 'Soup $soupName already exists');
       return;
@@ -79,7 +101,6 @@ class SmartStore {
 
     final db = _ensureDb();
     await db.transaction((txn) async {
-      // Create the soup table
       final tableName = _soupTableName(soupName);
       await txn.execute('''
         CREATE TABLE IF NOT EXISTS "$tableName" (
@@ -90,16 +111,15 @@ class SmartStore {
         )
       ''');
 
-      // Register in soup_attrs
       await txn.insert(_soupAttrTable, {
         'soupName': soupName,
         'tableName': tableName,
       });
 
-      // Create indexes
       for (var i = 0; i < indexSpecs.length; i++) {
         final spec = indexSpecs[i];
-        final colName = spec.columnName ?? '${tableName}_${i}';
+        SmartSqlValidator.validateFieldPath(spec.path);
+        final colName = spec.columnName ?? '${tableName}_$i';
 
         await txn.insert(_soupIndexMapTable, {
           'soupName': soupName,
@@ -109,7 +129,6 @@ class SmartStore {
         });
       }
 
-      // Create FTS table if needed
       if (IndexSpec.hasFTS(indexSpecs)) {
         final ftsPaths = indexSpecs
             .where((s) => s.type == SmartStoreType.fullText)
@@ -187,12 +206,10 @@ class SmartStore {
     List<IndexSpec> newIndexSpecs, {
     bool reIndexing = true,
   }) async {
-    // Drop and recreate with new specs
     final existingData = await _getAllSoupData(soupName);
     await dropSoup(soupName);
     await registerSoup(soupName, newIndexSpecs);
 
-    // Re-insert data
     for (final entry in existingData) {
       await create(soupName, entry);
     }
@@ -202,8 +219,7 @@ class SmartStore {
 
   // ===== CRUD Operations =====
 
-  /// Creates a new entry in the soup.
-  /// Returns the entry ID of the created record.
+  /// Creates a new entry in the soup. Returns the entry ID.
   Future<int> create(String soupName, Map<String, dynamic> entry) async {
     final db = _ensureDb();
     final tableName = await _getTableName(soupName);
@@ -220,11 +236,9 @@ class SmartStore {
       'lastModified': now,
     });
 
-    // Add entry ID and last modified to the returned data
     entry[soupEntryId] = id;
     entry[soupLastModifiedDate] = now;
 
-    // Update soup with entry metadata
     await db.update(
       tableName,
       {'soup': _maybeEncrypt(jsonEncode(entry))},
@@ -292,7 +306,6 @@ class SmartStore {
       return update(soupName, entry, existingId);
     }
 
-    // Try to find existing entry
     if (entry.containsKey(externalIdPath)) {
       final matchKey = entry[externalIdPath].toString();
       final existingId =
@@ -302,7 +315,6 @@ class SmartStore {
       }
     }
 
-    // Create new
     final id = await create(soupName, entry);
     entry[soupEntryId] = id;
     return entry;
@@ -411,23 +423,10 @@ class SmartStore {
 
     _database = await openDatabase(
       fullPath,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS $_soupAttrTable (
-            soupName TEXT PRIMARY KEY,
-            tableName TEXT NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS $_soupIndexMapTable (
-            soupName TEXT NOT NULL,
-            path TEXT NOT NULL,
-            columnName TEXT,
-            columnType TEXT NOT NULL
-          )
-        ''');
-      },
+      version: SchemaManager.currentVersion,
+      password: _dbPassword,
+      onCreate: SchemaManager.onCreate,
+      onUpgrade: SchemaManager.onUpgrade,
     );
   }
 
@@ -474,14 +473,9 @@ class SmartStore {
   }
 
   String _maybeDecrypt(String data) {
-    if (_encryptionKey != null) {
-      try {
-        return Encryptor.decryptString(data, _encryptionKey!);
-      } catch (_) {
-        return data; // Might be unencrypted
-      }
-    }
-    return data;
+    if (_encryptionKey == null) return data;
+    // Fail explicitly on decryption errors rather than falling back to plaintext
+    return Encryptor.decryptString(data, _encryptionKey!);
   }
 
   /// Converts SmartSQL to actual SQL.
@@ -490,12 +484,16 @@ class SmartStore {
     return smartSql.replaceAllMapped(
       RegExp(r'\{(\w+):(\w+)\}'),
       (match) {
-        // match.group(1) is the soup name
+        final soup = match.group(1)!;
         final field = match.group(2)!;
+
+        // Validate both soup name and field path to prevent SQL injection
+        SmartSqlValidator.validateSoupName(soup);
+        SmartSqlValidator.validateFieldPath(field);
+
         if (field == '_soup') return 'soup';
         if (field == soupEntryId) return 'id';
         if (field == soupLastModifiedDate) return 'lastModified';
-        // For JSON1 index paths, use json_extract
         return "json_extract(soup, '\$.$field')";
       },
     );

@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../analytics/logger/salesforce_logger.dart';
 
 /// Manages screen lock and biometric authentication policies.
@@ -20,6 +20,7 @@ class ScreenLockManager {
   static ScreenLockManager? _instance;
 
   final LocalAuthentication _localAuth;
+  final FlutterSecureStorage _secureStorage;
   final SalesforceLogger _logger = SalesforceLogger.getLogger('ScreenLock');
 
   bool _isLocked = false;
@@ -27,8 +28,11 @@ class ScreenLockManager {
   final StreamController<bool> _lockStateController =
       StreamController<bool>.broadcast();
 
-  ScreenLockManager._({LocalAuthentication? localAuth})
-      : _localAuth = localAuth ?? LocalAuthentication();
+  ScreenLockManager._({
+    LocalAuthentication? localAuth,
+    FlutterSecureStorage? secureStorage,
+  })  : _localAuth = localAuth ?? LocalAuthentication(),
+        _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   /// Gets the singleton instance.
   static ScreenLockManager get instance {
@@ -46,9 +50,9 @@ class ScreenLockManager {
   Future<void> onAppBackgrounded() async {
     if (!_isLocked) {
       _backgroundTimestamp = DateTime.now();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-          _backgroundTimestampKey, _backgroundTimestamp!.millisecondsSinceEpoch);
+      await _secureStorage.write(
+          key: _backgroundTimestampKey,
+          value: _backgroundTimestamp!.millisecondsSinceEpoch.toString());
     }
   }
 
@@ -61,14 +65,19 @@ class ScreenLockManager {
 
   /// Checks if the app should be locked based on timeout.
   Future<bool> shouldLock() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_lockEnabledKey) ?? false;
+    final enabledStr = await _secureStorage.read(key: _lockEnabledKey);
+    final enabled = enabledStr == 'true';
     if (!enabled) return false;
 
-    final timeout = prefs.getInt(_lockTimeoutKey) ?? 0;
+    final timeoutStr = await _secureStorage.read(key: _lockTimeoutKey);
+    final timeout = timeoutStr != null ? int.tryParse(timeoutStr) ?? 0 : 0;
     if (timeout == 0) return false;
 
-    final bgTimestamp = prefs.getInt(_backgroundTimestampKey);
+    final bgTimestampStr =
+        await _secureStorage.read(key: _backgroundTimestampKey);
+    if (bgTimestampStr == null) return false;
+
+    final bgTimestamp = int.tryParse(bgTimestampStr);
     if (bgTimestamp == null) return false;
 
     final backgroundTime =
@@ -98,10 +107,11 @@ class ScreenLockManager {
     required int timeoutMs,
     String? accountSuffix,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
     final suffix = accountSuffix ?? '';
-    await prefs.setBool('$_lockEnabledKey$suffix', enabled);
-    await prefs.setInt('$_lockTimeoutKey$suffix', timeoutMs);
+    await _secureStorage.write(
+        key: '$_lockEnabledKey$suffix', value: enabled.toString());
+    await _secureStorage.write(
+        key: '$_lockTimeoutKey$suffix', value: timeoutMs.toString());
 
     // Update global policy (minimum timeout across all accounts)
     await _updateGlobalPolicy();
@@ -139,30 +149,30 @@ class ScreenLockManager {
 
   /// Gets/sets biometric opt-in for the current user.
   Future<bool> hasBiometricOptedIn({String? accountSuffix}) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('$_biometricOptInKey${accountSuffix ?? ''}') ?? false;
+    final val = await _secureStorage.read(
+        key: '$_biometricOptInKey${accountSuffix ?? ''}');
+    return val == 'true';
   }
 
   /// Sets biometric opt-in.
   Future<void> setBiometricOptIn(bool optIn, {String? accountSuffix}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        '$_biometricOptInKey${accountSuffix ?? ''}', optIn);
+    await _secureStorage.write(
+        key: '$_biometricOptInKey${accountSuffix ?? ''}',
+        value: optIn.toString());
   }
 
   /// Cleans up lock data for a specific account.
   Future<void> cleanUp({String? accountSuffix}) async {
-    final prefs = await SharedPreferences.getInstance();
     final suffix = accountSuffix ?? '';
-    await prefs.remove('$_lockEnabledKey$suffix');
-    await prefs.remove('$_lockTimeoutKey$suffix');
-    await prefs.remove('$_biometricOptInKey$suffix');
+    await _secureStorage.delete(key: '$_lockEnabledKey$suffix');
+    await _secureStorage.delete(key: '$_lockTimeoutKey$suffix');
+    await _secureStorage.delete(key: '$_biometricOptInKey$suffix');
   }
 
   Future<void> _updateGlobalPolicy() async {
-    final prefs = await SharedPreferences.getInstance();
     // Global policy uses the base keys (no suffix)
-    final enabled = prefs.getBool(_lockEnabledKey) ?? false;
+    final enabledStr = await _secureStorage.read(key: _lockEnabledKey);
+    final enabled = enabledStr == 'true';
     if (!enabled) return;
   }
 

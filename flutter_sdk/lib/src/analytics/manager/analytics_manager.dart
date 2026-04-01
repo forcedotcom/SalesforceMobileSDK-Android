@@ -56,7 +56,6 @@ class SalesforceAnalyticsManager {
   /// Gets or creates an instance for the given unique ID.
   factory SalesforceAnalyticsManager.getInstance({
     required String uniqueId,
-    required String encryptionKey,
     required DeviceAppAttributes deviceAppAttributes,
   }) {
     return _instances.putIfAbsent(
@@ -65,7 +64,6 @@ class SalesforceAnalyticsManager {
         uniqueId: uniqueId,
         eventStoreManager: EventStoreManager(
           storeId: uniqueId,
-          encryptionKey: encryptionKey,
         ),
         deviceAppAttributes: deviceAppAttributes,
       ),

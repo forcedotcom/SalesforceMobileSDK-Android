@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../analytics/logger/salesforce_logger.dart';
 import '../rest/rest_client.dart';
 import 'user_account.dart';
@@ -175,8 +174,7 @@ class UserAccountManager {
   }
 
   Future<void> _loadCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final currentId = prefs.getString(_currentAccountKey);
+    final currentId = await _secureStorage.read(key: _currentAccountKey);
     if (currentId != null && _cachedAccounts != null) {
       _currentUser = _cachedAccounts!.cast<UserAccount?>().firstWhere(
             (a) => a?.uniqueId == currentId,
@@ -207,12 +205,11 @@ class UserAccountManager {
   }
 
   Future<void> _saveCurrentUser(UserAccount account) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_currentAccountKey, account.uniqueId);
+    await _secureStorage.write(
+        key: _currentAccountKey, value: account.uniqueId);
   }
 
   Future<void> _clearCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_currentAccountKey);
+    await _secureStorage.delete(key: _currentAccountKey);
   }
 }

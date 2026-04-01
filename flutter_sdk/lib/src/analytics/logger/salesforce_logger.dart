@@ -1,15 +1,20 @@
 import 'dart:developer' as developer;
 import 'package:logging/logging.dart';
+import 'log_sanitizer.dart';
 
 /// Logger component for the Salesforce SDK.
 ///
 /// Provides a unified logging interface with configurable log levels,
-/// component-based logging, and optional file logging support.
+/// component-based logging, and automatic sensitive data sanitization.
 class SalesforceLogger {
   static final Map<String, SalesforceLogger> _instances = {};
   final String _componentName;
   final Logger _logger;
   Level _logLevel;
+
+  /// Whether to sanitize log messages (redact tokens, etc.).
+  /// Enabled by default. Disable only in debug/test environments.
+  static bool sanitizeLogs = true;
 
   SalesforceLogger._(this._componentName)
       : _logger = Logger(_componentName),
@@ -63,13 +68,18 @@ class SalesforceLogger {
   void _log(Level level, String tag, String message,
       [Object? error, StackTrace? stackTrace]) {
     if (level.value >= _logLevel.value) {
-      final formattedMessage = '[$_componentName] $tag: $message';
+      var formattedMessage = '[$_componentName] $tag: $message';
+      if (sanitizeLogs) {
+        formattedMessage = LogSanitizer.sanitize(formattedMessage);
+      }
       _logger.log(level, formattedMessage, error, stackTrace);
       developer.log(
         formattedMessage,
         level: level.value,
         name: _componentName,
-        error: error,
+        error: sanitizeLogs && error != null
+            ? LogSanitizer.sanitize(error.toString())
+            : error,
         stackTrace: stackTrace,
       );
     }

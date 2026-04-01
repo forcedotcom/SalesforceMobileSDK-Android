@@ -41,6 +41,8 @@ class TokenEndpointResponse {
   final String? csrfToken;
   final String? idToken;
   final String? tokenFormat;
+  final int? expiresIn;
+  final DateTime? expiresAt;
   final Map<String, String> additionalOauthValues;
 
   TokenEndpointResponse({
@@ -62,10 +64,17 @@ class TokenEndpointResponse {
     this.csrfToken,
     this.idToken,
     this.tokenFormat,
+    this.expiresIn,
+    this.expiresAt,
     this.additionalOauthValues = const {},
   });
 
   factory TokenEndpointResponse.fromJson(Map<String, dynamic> json) {
+    final expiresIn = json['expires_in'] is int
+        ? json['expires_in'] as int
+        : json['expires_in'] is String
+            ? int.tryParse(json['expires_in'])
+            : null;
     return TokenEndpointResponse(
       authToken: json['access_token'],
       refreshToken: json['refresh_token'],
@@ -84,6 +93,10 @@ class TokenEndpointResponse {
       csrfToken: json['csrf_token'],
       idToken: json['id_token'],
       tokenFormat: json['token_format'],
+      expiresIn: expiresIn,
+      expiresAt: expiresIn != null
+          ? DateTime.now().add(Duration(seconds: expiresIn))
+          : null,
     );
   }
 

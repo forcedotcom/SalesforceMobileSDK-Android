@@ -391,13 +391,12 @@ void main() {
       );
     });
 
-    test('empty string encryption throws RangeError', () {
+    test('empty string encryption roundtrips correctly', () {
       const key = 'test-key';
-      // AES-CBC cannot encrypt empty strings (block cipher requires at least 1 block)
-      expect(
-        () => Encryptor.encryptString('', key),
-        throwsA(isA<RangeError>()),
-      );
+      // AES-GCM can encrypt empty strings (authenticated encryption)
+      final encrypted = Encryptor.encryptString('', key);
+      final decrypted = Encryptor.decryptString(encrypted, key);
+      expect(decrypted, equals(''));
     });
 
     test('handles long strings', () {
