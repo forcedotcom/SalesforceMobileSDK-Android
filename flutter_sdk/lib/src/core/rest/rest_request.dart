@@ -512,6 +512,65 @@ class RestRequest {
     );
   }
 
+  // ===== Notifications Batch Update =====
+
+  /// Request to update multiple notifications at once.
+  static RestRequest getRequestForNotificationsUpdate(
+    String apiVersion, {
+    List<String>? notificationIds,
+    DateTime? before,
+    bool? read,
+    bool? seen,
+  }) {
+    final body = <String, dynamic>{};
+    if (notificationIds != null) body['notificationIds'] = notificationIds;
+    if (before != null) {
+      body['before'] = before.toUtc().toIso8601String();
+    }
+    if (read != null) body['read'] = read;
+    if (seen != null) body['seen'] = seen;
+    return RestRequest(
+      method: RestMethod.patch,
+      path: '$servicesData/v$apiVersion/connect/notifications',
+      requestBody: body,
+    );
+  }
+
+  // ===== Single Access =====
+
+  /// Request for single access (redirect-based auth).
+  static RestRequest getRequestForSingleAccess(String redirectUri) {
+    final encodedUri = Uri.encodeComponent(redirectUri);
+    return RestRequest(
+      method: RestMethod.get,
+      path: '/services/oauth2/singleaccess?RedirectUri=$encodedUri',
+      endpoint: RestEndpoint.login,
+    );
+  }
+
+  // ===== Priming Records =====
+
+  /// Request for priming records (briefcase API).
+  static RestRequest getRequestForPrimingRecords(
+    String apiVersion, {
+    String? relayToken,
+    int? changedAfterTime,
+  }) {
+    final params = <String>[];
+    if (relayToken != null) {
+      params.add('relayToken=${Uri.encodeComponent(relayToken)}');
+    }
+    if (changedAfterTime != null && changedAfterTime > 0) {
+      params.add('changedAfterTimestamp=$changedAfterTime');
+    }
+    final queryStr = params.isNotEmpty ? '?${params.join('&')}' : '';
+    return RestRequest(
+      method: RestMethod.get,
+      path:
+          '$servicesData/v$apiVersion/connect/briefcase/priming-records$queryStr',
+    );
+  }
+
   /// A cheap/minimal request for health checks.
   static RestRequest getCheapRequest(String apiVersion) {
     return getRequestForLimits(apiVersion);

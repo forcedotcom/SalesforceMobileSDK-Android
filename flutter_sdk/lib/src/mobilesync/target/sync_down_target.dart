@@ -115,9 +115,38 @@ abstract class SyncDownTarget {
         return SoslSyncDownTarget.fromJson(json);
       case 'RefreshSyncDownTarget':
         return RefreshSyncDownTarget.fromJson(json);
+      case 'MruSyncDownTarget':
+        // Import dynamically via separate file
+        return _createMruTarget(json);
+      case 'ParentChildrenSyncDownTarget':
+        return _createParentChildrenTarget(json);
+      case 'BriefcaseSyncDownTarget':
+        return _createBriefcaseTarget(json);
       default:
         return SoqlSyncDownTarget.fromJson(json);
     }
+  }
+
+  // Factory methods for targets defined in other files.
+  // These are overridden at SDK initialization to avoid circular imports.
+  static SyncDownTarget Function(Map<String, dynamic>) _createMruTarget =
+      (json) => SoqlSyncDownTarget.fromJson(json);
+  static SyncDownTarget Function(Map<String, dynamic>)
+      _createParentChildrenTarget = (json) => SoqlSyncDownTarget.fromJson(json);
+  static SyncDownTarget Function(Map<String, dynamic>)
+      _createBriefcaseTarget = (json) => SoqlSyncDownTarget.fromJson(json);
+
+  /// Registers factory functions for extended sync-down target types.
+  static void registerTargetFactories({
+    SyncDownTarget Function(Map<String, dynamic>)? mruFactory,
+    SyncDownTarget Function(Map<String, dynamic>)? parentChildrenFactory,
+    SyncDownTarget Function(Map<String, dynamic>)? briefcaseFactory,
+  }) {
+    if (mruFactory != null) _createMruTarget = mruFactory;
+    if (parentChildrenFactory != null) {
+      _createParentChildrenTarget = parentChildrenFactory;
+    }
+    if (briefcaseFactory != null) _createBriefcaseTarget = briefcaseFactory;
   }
 
   Future<Set<String>> _getNonDirtyRecordIds(
