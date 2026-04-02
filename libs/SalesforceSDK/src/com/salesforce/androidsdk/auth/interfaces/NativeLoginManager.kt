@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.interfaces
 
 import android.content.Intent
+import androidx.fragment.app.FragmentActivity
 
 enum class NativeLoginResult {
     /** Email address is not a valid format  */
@@ -81,6 +82,21 @@ interface NativeLoginManager {
      * @return the intent to be started for fallback web based authentication.
      */
     fun getFallbackWebAuthenticationIntent(): Intent
+
+    /**
+     * Presents the SDK's biometric authentication prompt to unlock the app.
+     * Call this when the app is in a biometric-locked state (i.e.,
+     * [biometricAuthenticationUsername] is non-null) and the user wants to
+     * authenticate via biometric or device credential.
+     *
+     * On successful authentication, the app will be unlocked, tokens will be
+     * refreshed, and the provided activity will be finished.
+     *
+     * @param activity The FragmentActivity from which to present the biometric prompt
+     * @return True if the biometric prompt was presented, false if biometric
+     * authentication is not available or the app is not in a locked state
+     */
+    fun presentBiometricAuth(activity: FragmentActivity): Boolean
 
     // region Salesforce Identity API Headless Registration Flow
 

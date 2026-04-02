@@ -1,0 +1,39 @@
+{
+  "description": "Test shards for MobileSync library - all network tests in one shard to prevent server conflicts",
+  "shards": [
+    {
+      "name": "network",
+      "comment": "All network tests in single shard - run sequentially to avoid server conflicts",
+      "targets": [
+        "class com.salesforce.androidsdk.mobilesync.manager.SyncManagerTest",
+        "class com.salesforce.androidsdk.mobilesync.manager.SyncManagerSuspendTest",
+        "class com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManagerTest",
+        "class com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManagerTest",
+        "class com.salesforce.androidsdk.mobilesync.target.SyncUpTargetTest",
+        "class com.salesforce.androidsdk.mobilesync.target.CollectionSyncUpTargetTest",
+        "class com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTargetTest",
+        "class com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTargetTest",
+        "class com.salesforce.androidsdk.mobilesync.target.BriefcaseSyncDownTargetTest",
+        "class com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTest",
+        "class com.salesforce.androidsdk.mobilesync.target.ParentChildrenOtherSyncTest"
+      ]
+    },
+    {
+      "name": "remaining",
+      "comment": "All remaining tests - run in parallel, no server conflicts",
+      "targets": [
+        "notClass com.salesforce.androidsdk.mobilesync.manager.SyncManagerTest",
+        "notClass com.salesforce.androidsdk.mobilesync.manager.SyncManagerSuspendTest",
+        "notClass com.salesforce.androidsdk.mobilesync.manager.MetadataSyncManagerTest",
+        "notClass com.salesforce.androidsdk.mobilesync.manager.LayoutSyncManagerTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.SyncUpTargetTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.CollectionSyncUpTargetTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.SoqlSyncDownTargetTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.RefreshSyncDownTargetTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.BriefcaseSyncDownTargetTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.ParentChildrenSyncTest",
+        "notClass com.salesforce.androidsdk.mobilesync.target.ParentChildrenOtherSyncTest"
+      ]
+    }
+  ]
+}

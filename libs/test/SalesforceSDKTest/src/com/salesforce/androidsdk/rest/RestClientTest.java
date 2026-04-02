@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import static com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -368,7 +370,7 @@ public class RestClientTest {
     public void testGetSingleAccess() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForSingleAccess("abc/def"));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
-        checkKeys(response.asJSONObject(), "frontdoor_uri");
+        checkKeys(response.asJSONObject(), FRONTDOOR_URL_KEY);
     }
 
     /**
@@ -730,7 +732,7 @@ public class RestClientTest {
      * Create new account then look for it using soql.
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 180000) // 3 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
     public void testQueryWithBatchSize() throws Exception {
         cleanup();
         List<IdName> idNames = createAccounts(201, "-testWithBatchSize-");

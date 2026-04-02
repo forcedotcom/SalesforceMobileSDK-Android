@@ -117,6 +117,18 @@ public class BootConfig {
 	}
 
 	/**
+	 * Gets a native boot config instance from XML resources.
+	 * Package-private for testing purposes.
+	 * @param ctx The context used to read XML resources.
+	 * @return A BootConfig representing the native boot config object.
+	 */
+	static BootConfig getNativeBootConfig(Context ctx) {
+		BootConfig nativeBootConfig = new BootConfig();
+		nativeBootConfig.readFromXML(ctx);
+		return nativeBootConfig;
+	}
+
+	/**
 	 * Validates a boot config's inputs against basic sanity tests.
 	 * @param config The BootConfig instance to validate.
 	 * @throws BootConfigException If the boot config is invalid.
@@ -180,7 +192,9 @@ public class BootConfig {
 			JSONObject config = new JSONObject();
 			config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
 			config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
-			config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
+			if (oauthScopes != null) {
+				config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
+			}
 			config.put(IS_LOCAL, isLocal);
 			config.put(START_PAGE, startPage);
 			config.put(ERROR_PAGE, errorPage);
@@ -224,7 +238,12 @@ public class BootConfig {
 		final Resources res = ctx.getResources();
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
-		oauthScopes = res.getStringArray(R.array.oauthScopes);
+		try {
+			oauthScopes = res.getStringArray(R.array.oauthScopes);
+		} catch (Resources.NotFoundException e) {
+			// oauthScopes is optional, leave it as null
+			oauthScopes = null;
+		}
 	}
 
 	/**
@@ -237,11 +256,18 @@ public class BootConfig {
 			// Required fields.
 			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);
 			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
-			final JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
-			oauthScopes = new String[jsonScopes.length()];
-			for (int i = 0; i < oauthScopes.length; i++) {
-				oauthScopes[i] = jsonScopes.getString(i);
+			
+			// Optional oauthScopes field.
+			if (config.has(OAUTH_SCOPES)) {
+				final JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
+				oauthScopes = new String[jsonScopes.length()];
+				for (int i = 0; i < oauthScopes.length; i++) {
+					oauthScopes[i] = jsonScopes.getString(i);
+				}
+			} else {
+				oauthScopes = null;
 			}
+			
 			isLocal = config.getBoolean(IS_LOCAL);
 			startPage = config.getString(START_PAGE);
 			errorPage = config.getString(ERROR_PAGE);

@@ -23,7 +23,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 13.1.1
+### What's New in 13.2.0
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases).
 
 ### Native Applications
@@ -31,6 +31,46 @@ The Salesforce Mobile SDK provides essential libraries for quickly building nati
 
 ### Hybrid Applications
 HTML5 is quickly emerging as dominant technology for developing cross-platform mobile applications. While developers can create sophisticated apps with HTML5 and JavaScript, some limitations remain, specifically: session management, access to the camera and address book, and the inability to distribute apps inside public App Stores. The Salesforce Mobile Container makes possible to combine the ease of web app development with power of the Android platform by wrapping a web app inside a thin native container, producing a hybrid application.
+
+## Libraries
+
+| Library | Purpose |
+|---------|---------|
+| **SalesforceAnalytics** | Telemetry and event tracking |
+| **SalesforceSDK** | OAuth2 authentication, REST API, account management |
+| **SmartStore** | Encrypted local storage (SQLCipher) |
+| **MobileSync** | Data synchronization framework |
+| **SalesforceHybrid** | Cordova integration for hybrid apps |
+| **SalesforceReact** | React Native bridge modules |
+
+## Getting Started
+
+### Using the SDK (via forcedroid)
+
+```bash
+# Install CLI
+npm install -g forcedroid
+
+# Create app from template
+forcedroid create --appname MyApp --packagename com.mycompany.myapp --organization "My Company"
+```
+
+See templates for complete usage examples.
+
+### Building from Source
+
+```bash
+# Clone and setup
+git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
+cd SalesforceMobileSDK-Android
+./install.sh
+
+# Build
+./gradlew build
+
+# Run tests
+./gradlew connectedAndroidTest
+```
 
 Setting up your Development Environment
 ==

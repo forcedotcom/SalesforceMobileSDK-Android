@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.1.1"
+rootProject.ext["PUBLISH_VERSION"] = "13.2.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceHybrid"
 
 plugins {
@@ -102,6 +102,6 @@ android {
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase/artifacts/sdcard") { setIncludes(arrayListOf("*.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
     }
 }

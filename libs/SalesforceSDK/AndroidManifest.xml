@@ -2,15 +2,15 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-	android:versionCode="91"
-	android:versionName="13.1.1">
+	android:versionCode="92"
+	android:versionName="13.2.0.dev">
 
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
-    <application>
+    <application android:supportsRtl="true">
 
         <!-- Metadata for supported app restrictions -->
         <meta-data android:name="android.content.APP_RESTRICTIONS"
@@ -45,6 +45,12 @@
             android:configChanges="orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:exported="true" />
 
+        <!-- Token Migration Activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.TokenMigrationActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/AccountSwitcher"
+            android:exported="false" />
+
         <!-- Screen Lock Activity-->
         <activity android:name="com.salesforce.androidsdk.ui.ScreenLockActivity"
             android:exported="false"
@@ -68,11 +74,6 @@
             android:excludeFromRecents="true"
             android:theme="@style/SalesforceSDK"
             android:exported="true" />
-
-        <!--  Dev info activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.DevInfoActivity"
-            android:theme="@style/SalesforceSDK"
-            android:exported="false" />
 
         <!-- Receiver in SP app for IDP-SP login flows -->
         <receiver android:name="com.salesforce.androidsdk.auth.idp.SPReceiver"

@@ -1,5 +1,5 @@
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.1.1"
+rootProject.ext["PUBLISH_VERSION"] = "13.2.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceSDK"
 
 plugins {
@@ -8,11 +8,12 @@ plugins {
     `publish-module`
     jacoco
     kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.parcelize")
 }
 
 dependencies {
     val composeVersion = "1.8.2" // Update requires Kotlin 2.
-    val livecycleVersion = "2.8.7" // Update requires Kotlin 2.
+    val lifecycleVersion = "2.8.7" // Update requires Kotlin 2.
     val androidXActivityVersion = "1.10.1"
 
     api(project(":libs:SalesforceAnalytics"))
@@ -22,6 +23,7 @@ dependencies {
     api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
     api("androidx.work:work-runtime-ktx:2.10.3")
 
+    implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
@@ -29,10 +31,10 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
     implementation("androidx.activity:activity-compose:$androidXActivityVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$livecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-service:$livecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-service:$lifecycleVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
     implementation("androidx.window:window:1.4.0")
     implementation("androidx.window:window-core:1.4.0")
@@ -48,6 +50,7 @@ dependencies {
 
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
@@ -63,6 +66,7 @@ android {
 
     defaultConfig {
         minSdk = 28
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -136,7 +140,7 @@ android {
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase/artifacts/sdcard") { setIncludes(arrayListOf("*.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
     }
 }
 

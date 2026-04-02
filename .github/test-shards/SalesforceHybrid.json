@@ -1,0 +1,21 @@
+{
+  "description": "Test shards for SalesforceHybrid library - isolates network JS bridge tests",
+  "shards": [
+    {
+      "name": "network-js",
+      "comment": "JavaScript bridge tests that make server calls - isolated",
+      "targets": [
+        "class com.salesforce.androidsdk.phonegap.ForceJSTest",
+        "class com.salesforce.androidsdk.phonegap.MobileSyncJSTest"
+      ]
+    },
+    {
+      "name": "remaining",
+      "comment": "All remaining tests - uses notClass to exclude network tests",
+      "targets": [
+        "notClass com.salesforce.androidsdk.phonegap.ForceJSTest",
+        "notClass com.salesforce.androidsdk.phonegap.MobileSyncJSTest"
+      ]
+    }
+  ]
+}

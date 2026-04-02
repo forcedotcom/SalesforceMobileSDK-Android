@@ -393,30 +393,35 @@ public class ClientManager {
                 gettingAuthToken = true;
             }
 
-            // Only check for matching account inside synchronized thread that
-            // is actually getting the new auth token.
-            UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-            Account[] accounts = clientManager.getAccounts();
-            Account matchingAccount = null;
             String newAuthToken = null;
             String newInstanceUrl = null;
-
-            if (refreshToken != null) {
-                for (Account account : accounts) {
-                    UserAccount user = userAccountManager.buildUserAccount(account);
-                    if (user != null && refreshToken.equals(user.getRefreshToken())) {
-                        matchingAccount = account;
-                        break;
-                    }
-                }
-            }
-
-            // Fail early to ensure we don't logout the current user below by sending null.
-            if (matchingAccount == null) {
-                return null;
-            }
+            boolean shouldUpdateCache = false;
 
             try {
+                // Only check for matching account inside synchronized thread that
+                // is actually getting the new auth token.
+                UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+                Account[] accounts = clientManager.getAccounts();
+                Account matchingAccount = null;
+
+                if (refreshToken != null) {
+                    for (Account account : accounts) {
+                        UserAccount user = userAccountManager.buildUserAccount(account);
+                        if (user != null && refreshToken.equals(user.getRefreshToken())) {
+                            matchingAccount = account;
+                            break;
+                        }
+                    }
+                }
+
+                // Fail early to ensure we don't logout the current user below by sending null.
+                if (matchingAccount == null) {
+                    return null;
+                }
+
+                // We found a matching account, so we'll attempt a refresh and should update the cache.
+                shouldUpdateCache = true;
+
                 // Invalidate current auth token.
                 clientManager.invalidateToken(lastNewAuthToken);
                 final UserAccount userAccount = refreshStaleToken(matchingAccount);
@@ -460,9 +465,11 @@ public class ClientManager {
             } finally {
                 synchronized (lock) {
                     gettingAuthToken = false;
-                    lastNewAuthToken = newAuthToken;
-                    lastNewInstanceUrl = newInstanceUrl;
-                    lastRefreshTime  = System.currentTimeMillis();
+                    if (shouldUpdateCache) {
+                        lastNewAuthToken = newAuthToken;
+                        lastNewInstanceUrl = newInstanceUrl;
+                        lastRefreshTime  = System.currentTimeMillis();
+                    }
                     lock.notifyAll();
                 }
             }
@@ -508,7 +515,7 @@ public class ClientManager {
                 }
                 return null;
             } catch (Exception e) {
-                SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
+                SalesforceSDKLogger.e(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
             }
         }

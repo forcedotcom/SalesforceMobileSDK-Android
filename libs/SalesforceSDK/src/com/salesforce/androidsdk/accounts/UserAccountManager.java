@@ -504,6 +504,8 @@ public class UserAccountManager {
 
 		final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
+
+		// Maintenance Note: All account values are nullable by default.  If a value requires a default value when user's of older versions experience access token refresh, provide that here.
 		final String refreshToken = SalesforceSDKManager.decrypt(accountManager.getPassword(account), encryptionKey);
 		final String authToken = decryptUserData(account, AccountManager.KEY_AUTHTOKEN, encryptionKey);
 		final String loginServer = decryptUserData(account, AuthenticatorService.KEY_LOGIN_URL, encryptionKey);
@@ -535,10 +537,12 @@ public class UserAccountManager {
 		final String cookieSidClient = decryptUserData(account, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
 		final String sidCookieName = decryptUserData(account, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
 		final String clientId = decryptUserData(account, AuthenticatorService.KEY_CLIENT_ID, encryptionKey);
+
 		final String parentSid = decryptUserData(account, AuthenticatorService.KEY_PARENT_SID, encryptionKey);
 		final String tokenFormat = decryptUserData(account, AuthenticatorService.KEY_TOKEN_FORMAT, encryptionKey);
 		final String beaconChildConsumerKey = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
 		final String beaconChildConsumerSecret = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, encryptionKey);
+		final String scope = decryptUserData(account, AuthenticatorService.KEY_SCOPE, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
 		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
@@ -593,6 +597,7 @@ public class UserAccountManager {
 					.tokenFormat(tokenFormat)
 					.beaconChildConsumerKey(beaconChildConsumerKey)
 					.beaconChildConsumerSecret(beaconChildConsumerSecret)
+					.scope(scope)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
 		}
@@ -742,6 +747,7 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_TOKEN_FORMAT, SalesforceSDKManager.encrypt(userAccount.getTokenFormat(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerKey(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerSecret(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_SCOPE, SalesforceSDKManager.encrypt(userAccount.getScope(), encryptionKey));
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
@@ -760,5 +766,17 @@ public class UserAccountManager {
 
 	private String decryptUserData(Account account, String key, String encryptionKey) {
 		return  SalesforceSDKManager.decrypt(accountManager.getUserData(account, key), encryptionKey);
+	}
+
+	/**
+	 * Clears the stored current user info from shared preferences. This should be called
+	 * when the last user logs out to ensure no user information remains on the device.
+	 */
+	public void clearStoredCurrentUserInfo() {
+		clearCachedCurrentUser();
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+		sp.edit().clear().apply();
+		SalesforceSDKLogger.d(TAG, "Cleared current user info from shared preferences");
 	}
 }

@@ -44,4 +44,5 @@ public class Features {
     public static final String FEATURE_BIOMETRIC_AUTH = "BA";
     public static final String FEATURE_NATIVE_LOGIN = "NL";
     public static final String FEATURE_QR_CODE_LOGIN = "QR";
+    public static final String FEATURE_WELCOME_DISCOVERY_LOGIN = "WD";
 }

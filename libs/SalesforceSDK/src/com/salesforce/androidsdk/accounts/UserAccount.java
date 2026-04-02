@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.ScopeParser;
 import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -96,6 +97,7 @@ public class UserAccount {
 	public static final String TOKEN_FORMAT = "tokenFormat";
 	public static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
 	public static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+	public static final String SCOPE = "scope";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -142,6 +144,7 @@ public class UserAccount {
 	private Map<String, String> additionalOauthValues;
 	private String beaconChildConsumerKey;
 	private String beaconChildConsumerSecret;
+	private String scope;
 
 	/**
 	 * Parameterized constructor.
@@ -182,6 +185,7 @@ public class UserAccount {
 	 * @param beaconChildConsumerKey    beacon child consumer key
 	 * @param beaconChildConsumerSecret beacon child consumer secret
 	 * @param apiInstanceServer         API instance server
+	 * @param scope						Scope
 	 */
 	UserAccount(String authToken, String refreshToken,
 				String loginServer, String idUrl, String instanceServer,
@@ -193,7 +197,7 @@ public class UserAccount {
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
 				String sidCookieName, String clientId, String parentSid, String tokenFormat,
-				String beaconChildConsumerKey, String beaconChildConsumerSecret, String apiInstanceServer) {
+				String beaconChildConsumerKey, String beaconChildConsumerSecret, String apiInstanceServer, String scope) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -231,6 +235,7 @@ public class UserAccount {
 		this.tokenFormat = tokenFormat;
 		this.beaconChildConsumerKey = beaconChildConsumerKey;
 		this.beaconChildConsumerSecret = beaconChildConsumerSecret;
+		this.scope = scope;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_USER_AUTH);
 	}
 
@@ -281,6 +286,7 @@ public class UserAccount {
 			tokenFormat = object.optString(TOKEN_FORMAT, null);
 			beaconChildConsumerKey = object.optString(BEACON_CHILD_CONSUMER_KEY, null);
 			beaconChildConsumerSecret = object.optString(BEACON_CHILD_CONSUMER_SECRET, null);
+			scope = object.optString(SCOPE, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -337,6 +343,7 @@ public class UserAccount {
 			tokenFormat = bundle.getString(TOKEN_FORMAT);
 			beaconChildConsumerKey = bundle.getString(BEACON_CHILD_CONSUMER_KEY);
 			beaconChildConsumerSecret = bundle.getString(BEACON_CHILD_CONSUMER_SECRET);
+			scope = bundle.getString(SCOPE);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -667,7 +674,25 @@ public class UserAccount {
 	}
 
 	/**
-	 * Returns the beacon child consumer key .
+	 * Returns the OAuth scopes returned by the token endpoint.
+	 *
+	 * @return scope string.
+	 */
+	public String getScope() {
+		return scope;
+	}
+
+	/**
+	 * Checks whether the provided scope exists in this account's scope list.
+	 *
+	 * @param scopeToCheck Scope name to check.
+	 * @return True if present, false otherwise.
+	 */
+	public boolean hasScope(String scopeToCheck) {
+		return new ScopeParser(scope).hasScope(scopeToCheck);
+	}
+	/**
+	 * Returns the beacon child consumer key.
 	 *
 	 * @return beacon child consumer key.
 	 */
@@ -956,6 +981,7 @@ public class UserAccount {
 			object.put(TOKEN_FORMAT, tokenFormat);
 			object.put(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
 			object.put(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
+			object.put(SCOPE, scope);
 			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);
@@ -1016,6 +1042,7 @@ public class UserAccount {
 		object.putString(TOKEN_FORMAT, tokenFormat);
 		object.putString(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
 		object.putString(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
+		object.putString(SCOPE, scope);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}

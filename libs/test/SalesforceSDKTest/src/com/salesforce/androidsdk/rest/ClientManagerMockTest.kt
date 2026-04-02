@@ -72,6 +72,7 @@ class ClientManagerMockTest {
             every { additionalOauthKeys } returns emptyList()
             every { useHybridAuthentication } returns true
             every { appContext } returns mockAppContext
+            every { isDevSupportEnabled() } returns true
         }
         every { SalesforceSDKManager.getInstance() } returns mockSDKManager
         mockkStatic(UserAccountManager::class)

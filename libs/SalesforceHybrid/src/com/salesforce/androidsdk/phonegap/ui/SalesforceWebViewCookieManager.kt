@@ -30,6 +30,7 @@ import android.net.Uri
 import android.os.SystemClock
 import android.webkit.CookieManager
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.ScopeParser
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.d
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger.w
 import java.net.URI
@@ -37,8 +38,14 @@ import java.net.URI
 class SalesforceWebViewCookieManager {
     private val cookieManager = CookieManager.getInstance()
 
-    fun setCookies(userAccount: UserAccount) {
+    fun setCookies(userAccount: UserAccount,
+                   // Optional lambda parameters to facilitate testing
+                   setCookieValue: (String, String?, Boolean, String?, String?) -> Unit = ::setCookieValue,
+                   syncCookies: () -> Unit = ::syncCookies) {
         d(TAG, "setCookies for userAccount:${userAccount.toJson()}")
+
+        // Warn if expected scopes are missing
+        userAccount.scope?.let { inspectScopes(it) }
 
         val instanceUrl = userAccount.instanceServer
         val lightningDomain = userAccount.lightningDomain
@@ -81,6 +88,30 @@ class SalesforceWebViewCookieManager {
         setCookieValue(ORG_ID, vfDomain, setDomain, ORG_ID, orgId)
 
         syncCookies()
+    }
+
+    internal fun inspectScopes(scope: String, warn: (String) -> Unit = { w(TAG, it)}) {
+        val scopeParser = ScopeParser(scope)
+
+        // full encompasses all other scopes except for refresh
+        if (!scopeParser.hasScope("full")) {
+            if (!scopeParser.hasScope("web")) {
+                warn("Missing web scope: will not be able to access web content.")
+
+                // web encompasses visualforce scope
+                if (!scopeParser.hasScope("visualforce")) {
+                    warn("Missing visualforce scope: will not be able to access Visualforce pages.")
+                }
+            }
+
+            if (!scopeParser.hasScope("lightning")) {
+                warn("Missing lightning scope: will not be able to access Lightning applications.")
+            }
+
+            if (!scopeParser.hasScope("content")) {
+                warn("Missing content scope: will not be able to access Content resources.")
+            }
+        }
     }
 
     private fun setCookieValue(

@@ -34,6 +34,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 
 import androidx.core.content.ContextCompat;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -42,6 +43,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 
 import org.jetbrains.annotations.NotNull;
@@ -199,6 +201,40 @@ public class UserAccountManagerTest {
         Assert.assertEquals(OAuth2.LogoutReason.USER_LOGOUT, logoutCompleteReceiver.getLastReasonReceived());
         Assert.assertNotNull(logoutCompleteReceiver.getLastUserAccountReceived());
         Assert.assertEquals(TEST_USERNAME, logoutCompleteReceiver.getLastUserAccountReceived().getUsername());
+    }
+
+    /**
+     * Test that shared preferences are cleared when the last user logs out.
+     * This verifies the fix for W-17366971 - ensuring that identifier.xml
+     * and current_user_info files are deleted on logout.
+     */
+    @Test
+    public void testSharedPreferencesCleanupOnLastUserLogout() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        // Create a user and force creation of identifier.xml by accessing the encryption key
+        createTestAccountInAccountManager(userAccMgr);
+        String encryptionKey = SalesforceKeyGenerator.getEncryptionKey("test_key");
+        Assert.assertNotNull("Encryption key should be created", encryptionKey);
+
+        // Verify that identifier.xml shared preferences exists with data
+        SharedPreferences identifierPrefs = context.getSharedPreferences("identifier.xml", 0);
+        Assert.assertFalse("identifier.xml should have data", identifierPrefs.getAll().isEmpty());
+
+        // Verify that current_user_info shared preferences exists with data
+        SharedPreferences currentUserPrefs = context.getSharedPreferences("current_user_info", 0);
+        Assert.assertFalse("current_user_info should have data", currentUserPrefs.getAll().isEmpty());
+
+        // Logout the last user
+        userAccMgr.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        // Verify that identifier.xml shared preferences is cleared
+        identifierPrefs = context.getSharedPreferences("identifier.xml", 0);
+        Assert.assertTrue("identifier.xml should be empty after logout", identifierPrefs.getAll().isEmpty());
+
+        // Verify that current_user_info shared preferences is cleared
+        currentUserPrefs = context.getSharedPreferences("current_user_info", 0);
+        Assert.assertTrue("current_user_info should be empty after logout", currentUserPrefs.getAll().isEmpty());
     }
 
     /**

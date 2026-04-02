@@ -103,7 +103,7 @@ public class SalesforceSDKUpgradeManager {
      */
     protected synchronized void upgradeAccMgr() {
         String installedVersionStr = getInstalledAccMgrVersion();
-        if (installedVersionStr.equals(SalesforceSDKManager.SDK_VERSION)) {
+        if (installedVersionStr.equals(SalesforceSDKManager.SDK_VERSION) || installedVersionStr.isEmpty()) {
             return;
         }
 
@@ -314,11 +314,14 @@ public class SalesforceSDKUpgradeManager {
         PushMessaging.setReRegistrationRequested(true);
     }
 
-    /*
+    /**
      *  Migrate any accounts with account_type "com.salesforce.androidsdk" to a unique value.
-     *  TODO: Remove this in Mobile SDK 15.0
+     *
+     *  @deprecated Will be removed in Mobile SDK 15.0.0.
      */
-    private void migrateAccountType() {
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    public void migrateAccountType() {
         final String LEGACY_ACCOUNT_TYPE = "com.salesforce.androidsdk";
         if (SalesforceSDKManager.getInstance().getAccountType().equals(LEGACY_ACCOUNT_TYPE)) {
             SalesforceSDKLogger.e(TAG, "No app specific account type found.  To ensure users " +

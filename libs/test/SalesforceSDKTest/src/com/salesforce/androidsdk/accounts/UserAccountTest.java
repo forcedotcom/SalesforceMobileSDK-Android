@@ -104,12 +104,14 @@ public class UserAccountTest {
     public static final String TEST_TOKEN_FORMAT = "test-token-format";
     public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
     public static final String TEST_BEACON_CHILD_CONSUMER_SECRET = "test-beacon-child-consumer-secret";
+    public static final String TEST_SCOPE = "api web openid refresh_token";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
     public static final String TEST_USER_ID_2 = "test_user_id_2";
     public static final String TEST_ACCOUNT_NAME_2 = "test_username_2 (https://cs1.salesforce.com) (SalesforceSDKTest)";
     public static final String TEST_USERNAME_2 = "test_username_2";
+    public static final String TEST_SCOPE_2 = "api web refresh_token sfap_api";
 
 
     private EventsListenerQueue eq;
@@ -123,6 +125,23 @@ public class UserAccountTest {
         final Bundle actual = account.toBundle(createAdditionalOauthKeys());
         final Bundle expected = createTestAccountBundle();
         BundleTestHelper.checkSameBundle("UserAccount bundles do not match", expected, actual);
+    }
+
+
+    @Test
+    public void testHasScope() {
+        UserAccount account = createTestAccount();
+        Assert.assertTrue(account.hasScope("api"));
+        Assert.assertTrue(account.hasScope("web"));
+        Assert.assertTrue(account.hasScope("openid"));
+        Assert.assertTrue(account.hasScope("refresh_token"));
+        Assert.assertFalse(account.hasScope("unknown"));
+
+        UserAccount emptyScope = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(account)
+                .scope("")
+                .build();
+        Assert.assertFalse(emptyScope.hasScope("api"));
     }
 
     /**
@@ -203,6 +222,7 @@ public class UserAccountTest {
                 .orgId(TEST_ORG_ID_2)
                 .username(TEST_USERNAME_2)
                 .accountName(TEST_ACCOUNT_NAME_2)
+                .scope(TEST_SCOPE_2)
                 .build();
         checkOtherTestAccount(otherUserAccount);
     }
@@ -403,6 +423,7 @@ public class UserAccountTest {
         object.put(UserAccount.SID_COOKIE_NAME, TEST_SID_COOKIE_NAME);
         object.put(UserAccount.PARENT_SID, TEST_PARENT_SID);
         object.put(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
+        object.put(UserAccount.SCOPE, TEST_SCOPE);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
@@ -452,6 +473,7 @@ public class UserAccountTest {
         object.putString(UserAccount.TOKEN_FORMAT, TEST_TOKEN_FORMAT);
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
+        object.putString(UserAccount.SCOPE, TEST_SCOPE);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -497,6 +519,7 @@ public class UserAccountTest {
                 .tokenFormat(TEST_TOKEN_FORMAT)
                 .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)
                 .beaconChildConsumerSecret(TEST_BEACON_CHILD_CONSUMER_SECRET)
+                .scope(TEST_SCOPE)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }
@@ -511,6 +534,7 @@ public class UserAccountTest {
                 .orgId(TEST_ORG_ID_2)
                 .username(TEST_USERNAME_2)
                 .accountName(TEST_ACCOUNT_NAME_2)
+                .scope(TEST_SCOPE_2)
                 .build();
     }
 
@@ -567,6 +591,7 @@ public class UserAccountTest {
             Assert.assertNull("Beacon child consumer key should be null", account.getBeaconChildConsumerKey());
             Assert.assertNull("Beacon child consumer secret should be null", account.getBeaconChildConsumerSecret());
         }
+        Assert.assertEquals("Scope should match", TEST_SCOPE, account.getScope());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -609,6 +634,7 @@ public class UserAccountTest {
         Assert.assertEquals("Token format should match", TEST_TOKEN_FORMAT, account.getTokenFormat());
         Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, account.getBeaconChildConsumerKey());
         Assert.assertEquals("Beacon child consumer secret should match", TEST_BEACON_CHILD_CONSUMER_SECRET, account.getBeaconChildConsumerSecret());
+        Assert.assertEquals("Scope should match", TEST_SCOPE_2, account.getScope());
         Assert.assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
@@ -669,6 +695,7 @@ public class UserAccountTest {
         params.put("sidCookieName", TEST_SID_COOKIE_NAME);
         params.put("parent_sid", TEST_PARENT_SID);
         params.put("token_format", TEST_TOKEN_FORMAT);
+        params.put("scope", TEST_SCOPE);
 
         return params;
     }

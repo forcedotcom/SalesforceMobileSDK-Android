@@ -1,11 +1,13 @@
 package com.salesforce.androidsdk.app
 
+import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.ui.LoginActivity
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -17,7 +19,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -244,5 +249,43 @@ class SalesforceSDKManagerTests {
 
         assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
         assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    fun getDevActions_ReturnsAllActions_ForNonLoginActivity() {
+        // Arrange
+        val mockActivity = mockk<Activity>(relaxed = true)
+
+        // Act
+        val devActions = SalesforceSDKManager.getInstance().getDevActions(mockActivity)
+
+        // Assert
+        assertEquals(4, devActions.size)
+        assertTrue(devActions.containsKey("Show dev info"))
+        assertTrue(devActions.containsKey("Login Options"))
+        assertTrue(devActions.containsKey("Logout"))
+        assertTrue(devActions.containsKey("Switch User"))
+        assertNotNull(devActions["Show dev info"])
+        assertNotNull(devActions["Login Options"])
+        assertNotNull(devActions["Logout"])
+        assertNotNull(devActions["Switch User"])
+    }
+
+    @Test
+    fun getDevActions_ExcludesLogoutAndSwitchUser_ForLoginActivity() {
+        // Arrange
+        val mockLoginActivity = mockk<LoginActivity>(relaxed = true)
+
+        // Act
+        val devActions = SalesforceSDKManager.getInstance().getDevActions(mockLoginActivity)
+
+        // Assert
+        assertEquals(2, devActions.size)
+        assertTrue(devActions.containsKey("Show dev info"))
+        assertTrue(devActions.containsKey("Login Options"))
+        assertFalse(devActions.containsKey("Logout"))
+        assertFalse(devActions.containsKey("Switch User"))
+        assertNotNull(devActions["Show dev info"])
+        assertNotNull(devActions["Login Options"])
     }
 }

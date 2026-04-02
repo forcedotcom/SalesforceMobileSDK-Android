@@ -61,8 +61,10 @@ import com.salesforce.androidsdk.R.drawable.sf__android_astro
 import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__account_selector_click_label
 import com.salesforce.androidsdk.R.string.sf__profile_photo_content_description
+import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
 @Composable
 fun UserAccountListItem(
@@ -126,6 +128,7 @@ fun UserAccountListItem(
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -141,6 +144,7 @@ private fun UserAccountPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Selected", showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
 @Composable
@@ -156,6 +160,7 @@ private fun UserAccountSelectedPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview(name = "User account without provided profile picture.", showBackground = true)
 @Composable
 private fun UserAccountPreviewNoPic() {
@@ -170,6 +175,7 @@ private fun UserAccountPreviewNoPic() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("User Account with very long username and server url.", showBackground = true)
 @Composable
 private fun UserAccountPreviewLong() {

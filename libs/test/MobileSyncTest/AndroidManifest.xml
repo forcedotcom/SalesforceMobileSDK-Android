@@ -16,11 +16,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Disabling AILTN in tests -->
-        <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
-            android:enabled="false"
-            android:exported="false" />
 	</application>
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />

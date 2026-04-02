@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.os.Build
 import android.webkit.WebView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -36,19 +37,24 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -106,24 +112,26 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
-import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__clear_cache
+import com.salesforce.androidsdk.R.string.sf__clear_cookies
+import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
 import com.salesforce.androidsdk.R.string.sf__launch_idp
 import com.salesforce.androidsdk.R.string.sf__loading_indicator
 import com.salesforce.androidsdk.R.string.sf__more_options
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__reload
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.CORNER_RADIUS
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.SFColors
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
+import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
-internal const val PADDING_SIZE = 12
 internal const val HEADER_TEXT_SIZE = 20
 internal const val TEXT_SIZE = 16
-internal const val CORNER_RADIUS = 12
 internal const val STROKE_WIDTH = 1
 internal const val BUTTON_HEIGHT = 48
 internal const val LEVEL_3_ELEVATION = 6
@@ -142,6 +150,13 @@ fun LoginView() {
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
     }
+    val showDevSupport = with(SalesforceSDKManager.getInstance()) {
+        return@with if (isDebugBuild && isDevSupportEnabled()) {
+            { showDevSupportDialog(activity) }
+        } else {
+            null
+        }
+    }
 
     val topAppBar = viewModel.topAppBar ?: {
         DefaultTopAppBar(
@@ -153,13 +168,14 @@ fun LoginView() {
             clearWebViewCache = { viewModel.clearWebViewCache(activity.webView) },
             reloadWebView = { viewModel.reloadWebView() },
             shouldShowBackButton = viewModel.shouldShowBackButton,
+            showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
         )
     }
 
     // Possible Buttons to show in BottomAppBar
     val bioAuthButton: LoginViewModel.BottomBarButton? =
-        if (viewModel.isBiometricAuthenticationLocked.value) {
+        if (viewModel.showBiometricAuthenticationButton.value) {
             LoginViewModel.BottomBarButton(
                 stringResource(viewModel.biometricAuthenticationButtonText.intValue)
             ) {
@@ -190,6 +206,7 @@ fun LoginView() {
     }
 
     LoginView(
+        dynamicBackgroundColor = viewModel.dynamicBackgroundColor,
         loginUrlData = viewModel.loginUrl,
         topAppBar = topAppBar,
         webView = activity.webView,
@@ -202,6 +219,7 @@ fun LoginView() {
 
 @Composable
 internal fun LoginView(
+    dynamicBackgroundColor: MutableState<Color>,
     loginUrlData: LiveData<String>,
     topAppBar: @Composable () -> Unit,
     webView: WebView,
@@ -217,21 +235,27 @@ internal fun LoginView(
     )
 
     Scaffold(
-        topBar = topAppBar,
         bottomBar = bottomAppBar,
+        contentWindowInsets = WindowInsets.safeDrawing,
+        topBar = topAppBar,
     ) { innerPadding ->
-        if (loading) {
-            loadingIndicator()
-        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Load the WebView as a composable
+            AndroidView(
+                modifier = Modifier
+                    .background(dynamicBackgroundColor.value)
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+                    .applyImePaddingConditionally()
+                    .graphicsLayer(alpha = alpha),
+                factory = { webView },
+                update = { it.loadUrl(loginUrl.value ?: "") },
+            )
 
-        // Load the WebView as a composable
-        AndroidView(
-            modifier = Modifier
-                .padding(innerPadding)
-                .graphicsLayer(alpha = alpha),
-            factory = { webView },
-            update = { it.loadUrl(loginUrl.value ?: "") },
-        )
+            if (loading) {
+                loadingIndicator()
+            }
+        }
 
         if (showServerPicker.value) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)
@@ -251,6 +275,7 @@ internal fun DefaultTopAppBar(
     clearWebViewCache: () -> Unit,
     reloadWebView: () -> Unit,
     shouldShowBackButton: Boolean,
+    showDevSupport: (() -> Unit)?,
     finish: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -306,6 +331,12 @@ internal fun DefaultTopAppBar(
                     MenuItem(stringResource(sf__reload)) {
                         reloadWebView()
                         showMenu = false
+                    }
+                    showDevSupport?.let {
+                        MenuItem(stringResource(sf__dev_support_title_menu_item)) {
+                            it.invoke()
+                            showMenu = false
+                        }
                     }
                 }
             }
@@ -363,6 +394,7 @@ internal fun MenuItem(
             )
         },
         onClick = onClick,
+        modifier = Modifier.semantics { contentDescription = text }
     )
 }
 
@@ -468,8 +500,17 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
     else -> null
 }
 
-// Note: the light and dark previews should look the same.
-@Preview
+@Composable
+internal fun Modifier.applyImePaddingConditionally() : Modifier =
+    // TODO:  Remove when min API is > 29
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        windowInsetsPadding(WindowInsets.ime)
+    } else {
+        this
+    }
+
+@ExcludeFromJacocoGeneratedReport
+@Preview // Note: the light and dark previews should look the same.
 @Preview("Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
 @Composable
 private fun AppBarPreview() {
@@ -485,11 +526,13 @@ private fun AppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarLoadingPreview() {
@@ -505,11 +548,13 @@ private fun AppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarBackButtonPreview() {
@@ -525,11 +570,13 @@ private fun AppBarBackButtonPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun AppBarDarkPreview() {
@@ -545,11 +592,13 @@ private fun AppBarDarkPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BlueAppBarPreview() {
@@ -565,11 +614,13 @@ private fun BlueAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BlueAppBarLoadingPreview() {
@@ -585,11 +636,13 @@ private fun BlueAppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun CustomTextAppBarPreview() {
@@ -604,11 +657,13 @@ private fun CustomTextAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun CustomTextAppBarLoadingPreview() {
@@ -623,11 +678,13 @@ private fun CustomTextAppBarLoadingPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = false,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun LongCustomTextAppBarPreview() {
@@ -642,11 +699,13 @@ private fun LongCustomTextAppBarPreview() {
             clearWebViewCache = { },
             reloadWebView = { },
             shouldShowBackButton = true,
+            showDevSupport = null,
             finish = { },
         )
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Light Mode", showBackground = true, widthDp = 100, heightDp = 100)
 @Preview(
     "Dark Mode",
@@ -663,8 +722,8 @@ private fun LoadingIndicatorPreview() {
     }
 }
 
-// Note: the light and dark previews should look the same.
-@Preview
+@ExcludeFromJacocoGeneratedReport
+@Preview // Note: the light and dark previews should look the same.
 @Preview("Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, backgroundColor = 0xFF181818)
 @Composable
 private fun BottomBarPreview() {
@@ -682,6 +741,7 @@ private fun BottomBarPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview
 @Composable
 private fun BottomBarRedPreview() {
@@ -699,6 +759,7 @@ private fun BottomBarRedPreview() {
     }
 }
 
+@ExcludeFromJacocoGeneratedReport
 @Preview("Light", showBackground = true, heightDp = 100, widthDp = 100)
 @Preview(
     "Dark", showBackground = true, heightDp = 100, widthDp = 100,
