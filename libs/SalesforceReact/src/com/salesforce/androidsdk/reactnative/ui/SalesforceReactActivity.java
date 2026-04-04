@@ -59,6 +59,10 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
     private SalesforceReactActivityDelegate reactActivityDelegate;
     AlertDialog overlayPermissionRequiredDialog;
 
+    // Store callbacks for deferred authentication to invoke after OAuth completes
+    private Callback pendingAuthSuccessCallback;
+    private Callback pendingAuthErrorCallback;
+
     protected SalesforceReactActivity() {
         super();
         delegate = new SalesforceActivityDelegate(this);
@@ -113,6 +117,14 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
         // Logged in.
         else {
             SalesforceReactLogger.i(TAG, "onResume - already logged in");
+
+            // If we have pending auth callbacks (from deferred authentication), invoke them now
+            if (pendingAuthSuccessCallback != null) {
+                SalesforceReactLogger.i(TAG, "onResume - invoking pending auth callbacks");
+                getAuthCredentials(pendingAuthSuccessCallback, pendingAuthErrorCallback);
+                pendingAuthSuccessCallback = null;
+                pendingAuthErrorCallback = null;
+            }
         }
     }
 
@@ -199,12 +211,30 @@ public abstract class SalesforceReactActivity extends ReactActivity implements S
      */
     public void authenticate(final Callback successCallback, final Callback errorCallback) {
         SalesforceReactLogger.i(TAG, "authenticate called");
+
+        // Store callbacks for deferred invocation after activity resumes from OAuth
+        // This fixes the issue where callbacks are lost during activity pause/resume cycle
+        pendingAuthSuccessCallback = successCallback;
+        pendingAuthErrorCallback = errorCallback;
+
         clientManager.getRestClient(this, new RestClientCallback() {
 
             @Override
             public void authenticatedRestClient(RestClient client) {
                 SalesforceReactActivity.this.setRestClient(client);
-                getAuthCredentials(successCallback, errorCallback);
+                // Note: Callbacks will be invoked in onResume() after OAuth completes
+                // instead of here, to handle the activity lifecycle properly
+                if (client != null) {
+                    SalesforceReactLogger.i(TAG, "authenticate callback - client obtained, callbacks will be invoked in onResume");
+                } else {
+                    SalesforceReactLogger.i(TAG, "authenticate callback - null client received");
+                    // Clear pending callbacks if authentication failed
+                    pendingAuthSuccessCallback = null;
+                    pendingAuthErrorCallback = null;
+                    if (errorCallback != null) {
+                        errorCallback.invoke("Authentication failed");
+                    }
+                }
             }
         });
     }
