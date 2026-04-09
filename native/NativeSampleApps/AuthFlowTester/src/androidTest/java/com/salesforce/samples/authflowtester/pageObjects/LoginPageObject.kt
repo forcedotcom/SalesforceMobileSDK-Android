@@ -47,15 +47,14 @@ import androidx.test.espresso.web.webdriver.DriverAtoms.webKeys
 import androidx.test.espresso.web.webdriver.Locator
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
-private const val USERNAME_ID = "username"
-private const val PASSWORD_ID = "password"
-private const val LOGIN_BUTTON_ID = "Login"
+internal const val USERNAME_ID = "username"
+internal const val PASSWORD_ID = "password"
+internal const val LOGIN_BUTTON_ID = "Login"
 
 /**
  * Page object for the Salesforce login WebView.
@@ -69,6 +68,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     open fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         setUsername(username)
+        tapLogin()
         setPassword(password)
         tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
@@ -166,35 +166,6 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             onWebView().withElement(findElement(Locator.ID, LOGIN_BUTTON_ID))
                 .perform(webClick())
         }
-    }
-
-    /** Enters credentials and taps login in a Chrome Custom Tab via UIAutomator. */
-    private fun loginInCustomTab(username: String, password: String) {
-        val usernameField = device.findObject(
-            UiSelector().className("android.widget.EditText").instance(0)
-        )
-        if (!usernameField.waitForExists(TIMEOUT_MS)) {
-            throw AssertionError("Username field not found in Custom Tab")
-        }
-        usernameField.clearTextField()
-        usernameField.setText(username)
-
-        val passwordField = device.findObject(
-            UiSelector().className("android.widget.EditText").instance(1)
-        )
-        if (!passwordField.waitForExists(TIMEOUT_MS)) {
-            throw AssertionError("Password field not found in Custom Tab")
-        }
-        passwordField.clearTextField()
-        passwordField.setText(password)
-
-        val loginButton = device.findObject(
-            UiSelector().className("android.widget.Button").textContains("Log In")
-        )
-        if (!loginButton.waitForExists(TIMEOUT_MS)) {
-            throw AssertionError("Log In button not found in Custom Tab")
-        }
-        loginButton.click()
     }
 
     /** Retries a WebView action until it succeeds or times out. */

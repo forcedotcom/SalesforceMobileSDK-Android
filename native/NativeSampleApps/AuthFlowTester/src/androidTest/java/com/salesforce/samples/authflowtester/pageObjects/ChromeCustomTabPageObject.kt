@@ -54,19 +54,15 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     override fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         skipGoogleSignIn()
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
-        // Fill password first so username field remains visible above the keyboard
-        setPassword(password)
-        // Now fill username (visible above keyboard)
         setUsername(username)
-        // Press Enter to submit the form instead of tapping login button
-        device.pressEnter()
+        tapLogin()
+        setPassword(password)
+        tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
 
     override fun setUsername(name: String) {
-        val usernameField = device.findObject(
-            UiSelector().className("android.widget.EditText").instance(0)
-        )
+        val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
         if (!usernameField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Username field not found in Custom Tab")
         }
@@ -75,9 +71,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setPassword(password: String) {
-        val passwordField = device.findObject(
-            UiSelector().className("android.widget.EditText").instance(1)
-        )
+        val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
         if (!passwordField.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Password field not found in Custom Tab")
         }
@@ -86,9 +80,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun tapLogin() {
-        val loginButton = device.findObject(
-            UiSelector().className("android.widget.Button").textContains("Log In")
-        )
+        val loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
         if (!loginButton.waitForExists(TIMEOUT_MS)) {
             throw AssertionError("Log In button not found in Custom Tab")
         }
