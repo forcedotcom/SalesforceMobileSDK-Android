@@ -789,7 +789,9 @@ open class SalesforceSDKManager protected constructor(
         }
         return OAuthAuthorizationAttestation(
             attestationId = deviceId,
-            integrityToken = googlePlayIntegrityTask.getResult().token()
+            attestationData = Base64.getEncoder().encodeToString(
+                googlePlayIntegrityTask.getResult().token().encodeToByteArray()
+            )
         ).toBase64String()
     }
 
@@ -798,12 +800,12 @@ open class SalesforceSDKManager protected constructor(
      * @param attestationId The attestation id used when creating the Salesforce
      * Mobile App Attestation API Challenge.  This is intended to be the
      * Salesforce Mobile SDK device id
-     * @param integrityToken The token provided by the Google Play Integrity API
+     * @param attestationData The token provided by the Google Play Integrity API
      */
     @Serializable
     internal data class OAuthAuthorizationAttestation(
         val attestationId: String,
-        val integrityToken: String,
+        val attestationData: String,
     ) {
 
         /**
