@@ -312,15 +312,15 @@ public class OAuth2 {
             Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
 
-        final String authorizationAttestationValue = SalesforceSDKManager.getInstance().testOAuthAuthorizationAttestationRequest();
+        final String authorizationAppAttestationValue = SalesforceSDKManager.getInstance().createAppAttestationClient().createSalesforceOAuthAuthorizationAppAttestation();
 
         final String responseType = useWebServerAuthentication
                 ? CODE
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        if (authorizationAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAttestationValue);
+        if (authorizationAppAttestationValue != null) {
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
@@ -550,14 +550,14 @@ public class OAuth2 {
                                                                   FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
 
-        final String authorizationAttestationValue = SalesforceSDKManager.getInstance().testOAuthAuthorizationAttestationRequest();
+        final String authorizationAppAttestationValue = SalesforceSDKManager.getInstance().createAppAttestationClient().createSalesforceOAuthAuthorizationAppAttestation();
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
 
-        if (authorizationAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAttestationValue);
+        if (authorizationAppAttestationValue != null) {
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
 
         final String refreshPath = sb.toString();
