@@ -312,7 +312,8 @@ public class OAuth2 {
             Map<String,String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
 
-        final String authorizationAppAttestationValue = SalesforceSDKManager.getInstance().createAppAttestationClient().createSalesforceOAuthAuthorizationAppAttestation();
+        final AppAttestationClient appAttestationClient = SalesforceSDKManager.getInstance().getAppAttestationClient();
+        final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final String responseType = useWebServerAuthentication
                 ? CODE
@@ -550,7 +551,8 @@ public class OAuth2 {
                                                                   FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
 
-        final String authorizationAppAttestationValue = SalesforceSDKManager.getInstance().createAppAttestationClient().createSalesforceOAuthAuthorizationAppAttestation();
+        final AppAttestationClient appAttestationClient = SalesforceSDKManager.getInstance().getAppAttestationClient();
+        final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);

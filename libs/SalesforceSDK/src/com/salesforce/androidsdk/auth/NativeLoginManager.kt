@@ -164,9 +164,9 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
-        val authorizationAttestationValue = getInstance().createAppAttestationClient().createSalesforceOAuthAuthorizationAppAttestation()
+        val attestationValue = getInstance().appAttestationClient?.createSalesforceOAuthAuthorizationAppAttestation()
         val authRequestBody = createRequestBody(
-            ATTESTATION to authorizationAttestationValue,
+            ATTESTATION to attestationValue,
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,

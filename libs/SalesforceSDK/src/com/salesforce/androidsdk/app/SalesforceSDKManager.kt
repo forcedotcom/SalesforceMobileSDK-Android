@@ -228,6 +228,37 @@ open class SalesforceSDKManager protected constructor(
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
 
     /**
+     * The Google Cloud Project ID used to for the client implementation of the
+     * Salesforce App Attestation External Client App Plugin.  When using App
+     * Attestation, this value must match the linked Google Cloud Project ID
+     * for the app in Google Play Console's Play Integrity API and provided to
+     * the Salesforce App Attestation External Client App Plugin.
+     *
+     * When null, App Attestation and Google Play Integrity will be ignored by
+     * the Salesforce Mobile SDK.
+     */
+    var appAttestationGoogleCloudProjectId: Long? = null
+        set(value) {
+            field = value
+
+            appAttestationClient = field?.let { appAttestationGoogleCloudProjectId ->
+                AppAttestationClient(
+                    appContext,
+                    deviceId,
+                    appAttestationGoogleCloudProjectId,
+                    getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
+                    clientManager.peekUnauthenticatedRestClient()
+                )
+            }
+        }
+
+    /**
+     * The client side implementation of the Salesforce App Attestation External
+     * Client App Plugin or null with app attestation is disabled.
+     */
+    var appAttestationClient: AppAttestationClient? = null
+
+    /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
      * visual customization without overriding LoginActivity.
      */
@@ -683,18 +714,6 @@ open class SalesforceSDKManager protected constructor(
             actionKey = actionKey
         )
     }
-
-    /**
-     * Creates a client for use with the Salesforce App Attestation External
-     * Client App (ECA) Plugin
-     * @return The app authentication attestation client
-     */
-    fun createAppAttestationClient() = AppAttestationClient(
-        appContext,
-        deviceId,
-        getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
-        clientManager.peekUnauthenticatedRestClient()
-    )
 
     /**
      * Optionally enables browser based login instead of web view login.

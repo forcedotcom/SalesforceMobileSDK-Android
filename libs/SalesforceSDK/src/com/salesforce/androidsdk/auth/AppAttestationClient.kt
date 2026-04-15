@@ -27,17 +27,17 @@
 package com.salesforce.androidsdk.auth
 
 import android.content.Context
-import android.util.Log
-import androidx.datastore.core.DataStore
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
-import androidx.datastore.dataStore
+import androidx.annotation.VisibleForTesting
+import com.google.android.gms.tasks.Task
 import com.google.android.play.core.integrity.IntegrityManagerFactory.createStandard
+import com.google.android.play.core.integrity.StandardIntegrityManager
 import com.google.android.play.core.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
 import com.salesforce.androidsdk.rest.AppAttestationChallengeApiClient
 import com.salesforce.androidsdk.rest.RestClient
-import kotlinx.coroutines.flow.map
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.Serializable
@@ -47,11 +47,11 @@ import java.security.MessageDigest
 import java.util.Base64
 
 /**
- * Authentication app attestation features supporting the Salesforce App
- * Attestation External Client App (ECA) Plugin, the Salesforce Challenge API,
- * Google Play Integrity API and integration of app attestation with Salesforce
- * Authentication.
- * @param context The Android context
+ * App attestation features supporting the Salesforce App Attestation External
+ * Client App (ECA) Plugin, the Salesforce Challenge API, Google Play Integrity
+ * API and integration of app attestation with Salesforce Authentication.
+ * @param googleCloudProjectId The Google Cloud Project ID used with Google Play
+ * Integrity API
  * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param remoteAccessConsumerKey The Salesforce Connected App (CA) or External
  * Client App (ECA)remote access consumer key, usually provided by the boot
@@ -60,63 +60,69 @@ import java.util.Base64
  * Manager's unauthenticated REST client
  */
 class AppAttestationClient(
-    val context: Context,
+    context: Context,
     val deviceId: String,
+    val googleCloudProjectId: Long,
     val remoteAccessConsumerKey: String,
     val restClient: RestClient
 ) {
 
-    /** The data store for authentication attestation data */
-    val Context.dataStore: DataStore<AuthenticationAttestationData> by dataStore(
-        serializer = AuthenticationAttestationDataSerializer,
-        fileName = "${context.filesDir.path}/authentication_attestation_data_store.json",
-        corruptionHandler = ReplaceFileCorruptionHandler { AuthenticationAttestationData(googleCloudProjectId = null) }
-    )
+    /** The Google Play Integrity Manager and Token Provider */
+    private val integrityManager = createStandard(context)
+
 
     /** The Google Play Integrity API Token Provider */
-    private var integrityTokenProvider: StandardIntegrityTokenProvider? = null
-
-    /** The flow of authentication attestation data */
-    fun googleCloudProjectIdFlow() = context.dataStore.data.map { authenticationAttestationData ->
-        authenticationAttestationData.googleCloudProjectId
-    }
-
-    /** Sets the Google Cloud Project ID */
-    suspend fun setGoogleCloudProjectId(googleCloudProjectId: Long) {
-        context.dataStore.updateData { authenticationAttestationData ->
-            authenticationAttestationData.copy(googleCloudProjectId = googleCloudProjectId)
-        }
-    }
-
-    /** Prepares authorization app attestation for use */
-    suspend fun prepare() {
-        googleCloudProjectIdFlow().collect { googleCloudProjectId ->
-            onGoogleCloudProjectIdCollected(googleCloudProjectId ?: return@collect)
-        }
-    }
+    @VisibleForTesting
+    internal var integrityTokenProvider: StandardIntegrityTokenProvider? = null
 
     /**
-     * Prepares for authorization and authorization token refresh using app
+     * Prepares for authorization and authorization token refresh with app
      * attestation using the Salesforce Mobile App Attestation Challenge API
      * and Google Play Integrity API.
      * @param googleCloudProjectId The Google Cloud Project ID
      */
-    private fun onGoogleCloudProjectIdCollected(googleCloudProjectId: Long) {
+    init {
+        prepareIntegrityTokenProvider()
+    }
 
-        // Create the Google Play Integrity Manager and Token Provider.
-        val integrityManager = createStandard(context)
+    /**
+     * (Re-)prepares the Google Play Integrity token provider.
+     * @param integrityManager The Google Play Integrity API integrity manager.
+     * This parameter is intended for testing purposes only
+     */
+    @VisibleForTesting
+    internal fun prepareIntegrityTokenProvider(
+        integrityManager: StandardIntegrityManager = this.integrityManager
+    ): Task<StandardIntegrityTokenProvider> {
 
         // Prepare the Google Play Integrity token.  Calling this prior to requesting the Integrity Token reduces the latency of the request.
-        integrityManager.prepareIntegrityToken(
+        return integrityManager.prepareIntegrityToken(
             PrepareIntegrityTokenRequest.builder()
                 .setCloudProjectNumber(googleCloudProjectId)
                 .build()
-        ).addOnSuccessListener { tokenProvider ->
-            integrityTokenProvider = tokenProvider
-            Log.i("AppAttestation", "Prepared Google Play Integrity Token Provider: '${tokenProvider}'.")
-        }.addOnFailureListener { exception ->
-            Log.e("AppAttestation", "Failed to prepare Google Play Integrity Token Provider: '${exception.message}'.")
-        }
+        ).addOnSuccessListener(
+            ::onPrepareIntegrityTokenProviderSuccess
+        ).addOnFailureListener(
+            ::onPrepareIntegrityTokenProviderFailure
+        )
+    }
+
+    /**
+     * A success callback used by [prepareIntegrityTokenProvider].
+     * @param tokenProvider The Google Play API Integrity Token Provider
+     */
+    @VisibleForTesting
+    internal fun onPrepareIntegrityTokenProviderSuccess(tokenProvider: StandardIntegrityTokenProvider) {
+        integrityTokenProvider = tokenProvider
+    }
+
+    /**
+     * A failure callback for [prepareIntegrityTokenProvider].
+     * @param exception The exception provided by Google Play Integrity API
+     */
+    @VisibleForTesting
+    internal fun onPrepareIntegrityTokenProviderFailure(exception: Exception) {
+        w(javaClass.name, "Failed to prepare Google Play Integrity Token Provider: '${exception.message}'. App Attestation will be disabled.")
     }
 
     /**
@@ -126,12 +132,19 @@ class AppAttestationClient(
      * fetched using the "Challenge" as the Request Hash. The resulting token is
      * encoded into a value usable as the "attestation" parameter in the
      * Salesforce OAuth authorization request.
+     * @param integrityManager The Google Play Integrity API integrity manager.
+     * This parameter is intended for testing purposes only
+     * @param integrityTokenProvider The Google Play App Integrity API Integrity
+     * Token Provider.  This parameter is intended for testing purposes only
      * @return The "attestation" value usable in Salesforce OAuth authorization
      * and token refresh requests
      */
-    public fun createSalesforceOAuthAuthorizationAppAttestation(): String? {
-        // Guards.
-        val integrityTokenProvider = integrityTokenProvider ?: return ""
+    suspend fun createSalesforceOAuthAuthorizationAppAttestation(
+        integrityManager: StandardIntegrityManager = this.integrityManager,
+        integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
+    ): String? {
+        // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now
+        val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider(integrityManager).result
 
         // Fetch the Salesforce Mobile App Attestation Challenge.
         val salesforceAppAttestationChallenge = fetchSalesforceMobileAppAttestationChallenge()
@@ -140,25 +153,25 @@ class AppAttestationClient(
         val salesforceAppAttestationChallengeHashHexString = salesforceAppAttestationChallengeHashByteArray.joinToString("") { "%02x".format(it) }
 
         // Request the Google Play Integrity Token.
-        val integrityTokenResponse = integrityTokenProvider.request(
+        val integrityTokenResponse = integrityTokenProviderResolved.request(
             StandardIntegrityTokenRequest.builder()
                 .setRequestHash(salesforceAppAttestationChallengeHashHexString)
                 .build()
         )
-        val googlePlayIntegrityTask = integrityTokenResponse.addOnSuccessListener { response ->
-            Log.i("AppAttestation", "Received Google Play Integrity Token: '${response.token()}'.")
-
-        }.addOnFailureListener { exception ->
-            // If the app uses the same token provider for too long, the token provider can expire which results in the INTEGRITY_TOKEN_PROVIDER_INVALID error on the next token request. You should handle this error by requesting a new provider.
-            Log.e("AppAttestation", "Failed To Receive Google Play Integrity Token: Message: '${exception.message}'.")
-
-            // TODO: Handle the error by requesting a new Google Play Integrity Token Provider. ECJ20260311
+        val googlePlayIntegrityTask = integrityTokenResponse.addOnFailureListener { exception ->
+            e(javaClass.name, "Failed To Receive Google Play Integrity Token: Message: '${exception.message}'.")
+            // Synchronously re-prepare the Google Play Integrity Token Provider to provide a result to the caller.
+            runBlocking { prepareIntegrityTokenProvider().await() /* TODO: Make this retry the request. ECJ20260414 */ }
         }
 
-        // Wait for the Google Play Integrity API response and return the Base64-encoded Salesforce OAuth authorization attestation parameter JSON.
-        runBlocking {
-            googlePlayIntegrityTask.await()
-        }
+        /*
+         * Wait for the Google Play Integrity API response and return the
+         * Base64-encoded Salesforce OAuth authorization attestation parameter
+         * JSON. This may block the calling thread if the Google Play Integrity
+         * API introduces latency, though latency is expected to minimal as the
+         * API will have been prepared earlier in most scenarios.
+         */
+        googlePlayIntegrityTask.await()
         return OAuthAuthorizationAttestation(
             attestationId = deviceId,
             attestationData = Base64.getEncoder().encodeToString(
@@ -166,6 +179,13 @@ class AppAttestationClient(
             )
         ).toBase64String()
     }
+
+    /**
+     * A blocking Java-callable wrapper for
+     * [createSalesforceOAuthAuthorizationAppAttestation]
+     */
+    @JvmName("createSalesforceOAuthAuthorizationAppAttestationBlocking")
+    fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking { createSalesforceOAuthAuthorizationAppAttestation() }
 
     /**
      * Fetches a new "Challenge" from the Salesforce App Attestation External
@@ -185,23 +205,24 @@ class AppAttestationClient(
 
         return salesforceAppAttestationChallenge
     }
+}
+
+/**
+ * A Salesforce OAuth 2.0 authorization "attestation" parameter.
+ * @param attestationId The attestation id used when creating the Salesforce
+ * Mobile App Attestation API Challenge.  This is intended to be the
+ * Salesforce Mobile SDK device id
+ * @param attestationData The token provided by the Google Play Integrity API
+ */
+@Serializable
+internal data class OAuthAuthorizationAttestation(
+    val attestationId: String,
+    val attestationData: String,
+) {
 
     /**
-     * A Salesforce OAuth 2.0 authorization "attestation" parameter.
-     * @param attestationId The attestation id used when creating the Salesforce
-     * Mobile App Attestation API Challenge.  This is intended to be the
-     * Salesforce Mobile SDK device id
-     * @param attestationData The token provided by the Google Play Integrity API
+     * Returns a Base64-encoded JSON representation of this object
      */
-    @Serializable
-    internal data class OAuthAuthorizationAttestation(
-        val attestationId: String,
-        val attestationData: String,
-    ) {
-
-        /**
-         * Returns a Base64-encoded JSON representation of this object
-         */
-        fun toBase64String(): String? = Base64.getEncoder().encodeToString(Json.encodeToString(serializer(), this).encodeToByteArray())
-    }
+    fun toBase64String(): String? = Base64.getEncoder().encodeToString(Json.encodeToString(serializer(), this).encodeToByteArray())
 }
+

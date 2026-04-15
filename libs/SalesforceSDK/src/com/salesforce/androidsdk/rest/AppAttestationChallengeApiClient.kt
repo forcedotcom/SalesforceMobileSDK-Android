@@ -72,7 +72,7 @@ internal class AppAttestationChallengeApiClient(
             responseBodyString
         } else {
             runCatching {
-                val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString)
+                val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString) // TODO: Review error type. ECJ20260414
                 throw AppAttestationChallengeApiException(
                     message = errorResponseBody.message ?: "The server did not provide a message.",
                     source = errorResponseBody.sourceJson ?: "Source JSON could not be determined."
