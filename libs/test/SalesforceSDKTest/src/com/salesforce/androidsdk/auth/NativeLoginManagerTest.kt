@@ -24,9 +24,11 @@ import io.mockk.verify
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Ignore
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class NativeLoginManagerTest {

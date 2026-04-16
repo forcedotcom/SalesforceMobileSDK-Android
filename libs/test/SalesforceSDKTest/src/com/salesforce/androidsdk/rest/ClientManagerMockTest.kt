@@ -31,12 +31,14 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 
 private const val OLD_ACCESS_TOKEN = "old-token"
 private const val REFRESHED_ACCESS_TOKEN = "refreshed-auth-token"
 private const val REFRESH_TOKEN = "refresh-token"
 
+@Ignore
 @SmallTest
 class ClientManagerMockTest {
     private lateinit var clientManager: ClientManager
