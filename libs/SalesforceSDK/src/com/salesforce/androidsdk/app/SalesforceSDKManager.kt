@@ -242,7 +242,7 @@ open class SalesforceSDKManager protected constructor(
         set(value) {
             field = value
 
-            val loginHost = loginServerManager.selectedLoginServer.url.toUri().host
+            val loginHost = loginServerManager.selectedLoginServer?.url?.toUri()?.host
             if (loginHost == null) {
                 w(javaClass.name, "Cannot initialize Salesforce App Attestation Client since the selected login server URL doesn't have a host. Authentication may malfunction.")
                 return
