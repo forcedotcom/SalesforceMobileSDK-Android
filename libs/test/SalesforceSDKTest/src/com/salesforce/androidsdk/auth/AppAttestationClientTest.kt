@@ -66,6 +66,7 @@ class AppAttestationClientTest {
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
         val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
@@ -98,6 +99,7 @@ class AppAttestationClientTest {
         val integrityTokenProvider = mockk<StandardIntegrityTokenProvider>(relaxed = true)
 
         val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
@@ -122,6 +124,7 @@ class AppAttestationClientTest {
         val restClient = mockk<RestClient>(relaxed = true)
 
         val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
@@ -161,6 +164,7 @@ class AppAttestationClientTest {
         every { integrityTokenProvider.request(any()) } returns integrityTokenTask
 
         val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
@@ -209,6 +213,7 @@ class AppAttestationClientTest {
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
         val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,

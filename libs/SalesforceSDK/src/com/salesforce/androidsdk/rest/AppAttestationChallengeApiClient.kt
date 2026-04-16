@@ -35,7 +35,7 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod.GET
  * See https://docs.google.com/document/d/1MGw0-dO4Q-CJLNuqYBSYKAbEUy484lpLLX20ZIvwU6Y/edit?tab=t.0
  * TODO: Replace with final documentation when available. ECJ20260311
  *
- * @param apiHostName The Salesforce `sfap_api` hostname
+ * @param apiHostName The Salesforce App Attestation Challenge API host
  * @param restClient The REST client to use
  */
 @Suppress("unused")

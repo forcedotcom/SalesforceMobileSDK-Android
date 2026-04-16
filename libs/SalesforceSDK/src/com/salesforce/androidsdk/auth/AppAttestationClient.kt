@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import com.google.android.gms.tasks.Task
 import com.google.android.play.core.integrity.IntegrityManagerFactory.createStandard
 import com.google.android.play.core.integrity.IntegrityServiceException
 import com.google.android.play.core.integrity.StandardIntegrityManager
@@ -51,9 +50,10 @@ import java.util.Base64
  * App attestation features supporting the Salesforce App Attestation External
  * Client App (ECA) Plugin, the Salesforce Challenge API, Google Play Integrity
  * API and integration of app attestation with Salesforce Authentication.
+ * @param apiHostName The Salesforce App Attestation Challenge API host
+ * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param googleCloudProjectId The Google Cloud Project ID used with Google Play
  * Integrity API
- * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param remoteAccessConsumerKey The Salesforce Connected App (CA) or External
  * Client App (ECA)remote access consumer key, usually provided by the boot
  * config
@@ -62,6 +62,7 @@ import java.util.Base64
  */
 class AppAttestationClient(
     context: Context,
+    val apiHostName: String,
     val deviceId: String,
     val googleCloudProjectId: Long,
     val remoteAccessConsumerKey: String,
@@ -87,26 +88,25 @@ class AppAttestationClient(
     }
 
     /**
-     * (Re-)prepares the Google Play Integrity token provider.
+     * (Re-)prepares the Google Play Integrity token provider. Calling this
+     * prior to requesting the Integrity Token via
+     * [createSalesforceOAuthAuthorizationAppAttestation] reduces the latency of
+     * the request.
      * @param integrityManager The Google Play Integrity API integrity manager.
      * This parameter is intended for testing purposes only
      */
     @VisibleForTesting
     internal fun prepareIntegrityTokenProvider(
         integrityManager: StandardIntegrityManager = this.integrityManager
-    ): Task<StandardIntegrityTokenProvider> {
-
-        // Prepare the Google Play Integrity token.  Calling this prior to requesting the Integrity Token reduces the latency of the request.
-        return integrityManager.prepareIntegrityToken(
-            PrepareIntegrityTokenRequest.builder()
-                .setCloudProjectNumber(googleCloudProjectId)
-                .build()
-        ).addOnSuccessListener(
-            ::onPrepareIntegrityTokenProviderSuccess
-        ).addOnFailureListener(
-            ::onPrepareIntegrityTokenProviderFailure
-        )
-    }
+    ) = integrityManager.prepareIntegrityToken(
+        PrepareIntegrityTokenRequest.builder()
+            .setCloudProjectNumber(googleCloudProjectId)
+            .build()
+    ).addOnSuccessListener(
+        ::onPrepareIntegrityTokenProviderSuccess
+    ).addOnFailureListener(
+        ::onPrepareIntegrityTokenProviderFailure
+    )
 
     /**
      * A success callback used by [prepareIntegrityTokenProvider].
@@ -202,7 +202,7 @@ class AppAttestationClient(
     internal fun fetchSalesforceMobileAppAttestationChallenge(): String {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
         val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = "msdkappattestationtestorg.test1.my.pc-rnd.salesforce.com", // TODO: Replace with template placeholder. ECJ20260311
+            apiHostName = apiHostName,
             restClient = restClient
         )
         val salesforceAppAttestationChallenge = appAttestationChallengeApiClient.fetchChallenge(

@@ -64,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -241,13 +242,20 @@ open class SalesforceSDKManager protected constructor(
         set(value) {
             field = value
 
+            val loginHost = loginServerManager.selectedLoginServer.url.toUri().host
+            if (loginHost == null) {
+                w(javaClass.name, "Cannot initialize Salesforce App Attestation Client since the selected login server URL doesn't have a host. Authentication may malfunction.")
+                return
+            }
+
             appAttestationClient = field?.let { appAttestationGoogleCloudProjectId ->
                 AppAttestationClient(
-                    appContext,
-                    deviceId,
-                    appAttestationGoogleCloudProjectId,
-                    getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
-                    clientManager.peekUnauthenticatedRestClient()
+                    context = appContext,
+                    apiHostName = loginHost,
+                    deviceId = deviceId,
+                    googleCloudProjectId = appAttestationGoogleCloudProjectId,
+                    remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
+                    restClient = clientManager.peekUnauthenticatedRestClient()
                 )
             }
         }
