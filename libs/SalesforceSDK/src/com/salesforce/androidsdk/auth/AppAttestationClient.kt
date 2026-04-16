@@ -180,7 +180,10 @@ class AppAttestationClient(
         }.getOrElse { e ->
             // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
             if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
-                createSalesforceOAuthAuthorizationAppAttestation(integrityTokenProvider = null)
+                createSalesforceOAuthAuthorizationAppAttestation(
+                    integrityManager = integrityManager,
+                    integrityTokenProvider = null
+                )
             } else {
                 null
             }
