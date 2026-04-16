@@ -30,13 +30,14 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.google.android.gms.tasks.Task
 import com.google.android.play.core.integrity.IntegrityManagerFactory.createStandard
+import com.google.android.play.core.integrity.IntegrityServiceException
 import com.google.android.play.core.integrity.StandardIntegrityManager
 import com.google.android.play.core.integrity.StandardIntegrityManager.PrepareIntegrityTokenRequest
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenRequest
+import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTEGRITY_TOKEN_PROVIDER_INVALID
 import com.salesforce.androidsdk.rest.AppAttestationChallengeApiClient
 import com.salesforce.androidsdk.rest.RestClient
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
@@ -137,7 +138,7 @@ class AppAttestationClient(
      * @param integrityTokenProvider The Google Play App Integrity API Integrity
      * Token Provider.  This parameter is intended for testing purposes only
      * @return The "attestation" value usable in Salesforce OAuth authorization
-     * and token refresh requests
+     * and token refresh requests or null if the value cannot be created
      */
     suspend fun createSalesforceOAuthAuthorizationAppAttestation(
         integrityManager: StandardIntegrityManager = this.integrityManager,
@@ -158,11 +159,6 @@ class AppAttestationClient(
                 .setRequestHash(salesforceAppAttestationChallengeHashHexString)
                 .build()
         )
-        val googlePlayIntegrityTask = integrityTokenResponse.addOnFailureListener { exception ->
-            e(javaClass.name, "Failed To Receive Google Play Integrity Token: Message: '${exception.message}'.")
-            // Synchronously re-prepare the Google Play Integrity Token Provider to provide a result to the caller.
-            runBlocking { prepareIntegrityTokenProvider().await() /* TODO: Make this retry the request. ECJ20260414 */ }
-        }
 
         /*
          * Wait for the Google Play Integrity API response and return the
@@ -171,13 +167,24 @@ class AppAttestationClient(
          * API introduces latency, though latency is expected to minimal as the
          * API will have been prepared earlier in most scenarios.
          */
-        googlePlayIntegrityTask.await()
-        return OAuthAuthorizationAttestation(
-            attestationId = deviceId,
-            attestationData = Base64.getEncoder().encodeToString(
-                googlePlayIntegrityTask.getResult().token().encodeToByteArray()
-            )
-        ).toBase64String()
+        return runCatching {
+            integrityTokenResponse.await()
+
+            // When the Google Play Integrity API response is received, return the Base64-encoded Salesforce OAuth authorization attestation parameter JSON.
+            OAuthAuthorizationAttestation(
+                attestationId = deviceId,
+                attestationData = Base64.getEncoder().encodeToString(
+                    integrityTokenResponse.getResult().token().encodeToByteArray()
+                )
+            ).toBase64String()
+        }.getOrElse { e ->
+            // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
+            if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
+                createSalesforceOAuthAuthorizationAppAttestation(integrityTokenProvider = null)
+            } else {
+                null
+            }
+        }
     }
 
     /**
