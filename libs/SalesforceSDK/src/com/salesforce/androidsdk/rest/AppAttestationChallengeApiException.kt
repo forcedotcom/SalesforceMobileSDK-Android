@@ -31,11 +31,9 @@ package com.salesforce.androidsdk.rest
  * failure response.
  * See https://docs.google.com/document/d/1MGw0-dO4Q-CJLNuqYBSYKAbEUy484lpLLX20ZIvwU6Y/edit?tab=t.0
  * TODO: Replace with final documentation when available. ECJ20260311
- * TODO: Determine actual properties when final documentation is available. ECJ20260311
- * @param message The `sfap_api` error message
- * @param source The original `sfap_api` error response body
+ * @param source The original Salesforce Mobile App Attestation Challenge API
+ * error response body
  */
 class AppAttestationChallengeApiException(
-    message: String,
     val source: String
-) : Exception(message)
+) : Exception()

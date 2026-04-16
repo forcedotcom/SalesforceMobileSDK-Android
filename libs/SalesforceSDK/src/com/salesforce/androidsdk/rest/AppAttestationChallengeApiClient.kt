@@ -71,18 +71,9 @@ internal class AppAttestationChallengeApiClient(
         return if (restResponse.isSuccess && responseBodyString != null) {
             responseBodyString
         } else {
-            runCatching {
-                val errorResponseBody = SfapApiErrorResponseBody.fromJson(responseBodyString) // TODO: Review error type. ECJ20260414
-                throw AppAttestationChallengeApiException(
-                    message = errorResponseBody.message ?: "The server did not provide a message.",
-                    source = errorResponseBody.sourceJson ?: "Source JSON could not be determined."
-                )
-            }.getOrElse {
-                throw AppAttestationChallengeApiException(
-                    message = "The server returned an unrecognized error response.",
-                    source = responseBodyString
-                )
-            }
+            throw AppAttestationChallengeApiException(
+                source = responseBodyString
+            )
         }
     }
 }
