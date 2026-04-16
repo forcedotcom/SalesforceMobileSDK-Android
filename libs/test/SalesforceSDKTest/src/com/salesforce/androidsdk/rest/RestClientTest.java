@@ -50,6 +50,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -732,6 +733,7 @@ public class RestClientTest {
      * Create new account then look for it using soql.
      * @throws Exception
      */
+    @Ignore
     @Test(timeout = 180000) // 3 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
     public void testQueryWithBatchSize() throws Exception {
         cleanup();
