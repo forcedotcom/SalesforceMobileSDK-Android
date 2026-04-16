@@ -34,7 +34,6 @@ import com.google.android.play.core.integrity.StandardIntegrityManager.StandardI
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestResponse
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -52,7 +51,7 @@ import org.junit.runner.RunWith
 class AppAttestationClientTest {
 
     @Test
-    fun testPrepareIntegrityTokenProvider() {
+    fun appAttestationClient_prepareIntegrityTokenProvider_returnsSuccessfully() {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
@@ -80,8 +79,7 @@ class AppAttestationClientTest {
 
         verify(exactly = 1) {
             integrityManager.prepareIntegrityToken(match {
-                i(javaClass.name, it.toString()) // TODO: Determine how to verify the Google Cloud Project ID was set. ECJ20260411
-                true
+                it.toString().contains("cloudProjectNumber=654321")
             })
         }
         verify(exactly = 1) { integrityTokenProviderTask.addOnSuccessListener(any()) }
@@ -89,7 +87,7 @@ class AppAttestationClientTest {
     }
 
     @Test
-    fun testOnPrepareIntegrityTokenProviderSuccess() {
+    fun appAttestationClient_onPrepareIntegrityTokenProviderSuccess_assignsIntegrityTokenProvider() {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
@@ -115,7 +113,7 @@ class AppAttestationClientTest {
     }
 
     @Test
-    fun testOnPrepareIntegrityTokenProviderFailure() {
+    fun appAttestationClient_onPrepareIntegrityTokenProviderFailure_justRuns() {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
@@ -140,7 +138,7 @@ class AppAttestationClientTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun testCreateSalesforceOAuthAuthorizationAppAttestation() = runTest {
+    fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestation_returnsSuccessfully() = runTest {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
@@ -181,7 +179,7 @@ class AppAttestationClientTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun appAttestationClient_createAttestationWhenIntegrityTokenProviderIsNull_returns() = runTest {
+    fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestationWhenIntegrityTokenProviderIsNull_returnsSuccessfully() = runTest {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
