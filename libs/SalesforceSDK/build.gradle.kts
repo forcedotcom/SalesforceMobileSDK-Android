@@ -28,7 +28,6 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.datastore:datastore:1.1.1") // Update requires Kotlin 2.
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")

@@ -104,7 +104,10 @@ public class OAuth2 {
     public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
 
-    /// OAuth 2.0 authorization endpoint request body parameter names: Google Play Integrity API Token
+    /**
+     *  OAuth 2.0 authorization endpoint request body parameter names: Google
+     *  Play Integrity API Token
+     */
     protected static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";

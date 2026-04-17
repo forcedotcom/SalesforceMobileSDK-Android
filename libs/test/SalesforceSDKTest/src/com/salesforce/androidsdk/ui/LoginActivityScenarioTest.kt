@@ -49,7 +49,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -220,7 +219,6 @@ class LoginActivityScenarioTest {
         }
     }
 
-    @Ignore
     @Test
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
         // Set loginDevMenuReload to false initially

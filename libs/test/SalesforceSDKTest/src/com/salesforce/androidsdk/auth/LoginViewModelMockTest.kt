@@ -55,7 +55,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -102,7 +101,6 @@ class LoginViewModelMockTest {
         unmockkAll()
     }
 
-    @Ignore
     @Test
     fun onAuthFlowComplete_CallsAuthenticationUtilities_WithCorrectParameters() = runBlocking {
         // Mock the AuthenticationUtilities.onAuthFlowComplete function
@@ -393,7 +391,6 @@ class LoginViewModelMockTest {
         }
     }
 
-    @Ignore
     @Test
     fun onTokenMigration_CallsDoCodeExchange_WithCorrectParameters() = runBlocking {
         val testServer = "https://test.salesforce.com"

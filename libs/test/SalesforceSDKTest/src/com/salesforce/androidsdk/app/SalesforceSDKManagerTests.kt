@@ -303,6 +303,10 @@ class SalesforceSDKManagerTests {
         assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.deviceId)
         assertEquals("__CONSUMER_KEY__", SalesforceSDKManager.getInstance().appAttestationClient?.remoteAccessConsumerKey)
         assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.restClient)
+
+        SalesforceSDKManager.getInstance().updateAppAttestationClient("https://login.example.com", null)
+
+        assertNull(SalesforceSDKManager.getInstance().appAttestationClient)
     }
 
     @Test

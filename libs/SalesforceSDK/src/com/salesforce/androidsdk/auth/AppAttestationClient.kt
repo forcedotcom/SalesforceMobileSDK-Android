@@ -204,12 +204,10 @@ class AppAttestationClient(
             apiHostName = apiHostName,
             restClient = restClient
         )
-        val salesforceAppAttestationChallenge = appAttestationChallengeApiClient.fetchChallenge(
+        return appAttestationChallengeApiClient.fetchChallenge(
             attestationId = deviceId,
             remoteConsumerKey = remoteAccessConsumerKey
         )
-
-        return salesforceAppAttestationChallenge
     }
 }
 

@@ -229,7 +229,7 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * The client side implementation of the Salesforce App Attestation External
-     * Client App Plugin or null with app attestation is disabled.
+     * Client App (ECA) Plugin or null when app attestation is disabled.
      */
     var appAttestationClient: AppAttestationClient? = null
 
