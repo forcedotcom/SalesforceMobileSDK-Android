@@ -54,6 +54,9 @@ import java.util.Base64
  * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param googleCloudProjectId The Google Cloud Project ID used with Google Play
  * Integrity API
+ * @param integrityManager The Google Play App Integrity API Integrity Manager.
+ * This parameter is intended for testing purposes only. Defaults to a new
+ * instance
  * @param remoteAccessConsumerKey The Salesforce Connected App (CA) or External
  * Client App (ECA)remote access consumer key, usually provided by the boot
  * config
@@ -65,12 +68,10 @@ class AppAttestationClient(
     val apiHostName: String,
     val deviceId: String,
     val googleCloudProjectId: Long,
+    val integrityManager: StandardIntegrityManager = createStandard(context),
     val remoteAccessConsumerKey: String,
-    val restClient: RestClient
+    val restClient: RestClient,
 ) {
-
-    /** The Google Play Integrity Manager and Token Provider */
-    private val integrityManager = createStandard(context)
 
 
     /** The Google Play Integrity API Token Provider */
@@ -92,13 +93,9 @@ class AppAttestationClient(
      * prior to requesting the Integrity Token via
      * [createSalesforceOAuthAuthorizationAppAttestation] reduces the latency of
      * the request.
-     * @param integrityManager The Google Play Integrity API integrity manager.
-     * This parameter is intended for testing purposes only
      */
     @VisibleForTesting
-    internal fun prepareIntegrityTokenProvider(
-        integrityManager: StandardIntegrityManager = this.integrityManager
-    ) = integrityManager.prepareIntegrityToken(
+    internal fun prepareIntegrityTokenProvider() = integrityManager.prepareIntegrityToken(
         PrepareIntegrityTokenRequest.builder()
             .setCloudProjectNumber(googleCloudProjectId)
             .build()
@@ -133,19 +130,17 @@ class AppAttestationClient(
      * fetched using the "Challenge" as the Request Hash. The resulting token is
      * encoded into a value usable as the "attestation" parameter in the
      * Salesforce OAuth authorization request.
-     * @param integrityManager The Google Play Integrity API integrity manager.
-     * This parameter is intended for testing purposes only
      * @param integrityTokenProvider The Google Play App Integrity API Integrity
      * Token Provider.  This parameter is intended for testing purposes only
      * @return The "attestation" value usable in Salesforce OAuth authorization
      * and token refresh requests or null if the value cannot be created
      */
     suspend fun createSalesforceOAuthAuthorizationAppAttestation(
-        integrityManager: StandardIntegrityManager = this.integrityManager,
+        // TODO: Coverage needed. ECJ20260416
         integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
     ): String? {
         // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now
-        val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider(integrityManager).result
+        val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().result
 
         // Fetch the Salesforce Mobile App Attestation Challenge.
         val salesforceAppAttestationChallenge = fetchSalesforceMobileAppAttestationChallenge()
@@ -179,9 +174,9 @@ class AppAttestationClient(
             ).toBase64String()
         }.getOrElse { e ->
             // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
+            // TODO: Coverage needed. ECJ20260416
             if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
                 createSalesforceOAuthAuthorizationAppAttestation(
-                    integrityManager = integrityManager,
                     integrityTokenProvider = null
                 )
             } else {
@@ -195,6 +190,7 @@ class AppAttestationClient(
      * [createSalesforceOAuthAuthorizationAppAttestation]
      */
     @JvmName("createSalesforceOAuthAuthorizationAppAttestationBlocking")
+    // TODO: Coverage needed. ECJ20260416
     fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking { createSalesforceOAuthAuthorizationAppAttestation() }
 
     /**

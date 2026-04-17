@@ -34,6 +34,7 @@ import com.google.android.play.core.integrity.StandardIntegrityManager
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityToken
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTEGRITY_TOKEN_PROVIDER_INVALID
+import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTERNAL_ERROR
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestResponse
 import io.mockk.coEvery
@@ -45,6 +46,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -68,17 +70,14 @@ class AppAttestationClientTest {
         val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
-        val appAttestationClient = AppAttestationClient(
+        AppAttestationClient(
             apiHostName = "login.example.com",
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
             remoteAccessConsumerKey = remoteAccessConsumerKey,
             restClient = restClient
-        )
-
-        appAttestationClient.prepareIntegrityTokenProvider(
-            integrityManager = integrityManager
         )
 
         verify(exactly = 1) {
@@ -175,6 +174,9 @@ class AppAttestationClientTest {
             restClient = restClient
         )
 
+        // TODO: Consider refactoring this statement once it proves coverage for AppAttestationClient#145 ECJ20260416
+//        appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation() // TODO: This won't run without mocks. ECJ20260416
+
         val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
             integrityTokenProvider = integrityTokenProvider
         )
@@ -229,18 +231,77 @@ class AppAttestationClientTest {
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
             remoteAccessConsumerKey = remoteAccessConsumerKey,
-            restClient = restClient
+            restClient = restClient,
         )
 
         val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
-            integrityManager = integrityManager,
             integrityTokenProvider = throwingIntegrityTokenProvider
         )
 
         advanceUntilIdle()
 
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestationThrowingForUnknownIntegrityServiceException_returnsSuccessfully() = runTest {
+
+        val context = mockk<Context>(relaxed = true)
+        val deviceId = "123456"
+        val googleCloudProjectId = 654321L
+        val remoteAccessConsumerKey = "13579"
+        val restResponse = mockk<RestResponse>(relaxed = true)
+        every { restResponse.asString() } returns "__TEST_CHALLENGE_VALUE__"
+        every { restResponse.isSuccess } returns true
+        val restClient = mockk<RestClient>(relaxed = true)
+        every { restClient.sendSync(any()) } returns restResponse
+
+        val integrityToken = mockk<StandardIntegrityToken>(relaxed = true)
+        every { integrityToken.token() } returns "__TEST_INTEGRITY_TOKEN__"
+        val throwingIntegrityTokenTask = mockk<Task<StandardIntegrityToken>>(relaxed = true)
+        every { throwingIntegrityTokenTask.addOnFailureListener(any()) } returns throwingIntegrityTokenTask
+        every { throwingIntegrityTokenTask.getResult() } returns integrityToken
+        mockkStatic("kotlinx.coroutines.tasks.TasksKt")
+        val integrityServiceException = mockk<IntegrityServiceException>(relaxed = true)
+        every { integrityServiceException.errorCode } returns INTERNAL_ERROR
+        coEvery { throwingIntegrityTokenTask.await() } throws integrityServiceException
+        val throwingIntegrityTokenProvider = mockk<StandardIntegrityTokenProvider>(relaxed = true)
+        every { throwingIntegrityTokenProvider.request(any()) } returns throwingIntegrityTokenTask
+
+        val successfulIntegrityTokenTask = mockk<Task<StandardIntegrityToken>>(relaxed = true)
+        every { successfulIntegrityTokenTask.addOnFailureListener(any()) } returns successfulIntegrityTokenTask
+        every { successfulIntegrityTokenTask.getResult() } returns integrityToken
+        coEvery { successfulIntegrityTokenTask.await() } returns integrityToken
+        val successfulIntegrityTokenProvider = mockk<StandardIntegrityTokenProvider>(relaxed = true)
+        every { successfulIntegrityTokenProvider.request(any()) } returns successfulIntegrityTokenTask
+
+        val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
+        every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
+        every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
+        coEvery { integrityTokenProviderTask.result } returns successfulIntegrityTokenProvider
+        val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
+        every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
+
+        val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
+            context = context,
+            deviceId = deviceId,
+            googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
+            remoteAccessConsumerKey = remoteAccessConsumerKey,
+            restClient = restClient,
+        )
+
+        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+            integrityTokenProvider = throwingIntegrityTokenProvider
+        )
+
+        advanceUntilIdle()
+
+        assertNull(result)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -286,12 +347,12 @@ class AppAttestationClientTest {
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
             remoteAccessConsumerKey = remoteAccessConsumerKey,
-            restClient = restClient
+            restClient = restClient,
         )
 
         val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
-            integrityManager = integrityManager,
             integrityTokenProvider = throwingIntegrityTokenProvider
         )
 
@@ -337,17 +398,77 @@ class AppAttestationClientTest {
             context = context,
             deviceId = deviceId,
             googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
             remoteAccessConsumerKey = remoteAccessConsumerKey,
-            restClient = restClient
+            restClient = restClient,
         )
 
         val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
-            integrityManager = integrityManager,
             integrityTokenProvider = null
         )
 
         advanceUntilIdle()
 
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestationBlocking_returnsSuccessfully() = runTest {
+
+        val context = mockk<Context>(relaxed = true)
+        val deviceId = "123456"
+        val googleCloudProjectId = 654321L
+        val remoteAccessConsumerKey = "13579"
+        val restResponse = mockk<RestResponse>(relaxed = true)
+        every { restResponse.asString() } returns "__TEST_CHALLENGE_VALUE__"
+        every { restResponse.isSuccess } returns true
+        val restClient = mockk<RestClient>(relaxed = true)
+        every { restClient.sendSync(any()) } returns restResponse
+
+        val integrityToken = mockk<StandardIntegrityToken>(relaxed = true)
+        every { integrityToken.token() } returns "__TEST_INTEGRITY_TOKEN__"
+        val integrityTokenTask = mockk<Task<StandardIntegrityToken>>(relaxed = true)
+        every { integrityTokenTask.addOnFailureListener(any()) } returns integrityTokenTask
+        every { integrityTokenTask.getResult() } returns integrityToken
+        mockkStatic("kotlinx.coroutines.tasks.TasksKt")
+        coEvery { integrityTokenTask.await() } returns integrityToken
+        val integrityTokenProvider = mockk<StandardIntegrityTokenProvider>(relaxed = true)
+        every { integrityTokenProvider.request(any()) } returns integrityTokenTask
+
+        val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
+        every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
+        every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
+        coEvery { integrityTokenProviderTask.result } returns integrityTokenProvider
+        val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
+        every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
+
+        val appAttestationClient = AppAttestationClient(
+            apiHostName = "login.example.com",
+            context = context,
+            deviceId = deviceId,
+            googleCloudProjectId = googleCloudProjectId,
+            integrityManager = integrityManager,
+            remoteAccessConsumerKey = remoteAccessConsumerKey,
+            restClient = restClient
+        )
+
+        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking()
+
+        advanceUntilIdle()
+
+        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+    }
+
+    @Test
+    fun oAuthAuthorizationAttestationData_encode_returnsSuccessfully() {
+
+        val result = Json.decodeFromString(
+            OAuthAuthorizationAttestation.serializer(),
+            "{ \"attestationId\": \"123456\", \"attestationData\": \"W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==\" }"
+        )
+
+        assertEquals("123456", result.attestationId)
+        assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
     }
 }
