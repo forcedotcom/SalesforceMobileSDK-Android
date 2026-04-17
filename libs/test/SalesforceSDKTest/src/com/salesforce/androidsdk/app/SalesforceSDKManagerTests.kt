@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -287,5 +288,31 @@ class SalesforceSDKManagerTests {
         assertFalse(devActions.containsKey("Switch User"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
+    }
+
+    @Test
+    fun salesforceSdkManager_setAppAttestationGoogleCloudProjectId_updatesAppAttestationClient() {
+
+        SalesforceSDKManager.getInstance().updateAppAttestationClient(
+            selectedLoginServerHost = "login.example.com",
+            googleCloudProjectId = 123456
+        )
+
+        assertEquals(123456L, SalesforceSDKManager.getInstance().appAttestationClient?.googleCloudProjectId)
+        assertEquals("login.example.com", SalesforceSDKManager.getInstance().appAttestationClient?.apiHostName)
+        assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.deviceId)
+        assertEquals("__CONSUMER_KEY__", SalesforceSDKManager.getInstance().appAttestationClient?.remoteAccessConsumerKey)
+        assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.restClient)
+    }
+
+    @Test
+    fun salesforceSdkManager_setAppAttestationGoogleCloudProjectId_doesNotSetAppAttestationClientWhenGoogleCloudProjectIdIsNull() {
+
+        SalesforceSDKManager.getInstance().updateAppAttestationClient(
+            selectedLoginServerHost = "login.example.com",
+            googleCloudProjectId = null
+        )
+
+        assertNull(SalesforceSDKManager.getInstance().appAttestationClient)
     }
 }

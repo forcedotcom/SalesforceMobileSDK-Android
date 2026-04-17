@@ -64,7 +64,6 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -229,29 +228,40 @@ open class SalesforceSDKManager protected constructor(
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
 
     /**
-     * The Google Cloud Project ID used to for the client implementation of the
-     * Salesforce App Attestation External Client App Plugin.  When using App
+     * The client side implementation of the Salesforce App Attestation External
+     * Client App Plugin or null with app attestation is disabled.
+     */
+    var appAttestationClient: AppAttestationClient? = null
+
+    /**
+     * Updates the Salesforce App Attestation ECA Plugin Client for the selected
+     * login server and matching Google Cloud Project ID.  When using App
      * Attestation, this value must match the linked Google Cloud Project ID
      * for the app in Google Play Console's Play Integrity API and provided to
      * the Salesforce App Attestation External Client App Plugin.
      *
-     * When null, App Attestation and Google Play Integrity will be ignored by
-     * the Salesforce Mobile SDK.
+     * @param selectedLoginServerHost The selected login server configured with
+     * the Salesforce App Attestation ECA Plugin
+     * @param googleCloudProjectId The Google Cloud Project ID or null to
+     * disable Salesforce App Attestation
      */
-    var appAttestationGoogleCloudProjectId: Long? = null
-        set(value) {
-            field = value
+    fun updateAppAttestationClient(
+        selectedLoginServerHost: String,
+        googleCloudProjectId: Long? = null
+    ) {
+            // TODO: Needs Coverage x4. ECJ20260417
+//            val loginHost = selectedLoginServer.url.toUri().host
+            // TODO: Needs Coverage x1. ECJ20260417
+//            if (loginHost == null) {
+//                w(javaClass.name, "Cannot initialize Salesforce App Attestation Client since the selected login server URL doesn't have a host. Authentication may malfunction.")
+//                return
+//            }
 
-            val loginHost = loginServerManager.selectedLoginServer?.url?.toUri()?.host
-            if (loginHost == null) {
-                w(javaClass.name, "Cannot initialize Salesforce App Attestation Client since the selected login server URL doesn't have a host. Authentication may malfunction.")
-                return
-            }
-
-            appAttestationClient = field?.let { appAttestationGoogleCloudProjectId ->
+            // TODO: Needs Coverage x2. ECJ20260417
+            appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
                 AppAttestationClient(
                     context = appContext,
-                    apiHostName = loginHost,
+                    apiHostName = selectedLoginServerHost,
                     deviceId = deviceId,
                     googleCloudProjectId = appAttestationGoogleCloudProjectId,
                     remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
@@ -259,12 +269,6 @@ open class SalesforceSDKManager protected constructor(
                 )
             }
         }
-
-    /**
-     * The client side implementation of the Salesforce App Attestation External
-     * Client App Plugin or null with app attestation is disabled.
-     */
-    var appAttestationClient: AppAttestationClient? = null
 
     /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
