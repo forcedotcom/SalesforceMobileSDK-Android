@@ -11,16 +11,22 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
+import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import okhttp3.Call
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -289,6 +295,50 @@ class NativeLoginManagerTest {
             "test_username",
             mgr.biometricAuthenticationUsername
         )
+    }
+
+    // TODO: This test will need additional review. ECJ20260416
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_collectsAppAttestation() = runTest {
+
+        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
+        coEvery { appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation() } returns "__TEST_APP_ATTESTATION__"
+
+        val salesforceSdkManager = SalesforceSDKManager.getInstance()
+        salesforceSdkManager.appAttestationClient = appAttestationClient
+
+        val restClient = mockk<RestClient>(relaxed = true)
+        val mockResponse = mockk<RestResponse>(relaxed = true)
+        every { mockResponse.isSuccess } returns false
+        every {
+            restClient.sendAsync(any(), any())
+        } answers {
+            val callback = secondArg<RestClient.AsyncRequestCallback>()
+            callback.onSuccess(firstArg(), mockResponse)
+            mockk<Call>(relaxed = true)
+        }
+
+        mgr = NativeLoginManager(
+            clientId = "clientId",
+            redirectUri = "redirect",
+            loginUrl = "loginUrl",
+            restClient = restClient,
+        )
+
+        mgr.login("TestUser@Example.com", "test123456")
+
+        advanceUntilIdle()
+
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                runCatching {
+                    val buffer = okio.Buffer()
+                    it.requestBody?.writeTo(buffer)
+                    buffer.readUtf8().contains("attestation=__TEST_APP_ATTESTATION__")
+                }.getOrDefault(false)
+            }, any())
+        }
     }
 
     private fun addUserAccount() {

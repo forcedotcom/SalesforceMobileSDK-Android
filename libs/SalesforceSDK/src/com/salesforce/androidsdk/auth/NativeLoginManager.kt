@@ -85,6 +85,7 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -121,6 +122,9 @@ import kotlin.coroutines.suspendCoroutine
  * Google Cloud Console.  Defaults to null to disable reCAPTCHA use
  * @param isReCaptchaEnterprise Specifies if reCAPTCHA uses the enterprise
  * license. Defaults to false to disable reCAPTCHA use
+ * @param restClient The REST client to use for making network requests. This
+ * parameter is intended for testing purposes only. Defaults to the
+ * unauthenticated REST client
  */
 internal class NativeLoginManager(
     private val clientId: String,
@@ -128,7 +132,8 @@ internal class NativeLoginManager(
     private val loginUrl: String,
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
-    private val isReCaptchaEnterprise: Boolean = false
+    private val isReCaptchaEnterprise: Boolean = false,
+    private val restClient: RestClient = getInstance().clientManager.peekUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -260,8 +265,7 @@ internal class NativeLoginManager(
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {
         return suspendCoroutine { continuation ->
-            SalesforceSDKManager.getInstance().clientManager
-                .peekUnauthenticatedRestClient().sendAsync(request, object : AsyncRequestCallback {
+            restClient.sendAsync(request, object : AsyncRequestCallback {
 
                     override fun onSuccess(request: RestRequest?, response: RestResponse?) {
                         continuation.resume(response)
