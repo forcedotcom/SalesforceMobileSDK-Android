@@ -109,7 +109,7 @@ jobs:
 
           if $IS_PR ; then
             LEVELS_TO_TEST=$PR_API_VERSION
-            RETRIES=1
+            RETRIES=0
           fi
 
           # Build test-targets-for-shard arguments from config file
