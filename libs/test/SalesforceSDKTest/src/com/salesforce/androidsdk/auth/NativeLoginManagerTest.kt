@@ -23,12 +23,11 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@Ignore
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class NativeLoginManagerTest {
@@ -106,6 +105,15 @@ class NativeLoginManagerTest {
         Assert.assertEquals("Should return username.", "test_username", mgr.biometricAuthenticationUsername)
     }
 
+    @Test
+    fun nativeLoginManager_createRequestBody_filtersNullValues() {
+
+        val result = mgr.createRequestBody("key1" to "value1", "key2" to null)
+
+        val buffer = okio.Buffer()
+        result.writeTo(buffer)
+        assertEquals("key1=value1", buffer.readUtf8())
+    }
 
     @Test
     fun testPresentBiometricAuthReturnsFalseWhenNotLocked() {
