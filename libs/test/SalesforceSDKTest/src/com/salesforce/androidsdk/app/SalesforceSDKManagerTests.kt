@@ -3,6 +3,7 @@ package com.salesforce.androidsdk.app
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -293,30 +294,24 @@ class SalesforceSDKManagerTests {
     @Test
     fun salesforceSdkManager_setAppAttestationGoogleCloudProjectId_updatesAppAttestationClient() {
 
-        SalesforceSDKManager.getInstance().updateAppAttestationClient(
+        val salesforceSdkManager = SalesforceSDKManager(
+            context = InstrumentationRegistry.getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+        )
+        salesforceSdkManager.updateAppAttestationClient(
             selectedLoginServerHost = "login.example.com",
             googleCloudProjectId = 123456
         )
 
-        assertEquals(123456L, SalesforceSDKManager.getInstance().appAttestationClient?.googleCloudProjectId)
-        assertEquals("login.example.com", SalesforceSDKManager.getInstance().appAttestationClient?.apiHostName)
-        assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.deviceId)
-        assertEquals("__CONSUMER_KEY__", SalesforceSDKManager.getInstance().appAttestationClient?.remoteAccessConsumerKey)
-        assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient?.restClient)
+        assertEquals(123456L, salesforceSdkManager.appAttestationClient?.googleCloudProjectId)
+        assertEquals("login.example.com", salesforceSdkManager.appAttestationClient?.apiHostName)
+        assertNotNull(salesforceSdkManager.appAttestationClient?.deviceId)
+        assertEquals("__CONSUMER_KEY__", salesforceSdkManager.appAttestationClient?.remoteAccessConsumerKey)
+        assertNotNull(salesforceSdkManager.appAttestationClient?.restClient)
 
-        SalesforceSDKManager.getInstance().updateAppAttestationClient("https://login.example.com", null)
+        salesforceSdkManager.updateAppAttestationClient("https://login.example.com", null)
 
-        assertNull(SalesforceSDKManager.getInstance().appAttestationClient)
-    }
-
-    @Test
-    fun salesforceSdkManager_setAppAttestationGoogleCloudProjectId_doesNotSetAppAttestationClientWhenGoogleCloudProjectIdIsNull() {
-
-        SalesforceSDKManager.getInstance().updateAppAttestationClient(
-            selectedLoginServerHost = "login.example.com",
-            googleCloudProjectId = null
-        )
-
-        assertNull(SalesforceSDKManager.getInstance().appAttestationClient)
+        assertNull(salesforceSdkManager.appAttestationClient)
     }
 }
