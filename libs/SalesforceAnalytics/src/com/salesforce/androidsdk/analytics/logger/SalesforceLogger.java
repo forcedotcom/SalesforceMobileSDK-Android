@@ -389,6 +389,20 @@ public class SalesforceLogger {
     }
 
     /**
+     * Redacts sensitive tokens and credentials from a log message.
+     * Delegates to the Kotlin extension {@code String.redactSensitiveData()}.
+     *
+     * @param message The original log message.
+     * @return The message with sensitive values masked, showing only the last 4 characters.
+     */
+    static String redact(String message) {
+        if (message == null) {
+            return null;
+        }
+        return LogRedactorKt.redactSensitiveData(message);
+    }
+
+    /**
      * Logs a log line of the specified level.
      *
      * @param level   Log level.
@@ -397,6 +411,7 @@ public class SalesforceLogger {
      */
     public void log(Level level, String tag, String message) {
         if (level.severity >= logLevel.severity) {
+            message = redact(message);
             switch (level) {
                 case OFF:
                     break;
@@ -432,6 +447,7 @@ public class SalesforceLogger {
      */
     public void log(Level level, String tag, String message, Throwable e) {
         if (level.severity >= logLevel.severity) {
+            message = redact(message);
             switch (level) {
                 case OFF:
                     break;
