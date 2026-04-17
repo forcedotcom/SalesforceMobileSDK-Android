@@ -52,6 +52,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Suppress("OPT_IN_USAGE")
 @RunWith(AndroidJUnit4::class)
 class AppAttestationClientTest {
 
@@ -461,7 +462,7 @@ class AppAttestationClientTest {
     }
 
     @Test
-    fun oAuthAuthorizationAttestationData_encode_returnsSuccessfully() {
+    fun oAuthAuthorizationAttestation_encode_returnsSuccessfully() {
 
         val result = Json.decodeFromString(
             OAuthAuthorizationAttestation.serializer(),
@@ -470,5 +471,23 @@ class AppAttestationClientTest {
 
         assertEquals("123456", result.attestationId)
         assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
+    }
+
+    @Test
+    fun oAuthAuthorizationAttestation_decodeWithUnknownField_returnsSuccessfully() {
+
+        @Suppress("JSON_FORMAT_REDUNDANT")
+        val result = Json { ignoreUnknownKeys = true }.decodeFromString(
+            OAuthAuthorizationAttestation.serializer(),
+            "{ \"attestationId\": \"123456\", \"attestationData\": \"W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==\", \"unknownField\": \"ignored\" }"
+        )
+
+        assertEquals("123456", result.attestationId)
+        assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
+    }
+
+    @Test
+    fun oAuthAuthorizationAttestation_serializerDescriptor_hasCorrectElementCount() {
+        assertEquals(2, OAuthAuthorizationAttestation.serializer().descriptor.elementsCount)
     }
 }
