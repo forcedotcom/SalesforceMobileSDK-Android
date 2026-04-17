@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.auth;
 
 import android.net.Uri;
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -911,7 +910,7 @@ public class OAuth2 {
         public TokenEndpointResponse(Response response, List<String> additionalOauthKeys) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
-                Log.d(TAG, "parsedResponse-->" + parsedResponse);
+                SalesforceSDKLogger.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 if (parsedResponse.has(API_INSTANCE_URL)) {
