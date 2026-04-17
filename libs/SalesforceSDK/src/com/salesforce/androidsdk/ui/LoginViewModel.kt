@@ -72,7 +72,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -80,6 +79,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
+import kotlin.coroutines.CoroutineContext
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
@@ -469,7 +469,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         return with(authorizationUrl) { "$path?$query" }
     }
-    
+
     /**
      * Generates an OAuth authorization URL for the provided server.
      * @param server The login server URL
