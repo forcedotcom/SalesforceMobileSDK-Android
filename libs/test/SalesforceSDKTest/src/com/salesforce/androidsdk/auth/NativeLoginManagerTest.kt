@@ -297,7 +297,11 @@ class NativeLoginManagerTest {
         )
     }
 
-    // TODO: This test will need additional review. ECJ20260416
+    /**
+     * Tests that native login uses the app attestation during login.  This test
+     * can be removed when a comprehensive test of native login is created so
+     * long as that test covers the inclusion of the attestation parameter.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun nativeLoginManager_login_collectsAppAttestation() = runTest {
@@ -336,6 +340,49 @@ class NativeLoginManagerTest {
                     val buffer = okio.Buffer()
                     it.requestBody?.writeTo(buffer)
                     buffer.readUtf8().contains("attestation=__TEST_APP_ATTESTATION__")
+                }.getOrDefault(false)
+            }, any())
+        }
+    }
+
+    /**
+     * Tests that native login does not include app attestation during login
+     * when it is not applicable.  This test can be removed when a comprehensive
+     * test of native login is created so long as that test covers the exclusion
+     * of the attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_doesNotCollectAppAttestationWhenAppAttestationClientIsNotSet() = runTest {
+
+        val restClient = mockk<RestClient>(relaxed = true)
+        val mockResponse = mockk<RestResponse>(relaxed = true)
+        every { mockResponse.isSuccess } returns false
+        every {
+            restClient.sendAsync(any(), any())
+        } answers {
+            val callback = secondArg<RestClient.AsyncRequestCallback>()
+            callback.onSuccess(firstArg(), mockResponse)
+            mockk<Call>(relaxed = true)
+        }
+
+        mgr = NativeLoginManager(
+            clientId = "clientId",
+            redirectUri = "redirect",
+            loginUrl = "loginUrl",
+            restClient = restClient,
+        )
+
+        mgr.login("TestUser@Example.com", "test123456")
+
+        advanceUntilIdle()
+
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                runCatching {
+                    val buffer = okio.Buffer()
+                    it.requestBody?.writeTo(buffer)
+                    !buffer.readUtf8().contains("attestation=")
                 }.getOrDefault(false)
             }, any())
         }
