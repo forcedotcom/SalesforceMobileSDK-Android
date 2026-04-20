@@ -314,6 +314,6 @@ class SalesforceSDKManagerTests {
 
         salesforceSdkManager.updateAppAttestationClient("https://login.example.com" /* null default */)
 
-        assertNull(appAttestationClient)
+        assertNull(salesforceSdkManager.appAttestationClient)
     }
 }
