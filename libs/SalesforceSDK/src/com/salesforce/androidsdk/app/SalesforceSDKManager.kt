@@ -251,23 +251,24 @@ open class SalesforceSDKManager protected constructor(
      * for the app in Google Play Console's Play Integrity API and provided to
      * the Salesforce App Attestation External Client App Plugin.
      *
-     * @param selectedLoginServerHost The selected login server configured with
-     * the Salesforce App Attestation ECA Plugin
+     * @param apiHostName The Salesforce App Attestation External Client App
+     * (ECA) Plugin Challenge API Host Name.  This usually matches the selected
+     * login server
      * @param googleCloudProjectId The Google Cloud Project ID or null to
      * disable Salesforce App Attestation
      */
     fun updateAppAttestationClient(
-        selectedLoginServerHost: String,
+        apiHostName: String,
         googleCloudProjectId: Long? = null
     ) {
         synchronized(appAttestationClientLock) {
             appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
                 AppAttestationClient(
                     context = appContext,
-                    apiHostName = selectedLoginServerHost,
+                    apiHostName = apiHostName,
                     deviceId = deviceId,
                     googleCloudProjectId = appAttestationGoogleCloudProjectId,
-                    remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
+                    remoteAccessConsumerKey = getBootConfig(appContext).remoteAccessConsumerKey,
                     restClient = clientManager.peekUnauthenticatedRestClient()
                 )
             }

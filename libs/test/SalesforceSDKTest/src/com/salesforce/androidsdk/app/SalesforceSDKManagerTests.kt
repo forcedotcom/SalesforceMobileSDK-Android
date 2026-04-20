@@ -301,7 +301,7 @@ class SalesforceSDKManagerTests {
         )
 
         salesforceSdkManager.updateAppAttestationClient(
-            selectedLoginServerHost = "login.example.com",
+            apiHostName = "login.example.com",
             googleCloudProjectId = 123456
         )
 
