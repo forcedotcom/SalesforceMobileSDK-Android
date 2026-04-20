@@ -71,6 +71,7 @@ class ClientManagerMockTest {
             every { deviceId } returns "test-device-id-123"
             every { additionalOauthKeys } returns emptyList()
             every { useHybridAuthentication } returns true
+            every { appAttestationClient } returns null
             every { appContext } returns mockAppContext
             every { isDevSupportEnabled() } returns true
         }
