@@ -182,7 +182,7 @@ class AppAttestationClientTest {
         advanceUntilIdle()
 
         @Suppress("SpellCheckingInspection")
-        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -242,7 +242,7 @@ class AppAttestationClientTest {
         advanceUntilIdle()
 
         @Suppress("SpellCheckingInspection")
-        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -410,7 +410,7 @@ class AppAttestationClientTest {
         advanceUntilIdle()
 
         @Suppress("SpellCheckingInspection")
-        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -459,7 +459,7 @@ class AppAttestationClientTest {
         advanceUntilIdle()
 
         @Suppress("SpellCheckingInspection")
-        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
+        assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
     @Test

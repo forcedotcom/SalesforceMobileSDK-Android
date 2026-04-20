@@ -238,7 +238,8 @@ open class SalesforceSDKManager protected constructor(
      */
     @Volatile
     var appAttestationClient: AppAttestationClient? = null
-        private set
+        @VisibleForTesting
+        internal set
 
     /** Lock object for synchronized access to the app Attestation Client */
     private val appAttestationClientLock = Any()

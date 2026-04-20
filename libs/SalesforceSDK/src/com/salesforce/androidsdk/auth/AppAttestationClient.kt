@@ -65,12 +65,18 @@ import java.util.Base64
  */
 class AppAttestationClient(
     context: Context,
-    val apiHostName: String,
-    val deviceId: String,
-    val googleCloudProjectId: Long,
-    val integrityManager: StandardIntegrityManager = createStandard(context),
-    val remoteAccessConsumerKey: String,
-    val restClient: RestClient,
+    @property:VisibleForTesting
+    internal val apiHostName: String,
+    @property:VisibleForTesting
+    internal val deviceId: String,
+    @property:VisibleForTesting
+    internal val googleCloudProjectId: Long,
+    @property:VisibleForTesting
+    internal val integrityManager: StandardIntegrityManager = createStandard(context),
+    @property:VisibleForTesting
+    internal val remoteAccessConsumerKey: String,
+    @property:VisibleForTesting
+    internal val restClient: RestClient,
 ) {
 
 
