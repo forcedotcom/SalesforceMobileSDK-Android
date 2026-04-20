@@ -355,7 +355,7 @@ public class OAuth2 {
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
         if (authorizationAppAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(authorizationAppAttestationValue));
         }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
@@ -606,7 +606,7 @@ public class OAuth2 {
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
 
         if (authorizationAppAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(authorizationAppAttestationValue));
         }
 
         final String refreshPath = sb.toString();

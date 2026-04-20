@@ -31,6 +31,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
@@ -282,7 +283,7 @@ internal class NativeLoginManager(
 
     @VisibleForTesting
     internal fun createRequestBody(vararg kvPairs: Pair<String, String?>): RequestBody {
-        val requestBodyString = kvPairs.filter { it.second != null }.joinToString("&") { (key, value) -> "$key=$value" }
+        val requestBodyString = kvPairs.filter { it.second != null }.joinToString("&") { (key, value) -> "$key=${Uri.encode(value)}" }
         val mediaType = CONTENT_TYPE_VALUE_HTTP_POST.toMediaTypeOrNull()
         return requestBodyString.toRequestBody(mediaType)
     }

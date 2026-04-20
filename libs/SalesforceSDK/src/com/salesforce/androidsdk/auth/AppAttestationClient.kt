@@ -223,6 +223,6 @@ internal data class OAuthAuthorizationAttestation(
     /**
      * Returns a Base64-encoded JSON representation of this object
      */
-    fun toBase64String(): String? = Base64.getEncoder().encodeToString(Json.encodeToString(serializer(), this).encodeToByteArray())
+    fun toBase64String(): String? = Base64.getUrlEncoder().withoutPadding().encodeToString(Json.encodeToString(serializer(), this).encodeToByteArray())
 }
 
