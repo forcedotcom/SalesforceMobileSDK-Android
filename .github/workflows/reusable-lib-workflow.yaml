@@ -27,6 +27,10 @@ jobs:
       - name: Install Dependencies
         env:
           TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+          # On PR runs, only SalesforceReact consumes the bundled index.android.bundle,
+          # so skip the yarn install + react-native bundle step for every other lib to
+          # save ~3-5 min per matrix job. Nightly runs still produce the bundle.
+          SKIP_REACT_NATIVE_BUNDLE: ${{ (inputs.is_pr && inputs.lib != 'SalesforceReact') && '1' || '0' }}
         run: |
           ./install.sh
           echo $TEST_CREDENTIALS > ./shared/test/test_credentials.json

@@ -13,12 +13,17 @@ git submodule update
 git -C external/shared checkout -- samples/mobilesyncexplorer/bootconfig.json samples/accounteditor/bootconfig.json 2>/dev/null || true
 
 # get react native
-pushd "libs/SalesforceReact"
-rm -rf node_modules
-rm yarn.lock
-yarn install
-./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
-popd
+# Set SKIP_REACT_NATIVE_BUNDLE=1 to skip the yarn install and bundle step for
+# jobs that do not consume libs/test/SalesforceReactTest/assets/index.android.bundle.
+# Default behavior is unchanged (the bundle is produced).
+if [ "${SKIP_REACT_NATIVE_BUNDLE:-0}" != "1" ]; then
+    pushd "libs/SalesforceReact"
+    rm -rf node_modules
+    rm yarn.lock
+    yarn install
+    ./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
+    popd
+fi
 
 # Apply bootconfig placeholder substitution. Usage:
 #   apply_bootconfig_paths [sample_file] path1 path2 ...
