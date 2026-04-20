@@ -236,7 +236,12 @@ open class SalesforceSDKManager protected constructor(
      *
      * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
      */
+    @Volatile
     var appAttestationClient: AppAttestationClient? = null
+        private set
+
+    /** Lock object for synchronized access to the app Attestation Client */
+    private val appAttestationClientLock = Any()
 
     /**
      * Updates the Salesforce App Attestation ECA Plugin Client for the selected
@@ -254,15 +259,17 @@ open class SalesforceSDKManager protected constructor(
         selectedLoginServerHost: String,
         googleCloudProjectId: Long? = null
     ) {
-        appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
-            AppAttestationClient(
-                context = appContext,
-                apiHostName = selectedLoginServerHost,
-                deviceId = deviceId,
-                googleCloudProjectId = appAttestationGoogleCloudProjectId,
-                remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
-                restClient = clientManager.peekUnauthenticatedRestClient()
-            )
+        synchronized(appAttestationClientLock) {
+            appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
+                AppAttestationClient(
+                    context = appContext,
+                    apiHostName = selectedLoginServerHost,
+                    deviceId = deviceId,
+                    googleCloudProjectId = appAttestationGoogleCloudProjectId,
+                    remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
+                    restClient = clientManager.peekUnauthenticatedRestClient()
+                )
+            }
         }
     }
 
