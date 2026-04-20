@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest
 
+import android.net.Uri
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.GET
 
 /**
@@ -55,7 +56,7 @@ internal class AppAttestationChallengeApiClient(
      * Play Integrity API's request hash
      */
     @Suppress("unused")
-    @Throws(SfapApiException::class)
+    @Throws(AppAttestationChallengeApiException::class)
     fun fetchChallenge(
         attestationId: String,
         remoteConsumerKey: String
@@ -64,7 +65,7 @@ internal class AppAttestationChallengeApiClient(
         // Submit the request.
         val restRequest = RestRequest(
             GET,
-            "https://$apiHostName//mobile/attest/challenge?attestationId=$attestationId&consumerKey=$remoteConsumerKey"
+            "https://$apiHostName/mobile/attest/challenge?attestationId=${Uri.encode(attestationId)}&consumerKey=${Uri.encode(remoteConsumerKey)}"
         )
         val restResponse = restClient.sendSync(restRequest)
         val responseBodyString = restResponse.asString()
