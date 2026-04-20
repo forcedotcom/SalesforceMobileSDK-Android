@@ -245,6 +245,7 @@ open class SalesforceSDKManager protected constructor(
      * @param googleCloudProjectId The Google Cloud Project ID or null to
      * disable Salesforce App Attestation
      */
+    // TODO: Needs coverage. ECJ20260420
     fun updateAppAttestationClient(
         selectedLoginServerHost: String,
         googleCloudProjectId: Long? = null

@@ -292,11 +292,11 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
-    fun salesforceSdkManager_setAppAttestationGoogleCloudProjectId_updatesAppAttestationClient() {
+    fun salesforceSdkManager_updateAppAttestationClient_setsAndUnsetsAppAttestationClientForGoogleCloudProjectId() {
 
         val salesforceSdkManager = SalesforceSDKManager(
             context = InstrumentationRegistry.getInstrumentation().targetContext,
-            mainActivity = LoginActivity::class.java,
+            mainActivity = LoginActivity::class.java, /* Any Activity Class */
             loginActivity = LoginActivity::class.java,
         )
         salesforceSdkManager.updateAppAttestationClient(
@@ -310,7 +310,7 @@ class SalesforceSDKManagerTests {
         assertEquals("__CONSUMER_KEY__", salesforceSdkManager.appAttestationClient?.remoteAccessConsumerKey)
         assertNotNull(salesforceSdkManager.appAttestationClient?.restClient)
 
-        salesforceSdkManager.updateAppAttestationClient("https://login.example.com", null)
+        salesforceSdkManager.updateAppAttestationClient("https://login.example.com" /* null default */)
 
         assertNull(salesforceSdkManager.appAttestationClient)
     }

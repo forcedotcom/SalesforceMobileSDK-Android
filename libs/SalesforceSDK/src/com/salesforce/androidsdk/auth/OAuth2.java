@@ -312,10 +312,42 @@ public class OAuth2 {
             String loginHint,
             String displayType,
             String codeChallenge,
-            Map<String,String> addlParams) {
+            Map<String, String> addlParams) {
+        return getAuthorizationUrl(
+                useWebServerAuthentication,
+                useHybridAuthentication,
+                loginServer,
+                clientId,
+                callbackUrl,
+                scopes,
+                loginHint,
+                displayType,
+                codeChallenge,
+                addlParams,
+                SalesforceSDKManager.getInstance());
+    }
+
+    /**
+     * An internal, testable Salesforce Mobile SDK overload of
+     * {@link #getAuthorizationUrl(boolean, boolean, URI, String, String, String[], String, String, String, Map)}.
+     */
+    @VisibleForTesting
+    public static URI getAuthorizationUrl(
+            boolean useWebServerAuthentication,
+            boolean useHybridAuthentication,
+            URI loginServer,
+            String clientId,
+            String callbackUrl,
+            String[] scopes,
+            String loginHint,
+            String displayType,
+            String codeChallenge,
+            Map<String, String> addlParams,
+            SalesforceSDKManager salesforceSdkManager) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
 
-        final AppAttestationClient appAttestationClient = SalesforceSDKManager.getInstance().getAppAttestationClient();
+        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
+        // TODO: Coverage Needed. ECJ20260417
         final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final String responseType = useWebServerAuthentication
@@ -323,7 +355,9 @@ public class OAuth2 {
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
+        // TODO: Coverage Needed. ECJ20260417
         if (authorizationAppAttestationValue != null) {
+            // TODO: Coverage Needed. ECJ20260417
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
@@ -335,7 +369,7 @@ public class OAuth2 {
             sb.append(AND).append(LOGIN_HINT).append(EQUAL).append(Uri.encode(loginHint));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
-        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
         if (useWebServerAuthentication) {
             sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
         }
@@ -424,6 +458,17 @@ public class OAuth2 {
                                                      String clientId, String code, String codeVerifier,
                                                      String callbackUrl)
             throws OAuthFailedException, IOException {
+        return exchangeCode(httpAccessor, loginServer, clientId, code, codeVerifier, callbackUrl, SalesforceSDKManager.getInstance());
+    }
+
+    /**
+     * An internal, testable Salesforce Mobile SDK overload of
+     * {@link #exchangeCode(HttpAccess, URI, String, String, String, String)}.
+     */
+    public static TokenEndpointResponse exchangeCode(HttpAccess httpAccessor, URI loginServer,
+                                                     String clientId, String code, String codeVerifier,
+                                                     String callbackUrl, SalesforceSDKManager salesforceSdkManager)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_AUTH_CODE : AUTHORIZATION_CODE;
@@ -433,7 +478,7 @@ public class OAuth2 {
         builder.add(CODE, code);
         builder.add(CODE_VERIFIER, codeVerifier);
         builder.add(REDIRECT_URI, callbackUrl);
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, salesforceSdkManager);
     }
 
     /**
@@ -468,7 +513,8 @@ public class OAuth2 {
                 }
             }
         }
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
+        // TODO: Coverage Needed. ECJ20260417
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance());
     }
 
     /**
@@ -514,7 +560,8 @@ public class OAuth2 {
                                                          String jwt) throws IOException, OAuthFailedException {
         final FormBody.Builder formBodyBuilder = new FormBody.Builder().add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
-        return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
+        // TODO: Coverage Needed. ECJ20260417
+        return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder, SalesforceSDKManager.getInstance());
     }
 
     /**
@@ -549,19 +596,24 @@ public class OAuth2 {
         return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
-    private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
-                                                                  URI loginServer,
-                                                                  FormBody.Builder formBodyBuilder)
+    @VisibleForTesting
+    public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                 URI loginServer,
+                                                                 FormBody.Builder formBodyBuilder,
+                                                                 SalesforceSDKManager salesforceSdkManager)
             throws OAuthFailedException, IOException {
 
-        final AppAttestationClient appAttestationClient = SalesforceSDKManager.getInstance().getAppAttestationClient();
+        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
+        // TODO: Coverage Needed. ECJ20260417
         final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
-        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
 
+        // TODO: Coverage Needed. ECJ20260417
         if (authorizationAppAttestationValue != null) {
+            // TODO: Coverage Needed. ECJ20260417
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
 
