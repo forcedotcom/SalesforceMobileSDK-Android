@@ -113,7 +113,7 @@ jobs:
 
           if $IS_PR ; then
             LEVELS_TO_TEST=$PR_API_VERSION
-            RETRIES=0 # TODO: Revert this diagnostic change. ECJ20260417
+            RETRIES=1
           fi
 
           # Build test-targets-for-shard arguments from config file

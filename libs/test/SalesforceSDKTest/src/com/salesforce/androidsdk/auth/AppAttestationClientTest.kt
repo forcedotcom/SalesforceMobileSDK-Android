@@ -175,15 +175,13 @@ class AppAttestationClientTest {
             restClient = restClient
         )
 
-        // TODO: Consider refactoring this statement once it proves coverage for AppAttestationClient#145 ECJ20260416
-//        appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation() // TODO: This won't run without mocks. ECJ20260416
-
         val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
             integrityTokenProvider = integrityTokenProvider
         )
 
         advanceUntilIdle()
 
+        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
     }
 
@@ -243,6 +241,7 @@ class AppAttestationClientTest {
 
         advanceUntilIdle()
 
+        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
     }
 
@@ -410,6 +409,7 @@ class AppAttestationClientTest {
 
         advanceUntilIdle()
 
+        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
     }
 
@@ -458,6 +458,7 @@ class AppAttestationClientTest {
 
         advanceUntilIdle()
 
+        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result)
     }
 
@@ -470,6 +471,7 @@ class AppAttestationClientTest {
         )
 
         assertEquals("123456", result.attestationId)
+        @Suppress("SpellCheckingInspection")
         assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
     }
 
@@ -483,6 +485,7 @@ class AppAttestationClientTest {
         )
 
         assertEquals("123456", result.attestationId)
+        @Suppress("SpellCheckingInspection")
         assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
     }
 

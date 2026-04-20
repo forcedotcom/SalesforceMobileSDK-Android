@@ -230,6 +230,11 @@ open class SalesforceSDKManager protected constructor(
     /**
      * The client side implementation of the Salesforce App Attestation External
      * Client App (ECA) Plugin or null when app attestation is disabled.
+     *
+     * This property is not intended for public use outside of Salesforce Mobile
+     * SDK
+     *
+     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
      */
     var appAttestationClient: AppAttestationClient? = null
 
@@ -245,31 +250,21 @@ open class SalesforceSDKManager protected constructor(
      * @param googleCloudProjectId The Google Cloud Project ID or null to
      * disable Salesforce App Attestation
      */
-    // TODO: Needs coverage. ECJ20260420
     fun updateAppAttestationClient(
         selectedLoginServerHost: String,
         googleCloudProjectId: Long? = null
     ) {
-            // TODO: Needs Coverage x4. ECJ20260417
-//            val loginHost = selectedLoginServer.url.toUri().host
-            // TODO: Needs Coverage x1. ECJ20260417
-//            if (loginHost == null) {
-//                w(javaClass.name, "Cannot initialize Salesforce App Attestation Client since the selected login server URL doesn't have a host. Authentication may malfunction.")
-//                return
-//            }
-
-            // TODO: Needs Coverage x2. ECJ20260417
-            appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
-                AppAttestationClient(
-                    context = appContext,
-                    apiHostName = selectedLoginServerHost,
-                    deviceId = deviceId,
-                    googleCloudProjectId = appAttestationGoogleCloudProjectId,
-                    remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
-                    restClient = clientManager.peekUnauthenticatedRestClient()
-                )
-            }
+        appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
+            AppAttestationClient(
+                context = appContext,
+                apiHostName = selectedLoginServerHost,
+                deviceId = deviceId,
+                googleCloudProjectId = appAttestationGoogleCloudProjectId,
+                remoteAccessConsumerKey = getBootConfig(getInstance().appContext).remoteAccessConsumerKey,
+                restClient = clientManager.peekUnauthenticatedRestClient()
+            )
         }
+    }
 
     /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for

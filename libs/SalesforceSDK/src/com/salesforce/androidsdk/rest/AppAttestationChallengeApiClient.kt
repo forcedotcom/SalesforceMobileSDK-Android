@@ -68,11 +68,9 @@ internal class AppAttestationChallengeApiClient(
         )
         val restResponse = restClient.sendSync(restRequest)
         val responseBodyString = restResponse.asString()
-        // TODO: Needs Coverage. ECJ20260416
         return if (restResponse.isSuccess && responseBodyString != null) {
             responseBodyString
         } else {
-            // TODO: Needs Coverage. ECJ20260416
             throw AppAttestationChallengeApiException(
                 source = responseBodyString
             )

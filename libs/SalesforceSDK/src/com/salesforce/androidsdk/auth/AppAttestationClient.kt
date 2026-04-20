@@ -78,12 +78,6 @@ class AppAttestationClient(
     @VisibleForTesting
     internal var integrityTokenProvider: StandardIntegrityTokenProvider? = null
 
-    /**
-     * Prepares for authorization and authorization token refresh with app
-     * attestation using the Salesforce Mobile App Attestation Challenge API
-     * and Google Play Integrity API.
-     * @param googleCloudProjectId The Google Cloud Project ID
-     */
     init {
         prepareIntegrityTokenProvider()
     }
@@ -135,14 +129,13 @@ class AppAttestationClient(
      * @return The "attestation" value usable in Salesforce OAuth authorization
      * and token refresh requests or null if the value cannot be created
      */
-    suspend fun createSalesforceOAuthAuthorizationAppAttestation(
-        // TODO: Coverage needed. ECJ20260416
+    internal suspend fun createSalesforceOAuthAuthorizationAppAttestation(
         integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
     ): String? {
-        // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now
+        // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now.
         val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().result
 
-        // Fetch the Salesforce Mobile App Attestation Challenge.
+        // Fetch the Challenge from Salesforce Mobile App Attestation.
         val salesforceAppAttestationChallenge = fetchSalesforceMobileAppAttestationChallenge()
         val salesforceAppAttestationChallengeHashByteArray = MessageDigest.getInstance("SHA-256")
             .digest(salesforceAppAttestationChallenge.toByteArray(UTF_8))
@@ -174,7 +167,6 @@ class AppAttestationClient(
             ).toBase64String()
         }.getOrElse { e ->
             // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
-            // TODO: Coverage needed. ECJ20260416
             if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
                 createSalesforceOAuthAuthorizationAppAttestation(
                     integrityTokenProvider = null
@@ -188,9 +180,13 @@ class AppAttestationClient(
     /**
      * A blocking Java-callable wrapper for
      * [createSalesforceOAuthAuthorizationAppAttestation]
+     *
+     * This method is not intended for public use outside of Salesforce Mobile
+     * SDK
+     *
+     * TODO: Remove method when no longer referenced by Java. ECJ20260420
      */
     @JvmName("createSalesforceOAuthAuthorizationAppAttestationBlocking")
-    // TODO: Coverage needed. ECJ20260416
     fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking { createSalesforceOAuthAuthorizationAppAttestation() }
 
     /**

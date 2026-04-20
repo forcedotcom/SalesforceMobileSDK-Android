@@ -39,6 +39,7 @@ import org.junit.runner.RunWith
 class NativeLoginManagerTest {
     private lateinit var mgr: NativeLoginManager
     private lateinit var bioAuthManager: BiometricAuthenticationManager
+
     @Before
     fun setUp() {
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
@@ -108,7 +109,7 @@ class NativeLoginManagerTest {
         Assert.assertNull("Should not return username when not locked.", mgr.biometricAuthenticationUsername)
 
         bioAuthManager.lock()
-        Assert.assertEquals("Should return username.", "test_username", mgr.biometricAuthenticationUsername)
+        assertEquals("Should return username.", "test_username", mgr.biometricAuthenticationUsername)
     }
 
     @Test
@@ -290,7 +291,7 @@ class NativeLoginManagerTest {
         val account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
         bioAuthManager.lock()
-        Assert.assertEquals(
+        assertEquals(
             "Should return username for native login user when locked.",
             "test_username",
             mgr.biometricAuthenticationUsername

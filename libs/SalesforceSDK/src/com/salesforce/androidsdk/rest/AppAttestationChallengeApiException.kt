@@ -34,7 +34,6 @@ package com.salesforce.androidsdk.rest
  * @param source The original Salesforce Mobile App Attestation Challenge API
  * error response body
  */
-// TODO: Needs Coverage. ECJ20260416
 class AppAttestationChallengeApiException(
     val source: String?
 ) : Exception()

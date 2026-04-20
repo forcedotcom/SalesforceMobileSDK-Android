@@ -3,7 +3,7 @@ package com.salesforce.androidsdk.app
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -295,23 +295,25 @@ class SalesforceSDKManagerTests {
     fun salesforceSdkManager_updateAppAttestationClient_setsAndUnsetsAppAttestationClientForGoogleCloudProjectId() {
 
         val salesforceSdkManager = SalesforceSDKManager(
-            context = InstrumentationRegistry.getInstrumentation().targetContext,
+            context = getInstrumentation().targetContext,
             mainActivity = LoginActivity::class.java, /* Any Activity Class */
             loginActivity = LoginActivity::class.java,
         )
+
         salesforceSdkManager.updateAppAttestationClient(
             selectedLoginServerHost = "login.example.com",
             googleCloudProjectId = 123456
         )
 
-        assertEquals(123456L, salesforceSdkManager.appAttestationClient?.googleCloudProjectId)
-        assertEquals("login.example.com", salesforceSdkManager.appAttestationClient?.apiHostName)
-        assertNotNull(salesforceSdkManager.appAttestationClient?.deviceId)
-        assertEquals("__CONSUMER_KEY__", salesforceSdkManager.appAttestationClient?.remoteAccessConsumerKey)
-        assertNotNull(salesforceSdkManager.appAttestationClient?.restClient)
+        val appAttestationClient = salesforceSdkManager.appAttestationClient
+        assertEquals(123456L, appAttestationClient?.googleCloudProjectId)
+        assertEquals("login.example.com", appAttestationClient?.apiHostName)
+        assertNotNull(appAttestationClient?.deviceId)
+        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKey)
+        assertNotNull(appAttestationClient?.restClient)
 
         salesforceSdkManager.updateAppAttestationClient("https://login.example.com" /* null default */)
 
-        assertNull(salesforceSdkManager.appAttestationClient)
+        assertNull(appAttestationClient)
     }
 }

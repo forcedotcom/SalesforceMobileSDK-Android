@@ -169,7 +169,6 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
-        // TODO: Needs Coverage. ECJ20260416
         val attestationValue = getInstance().appAttestationClient?.createSalesforceOAuthAuthorizationAppAttestation()
         val authRequestBody = createRequestBody(
             ATTESTATION to attestationValue,
@@ -283,7 +282,6 @@ internal class NativeLoginManager(
 
     @VisibleForTesting
     internal fun createRequestBody(vararg kvPairs: Pair<String, String?>): RequestBody {
-        // TODO: Needs Coverage. ECJ20260416
         val requestBodyString = kvPairs.filter { it.second != null }.joinToString("&") { (key, value) -> "$key=$value" }
         val mediaType = CONTENT_TYPE_VALUE_HTTP_POST.toMediaTypeOrNull()
         return requestBodyString.toRequestBody(mediaType)

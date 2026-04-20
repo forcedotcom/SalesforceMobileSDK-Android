@@ -2,6 +2,10 @@ package com.salesforce.androidsdk.auth
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
+import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
+import com.salesforce.androidsdk.auth.OAuth2.makeTokenEndpointRequest
+import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -27,7 +31,7 @@ class OAuth2MockTests {
         every { appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() } returns "__ATTESTATION_TOKEN__"
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { salesforceSdkManager.appAttestationClient } returns appAttestationClient
-        val result = OAuth2.getAuthorizationUrl(
+        val result = getAuthorizationUrl(
             true,
             false,
             URI.create("https://login.example.com"),
@@ -49,7 +53,7 @@ class OAuth2MockTests {
 
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { salesforceSdkManager.appAttestationClient } returns null
-        val result = OAuth2.getAuthorizationUrl(
+        val result = getAuthorizationUrl(
             true,
             false,
             URI.create("https://login.example.com"),
@@ -91,7 +95,7 @@ class OAuth2MockTests {
             }
         }
 
-        OAuth2.makeTokenEndpointRequest(
+        makeTokenEndpointRequest(
             httpAccessor,
             URI.create("https://login.example.com"),
             FormBody.Builder(),
@@ -127,7 +131,7 @@ class OAuth2MockTests {
             }
         }
 
-        OAuth2.makeTokenEndpointRequest(
+        makeTokenEndpointRequest(
             httpAccessor,
             URI.create("https://login.example.com"),
             FormBody.Builder(),
@@ -158,7 +162,7 @@ class OAuth2MockTests {
             }
         }
 
-        OAuth2.exchangeCode(
+        exchangeCode(
             httpAccessor,
             URI.create("https://login.example.com"),
             "__REMOTE_CONSUMER_KEY__",
@@ -200,7 +204,7 @@ class OAuth2MockTests {
             }
         }
 
-        OAuth2.swapJWTForTokens(
+        swapJWTForTokens(
             httpAccessor,
             URI.create("https://login.example.com"),
             "__JWT_ASSERTION__",
@@ -208,6 +212,7 @@ class OAuth2MockTests {
 
         val bodyBuffer = Buffer().also { requestSlot.captured.body?.writeTo(it) }
         val formBody = bodyBuffer.readUtf8()
+        @Suppress("SpellCheckingInspection")
         assertTrue(
             "Expected grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer in form body but got: $formBody",
             formBody.contains("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"),

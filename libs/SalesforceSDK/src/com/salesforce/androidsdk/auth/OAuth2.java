@@ -105,8 +105,8 @@ public class OAuth2 {
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
 
     /**
-     *  OAuth 2.0 authorization endpoint request body parameter names: Google
-     *  Play Integrity API Token
+     *  OAuth 2.0 authorization endpoint request body parameter names:
+     *  Salesforce App Attestation External Client App Attestation
      */
     protected static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
@@ -347,7 +347,6 @@ public class OAuth2 {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
 
         final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
-        // TODO: Coverage Needed. ECJ20260417
         final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final String responseType = useWebServerAuthentication
@@ -355,9 +354,7 @@ public class OAuth2 {
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        // TODO: Coverage Needed. ECJ20260417
         if (authorizationAppAttestationValue != null) {
-            // TODO: Coverage Needed. ECJ20260417
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
@@ -513,7 +510,6 @@ public class OAuth2 {
                 }
             }
         }
-        // TODO: Coverage Needed. ECJ20260417
         return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance());
     }
 
@@ -560,7 +556,6 @@ public class OAuth2 {
                                                          String jwt) throws IOException, OAuthFailedException {
         final FormBody.Builder formBodyBuilder = new FormBody.Builder().add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
-        // TODO: Coverage Needed. ECJ20260417
         return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder, SalesforceSDKManager.getInstance());
     }
 
@@ -604,16 +599,13 @@ public class OAuth2 {
             throws OAuthFailedException, IOException {
 
         final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
-        // TODO: Coverage Needed. ECJ20260417
         final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
 
-        // TODO: Coverage Needed. ECJ20260417
         if (authorizationAppAttestationValue != null) {
-            // TODO: Coverage Needed. ECJ20260417
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(authorizationAppAttestationValue);
         }
 
