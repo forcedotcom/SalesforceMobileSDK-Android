@@ -89,7 +89,7 @@ class AppAttestationClient(
     }
 
     /**
-     * (Re-)prepares the Google Play Integrity token provider. Calling this
+     * (Re-)prepares the Google Play Integrity Token Provider. Calling this
      * prior to requesting the Integrity Token via
      * [createSalesforceOAuthAuthorizationAppAttestation] reduces the latency of
      * the request.
@@ -139,7 +139,7 @@ class AppAttestationClient(
         integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
     ): String? {
         // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now.
-        val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().result
+        val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().await()
 
         // Fetch the Challenge from Salesforce Mobile App Attestation.
         val salesforceAppAttestationChallenge = fetchSalesforceMobileAppAttestationChallenge()
@@ -193,7 +193,9 @@ class AppAttestationClient(
      * TODO: Remove method when no longer referenced by Java. ECJ20260420
      */
     @JvmName("createSalesforceOAuthAuthorizationAppAttestationBlocking")
-    fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking { createSalesforceOAuthAuthorizationAppAttestation() }
+    fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking {
+        createSalesforceOAuthAuthorizationAppAttestation()
+    }
 
     /**
      * Fetches a new "Challenge" from the Salesforce App Attestation External
