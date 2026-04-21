@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.auth
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
 import com.salesforce.androidsdk.auth.OAuth2.makeTokenEndpointRequest
@@ -27,10 +28,6 @@ class OAuth2MockTests {
     @Test
     fun oauth2_getAuthorizationUrl_includesAttestationParameterWhenNotNull() {
 
-        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
-        every { appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() } returns "__ATTESTATION_TOKEN__"
-        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true)
-        every { salesforceSdkManager.appAttestationClient } returns appAttestationClient
         val result = getAuthorizationUrl(
             true,
             false,
@@ -41,8 +38,7 @@ class OAuth2MockTests {
             null,
             "__DISPLAY_TYPE__",
             "__CODE_CHALLENGE__",
-            mapOf<String, String>(),
-            salesforceSdkManager,
+            mapOf(ATTESTATION to "__ATTESTATION_TOKEN__")
         )
 
         assertTrue(result.query.contains("attestation=__ATTESTATION_TOKEN__"))
@@ -51,8 +47,6 @@ class OAuth2MockTests {
     @Test
     fun oauth2_getAuthorizationUrl_excludesAttestationParameterWhenNull() {
 
-        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true)
-        every { salesforceSdkManager.appAttestationClient } returns null
         val result = getAuthorizationUrl(
             true,
             false,
@@ -64,7 +58,6 @@ class OAuth2MockTests {
             "__DISPLAY_TYPE__",
             "__CODE_CHALLENGE__",
             mapOf<String, String>(),
-            salesforceSdkManager,
         )
 
         assertFalse(result.query.contains("attestation=__ATTESTATION_TOKEN__"))
@@ -73,7 +66,8 @@ class OAuth2MockTests {
     @Test
     fun oauth2_makeTokenEndpointRequest_includesAttestationParameterWhenNotNull() {
         val appAttestationClient = mockk<AppAttestationClient>(relaxed = true) {
-            every { createSalesforceOAuthAuthorizationAppAttestationBlocking() } returns "__ATTESTATION_TOKEN__"
+            every { fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
+            every { createAppAttestationBlocking("__TEST_CHALLENGE_VALUE__") } returns "__ATTESTATION_TOKEN__"
         }
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { this@mockk.appAttestationClient } returns appAttestationClient
@@ -212,7 +206,6 @@ class OAuth2MockTests {
 
         val bodyBuffer = Buffer().also { requestSlot.captured.body?.writeTo(it) }
         val formBody = bodyBuffer.readUtf8()
-        @Suppress("SpellCheckingInspection")
         assertTrue(
             "Expected grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer in form body but got: $formBody",
             formBody.contains("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"),

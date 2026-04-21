@@ -50,6 +50,11 @@ import java.util.Base64
  * App attestation features supporting the Salesforce App Attestation External
  * Client App (ECA) Plugin, the Salesforce Challenge API, Google Play Integrity
  * API and integration of app attestation with Salesforce Authentication.
+ *
+ * This method is not intended for public use outside of Salesforce Mobile SDK.
+ *
+ * TODO: Make this class internal once Java support is removed. ECJ20260421
+ *
  * @param apiHostName The Salesforce App Attestation Challenge API host
  * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param googleCloudProjectId The Google Cloud Project ID used with Google Play
@@ -91,8 +96,7 @@ class AppAttestationClient(
     /**
      * (Re-)prepares the Google Play Integrity Token Provider. Calling this
      * prior to requesting the Integrity Token via
-     * [createSalesforceOAuthAuthorizationAppAttestation] reduces the latency of
-     * the request.
+     * [createAppAttestation] reduces the latency of the request.
      */
     @VisibleForTesting
     internal fun prepareIntegrityTokenProvider() = integrityManager.prepareIntegrityToken(
@@ -130,21 +134,29 @@ class AppAttestationClient(
      * fetched using the "Challenge" as the Request Hash. The resulting token is
      * encoded into a value usable as the "attestation" parameter in the
      * Salesforce OAuth authorization request.
+     *
+     * This method is not intended for public use outside of Salesforce Mobile
+     * SDK.
+     *
+     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
+     *
+     * @param appAttestationChallenge The Salesforce Mobile App Attestation
+     * External Client App (ECA) Plug-In "Challenge" to use
      * @param integrityTokenProvider The Google Play App Integrity API Integrity
      * Token Provider.  This parameter is intended for testing purposes only
      * @return The "attestation" value usable in Salesforce OAuth authorization
      * and token refresh requests or null if the value cannot be created
      */
-    internal suspend fun createSalesforceOAuthAuthorizationAppAttestation(
+    suspend fun createAppAttestation(
+        appAttestationChallenge: String,
         integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
     ): String? {
         // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now.
         val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().await()
 
         // Fetch the Challenge from Salesforce Mobile App Attestation.
-        val salesforceAppAttestationChallenge = fetchSalesforceMobileAppAttestationChallenge()
         val salesforceAppAttestationChallengeHashByteArray = MessageDigest.getInstance("SHA-256")
-            .digest(salesforceAppAttestationChallenge.toByteArray(UTF_8))
+            .digest(appAttestationChallenge.toByteArray(UTF_8))
         val salesforceAppAttestationChallengeHashHexString = salesforceAppAttestationChallengeHashByteArray.joinToString("") { "%02x".format(it) }
 
         // Request the Google Play Integrity Token.
@@ -174,7 +186,8 @@ class AppAttestationClient(
         }.getOrElse { e ->
             // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
             if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
-                createSalesforceOAuthAuthorizationAppAttestation(
+                createAppAttestation(
+                    appAttestationChallenge = appAttestationChallenge,
                     integrityTokenProvider = null
                 )
             } else {
@@ -184,25 +197,32 @@ class AppAttestationClient(
     }
 
     /**
-     * A blocking Java-callable wrapper for
-     * [createSalesforceOAuthAuthorizationAppAttestation]
+     * A blocking Java-callable wrapper for [createAppAttestation]
      *
      * This method is not intended for public use outside of Salesforce Mobile
-     * SDK
+     * SDK.
      *
      * TODO: Remove method when no longer referenced by Java. ECJ20260420
+     * @param appAttestationChallenge The Salesforce Mobile App Attestation
+     * External Client App (ECA) Plug-In "Challenge" to use
      */
-    @JvmName("createSalesforceOAuthAuthorizationAppAttestationBlocking")
-    fun createSalesforceOAuthAuthorizationAppAttestationBlocking() = runBlocking {
-        createSalesforceOAuthAuthorizationAppAttestation()
+    @JvmName("createAppAttestationBlocking")
+    fun createAppAttestationBlocking(appAttestationChallenge: String) = runBlocking {
+        createAppAttestation(appAttestationChallenge)
     }
 
     /**
      * Fetches a new "Challenge" from the Salesforce App Attestation External
      * Client App (ECA) Plug-In.
+     *
+     * This method is not intended for public use outside of Salesforce Mobile
+     * SDK.
+     *
+     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
+     *
      * @return The Salesforce App Attestation ECA Plug-In's "Challenge"
      */
-    internal fun fetchSalesforceMobileAppAttestationChallenge(): String {
+    fun fetchMobileAppAttestationChallenge(): String {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
         val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
             apiHostName = apiHostName,

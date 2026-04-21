@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.LIGHT
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
@@ -453,6 +454,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     ): String {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
+
+        // Populate the additional parameter map with app attestation, if applicable.
+        SalesforceSDKManager.getInstance().appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge()
+            val attestation = createAppAttestation(challenge) ?: return@run
+            additionalParams?.put(ATTESTATION, attestation)
+        }
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,

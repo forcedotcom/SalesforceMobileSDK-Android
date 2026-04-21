@@ -308,7 +308,12 @@ class NativeLoginManagerTest {
     fun nativeLoginManager_login_collectsAppAttestation() = runTest {
 
         val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
-        coEvery { appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation() } returns "__TEST_APP_ATTESTATION__"
+        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
+        coEvery {
+            appAttestationClient.createAppAttestation(
+                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
+            )
+        } returns "__TEST_APP_ATTESTATION__"
 
         val salesforceSdkManager = SalesforceSDKManager.getInstance()
         salesforceSdkManager.appAttestationClient = appAttestationClient
@@ -337,11 +342,7 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                runCatching {
-                    val buffer = okio.Buffer()
-                    it.requestBody?.writeTo(buffer)
-                    buffer.readUtf8().contains("attestation=__TEST_APP_ATTESTATION__")
-                }.getOrDefault(false)
+                it.path.contains("?attestation=__TEST_APP_ATTESTATION__")
             }, any())
         }
     }

@@ -59,7 +59,7 @@ import okhttp3.Response;
 
 /**
  * Helper methods for common OAuth2 requests.
- *
+ * <p>
  * The typical OAuth2 flow is:
  *
  * <ol>
@@ -107,8 +107,13 @@ public class OAuth2 {
     /**
      *  OAuth 2.0 authorization endpoint request body parameter names:
      *  Salesforce App Attestation External Client App Attestation
+     * <p>
+     *  This method is not intended for public use outside of Salesforce Mobile
+     *  SDK.
+     * <p>
+     *  TODO: Make this internal when no longer referenced by Java. ECJ20260421
      */
-    protected static final String ATTESTATION = "attestation";
+    public static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     protected static final String REDIRECT_URI = "redirect_uri";
@@ -169,7 +174,6 @@ public class OAuth2 {
     private static final String CSRF_TOKEN = "csrf_token";
     private static final String EMPTY_STRING = "";
     private static final String FORWARD_SLASH = "/";
-    private static final String SINGLE_SPACE = " ";
     private static final String TAG = "OAuth2";
     private static final String ID_URL = "id";
     private static final String ASSERTED_USER = "asserted_user";
@@ -244,7 +248,7 @@ public class OAuth2 {
     /**
      * Builds the URL to the authorization web page for this login server.
      * You need not provide the 'refresh_token' scope, as it is provided automatically.
-     *
+     * <p>
      * This overload defaults `loginHint` to null and does not enable Salesforce Welcome Login hint.
      *
      * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
@@ -256,7 +260,11 @@ public class OAuth2 {
      *                                   the default OAuth scope is provided.
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @param addlParams                 Any additional parameters that may be
+     *                                   added to the request. When using
+     *                                   Salesforce Mobile App Attestation, the
+     *                                   "attestation" parameter should be added
+     *                                   to this map.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
@@ -298,7 +306,11 @@ public class OAuth2 {
      * @param loginHint                  When applicable, the Salesforce Welcome Login hint
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @param addlParams                 Any additional parameters that may be
+     *                                   added to the request. When using
+     *                                   Salesforce Mobile App Attestation, the
+     *                                   "attestation" parameter should be added
+     *                                   to this map.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
@@ -313,50 +325,13 @@ public class OAuth2 {
             String displayType,
             String codeChallenge,
             Map<String, String> addlParams) {
-        return getAuthorizationUrl(
-                useWebServerAuthentication,
-                useHybridAuthentication,
-                loginServer,
-                clientId,
-                callbackUrl,
-                scopes,
-                loginHint,
-                displayType,
-                codeChallenge,
-                addlParams,
-                SalesforceSDKManager.getInstance());
-    }
-
-    /**
-     * An internal, testable Salesforce Mobile SDK overload of
-     * {@link #getAuthorizationUrl(boolean, boolean, URI, String, String, String[], String, String, String, Map)}.
-     */
-    @VisibleForTesting
-    public static URI getAuthorizationUrl(
-            boolean useWebServerAuthentication,
-            boolean useHybridAuthentication,
-            URI loginServer,
-            String clientId,
-            String callbackUrl,
-            String[] scopes,
-            String loginHint,
-            String displayType,
-            String codeChallenge,
-            Map<String, String> addlParams,
-            SalesforceSDKManager salesforceSdkManager) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-
-        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
-        final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
 
         final String responseType = useWebServerAuthentication
                 ? CODE
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
         sb.append(OAUTH_AUTH_PATH).append(getBrandedLoginPath());
         sb.append(OAUTH_DISPLAY_PARAM).append(displayType == null ? TOUCH : displayType);
-        if (authorizationAppAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(authorizationAppAttestationValue));
-        }
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(responseType);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
         if (scopes != null && scopes.length > 0) {
@@ -366,11 +341,11 @@ public class OAuth2 {
             sb.append(AND).append(LOGIN_HINT).append(EQUAL).append(Uri.encode(loginHint));
         }
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
-        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
+        sb.append(AND).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
         if (useWebServerAuthentication) {
             sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
         }
-        if (addlParams != null && addlParams.size() > 0) {
+        if (addlParams != null && !addlParams.isEmpty()) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
@@ -418,7 +393,7 @@ public class OAuth2 {
         sb.append(FRONTDOOR);
         sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(url.toString()));
-        if (addlParams != null && addlParams.size() > 0) {
+        if (addlParams != null && !addlParams.isEmpty()) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
@@ -570,9 +545,9 @@ public class OAuth2 {
      *
      * @throws IOException See {@link IOException}.
      */
-    public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
-                                                              String identityServiceIdUrl,
-                                                              String authToken)
+    public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
+                                                        String identityServiceIdUrl,
+                                                        String authToken)
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken);
@@ -587,7 +562,7 @@ public class OAuth2 {
      * @param builder Builder instance.
      * @param authToken Access token.
      */
-    public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
+    public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
         return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
@@ -598,15 +573,15 @@ public class OAuth2 {
                                                                  SalesforceSDKManager salesforceSdkManager)
             throws OAuthFailedException, IOException {
 
-        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
-        final String authorizationAppAttestationValue = appAttestationClient != null ? appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking() : null;
-
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
 
-        if (authorizationAppAttestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(authorizationAppAttestationValue));
+        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
+        final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallenge() : null;
+        final String attestationValue = challenge != null ? appAttestationClient.createAppAttestationBlocking(challenge) : null;
+        if (attestationValue != null) {
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(attestationValue));
         }
 
         final String refreshPath = sb.toString();

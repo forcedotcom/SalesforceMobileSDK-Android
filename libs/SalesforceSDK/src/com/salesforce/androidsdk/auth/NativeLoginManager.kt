@@ -54,7 +54,6 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
@@ -97,7 +96,6 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -134,7 +132,7 @@ internal class NativeLoginManager(
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
     private val isReCaptchaEnterprise: Boolean = false,
-    private val restClient: RestClient = getInstance().clientManager.peekUnauthenticatedRestClient()
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -170,9 +168,11 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
-        val attestationValue = getInstance().appAttestationClient?.createSalesforceOAuthAuthorizationAppAttestation()
+        val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge()
+            createAppAttestation(challenge) ?: return@run null
+        }
         val authRequestBody = createRequestBody(
-            ATTESTATION to attestationValue,
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,
@@ -181,7 +181,7 @@ internal class NativeLoginManager(
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH", // Full path for unauthenticated request
+            "$loginUrl$OAUTH_AUTH_PATH${attestationValue?.let { "?$ATTESTATION=$it" } ?: ""}", // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
@@ -992,7 +992,7 @@ internal class NativeLoginManager(
             runCatching {
                 client.oAuthRefreshInterceptor.refreshAccessToken()
             }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
+                SalesforceSDKLogger.e(TAG, "Error encountered while unlocking.", e)
             }
             bioAuthManager?.onUnlock()
             activity.finish()

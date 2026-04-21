@@ -175,13 +175,13 @@ class AppAttestationClientTest {
             restClient = restClient
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
             integrityTokenProvider = integrityTokenProvider
         )
 
         advanceUntilIdle()
 
-        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
@@ -221,7 +221,7 @@ class AppAttestationClientTest {
         val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
         every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
         every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
-        coEvery { integrityTokenProviderTask.result } returns successfulIntegrityTokenProvider
+        coEvery { integrityTokenProviderTask.await() } returns successfulIntegrityTokenProvider
         val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
@@ -235,13 +235,13 @@ class AppAttestationClientTest {
             restClient = restClient,
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
             integrityTokenProvider = throwingIntegrityTokenProvider
         )
 
         advanceUntilIdle()
 
-        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
@@ -295,7 +295,8 @@ class AppAttestationClientTest {
             restClient = restClient,
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
             integrityTokenProvider = throwingIntegrityTokenProvider
         )
 
@@ -352,7 +353,8 @@ class AppAttestationClientTest {
             restClient = restClient,
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
             integrityTokenProvider = throwingIntegrityTokenProvider
         )
 
@@ -389,7 +391,7 @@ class AppAttestationClientTest {
         val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
         every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
         every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
-        coEvery { integrityTokenProviderTask.result } returns integrityTokenProvider
+        coEvery { integrityTokenProviderTask.await() } returns integrityTokenProvider
         val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
@@ -403,19 +405,19 @@ class AppAttestationClientTest {
             restClient = restClient,
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestation(
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
             integrityTokenProvider = null
         )
 
         advanceUntilIdle()
 
-        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestationBlocking_returnsSuccessfully() = runTest {
+    fun appAttestationClient_createAppAttestationBlocking_returnsSuccessfully() = runTest {
 
         val context = mockk<Context>(relaxed = true)
         val deviceId = "123456"
@@ -440,7 +442,7 @@ class AppAttestationClientTest {
         val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
         every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
         every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
-        coEvery { integrityTokenProviderTask.result } returns integrityTokenProvider
+        coEvery { integrityTokenProviderTask.await() } returns integrityTokenProvider
         val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
         every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
 
@@ -454,11 +456,12 @@ class AppAttestationClientTest {
             restClient = restClient
         )
 
-        val result = appAttestationClient.createSalesforceOAuthAuthorizationAppAttestationBlocking()
+        val result = appAttestationClient.createAppAttestationBlocking(
+            appAttestationChallenge = "__TEST_CHALLENGE_VALUE__",
+        )
 
         advanceUntilIdle()
 
-        @Suppress("SpellCheckingInspection")
         assertEquals("eyJhdHRlc3RhdGlvbklkIjoiMTIzNDU2IiwiYXR0ZXN0YXRpb25EYXRhIjoiWDE5VVJWTlVYMGxPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ", result)
     }
 
@@ -471,7 +474,6 @@ class AppAttestationClientTest {
         )
 
         assertEquals("123456", result.attestationId)
-        @Suppress("SpellCheckingInspection")
         assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
     }
 
@@ -485,7 +487,6 @@ class AppAttestationClientTest {
         )
 
         assertEquals("123456", result.attestationId)
-        @Suppress("SpellCheckingInspection")
         assertEquals("W19VVlJTVVhNbExPVkVWSFVrbFVXVjlVVDB0RlRsOWYifQ==", result.attestationData)
     }
 
