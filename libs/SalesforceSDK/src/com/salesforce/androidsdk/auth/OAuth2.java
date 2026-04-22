@@ -31,6 +31,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -567,6 +568,7 @@ public class OAuth2 {
     }
 
     @VisibleForTesting
+    @WorkerThread
     public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
                                                                  URI loginServer,
                                                                  FormBody.Builder formBodyBuilder,

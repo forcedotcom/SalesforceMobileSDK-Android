@@ -206,7 +206,6 @@ class AppAttestationClient(
      * @param appAttestationChallenge The Salesforce Mobile App Attestation
      * External Client App (ECA) Plug-In "Challenge" to use
      */
-    @JvmName("createAppAttestationBlocking")
     fun createAppAttestationBlocking(appAttestationChallenge: String) = runBlocking {
         createAppAttestation(appAttestationChallenge)
     }

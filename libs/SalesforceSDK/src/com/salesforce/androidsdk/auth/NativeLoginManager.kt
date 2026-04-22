@@ -181,7 +181,7 @@ internal class NativeLoginManager(
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH${attestationValue?.let { "?$ATTESTATION=$it" } ?: ""}", // Full path for unauthenticated request
+            "$loginUrl$OAUTH_AUTH_PATH${attestationValue?.let { "?$ATTESTATION=${Uri.encode(it)}" } ?: ""}", // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
