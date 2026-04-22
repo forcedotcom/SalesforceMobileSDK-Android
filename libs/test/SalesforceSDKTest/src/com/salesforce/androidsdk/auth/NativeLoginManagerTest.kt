@@ -309,42 +309,16 @@ class NativeLoginManagerTest {
     @Test
     fun nativeLoginManager_login_collectsAppAttestation() = runTest {
 
-        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
-        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
-        coEvery {
-            appAttestationClient.createAppAttestation(
-                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
-            )
-        } returns "__TEST_APP_ATTESTATION__"
+        installAppAttestationClient(attestation = TEST_APP_ATTESTATION)
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
 
-        val salesforceSdkManager = SalesforceSDKManager.getInstance()
-        salesforceSdkManager.appAttestationClient = appAttestationClient
-
-        val restClient = mockk<RestClient>(relaxed = true)
-        val mockResponse = mockk<RestResponse>(relaxed = true)
-        every { mockResponse.isSuccess } returns false
-        every {
-            restClient.sendAsync(any(), any())
-        } answers {
-            val callback = secondArg<RestClient.AsyncRequestCallback>()
-            callback.onSuccess(firstArg(), mockResponse)
-            mockk<Call>(relaxed = true)
-        }
-
-        mgr = NativeLoginManager(
-            clientId = "clientId",
-            redirectUri = "redirect",
-            loginUrl = "loginUrl",
-            restClient = restClient,
-        )
-
-        mgr.login("TestUser@Example.com", "test123456")
-
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
         advanceUntilIdle()
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "loginUrl$OAUTH_AUTH_PATH?attestation=__TEST_APP_ATTESTATION__"
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH?attestation=$TEST_APP_ATTESTATION"
             }, any())
         }
     }
@@ -361,42 +335,16 @@ class NativeLoginManagerTest {
     @Test
     fun nativeLoginManager_login_doesNotCollectAppAttestationWhenCreateAppAttestationReturnsNull() = runTest {
 
-        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
-        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
-        coEvery {
-            appAttestationClient.createAppAttestation(
-                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
-            )
-        } returns null
+        installAppAttestationClient(attestation = null)
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
 
-        val salesforceSdkManager = SalesforceSDKManager.getInstance()
-        salesforceSdkManager.appAttestationClient = appAttestationClient
-
-        val restClient = mockk<RestClient>(relaxed = true)
-        val mockResponse = mockk<RestResponse>(relaxed = true)
-        every { mockResponse.isSuccess } returns false
-        every {
-            restClient.sendAsync(any(), any())
-        } answers {
-            val callback = secondArg<RestClient.AsyncRequestCallback>()
-            callback.onSuccess(firstArg(), mockResponse)
-            mockk<Call>(relaxed = true)
-        }
-
-        mgr = NativeLoginManager(
-            clientId = "clientId",
-            redirectUri = "redirect",
-            loginUrl = "loginUrl",
-            restClient = restClient,
-        )
-
-        mgr.login("TestUser@Example.com", "test123456")
-
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
         advanceUntilIdle()
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "loginUrl$OAUTH_AUTH_PATH"
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH"
             }, any())
         }
     }
@@ -411,38 +359,22 @@ class NativeLoginManagerTest {
     @Test
     fun nativeLoginManager_login_doesNotCollectAppAttestationWhenAppAttestationClientIsNotSet() = runTest {
 
-        val restClient = mockk<RestClient>(relaxed = true)
-        val mockResponse = mockk<RestResponse>(relaxed = true)
-        every { mockResponse.isSuccess } returns false
-        every {
-            restClient.sendAsync(any(), any())
-        } answers {
-            val callback = secondArg<RestClient.AsyncRequestCallback>()
-            callback.onSuccess(firstArg(), mockResponse)
-            mockk<Call>(relaxed = true)
-        }
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
 
-        mgr = NativeLoginManager(
-            clientId = "clientId",
-            redirectUri = "redirect",
-            loginUrl = "loginUrl",
-            restClient = restClient,
-        )
-
-        mgr.login("TestUser@Example.com", "test123456")
-
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
         advanceUntilIdle()
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "loginUrl$OAUTH_AUTH_PATH"
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH"
             }, any())
         }
     }
 
     /**
      * Tests that native login URL-encodes the app attestation value when it
-     * contains URL-unsafe characters.  This gates the [Uri.encode] call on the
+     * contains URL-unsafe characters.  This gates the [android.net.Uri.encode] call on the
      * attestation parameter and can be removed when a comprehensive test of
      * native login is created so long as that test covers URL encoding of the
      * attestation parameter.
@@ -451,45 +383,54 @@ class NativeLoginManagerTest {
     @Test
     fun nativeLoginManager_login_urlEncodesAppAttestationValue() = runTest {
 
-        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
-        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
-        coEvery {
-            appAttestationClient.createAppAttestation(
-                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
-            )
-        } returns "foo bar+baz=qux/"
+        installAppAttestationClient(attestation = URL_UNSAFE_APP_ATTESTATION)
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
 
-        val salesforceSdkManager = SalesforceSDKManager.getInstance()
-        salesforceSdkManager.appAttestationClient = appAttestationClient
-
-        val restClient = mockk<RestClient>(relaxed = true)
-        val mockResponse = mockk<RestResponse>(relaxed = true)
-        every { mockResponse.isSuccess } returns false
-        every {
-            restClient.sendAsync(any(), any())
-        } answers {
-            val callback = secondArg<RestClient.AsyncRequestCallback>()
-            callback.onSuccess(firstArg(), mockResponse)
-            mockk<Call>(relaxed = true)
-        }
-
-        mgr = NativeLoginManager(
-            clientId = "clientId",
-            redirectUri = "redirect",
-            loginUrl = "loginUrl",
-            restClient = restClient,
-        )
-
-        mgr.login("TestUser@Example.com", "test123456")
-
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
         advanceUntilIdle()
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "loginUrl$OAUTH_AUTH_PATH?attestation=foo%20bar%2Bbaz%3Dqux%2F"
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH?attestation=$URL_ENCODED_APP_ATTESTATION"
             }, any())
         }
     }
+
+    // region Helpers used by attestation tests
+
+    private fun installAppAttestationClient(attestation: String?) {
+        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
+            every { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
+            coEvery {
+                createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
+            } returns attestation
+        }
+        SalesforceSDKManager.getInstance().appAttestationClient = appAttestationClient
+    }
+
+    private fun createRestClientStubbingFailedLoginResponse(): RestClient {
+        val mockResponse = mockk<RestResponse>(relaxed = true).apply {
+            every { isSuccess } returns false
+        }
+        return mockk<RestClient>(relaxed = true).apply {
+            every { sendAsync(any(), any()) } answers {
+                val callback = secondArg<RestClient.AsyncRequestCallback>()
+                callback.onSuccess(firstArg(), mockResponse)
+                mockk<Call>(relaxed = true)
+            }
+        }
+    }
+
+    private fun createNativeLoginManagerForTest(restClient: RestClient): NativeLoginManager =
+        NativeLoginManager(
+            clientId = TEST_CLIENT_ID,
+            redirectUri = TEST_REDIRECT_URI,
+            loginUrl = TEST_LOGIN_URL,
+            restClient = restClient,
+        )
+
+    // endregion Helpers used by attestation tests
 
     private fun addUserAccount() {
         UserAccountManager.getInstance().createAccount(UserAccountTest.createTestAccount())
@@ -501,5 +442,17 @@ class NativeLoginManagerTest {
             .nativeLogin(true)
             .build()
         UserAccountManager.getInstance().createAccount(account)
+    }
+
+    private companion object {
+        const val TEST_CLIENT_ID = "clientId"
+        const val TEST_REDIRECT_URI = "redirect"
+        const val TEST_LOGIN_URL = "loginUrl"
+        const val TEST_USERNAME = "TestUser@Example.com"
+        const val TEST_PASSWORD = "test123456"
+        const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
+        const val TEST_APP_ATTESTATION = "__TEST_APP_ATTESTATION__"
+        const val URL_UNSAFE_APP_ATTESTATION = "foo bar+baz=qux/"
+        const val URL_ENCODED_APP_ATTESTATION = "foo%20bar%2Bbaz%3Dqux%2F"
     }
 }

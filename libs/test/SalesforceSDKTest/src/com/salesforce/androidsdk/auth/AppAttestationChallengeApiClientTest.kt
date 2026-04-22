@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestResponse
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,23 +42,27 @@ import org.junit.runner.RunWith
 class AppAttestationChallengeApiClientTest {
 
     @Test
-    fun appAttestationChallengeApiClient_fetchChallenge_throwsWhenRestResponseIsNotSuccess() {
+    fun appAttestationChallengeApiClient_fetchChallenge_returnsChallengeOnSuccess() {
 
-        val restResponse = mockk<RestResponse>(relaxed = true)
-        every { restResponse.asString() } returns "__TEST_CHALLENGE_VALUE__"
-        every { restResponse.isSuccess } returns false
-        val restClient = mockk<RestClient>(relaxed = true)
-        every { restClient.sendSync(any()) } returns restResponse
+        val client = createClient(body = TEST_CHALLENGE_VALUE, success = true)
 
-        val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = "https://www.example.com",
-            restClient = restClient
+        val result = client.fetchChallenge(
+            attestationId = TEST_ATTESTATION_ID,
+            remoteConsumerKey = TEST_REMOTE_CONSUMER_KEY,
         )
 
+        assertEquals(TEST_CHALLENGE_VALUE, result)
+    }
+
+    @Test
+    fun appAttestationChallengeApiClient_fetchChallenge_throwsWhenRestResponseIsNotSuccess() {
+
+        val client = createClient(body = TEST_CHALLENGE_VALUE, success = false)
+
         assertThrows(AppAttestationChallengeApiException::class.java) {
-            appAttestationChallengeApiClient.fetchChallenge(
-                attestationId = "__ATTESTATION_ID__",
-                remoteConsumerKey = "__REMOTE_CONSUMER_KEY__"
+            client.fetchChallenge(
+                attestationId = TEST_ATTESTATION_ID,
+                remoteConsumerKey = TEST_REMOTE_CONSUMER_KEY,
             )
         }
     }
@@ -65,21 +70,12 @@ class AppAttestationChallengeApiClientTest {
     @Test
     fun appAttestationChallengeApiClient_fetchChallenge_throwsWhenRestResponseBodyStringIsNull() {
 
-        val restResponse = mockk<RestResponse>(relaxed = true)
-        every { restResponse.asString() } returns null
-        every { restResponse.isSuccess } returns true
-        val restClient = mockk<RestClient>(relaxed = true)
-        every { restClient.sendSync(any()) } returns restResponse
-
-        val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = "https://www.example.com",
-            restClient = restClient
-        )
+        val client = createClient(body = null, success = true)
 
         assertThrows(AppAttestationChallengeApiException::class.java) {
-            appAttestationChallengeApiClient.fetchChallenge(
-                attestationId = "__ATTESTATION_ID__",
-                remoteConsumerKey = "__REMOTE_CONSUMER_KEY__"
+            client.fetchChallenge(
+                attestationId = TEST_ATTESTATION_ID,
+                remoteConsumerKey = TEST_REMOTE_CONSUMER_KEY,
             )
         }
     }
@@ -87,22 +83,41 @@ class AppAttestationChallengeApiClientTest {
     @Test
     fun appAttestationChallengeApiClient_fetchChallenge_throwsWhenRestResponseIsNotSuccessAndBodyStringIsNull() {
 
-        val restResponse = mockk<RestResponse>(relaxed = true)
-        every { restResponse.asString() } returns null
-        every { restResponse.isSuccess } returns false
-        val restClient = mockk<RestClient>(relaxed = true)
-        every { restClient.sendSync(any()) } returns restResponse
-
-        val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = "https://www.example.com",
-            restClient = restClient
-        )
+        val client = createClient(body = null, success = false)
 
         assertThrows(AppAttestationChallengeApiException::class.java) {
-            appAttestationChallengeApiClient.fetchChallenge(
-                attestationId = "__ATTESTATION_ID__",
-                remoteConsumerKey = "__REMOTE_CONSUMER_KEY__"
+            client.fetchChallenge(
+                attestationId = TEST_ATTESTATION_ID,
+                remoteConsumerKey = TEST_REMOTE_CONSUMER_KEY,
             )
         }
+    }
+
+    // region Helpers
+
+    private fun createClient(
+        body: String?,
+        success: Boolean,
+    ): AppAttestationChallengeApiClient {
+        val restResponse = mockk<RestResponse>(relaxed = true).apply {
+            every { asString() } returns body
+            every { isSuccess } returns success
+        }
+        val restClient = mockk<RestClient>(relaxed = true).apply {
+            every { sendSync(any()) } returns restResponse
+        }
+        return AppAttestationChallengeApiClient(
+            apiHostName = TEST_API_HOST_NAME,
+            restClient = restClient,
+        )
+    }
+
+    // endregion Helpers
+
+    private companion object {
+        const val TEST_API_HOST_NAME = "https://www.example.com"
+        const val TEST_ATTESTATION_ID = "__ATTESTATION_ID__"
+        const val TEST_REMOTE_CONSUMER_KEY = "__REMOTE_CONSUMER_KEY__"
+        const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
     }
 }
