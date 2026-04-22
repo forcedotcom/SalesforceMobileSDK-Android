@@ -11,6 +11,7 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback
 import com.salesforce.androidsdk.rest.RestClient
@@ -49,6 +50,7 @@ class NativeLoginManagerTest {
     fun tearDown() {
         SalesforceSDKManager.getInstance().userAccountManager
             .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
+        SalesforceSDKManager.getInstance().appAttestationClient = null
         unmockkAll()
     }
 
@@ -342,7 +344,59 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path.contains("?attestation=__TEST_APP_ATTESTATION__")
+                it.path == "loginUrl$OAUTH_AUTH_PATH?attestation=__TEST_APP_ATTESTATION__"
+            }, any())
+        }
+    }
+
+    /**
+     * Tests that native login does not include app attestation during login
+     * when the app attestation client is set but
+     * [AppAttestationClient.createAppAttestation] returns null (for example,
+     * because the Google Play Integrity API could not produce a token).  This
+     * test can be removed when a comprehensive test of native login is created
+     * so long as that test covers the exclusion of the attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_doesNotCollectAppAttestationWhenCreateAppAttestationReturnsNull() = runTest {
+
+        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
+        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
+        coEvery {
+            appAttestationClient.createAppAttestation(
+                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
+            )
+        } returns null
+
+        val salesforceSdkManager = SalesforceSDKManager.getInstance()
+        salesforceSdkManager.appAttestationClient = appAttestationClient
+
+        val restClient = mockk<RestClient>(relaxed = true)
+        val mockResponse = mockk<RestResponse>(relaxed = true)
+        every { mockResponse.isSuccess } returns false
+        every {
+            restClient.sendAsync(any(), any())
+        } answers {
+            val callback = secondArg<RestClient.AsyncRequestCallback>()
+            callback.onSuccess(firstArg(), mockResponse)
+            mockk<Call>(relaxed = true)
+        }
+
+        mgr = NativeLoginManager(
+            clientId = "clientId",
+            redirectUri = "redirect",
+            loginUrl = "loginUrl",
+            restClient = restClient,
+        )
+
+        mgr.login("TestUser@Example.com", "test123456")
+
+        advanceUntilIdle()
+
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                it.path == "loginUrl$OAUTH_AUTH_PATH"
             }, any())
         }
     }
@@ -381,11 +435,58 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                runCatching {
-                    val buffer = okio.Buffer()
-                    it.requestBody?.writeTo(buffer)
-                    !buffer.readUtf8().contains("attestation=")
-                }.getOrDefault(false)
+                it.path == "loginUrl$OAUTH_AUTH_PATH"
+            }, any())
+        }
+    }
+
+    /**
+     * Tests that native login URL-encodes the app attestation value when it
+     * contains URL-unsafe characters.  This gates the [Uri.encode] call on the
+     * attestation parameter and can be removed when a comprehensive test of
+     * native login is created so long as that test covers URL encoding of the
+     * attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_urlEncodesAppAttestationValue() = runTest {
+
+        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true)
+        every { appAttestationClient.fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
+        coEvery {
+            appAttestationClient.createAppAttestation(
+                appAttestationChallenge = "__TEST_CHALLENGE_VALUE__"
+            )
+        } returns "foo bar+baz=qux/"
+
+        val salesforceSdkManager = SalesforceSDKManager.getInstance()
+        salesforceSdkManager.appAttestationClient = appAttestationClient
+
+        val restClient = mockk<RestClient>(relaxed = true)
+        val mockResponse = mockk<RestResponse>(relaxed = true)
+        every { mockResponse.isSuccess } returns false
+        every {
+            restClient.sendAsync(any(), any())
+        } answers {
+            val callback = secondArg<RestClient.AsyncRequestCallback>()
+            callback.onSuccess(firstArg(), mockResponse)
+            mockk<Call>(relaxed = true)
+        }
+
+        mgr = NativeLoginManager(
+            clientId = "clientId",
+            redirectUri = "redirect",
+            loginUrl = "loginUrl",
+            restClient = restClient,
+        )
+
+        mgr.login("TestUser@Example.com", "test123456")
+
+        advanceUntilIdle()
+
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                it.path == "loginUrl$OAUTH_AUTH_PATH?attestation=foo%20bar%2Bbaz%3Dqux%2F"
             }, any())
         }
     }
