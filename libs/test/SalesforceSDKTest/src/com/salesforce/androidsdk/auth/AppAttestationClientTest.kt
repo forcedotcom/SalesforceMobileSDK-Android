@@ -35,12 +35,16 @@ import com.google.android.play.core.integrity.StandardIntegrityManager.StandardI
 import com.google.android.play.core.integrity.StandardIntegrityManager.StandardIntegrityTokenProvider
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTEGRITY_TOKEN_PROVIDER_INVALID
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTERNAL_ERROR
+import com.salesforce.androidsdk.rest.AppAttestationChallengeApiException
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
+import io.mockk.CapturingSlot
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.tasks.await
@@ -49,6 +53,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -466,6 +472,61 @@ class AppAttestationClientTest {
     }
 
     @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_OnSuccess_ReturnsChallenge() {
+
+        val requestSlot = slot<RestRequest>()
+        val restClient = createRestClientReturning(
+            restResponse = createRestResponse(body = TEST_CHALLENGE_VALUE, success = true),
+            requestSlot = requestSlot,
+        )
+        val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
+
+        val result = appAttestationClient.fetchMobileAppAttestationChallenge()
+
+        assertEquals(TEST_CHALLENGE_VALUE, result)
+        val requestedPath = requestSlot.captured.path
+        assertTrue(
+            "Request URL should target the attestation challenge endpoint at '$TEST_API_HOST_NAME' but was '$requestedPath'.",
+            requestedPath.startsWith("https://$TEST_API_HOST_NAME/mobile/attest/challenge"),
+        )
+        assertTrue(
+            "Request URL should contain 'attestationId=$TEST_DEVICE_ID' but was '$requestedPath'.",
+            requestedPath.contains("attestationId=$TEST_DEVICE_ID"),
+        )
+        assertTrue(
+            "Request URL should contain 'consumerKey=$TEST_REMOTE_ACCESS_CONSUMER_KEY' but was '$requestedPath'.",
+            requestedPath.contains("consumerKey=$TEST_REMOTE_ACCESS_CONSUMER_KEY"),
+        )
+        verify(exactly = 1) { restClient.sendSync(any()) }
+    }
+
+    @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_OnFailureResponse_ThrowsException() {
+
+        val restClient = createRestClientReturning(
+            restResponse = createRestResponse(body = "__ERROR_BODY__", success = false),
+        )
+        val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
+
+        assertThrows(AppAttestationChallengeApiException::class.java) {
+            appAttestationClient.fetchMobileAppAttestationChallenge()
+        }
+    }
+
+    @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_OnNullResponseBody_ThrowsException() {
+
+        val restClient = createRestClientReturning(
+            restResponse = createRestResponse(body = null, success = true),
+        )
+        val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
+
+        assertThrows(AppAttestationChallengeApiException::class.java) {
+            appAttestationClient.fetchMobileAppAttestationChallenge()
+        }
+    }
+
+    @Test
     fun oAuthAuthorizationAttestation_encode_returnsSuccessfully() {
 
         val result = Json.decodeFromString(
@@ -493,5 +554,52 @@ class AppAttestationClientTest {
     @Test
     fun oAuthAuthorizationAttestation_serializerDescriptor_hasCorrectElementCount() {
         assertEquals(2, OAuthAuthorizationAttestation.serializer().descriptor.elementsCount)
+    }
+
+    // region Helpers
+
+    private fun createAppAttestationClientForTest(
+        restClient: RestClient,
+    ): AppAttestationClient {
+        val integrityTokenProviderTask = mockk<Task<StandardIntegrityTokenProvider>>(relaxed = true)
+        every { integrityTokenProviderTask.addOnSuccessListener(any()) } returns integrityTokenProviderTask
+        every { integrityTokenProviderTask.addOnFailureListener(any()) } returns integrityTokenProviderTask
+        val integrityManager = mockk<StandardIntegrityManager>(relaxed = true)
+        every { integrityManager.prepareIntegrityToken(any()) } returns integrityTokenProviderTask
+
+        return AppAttestationClient(
+            apiHostName = TEST_API_HOST_NAME,
+            context = mockk<Context>(relaxed = true),
+            deviceId = TEST_DEVICE_ID,
+            googleCloudProjectId = TEST_GOOGLE_CLOUD_PROJECT_ID,
+            integrityManager = integrityManager,
+            remoteAccessConsumerKey = TEST_REMOTE_ACCESS_CONSUMER_KEY,
+            restClient = restClient,
+        )
+    }
+
+    private fun createRestResponse(
+        body: String?,
+        success: Boolean,
+    ): RestResponse = mockk<RestResponse>(relaxed = true).also { response ->
+        every { response.asString() } returns body
+        every { response.isSuccess } returns success
+    }
+
+    private fun createRestClientReturning(
+        restResponse: RestResponse,
+        requestSlot: CapturingSlot<RestRequest> = slot(),
+    ): RestClient = mockk<RestClient>(relaxed = true).also { client ->
+        every { client.sendSync(capture(requestSlot)) } returns restResponse
+    }
+
+    // endregion Helpers
+
+    private companion object {
+        const val TEST_API_HOST_NAME = "login.example.com"
+        const val TEST_DEVICE_ID = "123456"
+        const val TEST_GOOGLE_CLOUD_PROJECT_ID = 654321L
+        const val TEST_REMOTE_ACCESS_CONSUMER_KEY = "13579"
+        const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
     }
 }
