@@ -118,6 +118,66 @@ class LoginActivityTest {
         verify(exactly = 0) { activity.clearWebView(any()) }
     }
 
+    // region Login for Admin
+
+    @Test
+    fun adminLoginCustomTabLauncher_onCancel_doesNothing() {
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+
+        val adminResult = activity.AdminCustomTabActivityResult()
+        adminResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
+
+        // Contrast with CustomTabActivityResult which calls these on cancel; the admin
+        // launcher must preserve the existing WebView login page.
+        verify(exactly = 0) { activity.clearWebView(any()) }
+        verify(exactly = 0) { loginUrl.value = any() }
+        verify(exactly = 0) { activity.finish() }
+    }
+
+    @Test
+    fun onLoginForAdminsClick_withNullBrowserCustomTabUrl_doesNotLaunchCustomTab() {
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns null
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.onLoginForAdminsClick() } answers { callOriginal() }
+
+        activity.onLoginForAdminsClick()
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    @Test
+    fun onLoginForAdminsClick_withBrowserCustomTabUrl_launchesCustomTab() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns testUrl
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.onLoginForAdminsClick() } answers { callOriginal() }
+
+        activity.onLoginForAdminsClick()
+
+        // `loadLoginPageInCustomTab` is invoked with the URL from `browserCustomTabUrl.value`.
+        // Note: we can't verify the launcher argument via mockk here because Kotlin emits
+        // direct field access (GETFIELD) for same-class property reads, bypassing the mocked
+        // getter for `adminLoginCustomTabLauncher`. The admin-vs-regular launcher routing is
+        // enforced structurally by the 2-line body of `onLoginForAdminsClick`.
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(eq(testUrl), any()) }
+    }
+
+    // endregion
+
     @Test
     fun testIsWelcomeDiscoveryUri() {
         val validUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
@@ -152,36 +212,6 @@ class LoginActivityTest {
     }
 
     // region Salesforce Welcome Discovery
-
-    @Test
-    fun loginActivityBrowserCustomTabObserver_startsBrowserCustomTabAuthorization_onChange() {
-
-        val exampleUrl = "https://www.example.com" // IETF-Reserved Test Domain
-
-        val activity = mockk<LoginActivity>(relaxed = true)
-        val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>(relaxed = true)
-        every { activity.customTabLauncher } returns activityResultLauncher
-
-        val observer = activity.BrowserCustomTabUrlObserver(activity)
-
-        observer.onChanged(exampleUrl)
-        verify {
-            activity.startBrowserCustomTabAuthorization(
-                match { it == exampleUrl },
-                match { it == activityResultLauncher }
-            )
-        }
-    }
-
-    @Test
-    fun loginActivityBrowserCustomTabObserver_returns_onChangeWithAboutBlank() {
-
-        val activity = mockk<LoginActivity>(relaxed = true)
-        val observer = activity.BrowserCustomTabUrlObserver(activity)
-
-        observer.onChanged(ABOUT_BLANK)
-        verify(exactly = 0) { activity.startBrowserCustomTabAuthorization(any(), any(), any()) }
-    }
 
     @Test
     fun loginActivityPendingServerObserver_appliesPendingServer_onChange() {

@@ -108,7 +108,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
-import com.salesforce.androidsdk.R.color.sf__primary_color
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
@@ -175,9 +174,27 @@ import java.security.cert.X509Certificate
  */
 open class LoginActivity : FragmentActivity() {
 
-    /** The activity result launcher used when browser-based authentication loads the OAuth authorization URL in the external browser custom tab activity */
+    /**
+     * The activity result launcher used when browser-based authentication loads
+     * the OAuth authorization URL in the external browser custom tab activity
+     * */
     @VisibleForTesting
-    internal val customTabLauncher = registerForActivityResult(StartActivityForResult(), CustomTabActivityResult())
+    internal val customTabLauncher = registerForActivityResult(
+        /* contract = */ StartActivityForResult(),
+        /* callback = */ CustomTabActivityResult(),
+    )
+
+    /**
+     * The activity result launcher used by the "Login for Admin" flow.
+     *
+     * Unlike [customTabLauncher], cancelling here leaves the existing WebView
+     * login page intact and does not reveal the server picker.
+     */
+    @VisibleForTesting
+    internal val adminLoginCustomTabLauncher = registerForActivityResult(
+        /* contract = */ StartActivityForResult(),
+        /* callback = */ AdminCustomTabActivityResult(),
+    )
 
     // View Model
     @VisibleForTesting(otherwise = PROTECTED)
@@ -276,6 +293,13 @@ open class LoginActivity : FragmentActivity() {
             certAuthOrLogin()
         }
 
+        // Observe front door bridge URL to load in the WebView when present.
+        viewModel.frontDoorBridgeUrl.observe(this) { url ->
+            if (url != null) {
+                viewModel.loading.value = true
+            }
+        }
+
         // Take control of the back logic if the device is locked.
         // TODO:  Remove SDK_INT check when min API > 33
         if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
@@ -283,8 +307,12 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Add view model observers.
-        viewModel.browserCustomTabUrl.observe(this, BrowserCustomTabUrlObserver())
         viewModel.pendingServer.observe(this, PendingServerObserver())
+
+        // Set callback for when browser custom tab URL is ready to launch.
+        viewModel.onBrowserCustomTabReady = { url ->
+            loadLoginPageInCustomTab(url, customTabLauncher)
+        }
 
         // Support magic links
         if (viewModel.jwt != null) {
@@ -751,7 +779,13 @@ open class LoginActivity : FragmentActivity() {
         )
     }
 
-    private fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+    internal fun onLoginForAdminsClick() {
+        val loginUrl = viewModel.browserCustomTabUrl.value ?: return
+        loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
+    }
+
+    @VisibleForTesting
+    internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*
              * Set a custom animation to slide in and out for Chrome custom tab
@@ -763,8 +797,11 @@ open class LoginActivity : FragmentActivity() {
             // Replace the default 'Close Tab' button with a custom back arrow instead of 'x'
             setCloseButtonIcon(decodeResource(resources, sf__action_back))
             setShareState(CustomTabsIntent.SHARE_STATE_OFF)
+
+            // Use app provided color if set.  Fallback to dynamic color.
+            val background: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
             setDefaultColorSchemeParams(
-                CustomTabColorSchemeParams.Builder().setToolbarColor(getColor(sf__primary_color)).build()
+                CustomTabColorSchemeParams.Builder().setToolbarColor(background.toArgb()).build()
             )
         }.build()
 
@@ -874,7 +911,7 @@ open class LoginActivity : FragmentActivity() {
 
         // Choose front door bridge use by verifying intent data and such that only front door bridge URLs with matching consumer keys are used.
         val uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey = uiBridgeApiParametersConsumerKey != null && uiBridgeApiParametersConsumerKey != viewModel.bootConfig.remoteAccessConsumerKey
-        viewModel.isUsingFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
+        val shouldUseFrontDoorBridge = (isFrontdoorBridgeUrlIntent(intent) || isQrCodeLoginUrlIntent(intent)) && !uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey
 
         // Alert the user if the front door bridge URL is not for this app and was discarded.
         if (uiBridgeApiParametersFrontDoorBridgeUrlMismatchedConsumerKey) {
@@ -888,7 +925,7 @@ open class LoginActivity : FragmentActivity() {
         }
 
         // Use the front door URL as the login page if applicable.
-        if (viewModel.isUsingFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null) {
+        if (shouldUseFrontDoorBridge && uiBridgeApiParameters?.frontdoorBridgeUrl != null) {
             loginWithFrontdoorBridgeUrl(
                 uiBridgeApiParameters.frontdoorBridgeUrl,
                 uiBridgeApiParameters.pkceCodeVerifier
@@ -1077,35 +1114,6 @@ open class LoginActivity : FragmentActivity() {
 
         // If the intent is for log in using a UI Bridge API front door URL, apply it to the activity.
         applyUiBridgeApiFrontDoorUrl(intent)
-    }
-
-    /**
-     * Starts a browser custom tab for the OAuth authorization URL according to
-     * the authentication configuration. The activity only takes action when
-     * browser-based authentication requires a browser custom tab to be started.
-     * UI front-door bridge use bypasses the need for browser custom tab.
-     * @param authorizationUrl The selected login server's OAuth authorization
-     * URL
-     * @param activityResultLauncher The activity result launcher to use when
-     * browser-based authentication requires a browser custom tab
-     * @param isBrowserLoginEnabled Indicates if browser-based authentication is
-     * enabled
-     * @param isUsingFrontDoorBridge Indicates if a UI bridge API front door
-     * bridge URL is in use
-     * @param singleServerCustomTabActivity Indicates single server custom
-     * browser tab authentication is active
-     */
-    @VisibleForTesting
-    internal open fun startBrowserCustomTabAuthorization(
-        authorizationUrl: String,
-        activityResultLauncher: ActivityResultLauncher<Intent>,
-        isBrowserLoginEnabled: Boolean = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
-        isUsingFrontDoorBridge: Boolean = viewModel.isUsingFrontDoorBridge,
-        singleServerCustomTabActivity: Boolean = viewModel.singleServerCustomTabActivity,
-    ) {
-        if ((singleServerCustomTabActivity.or(isBrowserLoginEnabled)).and(!isUsingFrontDoorBridge)) {
-            loadLoginPageInCustomTab(authorizationUrl, activityResultLauncher)
-        }
     }
 
     /**
@@ -1591,31 +1599,18 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    // endregion
-    // region Observer Classes
-
     /**
-     * An observer for browser custom tab URL that continues the authentication
-     * flow by loading the login URL in a web browser custom tab when browser-
-     * based authentication is required.
-     * @param activity The login activity. This parameter is intended for
-     * testing purposes only. Defaults to this inner class receiver
+     * Activity result callback for the "Login for Admin" custom tab.
      */
-    internal inner class BrowserCustomTabUrlObserver(
-        private val activity: LoginActivity = this@LoginActivity
-    ) : Observer<String> {
-        override fun onChanged(value: String) {
-            if (value == "about:blank") {
-                return
-            }
-
-            activity.startBrowserCustomTabAuthorization(
-                authorizationUrl = value,
-                activityResultLauncher = activity.customTabLauncher,
-                isBrowserLoginEnabled = SalesforceSDKManager.getInstance().isBrowserLoginEnabled,
-            )
+    @VisibleForTesting
+    internal inner class AdminCustomTabActivityResult : ActivityResultCallback<ActivityResult> {
+        override fun onActivityResult(result: ActivityResult) {
+            // Intentional no-op: keep the existing WebView visible on cancel.
         }
     }
+
+    // endregion
+    // region Observer Classes
 
     /**
      * An observer for pending login server that continues the authentication

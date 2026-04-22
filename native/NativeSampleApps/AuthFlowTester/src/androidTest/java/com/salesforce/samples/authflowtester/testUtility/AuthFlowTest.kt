@@ -158,6 +158,45 @@ abstract class AuthFlowTest {
         app.validateApiRequest()
     }
 
+    /**
+     * Exercises the "Login for Admins" flow: starts on the REGULAR_AUTH server (in-app
+     * WebView), opens the overflow menu, taps "Login for Admins" to launch a Chrome
+     * Custom Tab, completes login in Chrome, and validates the resulting user/tokens.
+     */
+    fun adminLoginAndValidate(useWebServerFlow: Boolean = true) {
+        val loginPage = LoginPageObject(composeTestRule)
+        val chromePage = ChromeCustomTabPageObject(composeTestRule)
+
+        ensureRegularAuthServer()
+
+        loginPage.openLoginOptions()
+        if (!useWebServerFlow) {
+            loginOptions.disableWebServerFlow()
+        }
+        loginOptions.setOverrideBootConfig(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
+
+        // Launch the admin custom tab from the WebView login view.
+        loginPage.tapLoginForAdminsMenuItem()
+
+        // Complete login in Chrome. User credentials are the REGULAR_AUTH server's users
+        // since that is the selected login host; the admin flow just swaps the surface
+        // (WebView -> Chrome Custom Tab) without changing the target server.
+        chromePage.skipGoogleSignIn()
+        val (username, password) = testConfig.getUser(REGULAR_AUTH, user)
+        chromePage.setUsername(username)
+        chromePage.tapLogin()
+        chromePage.setPassword(password)
+        chromePage.tapLogin()
+
+        // OAuth approval page is rendered inside the Chrome Custom Tab.
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
+
+        app.waitForAppLoad()
+        app.validateUser(REGULAR_AUTH, user)
+        app.validateOAuthValues(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
+        app.validateApiRequest()
+    }
+
     fun migrateAndValidate(
         knownAppConfig: KnownAppConfig,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,

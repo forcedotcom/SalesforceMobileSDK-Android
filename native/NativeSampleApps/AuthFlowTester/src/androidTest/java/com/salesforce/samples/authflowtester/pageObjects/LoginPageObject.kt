@@ -115,6 +115,23 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         Thread.sleep(TIMEOUT_MS / 4)
     }
 
+    /**
+     * Opens the top bar overflow menu and taps the "Login for Admins" item.
+     * The SDK then launches the OAuth authorize URL in a Chrome Custom Tab while
+     * the in-app WebView remains loaded underneath.
+     */
+    fun tapLoginForAdminsMenuItem() {
+        // Tap "More Options" three-dot menu (Compose IconButton)
+        composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
+            .performClick()
+        composeTestRule.waitForIdle()
+
+        // Tap "Login for Admins" dropdown menu item
+        composeTestRule.onNodeWithText(getString(R.string.sf__login_for_admins))
+            .performClick()
+        composeTestRule.waitForIdle()
+    }
+
     fun changeServer(knownLoginHostConfig: KnownLoginHostConfig) {
         val url = testConfig.getLoginHost(knownLoginHostConfig).url
 

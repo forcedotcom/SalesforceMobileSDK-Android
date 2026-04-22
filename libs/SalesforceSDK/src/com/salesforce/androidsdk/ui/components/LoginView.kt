@@ -110,12 +110,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
 import com.salesforce.androidsdk.R.string.sf__clear_cache
 import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
 import com.salesforce.androidsdk.R.string.sf__launch_idp
+import com.salesforce.androidsdk.R.string.sf__login_for_admins
 import com.salesforce.androidsdk.R.string.sf__loading_indicator
 import com.salesforce.androidsdk.R.string.sf__more_options
 import com.salesforce.androidsdk.R.string.sf__pick_server
@@ -145,7 +147,8 @@ fun LoginView() {
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
     val viewModel: LoginViewModel =
         viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
-    val titleText = if (viewModel.isUsingFrontDoorBridge) {
+    val frontDoorBridgeUrl = viewModel.frontDoorBridgeUrl.observeAsState()
+    val titleText = if (frontDoorBridgeUrl.value != null) {
         viewModel.frontdoorBridgeServer ?: ""
     } else {
         viewModel.titleText ?: viewModel.defaultTitleText
@@ -170,6 +173,7 @@ fun LoginView() {
             shouldShowBackButton = viewModel.shouldShowBackButton,
             showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
+            onLoginForAdmins = { activity.onLoginForAdminsClick() },
         )
     }
 
@@ -208,6 +212,7 @@ fun LoginView() {
     LoginView(
         dynamicBackgroundColor = viewModel.dynamicBackgroundColor,
         loginUrlData = viewModel.loginUrl,
+        frontDoorBridgeUrlData = viewModel.frontDoorBridgeUrl,
         topAppBar = topAppBar,
         webView = activity.webView,
         loading = viewModel.loading.value,
@@ -221,6 +226,7 @@ fun LoginView() {
 internal fun LoginView(
     dynamicBackgroundColor: MutableState<Color>,
     loginUrlData: LiveData<String>,
+    frontDoorBridgeUrlData: LiveData<String?> = MediatorLiveData<String?>(),
     topAppBar: @Composable () -> Unit,
     webView: WebView,
     loading: Boolean,
@@ -229,6 +235,7 @@ internal fun LoginView(
     showServerPicker: MutableState<Boolean>,
 ) {
     val loginUrl = loginUrlData.observeAsState()
+    val frontDoorBridgeUrl = frontDoorBridgeUrlData.observeAsState()
     val alpha: Float by animateFloatAsState(
         targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
         animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
@@ -249,7 +256,9 @@ internal fun LoginView(
                     .applyImePaddingConditionally()
                     .graphicsLayer(alpha = alpha),
                 factory = { webView },
-                update = { it.loadUrl(loginUrl.value ?: "") },
+                update = {
+                    it.loadUrl(frontDoorBridgeUrl.value ?: loginUrl.value ?: "")
+                },
             )
 
             if (loading) {
@@ -277,6 +286,7 @@ internal fun DefaultTopAppBar(
     shouldShowBackButton: Boolean,
     showDevSupport: (() -> Unit)?,
     finish: () -> Unit,
+    onLoginForAdmins: (() -> Unit)? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -331,6 +341,12 @@ internal fun DefaultTopAppBar(
                     MenuItem(stringResource(sf__reload)) {
                         reloadWebView()
                         showMenu = false
+                    }
+                    onLoginForAdmins?.let {
+                        MenuItem(stringResource(sf__login_for_admins)) {
+                            it.invoke()
+                            showMenu = false
+                        }
                     }
                     showDevSupport?.let {
                         MenuItem(stringResource(sf__dev_support_title_menu_item)) {
