@@ -394,7 +394,7 @@ public class OAuth2 {
         sb.append(FRONTDOOR);
         sb.append(SID).append(EQUAL).append(accessToken);
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(url.toString()));
-        if (addlParams != null && !addlParams.isEmpty()) {
+        if (addlParams != null && addlParams.size() > 0) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
