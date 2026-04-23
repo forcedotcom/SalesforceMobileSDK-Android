@@ -144,12 +144,18 @@ class AppAttestationClient(
      * External Client App (ECA) Plug-In "Challenge" to use
      * @param integrityTokenProvider The Google Play App Integrity API Integrity
      * Token Provider.  This parameter is intended for testing purposes only
+     * @param canRetryOnInvalidTokenProvider When true (the default), a single
+     * inline retry with a freshly prepared Integrity Token Provider is allowed
+     * if the request fails with [INTEGRITY_TOKEN_PROVIDER_INVALID].  The
+     * recursive retry call sets this false to guarantee at most one retry
+     * and prevent unbounded recursion on the caller thread
      * @return The "attestation" value usable in Salesforce OAuth authorization
      * and token refresh requests or null if the value cannot be created
      */
     suspend fun createAppAttestation(
         appAttestationChallenge: String,
         integrityTokenProvider: StandardIntegrityTokenProvider? = this.integrityTokenProvider,
+        canRetryOnInvalidTokenProvider: Boolean = true,
     ): String? {
         // Guard to ensure the Google Play Integrity API Integrity Provider was asynchronously resolved or do so synchronously now.
         val integrityTokenProviderResolved = integrityTokenProvider ?: prepareIntegrityTokenProvider().await()
@@ -185,10 +191,12 @@ class AppAttestationClient(
             ).toBase64String()
         }.getOrElse { e ->
             // If the Google Play Integrity API failed due to the Integrity Token Provider being expired, re-prepare it once for an inline retry.
-            if ((e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
+            // The retry call passes canRetryOnInvalidTokenProvider = false to cap retries at one attempt and prevent unbounded recursion on the caller thread if the freshly prepared provider also reports INTEGRITY_TOKEN_PROVIDER_INVALID.
+            if (canRetryOnInvalidTokenProvider && (e as? IntegrityServiceException)?.errorCode == INTEGRITY_TOKEN_PROVIDER_INVALID) {
                 createAppAttestation(
                     appAttestationChallenge = appAttestationChallenge,
-                    integrityTokenProvider = null
+                    integrityTokenProvider = null,
+                    canRetryOnInvalidTokenProvider = false,
                 )
             } else {
                 null
@@ -248,7 +256,14 @@ internal data class OAuthAuthorizationAttestation(
 ) {
 
     /**
-     * Returns a Base64-encoded JSON representation of this object
+     * Returns a Base64-encoded JSON representation of this object.
+     *
+     * Note: Standard Base64 alphabet with padding is used by design. The
+     * Salesforce App Attestation server-side contract requires the
+     * standard (not URL-safe) Base64 encoding with padding, and the value
+     * is consumed as-is without URI percent-encoding at the token endpoint
+     * (see OAuth2.makeTokenEndpointRequest). This has been verified
+     * end-to-end; do not switch to Base64.getUrlEncoder() or strip padding.
      */
     fun toBase64String(): String? = Base64.getEncoder().encodeToString(Json.encodeToString(serializer(), this).encodeToByteArray())
 }

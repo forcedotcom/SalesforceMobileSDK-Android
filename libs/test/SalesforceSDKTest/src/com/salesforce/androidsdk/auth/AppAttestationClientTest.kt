@@ -143,6 +143,58 @@ class AppAttestationClientTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun appAttestationClient_createAppAttestation_whenBothProvidersThrowInvalidTokenProvider_retriesAtMostOnceAndReturnsNull() = runTest {
+
+        val throwingIntegrityTokenProvider = createThrowingIntegrityTokenProvider(
+            throwable = createIntegrityServiceException(errorCode = INTEGRITY_TOKEN_PROVIDER_INVALID),
+        )
+        val integrityManager = createMockIntegrityManagerResolvingTo(
+            provider = createThrowingIntegrityTokenProvider(
+                throwable = createIntegrityServiceException(errorCode = INTEGRITY_TOKEN_PROVIDER_INVALID),
+            ),
+        )
+        val appAttestationClient = createAppAttestationClientForTest(integrityManager = integrityManager)
+
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = TEST_CHALLENGE_VALUE,
+            integrityTokenProvider = throwingIntegrityTokenProvider,
+        )
+
+        advanceUntilIdle()
+
+        assertNull(result)
+        // integrityManager.prepareIntegrityToken is called exactly twice: once from the constructor's init {} block,
+        // and exactly once more for the single inline retry.  A count > 2 would indicate unbounded recursion.
+        verify(exactly = 2) { integrityManager.prepareIntegrityToken(any()) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun appAttestationClient_createAppAttestation_whenCanRetryIsFalseAndProviderThrowsInvalid_shortCircuitsWithoutRetry() = runTest {
+
+        val throwingIntegrityTokenProvider = createThrowingIntegrityTokenProvider(
+            throwable = createIntegrityServiceException(errorCode = INTEGRITY_TOKEN_PROVIDER_INVALID),
+        )
+        val integrityManager = createMockIntegrityManagerResolvingTo(
+            provider = createSuccessfulIntegrityTokenProvider(),
+        )
+        val appAttestationClient = createAppAttestationClientForTest(integrityManager = integrityManager)
+
+        val result = appAttestationClient.createAppAttestation(
+            appAttestationChallenge = TEST_CHALLENGE_VALUE,
+            integrityTokenProvider = throwingIntegrityTokenProvider,
+            canRetryOnInvalidTokenProvider = false,
+        )
+
+        advanceUntilIdle()
+
+        assertNull(result)
+        // Only the constructor's init {} block may call prepareIntegrityToken; no retry is allowed when canRetryOnInvalidTokenProvider = false.
+        verify(exactly = 1) { integrityManager.prepareIntegrityToken(any()) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun appAttestationClient_createSalesforceOAuthAuthorizationAppAttestationThrowingForUnknownIntegrityServiceException_returnsSuccessfully() = runTest {
 
         val throwingIntegrityTokenProvider = createThrowingIntegrityTokenProvider(
