@@ -7,8 +7,9 @@ plugins {
     `kotlin-android`
     `publish-module`
     jacoco
-    kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.serialization") version "2.1.0"
     kotlin("plugin.parcelize")
+    kotlin("plugin.compose")
 }
 
 dependencies {
@@ -38,7 +39,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
     implementation("androidx.window:window:1.4.0")
     implementation("androidx.window:window-core:1.4.0")
-    implementation("androidx.compose.material3:material3-android:1.3.2")
+    implementation("androidx.compose.material3:material3-android:1.4.0")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
@@ -119,10 +120,8 @@ android {
         compose = true
     }
 
-    @Suppress("UnstableApiUsage")
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
+    // Note: With Kotlin 2.0+, Compose Compiler is integrated into the Kotlin compiler
+    // and kotlinCompilerExtensionVersion is no longer needed
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {
         group = "Coverage"
