@@ -25,7 +25,7 @@ dependencies {
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.restexplorer"
     testNamespace = "com.salesforce.samples.restexplorer.tests"
 

@@ -45,7 +45,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.authflowtester"
 
     //noinspection GradleDependency

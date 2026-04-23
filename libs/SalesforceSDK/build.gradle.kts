@@ -59,7 +59,7 @@ dependencies {
     androidTestImplementation("io.mockk:mockk-android:1.14.9")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 

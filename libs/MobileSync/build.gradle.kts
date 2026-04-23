@@ -19,7 +19,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.mobilesync"
     testNamespace = "com.salesforce.androidsdk.mobilesync.tests"
 
