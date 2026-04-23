@@ -202,13 +202,25 @@ Resolve this blocker **before** attempting AGP 10.0 upgrade (likely 6-12 months 
 
 ## Migration Attempt Log
 
-**2026-04-23:**
+**2026-04-23 (Initial Attempt with Kotlin 2.2.10):**
 - Removed `android.newDsl=false` from `gradle.properties`
 - Removed TODO comments from all `build.gradle.kts` files
 - Tested with `builtInKotlin=false` + explicit `kotlin-android`: ❌ Cast Exception
 - Tested without `builtInKotlin` setting + no explicit `kotlin-android`: ❌ Compilation Failure
 - Reverted all changes
-- Documented blocker findings in this file
+- Documented initial blocker findings in this file
+
+**2026-04-23 (Second Attempt with Kotlin 2.3.21):**
+- Updated Kotlin Gradle Plugin from 2.2.10 to 2.3.21
+- Removed `android.newDsl=false` and `android.builtInKotlin=false`
+- Removed `kotlin-android` plugin from all build files
+- Result: Kotlin 2.3.21 provides clearer error messages:
+  * "The 'org.jetbrains.kotlin.android' plugin is no longer required for Kotlin support since AGP 9.0"
+  * Kotlin compilation runs but shows `NO-SOURCE` for all modules
+  * AGP's built-in Kotlin doesn't detect Kotlin files in custom `src/` layout
+- Root cause identified: Project uses non-standard source layout incompatible with AGP built-in Kotlin
+- Reverted all changes
+- Updated blocker documentation
 
 ---
 
