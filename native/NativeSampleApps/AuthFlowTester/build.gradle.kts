@@ -1,7 +1,8 @@
 plugins {
     android
     `kotlin-android`
-    kotlin("plugin.serialization") version "1.9.24"
+    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("plugin.compose")
 }
 
 dependencies {
@@ -31,7 +32,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test:1.10.3")
     androidTestUtil("androidx.test:orchestrator:1.6.1")
 
-    implementation("androidx.compose.material3:material3-android:1.3.2")
+    implementation("androidx.compose.material3:material3-android:1.4.0")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
@@ -66,9 +67,8 @@ android {
         buildConfig = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
+    // Note: With Kotlin 2.0+, Compose Compiler is integrated into the Kotlin compiler
+    // and kotlinCompilerExtensionVersion is no longer needed
 
     buildTypes {
         debug {
