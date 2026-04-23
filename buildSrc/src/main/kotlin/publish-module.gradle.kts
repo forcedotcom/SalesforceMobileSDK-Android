@@ -15,7 +15,8 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
     }
 
     val sourcesJar by tasks.creating(Jar::class) {
-        from(android.sourceSets.getByName("main").java.srcDirs)
+        val mainSourceSet = android.sourceSets.getByName("main")
+        from(mainSourceSet.java.getSourceFiles())
     }
 
     artifacts {
@@ -29,7 +30,7 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
                     artifactId = rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String
                     groupId = rootProject.ext["PUBLISH_GROUP_ID"] as? String
                     version = rootProject.ext["PUBLISH_VERSION"] as? String
-                    from(components["release"])
+                    from(components.getByName("release"))
                     artifact(sourcesJar)
                     pom {
                         name.set(rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String)

@@ -38,19 +38,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.srcDirs("src")
+            resources.srcDirs("src")
+            aidl.srcDirs("src")
+            renderscript.srcDirs("src")
+            res.srcDirs("res")
+            assets.srcDirs("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceAnalyticsTest")
-            java.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/res"))
+            java.srcDirs("../test/SalesforceAnalyticsTest/src")
+            resources.srcDirs("../test/SalesforceAnalyticsTest/src")
+            res.srcDirs("../test/SalesforceAnalyticsTest/res")
         }
     }
 
@@ -91,11 +91,11 @@ android {
             html.required = true
         }
 
-        sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+        val fileFilter = listOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(listOf("**/coverage.ec")) })
     }
 }
