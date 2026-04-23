@@ -10,7 +10,7 @@ dependencies {
 
     implementation(project(":libs:SalesforceSDK"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-    implementation("androidx.compose.runtime:runtime-android:1.10.0")
+    implementation("androidx.compose.runtime:runtime-android:1.11.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.tracing:tracing:1.3.0")
     implementation("com.google.android.material:material:1.13.0")
@@ -21,7 +21,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.appcompat:appcompat-resources:1.7.1")
 
-    androidTestImplementation("androidx.test:rules:1.6.1") {
+    androidTestImplementation("androidx.test:rules:1.7.0") {
         exclude("com.android.support", "support-annotations")
     }
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
@@ -29,7 +29,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-web:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    androidTestImplementation("androidx.compose.ui:ui-test:1.10.3")
+    androidTestImplementation("androidx.compose.ui:ui-test:1.11.0")
     androidTestUtil("androidx.test:orchestrator:1.6.1")
 
     implementation("androidx.compose.material3:material3-android:1.4.0")
