@@ -97,6 +97,27 @@ class LoginActivityScenarioTest {
     }
 
     @Test
+    fun onBrowserCustomTabReady_IsSetOnCreate() {
+        // The activity wires the callback as part of onCreate so that the ViewModel can push
+        // the browser-custom-tab URL back up when it's ready (replacing the deleted
+        // BrowserCustomTabUrlObserver). Verifying the callback is non-null after onCreate
+        // protects against someone accidentally removing the wiring. The *behavior* of the
+        // lambda (routing through the regular customTabLauncher, not the admin one) is
+        // exercised by the `onLoginForAdminsClick_*` tests in LoginActivityTest which verify
+        // the two launchers are used by the right code paths.
+        launch<LoginActivity>(
+            Intent(getApplicationContext(), LoginActivity::class.java)
+        ).use { activityScenario ->
+            activityScenario.onActivity { activity ->
+                assertNotNull(
+                    "onBrowserCustomTabReady should be set in LoginActivity.onCreate",
+                    activity.viewModel.onBrowserCustomTabReady,
+                )
+            }
+        }
+    }
+
+    @Test
     fun viewModelFrontDoorBridgeCodeVerifier_UpdatesOn_onCreateWithQrCodeLoginIntent() {
         val uri = "app://android/login/qr/?bridgeJson=%7B%22pkce_code_verifier%22%3A%22__CODE_VERIFIER__%22%2C%22frontdoor_bridge_url%22%3A%22https%3A%2F%2Fmobilesdk.my.salesforce.com%2Fsecur%2Ffrontdoor.jsp%3Fotp%3D__OTP__%26startURL%3D%252Fservices%252Foauth2%252Fauthorize%253Fresponse_type%253Dcode%2526client_id%253D__CONSUMER_KEY__%2526redirect_uri%253Dtestsfdc%25253A%25252F%25252F%25252Fmobilesdk%25252Fdetect%25252Foauth%25252Fdone%2526code_challenge%253D__CODE_CHALLENGE__%26cshc%3D__CSHC__%22%7D".toUri()
 
@@ -113,7 +134,7 @@ class LoginActivityScenarioTest {
                 assertTrue(activity.viewModel.isUsingFrontDoorBridge)
                 assertEquals("__CODE_VERIFIER__", activity.viewModel.frontdoorBridgeCodeVerifier)
                 assertEquals("https://mobilesdk.my.salesforce.com", activity.viewModel.frontdoorBridgeServer)
-                assertEquals("https://mobilesdk.my.salesforce.com/secur/frontdoor.jsp?otp=__OTP__&startURL=%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D__CONSUMER_KEY__%26redirect_uri%3Dtestsfdc%253A%252F%252F%252Fmobilesdk%252Fdetect%252Foauth%252Fdone%26code_challenge%3D__CODE_CHALLENGE__&cshc=__CSHC__", activity.viewModel.loginUrl.value)
+                assertEquals("https://mobilesdk.my.salesforce.com/secur/frontdoor.jsp?otp=__OTP__&startURL=%2Fservices%2Foauth2%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D__CONSUMER_KEY__%26redirect_uri%3Dtestsfdc%253A%252F%252F%252Fmobilesdk%252Fdetect%252Foauth%252Fdone%26code_challenge%3D__CODE_CHALLENGE__&cshc=__CSHC__", activity.viewModel.frontDoorBridgeUrl.value)
             }
         }
     }
@@ -249,114 +270,6 @@ class LoginActivityScenarioTest {
     }
 
     // region Salesforce Welcome Discovery
-
-    @Test
-    fun loginActivity_startBrowserCustomTabAuthorization_launchesActivityResultLauncherWhenIsBrowserLoginEnabled() {
-
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            val sdkManager = mockk<SalesforceSDKManager>()
-            every { sdkManager.isBrowserLoginEnabled } returns true
-            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
-
-            activity.startBrowserCustomTabAuthorization(
-                authorizationUrl = "_authorization_url_",
-                activityResultLauncher = activityResultLauncher,
-                isBrowserLoginEnabled = true,
-                isUsingFrontDoorBridge = false,
-                singleServerCustomTabActivity = false,
-            )
-            verify(exactly = 1) { activityResultLauncher.launch(any()) }
-        }
-    }
-
-    @Test
-    fun loginActivity_startBrowserCustomTabAuthorization_launchesActivityResultLauncherWhenSingleServerCustomTabActivity() {
-
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            val sdkManager = mockk<SalesforceSDKManager>()
-            every { sdkManager.isBrowserLoginEnabled } returns true
-            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
-
-            activity.startBrowserCustomTabAuthorization(
-                authorizationUrl = "_authorization_url_",
-                activityResultLauncher = activityResultLauncher,
-                isBrowserLoginEnabled = false,
-                isUsingFrontDoorBridge = false,
-                singleServerCustomTabActivity = true,
-            )
-            verify(exactly = 1) { activityResultLauncher.launch(any()) }
-        }
-    }
-
-    @Test
-    fun loginActivity_startBrowserCustomTabAuthorization_returnsActivityResultLauncherWhenBothBrowserLoginDisabledAndIsUsingFrontDoorBridge() {
-
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            val sdkManager = mockk<SalesforceSDKManager>()
-            every { sdkManager.isBrowserLoginEnabled } returns true
-            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
-
-            activity.startBrowserCustomTabAuthorization(
-                authorizationUrl = "_authorization_url_",
-                activityResultLauncher = activityResultLauncher,
-                isBrowserLoginEnabled = false,
-                isUsingFrontDoorBridge = true,
-                singleServerCustomTabActivity = false,
-            )
-            verify(exactly = 0) { activityResultLauncher.launch(any()) }
-        }
-    }
-
-    @Test
-    fun loginActivity_startBrowserCustomTabAuthorization_returnsActivityResultLauncherWhenIsUsingFrontDoorBridge() {
-
-        val activityScenario = launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        )
-
-        activityScenario.onActivity { activity ->
-
-            val sdkManager = mockk<SalesforceSDKManager>()
-            every { sdkManager.isBrowserLoginEnabled } returns true
-            val activityResultLauncher = mockk<ActivityResultLauncher<Intent>>()
-
-            activity.startBrowserCustomTabAuthorization(
-                authorizationUrl = "_authorization_url_",
-                activityResultLauncher = activityResultLauncher,
-                isBrowserLoginEnabled = true,
-                isUsingFrontDoorBridge = true,
-                singleServerCustomTabActivity = true,
-            )
-            verify(exactly = 0) { activityResultLauncher.launch(any()) }
-        }
-    }
 
     @Test
     fun loginActivity_startsWscDiscovery_onCreateWithSelectedServer() {

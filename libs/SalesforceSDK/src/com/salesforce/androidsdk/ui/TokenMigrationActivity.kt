@@ -130,11 +130,10 @@ internal class TokenMigrationActivity : ComponentActivity() {
         lifecycleScope.launch {
             val frontDoorUrl = withContext(IO) {
                 runCatching {
-                    val authorizationUrl = viewModel.getAuthorizationUrl(
+                    val authorizationPath = viewModel.generateMigrationAuthorizationPath(
                         server = user.instanceServer,
                         migrationOAuthConfig = oAuthConfig,
                     )
-                    val authorizationPath = with(authorizationUrl.toUri()) { "$path?$query" }
                     val request = RestRequest.getRequestForSingleAccess(authorizationPath)
                     val singleAccessResponse = client.sendSync(request)
 
