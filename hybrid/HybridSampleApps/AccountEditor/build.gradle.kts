@@ -8,7 +8,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.accounteditor"
 
     //noinspection GradleDependency

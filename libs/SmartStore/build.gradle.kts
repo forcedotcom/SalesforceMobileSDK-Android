@@ -22,7 +22,7 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
