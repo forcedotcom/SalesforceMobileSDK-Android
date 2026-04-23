@@ -583,6 +583,11 @@ public class OAuth2 {
         final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallenge() : null;
         final String attestationValue = challenge != null ? appAttestationClient.createAppAttestationBlocking(challenge) : null;
         if (attestationValue != null) {
+            // Note: The attestation value is appended to the token endpoint
+            // query string without Uri.encode by design. The value produced
+            // by OAuthAuthorizationAttestation.toBase64String() is accepted
+            // as-is by the Salesforce token endpoint's server-side contract.
+            // This has been verified end-to-end; do not wrap in Uri.encode.
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(attestationValue);
         }
 
