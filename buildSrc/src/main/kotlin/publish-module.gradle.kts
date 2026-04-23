@@ -1,38 +1,31 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     `android-library`
     `maven-publish`
     signing
-    kotlin("android")
 }
 
 if (rootProject.name == "SalesforceMobileSDK-Android") {
-    android {
-        publishing {
-            singleVariant("release") {
-                withSourcesJar()
+    pluginManager.withPlugin("com.android.library") {
+        extensions.configure<LibraryExtension>("android") {
+            publishing {
+                singleVariant("release") {
+                    withSourcesJar()
+                }
             }
         }
-    }
 
-    val sourcesJar by tasks.creating(Jar::class) {
-        val mainSourceSet = android.sourceSets.getByName("main")
-        from(mainSourceSet.java.getSourceFiles())
-    }
+        afterEvaluate {
+            publishing {
+                publications {
+                    create<MavenPublication>("release") {
+                        artifactId = rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String
+                        groupId = rootProject.ext["PUBLISH_GROUP_ID"] as? String
+                        version = rootProject.ext["PUBLISH_VERSION"] as? String
+                        from(components.getByName("release"))
 
-    artifacts {
-        archives(sourcesJar)
-    }
-
-    afterEvaluate {
-        publishing {
-            publications {
-                create<MavenPublication>("release") {
-                    artifactId = rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String
-                    groupId = rootProject.ext["PUBLISH_GROUP_ID"] as? String
-                    version = rootProject.ext["PUBLISH_VERSION"] as? String
-                    from(components.getByName("release"))
-                    artifact(sourcesJar)
-                    pom {
+                        pom {
                         name.set(rootProject.ext["PUBLISH_ARTIFACT_ID"] as? String)
                         description.set("Official Salesforce Android SDK")
                         url.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android")
@@ -80,6 +73,7 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
                     rootProject.ext["signing.password"] as? String
                 )
                 sign(publishing.publications)
+            }
             }
         }
     }

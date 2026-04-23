@@ -9,10 +9,10 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.12.0")
+        classpath("com.android.tools.build:gradle:9.1.1")
         classpath("io.github.gradle-nexus:publish-plugin:2.0.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
-        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10")
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10")
         classpath("org.jacoco:org.jacoco.core:0.8.13")
     }
 }
@@ -24,10 +24,10 @@ allprojects {
     // Ensure that we do not use newer language features that would make the SDK incompatible with
     // apps that do not target the latest version of Kotlin.
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-        kotlinOptions {
-            freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
-            apiVersion = "1.6"
-            languageVersion = "1.6"
+        compilerOptions {
+            freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8)
+            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8)
         }
     }
 }
