@@ -121,9 +121,6 @@ android {
         compose = true
     }
 
-    // Note: With Kotlin 2.0+, Compose Compiler is integrated into the Kotlin compiler
-    // and kotlinCompilerExtensionVersion is no longer needed
-
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {
         group = "Coverage"
         description = "Convert coverage.ec from Firebase Test Lab to XML that is usable by CodeCov."

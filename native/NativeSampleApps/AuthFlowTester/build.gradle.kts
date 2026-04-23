@@ -68,9 +68,6 @@ android {
         buildConfig = true
     }
 
-    // Note: With Kotlin 2.0+, Compose Compiler is integrated into the Kotlin compiler
-    // and kotlinCompilerExtensionVersion is no longer needed
-
     buildTypes {
         debug {
             enableAndroidTestCoverage = true
