@@ -38,6 +38,7 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
     implementation("androidx.compose.material:material:$composeVersion")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.activity:activity-compose:$composeVersion")
 
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
