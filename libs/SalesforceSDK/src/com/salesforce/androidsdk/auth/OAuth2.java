@@ -583,7 +583,7 @@ public class OAuth2 {
         final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallenge() : null;
         final String attestationValue = challenge != null ? appAttestationClient.createAppAttestationBlocking(challenge) : null;
         if (attestationValue != null) {
-            sb.append(AND).append(ATTESTATION).append(EQUAL).append(Uri.encode(attestationValue));
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(attestationValue);
         }
 
         final String refreshPath = sb.toString();
