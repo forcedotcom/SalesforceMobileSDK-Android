@@ -7,28 +7,29 @@ dependencies {
     api(project(":libs:SalesforceSDK"))
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.appcompat:appcompat-resources:1.7.1")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
 }
 
 android {
     namespace = "com.salesforce.samples.configuredapp"
 
-    compileSdk = 36
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 37
         minSdk = 28
     }
 
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs("src")
-            resources.srcDirs("src")
-            aidl.srcDirs("src")
-            renderscript.srcDirs("src")
-            res.srcDirs("res")
-            assets.srcDirs("assets")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            renderscript.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
     }
 

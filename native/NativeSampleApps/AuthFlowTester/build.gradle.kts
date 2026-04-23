@@ -6,12 +6,12 @@ plugins {
 }
 
 dependencies {
-    val composeVersion = "1.8.2" // Update requires Kotlin 2.
+    val composeVersion = "1.13.0"
 
     implementation(project(":libs:SalesforceSDK"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("androidx.compose.runtime:runtime-android:1.11.0")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.tracing:tracing:1.3.0")
     implementation("com.google.android.material:material:1.13.0")
     androidTestImplementation("androidx.test:runner:1.7.0") {
@@ -33,7 +33,7 @@ dependencies {
     androidTestUtil("androidx.test:orchestrator:1.6.1")
 
     implementation("androidx.compose.material3:material3-android:1.4.0")
-    implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
+    implementation(platform("androidx.compose:compose-bom:2026.04.01"))
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
@@ -48,10 +48,11 @@ dependencies {
 android {
     namespace = "com.salesforce.samples.authflowtester"
 
-    compileSdk = 36
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 37
         minSdk = 28
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
@@ -87,12 +88,10 @@ android {
 
     sourceSets {
         getByName("main") {
-            assets.srcDirs("${rootDir}/shared/test")
+            assets.directories.add("${rootDir}/shared/test")
         }
         getByName("androidTest") {
-            java.srcDirs(
-                "src/androidTest/java",
-            )
+            java.directories.add("src/androidTest/java")
         }
     }
 

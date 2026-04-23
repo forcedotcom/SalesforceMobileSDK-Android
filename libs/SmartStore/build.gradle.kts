@@ -12,8 +12,8 @@ plugins {
 dependencies {
     api(project(":libs:SalesforceSDK"))
     api("androidx.sqlite:sqlite:2.6.2")
-    api("net.zetetic:sqlcipher-android:4.14.0")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    api("net.zetetic:sqlcipher-android:4.14.1")
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
@@ -26,7 +26,8 @@ android {
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -42,20 +43,20 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs("src")
-            resources.srcDirs("src")
-            aidl.srcDirs("src")
-            renderscript.srcDirs("src")
-            res.srcDirs("res")
-            assets.srcDirs("assets")
-            jniLibs.srcDir("libs")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            renderscript.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
+            jniLibs.directories.add("libs")
         }
 
         getByName("androidTest") {
             setRoot("../test/SmartStoreTest")
-            java.srcDirs("../test/SmartStoreTest/src")
-            resources.srcDirs("../test/SmartStoreTest/src")
-            res.srcDirs("../test/SmartStoreTest/res")
+            java.directories.add("../test/SmartStoreTest/src")
+            resources.directories.add("../test/SmartStoreTest/src")
+            res.directories.add("../test/SmartStoreTest/res")
         }
     }
 

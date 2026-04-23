@@ -22,8 +22,8 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.79.3")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    api("com.facebook.react:react-android:0.79.3") // TODO: This update should happen in a dedicated work item. ECJ20260423
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
@@ -42,8 +42,8 @@ android {
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0.  Also, React Native 0.81.5 requests 36.
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -58,19 +58,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs("src")
-            resources.srcDirs("src")
-            aidl.srcDirs("src")
-            renderscript.srcDirs("src")
-            res.srcDirs("res")
-            assets.srcDirs("assets")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            renderscript.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceReactTest")
-            java.srcDirs("../test/SalesforceReactTest/src")
-            resources.srcDirs("../test/SalesforceReactTest/src")
-            res.srcDirs("../test/SalesforceReactTest/res")
+            java.directories.add("../test/SalesforceReactTest/src")
+            resources.directories.add("../test/SalesforceReactTest/src")
+            res.directories.add("../test/SalesforceReactTest/res")
         }
     }
 
@@ -171,7 +171,7 @@ afterEvaluate {
         tasks.getByName("preDebugAndroidTestBuild").dependsOn(
             tasks.getByName("buildReactTestBundleIfNotExists")
         )
-    } catch (ignored: Throwable) {
+    } catch (_: Throwable) {
         println("The preDebugAndroidTestBuild task was not found.")
     }
 }

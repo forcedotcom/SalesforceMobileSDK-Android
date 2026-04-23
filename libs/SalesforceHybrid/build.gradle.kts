@@ -13,12 +13,12 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("org.apache.cordova:framework:14.0.1")
+    api("org.apache.cordova:framework:14.0.1") // TODO: This update should happen in a dedicated work effort. ECJ20260423
     api("androidx.appcompat:appcompat:1.7.1")
     api("androidx.appcompat:appcompat-resources:1.7.1")
     api("androidx.webkit:webkit:1.15.0")
     api("androidx.core:core-splashscreen:1.2.0")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
@@ -28,8 +28,8 @@ android {
     namespace = "com.salesforce.androidsdk.hybrid"
     testNamespace = "com.salesforce.androidsdk.phonegap"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -44,19 +44,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs("src")
-            resources.srcDirs("src")
-            aidl.srcDirs("src")
-            renderscript.srcDirs("src")
-            res.srcDirs("res")
-            assets.srcDirs("assets")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            renderscript.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceHybridTest")
-            java.srcDirs("../test/SalesforceHybridTest/src")
-            resources.srcDirs("../test/SalesforceHybridTest/src")
-            res.srcDirs("../test/SalesforceHybridTest/res")
+            java.directories.add("../test/SalesforceHybridTest/src")
+            resources.directories.add("../test/SalesforceHybridTest/src")
+            res.directories.add("../test/SalesforceHybridTest/res")
         }
     }
 

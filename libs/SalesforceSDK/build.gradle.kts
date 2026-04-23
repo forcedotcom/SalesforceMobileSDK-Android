@@ -13,22 +13,22 @@ plugins {
 }
 
 dependencies {
-    val composeVersion = "1.8.2" // Update requires Kotlin 2.
-    val lifecycleVersion = "2.8.7" // Update requires Kotlin 2.
-    val androidXActivityVersion = "1.10.1"
+    val composeVersion = "1.11.0"
+    val lifecycleVersion = "2.10.0"
+    val androidXActivityVersion = "1.13.0"
 
     api(project(":libs:SalesforceAnalytics"))
     api("com.squareup.okhttp3:okhttp:5.3.2")
     api("com.google.firebase:firebase-messaging:25.0.1")
-    api("androidx.core:core:1.16.0") // Update requires API 36 compileSdk
-    api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
+    api("androidx.core:core:1.18.0") // Update requires API 36 compileSdk
+    api("androidx.browser:browser:1.10.0") // Update requires API 36 compileSdk
     api("androidx.work:work-runtime-ktx:2.11.2")
 
     implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
-    implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
+    implementation("com.google.android.material:material:1.13.0")  // remove this when all XML is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
     implementation("androidx.activity:activity-compose:$androidXActivityVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
@@ -40,7 +40,7 @@ dependencies {
     implementation("androidx.window:window:1.5.1")
     implementation("androidx.window:window-core:1.5.1")
     implementation("androidx.compose.material3:material3-android:1.4.0")
-    implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
+    implementation(platform("androidx.compose:compose-bom:2026.04.01"))
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")
     implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
@@ -63,8 +63,8 @@ android {
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -80,20 +80,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs("src")
-            resources.srcDirs("src")
-            aidl.srcDirs("src")
-            renderscript.srcDirs("src")
-            res.srcDirs("res")
-            assets.srcDirs("assets")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            renderscript.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceSDKTest")
-            java.srcDirs("../test/SalesforceSDKTest/src")
-            resources.srcDirs("../test/SalesforceSDKTest/src")
-            res.srcDirs("../test/SalesforceSDKTest/res")
-            @Suppress("UnstableApiUsage")
+            java.directories.add("../test/SalesforceSDKTest/src")
+            resources.directories.add("../test/SalesforceSDKTest/src")
+            res.directories.add("../test/SalesforceSDKTest/res")
             assets.directories.add("../../shared/test")
         }
     }
