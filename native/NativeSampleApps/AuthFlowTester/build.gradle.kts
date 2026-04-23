@@ -64,7 +64,6 @@ android {
 
     buildFeatures {
         compose = true
-        renderScript = true
         aidl = true
         buildConfig = true
     }

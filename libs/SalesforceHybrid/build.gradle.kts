@@ -47,7 +47,6 @@ android {
             java.directories.add("src")
             resources.directories.add("src")
             aidl.directories.add("src")
-            renderscript.directories.add("src")
             res.directories.add("res")
             assets.directories.add("assets")
         }
@@ -77,7 +76,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }
