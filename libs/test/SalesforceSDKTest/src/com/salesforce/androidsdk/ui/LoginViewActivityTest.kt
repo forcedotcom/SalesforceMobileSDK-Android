@@ -325,6 +325,34 @@ class LoginViewActivityTest {
     }
 
     @Test
+    fun topAppBar_LoginForAdminsButton_CallsCallback() {
+        var loginForAdminsCalled = false
+        androidComposeTestRule.setContent {
+            DefaultTopAppBarTestWrapper(
+                onLoginForAdmins = { loginForAdminsCalled = true },
+            )
+        }
+
+        val menu = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__more_options)
+        )
+        val loginForAdminsButton = androidComposeTestRule.onNodeWithText(
+            androidComposeTestRule.activity.getString(R.string.sf__login_for_admins)
+        )
+
+        menu.assertIsDisplayed()
+        menu.performClick()
+        loginForAdminsButton.assertIsDisplayed()
+        Assert.assertFalse("Login for Admins should not be called yet.", loginForAdminsCalled)
+
+        loginForAdminsButton.performClick()
+        Assert.assertTrue("Login for Admins callback should be invoked.", loginForAdminsCalled)
+
+        // Menu should dismiss after clicking the item.
+        loginForAdminsButton.assertDoesNotExist()
+    }
+
+    @Test
     fun bottomAppBar_WithNoButton_DisplaysCorrectly() {
         androidComposeTestRule.setContent {
             DefaultBottomAppBarTestWrapper()
@@ -512,10 +540,12 @@ class LoginViewActivityTest {
         shouldShowBackButton: Boolean = false,
         showDevSupport: (() -> Unit)? = { },
         finish: () -> Unit = { },
+        onLoginForAdmins: (() -> Unit) = { },
     ) {
         DefaultTopAppBar(
             backgroundColor, titleText, titleTextColor, showServerPicker, clearCookies,
-            clearWebViewCache, reloadWebView, shouldShowBackButton, showDevSupport, finish
+            clearWebViewCache, reloadWebView, shouldShowBackButton, showDevSupport, finish,
+            onLoginForAdmins,
         )
     }
 
@@ -546,6 +576,15 @@ class LoginViewActivityTest {
         bottomAppBar: @Composable () -> Unit = { DefaultBottomAppBarTestWrapper() },
         showServerPicker: MutableState<Boolean> = mutableStateOf(false),
     ) {
-        LoginView(dynamicBackgroundColor, loginUrlData, topAppBar, webView, loading, loadingIndicator, bottomAppBar, showServerPicker)
+        LoginView(
+            dynamicBackgroundColor = dynamicBackgroundColor,
+            loginUrlData = loginUrlData,
+            topAppBar = topAppBar,
+            webView = webView,
+            loading = loading,
+            loadingIndicator = loadingIndicator,
+            bottomAppBar = bottomAppBar,
+            showServerPicker = showServerPicker,
+        )
     }
 }
