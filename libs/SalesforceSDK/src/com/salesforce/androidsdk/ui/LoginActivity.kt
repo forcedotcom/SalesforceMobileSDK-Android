@@ -779,7 +779,13 @@ open class LoginActivity : FragmentActivity() {
         )
     }
 
-    internal fun onLoginForAdminsClick() {
+    /**
+     *  Launches the current login server in a Custom Tab. This allows Admins
+     *  to authenticate with a Passkey or by other methods that require
+     *  Advanced/Browser Authentication.
+     */
+    @Deprecated(message = "This function will be replaced by a permanent solution in 14.0.")
+    fun launchLoginForAdminsAction() {
         val loginUrl = viewModel.browserCustomTabUrl.value ?: return
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }

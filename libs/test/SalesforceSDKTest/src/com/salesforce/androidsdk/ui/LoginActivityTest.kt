@@ -32,7 +32,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -147,9 +146,9 @@ class LoginActivityTest {
 
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
-        every { activity.onLoginForAdminsClick() } answers { callOriginal() }
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
 
-        activity.onLoginForAdminsClick()
+        activity.launchLoginForAdminsAction()
 
         verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
     }
@@ -164,9 +163,9 @@ class LoginActivityTest {
 
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
-        every { activity.onLoginForAdminsClick() } answers { callOriginal() }
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
 
-        activity.onLoginForAdminsClick()
+        activity.launchLoginForAdminsAction()
 
         // `loadLoginPageInCustomTab` is invoked with the URL from `browserCustomTabUrl.value`.
         // Note: we can't verify the launcher argument via mockk here because Kotlin emits

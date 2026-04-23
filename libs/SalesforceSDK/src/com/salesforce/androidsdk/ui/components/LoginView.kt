@@ -173,7 +173,7 @@ fun LoginView() {
             shouldShowBackButton = viewModel.shouldShowBackButton,
             showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
-            onLoginForAdmins = { activity.onLoginForAdminsClick() },
+            onLoginForAdmins = { activity.launchLoginForAdminsAction() },
         )
     }
 
