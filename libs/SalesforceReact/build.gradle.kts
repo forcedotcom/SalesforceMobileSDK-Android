@@ -38,7 +38,7 @@ dependencies {
 
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
@@ -117,7 +117,7 @@ android {
 val assetsFolder = File("libs/test/SalesforceReactTest/assets")
 val reactTestsBundleFile = File(assetsFolder, "index.android.bundle")
 
-task<Exec>("buildReactTestBundle") {
+tasks.register<Exec>("buildReactTestBundle") {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         commandLine(
             "cmd",
@@ -155,10 +155,11 @@ task<Exec>("buildReactTestBundle") {
     }
 }
 
-task("buildReactTestBundleIfNotExists") {
-    if (!reactTestsBundleFile.exists()) {
+tasks.register("buildReactTestBundleIfNotExists") {
+    dependsOn("buildReactTestBundle")
+    onlyIf { !reactTestsBundleFile.exists() }
+    doFirst {
         assetsFolder.mkdirs()
-        dependsOn("buildReactTestBundle")
     }
 }
 
