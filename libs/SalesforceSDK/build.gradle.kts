@@ -7,7 +7,7 @@ plugins {
     `kotlin-android`
     `publish-module`
     jacoco
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("plugin.serialization") version "2.2.10"
     kotlin("plugin.parcelize")
     kotlin("plugin.compose")
 }
@@ -28,7 +28,6 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
     implementation("androidx.activity:activity-compose:$androidXActivityVersion")
@@ -36,9 +35,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-service:$lifecycleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
-    implementation("androidx.window:window:1.4.0")
-    implementation("androidx.window:window-core:1.4.0")
+    implementation("androidx.lifecycle:lifecycle-process:$lifecycleVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("androidx.window:window:1.5.1")
+    implementation("androidx.window:window-core:1.5.1")
     implementation("androidx.compose.material3:material3-android:1.4.0")
     implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
     implementation("androidx.compose.foundation:foundation-android:$composeVersion")

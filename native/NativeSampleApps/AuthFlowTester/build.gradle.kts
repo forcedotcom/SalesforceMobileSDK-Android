@@ -1,7 +1,7 @@
 plugins {
     android
     `kotlin-android`
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("plugin.serialization") version "2.2.10"
     kotlin("plugin.compose")
 }
 
@@ -9,7 +9,7 @@ dependencies {
     val composeVersion = "1.8.2" // Update requires Kotlin 2.
 
     implementation(project(":libs:SalesforceSDK"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("androidx.compose.runtime:runtime-android:1.10.0")
     implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
     implementation("androidx.tracing:tracing:1.3.0")
