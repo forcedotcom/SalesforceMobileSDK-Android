@@ -18,7 +18,7 @@ dependencies {
     val androidXActivityVersion = "1.10.1"
 
     api(project(":libs:SalesforceAnalytics"))
-    api("com.squareup.okhttp3:okhttp:4.12.0")
+    api("com.squareup.okhttp3:okhttp:5.3.2")
     api("com.google.firebase:firebase-messaging:25.0.0")
     api("androidx.core:core:1.16.0") // Update requires API 36 compileSdk
     api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
