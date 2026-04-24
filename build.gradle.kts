@@ -11,8 +11,8 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:9.2.0")
         classpath("io.github.gradle-nexus:publish-plugin:2.0.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10")
-        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20")
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.3.20")
         classpath("org.jacoco:org.jacoco.core:0.8.14")
     }
 }
@@ -26,8 +26,8 @@ allprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8)
-            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8)
+            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_1)
+            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_1)
         }
     }
 }
