@@ -72,6 +72,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -125,8 +126,24 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** The selected login server's OAuth authorization URL for use in the web view when browser-based authentication is inactive */
     val loginUrl = MediatorLiveData<String>()
 
-    /** The selected login server's OAuth authorization URL for use in the external browser custom tab when browser-based authentication is active.  This provides the login flow with the requirements for advanced authentication, such as client certificates */
+    /**
+     * The selected login server's OAuth authorization URL for use in the
+     * external browser custom tab when browser-based authentication is active.
+     * This provides the login flow with the requirements for advanced
+     * authentication, such as client certificates.
+     *
+     * Future enhancement: Use CustomTabsClient.warmup() and
+     * CustomTabsSession.mayLaunchUrl() to pre-warm the browser and
+     * speculatively pre-load this URL whenever it changes, improving custom
+     * tab launch performance.
+     */
     val browserCustomTabUrl = MediatorLiveData<String>()
+
+    /** The Salesforce Identity API UI Bridge front door bridge URL for use in the web view when overriding the standard login URL */
+    val frontDoorBridgeUrl = MediatorLiveData<String?>()
+
+    /** Callback invoked when [browserCustomTabUrl] is ready and should be launched in a browser custom tab. Set by the Activity. */
+    internal var onBrowserCustomTabReady: ((String) -> Unit)? = null
 
     var showServerPicker = mutableStateOf(false)
     var loading = mutableStateOf(false)
@@ -206,7 +223,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             }
             // Second, when not using a front-door bridge URL, the app's preferences can be used.
             else {
-                useWebServerAuthentication || isBrowserLoginEnabled
+                useWebServerAuthentication || isBrowserLoginEnabled || singleServerCustomTabActivity
             }
         }
 
@@ -236,7 +253,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     internal var authCodeForJwtFlow: String? = null
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
-    internal var isUsingFrontDoorBridge = false
+    internal val isUsingFrontDoorBridge: Boolean
+        get() = frontDoorBridgeUrl.value != null
 
     // The optional server used for code exchange.
     internal var frontdoorBridgeServer: String? = null
@@ -262,9 +280,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Update loginUrl when selectedServer updates so webview automatically reloads
         loginUrl.addSource(selectedServer, LoginUrlSource())
-
-        // When selecting a login server, update the browser custom tab URL to match the OAuth authorization URL when browser-based authentication is active.
-        browserCustomTabUrl.addSource(selectedServer, BrowserCustomTabUrlSource())
     }
 
     /** Reloads the WebView with a newly generated authorization URL. */
@@ -278,7 +293,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 }
 
                 viewModelScope.launch {
-                    loginUrl.value = getAuthorizationUrl(server)
+                    generateAuthorizationUrl(server)
                 }
             }
         }
@@ -302,10 +317,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         frontdoorBridgeUrl: String,
         pkceCodeVerifier: String?,
     ) {
-        isUsingFrontDoorBridge = true
         frontdoorBridgeServer = with(URI(frontdoorBridgeUrl)) { "${scheme}://${host}" }
         frontdoorBridgeCodeVerifier = pkceCodeVerifier
-        loginUrl.value = frontdoorBridgeUrl
+        frontDoorBridgeUrl.value = frontdoorBridgeUrl
     }
 
     /**
@@ -397,7 +411,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * its default inactive state.
      */
     internal fun resetFrontDoorBridgeUrl() {
-        isUsingFrontDoorBridge = false
+        frontDoorBridgeUrl.value = null
         frontdoorBridgeServer = null
         frontdoorBridgeCodeVerifier = null
     }
@@ -428,68 +442,136 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
 
     /**
-     * Generates an OAuth authorization URL for the provided server.
+     * Generates an OAuth authorization URL for token migration.
      * @param server The login server URL
-     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
-     * for testing purposes only. Defaults to the shared instance
-     * @param scope The Coroutine scope.  This parameter is intended for testing
-     * purposes only. Defaults to the IO scope
+     * @param migrationOAuthConfig The OAuth config to use for migration
      */
-    internal suspend fun getAuthorizationUrl(
+    internal fun generateMigrationAuthorizationPath(
         server: String,
+        migrationOAuthConfig: OAuthConfig,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-        scope: CoroutineScope = CoroutineScope(IO),
-        migrationOAuthConfig: OAuthConfig? = null,
-    ) = withContext(scope.coroutineContext) {
-        // Show loading indicator because appConfigForLoginHost could take a noticeable amount of time.
-        loading.value = true
-
-        with(sdkManager) {
-            oAuthConfig = when {
-                // Used by UserAccountManager.migrateRefreshToken/TokenMigrationActivity
-                migrationOAuthConfig != null -> migrationOAuthConfig
-                // Used by LoginOptions
-                isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
-                // Check if app has a config and fallback to bootconfig file.
-                else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
-            }
-        }
-
-        val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
-        val additionalParams = when {
-            jwtFlow -> null
-            else -> additionalParameters
-        }
-
+    ): String {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
-            useWebServerFlow,
+            /* useWebServerAuthentication = */ true,
             sdkManager.useHybridAuthentication,
             URI(server),
-            consumerKey,
-            oAuthConfig.redirectUri,
-            oAuthConfig.scopes?.toTypedArray(),
-            loginHint,
+            migrationOAuthConfig.consumerKey,
+            migrationOAuthConfig.redirectUri,
+            migrationOAuthConfig.scopes?.toTypedArray(),
+            /* loginHint = */ null,
             authorizationDisplayType,
             codeChallenge,
-            additionalParams
+            /* addlParams = */ emptyMap<String, String>(),
         )
 
-        // The Salesforce Welcome login hint is only used once.
-        loginHint = null
+        return with(authorizationUrl) { "$path?$query" }
+    }
+    
+    /**
+     * Generates an OAuth authorization URL for the provided server.
+     * @param server The login server URL
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
+     * @param coroutineContext The coroutine context.  This parameter is intended
+     * for testing purposes only. Defaults to the IO dispatcher
+     */
+    internal suspend fun generateAuthorizationUrl(
+        server: String,
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+        coroutineContext: CoroutineContext = IO,
+    ) {
+        // Show loading indicator.
+        loading.value = true
 
-        return@withContext when {
-            jwtFlow -> getFrontdoorUrl(
-                authorizationUrl,
-                authCodeForJwtFlow,
-                selectedServer.value,
-                mapOf<String, String>()
+        // Perform heavy work (config fetch, URL generation) on the IO dispatcher.
+        val (browserTabUrl, webViewUrl) = withContext(coroutineContext) {
+            with(sdkManager) {
+                oAuthConfig = when {
+                    // Used by LoginOptions
+                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
+                    // Check if app has a config and fallback to bootconfig file.
+                    else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
+                }
+            }
+
+            val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
+            val additionalParams = when {
+                jwtFlow -> null
+                else -> additionalParameters
+            }
+
+            val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
+            val codeChallenge = getSHA256Hash(codeVerifier)
+
+            val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
+                /* useWebServerAuthentication = */ true,
+                sdkManager.useHybridAuthentication,
+                URI(server),
+                consumerKey,
+                oAuthConfig.redirectUri,
+                oAuthConfig.scopes?.toTypedArray(),
+                loginHint,
+                authorizationDisplayType,
+                codeChallenge,
+                additionalParams
             )
 
-            else -> authorizationUrl
-        }.toString()
+            val browserTabUrlValue = when {
+                jwtFlow -> getFrontdoorUrl(
+                    webServerAuthorizationUrl,
+                    authCodeForJwtFlow,
+                    selectedServer.value,
+                    mapOf<String, String>()
+                )
+
+                else -> webServerAuthorizationUrl.toString()
+            }.toString()
+
+            val webViewUrlValue = if (useWebServerFlow) {
+                browserTabUrlValue
+            } else {
+                val userAgentAuthorizationUrl = OAuth2.getAuthorizationUrl(
+                    false,
+                    sdkManager.useHybridAuthentication,
+                    URI(server),
+                    consumerKey,
+                    oAuthConfig.redirectUri,
+                    oAuthConfig.scopes?.toTypedArray(),
+                    loginHint,
+                    authorizationDisplayType,
+                    codeChallenge,
+                    additionalParams
+                )
+
+                when {
+                    jwtFlow -> getFrontdoorUrl(
+                        userAgentAuthorizationUrl,
+                        authCodeForJwtFlow,
+                        selectedServer.value,
+                        mapOf<String, String>(),
+                    )
+
+                    else -> userAgentAuthorizationUrl
+                }.toString()
+            }
+
+            // The Salesforce Welcome login hint is only used once.
+            loginHint = null
+
+            Pair(browserTabUrlValue, webViewUrlValue)
+        }
+
+        // Set LiveData values on the main thread.
+        browserCustomTabUrl.value = browserTabUrl
+        loginUrl.value = webViewUrl
+
+        // Launch the browser custom tab when applicable.
+        if (sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity) {
+            onBrowserCustomTabReady?.invoke(browserTabUrl)
+        }
     }
 
     @VisibleForTesting
@@ -573,8 +655,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /**
      * An observer used to set the web view's OAuth authorization URL from the
      * selected login server.
-     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
-     * for testing purposes only. Defaults to the shared instance
      * @param viewModel The login activity view model. This parameter is
      * intended for testing purposes only. Defaults to this inner class receiver
      * @param scope The Coroutine scope.  This parameter is intended for testing
@@ -582,21 +662,22 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      */
     @VisibleForTesting
     inner class LoginUrlSource(
-        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
         private val viewModel: LoginViewModel = this@LoginViewModel,
         private val scope: CoroutineScope = viewModelScope,
     ) : Observer<String?> {
         override fun onChanged(value: String?) {
-            if (!sdkManager.isBrowserLoginEnabled && !singleServerCustomTabActivity && !viewModel.isUsingFrontDoorBridge && value != null) {
-                val valueUrl = value.toUri()
-                val loginUrl = viewModel.loginUrl.value?.toUri()
+            if (value == null) return
 
-                val isNewServer = (loginUrl?.host?.equals(valueUrl.host) == false).or(!loginUrl?.path.equals(valueUrl.path))
-                if (isNewServer) {
-                    scope.launch {
-                        viewModel.loginUrl.value = viewModel.getAuthorizationUrl(value)
-                    }
-                }
+            // Ensure the server has a scheme so it parses as a hierarchical URI.
+            val server = if (value.startsWith("http")) value else "https://$value"
+
+            // Avoid unnecessary reloads when the server host hasn't changed.
+            val newHost = server.toUri().host
+            val currentHost = viewModel.loginUrl.value?.toUri()?.host
+            if (newHost != null && newHost == currentHost) return
+
+            scope.launch {
+                viewModel.generateAuthorizationUrl(server = server)
             }
         }
     }
@@ -617,35 +698,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 viewModel.reloadWebView()
             } else {
                 viewModel.pendingServer.value = loginServer
-            }
-        }
-    }
-
-    /**
-     * An observer used to set the external browser custom tab's OAuth
-     * authorization URL from the selected login server.
-     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
-     * for testing purposes only. Defaults to the shared instance
-     * @param viewModel The login activity view model. This parameter is
-     * intended for testing purposes only. Defaults to this inner class receiver
-     * @param scope The Coroutine scope.  This parameter is intended for testing
-     * purposes only. Defaults to the IO scope
-     */
-    @VisibleForTesting
-    inner class BrowserCustomTabUrlSource(
-        private val sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-        private val viewModel: LoginViewModel = this@LoginViewModel,
-        private val scope: CoroutineScope = viewModelScope,
-    ) : Observer<String> {
-        override fun onChanged(value: String) {
-            val useBrowserCustomTab = sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity
-            if (useBrowserCustomTab && !viewModel.isUsingFrontDoorBridge) {
-                scope.launch {
-                    viewModel.browserCustomTabUrl.value = viewModel.getAuthorizationUrl(
-                        server = value,
-                        scope = scope
-                    )
-                }
             }
         }
     }
