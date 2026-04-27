@@ -40,7 +40,6 @@ import org.junit.runner.RunWith
 class NativeLoginManagerTest {
     private lateinit var mgr: NativeLoginManager
     private lateinit var bioAuthManager: BiometricAuthenticationManager
-
     @Before
     fun setUp() {
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
