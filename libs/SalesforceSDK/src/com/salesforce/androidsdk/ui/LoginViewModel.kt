@@ -507,12 +507,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
             val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
             val additionalParams = when {
-                jwtFlow -> null
+                jwtFlow -> mutableMapOf()
                 else -> additionalParameters
             }
 
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
+
+            // Populate the additional parameter map with app attestation, if applicable.
+            sdkManager.appAttestationClient?.run {
+                val challenge = fetchMobileAppAttestationChallenge()
+                val attestation = createAppAttestation(challenge) ?: return@run
+                additionalParams[ATTESTATION] = attestation
+            }
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
