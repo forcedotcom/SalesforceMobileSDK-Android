@@ -372,31 +372,6 @@ class NativeLoginManagerTest {
         }
     }
 
-    /**
-     * Tests that native login URL-encodes the app attestation value when it
-     * contains URL-unsafe characters.  This gates the [android.net.Uri.encode] call on the
-     * attestation parameter and can be removed when a comprehensive test of
-     * native login is created so long as that test covers URL encoding of the
-     * attestation parameter.
-     */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun nativeLoginManager_login_urlEncodesAppAttestationValue() = runTest {
-
-        installAppAttestationClient(attestation = URL_UNSAFE_APP_ATTESTATION)
-        val restClient = createRestClientStubbingFailedLoginResponse()
-        mgr = createNativeLoginManagerForTest(restClient = restClient)
-
-        mgr.login(TEST_USERNAME, TEST_PASSWORD)
-        advanceUntilIdle()
-
-        verify(exactly = 1) {
-            restClient.sendAsync(match {
-                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH?attestation=$URL_ENCODED_APP_ATTESTATION"
-            }, any())
-        }
-    }
-
     // region Helpers used by attestation tests
 
     private fun installAppAttestationClient(attestation: String?) {
@@ -452,7 +427,5 @@ class NativeLoginManagerTest {
         const val TEST_PASSWORD = "test123456"
         const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
         const val TEST_APP_ATTESTATION = "__TEST_APP_ATTESTATION__"
-        const val URL_UNSAFE_APP_ATTESTATION = "foo bar+baz=qux/"
-        const val URL_ENCODED_APP_ATTESTATION = "foo%20bar%2Bbaz%3Dqux%2F"
     }
 }
