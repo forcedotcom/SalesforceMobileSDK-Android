@@ -20,8 +20,8 @@ dependencies {
     api(project(":libs:SalesforceAnalytics"))
     api("com.squareup.okhttp3:okhttp:5.3.2")
     api("com.google.firebase:firebase-messaging:25.0.1")
-    api("androidx.core:core:1.18.0") // Update requires API 36 compileSdk
-    api("androidx.browser:browser:1.10.0") // Update requires API 36 compileSdk
+    api("androidx.core:core:1.18.0")
+    api("androidx.browser:browser:1.10.0")
     api("androidx.work:work-runtime-ktx:2.11.2")
 
     implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
