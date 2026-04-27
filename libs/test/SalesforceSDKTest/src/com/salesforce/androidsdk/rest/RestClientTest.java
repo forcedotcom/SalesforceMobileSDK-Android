@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.rest;
 
 import static com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -71,6 +73,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 /**
  * Tests for RestClient
@@ -729,15 +732,13 @@ public class RestClientTest {
      * Create new account then look for it using soql.
      * @throws Exception
      */
-    @Test(timeout = 300000) // 5 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
+    @Test(timeout = 180000) // 3 minutes - test creates 201 accounts which takes time, especially in Firebase Test Lab
     public void testQueryWithBatchSize() throws Exception {
         cleanup();
         List<IdName> idNames = createAccounts(201, "-testWithBatchSize-");
         String soql = "select name from account where Name like '" + ENTITY_NAME_PREFIX + "-testWithBatchSize-%'";
 
-        // SOQL without batch size.
-        // NB: totalSize reflects the full result set, but Salesforce may split results across pages
-        // at its discretion regardless of batch size. Do not assert on records.length() here.
+        // SOQL without batch size
         RestRequest requestNoBatchSizeSpecified = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql);
         Assert.assertNull(requestNoBatchSizeSpecified.getAdditionalHttpHeaders());
         RestResponse responseNoBatchSizeSpecified = restClient.sendSync(requestNoBatchSizeSpecified);
@@ -745,9 +746,9 @@ public class RestClientTest {
         JSONObject jsonResponseNoBatchSizeSpecified = responseNoBatchSizeSpecified.asJSONObject();
         checkKeys(jsonResponseNoBatchSizeSpecified, "done", "totalSize", "records");
         Assert.assertEquals("201 rows should match", 201, jsonResponseNoBatchSizeSpecified.getInt("totalSize"));
+        Assert.assertEquals("201 rows should have been returned", 201, jsonResponseNoBatchSizeSpecified.getJSONArray("records").length());
 
-        // SOQL with batch size.
-        // Salesforce may return fewer than batchSize records per page, so assert the cap, not equality.
+        // SOQL with batch size
         RestRequest requestWithBatchSizeSpecified = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql, 200);
         Assert.assertEquals("batchSize=200", requestWithBatchSizeSpecified.getAdditionalHttpHeaders().get(RestRequest.SFORCE_QUERY_OPTIONS));
         RestResponse responseWithBatchSizeSpecified = restClient.sendSync(requestWithBatchSizeSpecified);
@@ -755,7 +756,7 @@ public class RestClientTest {
         JSONObject jsonResponseWithBatchSizeSpecified = responseWithBatchSizeSpecified.asJSONObject();
         checkKeys(jsonResponseWithBatchSizeSpecified, "done", "totalSize", "records");
         Assert.assertEquals("201 rows should match", 201, jsonResponseWithBatchSizeSpecified.getInt("totalSize"));
-        Assert.assertTrue("At most 200 rows should have been returned", jsonResponseWithBatchSizeSpecified.getJSONArray("records").length() <= 200);
+        Assert.assertEquals("200 rows should have been returned", 200, jsonResponseWithBatchSizeSpecified.getJSONArray("records").length());
     }
 
     /**
@@ -1606,33 +1607,29 @@ public class RestClientTest {
     }
 
     /**
-     * Helper method to delete any entities created by one of the test.
-     * <p>
-     * Uses SOQL instead of SOSL: SOSL is backed by an eventually-consistent
-     * search index and frequently fails to surface records created moments
-     * earlier by a prior test, leaving orphans that later tests then see via
-     * (immediately-consistent) SOQL. SOQL on Name avoids that race.
+     * Helper method to delete any entities created by one of the test
      */
     private void cleanup() {
         try {
+            RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+            JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
             List<RestRequest> requests = new ArrayList<>();
-            for (String objectType : new String[]{ACCOUNT, "contact"}) {
-                String soql = "select Id from " + objectType + " where Name like '" + ENTITY_NAME_PREFIX + "%'";
-                RestResponse response = restClient.sendSync(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, soql));
-                JSONArray records = response.asJSONObject().getJSONArray("records");
-                for (int i = 0; i < records.length(); i++) {
-                    String id = records.getJSONObject(i).getString("Id");
-                    requests.add(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, objectType, id));
-                    if (requests.size() == 25) {
-                        restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
-                        requests.clear();
-                    }
+            for (int i = 0; i < jsonResults.length(); i++) {
+                JSONObject jsonResult = jsonResults.getJSONObject(i);
+                String objectType = jsonResult.getJSONObject("attributes").getString("type");
+                String id = jsonResult.getString("Id");
+                RestRequest deleteRequest = RestRequest.getRequestForDelete(TestCredentials.API_VERSION, objectType, id);
+                requests.add(deleteRequest);
+                if (requests.size() == 25) {
+                    restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
+                    requests.clear();
                 }
             }
-            if (!requests.isEmpty()) {
+            if (requests.size() > 0) {
                 restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, requests));
             }
-        } catch (Exception e) {
+        }
+        catch(Exception e) {
             // We tried our best :-(
         }
     }
