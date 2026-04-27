@@ -56,6 +56,11 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
                                     name.set("Eric C. Johnson")
                                     email.set("Johnson.Eric@Salesforce.com")
                                 }
+                                developer {
+                                    id.set("sfdctaka")
+                                    name.set("Takashi Arai")
+                                    email.set("T.Arai@Salesforce.com")
+                                }
                                 scm {
                                     connection.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android.git")
                                     developerConnection.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android.git")
