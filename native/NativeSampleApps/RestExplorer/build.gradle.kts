@@ -5,34 +5,35 @@ plugins {
 
 dependencies {
     implementation(project(":libs:SalesforceSDK"))
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.tracing:tracing:1.3.0")
     implementation("com.google.android.material:material:1.13.0")
-    androidTestImplementation("androidx.test:runner:1.5.1") {
+    androidTestImplementation("androidx.test:runner:1.7.0") {
         exclude("com.android.support", "support-annotations")
     }
 
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.appcompat:appcompat-resources:1.7.1")
 
-    androidTestImplementation("androidx.test:rules:1.5.0") {
+    androidTestImplementation("androidx.test:rules:1.7.0") {
         exclude("com.android.support", "support-annotations")
     }
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0") {
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0") {
         exclude("com.android.support", "support-annotations")
     }
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.restexplorer"
     testNamespace = "com.salesforce.samples.restexplorer.tests"
 
-    compileSdk = 36
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 37
         minSdk = 28
     }
 
@@ -45,19 +46,18 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/RestExplorerTest")
-            java.srcDirs(arrayOf("../test/RestExplorerTest/src"))
-            resources.srcDirs(arrayOf("../test/RestExplorerTest/src"))
-            res.srcDirs(arrayOf("../test/RestExplorerTest/res"))
+            java.directories.add("../test/RestExplorerTest/src")
+            resources.directories.add("../test/RestExplorerTest/src")
+            res.directories.add("../test/RestExplorerTest/res")
         }
     }
 
@@ -79,7 +79,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }

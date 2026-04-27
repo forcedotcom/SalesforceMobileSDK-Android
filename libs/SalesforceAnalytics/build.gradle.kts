@@ -12,18 +12,18 @@ plugins {
 dependencies {
     api("com.squareup:tape:1.2.3")
     api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.analytics"
     testNamespace = "com.salesforce.androidsdk.analytics.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -38,19 +38,18 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceAnalyticsTest")
-            java.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceAnalyticsTest/res"))
+            java.directories.add("../test/SalesforceAnalyticsTest/src")
+            resources.directories.add("../test/SalesforceAnalyticsTest/src")
+            res.directories.add("../test/SalesforceAnalyticsTest/res")
         }
     }
 
@@ -71,7 +70,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }
@@ -91,11 +89,11 @@ android {
             html.required = true
         }
 
-        sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+        val fileFilter = listOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(listOf("**/coverage.ec")) })
     }
 }

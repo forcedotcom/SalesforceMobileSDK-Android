@@ -11,10 +11,9 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    //noinspection GradleDependency -  Needs to line up with supported SQLCipher version.
-    api("androidx.sqlite:sqlite:2.2.0")
-    api("net.zetetic:sqlcipher-android:4.10.0")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    api("androidx.sqlite:sqlite:2.6.2")
+    api("net.zetetic:sqlcipher-android:4.14.1")
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
@@ -23,11 +22,12 @@ dependencies {
     implementation("com.google.android.material:material:1.13.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.smartstore"
     testNamespace = "com.salesforce.androidsdk.smartstore.tests"
 
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -43,20 +43,19 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
-            jniLibs.srcDir("libs")
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
+            jniLibs.directories.add("libs")
         }
 
         getByName("androidTest") {
             setRoot("../test/SmartStoreTest")
-            java.srcDirs(arrayOf("../test/SmartStoreTest/src"))
-            resources.srcDirs(arrayOf("../test/SmartStoreTest/src"))
-            res.srcDirs(arrayOf("../test/SmartStoreTest/res"))
+            java.directories.add("../test/SmartStoreTest/src")
+            resources.directories.add("../test/SmartStoreTest/src")
+            res.directories.add("../test/SmartStoreTest/res")
         }
     }
 
@@ -78,7 +77,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }
@@ -94,11 +92,11 @@ android {
             html.required = true
         }
 
-        sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+        val fileFilter = listOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(listOf("**/coverage.ec")) })
     }
 }

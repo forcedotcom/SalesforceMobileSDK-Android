@@ -5,28 +5,28 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceHybrid"))
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    implementation("androidx.core:core-ktx:1.18.0")
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.mobilesyncexplorerhybrid"
 
-    compileSdk = 36
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        targetSdk = 36
+        targetSdk = 37
         minSdk = 28
     }
 
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
     }
 
@@ -42,7 +42,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }

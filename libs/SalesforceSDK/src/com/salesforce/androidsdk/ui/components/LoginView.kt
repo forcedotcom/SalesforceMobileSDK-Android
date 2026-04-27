@@ -488,7 +488,6 @@ internal fun ToolTipWrapper(contentDescription: Int, content: @Composable (descr
         positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
         tooltip = {
             RichTooltip(
-                caretSize = DpSize(PADDING_SIZE.dp, PADDING_SIZE.dp),
                 colors = RichTooltipColors(
                     containerColor = colorScheme.outline,
                     contentColor = colorScheme.onSecondary,

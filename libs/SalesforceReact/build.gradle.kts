@@ -22,8 +22,8 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.79.3")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
+    api("com.facebook.react:react-android:0.79.3") // TODO: This update should happen in a dedicated work item. ECJ20260423
+    implementation("androidx.core:core-ktx:1.18.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
@@ -38,12 +38,12 @@ dependencies {
 
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk.reactnative"
     testNamespace = "com.salesforce.androidsdk.reactnative.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0.  Also, React Native 0.81.5 requests 36.
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
         minSdk = 28
@@ -58,19 +58,18 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceReactTest")
-            java.srcDirs(arrayOf("../test/SalesforceReactTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceReactTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceReactTest/res"))
+            java.directories.add("../test/SalesforceReactTest/src")
+            resources.directories.add("../test/SalesforceReactTest/src")
+            res.directories.add("../test/SalesforceReactTest/res")
         }
     }
 
@@ -91,7 +90,6 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
     }
@@ -107,19 +105,19 @@ android {
             html.required = true
         }
 
-        sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+        val fileFilter = listOf("**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(listOf("**/coverage.ec")) })
     }
 }
 
 val assetsFolder = File("libs/test/SalesforceReactTest/assets")
 val reactTestsBundleFile = File(assetsFolder, "index.android.bundle")
 
-task<Exec>("buildReactTestBundle") {
+tasks.register<Exec>("buildReactTestBundle") {
     if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         commandLine(
             "cmd",
@@ -157,10 +155,11 @@ task<Exec>("buildReactTestBundle") {
     }
 }
 
-task("buildReactTestBundleIfNotExists") {
-    if (!reactTestsBundleFile.exists()) {
+tasks.register("buildReactTestBundleIfNotExists") {
+    dependsOn("buildReactTestBundle")
+    onlyIf { !reactTestsBundleFile.exists() }
+    doFirst {
         assetsFolder.mkdirs()
-        dependsOn("buildReactTestBundle")
     }
 }
 
@@ -171,7 +170,7 @@ afterEvaluate {
         tasks.getByName("preDebugAndroidTestBuild").dependsOn(
             tasks.getByName("buildReactTestBundleIfNotExists")
         )
-    } catch (ignored: Throwable) {
+    } catch (_: Throwable) {
         println("The preDebugAndroidTestBuild task was not found.")
     }
 }
