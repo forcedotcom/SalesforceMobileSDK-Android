@@ -96,6 +96,7 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getRandom128ByteKey
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -178,10 +179,11 @@ internal class NativeLoginManager(
             REDIRECT_URI to redirectUri,
             CODE_CHALLENGE to codeChallenge,
         )
+        val queryString = attestationValue?.let { "?$ATTESTATION=${it}" } ?: ""
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH${attestationValue?.let { "?$ATTESTATION=${Uri.encode(it)}" } ?: ""}", // Full path for unauthenticated request
+            "$loginUrl$OAUTH_AUTH_PATH$queryString", // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
@@ -992,7 +994,7 @@ internal class NativeLoginManager(
             runCatching {
                 client.oAuthRefreshInterceptor.refreshAccessToken()
             }.onFailure { e ->
-                SalesforceSDKLogger.e(TAG, "Error encountered while unlocking.", e)
+                e(TAG, "Error encountered while unlocking.", e)
             }
             bioAuthManager?.onUnlock()
             activity.finish()
