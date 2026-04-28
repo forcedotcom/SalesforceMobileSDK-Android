@@ -447,7 +447,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param server The login server URL
      * @param migrationOAuthConfig The OAuth config to use for migration
      */
-    internal fun generateMigrationAuthorizationPath(
+    internal suspend fun generateMigrationAuthorizationPath (
         server: String,
         migrationOAuthConfig: OAuthConfig,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
@@ -456,10 +456,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val codeChallenge = getSHA256Hash(codeVerifier)
 
         // Populate the additional parameter map with app attestation, if applicable.
+        val additionalParameters = mutableMapOf<String, String>()
         sdkManager.appAttestationClient?.run {
             val challenge = fetchMobileAppAttestationChallenge()
             val attestation = createAppAttestation(challenge) ?: return@run
-            additionalParams?.put(ATTESTATION, attestation)
+            additionalParameters[ATTESTATION] = attestation
         }
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
@@ -472,7 +473,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             /* loginHint = */ null,
             authorizationDisplayType,
             codeChallenge,
-            /* addlParams = */ emptyMap<String, String>(),
+            /* addlParams = */ additionalParameters,
         )
 
         return with(authorizationUrl) { "$path?$query" }

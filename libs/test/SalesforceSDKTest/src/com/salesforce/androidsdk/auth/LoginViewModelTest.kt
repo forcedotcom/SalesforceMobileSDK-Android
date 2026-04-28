@@ -612,7 +612,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun generateMigrationAuthorizationPath_UsesMigrationConfig_OverAppConfigForLoginHost() {
+    fun generateMigrationAuthorizationPath_UsesMigrationConfig_OverAppConfigForLoginHost() = runTest {
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = false)
         val appConfigConsumerKey = "app_config_key_should_not_be_used"
         val appConfigRedirectUri = "appconfig://should_not_be_used"
@@ -880,10 +880,20 @@ class LoginViewModelTest {
 
     @Test
     fun getAuthorizationUrl_WithNullAppAttestationClient_OmitsAttestationParam() = runBlocking {
-        val sdkManagerMock = createSdkManagerMockForAttestation(appAttestationClient = null)
         val freshViewModel = LoginViewModel(bootConfig)
 
-        val loginUrl = freshViewModel.getAuthorizationUrl(TEST_ATTESTATION_SERVER, sdkManagerMock)
+        val migrationConsumerKey = "migration_override_key_789"
+        val migrationRedirectUri = "migration://redirect"
+        val migrationScopes = listOf("api", "migration_scope")
+
+        val loginUrl = freshViewModel.generateMigrationAuthorizationPath(
+            server = TEST_ATTESTATION_SERVER,
+            migrationOAuthConfig = OAuthConfig(
+                migrationConsumerKey,
+                migrationRedirectUri,
+                migrationScopes,
+            ),
+        )
 
         assertFalse(
             "URL should NOT contain an attestation parameter but was '$loginUrl'.",
@@ -897,7 +907,19 @@ class LoginViewModelTest {
         val sdkManagerMock = createSdkManagerMockForAttestation(appAttestationClient = appAttestationClient)
         val freshViewModel = LoginViewModel(bootConfig)
 
-        val loginUrl = freshViewModel.getAuthorizationUrl(TEST_ATTESTATION_SERVER, sdkManagerMock)
+        val migrationConsumerKey = "migration_override_key_789"
+        val migrationRedirectUri = "migration://redirect"
+        val migrationScopes = listOf("api", "migration_scope")
+
+        val loginUrl = freshViewModel.generateMigrationAuthorizationPath(
+            server = TEST_ATTESTATION_SERVER,
+            migrationOAuthConfig = OAuthConfig(
+                migrationConsumerKey,
+                migrationRedirectUri,
+                migrationScopes,
+            ),
+            sdkManager = sdkManagerMock,
+        )
 
         assertTrue(
             "URL should contain '$ATTESTATION_QUERY_PARAM_PREFIX$TEST_APP_ATTESTATION' but was '$loginUrl'.",
@@ -915,7 +937,19 @@ class LoginViewModelTest {
         val sdkManagerMock = createSdkManagerMockForAttestation(appAttestationClient = appAttestationClient)
         val freshViewModel = LoginViewModel(bootConfig)
 
-        val loginUrl = freshViewModel.getAuthorizationUrl(TEST_ATTESTATION_SERVER, sdkManagerMock)
+        val migrationConsumerKey = "migration_override_key_789"
+        val migrationRedirectUri = "migration://redirect"
+        val migrationScopes = listOf("api", "migration_scope")
+
+        val loginUrl = freshViewModel.generateMigrationAuthorizationPath(
+            server = TEST_ATTESTATION_SERVER,
+            migrationOAuthConfig = OAuthConfig(
+                migrationConsumerKey,
+                migrationRedirectUri,
+                migrationScopes,
+            ),
+            sdkManager = sdkManagerMock,
+        )
 
         assertFalse(
             "URL should NOT contain an attestation parameter but was '$loginUrl'.",
