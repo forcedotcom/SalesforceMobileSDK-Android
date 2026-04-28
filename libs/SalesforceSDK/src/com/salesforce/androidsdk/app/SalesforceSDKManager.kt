@@ -89,6 +89,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
+import com.salesforce.androidsdk.auth.AppAttestationClient
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
@@ -225,6 +226,54 @@ open class SalesforceSDKManager protected constructor(
      * the account.
      */
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
+
+    /**
+     * The client side implementation of the Salesforce App Attestation External
+     * Client App (ECA) Plugin or null when app attestation is disabled.
+     *
+     * This property is not intended for public use outside of Salesforce Mobile
+     * SDK
+     *
+     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
+     */
+    @Volatile
+    var appAttestationClient: AppAttestationClient? = null
+        @VisibleForTesting
+        internal set
+
+    /** Lock object for synchronized access to the app Attestation Client */
+    private val appAttestationClientLock = Any()
+
+    /**
+     * Updates the Salesforce App Attestation ECA Plugin Client for the selected
+     * login server and matching Google Cloud Project ID.  When using App
+     * Attestation, this value must match the linked Google Cloud Project ID
+     * for the app in Google Play Console's Play Integrity API and provided to
+     * the Salesforce App Attestation External Client App Plugin.
+     *
+     * @param apiHostName The Salesforce App Attestation External Client App
+     * (ECA) Plugin Challenge API Host Name.  This usually matches the selected
+     * login server
+     * @param googleCloudProjectId The Google Cloud Project ID or null to
+     * disable Salesforce App Attestation
+     */
+    fun updateAppAttestationClient(
+        apiHostName: String,
+        googleCloudProjectId: Long? = null
+    ) {
+        synchronized(appAttestationClientLock) {
+            appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
+                AppAttestationClient(
+                    context = appContext,
+                    apiHostName = apiHostName,
+                    deviceId = deviceId,
+                    googleCloudProjectId = appAttestationGoogleCloudProjectId,
+                    remoteAccessConsumerKey = getBootConfig(appContext).remoteAccessConsumerKey,
+                    restClient = clientManager.peekUnauthenticatedRestClient()
+                )
+            }
+        }
+    }
 
     /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for

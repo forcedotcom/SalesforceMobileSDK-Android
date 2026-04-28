@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.LIGHT
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
@@ -72,7 +73,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -80,6 +80,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
+import kotlin.coroutines.CoroutineContext
 
 open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
@@ -446,13 +447,21 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * @param server The login server URL
      * @param migrationOAuthConfig The OAuth config to use for migration
      */
-    internal fun generateMigrationAuthorizationPath(
+    internal suspend fun generateMigrationAuthorizationPath (
         server: String,
         migrationOAuthConfig: OAuthConfig,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
     ): String {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
+
+        // Populate the additional parameter map with app attestation, if applicable.
+        val additionalParameters = mutableMapOf<String, String>()
+        sdkManager.appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge()
+            val attestation = createAppAttestation(challenge) ?: return@run
+            additionalParameters[ATTESTATION] = attestation
+        }
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
@@ -464,12 +473,12 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             /* loginHint = */ null,
             authorizationDisplayType,
             codeChallenge,
-            /* addlParams = */ emptyMap<String, String>(),
+            /* addlParams = */ additionalParameters,
         )
 
         return with(authorizationUrl) { "$path?$query" }
     }
-    
+
     /**
      * Generates an OAuth authorization URL for the provided server.
      * @param server The login server URL
@@ -488,10 +497,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Perform heavy work (config fetch, URL generation) on the IO dispatcher.
         val (browserTabUrl, webViewUrl) = withContext(coroutineContext) {
+            val debugOverrideAppConfig = sdkManager.debugOverrideAppConfig
             with(sdkManager) {
                 oAuthConfig = when {
                     // Used by LoginOptions
-                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
+                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig
                     // Check if app has a config and fallback to bootconfig file.
                     else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
                 }
@@ -499,12 +509,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
             val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
             val additionalParams = when {
-                jwtFlow -> null
+                jwtFlow -> mutableMapOf()
                 else -> additionalParameters
             }
 
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
+
+            // Populate the additional parameter map with app attestation, if applicable.
+            sdkManager.appAttestationClient?.run {
+                val challenge = fetchMobileAppAttestationChallenge()
+                val attestation = createAppAttestation(challenge) ?: return@run
+                additionalParams[ATTESTATION] = attestation
+            }
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,

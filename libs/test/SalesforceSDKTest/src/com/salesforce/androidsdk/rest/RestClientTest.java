@@ -761,7 +761,7 @@ public class RestClientTest {
 
     /**
      * Testing that calling resume more than once on a RestResponse doesn't throw an exception
-     * @throws Exception 
+     * @throws Exception
      */
     @Test
     public void testDoubleConsume() throws Exception {

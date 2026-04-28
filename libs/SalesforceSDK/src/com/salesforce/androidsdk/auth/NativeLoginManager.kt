@@ -31,6 +31,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.R
@@ -54,6 +55,7 @@ import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_ID
@@ -83,6 +85,7 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -119,6 +122,9 @@ import kotlin.coroutines.suspendCoroutine
  * Google Cloud Console.  Defaults to null to disable reCAPTCHA use
  * @param isReCaptchaEnterprise Specifies if reCAPTCHA uses the enterprise
  * license. Defaults to false to disable reCAPTCHA use
+ * @param restClient The REST client to use for making network requests. This
+ * parameter is intended for testing purposes only. Defaults to the
+ * unauthenticated REST client
  */
 internal class NativeLoginManager(
     private val clientId: String,
@@ -126,7 +132,8 @@ internal class NativeLoginManager(
     private val loginUrl: String,
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
-    private val isReCaptchaEnterprise: Boolean = false
+    private val isReCaptchaEnterprise: Boolean = false,
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -162,16 +169,21 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
+        val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge()
+            createAppAttestation(challenge) ?: return@run null
+        }
         val authRequestBody = createRequestBody(
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,
             CODE_CHALLENGE to codeChallenge,
         )
+        val queryString = attestationValue?.let { "?$ATTESTATION=${it}" } ?: ""
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH", // Full path for unauthenticated request
+            "$loginUrl$OAUTH_AUTH_PATH$queryString", // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
@@ -255,8 +267,7 @@ internal class NativeLoginManager(
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {
         return suspendCoroutine { continuation ->
-            SalesforceSDKManager.getInstance().clientManager
-                .peekUnauthenticatedRestClient().sendAsync(request, object : AsyncRequestCallback {
+            restClient.sendAsync(request, object : AsyncRequestCallback {
 
                     override fun onSuccess(request: RestRequest?, response: RestResponse?) {
                         continuation.resume(response)
@@ -272,8 +283,9 @@ internal class NativeLoginManager(
         }
     }
 
-    private fun createRequestBody(vararg kvPairs: Pair<String, String>): RequestBody {
-        val requestBodyString = kvPairs.joinToString("&") { (key, value) -> "$key=$value" }
+    @VisibleForTesting
+    internal fun createRequestBody(vararg kvPairs: Pair<String, String?>): RequestBody {
+        val requestBodyString = kvPairs.filter { it.second != null }.joinToString("&") { (key, value) -> "$key=${Uri.encode(value)}" }
         val mediaType = CONTENT_TYPE_VALUE_HTTP_POST.toMediaTypeOrNull()
         return requestBodyString.toRequestBody(mediaType)
     }

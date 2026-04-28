@@ -3,6 +3,7 @@ package com.salesforce.androidsdk.app
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -22,6 +23,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -287,5 +289,31 @@ class SalesforceSDKManagerTests {
         assertFalse(devActions.containsKey("Switch User"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
+    }
+
+    @Test
+    fun salesforceSdkManager_updateAppAttestationClient_setsAndUnsetsAppAttestationClientForGoogleCloudProjectId() {
+
+        val salesforceSdkManager = SalesforceSDKManager(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java, /* Any Activity Class */
+            loginActivity = LoginActivity::class.java,
+        )
+
+        salesforceSdkManager.updateAppAttestationClient(
+            apiHostName = "login.example.com",
+            googleCloudProjectId = 123456
+        )
+
+        val appAttestationClient = salesforceSdkManager.appAttestationClient
+        assertEquals(123456L, appAttestationClient?.googleCloudProjectId)
+        assertEquals("login.example.com", appAttestationClient?.apiHostName)
+        assertNotNull(appAttestationClient?.deviceId)
+        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKey)
+        assertNotNull(appAttestationClient?.restClient)
+
+        salesforceSdkManager.updateAppAttestationClient("https://login.example.com" /* null default */)
+
+        assertNull(salesforceSdkManager.appAttestationClient)
     }
 }
