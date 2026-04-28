@@ -14,7 +14,7 @@ SQLCipher is an open-source extension to SQLite that provides transparent 256-bi
 ## Parameters
 - `NEW_VERSION`: The new SQLCipher version (e.g., "4.10.0", "4.11.0")
 - `OLD_VERSION`: The current SQLCipher version (default: check build.gradle.kts)
-- `NEW_OPENSSL_VERSION`: The OpenSSL version bundled with the new SQLCipher (check SQLCipher release notes)
+- `NEW_PROVIDER_VERSION`: The cipher provider version bundled with the new SQLCipher (check SQLCipher release notes)
 
 ## Process
 
@@ -23,11 +23,11 @@ SQLCipher is an open-source extension to SQLite that provides transparent 256-bi
 Before starting, check the SQLCipher release notes:
 - Visit: https://github.com/sqlcipher/sqlcipher/releases
 - Review changes, breaking changes, and new features
-- Note the OpenSSL version included (important for tests)
+- Note the provider version included (important for tests)
 - Check for API changes that might affect the SDK
 
 **Key things to look for:**
-- OpenSSL version changes
+- Provider version changes
 - API signature changes (e.g., DatabaseErrorHandler methods)
 - Deprecated features or behavior changes
 - Security fixes or enhancements
@@ -68,11 +68,11 @@ public void testSQLCipherVersion() {
 ```java
 @Test
 public void testCipherProviderVersion() {
-    Assert.assertEquals("Wrong sqlcipher provider version", "OpenSSL NEW_OPENSSL_VERSION", store.getCipherProviderVersion());
+    Assert.assertEquals("Wrong sqlcipher provider version", "NEW_PROVIDER_VERSION", store.getCipherProviderVersion());
 }
 ```
 
-**Note:** The OpenSSL version format is typically like "OpenSSL 3.0.17 1 Jul 2025" - check the actual runtime value or SQLCipher release notes.
+**Note:** The OpenSSL version format is typically like "OpenSSL 3.0.17 1 Jul 2025" and the LibTomCrypt format is like "1.18.2" - check the actual runtime value or SQLCipher release notes.
 
 ### 4. Check for API Changes
 
@@ -126,7 +126,7 @@ Build and run the SmartStore tests:
 
 **Key tests to verify:**
 - `testSQLCipherVersion()` - Confirms correct version
-- `testCipherProviderVersion()` - Confirms correct OpenSSL version
+- `testCipherProviderVersion()` - Confirms correct provider version
 - `testCipherFIPSStatus()` - Should remain false for community edition
 - All query and index tests
 - Encryption/decryption tests
@@ -203,7 +203,7 @@ Recent SQLCipher updates in the project:
 - Always test thoroughly on real devices, not just emulators
 - Check SQLCipher's GitHub issues before and after updating
 - The community edition (what we use) includes "community" in the version string
-- OpenSSL version changes are common and must be updated in tests
+- Crypto provider version changes are common and must be updated in tests
 - Test with encrypted databases from previous versions to ensure migration works
 
 ## Resources
