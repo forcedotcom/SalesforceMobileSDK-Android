@@ -497,10 +497,11 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Perform heavy work (config fetch, URL generation) on the IO dispatcher.
         val (browserTabUrl, webViewUrl) = withContext(coroutineContext) {
+            val debugOverrideAppConfig = sdkManager.debugOverrideAppConfig
             with(sdkManager) {
                 oAuthConfig = when {
                     // Used by LoginOptions
-                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
+                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig
                     // Check if app has a config and fallback to bootconfig file.
                     else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
                 }
