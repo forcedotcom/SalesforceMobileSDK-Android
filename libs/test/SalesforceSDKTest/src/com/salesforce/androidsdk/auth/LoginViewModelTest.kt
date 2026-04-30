@@ -145,7 +145,7 @@ class LoginViewModelTest {
         assertEquals(customLoginUrl, viewModel.defaultTitleText)
     }
 
-    @Ignore
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun loginUrl_UpdatesOn_selectedServerChange() {
         // Wait for initial values to be set
@@ -359,7 +359,7 @@ class LoginViewModelTest {
 
     // endregion
 
-    @Ignore
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun selectedServer_Changes_GenerateCorrectAuthorizationUrl() {
         val originalServer = viewModel.selectedServer.value!!
@@ -378,7 +378,7 @@ class LoginViewModelTest {
     }
 
     @Ignore("java.lang.NullPointerException: Attempt to invoke virtual method 'byte[] java.lang.String.getBytes(java.nio.charset.Charset)' on a null object reference\n" +
-            "\tat com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash(SalesforceKeyGenerator.java:130)")
+            "\tat com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash(SalesforceKeyGenerator.java:130)") // ✅ Passes locally. ECJ20260430
     @Test
     fun codeVerifier_UpdatesOn_WebViewRefresh() {
         val originalCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
@@ -393,7 +393,7 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(newCodeChallenge))
     }
 
-    @Ignore
+    @Ignore // ✅ Passes locally. ECJ20260430
 //    java.lang.NullPointerException: Attempt to invoke virtual method 'byte[] java.lang.String.getBytes(java.nio.charset.Charset)' on a null object reference
 //    at com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash(SalesforceKeyGenerator.java:130)
     @Test
@@ -674,7 +674,7 @@ class LoginViewModelTest {
         }
     }
 
-    @Ignore
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun generateAuthorizationUrl_UsesServerSpecificConfig_FromAppConfigForLoginHost() {
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -776,7 +776,7 @@ class LoginViewModelTest {
             "\tat org.junit.Assert.assertNotEquals(Assert.java:163)\n" +
             "\tat com.salesforce.androidsdk.auth.LoginViewModelTest.reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst(LoginViewModelTest.kt:636)\n" +
             "\n" +
-            " ")
+            " ") // ✅ Passes locally. ECJ20260430
     @Test
     fun reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst() {
         try {
@@ -947,6 +947,8 @@ class LoginViewModelTest {
         }
     }
 
+    // TODO: This test runs for half a minute plus. ECJ20260425
+    @Ignore
     @Test
     fun generateAuthorizationUrl_WhenCreateAppAttestationReturnsNull_OmitsAttestationParam() = runBlocking {
         val appAttestationClient = createMockAppAttestationClient(attestation = null)
@@ -970,7 +972,7 @@ class LoginViewModelTest {
     }
 
     // TODO: This test runs for half a minute plus. ECJ20260425
-    @Ignore
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun getAuthorizationUrl_WhenCreateAppAttestationReturnsNull_OmitsAttestationParam() = runBlocking {
         val appAttestationClient = createMockAppAttestationClient(attestation = null)

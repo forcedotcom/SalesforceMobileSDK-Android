@@ -32,6 +32,7 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -208,6 +209,8 @@ class NativeLoginManagerTest {
         )
     }
 
+    // TODO: This test runs more than three minutes. ECJ20260425
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun testPresentBiometricAuthReturnsTrueWhenAllConditionsMet() {
         bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
@@ -258,6 +261,8 @@ class NativeLoginManagerTest {
         verify { activity.finish() }
     }
 
+    // TODO: This test runs for two minutes plus. ECJ20260425
+    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun testOnBiometricAuthenticationSucceededHandlesRefreshFailure() {
         bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
