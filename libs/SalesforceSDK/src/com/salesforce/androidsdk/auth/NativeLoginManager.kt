@@ -179,7 +179,7 @@ internal class NativeLoginManager(
             REDIRECT_URI to redirectUri,
             CODE_CHALLENGE to codeChallenge,
         )
-        val queryString = attestationValue?.let { "?$ATTESTATION=${it}" } ?: ""
+        val queryString = if (attestationValue != null) "?$ATTESTATION=$attestationValue" else ""
         val authRequest = RestRequest(
             POST,
             LOGIN,
