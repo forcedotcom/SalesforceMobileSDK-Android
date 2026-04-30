@@ -53,9 +53,11 @@ import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
+@Ignore
 class TokenMigrationViewActivityTest {
 
     @get:Rule

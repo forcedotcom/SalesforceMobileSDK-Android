@@ -279,6 +279,8 @@ class AppAttestationClientTest {
         val result = appAttestationClient.fetchMobileAppAttestationChallenge()
 
         assertEquals(TEST_CHALLENGE_VALUE, result)
+        verify(exactly = 1) { restClient.sendSync(any()) }
+        assertTrue("Request slot should have captured a request", requestSlot.isCaptured)
         val requestedPath = requestSlot.captured.path
         assertTrue(
             "Request URL should target the attestation challenge endpoint at '$TEST_API_HOST_NAME' but was '$requestedPath'.",
@@ -292,7 +294,6 @@ class AppAttestationClientTest {
             "Request URL should contain 'consumerKey=$TEST_REMOTE_ACCESS_CONSUMER_KEY' but was '$requestedPath'.",
             requestedPath.contains("consumerKey=$TEST_REMOTE_ACCESS_CONSUMER_KEY"),
         )
-        verify(exactly = 1) { restClient.sendSync(any()) }
     }
 
     @Test
@@ -325,6 +326,18 @@ class AppAttestationClientTest {
     fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenApiHostNameIsNull_ReturnsNull() {
 
         val appAttestationClient = createAppAttestationClientForTest(apiHostName = null)
+
+        val result = appAttestationClient.fetchMobileAppAttestationChallenge()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenRemoteConsumerKeyIsNull_ReturnsNull() {
+
+        val appAttestationClient = createAppAttestationClientForTest(
+            remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { null }
+        )
 
         val result = appAttestationClient.fetchMobileAppAttestationChallenge()
 
@@ -367,12 +380,13 @@ class AppAttestationClientTest {
         restClient: RestClient = createSuccessfulRestClientForChallenge(),
         integrityManager: StandardIntegrityManager = createMockIntegrityManagerWithInertProviderTask(),
         apiHostName: String? = TEST_API_HOST_NAME,
+        remoteAccessConsumerKeyProvider: RemoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { TEST_REMOTE_ACCESS_CONSUMER_KEY },
     ): AppAttestationClient = AppAttestationClient(
         context = mockk<Context>(relaxed = true),
         deviceId = TEST_DEVICE_ID,
         googleCloudProjectId = TEST_GOOGLE_CLOUD_PROJECT_ID,
         integrityManager = integrityManager,
-        remoteAccessConsumerKeyProvider = { TEST_REMOTE_ACCESS_CONSUMER_KEY },
+        remoteAccessConsumerKeyProvider = remoteAccessConsumerKeyProvider,
         restClient = restClient,
     ).also { it.apiHostName = apiHostName }
 

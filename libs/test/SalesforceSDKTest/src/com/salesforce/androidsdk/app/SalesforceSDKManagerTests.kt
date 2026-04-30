@@ -255,6 +255,77 @@ class SalesforceSDKManagerTests {
         assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
     }
 
+    @Test
+    fun salesforceSdkManager_ClearsAppAttestationHostName_ForNonMyDomainServer() {
+
+        val salesforceSdkManager = createTestSalesforceSDKManager(googleCloudProjectId = 123456L)
+
+        // Verify app attestation client exists and get non-null reference
+        val appAttestationClient = requireNotNull(salesforceSdkManager.appAttestationClient) {
+            "App attestation client should not be null"
+        }
+
+        // Set initial hostname value
+        appAttestationClient.apiHostName = "test.example.com"
+        assertEquals("test.example.com", appAttestationClient.apiHostName)
+
+        // Initialize and set login server to production (non-My Domain)
+        salesforceSdkManager.loginServerManager.reset()
+        salesforceSdkManager.loginServerManager.setSelectedLoginServer(
+            LoginServer(
+                "Production",
+                PRODUCTION_LOGIN_URL,
+                false
+            )
+        )
+
+        runBlocking {
+            salesforceSdkManager.fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        // Verify hostname was cleared for non-My Domain server
+        assertNull(appAttestationClient.apiHostName)
+    }
+
+    @Test
+    fun salesforceSdkManager_SetsAppAttestationHostName_ForMyDomainServer() {
+
+        val salesforceSdkManager = createTestSalesforceSDKManager(googleCloudProjectId = 123456L)
+
+        // Verify app attestation client exists and get non-null reference
+        val appAttestationClient = requireNotNull(salesforceSdkManager.appAttestationClient) {
+            "App attestation client should not be null"
+        }
+
+        // Initial hostname should be null
+        assertNull(appAttestationClient.apiHostName)
+
+        // Initialize and set login server to a My Domain server
+        salesforceSdkManager.loginServerManager.reset()
+        salesforceSdkManager.loginServerManager.setSelectedLoginServer(
+            LoginServer(
+                "Example",
+                "https://www.example.com",
+                true
+            )
+        )
+
+        runBlocking {
+            salesforceSdkManager.fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        // Verify hostname was set to the My Domain server host
+        assertEquals("www.example.com", appAttestationClient.apiHostName)
+    }
+
     fun getDevActions_ReturnsAllActions_ForNonLoginActivity() {
         // Arrange
         val mockActivity = mockk<Activity>(relaxed = true)
@@ -330,6 +401,14 @@ class SalesforceSDKManagerTests {
         val salesforceSdkManager = createTestSalesforceSDKManager()
 
         assertNull(salesforceSdkManager.createAppAttestationClient(googleCloudProjectId = null))
+    }
+
+    @Test
+    fun salesforceSdkManager_createAppAttestationClient_returnsNullWhenCalledWithoutParameter() {
+
+        val salesforceSdkManager = createTestSalesforceSDKManager()
+
+        assertNull(salesforceSdkManager.createAppAttestationClient())
     }
 
     @Test
