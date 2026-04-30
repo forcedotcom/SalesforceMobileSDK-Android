@@ -459,7 +459,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val additionalParameters = mutableMapOf<String, String>()
         sdkManager.appAttestationClient?.run {
             val challenge = fetchMobileAppAttestationChallenge()
-            val attestation = createAppAttestation(challenge) ?: return@run
+            val attestation = createAppAttestation(challenge)
+            if (attestation == null) return@run
             additionalParameters[ATTESTATION] = attestation
         }
 
@@ -507,7 +508,13 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 }
             }
 
-            val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
+            val currentJwt = jwt
+            val currentAuthCode = authCodeForJwtFlow
+            val jwtFlow = if (currentJwt != null && currentAuthCode != null) {
+                currentJwt.isNotBlank() && currentAuthCode.isNotBlank()
+            } else {
+                false
+            }
             val additionalParams = when {
                 jwtFlow -> mutableMapOf()
                 else -> additionalParameters
