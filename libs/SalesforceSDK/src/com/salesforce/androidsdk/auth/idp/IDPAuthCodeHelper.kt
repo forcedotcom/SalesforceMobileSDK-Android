@@ -149,7 +149,7 @@ internal class IDPAuthCodeHelper @VisibleForTesting internal constructor(
         return if (restResponse == null || !restResponse.isSuccess) null else restResponse.asJSONObject().getString(FRONTDOOR_URL_KEY)
     }
 
-    private fun onError(error: String, exception: Exception? = null) {
+    private fun onError(error: String, exception: java.lang.Exception? = null) {
         SalesforceSDKLogger.e(TAG, "Auth code obtention failed: $error", exception)
         onResult(Result(success = false, error = error))
     }
