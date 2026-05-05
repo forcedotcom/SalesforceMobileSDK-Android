@@ -30,21 +30,20 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
-import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
-import org.junit.Assert.assertEquals
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.Assert.assertNotEquals
-import org.junit.Ignore
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -61,8 +60,6 @@ import org.junit.runner.RunWith
 class MultiUserLoginTests: AuthFlowTest() {
 
     // Both users use the same default app type and default scopes, with additional token validation.
-    @Ignore("java.lang.AssertionError: WebView action failed after 15000ms\n" +
-            "\tat com.salesforce.samples.authflowtester.pageObjects.LoginPageObject.retryWebAction(LoginPageObject.kt:186)")
     @Test
     fun testSameApp_SameScopes_uniqueTokens() {
         // Initial user

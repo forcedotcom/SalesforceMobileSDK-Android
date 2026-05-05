@@ -52,7 +52,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -66,7 +65,6 @@ internal const val INVALID_USER = "invalid-user"
 /**
  * Tests for TokenMigrationActivity using ActivityScenario.
  */
-@Ignore // ✅ Passes locally. ECJ20260430
 @RunWith(AndroidJUnit4::class)
 class TokenMigrationActivityTest {
 

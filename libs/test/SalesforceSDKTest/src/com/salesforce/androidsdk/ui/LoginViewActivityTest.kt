@@ -61,7 +61,6 @@ import com.salesforce.androidsdk.ui.components.DefaultLoadingIndicator
 import com.salesforce.androidsdk.ui.components.DefaultTopAppBar
 import com.salesforce.androidsdk.ui.components.LoginView
 import org.junit.Assert
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
@@ -413,7 +412,6 @@ class LoginViewActivityTest {
         Assert.assertTrue("Button should have been clicked.", buttonClicked)
     }
 
-    @Ignore // ✅ Passes locally. ECJ20260430
     @Test
     fun loginView_DefaultComponents_DisplayCorrectly() {
         val dynamicBackgroundColor = mutableStateOf(White)

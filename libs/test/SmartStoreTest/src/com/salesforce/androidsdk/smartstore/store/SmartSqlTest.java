@@ -41,7 +41,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -539,7 +538,6 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 * Making sure the "cleanup" regexp is a lot faster than the old cleanup regexp
 	 * Testing a real-world query with 25k characters
 	 */
-	@Ignore("There is a real failure here and this test is inconsistent locally. ❌ ECJ20260430")
 	@Test
 	public void testCleanupRegexpFaster() {
 		String oldRegexp = "([^ ]+)\\.json_extract\\(soup";

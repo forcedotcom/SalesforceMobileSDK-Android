@@ -48,11 +48,9 @@ import com.salesforce.androidsdk.R.string.sf__screen_lock_setup_button
 import com.salesforce.androidsdk.R.string.sf__screen_lock_setup_required
 import com.salesforce.androidsdk.ui.components.ScreenLockView
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
-@Ignore // ✅ Passes locally. ECJ20260430
 class ScreenLockViewTest {
 
     @get:Rule

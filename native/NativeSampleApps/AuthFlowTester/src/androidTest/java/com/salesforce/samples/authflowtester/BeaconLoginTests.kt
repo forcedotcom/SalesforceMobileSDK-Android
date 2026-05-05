@@ -35,7 +35,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -72,8 +71,6 @@ open class BeaconLoginTests: AuthFlowTest() {
     // region Beacon Opaque Tests
 
     // Login with Beacon opaque using default scopes and web server flow.
-    @Ignore("java.lang.AssertionError: WebView action failed after 15000ms\n" +
-            "\tat com.salesforce.samples.authflowtester.pageObjects.LoginPageObject.retryWebAction(LoginPageObject.kt:186)")
     @Test
     open fun testBeaconOpaque_DefaultScopes() {
         loginAndValidate(
