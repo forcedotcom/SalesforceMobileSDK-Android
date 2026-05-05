@@ -29,8 +29,7 @@ android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.samples.restexplorer"
     testNamespace = "com.salesforce.samples.restexplorer.tests"
 
-    //noinspection GradleDependency
-    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
+    compileSdk = 37
 
     defaultConfig {
         targetSdk = 37
