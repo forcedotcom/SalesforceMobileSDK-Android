@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.coEvery
@@ -48,6 +49,7 @@ import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -714,6 +716,71 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 tokenMigration = true,
                 loginServer = migrationServer,
+            )
+        }
+    }
+
+    @Test
+    fun migrationFlow_DoCodeExchange_UsesMigrationConfig_NotBootConfig() = runBlocking {
+        val migrationConsumerKey = "migration_consumer_key_xyz"
+        val migrationRedirectUri = "migrationapp://callback"
+        val migrationConfig = OAuthConfig(
+            consumerKey = migrationConsumerKey,
+            redirectUri = migrationRedirectUri,
+            scopes = listOf("api", "refresh_token"),
+        )
+        val migrationServer = "https://test.salesforce.com"
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
+
+        // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } returns mockTokenResponse
+
+        // Spy so we can short-circuit account creation, leaving exchangeCode as the observable.
+        val spyViewModel = spyk(viewModel)
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        // Sanity: distinct from boot config so a missing side effect would surface.
+        assertFalse(
+            "Test setup error: migration consumerKey must differ from boot config",
+            migrationConsumerKey == bootConfig.remoteAccessConsumerKey,
+        )
+        assertFalse(
+            "Test setup error: migration redirectUri must differ from boot config",
+            migrationRedirectUri == bootConfig.oauthRedirectURI,
+        )
+
+        // Drive the real migration sequence: URL generation, then code exchange.
+        spyViewModel.generateMigrationAuthorizationPath(
+            server = migrationServer,
+            migrationOAuthConfig = migrationConfig,
+        )
+        spyViewModel.doCodeExchange(
+            testCode,
+            onAuthFlowError = mockOnError,
+            onAuthFlowSuccess = mockOnSuccess,
+            loginServer = migrationServer,
+            tokenMigration = true,
+        )
+        Thread.sleep(200)
+
+        // Token exchange must be performed with MIGRATION credentials.
+        verify {
+            OAuth2.exchangeCode(
+                /* httpAccessor = */ any(),
+                /* loginServer = */ any(),
+                /* clientId = */ migrationConsumerKey,
+                /* code = */ testCode,
+                /* codeVerifier = */ any(),
+                /* callbackUrl = */ migrationRedirectUri,
             )
         }
     }

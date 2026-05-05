@@ -442,15 +442,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
 
     /**
-     * Generates an OAuth authorization URL for token migration.
-     * @param server The login server URL
-     * @param migrationOAuthConfig The OAuth config to use for migration
+     * Generates an OAuth authorization URL for token migration given a login
+     * [server] and [migrationOAuthConfig].
      */
     internal fun generateMigrationAuthorizationPath(
         server: String,
         migrationOAuthConfig: OAuthConfig,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
     ): String {
+        // Set oAuthConfig so downstream migration steps (TokenMigrationClientManager's
+        // callback URL match and doCodeExchange's consumerKey/redirectUri) use the
+        // migration config rather than the default boot config.
+        oAuthConfig = migrationOAuthConfig
+
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
@@ -569,7 +573,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         loginUrl.value = webViewUrl
 
         // Launch the browser custom tab when applicable.
-        if (sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity) {
+        if ((sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity)
+            && !isUsingFrontDoorBridge) {
             onBrowserCustomTabReady?.invoke(browserTabUrl)
         }
     }
