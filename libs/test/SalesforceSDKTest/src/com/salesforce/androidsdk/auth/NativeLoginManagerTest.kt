@@ -41,6 +41,7 @@ import org.junit.runner.RunWith
 class NativeLoginManagerTest {
     private lateinit var mgr: NativeLoginManager
     private lateinit var bioAuthManager: BiometricAuthenticationManager
+
     @Before
     fun setUp() {
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
@@ -322,7 +323,11 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH?attestation=$TEST_APP_ATTESTATION"
+                val buffer = okio.Buffer()
+                it.requestBody.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH" &&
+                        bodyString.contains("attestation=$TEST_APP_ATTESTATION")
             }, any())
         }
     }
@@ -348,7 +353,11 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH"
+                val buffer = okio.Buffer()
+                it.requestBody.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH" &&
+                        !bodyString.contains("attestation=")
             }, any())
         }
     }
@@ -371,7 +380,11 @@ class NativeLoginManagerTest {
 
         verify(exactly = 1) {
             restClient.sendAsync(match {
-                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH"
+                val buffer = okio.Buffer()
+                it.requestBody.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH" &&
+                        !bodyString.contains("attestation=")
             }, any())
         }
     }

@@ -174,16 +174,16 @@ internal class NativeLoginManager(
             createAppAttestation(challenge) ?: return@run null
         }
         val authRequestBody = createRequestBody(
+            ATTESTATION to attestationValue,
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,
             CODE_CHALLENGE to codeChallenge,
         )
-        val queryString = if (attestationValue != null) "?$ATTESTATION=$attestationValue" else ""
         val authRequest = RestRequest(
             POST,
             LOGIN,
-            "$loginUrl$OAUTH_AUTH_PATH$queryString", // Full path for unauthenticated request
+            "$loginUrl$OAUTH_AUTH_PATH", // Full path for unauthenticated request
             authRequestBody,
             authRequestHeaders,
         )
