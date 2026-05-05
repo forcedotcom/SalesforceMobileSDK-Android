@@ -508,13 +508,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 }
             }
 
-            val currentJwt = jwt
-            val currentAuthCode = authCodeForJwtFlow
-            val jwtFlow = if (currentJwt != null && currentAuthCode != null) {
-                currentJwt.isNotBlank() && currentAuthCode.isNotBlank()
-            } else {
-                false
-            }
+            val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
             val additionalParams = when {
                 jwtFlow -> mutableMapOf()
                 else -> additionalParameters
