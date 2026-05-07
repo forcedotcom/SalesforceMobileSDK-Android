@@ -322,6 +322,16 @@ class AppAttestationClientTest {
     }
 
     @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenApiHostNameIsNull_ReturnsNull() {
+
+        val appAttestationClient = createAppAttestationClientForTest(apiHostName = null)
+
+        val result = appAttestationClient.fetchMobileAppAttestationChallenge()
+
+        assertNull(result)
+    }
+
+    @Test
     fun oAuthAuthorizationAttestation_encode_returnsSuccessfully() {
 
         val result = Json.decodeFromString(
@@ -356,15 +366,15 @@ class AppAttestationClientTest {
     private fun createAppAttestationClientForTest(
         restClient: RestClient = createSuccessfulRestClientForChallenge(),
         integrityManager: StandardIntegrityManager = createMockIntegrityManagerWithInertProviderTask(),
+        apiHostName: String? = TEST_API_HOST_NAME,
     ): AppAttestationClient = AppAttestationClient(
-        apiHostName = TEST_API_HOST_NAME,
         context = mockk<Context>(relaxed = true),
         deviceId = TEST_DEVICE_ID,
         googleCloudProjectId = TEST_GOOGLE_CLOUD_PROJECT_ID,
         integrityManager = integrityManager,
         remoteAccessConsumerKey = TEST_REMOTE_ACCESS_CONSUMER_KEY,
         restClient = restClient,
-    )
+    ).also { it.apiHostName = apiHostName }
 
     private fun createSuccessfulRestClientForChallenge(): RestClient = createRestClientReturning(
         restResponse = createRestResponse(body = TEST_CHALLENGE_VALUE, success = true),

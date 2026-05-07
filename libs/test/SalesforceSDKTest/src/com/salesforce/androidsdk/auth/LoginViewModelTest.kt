@@ -1090,6 +1090,36 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun generateAuthorizationUrl_WhenFetchChallengeReturnsNull_OmitsAttestationParam() = runBlocking {
+        verifyAttestationOmittedWhenChallengeIsNull { viewModel, sdkManager ->
+            viewModel.generateAuthorizationUrl(
+                server = TEST_ATTESTATION_SERVER,
+                sdkManager = sdkManager,
+            )
+            viewModel.loginUrl.value!!
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenFetchChallengeReturnsNull_OmitsAttestationParam() = runBlocking {
+        verifyAttestationOmittedWhenChallengeIsNull { viewModel, sdkManager ->
+            val migrationConsumerKey = "migration_override_key_789"
+            val migrationRedirectUri = "migration://redirect"
+            val migrationScopes = listOf("api", "migration_scope")
+
+            viewModel.generateMigrationAuthorizationPath(
+                server = TEST_ATTESTATION_SERVER,
+                migrationOAuthConfig = OAuthConfig(
+                    migrationConsumerKey,
+                    migrationRedirectUri,
+                    migrationScopes,
+                ),
+                sdkManager = sdkManager,
+            )
+        }
+    }
+
+    @Test
     fun generateAuthorizationUrl_WithEmptyJwtString_DoesNotActivateJwtFlow() = runBlocking {
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManagerMock.isDebugBuild } returns false
@@ -1563,6 +1593,40 @@ class LoginViewModelTest {
         coEvery {
             client.createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
         } returns attestation
+    }
+
+    /**
+     * Creates a mock [AppAttestationClient] where
+     * [AppAttestationClient.fetchMobileAppAttestationChallenge] returns null,
+     * simulating the case where [AppAttestationClient.apiHostName] is null
+     * (Salesforce App Attestation is disabled for the current login server).
+     */
+    private fun createMockAppAttestationClientWithNullChallenge(): AppAttestationClient =
+        mockk<AppAttestationClient>(relaxed = true).also { client ->
+            every { client.fetchMobileAppAttestationChallenge() } returns null
+        }
+
+    /**
+     * Helper to verify that attestation is omitted when fetchMobileAppAttestationChallenge returns null.
+     *
+     * @param urlGenerator Function that generates a URL string given a view model and SDK manager
+     */
+    private suspend fun verifyAttestationOmittedWhenChallengeIsNull(
+        urlGenerator: suspend (LoginViewModel, SalesforceSDKManager) -> String
+    ) {
+        val appAttestationClient = createMockAppAttestationClientWithNullChallenge()
+        val sdkManagerMock = createSdkManagerMockForAttestation(appAttestationClient = appAttestationClient)
+        val freshViewModel = LoginViewModel(bootConfig)
+
+        val url = urlGenerator(freshViewModel, sdkManagerMock)
+
+        assertFalse(
+            "URL should NOT contain an attestation parameter when challenge fetch returns null, but was '$url'.",
+            url.contains(ATTESTATION_QUERY_PARAM_PREFIX),
+        )
+        coVerify(exactly = 0) {
+            appAttestationClient.createAppAttestation(any())
+        }
     }
 
     private fun generateExpectedAuthorizationUrl(

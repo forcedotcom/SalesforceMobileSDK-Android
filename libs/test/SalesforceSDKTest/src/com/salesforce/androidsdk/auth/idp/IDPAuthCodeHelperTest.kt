@@ -134,6 +134,29 @@ class IDPAuthCodeHelperTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun idpAuthCodeHelper_getAuthorizationPathForSP_whenFetchChallengeReturnsNull_excludesAttestationFromQuery() = runTest {
+
+        // Simulate apiHostName being null (App Attestation disabled for the current login server).
+        val appAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
+            every { fetchMobileAppAttestationChallenge() } returns null
+        }
+        val idpAuthCodeHelper = createIdpAuthCodeHelper(appAttestationClient = appAttestationClient)
+
+        val result = idpAuthCodeHelper.getAuthorizationPathForSP()
+
+        advanceUntilIdle()
+
+        val nonNullResult = requireNotNull(result) {
+            "Result should be non-null for a valid login server."
+        }
+        assertFalse(
+            "Result should NOT contain an attestation parameter when challenge fetch returns null, but was '$nonNullResult'.",
+            nonNullResult.contains("attestation="),
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun idpAuthCodeHelper_getAuthorizationPathForSP_whenAuthorizationUrlIsNull_returnsNull() = runTest {
 
         stubOAuthAuthorizationUrl(returnValue = null)
