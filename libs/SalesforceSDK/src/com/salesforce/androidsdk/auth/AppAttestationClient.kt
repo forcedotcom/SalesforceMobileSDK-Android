@@ -61,9 +61,9 @@ import java.util.Base64
  * @param integrityManager The Google Play App Integrity API Integrity Manager.
  * This parameter is intended for testing purposes only. Defaults to a new
  * instance
- * @param remoteAccessConsumerKey The Salesforce Connected App (CA) or External
- * Client App (ECA)remote access consumer key, usually provided by the boot
- * config
+ * @param remoteAccessConsumerKey An adapter method that provides the Salesforce
+ * External Client App (ECA) remote access consumer key, usually provided by the
+ * boot config
  * @param restClient The REST client, usually provided by the Salesforce SDK
  * Manager's unauthenticated REST client
  */
@@ -76,7 +76,7 @@ class AppAttestationClient(
     @property:VisibleForTesting
     internal val integrityManager: StandardIntegrityManager = createStandard(context),
     @property:VisibleForTesting
-    internal val remoteAccessConsumerKey: String,
+    internal val remoteAccessConsumerKey: () -> String?,
     @property:VisibleForTesting
     internal val restClient: RestClient,
 ) {
@@ -236,7 +236,7 @@ class AppAttestationClient(
         )
         return appAttestationChallengeApiClient.fetchChallenge(
             attestationId = deviceId,
-            remoteConsumerKey = remoteAccessConsumerKey
+            remoteConsumerKey = remoteAccessConsumerKey() ?: return null
         )
     }
 }

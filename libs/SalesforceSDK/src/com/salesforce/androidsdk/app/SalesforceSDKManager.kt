@@ -263,7 +263,7 @@ open class SalesforceSDKManager protected constructor(
             context = appContext,
             deviceId = deviceId,
             googleCloudProjectId = appAttestationGoogleCloudProjectId,
-            remoteAccessConsumerKey = getBootConfig(appContext).remoteAccessConsumerKey,
+            remoteAccessConsumerKey = { getBootConfig(appContext).remoteAccessConsumerKey },
             restClient = clientManager.peekUnauthenticatedRestClient()
         )
     }
