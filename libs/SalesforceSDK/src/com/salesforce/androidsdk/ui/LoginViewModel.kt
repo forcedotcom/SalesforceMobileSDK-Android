@@ -462,9 +462,8 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Populate the additional parameter map with app attestation, if applicable.
         val additionalParameters = mutableMapOf<String, String>()
         sdkManager.appAttestationClient?.run {
-            val challenge = fetchMobileAppAttestationChallenge()
-            val attestation = createAppAttestation(challenge)
-            if (attestation == null) return@run
+            val challenge = fetchMobileAppAttestationChallenge() ?: return@run
+            val attestation = createAppAttestation(challenge) ?: return@run
             additionalParameters[ATTESTATION] = attestation
         }
 
@@ -523,7 +522,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
             // Populate the additional parameter map with app attestation, if applicable.
             sdkManager.appAttestationClient?.run {
-                val challenge = fetchMobileAppAttestationChallenge()
+                val challenge = fetchMobileAppAttestationChallenge() ?: return@run
                 val attestation = createAppAttestation(challenge) ?: return@run
                 additionalParams[ATTESTATION] = attestation
             }

@@ -55,7 +55,6 @@ import java.util.Base64
  *
  * TODO: Make this class internal once Java support is removed. ECJ20260421
  *
- * @param apiHostName The Salesforce App Attestation Challenge API host
  * @param deviceId The device id, usually provided by the Salesforce SDK Manager
  * @param googleCloudProjectId The Google Cloud Project ID used with Google Play
  * Integrity API
@@ -71,8 +70,6 @@ import java.util.Base64
 class AppAttestationClient(
     context: Context,
     @property:VisibleForTesting
-    internal val apiHostName: String,
-    @property:VisibleForTesting
     internal val deviceId: String,
     @property:VisibleForTesting
     internal val googleCloudProjectId: Long,
@@ -84,6 +81,8 @@ class AppAttestationClient(
     internal val restClient: RestClient,
 ) {
 
+    /** The Salesforce App Attestation Challenge API host or null to disable Salesforce App Attestation */
+    internal var apiHostName: String? = null
 
     /** The Google Play Integrity API Token Provider */
     @VisibleForTesting
@@ -229,10 +228,10 @@ class AppAttestationClient(
      *
      * @return The Salesforce App Attestation ECA Plug-In's "Challenge"
      */
-    fun fetchMobileAppAttestationChallenge(): String {
+    fun fetchMobileAppAttestationChallenge(): String? {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
         val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = apiHostName,
+            apiHostName = apiHostName ?: return null,
             restClient = restClient
         )
         return appAttestationChallengeApiClient.fetchChallenge(

@@ -64,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -176,6 +177,9 @@ import com.salesforce.androidsdk.security.interfaces.ScreenLockManager as Screen
  * @param context The Android context
  * @param mainActivity Activity that should be launched after the login flow
  * @param loginActivity Login activity
+ * @param googleCloudProjectId The Google Cloud Project ID to use with
+ * Google Play Integrity API and Salesforce App Attestation or null to
+ * disable both features
  */
 open class SalesforceSDKManager protected constructor(
     @JvmField
@@ -183,6 +187,7 @@ open class SalesforceSDKManager protected constructor(
     mainActivity: Class<out Activity>,
     private val loginActivity: Class<out Activity>? = null,
     internal val nativeLoginActivity: Class<out Activity>? = null,
+    googleCloudProjectId: Long? = null,
 ) : DefaultLifecycleObserver {
 
     constructor(
@@ -229,50 +234,38 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * The client side implementation of the Salesforce App Attestation External
-     * Client App (ECA) Plugin or null when app attestation is disabled.
+     * Client App (ECA) Plugin or null when Salesforce App Attestation is
+     * disabled.
      *
      * This property is not intended for public use outside of Salesforce Mobile
      * SDK
      *
      * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
      */
-    @Volatile
-    var appAttestationClient: AppAttestationClient? = null
-        @VisibleForTesting
-        internal set
-
-    /** Lock object for synchronized access to the app Attestation Client */
-    private val appAttestationClientLock = Any()
+    val appAttestationClient: AppAttestationClient? by lazy {
+        googleCloudProjectId?.let { createAppAttestationClient(it) }
+    }
 
     /**
-     * Updates the Salesforce App Attestation ECA Plugin Client for the selected
-     * login server and matching Google Cloud Project ID.  When using App
-     * Attestation, this value must match the linked Google Cloud Project ID
-     * for the app in Google Play Console's Play Integrity API and provided to
-     * the Salesforce App Attestation External Client App Plugin.
+     * Creates the Salesforce App Attestation ECA Plugin Client for the selected
+     * Google Cloud Project ID.  When using Salesforce App Attestation, this
+     * value must match the linked Google Cloud Project ID for the app in Google
+     * Play Console's Play Integrity API and provided to the Salesforce App
+     * Attestation External Client App Plugin.
      *
-     * @param apiHostName The Salesforce App Attestation External Client App
-     * (ECA) Plugin Challenge API Host Name.  This usually matches the selected
-     * login server
      * @param googleCloudProjectId The Google Cloud Project ID or null to
      * disable Salesforce App Attestation
      */
-    fun updateAppAttestationClient(
-        apiHostName: String,
+    fun createAppAttestationClient(
         googleCloudProjectId: Long? = null
-    ) {
-        synchronized(appAttestationClientLock) {
-            appAttestationClient = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
-                AppAttestationClient(
-                    context = appContext,
-                    apiHostName = apiHostName,
-                    deviceId = deviceId,
-                    googleCloudProjectId = appAttestationGoogleCloudProjectId,
-                    remoteAccessConsumerKey = getBootConfig(appContext).remoteAccessConsumerKey,
-                    restClient = clientManager.peekUnauthenticatedRestClient()
-                )
-            }
-        }
+    ) = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
+        AppAttestationClient(
+            context = appContext,
+            deviceId = deviceId,
+            googleCloudProjectId = appAttestationGoogleCloudProjectId,
+            remoteAccessConsumerKey = getBootConfig(appContext).remoteAccessConsumerKey,
+            restClient = clientManager.peekUnauthenticatedRestClient()
+        )
     }
 
     /**
@@ -1717,12 +1710,16 @@ open class SalesforceSDKManager protected constructor(
          * @param context The Android context
          * @param mainActivity The app's main activity class
          * @param loginActivity The app login activity class
+         * @param googleCloudProjectId The Google Cloud Project ID to use with
+         * Google Play Integrity API and Salesforce App Attestation or null to
+         * disable both features
          */
         private fun init(
             context: Context,
             mainActivity: Class<out Activity>,
             loginActivity: Class<out Activity>? = null,
             nativeLoginActivity: Class<out Activity>? = null,
+            googleCloudProjectId: Long? = null,
         ) {
             if (INSTANCE == null) {
                 INSTANCE = SalesforceSDKManager(
@@ -1730,6 +1727,7 @@ open class SalesforceSDKManager protected constructor(
                     mainActivity,
                     loginActivity,
                     nativeLoginActivity,
+                    googleCloudProjectId,
                 )
             }
             initInternal(context)
@@ -1958,6 +1956,9 @@ open class SalesforceSDKManager protected constructor(
                     shareBrowserSessionEnabled = false
                 )
 
+                // Disable Salesforce App Attestation for login servers that are not My Domain servers.
+                appAttestationClient?.apiHostName = null
+
                 return@withTimeoutOrNull
             }
 
@@ -1966,6 +1967,9 @@ open class SalesforceSDKManager protected constructor(
                     browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
                     shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
                 )
+
+                // Consider enabling Salesforce App Attestation for login servers that are My Domain servers.
+                appAttestationClient?.apiHostName = loginServer.toUri().host
             }
         }
 

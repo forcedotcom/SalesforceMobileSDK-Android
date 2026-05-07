@@ -170,7 +170,7 @@ internal class NativeLoginManager(
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
         val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
-            val challenge = fetchMobileAppAttestationChallenge()
+            val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
             createAppAttestation(challenge) ?: return@run null
         }
         val authRequestBody = createRequestBody(

@@ -115,7 +115,7 @@ internal class IDPAuthCodeHelper @VisibleForTesting internal constructor(
 
         // Add Salesforce Mobile App Attestation parameter to authorization URL if applicable.
         val additionalParams = appAttestationClient?.run {
-            val challenge = fetchMobileAppAttestationChallenge()
+            val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
             val attestation = createAppAttestation(challenge) ?: return@run null
             mapOf(ATTESTATION to attestation)
         }
