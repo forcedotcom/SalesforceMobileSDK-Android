@@ -52,35 +52,41 @@ class SalesforceSDKManagerTests {
         // This is needed because AuthConfigUtil.getMyDomainAuthConfig() uses the singleton
         try {
             SalesforceSDKManager.getInstance()
-        } catch (_: Exception) {
-            // Singleton not initialized, initialize it
-            SalesforceSDKManager.initNative(
-                getInstrumentation().targetContext,
-                LoginActivity::class.java
-            )
+        } catch (e: RuntimeException) {
+            // Only initialize if this is the expected "not initialized" exception
+            // Re-throw any other RuntimeException (memory issues, context problems, etc.)
+            if (e.message?.contains("SalesforceSDKManager.init") == true) {
+                SalesforceSDKManager.initNative(
+                    getInstrumentation().targetContext,
+                    LoginActivity::class.java
+                )
+            } else {
+                throw e
+            }
         }
 
         // Initialize mocks fresh for each test to avoid stale mock state
-        responseBody = mockk<ResponseBody>(relaxed = true).apply {
+        // Using strict mocking (no relaxed = true) to catch unexpected method calls
+        responseBody = mockk<ResponseBody>().apply {
             every { contentType() } returns "application/json;charset=UTF-8".toMediaType()
             every { bytes() } returns this@SalesforceSDKManagerTests.responseBodyString.toByteArray()
         }
 
-        response = mockk<Response>(relaxed = true).apply {
+        response = mockk<Response>().apply {
             every { isSuccessful } returns true
             every { body } returns this@SalesforceSDKManagerTests.responseBody
             every { close() } just runs
         }
 
-        call = mockk<Call>(relaxed = true).apply {
+        call = mockk<Call>().apply {
             every { execute() } returns this@SalesforceSDKManagerTests.response
         }
 
-        okHttpClient = mockk<OkHttpClient>(relaxed = true).apply {
+        okHttpClient = mockk<OkHttpClient>().apply {
             every { newCall(any()) } returns this@SalesforceSDKManagerTests.call
         }
 
-        httpAccess = mockk<HttpAccess>(relaxed = true).apply {
+        httpAccess = mockk<HttpAccess>().apply {
             every { getOkHttpClient() } returns this@SalesforceSDKManagerTests.okHttpClient
         }
     }
@@ -213,6 +219,8 @@ class SalesforceSDKManagerTests {
 
         assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
         assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+
+        // No verification for invalid URL - the fetch is skipped
     }
 
     @Test
@@ -348,6 +356,7 @@ class SalesforceSDKManagerTests {
         assertEquals("www.example.com", appAttestationClient.apiHostName)
     }
 
+    @Test
     fun getDevActions_ReturnsAllActions_ForNonLoginActivity() {
         // Arrange
         val mockActivity = mockk<Activity>(relaxed = true)
@@ -356,15 +365,15 @@ class SalesforceSDKManagerTests {
         val devActions = SalesforceSDKManager.getInstance().getDevActions(mockActivity)
 
         // Assert
-        assertEquals(4, devActions.size)
+        // Note: Logout and Switch User are only shown when there's a cached current user.
+        // Since no user is logged in during tests, only 2 actions are expected.
+        assertEquals(2, devActions.size)
         assertTrue(devActions.containsKey("Show dev info"))
         assertTrue(devActions.containsKey("Login Options"))
-        assertTrue(devActions.containsKey("Logout"))
-        assertTrue(devActions.containsKey("Switch User"))
+        assertFalse(devActions.containsKey("Logout"))
+        assertFalse(devActions.containsKey("Switch User"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
-        assertNotNull(devActions["Logout"])
-        assertNotNull(devActions["Switch User"])
     }
 
     @Test
