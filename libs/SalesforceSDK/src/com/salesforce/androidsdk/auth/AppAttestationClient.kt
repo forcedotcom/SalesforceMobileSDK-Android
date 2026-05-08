@@ -96,6 +96,7 @@ class AppAttestationClient(
 ) {
 
     /** The Salesforce App Attestation Challenge API host or null to disable Salesforce App Attestation */
+    @Volatile
     internal var apiHostName: String? = null
 
     /** The Google Play Integrity API Token Provider */
@@ -240,7 +241,11 @@ class AppAttestationClient(
      *
      * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
      *
-     * @return The Salesforce App Attestation ECA Plug-In's "Challenge"
+     * @return The Salesforce App Attestation ECA Plug-In challenge, or null if
+     * App Attestation is disabled (apiHostName is null) or the remote access
+     * consumer key is unavailable
+     * @throws java.io.IOException if the network request fails
+     * @throws org.json.JSONException if the response cannot be parsed
      */
     fun fetchMobileAppAttestationChallenge(): String? {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
