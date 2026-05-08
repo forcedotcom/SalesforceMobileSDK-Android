@@ -372,7 +372,7 @@ class AppAttestationClientTest {
         deviceId = TEST_DEVICE_ID,
         googleCloudProjectId = TEST_GOOGLE_CLOUD_PROJECT_ID,
         integrityManager = integrityManager,
-        remoteAccessConsumerKey = TEST_REMOTE_ACCESS_CONSUMER_KEY,
+        remoteAccessConsumerKeyProvider = { TEST_REMOTE_ACCESS_CONSUMER_KEY },
         restClient = restClient,
     ).also { it.apiHostName = apiHostName }
 

@@ -47,6 +47,20 @@ import java.security.MessageDigest
 import java.util.Base64
 
 /**
+ * Provides the Salesforce External Client App (ECA) remote access consumer key.
+ * This is typically sourced from the boot configuration.
+ *
+ * This interface is not intended for public use outside of Salesforce Mobile
+ * SDK.
+ */
+fun interface RemoteAccessConsumerKeyProvider {
+    /**
+     * Returns the current remote access consumer key or null if not available.
+     */
+    fun getRemoteConsumerKey(): String?
+}
+
+/**
  * App attestation features supporting the Salesforce App Attestation External
  * Client App (ECA) Plugin, the Salesforce Challenge API, Google Play Integrity
  * API and integration of app attestation with Salesforce Authentication.
@@ -61,9 +75,9 @@ import java.util.Base64
  * @param integrityManager The Google Play App Integrity API Integrity Manager.
  * This parameter is intended for testing purposes only. Defaults to a new
  * instance
- * @param remoteAccessConsumerKey An adapter method that provides the Salesforce
- * External Client App (ECA) remote access consumer key, usually provided by the
- * boot config
+ * @param remoteAccessConsumerKeyProvider Provides the Salesforce External
+ * Client App (ECA) remote access consumer key, usually sourced from the boot
+ * config
  * @param restClient The REST client, usually provided by the Salesforce SDK
  * Manager's unauthenticated REST client
  */
@@ -76,7 +90,7 @@ class AppAttestationClient(
     @property:VisibleForTesting
     internal val integrityManager: StandardIntegrityManager = createStandard(context),
     @property:VisibleForTesting
-    internal val remoteAccessConsumerKey: () -> String?,
+    internal val remoteAccessConsumerKeyProvider: RemoteAccessConsumerKeyProvider,
     @property:VisibleForTesting
     internal val restClient: RestClient,
 ) {
@@ -236,7 +250,7 @@ class AppAttestationClient(
         )
         return appAttestationChallengeApiClient.fetchChallenge(
             attestationId = deviceId,
-            remoteConsumerKey = remoteAccessConsumerKey() ?: return null
+            remoteConsumerKey = remoteAccessConsumerKeyProvider.getRemoteConsumerKey() ?: return null
         )
     }
 }

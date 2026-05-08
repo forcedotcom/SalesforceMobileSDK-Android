@@ -315,7 +315,7 @@ class SalesforceSDKManagerTests {
         )
         assertEquals(123456L, appAttestationClient?.googleCloudProjectId)
         assertNotNull(appAttestationClient?.deviceId)
-        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKey)
+        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKeyProvider?.getRemoteConsumerKey())
         assertNotNull(appAttestationClient?.restClient)
         // apiHostName starts null — it is set later by fetchAuthenticationConfiguration.
         assertNull(

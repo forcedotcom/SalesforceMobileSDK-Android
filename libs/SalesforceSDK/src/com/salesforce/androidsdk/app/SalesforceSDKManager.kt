@@ -91,6 +91,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AppAttestationClient
+import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
@@ -263,7 +264,9 @@ open class SalesforceSDKManager protected constructor(
             context = appContext,
             deviceId = deviceId,
             googleCloudProjectId = appAttestationGoogleCloudProjectId,
-            remoteAccessConsumerKey = { getBootConfig(appContext).remoteAccessConsumerKey },
+            remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider {
+                getBootConfig(appContext).remoteAccessConsumerKey
+            },
             restClient = clientManager.peekUnauthenticatedRestClient()
         )
     }
