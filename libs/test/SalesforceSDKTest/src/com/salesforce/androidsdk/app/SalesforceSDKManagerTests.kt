@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
@@ -93,7 +94,13 @@ class SalesforceSDKManagerTests {
 
     @After
     fun teardown() {
-        SalesforceSDKManager.getInstance().loginServerManager.reset()
+        // Reset all singleton state to ensure test isolation
+        // This prevents state leakage between tests
+        SalesforceSDKManager.getInstance().apply {
+            loginServerManager.reset()
+            isBrowserLoginEnabled = false
+            isShareBrowserSessionEnabled = false
+        }
         unmockkAll()
     }
 
@@ -284,7 +291,18 @@ class SalesforceSDKManagerTests {
     @Test
     fun salesforceSdkManager_ClearsAppAttestationHostName_ForNonMyDomainServer() {
 
-        val salesforceSdkManager = createTestSalesforceSDKManager(googleCloudProjectId = 123456L)
+        // Create test instance with production server (non-My Domain)
+        val salesforceSdkManager = TestSalesforceSDKManagerWithAttestation(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+            googleCloudProjectId = 123456L,
+            testLoginServer = LoginServer(
+                "Production",
+                PRODUCTION_LOGIN_URL,
+                false
+            )
+        )
 
         // Verify app attestation client exists and get non-null reference
         val appAttestationClient = requireNotNull(salesforceSdkManager.appAttestationClient) {
@@ -294,16 +312,6 @@ class SalesforceSDKManagerTests {
         // Set initial hostname value
         appAttestationClient.apiHostName = "test.example.com"
         assertEquals("test.example.com", appAttestationClient.apiHostName)
-
-        // Initialize and set login server to production (non-My Domain)
-        salesforceSdkManager.loginServerManager.reset()
-        salesforceSdkManager.loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Production",
-                PRODUCTION_LOGIN_URL,
-                false
-            )
-        )
 
         runBlocking {
             salesforceSdkManager.fetchAuthenticationConfiguration(
@@ -320,7 +328,19 @@ class SalesforceSDKManagerTests {
     @Test
     fun salesforceSdkManager_SetsAppAttestationHostName_ForMyDomainServer() {
 
-        val salesforceSdkManager = createTestSalesforceSDKManager(googleCloudProjectId = 123456L)
+        // Create test instance with My Domain server
+        val testLoginServer = LoginServer(
+            "Example",
+            "https://www.example.com",
+            true
+        )
+        val salesforceSdkManager = TestSalesforceSDKManagerWithAttestation(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+            googleCloudProjectId = 123456L,
+            testLoginServer = testLoginServer
+        )
 
         // Verify app attestation client exists and get non-null reference
         val appAttestationClient = requireNotNull(salesforceSdkManager.appAttestationClient) {
@@ -330,26 +350,12 @@ class SalesforceSDKManagerTests {
         // Initial hostname should be null
         assertNull(appAttestationClient.apiHostName)
 
-        // Initialize and set login server to a My Domain server
-        salesforceSdkManager.loginServerManager.reset()
-        salesforceSdkManager.loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Example",
-                "https://www.example.com",
-                true
-            )
-        )
-
         runBlocking {
             salesforceSdkManager.fetchAuthenticationConfiguration(
                 httpAccess = httpAccess,
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
-
-            // Small delay to ensure all async operations complete
-            // including broadcast handling in AuthConfigUtil
-            kotlinx.coroutines.delay(100)
         }
 
         // Verify hostname was set to the My Domain server host
@@ -477,11 +483,34 @@ class SalesforceSDKManagerTests {
     /**
      * A minimal subclass of [SalesforceSDKManager] that exposes the protected
      * primary constructor so that tests can supply a [googleCloudProjectId].
+     *
+     * This subclass also overrides [loginServerManager] to provide an
+     * isolated test instance that doesn't share state via SharedPreferences.
      */
     private class TestSalesforceSDKManagerWithAttestation(
         context: android.content.Context,
         mainActivity: Class<out Activity>,
         loginActivity: Class<out Activity>? = null,
         googleCloudProjectId: Long? = null,
-    ) : SalesforceSDKManager(context, mainActivity, loginActivity, null, googleCloudProjectId)
+        private val testLoginServer: LoginServer? = null,
+    ) : SalesforceSDKManager(context, mainActivity, loginActivity, null, googleCloudProjectId) {
+
+        /**
+         * Override to provide a test-specific LoginServerManager that uses
+         * in-memory storage instead of SharedPreferences for test isolation.
+         */
+        override val loginServerManager: LoginServerManager by lazy {
+            // Create a mock that doesn't use SharedPreferences
+            mockk<LoginServerManager>(relaxed = true).apply {
+                // Return the test login server when asked
+                every { selectedLoginServer } returns (testLoginServer ?: LoginServer(
+                    "Test",
+                    "https://test.example.com",
+                    false
+                ))
+                // No-op for reset() to avoid SharedPreferences access
+                every { reset() } just runs
+            }
+        }
+    }
 }
