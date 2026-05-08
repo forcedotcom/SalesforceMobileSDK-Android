@@ -40,31 +40,49 @@ class SalesforceSDKManagerTests {
     private val responseBodyString =
         "{\"MobileSDK\":{\"UseAndroidNativeBrowserForAuthentication\":false,\"shareBrowserSessionAndroid\":false}}"
 
-    private val responseBody = mockk<ResponseBody>().apply {
-        every { contentType() } returns "application/json;charset=UTF-8".toMediaType()
-        every { bytes() } returns this@SalesforceSDKManagerTests.responseBodyString.toByteArray()
-    }
-
-    private val response = mockk<Response>().apply {
-        every { isSuccessful } returns true
-        every { body } returns this@SalesforceSDKManagerTests.responseBody
-        every { close() } just runs
-    }
-
-    private val call = mockk<Call>().apply {
-        every { execute() } returns this@SalesforceSDKManagerTests.response
-    }
-
-    private val okHttpClient = mockk<OkHttpClient>().apply {
-        every { newCall(any()) } returns this@SalesforceSDKManagerTests.call
-    }
-
-    private val httpAccess = mockk<HttpAccess>().apply {
-        every { getOkHttpClient() } returns this@SalesforceSDKManagerTests.okHttpClient
-    }
+    private lateinit var responseBody: ResponseBody
+    private lateinit var response: Response
+    private lateinit var call: Call
+    private lateinit var okHttpClient: OkHttpClient
+    private lateinit var httpAccess: HttpAccess
 
     @Before
     fun setup() {
+        // Ensure the singleton SalesforceSDKManager is properly initialized
+        // This is needed because AuthConfigUtil.getMyDomainAuthConfig() uses the singleton
+        try {
+            SalesforceSDKManager.getInstance()
+        } catch (_: Exception) {
+            // Singleton not initialized, initialize it
+            SalesforceSDKManager.initNative(
+                getInstrumentation().targetContext,
+                LoginActivity::class.java
+            )
+        }
+
+        // Initialize mocks fresh for each test to avoid stale mock state
+        responseBody = mockk<ResponseBody>(relaxed = true).apply {
+            every { contentType() } returns "application/json;charset=UTF-8".toMediaType()
+            every { bytes() } returns this@SalesforceSDKManagerTests.responseBodyString.toByteArray()
+        }
+
+        response = mockk<Response>(relaxed = true).apply {
+            every { isSuccessful } returns true
+            every { body } returns this@SalesforceSDKManagerTests.responseBody
+            every { close() } just runs
+        }
+
+        call = mockk<Call>(relaxed = true).apply {
+            every { execute() } returns this@SalesforceSDKManagerTests.response
+        }
+
+        okHttpClient = mockk<OkHttpClient>(relaxed = true).apply {
+            every { newCall(any()) } returns this@SalesforceSDKManagerTests.call
+        }
+
+        httpAccess = mockk<HttpAccess>(relaxed = true).apply {
+            every { getOkHttpClient() } returns this@SalesforceSDKManagerTests.okHttpClient
+        }
     }
 
     @After
@@ -320,6 +338,10 @@ class SalesforceSDKManagerTests {
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
+
+            // Small delay to ensure all async operations complete
+            // including broadcast handling in AuthConfigUtil
+            kotlinx.coroutines.delay(100)
         }
 
         // Verify hostname was set to the My Domain server host
