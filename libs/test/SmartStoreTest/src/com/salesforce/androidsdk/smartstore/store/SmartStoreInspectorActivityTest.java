@@ -59,7 +59,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -70,7 +69,6 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Tests for SmartStoreInspectorActivity
  */
-@Ignore
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class SmartStoreInspectorActivityTest {

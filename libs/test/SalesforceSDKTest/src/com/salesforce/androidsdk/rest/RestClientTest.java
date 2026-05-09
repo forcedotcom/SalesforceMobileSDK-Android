@@ -50,7 +50,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -81,8 +80,6 @@ import okio.ByteString;
  *
  * Does live calls to a test org
  */
-
-@Ignore
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class RestClientTest {

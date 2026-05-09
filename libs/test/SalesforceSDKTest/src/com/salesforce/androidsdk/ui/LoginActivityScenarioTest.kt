@@ -45,7 +45,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -193,31 +192,6 @@ class LoginActivityScenarioTest {
         }
     }
 
-//    *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
-//    Build fingerprint: 'google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys'
-//    Revision: '0'
-//    ABI: 'arm64'
-//    Timestamp: 2026-04-24 14:50:27.342453036-0700
-//    Process uptime: 0s
-//    Cmdline: com.google.android.bluetooth
-//    pid: 8824, tid: 8843, name: bt_stack_manage  >>> com.google.android.bluetooth <<<
-//    uid: 1002
-//    tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
-//    pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
-//    signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
-//    Abort message: 'system/gd/stack_manager.cc:57 StartUp: Can't start stack, last instance: starting HciHal'
-//    x0  0000000000000000  x1  000000000000228b  x2  0000000000000006  x3  0000007a0c4d87e0
-//    x4  73521f3634396262  x5  73521f3634396262  x6  73521f3634396262  x7  7f7f7f7f7f7f7f7f
-//    x8  00000000000000f0  x9  0000007cab2eb468  x10 ffffff80fffffb9f  x11 0000000000000000
-//    x12 0000007a0c4d76f0  x13 0000000000000059  x14 0000007a0c4d8938  x15 000182e65e501381
-//    x16 0000007cab39aff8  x17 0000007cab3851c0  x18 00000078f8de8088  x19 0000000000002278
-//    x20 000000000000228b  x21 00000000ffffffff  x22 0000007a1160e180  x23 0000000000000024
-//    x24 00000078fb43e6c8  x25 0000007a0c4d8da0  x26 0000007a0c4d8938  x27 0000007a0c4d9a80
-//    x28 00000078fbf67d40  x29 0000007a0c4d8860
-//    lr  0000007cab3236a4  sp  0000007a0c4d87c0  pc  0000007cab3236d4  pst 0000000000001000
-//    22 total frames
-//    backtrace:
-    @Ignore
     @Test
     fun testWebviewSettings() {
         launch<LoginActivity>(
@@ -241,7 +215,6 @@ class LoginActivityScenarioTest {
         }
     }
 
-    @Ignore
     @Test
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
         // Set loginDevMenuReload to false initially
