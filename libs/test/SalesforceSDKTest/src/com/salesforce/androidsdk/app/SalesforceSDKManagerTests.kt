@@ -371,15 +371,15 @@ class SalesforceSDKManagerTests {
         val devActions = SalesforceSDKManager.getInstance().getDevActions(mockActivity)
 
         // Assert
-        // Note: Logout and Switch User are only shown when there's a cached current user.
-        // Since no user is logged in during tests, only 2 actions are expected.
-        assertEquals(2, devActions.size)
+        assertEquals(4, devActions.size)
         assertTrue(devActions.containsKey("Show dev info"))
         assertTrue(devActions.containsKey("Login Options"))
-        assertFalse(devActions.containsKey("Logout"))
-        assertFalse(devActions.containsKey("Switch User"))
+        assertTrue(devActions.containsKey("Logout"))
+        assertTrue(devActions.containsKey("Switch User"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
+        assertNotNull(devActions["Logout"])
+        assertNotNull(devActions["Switch User"])
     }
 
     @Test
