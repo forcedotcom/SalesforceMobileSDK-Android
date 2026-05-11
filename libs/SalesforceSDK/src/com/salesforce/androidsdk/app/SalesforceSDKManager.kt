@@ -264,8 +264,12 @@ open class SalesforceSDKManager protected constructor(
             context = appContext,
             deviceId = deviceId,
             googleCloudProjectId = appAttestationGoogleCloudProjectId,
-            remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider {
-                getBootConfig(appContext).remoteAccessConsumerKey
+            remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { loginServer ->
+                val debugOverrideAppConfig = debugOverrideAppConfig
+                when {
+                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig.consumerKey
+                    else -> appConfigForLoginHost(loginServer)?.consumerKey ?: OAuthConfig(getBootConfig(appContext)).consumerKey
+                }
             },
             restClient = clientManager.peekUnauthenticatedRestClient()
         )

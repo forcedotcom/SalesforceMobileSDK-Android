@@ -580,7 +580,7 @@ public class OAuth2 {
         sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
 
         final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
-        final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallenge() : null;
+        final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallengeBlocking() : null;
         final String attestationValue = challenge != null ? appAttestationClient.createAppAttestationBlocking(challenge) : null;
         if (attestationValue != null) {
             // Note: The attestation value is appended to the token endpoint

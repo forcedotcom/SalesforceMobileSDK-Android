@@ -56,8 +56,10 @@ import java.util.Base64
 fun interface RemoteAccessConsumerKeyProvider {
     /**
      * Returns the current remote access consumer key or null if not available.
+     * @param loginServer The login server
+     * @return The remote access consumer key or null if not available
      */
-    fun getRemoteConsumerKey(): String?
+    suspend fun getRemoteConsumerKey(loginServer: String): String?
 }
 
 /**
@@ -236,18 +238,13 @@ class AppAttestationClient(
      * Fetches a new "Challenge" from the Salesforce App Attestation External
      * Client App (ECA) Plug-In.
      *
-     * This method is not intended for public use outside of Salesforce Mobile
-     * SDK.
-     *
-     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
-     *
      * @return The Salesforce App Attestation ECA Plug-In challenge, or null if
      * App Attestation is disabled (apiHostName is null) or the remote access
      * consumer key is unavailable
      * @throws java.io.IOException if the network request fails
      * @throws org.json.JSONException if the response cannot be parsed
      */
-    fun fetchMobileAppAttestationChallenge(): String? {
+    internal suspend fun fetchMobileAppAttestationChallenge(): String? {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
         val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
             apiHostName = apiHostName ?: return null,
@@ -255,8 +252,25 @@ class AppAttestationClient(
         )
         return appAttestationChallengeApiClient.fetchChallenge(
             attestationId = deviceId,
-            remoteConsumerKey = remoteAccessConsumerKeyProvider.getRemoteConsumerKey() ?: return null
+            remoteConsumerKey = remoteAccessConsumerKeyProvider.getRemoteConsumerKey(apiHostName ?: return null) ?: return null
         )
+    }
+
+    /**
+     * Fetches a new "Challenge" from the Salesforce App Attestation External
+     * Client App (ECA) Plug-In.
+     *
+     * This method is not intended for public use outside of Salesforce Mobile
+     * SDK.
+     *
+     * @return The Salesforce App Attestation ECA Plug-In challenge, or null if
+     * App Attestation is disabled (apiHostName is null) or the remote access
+     * consumer key is unavailable
+     * @throws java.io.IOException if the network request fails
+     * @throws org.json.JSONException if the response cannot be parsed
+     */
+    fun fetchMobileAppAttestationChallengeBlocking(): String? = runBlocking {
+        fetchMobileAppAttestationChallenge()
     }
 }
 
