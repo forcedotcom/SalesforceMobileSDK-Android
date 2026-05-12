@@ -45,6 +45,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -267,7 +268,7 @@ class AppAttestationClientTest {
     }
 
     @Test
-    fun appAttestationClient_fetchMobileAppAttestationChallenge_OnSuccess_ReturnsChallenge() {
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_OnSuccess_ReturnsChallenge() = runTest {
 
         val requestSlot = slot<RestRequest>()
         val restClient = createRestClientReturning(
@@ -305,7 +306,9 @@ class AppAttestationClientTest {
         val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
 
         assertThrows(AppAttestationChallengeApiException::class.java) {
-            appAttestationClient.fetchMobileAppAttestationChallenge()
+            runBlocking {
+                appAttestationClient.fetchMobileAppAttestationChallenge()
+            }
         }
     }
 
@@ -318,12 +321,14 @@ class AppAttestationClientTest {
         val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
 
         assertThrows(AppAttestationChallengeApiException::class.java) {
-            appAttestationClient.fetchMobileAppAttestationChallenge()
+            runBlocking {
+                appAttestationClient.fetchMobileAppAttestationChallenge()
+            }
         }
     }
 
     @Test
-    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenApiHostNameIsNull_ReturnsNull() {
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenApiHostNameIsNull_ReturnsNull() = runTest {
 
         val appAttestationClient = createAppAttestationClientForTest(apiHostName = null)
 
@@ -333,7 +338,7 @@ class AppAttestationClientTest {
     }
 
     @Test
-    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenRemoteConsumerKeyIsNull_ReturnsNull() {
+    fun appAttestationClient_fetchMobileAppAttestationChallenge_WhenRemoteConsumerKeyIsNull_ReturnsNull() = runTest {
 
         val appAttestationClient = createAppAttestationClientForTest(
             remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { null }

@@ -37,7 +37,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -64,8 +63,6 @@ class IDPAuthCodeHelperTest {
         val idpAuthCodeHelper = createIdpAuthCodeHelper(appAttestationClient = null)
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
-
-        advanceUntilIdle()
 
         val nonNullResult = requireNotNull(result) {
             "Result should be non-null for a valid login server."
@@ -101,8 +98,6 @@ class IDPAuthCodeHelperTest {
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
 
-        advanceUntilIdle()
-
         val nonNullResult = requireNotNull(result) {
             "Result should be non-null for a valid login server."
         }
@@ -121,8 +116,6 @@ class IDPAuthCodeHelperTest {
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
 
-        advanceUntilIdle()
-
         val nonNullResult = requireNotNull(result) {
             "Result should be non-null for a valid login server."
         }
@@ -138,13 +131,11 @@ class IDPAuthCodeHelperTest {
 
         // Simulate apiHostName being null (App Attestation disabled for the current login server).
         val appAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
-            every { fetchMobileAppAttestationChallenge() } returns null
+            coEvery { fetchMobileAppAttestationChallenge() } returns null
         }
         val idpAuthCodeHelper = createIdpAuthCodeHelper(appAttestationClient = appAttestationClient)
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
-
-        advanceUntilIdle()
 
         val nonNullResult = requireNotNull(result) {
             "Result should be non-null for a valid login server."
@@ -164,8 +155,6 @@ class IDPAuthCodeHelperTest {
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
 
-        advanceUntilIdle()
-
         assertNull("Result should be null when OAuth2.getAuthorizationUrl returns null.", result)
     }
 
@@ -177,8 +166,6 @@ class IDPAuthCodeHelperTest {
         val idpAuthCodeHelper = createIdpAuthCodeHelper(appAttestationClient = null)
 
         val result = idpAuthCodeHelper.getAuthorizationPathForSP()
-
-        advanceUntilIdle()
 
         assertEquals(OAUTH_AUTHORIZE_PATH, result)
     }
@@ -199,7 +186,7 @@ class IDPAuthCodeHelperTest {
 
     private fun createMockAttestationClient(attestation: String?): AppAttestationClient =
         mockk<AppAttestationClient>(relaxed = true).apply {
-            every { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
+            coEvery { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
             coEvery {
                 createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
             } returns attestation

@@ -375,7 +375,7 @@ class NativeLoginManagerTest {
     fun nativeLoginManager_login_doesNotCollectAppAttestationWhenFetchChallengeReturnsNull() = runTest {
 
         val mockAppAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
-            every { fetchMobileAppAttestationChallenge() } returns null
+            coEvery { fetchMobileAppAttestationChallenge() } returns null
         }
         mockkObject(SalesforceSDKManager)
         val spySdkManager = spyk(SalesforceSDKManager.getInstance())
@@ -430,7 +430,7 @@ class NativeLoginManagerTest {
      */
     private fun installAppAttestationClient(attestation: String?) {
         val mockAppAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
-            every { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
+            coEvery { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
             coEvery {
                 createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
             } returns attestation

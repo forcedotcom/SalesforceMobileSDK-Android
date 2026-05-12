@@ -586,6 +586,13 @@ class LoginViewModelTest {
             redirectUri = debugRedirectUri,
             scopes = debugScopes,
         )
+        coEvery {
+            sdkManagerMock.resolveOAuthConfigForLoginServer(any())
+        } returns OAuthConfig(
+            consumerKey = appConfigConsumerKey,
+            redirectUri = appConfigRedirectUri,
+            scopes = listOf("api"),
+        )
 
         // Verify the URL contains the app config values, not the debug override config values
         runBlocking { viewModel.generateAuthorizationUrl("test.salesforce.com", sdkManagerMock) }
@@ -1589,7 +1596,7 @@ class LoginViewModelTest {
     private fun createMockAppAttestationClient(
         attestation: String?,
     ): AppAttestationClient = mockk<AppAttestationClient>(relaxed = true).also { client ->
-        every { client.fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
+        coEvery { client.fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
         coEvery {
             client.createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
         } returns attestation
@@ -1603,7 +1610,7 @@ class LoginViewModelTest {
      */
     private fun createMockAppAttestationClientWithNullChallenge(): AppAttestationClient =
         mockk<AppAttestationClient>(relaxed = true).also { client ->
-            every { client.fetchMobileAppAttestationChallenge() } returns null
+            coEvery { client.fetchMobileAppAttestationChallenge() } returns null
         }
 
     /**

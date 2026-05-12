@@ -412,7 +412,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
-    fun salesforceSdkManager_appAttestationClient_isCreatedWhenGoogleCloudProjectIdProvided() {
+    fun salesforceSdkManager_appAttestationClient_isCreatedWhenGoogleCloudProjectIdProvided() = runBlocking {
 
         val salesforceSdkManager = createTestSalesforceSDKManager(googleCloudProjectId = 123456L)
 
@@ -423,7 +423,7 @@ class SalesforceSDKManagerTests {
         )
         assertEquals(123456L, appAttestationClient?.googleCloudProjectId)
         assertNotNull(appAttestationClient?.deviceId)
-        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKeyProvider?.getRemoteConsumerKey())
+        assertEquals("__CONSUMER_KEY__", appAttestationClient?.remoteAccessConsumerKeyProvider?.getRemoteConsumerKey("https://login.salesforce.com"))
         assertNotNull(appAttestationClient?.restClient)
         // apiHostName starts null — it is set later by fetchAuthenticationConfiguration.
         assertNull(

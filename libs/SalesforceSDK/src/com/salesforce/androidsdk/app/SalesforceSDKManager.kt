@@ -265,11 +265,7 @@ open class SalesforceSDKManager protected constructor(
             deviceId = deviceId,
             googleCloudProjectId = appAttestationGoogleCloudProjectId,
             remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { loginServer ->
-                val debugOverrideAppConfig = debugOverrideAppConfig
-                when {
-                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig.consumerKey
-                    else -> appConfigForLoginHost(loginServer)?.consumerKey ?: OAuthConfig(getBootConfig(appContext)).consumerKey
-                }
+                resolveOAuthConfigForLoginServer(loginServer).consumerKey
             },
             restClient = clientManager.peekUnauthenticatedRestClient()
         )
@@ -293,6 +289,32 @@ open class SalesforceSDKManager protected constructor(
     }
 
     internal var debugOverrideAppConfig: OAuthConfig? = null
+
+    /**
+     * Resolves the OAuth configuration for the specified login server.
+     *
+     * Resolution order:
+     * 1. Debug override configuration (when [isDebugBuild] is true and override
+     * is set)
+     * 2. Dynamic app configuration for the login host via
+     * [appConfigForLoginHost]
+     * 3. Static boot configuration from bootconfig.xml
+     *
+     * This allows apps to use different OAuth configs per server while
+     * supporting debug overrides for development/testing.
+     *
+     * @param loginServer The login server URL
+     * @return The OAuth configuration for the specified server
+     */
+    internal suspend fun resolveOAuthConfigForLoginServer(
+        loginServer: String
+    ): OAuthConfig {
+        val debugOverride = debugOverrideAppConfig
+        return when {
+            isDebugBuild && debugOverride != null -> debugOverride
+            else -> appConfigForLoginHost(loginServer) ?: OAuthConfig(getBootConfig(appContext))
+        }
+    }
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java

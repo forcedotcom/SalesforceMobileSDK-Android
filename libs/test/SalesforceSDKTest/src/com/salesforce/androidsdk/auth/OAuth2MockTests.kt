@@ -66,7 +66,7 @@ class OAuth2MockTests {
     @Test
     fun oauth2_makeTokenEndpointRequest_includesAttestationParameterWhenNotNull() {
         val appAttestationClient = mockk<AppAttestationClient>(relaxed = true) {
-            every { fetchMobileAppAttestationChallenge() } returns "__TEST_CHALLENGE_VALUE__"
+            every { fetchMobileAppAttestationChallengeBlocking() } returns "__TEST_CHALLENGE_VALUE__"
             every { createAppAttestationBlocking("__TEST_CHALLENGE_VALUE__") } returns "__ATTESTATION_TOKEN__"
         }
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
