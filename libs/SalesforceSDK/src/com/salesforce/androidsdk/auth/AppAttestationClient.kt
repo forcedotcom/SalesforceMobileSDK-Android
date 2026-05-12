@@ -246,13 +246,14 @@ class AppAttestationClient(
      */
     internal suspend fun fetchMobileAppAttestationChallenge(): String? {
         // Create the Salesforce App Attestation Challenge API client and fetch a new challenge.
+        val apiHost = apiHostName ?: return null
         val appAttestationChallengeApiClient = AppAttestationChallengeApiClient(
-            apiHostName = apiHostName ?: return null,
+            apiHostName = apiHost,
             restClient = restClient
         )
         return appAttestationChallengeApiClient.fetchChallenge(
             attestationId = deviceId,
-            remoteConsumerKey = remoteAccessConsumerKeyProvider.getRemoteConsumerKey(apiHostName ?: return null) ?: return null
+            remoteConsumerKey = remoteAccessConsumerKeyProvider.getRemoteConsumerKey(apiHost) ?: return null
         )
     }
 
