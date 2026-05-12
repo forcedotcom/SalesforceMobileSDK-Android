@@ -349,6 +349,28 @@ class AppAttestationClientTest {
         assertNull(result)
     }
 
+    // region Blocking Wrapper Test
+
+    /**
+     * Tests the blocking wrapper delegates to the suspend function correctly.
+     * Functionality is fully covered by the suspend function tests.
+     */
+    @Test
+    fun appAttestationClient_fetchMobileAppAttestationChallengeBlocking_DelegatesToSuspendFunction() {
+
+        val restClient = createRestClientReturning(
+            restResponse = createRestResponse(body = TEST_CHALLENGE_VALUE, success = true),
+        )
+        val appAttestationClient = createAppAttestationClientForTest(restClient = restClient)
+
+        val result = appAttestationClient.fetchMobileAppAttestationChallengeBlocking()
+
+        assertEquals(TEST_CHALLENGE_VALUE, result)
+        verify(exactly = 1) { restClient.sendSync(any()) }
+    }
+
+    // endregion Blocking Wrapper Test
+
     @Test
     fun oAuthAuthorizationAttestation_encode_returnsSuccessfully() {
 
