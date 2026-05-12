@@ -68,6 +68,7 @@ class SalesforceSDKManagerOAuthConfigResolverTest {
         // Reset state
         sdkManager.debugOverrideAppConfig = null
         sdkManager.appConfigForLoginHost = { OAuthConfig(getBootConfig(targetContext)) }
+        sdkManager.isDebugBuildOverride = null
         TestSalesforceSDKManager.resetInstance()
     }
 
@@ -205,6 +206,31 @@ class SalesforceSDKManagerOAuthConfigResolverTest {
         assertEquals("Consumer key should include server", "key-for-https://custom.salesforce.com", result.consumerKey)
     }
 
+    @Test
+    fun test_givenReleaseBuildWithDebugOverride_whenResolveOAuthConfig_thenIgnoresDebugOverride() = runBlocking {
+        // Given: Release build (isDebugBuild = false) with debug override set
+        val overrideConfig = OAuthConfig(
+            consumerKey = "debug-consumer-key",
+            redirectUri = "debug://callback",
+            scopes = listOf("api")
+        )
+        val appConfig = OAuthConfig(
+            consumerKey = "app-consumer-key",
+            redirectUri = "app://callback",
+            scopes = listOf("api")
+        )
+        sdkManager.isDebugBuildOverride = false
+        sdkManager.debugOverrideAppConfig = overrideConfig
+        sdkManager.appConfigForLoginHost = { appConfig }
+
+        // When: Resolving OAuth config
+        val result = sdkManager.resolveOAuthConfigForLoginServer("https://test.salesforce.com")
+
+        // Then: Debug override is ignored and app config is returned
+        assertEquals("App config consumer key should be returned", "app-consumer-key", result.consumerKey)
+        assertEquals("App config redirect URI should be returned", "app://callback", result.redirectUri)
+    }
+
     /**
      * Test version of SalesforceSDKManager that doesn't interfere with other tests.
      */
@@ -213,6 +239,11 @@ class SalesforceSDKManagerOAuthConfigResolverTest {
         mainActivity: Class<out Activity>,
         loginActivity: Class<out Activity>,
     ) : SalesforceSDKManager(context, mainActivity, loginActivity) {
+
+        var isDebugBuildOverride: Boolean? = null
+
+        override val isDebugBuild: Boolean
+            get() = isDebugBuildOverride ?: super.isDebugBuild
 
         companion object {
             private var TEST_INSTANCE: TestSalesforceSDKManager? = null

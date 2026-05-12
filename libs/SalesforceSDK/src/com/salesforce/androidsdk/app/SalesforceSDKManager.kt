@@ -1550,7 +1550,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this is a debug build */
-    internal val isDebugBuild
+    internal open val isDebugBuild
         get() = DEBUG
 
 
