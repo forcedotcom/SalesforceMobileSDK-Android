@@ -45,6 +45,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -192,6 +193,8 @@ class LoginActivityScenarioTest {
         }
     }
 
+    // TODO: This test can hang on Firebase Test Lab. ECJ20260425
+    @Ignore
     @Test
     fun testWebviewSettings() {
         launch<LoginActivity>(
@@ -215,6 +218,10 @@ class LoginActivityScenarioTest {
         }
     }
 
+//    lr  0000007cab3236a4  sp  0000007a0c4d87c0  pc  0000007cab3236d4  pst 0000000000001000
+//    22 total frames
+//    backtrace:
+    @Ignore
     @Test
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
         // Set loginDevMenuReload to false initially

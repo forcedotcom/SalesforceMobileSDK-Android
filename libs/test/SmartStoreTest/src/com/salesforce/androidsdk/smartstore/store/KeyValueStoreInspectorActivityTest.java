@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,6 +66,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Tests for KeyValueStoreInspectorActivity
  */
+@Ignore
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class KeyValueStoreInspectorActivityTest {

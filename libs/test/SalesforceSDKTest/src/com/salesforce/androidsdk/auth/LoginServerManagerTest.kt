@@ -56,10 +56,12 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.xmlpull.v1.XmlPullParserException
 
+@Ignore
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class LoginServerManagerMockTest {

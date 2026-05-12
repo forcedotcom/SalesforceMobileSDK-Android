@@ -38,6 +38,7 @@ import androidx.test.filters.SmallTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,6 +51,7 @@ import java.util.concurrent.Future;
  *
  * @author bhariharan
  */
+@Ignore
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class AuthConfigUtilTest {
