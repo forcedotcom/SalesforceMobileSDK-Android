@@ -33,7 +33,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -48,8 +47,6 @@ class ECALoginTests: AuthFlowTest() {
     // region ECA Opaque Tests
 
     // Login with ECA opaque using default scopes and web server flow.
-    @Ignore("java.lang.AssertionError: WebView action failed after 15000ms\n" +
-            "\tat org.junit.Assert.fail(Assert.java:89)")
     @Test
 fun testECAOpaque_DefaultScopes() {
         loginAndValidate(knownAppConfig = ECA_OPAQUE)
@@ -83,7 +80,6 @@ fun testECAJwt_SubsetScopes_NotHybrid() {
 
     // Login with ECA JWT using all scopes and web server flow.
     @Test
-    @Ignore
 fun testECAJwt_AllScopes() {
         loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }

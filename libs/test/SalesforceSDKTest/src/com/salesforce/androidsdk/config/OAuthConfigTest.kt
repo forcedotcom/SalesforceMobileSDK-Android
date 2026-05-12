@@ -32,7 +32,6 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -85,8 +84,6 @@ class OAuthConfigTest {
         assertEquals("api web refresh_token", config.scopesString)
     }
 
-    // The test timed out. The test ran longer than its maximum allowed duration, and was stopped.
-    @Ignore
     @Test
     fun testBootConfigConstructorWithEmptyScopes() {
         val bootConfig = mockk<BootConfig>()

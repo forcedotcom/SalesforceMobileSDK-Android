@@ -62,7 +62,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -145,7 +144,6 @@ class LoginViewModelTest {
         assertEquals(customLoginUrl, viewModel.defaultTitleText)
     }
 
-    @Ignore
     @Test
     fun loginUrl_UpdatesOn_selectedServerChange() {
         // Wait for initial values to be set
@@ -359,7 +357,6 @@ class LoginViewModelTest {
 
     // endregion
 
-    @Ignore
     @Test
     fun selectedServer_Changes_GenerateCorrectAuthorizationUrl() {
         val originalServer = viewModel.selectedServer.value!!
@@ -377,8 +374,6 @@ class LoginViewModelTest {
         assertEquals(newAuthUrl, viewModel.loginUrl.value)
     }
 
-    @Ignore("java.lang.NullPointerException: Attempt to invoke virtual method 'byte[] java.lang.String.getBytes(java.nio.charset.Charset)' on a null object reference\n" +
-            "\tat com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash(SalesforceKeyGenerator.java:130)")
     @Test
     fun codeVerifier_UpdatesOn_WebViewRefresh() {
         val originalCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
@@ -393,9 +388,6 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(newCodeChallenge))
     }
 
-    @Ignore
-//    java.lang.NullPointerException: Attempt to invoke virtual method 'byte[] java.lang.String.getBytes(java.nio.charset.Charset)' on a null object reference
-//    at com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash(SalesforceKeyGenerator.java:130)
     @Test
     fun jwtFlow_Changes_loginUrl() {
         val server = viewModel.selectedServer.value!!
@@ -681,7 +673,6 @@ class LoginViewModelTest {
         }
     }
 
-    @Ignore
     @Test
     fun generateAuthorizationUrl_UsesServerSpecificConfig_FromAppConfigForLoginHost() {
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -777,13 +768,6 @@ class LoginViewModelTest {
         assertEquals("frontDoorBridgeUrl should still be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
     }
 
-    @Ignore("java.lang.AssertionError: New URL should not be ABOUT_BLANK. Actual: about:blank\n" +
-            "\tat org.junit.Assert.fail(Assert.java:89)\n" +
-            "\tat org.junit.Assert.failEquals(Assert.java:187)\n" +
-            "\tat org.junit.Assert.assertNotEquals(Assert.java:163)\n" +
-            "\tat com.salesforce.androidsdk.auth.LoginViewModelTest.reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst(LoginViewModelTest.kt:636)\n" +
-            "\n" +
-            " ")
     @Test
     fun reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst() {
         try {

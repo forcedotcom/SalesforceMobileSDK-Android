@@ -39,7 +39,6 @@ import com.salesforce.androidsdk.util.test.TestCredentials;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -58,7 +57,6 @@ import okhttp3.Response;
 /**
  * Tests for HttpAccess.
  */
-@Ignore
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class HttpAccessTest {
