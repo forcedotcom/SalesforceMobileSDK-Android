@@ -488,6 +488,15 @@ public class UserAccountManager {
 			accountManager.setUserData(account, key, extras.getString(key));
 		}
 
+		// The refresh token is stored as the Account's password (see createAccount), not as user data,
+		// so buildAuthBundle does not include it.  Persist it explicitly here so that server-side
+		// Refresh Token Rotation is correctly reflected in storage.
+		final String refreshToken = userAccount.getRefreshToken();
+		if (refreshToken != null) {
+			final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+			accountManager.setPassword(account, SalesforceSDKManager.encrypt(refreshToken, encryptionKey));
+		}
+
 		return extras;
 	}
 

@@ -109,6 +109,48 @@ public class UserAccountManagerTest {
         checkSameUserAccount(userAccount, restoredUserAccount);
     }
 
+    /*
+     * Server-side Refresh Token Rotation (RTR) regression test.
+     *
+     * The refresh token is persisted as the Account's password and is read back via accountManager.getPassword().
+     * updateAccount must therefore persist a rotated refresh token via setPassword.
+     */
+    @Test
+    public void testUpdateAccountPersistsRotatedRefreshToken() {
+        final UserAccount original = UserAccountTest.createTestAccount();
+        userAccMgr.createAccount(original);
+        final Account account = userAccMgr.getCurrentAccount();
+        Assert.assertEquals(
+                "Initial refresh token should round-trip through AccountManager",
+                UserAccountTest.TEST_REFRESH_TOKEN,
+                userAccMgr.buildUserAccount(account).getRefreshToken());
+
+        // Simulate a server-side refresh token rotation by building a
+        // UserAccount with a new refresh token value and updating.
+        final String rotatedRefreshToken = "rotated_refresh_token";
+        final UserAccount rotated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .refreshToken(rotatedRefreshToken)
+                .build();
+        userAccMgr.updateAccount(account, rotated);
+
+        // The persisted refresh token must reflect the rotated value.
+        final UserAccount reloaded = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals(
+                "Rotated refresh token should be persisted by updateAccount",
+                rotatedRefreshToken,
+                reloaded.getRefreshToken());
+
+        // Encryption (AES-GCM with a random IV) is non-deterministic, so
+        // compare against the decrypted password rather than re-encrypting
+        // the expected value.
+        final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+        Assert.assertEquals(
+                "Rotated refresh token should be used as the account password.",
+                rotatedRefreshToken,
+                SalesforceSDKManager.decrypt(accMgr.getPassword(account), encryptionKey));
+    }
+
     /**
      * Test to get all authenticated users.
      */
