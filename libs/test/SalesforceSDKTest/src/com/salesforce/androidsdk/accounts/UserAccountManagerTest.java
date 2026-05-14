@@ -151,6 +151,47 @@ public class UserAccountManagerTest {
                 SalesforceSDKManager.decrypt(accMgr.getPassword(account), encryptionKey));
     }
 
+    /*
+     * Server-side Refresh Token Rotation (RTR) regression test.
+     *
+     * A UserAccount snapshot built from the persisted Account must reflect a
+     * subsequent rotation of the refresh token via updateAccount, even when
+     * the snapshot itself was built before the rotation.  This guards the
+     * live-lookup behavior of UserAccount.getRefreshToken().
+     */
+    @Test
+    public void testGetRefreshTokenReflectsLatestPersistedValue() {
+        final UserAccount original = UserAccountTest.createTestAccount();
+        userAccMgr.createAccount(original);
+        final Account account = userAccMgr.getCurrentAccount();
+
+        // Snapshot taken before rotation.
+        final UserAccount staleUser = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals(
+                "Initial refresh token should be observed via the snapshot",
+                UserAccountTest.TEST_REFRESH_TOKEN,
+                staleUser.getRefreshToken());
+
+        // Rotate via updateAccount.
+        final String rotatedRefreshToken = "rotated_refresh_token";
+        final UserAccount rotated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .refreshToken(rotatedRefreshToken)
+                .build();
+        userAccMgr.updateAccount(account, rotated);
+
+        Assert.assertEquals(
+                "Initial refresh token should be observed via the snapshot",
+                UserAccountTest.TEST_REFRESH_TOKEN,
+                staleUser.getRefreshTokenForPersistence());
+        // The previously-built snapshot should now observe the rotated value
+        // through its live lookup against AccountManager.
+        Assert.assertEquals(
+                "Snapshot built before rotation should reflect the latest persisted refresh token",
+                rotatedRefreshToken,
+                staleUser.getRefreshToken());
+    }
+
     /**
      * Test to get all authenticated users.
      */

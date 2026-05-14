@@ -404,7 +404,7 @@ class ClientManagerMockTest {
         verify(exactly = 1) {
             mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
         }
-        Assert.assertEquals(ROTATED_REFRESH_TOKEN, userSlot.captured.refreshToken)
+        Assert.assertEquals(ROTATED_REFRESH_TOKEN, userSlot.captured.refreshTokenForPersistence)
         // ...and so should the provider's in-memory cache, so that subsequent
         // refreshes (and getRefreshToken consumers) use the rotated token.
         Assert.assertEquals(ROTATED_REFRESH_TOKEN, authTokenProvider.refreshToken)
