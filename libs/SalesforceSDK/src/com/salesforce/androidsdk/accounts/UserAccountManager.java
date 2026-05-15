@@ -442,7 +442,7 @@ public class UserAccountManager {
 		final Bundle extras = buildAuthBundle(userAccount);
 
 		Account acc = new Account(userAccount.getAccountName(), accountType);
-		String password = SalesforceSDKManager.encrypt(userAccount.getRefreshToken(), encryptionKey);
+		String password = SalesforceSDKManager.encrypt(userAccount.getRefreshTokenForPersistence(), encryptionKey);
 		boolean success = accountManager.addAccountExplicitly(acc, password, new Bundle());
 
 		// Add account will fail if the account already exists, so update refresh token.
@@ -486,6 +486,16 @@ public class UserAccountManager {
 
 		for (final String key : extras.keySet()) {
 			accountManager.setUserData(account, key, extras.getString(key));
+		}
+
+		// The refresh token is stored as the Account's password (see createAccount), not as user data,
+		// so buildAuthBundle does not include it.  Persist it explicitly here so that server-side
+		// Use the in-memory snapshot rather than getRefreshToken(), which now performs a live lookup
+		// against AccountManager and would return the updated value we may be about to write.
+		final String refreshToken = userAccount.getRefreshTokenForPersistence();
+		if (refreshToken != null) {
+			final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
+			accountManager.setPassword(account, SalesforceSDKManager.encrypt(refreshToken, encryptionKey));
 		}
 
 		return extras;

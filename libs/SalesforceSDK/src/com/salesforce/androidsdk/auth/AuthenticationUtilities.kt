@@ -465,8 +465,13 @@ internal fun handleDuplicateUserAccount(
             clearCaches()
             userAccountManager.clearCachedCurrentUser()
 
-            // Revoke existing refresh token
-            if (account.refreshToken != duplicateUserAccount.refreshToken) {
+            // Revoke existing refresh token.  Compare the new account's in-memory
+            // snapshot (the value just issued by the server) against the duplicate
+            // account's snapshot (the value currently persisted).  Using
+            // getRefreshToken() here would do a live AccountManager lookup for
+            // both UserAccounts and return the same persisted value, suppressing
+            // the revocation and leaking the prior refresh token.
+            if (account.refreshTokenForPersistence != duplicateUserAccount.refreshTokenForPersistence) {
                 runCatching {
                     URI(duplicateUserAccount.instanceServer)
                 }.onFailure { throwable ->
@@ -481,7 +486,7 @@ internal fun handleDuplicateUserAccount(
                         revokeRefreshToken(
                             HttpAccess.DEFAULT,
                             uri,
-                            duplicateUserAccount.refreshToken,
+                            duplicateUserAccount.refreshTokenForPersistence,
                             OAuth2.LogoutReason.REFRESH_TOKEN_ROTATED,
                         )
                     }
@@ -515,7 +520,8 @@ private fun UserAccountManager.persistAccount(
     acctManager: AccountManager = AccountManager.get(SalesforceSDKManager.getInstance().appContext),
 ) {
     val account = Account(userAccount.accountName, accountType)
-    val password = SalesforceSDKManager.encrypt(userAccount.refreshToken, encryptionKey)
+    // Encrypt the in-memory snapshot rather than getRefreshToken(), which performs a lookup.
+    val password = SalesforceSDKManager.encrypt(userAccount.refreshTokenForPersistence, encryptionKey)
     val created = acctManager.addAccountExplicitly(account, password, /* userdata = */ Bundle())
 
     // addAccountExplicitly fails if the account already exists, so update the refresh token.

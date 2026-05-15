@@ -354,7 +354,8 @@ public class ClientManager {
         private final Object lock = new Object();
         private final ClientManager clientManager;
         private String lastNewAuthToken;
-        private final String refreshToken;
+        // Mutable to support server-side Refresh Token Rotation (RTR).
+        private String refreshToken;
         private String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
 
@@ -505,6 +506,12 @@ public class ClientManager {
                 UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
                 updatedUserAccount.downloadProfilePhoto();
                 UserAccountManager.getInstance().clearCachedCurrentUser();
+
+                // Handle server-side Refresh Token Rotation: if the response contained a new refresh token,
+                // update this provider's cached copy.
+                if (tr.refreshToken != null && !tr.refreshToken.equals(refreshToken)) {
+                    refreshToken = tr.refreshToken;
+                }
 
                 return updatedUserAccount;
             } catch (OAuth2.OAuthFailedException ofe) {

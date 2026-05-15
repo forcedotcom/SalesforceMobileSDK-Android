@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -372,6 +374,46 @@ public class UserAccount {
 	 * @return Refresh token.
 	 */
 	public String getRefreshToken() {
+		if (accountName != null) {
+			try {
+				final AccountManager accMrg = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
+				final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+				for (Account account : accMrg.getAccountsByType(accountType)) {
+					if (accountName.equals(account.name)) {
+						final String encryptedPassword = accMrg.getPassword(account);
+						if (encryptedPassword != null) {
+							final String newestRefreshToken = SalesforceSDKManager.decrypt(
+									encryptedPassword, SalesforceSDKManager.getEncryptionKey());
+							if (newestRefreshToken != null) {
+								return newestRefreshToken;
+							}
+						}
+						break;
+					}
+				}
+			} catch (Exception e) {
+				SalesforceSDKLogger.w(TAG,
+						"Failed to read latest refresh token from AccountManager; using in-memory value",
+						e);
+			}
+		}
+		return refreshToken;
+	}
+
+	/**
+	 * Returns the in-memory refresh token snapshot, without consulting
+	 * {@link AccountManager}.
+	 *
+	 * Intended for persistence call sites that are about to write a refresh
+	 * token to storage (account creation, update, token migration, duplicate
+	 * user reconciliation).  Using {@link #getRefreshToken()} at those sites
+	 * would read back the value currently persisted in {@link AccountManager}
+	 * — i.e. the value we are about to overwrite — instead of the value the
+	 * caller built this {@code UserAccount} with.
+	 *
+	 * @return The refresh token field as set at construction time.
+	 */
+	public String getRefreshTokenForPersistence() {
 		return refreshToken;
 	}
 
@@ -948,7 +990,7 @@ public class UserAccount {
 		JSONObject object = new JSONObject();
 		try {
 			object.put(AUTH_TOKEN, authToken);
-			object.put(REFRESH_TOKEN, refreshToken);
+			object.put(REFRESH_TOKEN, getRefreshToken());
 			object.put(LOGIN_SERVER, loginServer);
 			object.put(ID_URL, idUrl);
 			object.put(INSTANCE_SERVER, instanceServer);
@@ -1007,7 +1049,7 @@ public class UserAccount {
 	Bundle toBundle(List<String> additionalOauthKeys) {
 		Bundle object = new Bundle();
 		object.putString(AUTH_TOKEN, authToken);
-		object.putString(REFRESH_TOKEN, refreshToken);
+		object.putString(REFRESH_TOKEN, getRefreshToken());
 		object.putString(LOGIN_SERVER, loginServer);
 		object.putString(ID_URL, idUrl);
 		object.putString(INSTANCE_SERVER, instanceServer);

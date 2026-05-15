@@ -36,6 +36,7 @@ import org.junit.Test
 private const val OLD_ACCESS_TOKEN = "old-token"
 private const val REFRESHED_ACCESS_TOKEN = "refreshed-auth-token"
 private const val REFRESH_TOKEN = "refresh-token"
+private const val ROTATED_REFRESH_TOKEN = "rotated-refresh-token"
 
 @SmallTest
 class ClientManagerMockTest {
@@ -343,6 +344,147 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
+    }
+
+    /*
+        Server-side Refresh Token Rotation (RTR): when the token endpoint returns
+        a rotated refresh_token, the provider must update its cached refresh
+        token so subsequent calls don't reuse the now-invalidated previous one.
+     */
+    @Test
+    fun testGetNewAuthToken_RefreshTokenRotation_UpdatesCachedRefreshToken() {
+        val responseBody = """
+                {
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
+                    "refresh_token": "$ROTATED_REFRESH_TOKEN",
+                    "instance_url": "https://login.salesforce.com",
+                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "token_type": "Bearer",
+                    "issued_at": "1234567890",
+                    "signature": "mock-signature"
+                }
+            """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        val rotatedResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { close() } just runs
+            every { body } returns responseBody
+        }
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns rotatedResponse
+            }
+        }
+
+        val userSlot = slot<UserAccount>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        // First refresh: server rotates the refresh token.
+        Assert.assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
+
+        // The persisted account should be updated with the rotated refresh token...
+        verify(exactly = 1) {
+            mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
+        }
+        Assert.assertEquals(ROTATED_REFRESH_TOKEN, userSlot.captured.refreshTokenForPersistence)
+        // ...and so should the provider's in-memory cache, so that subsequent
+        // refreshes (and getRefreshToken consumers) use the rotated token.
+        Assert.assertEquals(ROTATED_REFRESH_TOKEN, authTokenProvider.refreshToken)
+    }
+
+    /*
+        Server-side Refresh Token Rotation (RTR): after a refresh that rotates
+        the refresh token, the provider's cached refresh token must reflect
+        the new value so that a subsequent refresh sends the current token
+        and the per-account lookup matches the rotated value persisted to
+        the account.
+     */
+    @Test
+    fun testGetNewAuthToken_RefreshTokenRotation_SubsequentRefreshSucceeds() {
+        val firstRotated = ROTATED_REFRESH_TOKEN
+        val secondRotated = "rotated-refresh-token-2"
+
+        fun rotationResponse(rt: String): Response {
+            val responseBody = """
+                {
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
+                    "refresh_token": "$rt",
+                    "instance_url": "https://login.salesforce.com",
+                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "token_type": "Bearer",
+                    "issued_at": "1234567890",
+                    "signature": "mock-signature"
+                }
+                """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+            return mockk<Response>(relaxed = true) {
+                every { isSuccessful } returns true
+                every { close() } just runs
+                every { body } returns responseBody
+            }
+        }
+
+        // Return a different rotated refresh token on each refresh.
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returnsMany listOf(
+                mockk<Call> { every { execute() } returns rotationResponse(firstRotated) },
+                mockk<Call> { every { execute() } returns rotationResponse(secondRotated) },
+            )
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        // The persisted account's refresh token follows whatever updateAccount
+        // was last called with (i.e., the most recent rotated value).
+        var persistedRefreshToken = REFRESH_TOKEN
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } answers { persistedRefreshToken }
+            every { loginServer } returns "https://login.salesforce.com"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } answers {
+            persistedRefreshToken = secondArg<UserAccount>().refreshToken
+            mockk()
+        }
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        // First refresh succeeds, rotates to firstRotated.
+        Assert.assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
+        Assert.assertEquals(firstRotated, authTokenProvider.refreshToken)
+        Assert.assertEquals(firstRotated, persistedRefreshToken)
+
+        // Second refresh, ensure each rotation is stored.
+        Assert.assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
+        Assert.assertEquals(secondRotated, authTokenProvider.refreshToken)
+        verify(exactly = 0) {
+            mockSDKManager.logout(any(), any(), any(), any())
+        }
     }
 
     /*
