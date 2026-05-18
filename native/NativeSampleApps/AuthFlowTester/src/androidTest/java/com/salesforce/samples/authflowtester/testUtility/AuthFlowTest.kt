@@ -218,4 +218,19 @@ abstract class AuthFlowTest {
         app.revokeAccessToken()
         app.validateApiRequest()
     }
+
+    fun assertRevokeAndRefreshWorks(isRtr: Boolean) {
+        val (preAccessToken, preRefreshToken) = app.getTokens()
+        app.revokeAccessToken()
+        app.validateApiRequest()
+        val (postAccessToken, postRefreshToken) = app.getTokens()
+
+        assert(preAccessToken != postAccessToken) { "Access token should have been refreshed" }
+
+        if (isRtr) {
+            assert(preRefreshToken != postRefreshToken) { "Refresh token should have rotated (RTR app)" }
+        } else {
+            assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
+        }
+    }
 }
