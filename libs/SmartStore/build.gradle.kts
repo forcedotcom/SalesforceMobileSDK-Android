@@ -12,15 +12,15 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    api("androidx.sqlite:sqlite:2.6.2")
-    api("net.zetetic:sqlcipher-android:4.16.0")
-    implementation("androidx.core:core-ktx:1.18.0")
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    implementation("com.google.android.material:material:1.13.0")
+    api(libs.androidx.sqlite)
+    api(libs.sqlcipher.android)
+    implementation(libs.androidx.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    implementation(libs.material)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     api(project(":libs:SalesforceSDK"))
-    implementation("androidx.core:core-ktx:1.18.0")
+    implementation(libs.androidx.core.ktx)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

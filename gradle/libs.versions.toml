@@ -1,0 +1,127 @@
+[versions]
+# Kotlin / serialization
+kotlinx-serialization-json = "1.11.0"
+
+# AndroidX core
+androidx-core = "1.18.0"
+androidx-appcompat = "1.7.1"
+androidx-activity = "1.13.0"
+androidx-browser = "1.10.0"
+androidx-biometric = "1.4.0-alpha07"
+androidx-lifecycle = "2.10.0"
+androidx-tracing = "2.0.0-alpha07"
+androidx-window = "1.5.1"
+androidx-work = "2.11.2"
+androidx-webkit = "1.16.0"
+androidx-sqlite = "2.6.2"
+androidx-core-splashscreen = "1.2.0"
+
+# Compose
+compose = "1.11.1"
+compose-bom = "2026.05.00"
+compose-material3 = "1.4.0"
+
+# Material (XML)
+material = "1.14.0"
+
+# Networking / Google
+okhttp = "5.3.2"
+firebase-messaging = "25.0.2"
+play-integrity = "1.6.0"
+accompanist = "0.37.3"
+
+# SmartStore
+sqlcipher-android = "4.16.0"
+
+# Hybrid / React Native
+cordova-framework = "15.0.0"
+react-android = "0.79.3"
+
+# Analytics deps
+tape = "1.2.3"
+paperdb = "2.7.2"
+
+# Test
+androidx-test-runner = "1.7.0"
+androidx-test-rules = "1.7.0"
+androidx-test-ext-junit = "1.3.0"
+androidx-test-espresso = "3.7.0"
+androidx-test-uiautomator = "2.3.0"
+androidx-test-orchestrator = "1.6.1"
+androidx-arch-core-testing = "2.2.0"
+mockk-android = "1.14.9"
+
+[libraries]
+# Kotlin / serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+
+# AndroidX core
+androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-core-splashscreen" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-appcompat-resources = { module = "androidx.appcompat:appcompat-resources", version.ref = "androidx-appcompat" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidx-activity" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
+androidx-tracing = { module = "androidx.tracing:tracing", version.ref = "androidx-tracing" }
+androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "androidx-webkit" }
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "androidx-sqlite" }
+androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
+androidx-window-core = { module = "androidx.window:window-core", version.ref = "androidx-window" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
+
+# Lifecycle
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-service = { module = "androidx.lifecycle:lifecycle-service", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "androidx-lifecycle" }
+
+# Compose
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation-android", version.ref = "compose" }
+androidx-compose-material = { module = "androidx.compose.material:material", version.ref = "compose" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3-android", version.ref = "compose-material3" }
+androidx-compose-runtime-android = { module = "androidx.compose.runtime:runtime-android" }
+androidx-compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "compose" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview-android", version.ref = "compose" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
+
+# Material (XML)
+material = { module = "com.google.android.material:material", version.ref = "material" }
+
+# Networking / Google
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebase-messaging" }
+play-integrity = { module = "com.google.android.play:integrity", version.ref = "play-integrity" }
+accompanist-drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version.ref = "accompanist" }
+
+# SmartStore
+sqlcipher-android = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher-android" }
+
+# Hybrid / React Native
+cordova-framework = { module = "org.apache.cordova:framework", version.ref = "cordova-framework" }
+react-android = { module = "com.facebook.react:react-android", version.ref = "react-android" }
+android-jsc = { module = "org.webkit:android-jsc", version = "+" }
+android-jsc-intl = { module = "org.webkit:android-jsc-intl", version = "+" }
+
+# Analytics deps
+tape = { module = "com.squareup:tape", version.ref = "tape" }
+paperdb = { module = "io.github.pilgr:paperdb", version.ref = "paperdb" }
+
+# Test
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test-rules" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
+androidx-test-espresso-web = { module = "androidx.test.espresso:espresso-web", version.ref = "androidx-test-espresso" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-test-uiautomator" }
+androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
+androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch-core-testing" }
+mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk-android" }
