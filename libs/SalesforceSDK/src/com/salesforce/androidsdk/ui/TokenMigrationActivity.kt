@@ -48,7 +48,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
-import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.BACKGROUND_COLOR_JAVASCRIPT
@@ -232,24 +231,13 @@ internal class TokenMigrationActivity : ComponentActivity() {
                         viewModel.loading.value = true
 
                         CoroutineScope(Default).launch {
-                            when {
-                                viewModel.useWebServerFlow ->
-                                    viewModel.onWebServerFlowComplete(
-                                        code = params["code"],
-                                        onAuthFlowError = resultCallback.onMigrationError,
-                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
-                                        loginServer = instanceServer,
-                                        tokenMigration = true,
-                                    ).join()
-
-                                else ->
-                                    viewModel.onAuthFlowComplete(
-                                        tr = TokenEndpointResponse(params),
-                                        onAuthFlowError = resultCallback.onMigrationError,
-                                        onAuthFlowSuccess = resultCallback.onMigrationSuccess,
-                                        tokenMigration = true,
-                                    )
-                            }
+                            viewModel.onWebServerFlowComplete(
+                                code = params["code"],
+                                onAuthFlowError = resultCallback.onMigrationError,
+                                onAuthFlowSuccess = resultCallback.onMigrationSuccess,
+                                loginServer = instanceServer,
+                                tokenMigration = true,
+                            ).join()
 
                             // Wait until we are completely finished so progress indicator is shown.
                             finish()
