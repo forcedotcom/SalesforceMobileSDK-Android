@@ -35,7 +35,7 @@ sqlcipher-android = "4.16.0"
 
 # Hybrid / React Native
 cordova-framework = "15.0.0"
-react-android = "0.79.3"
+react-android = "0.81.5"
 
 # Analytics deps
 tape = "1.2.3"
