@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.R.attr.windowLightStatusBar
+import android.accounts.AccountManager
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Context.ACCESSIBILITY_SERVICE
@@ -60,6 +61,7 @@ import androidx.core.content.res.ResourcesCompat.getDrawable
 import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__screen_lock_auth_error
 import com.salesforce.androidsdk.R.string.sf__screen_lock_auth_failed
@@ -73,6 +75,7 @@ import com.salesforce.androidsdk.R.string.sf__screen_lock_subtitle
 import com.salesforce.androidsdk.R.string.sf__screen_lock_title
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 import com.salesforce.androidsdk.security.ScreenLockManager
@@ -83,11 +86,23 @@ import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ScreenLockActivityScenarioTest {
+
+    @Before
+    fun setUp() {
+        // Remove any accounts left over from prior tests in the same shard. Without this,
+        // screenLockActivity_logoutScreenLockUsers_defaultParameters runs against the real
+        // UserAccountManager and can trigger AuthenticatorService work that ANRs the test
+        // process and cascades into failures of later tests in this class.
+        cleanupAccounts(
+            AccountManager.get(InstrumentationRegistry.getInstrumentation().targetContext)
+        )
+    }
 
     @Test
     fun screenLockActivity_appliesDefaults_whenCreated() {
