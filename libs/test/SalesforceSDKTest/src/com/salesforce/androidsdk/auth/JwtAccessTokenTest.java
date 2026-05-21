@@ -61,6 +61,20 @@ public class JwtAccessTokenTest {
 
 
     @Test
+    public void testDecodeJwtWithArrayScp() {
+        String payloadWithArrayScp = "{\"scp\":[\"refresh_token\",\"web\",\"api\"],\"aud\":[\"https://mobilesdkatsdb6.test1.my.pc-rnd.salesforce.com\"],\"sub\":\"uid:some-uid\",\"nbf\":1730386620,\"iss\":\"https://mobilesdkatsdb6.test1.my.pc-rnd.salesforce.com\",\"exp\":1730386695,\"client_id\":\"some-client-id\"}";
+        String rawJwt = Base64.getEncoder().encodeToString(HEADER.getBytes()) + "."
+                + Base64.getEncoder().encodeToString(payloadWithArrayScp.getBytes()) + "."
+                + Base64.getEncoder().encodeToString(SIGNATURE.getBytes());
+
+        JwtAccessToken decodedJwt = new JwtAccessToken(rawJwt);
+        Assert.assertNotNull(decodedJwt);
+        JwtPayload jwtPayload = decodedJwt.getPayload();
+        Assert.assertNotNull(jwtPayload);
+        Assert.assertEquals("refresh_token web api", jwtPayload.getScopes());
+    }
+
+    @Test
     public void testInvalidJwt() {
         String invalidRawJwt = "invalid-jwt-string";
 

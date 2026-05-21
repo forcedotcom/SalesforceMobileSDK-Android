@@ -1,10 +1,38 @@
 package com.salesforce.androidsdk.auth
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import java.util.Base64
 import java.util.Date
+
+private object ScopeStringSerializer : KSerializer<String?> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("ScopeString", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): String? {
+        val jsonDecoder = decoder as? JsonDecoder ?: return decoder.decodeString()
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonArray -> element.joinToString(" ") { it.jsonPrimitive.content }
+            is JsonPrimitive -> element.content
+            else -> null
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: String?) {
+        if (value != null) encoder.encodeString(value)
+    }
+}
 
 @Serializable
 data class JwtHeader(
@@ -23,6 +51,7 @@ data class JwtPayload(
     @SerialName("iss") val issuer: String? = null,
     @SerialName("nbf") val notBeforeTime: Int? = null,
     @SerialName("sub") val subject: String? = null,
+    @Serializable(with = ScopeStringSerializer::class)
     @SerialName("scp") val scopes: String? = null,
     @SerialName("client_id") val clientId: String? = null,
 )
