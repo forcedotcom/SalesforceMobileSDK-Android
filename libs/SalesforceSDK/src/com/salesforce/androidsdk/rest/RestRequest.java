@@ -101,6 +101,11 @@ public class RestRequest {
     public static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
 
     /**
+     * application/x-www-form-urlencoded media type
+     */
+    public static final MediaType MEDIA_TYPE_FORM_URLENCODED = MediaType.get("application/x-www-form-urlencoded");
+
+    /**
      * utf_8 charset
      */
     public static final String UTF_8 = StandardCharsets.UTF_8.name();
@@ -386,7 +391,7 @@ public class RestRequest {
     public static RestRequest getRequestForSingleAccess(String redirectUri) throws UnsupportedEncodingException {
         RequestBody requestBody = RequestBody.create(
                 "redirect_uri=" + URLEncoder.encode(redirectUri, UTF_8),
-                MediaType.get("application/x-www-form-urlencoded")
+                MEDIA_TYPE_FORM_URLENCODED
         );
         return new RestRequest(RestMethod.POST, RestEndpoint.INSTANCE, RestAction.SINGLEACCESS.getPath(), requestBody, null);
     }
