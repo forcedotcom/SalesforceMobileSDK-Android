@@ -47,7 +47,19 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQU
 import org.junit.After
 import org.junit.Rule
 
+/**
+ * Total polling window after submitting credentials we expect to be
+ * rejected. During this window the test repeatedly checks that no new
+ * user account has been created and the AuthFlowTester app has not
+ * loaded; either condition would indicate that login unexpectedly
+ * succeeded.
+ */
+private const val LOGIN_FAILURE_SETTLE_MS: Long = 5_000
+
+private const val POLL_INTERVAL_MS: Long = 500
+
 abstract class AuthFlowTest {
+
     @get:Rule(order = 0)
     val permissionRule: GrantPermissionRule = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
@@ -195,6 +207,73 @@ abstract class AuthFlowTest {
         app.validateUser(REGULAR_AUTH, user)
         app.validateOAuthValues(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
         app.validateApiRequest()
+    }
+
+    /**
+     * Opens Login Options, applies the supplied dynamic boot-config override
+     * (arbitrary consumer key, redirect URI, scopes), submits credentials, and
+     * expects login to fail. Asserts that no new authenticated user account
+     * was created and the LoginActivity remains in front.
+     *
+     * Uses bounded polling to confirm the failure: at any point during the
+     * wait, if a new user account appears or the AuthFlowTester app loads,
+     * the test fails immediately (login should not have succeeded). The
+     * polling window terminates once the LoginActivity remains visible
+     * without a user being created — the steady-state we expect after the
+     * SDK's reloadWebView call.
+     */
+    fun loginAndExpectFailure(
+        consumerKey: String,
+        redirectUri: String,
+        scopes: String? = null,
+        knownUserConfig: KnownUserConfig = user,
+    ) {
+        val loginPage = LoginPageObject(composeTestRule)
+        ensureRegularAuthServer()
+
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val initialUserCount = userAccountManager.authenticatedUsers?.size ?: 0
+
+        loginPage.openLoginOptions()
+        loginOptions.setOverrideBootConfigRaw(consumerKey, redirectUri, scopes)
+
+        // Submit credentials. Some failure modes (e.g. invalid consumer key)
+        // cause the OAuth /authorize endpoint to render an error page rather
+        // than the username form, in which case the WebView never exposes
+        // the username/password elements and the page-object actions throw.
+        // That is itself a successful failure: the user could not log in.
+        val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
+        try {
+            loginPage.setUsername(username)
+            loginPage.tapLogin()
+            loginPage.setPassword(password)
+            loginPage.tapLogin()
+        } catch (e: AssertionError) {
+            // Verify the failure was due to a missing login form, not a
+            // different test-infrastructure issue. The LoginActivity must
+            // still be in front (otherwise we crashed somewhere unexpected).
+            assert(loginPage.isLoginScreenVisible()) {
+                "WebView page-object action threw outside the LoginActivity: ${e.message}"
+            }
+        }
+
+        val deadline = System.currentTimeMillis() + LOGIN_FAILURE_SETTLE_MS
+        while (System.currentTimeMillis() < deadline) {
+            val currentUserCount = userAccountManager.authenticatedUsers?.size ?: 0
+            assert(currentUserCount == initialUserCount) {
+                "Login should have failed but a new user account was created " +
+                    "(count went from $initialUserCount to $currentUserCount)"
+            }
+            assert(!app.isAppLoaded()) {
+                "Login should have failed but AuthFlowTester app loaded"
+            }
+            Thread.sleep(POLL_INTERVAL_MS)
+        }
+
+        // After the polling window, confirm we are still on the login screen.
+        assert(loginPage.isLoginScreenVisible()) {
+            "Expected to remain on the login screen after a failed login"
+        }
     }
 
     fun migrateAndValidate(

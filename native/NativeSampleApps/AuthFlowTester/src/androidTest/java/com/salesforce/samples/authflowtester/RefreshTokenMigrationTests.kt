@@ -157,6 +157,45 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
     }
 
     // endregion
+    // region User-agent source -> web-server destination cross-app migrations
+
+    /**
+     * Migrate CA (user agent flow) -> ECA with extended scopes. Migration
+     * always uses web-server flow internally
+     * ([LoginViewModel.generateMigrationAuthorizationPath] hard-codes
+     * useWebServerAuthentication = true), so the destination is implicitly
+     * web server. Asserts scope upgrade and working post-migration tokens.
+     */
+    @Test
+    fun testMigrateCAUserAgent_To_ECAExtendedWebServer() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
+            useWebServerFlow = false,
+        )
+        migrateAndValidate(
+            knownAppConfig = KnownAppConfig.ECA_OPAQUE,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    /**
+     * Migrate CA (user agent flow) -> Beacon with extended scopes. See
+     * [testMigrateCAUserAgent_To_ECAExtendedWebServer] for context on why
+     * the destination flow is implicitly web server.
+     */
+    @Test
+    fun testMigrateCAUserAgent_To_BeaconExtendedWebServer() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
+            useWebServerFlow = false,
+        )
+        migrateAndValidate(
+            knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // endregion
 
     override fun loginAndValidate(
         knownAppConfig: KnownAppConfig,

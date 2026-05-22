@@ -74,6 +74,21 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
 
+    /**
+     * Returns true when the LoginActivity top bar is currently in front
+     * (detected via the SDK's "More Options" content description). Used by
+     * negative tests to assert the user did not advance past login.
+     */
+    fun isLoginScreenVisible(): Boolean =
+        try {
+            composeTestRule
+                .onAllNodesWithContentDescription(getString(R.string.sf__more_options))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
+
     fun openLoginOptions() {
         // Tap "More Options" three-dot menu (Compose IconButton)
         composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
