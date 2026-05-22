@@ -55,6 +55,8 @@ enum class KnownLoginHostConfig {
 enum class KnownAppConfig {
     ECA_OPAQUE,
     ECA_JWT,
+    ECA_OPAQUE_RTR,
+    ECA_JWT_RTR,
     BEACON_OPAQUE,
     BEACON_JWT,
     CA_OPAQUE,
@@ -109,6 +111,7 @@ data class AppConfig(
     val scopes: String,
 ) {
     val issuesJwt = name.contains("_jwt")
+    val isRtr = name.contains("_rtr")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"
     val scopeList = scopes.split(" ")
 

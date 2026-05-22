@@ -5,24 +5,24 @@ plugins {
 
 dependencies {
     implementation(project(":libs:SalesforceSDK"))
-    implementation("androidx.core:core-ktx:1.18.0")
-    implementation("androidx.tracing:tracing:1.3.0")
-    implementation("com.google.android.material:material:1.13.0")
-    androidTestImplementation("androidx.test:runner:1.7.0") {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.tracing)
+    implementation(libs.material)
+    androidTestImplementation(libs.androidx.test.runner) {
         exclude("com.android.support", "support-annotations")
     }
 
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.appcompat:appcompat-resources:1.7.1")
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.appcompat.resources)
 
-    androidTestImplementation("androidx.test:rules:1.7.0") {
+    androidTestImplementation(libs.androidx.test.rules) {
         exclude("com.android.support", "support-annotations")
     }
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0") {
+    androidTestImplementation(libs.androidx.test.espresso.core) {
         exclude("com.android.support", "support-annotations")
     }
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

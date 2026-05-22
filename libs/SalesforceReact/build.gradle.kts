@@ -23,18 +23,18 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("com.facebook.react:react-android:0.79.3") // TODO: This update should happen in a dedicated work item. ECJ20260423
-    implementation("androidx.core:core-ktx:1.18.0")
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    api(libs.react.android) // TODO: This update should happen in a dedicated work item. ECJ20260423
+    implementation(libs.androidx.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
 
     // JSC from node_modules
     if (useIntlJsc) {
-        androidTestImplementation("org.webkit:android-jsc-intl:+")
+        androidTestImplementation(libs.android.jsc.intl)
     } else {
-        androidTestImplementation("org.webkit:android-jsc:+")
+        androidTestImplementation(libs.android.jsc)
     }
 
 }

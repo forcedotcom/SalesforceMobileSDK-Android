@@ -11,12 +11,12 @@ plugins {
 }
 
 dependencies {
-    api("com.squareup:tape:1.2.3")
-    api("io.github.pilgr:paperdb:2.7.2")
-    implementation("androidx.core:core-ktx:1.18.0")
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    api(libs.tape)
+    api(libs.paperdb)
+    implementation(libs.androidx.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

@@ -14,15 +14,15 @@ plugins {
 
 dependencies {
     api(project(":libs:MobileSync"))
-    api("org.apache.cordova:framework:15.0.0")
-    api("androidx.appcompat:appcompat:1.7.1")
-    api("androidx.appcompat:appcompat-resources:1.7.1")
-    api("androidx.webkit:webkit:1.16.0")
-    api("androidx.core:core-splashscreen:1.2.0")
-    implementation("androidx.core:core-ktx:1.18.0")
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    api(libs.cordova.framework)
+    api(libs.androidx.appcompat)
+    api(libs.androidx.appcompat.resources)
+    api(libs.androidx.webkit)
+    api(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

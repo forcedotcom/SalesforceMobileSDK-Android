@@ -47,6 +47,16 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset |
 | `testECAJwt_AllScopes` | ECA JWT | All |
 
+#### RTRLoginTests
+Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps.
+
+| Test | App Config | Hybrid |
+|------|-----------|--------|
+| `testECAJwtRtr_Hybrid` | ECA JWT RTR | Yes |
+| `testECAJwtRtr_NoHybrid` | ECA JWT RTR | No |
+| `testECAOpaqueRtr_Hybrid` | ECA Opaque RTR | Yes |
+| `testECAOpaqueRtr_NoHybrid` | ECA Opaque RTR | No |
+
 #### BeaconLoginTests
 Beacon app login tests for lightweight authentication use cases, covering both opaque and JWT token formats.
 
@@ -148,7 +158,7 @@ Multi-user tests additionally verify:
 
 ### Configuration
 
-- **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
+- **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `ECA_OPAQUE_RTR`, `ECA_JWT_RTR`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
 - **Login hosts** (`KnownLoginHostConfig`): `REGULAR_AUTH` (in-app WebView), `ADVANCED_AUTH` (Chrome Custom Tab)
 - **Scope options** (`ScopeSelection`): `EMPTY` (default/boot config scopes), `SUBSET` (all minus `sfap_api`), `ALL`
 - **Users** (`KnownUserConfig`): `FIRST` through `FIFTH`, assigned per API level

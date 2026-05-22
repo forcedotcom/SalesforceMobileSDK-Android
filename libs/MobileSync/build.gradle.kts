@@ -12,12 +12,12 @@ plugins {
 
 dependencies {
     api(project(":libs:SmartStore"))
-    api("androidx.appcompat:appcompat:1.7.1")
-    api("androidx.appcompat:appcompat-resources:1.7.1")
-    implementation("androidx.core:core-ktx:1.18.0")
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    api(libs.androidx.appcompat)
+    api(libs.androidx.appcompat.resources)
+    implementation(libs.androidx.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

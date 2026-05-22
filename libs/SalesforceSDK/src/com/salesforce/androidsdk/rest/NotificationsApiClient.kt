@@ -28,7 +28,7 @@
 package com.salesforce.androidsdk.rest
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.rest.RestRequest.MEDIA_TYPE_JSON
+import com.salesforce.androidsdk.rest.RestRequest.MEDIA_TYPE_FORM_URLENCODED
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.GET
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod.POST
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
@@ -106,7 +106,7 @@ class NotificationsApiClient(
         val restRequest = RestRequest(
             POST,
             "https://${restClient.clientInfo.instanceUrl.host}/${ApiVersionStrings.getBasePath()}/connect/notifications/${notificationId}/actions/${actionKey}",
-            "".toRequestBody(MEDIA_TYPE_JSON),
+            ByteArray(0).toRequestBody(MEDIA_TYPE_FORM_URLENCODED),
             mutableMapOf<String, String>()
         )
         val restResponse = restClient.sendSync(restRequest)
