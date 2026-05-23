@@ -14,7 +14,7 @@
     },
     {
       "name": "ui",
-      "comment": "Tests that exercise Activities/UI",
+      "comment": "Compose-rendering tests must NOT share a shard with classes that call mockk<...>(relaxed = true) on Activity-derived types (LoginActivity, FragmentActivity, etc.). mockk's Android dispatcher bytecode-instruments those class hierarchies for the JVM process lifetime, which slows ContextThemeWrapper.getResources() to seconds per call — hanging Compose rendering. The current polluters are LoginActivityTest, NativeLoginManagerTest, and SalesforceSDKManagerTests, all kept in the `remaining` shard.",
       "targets": [
         "class com.salesforce.androidsdk.ui.LoginViewActivityTest",
         "class com.salesforce.androidsdk.ui.PickerBottomSheetTest",
@@ -25,6 +25,15 @@
         "class com.salesforce.androidsdk.security.ScreenLockManagerTest",
         "class com.salesforce.androidsdk.security.BiometricAuthenticationManagerTest",
         "class com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
+        "class com.salesforce.androidsdk.ui.TokenMigrationViewActivityTest",
+        "class com.salesforce.androidsdk.ui.ScreenLockActivityScenarioTest",
+        "class com.salesforce.androidsdk.ui.ScreenLockViewTest"
+      ]
+    },
+    {
+      "name": "webview",
+      "comment": "TokenMigrationWebViewTest is slow on the emulator (~30-60s per test) due to WebView setup, independent of the mockk pollution pathology. Keep it isolated to avoid eating budget in other shards.",
+      "targets": [
         "class com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
       ]
     },
@@ -72,7 +81,10 @@
         "notClass com.salesforce.androidsdk.rest.files.ConnectUriBuilderTest",
         "notClass com.salesforce.androidsdk.rest.files.FileRequestsTest",
         "notClass com.salesforce.androidsdk.ui.TokenMigrationActivityTest",
-        "notClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest"
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationViewActivityTest",
+        "notClass com.salesforce.androidsdk.ui.TokenMigrationWebViewTest",
+        "notClass com.salesforce.androidsdk.ui.ScreenLockActivityScenarioTest",
+        "notClass com.salesforce.androidsdk.ui.ScreenLockViewTest"
       ]
     }
   ]

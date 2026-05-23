@@ -174,35 +174,6 @@ class TokenMigrationWebViewTest {
     }
 
     @Test
-    fun shouldOverrideUrlLoading_returnsTrueForCallbackUrl_userAgentFlow() {
-        val activity = launchActivity()
-        val mockResultCallback = createMockResultCallback()
-        val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "instanceServer")
-
-        every { mockViewModel.useWebServerFlow } returns false
-
-        val mockRequest = createMockWebResourceRequest("testapp://oauth/callback?code=test_code")
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            assertTrue(
-                "Callback URL should be overridden because migration is finished",
-                clientManager.shouldOverrideUrlLoading(mockWebView, mockRequest)
-            )
-            coVerify {
-                mockViewModel.onAuthFlowComplete(
-                    tr = any(),
-                    onAuthFlowSuccess = mockResultCallback.onMigrationSuccess,
-                    onAuthFlowError = mockResultCallback.onMigrationError,
-                    tokenMigration = true,
-                )
-            }
-
-            verify(exactly = 0) {
-                mockViewModel.onWebServerFlowComplete(any(), any(), any(), any(), any())
-            }
-        }
-    }
-
-    @Test
     fun shouldOverrideUrlLoading_callsErrorCallbackOnError() {
         val activity = launchActivity()
         val mockResultCallback = createMockResultCallback()

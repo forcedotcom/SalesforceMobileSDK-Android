@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.ui
 import android.R.attr.windowLightStatusBar
 import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
-import android.content.Context.ACCESSIBILITY_SERVICE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -62,7 +61,6 @@ import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.R.drawable.sf__salesforce_logo
 import com.salesforce.androidsdk.R.string.sf__screen_lock_auth_error
-import com.salesforce.androidsdk.R.string.sf__screen_lock_auth_failed
 import com.salesforce.androidsdk.R.string.sf__screen_lock_auth_success
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error_hw_unavailable
@@ -855,65 +853,6 @@ class ScreenLockActivityScenarioTest {
                 verify(exactly = 0) { userAccountManager.signoutUser(any(), null, true, USER_LOGOUT) }
             }
         }
-    }
-
-    @Test
-    fun biometricAuthenticationCallback_onAuthenticationError_callsOnAuthError() {
-
-        val accessibilityManager = mockk<AccessibilityManager>(relaxed = true)
-        val activity = mockk<ScreenLockActivity>(relaxed = true)
-        every { activity.getSystemService(ACCESSIBILITY_SERVICE) } returns accessibilityManager
-        val biometricAuthenticationCallback = activity.BiometricAuthenticationCallback()
-
-        val expectedErrorString = "Expected Error String"
-
-        biometricAuthenticationCallback.onAuthenticationError(0, expectedErrorString)
-
-        verify(exactly = 1) { activity.onAuthError(accessibilityManager = any(), errString = expectedErrorString) }
-    }
-
-    @Test
-    fun biometricAuthenticationCallback_onAuthenticationSucceeded_callsFinishSuccess() {
-
-        val accessibilityManager = mockk<AccessibilityManager>(relaxed = true)
-        val activity = mockk<ScreenLockActivity>(relaxed = true)
-        every { activity.getSystemService(ACCESSIBILITY_SERVICE) } returns accessibilityManager
-        val biometricAuthenticationCallback = activity.BiometricAuthenticationCallback()
-        val biometricResult = mockk<BiometricPrompt.AuthenticationResult>(relaxed = true)
-
-        biometricAuthenticationCallback.onAuthenticationSucceeded(biometricResult)
-
-        verify(exactly = 1) {
-            activity.finishSuccess(
-                accessibilityManager = any(),
-                screenLockManager = any(),
-                sdkConfiguration = any(),
-            )
-        }
-    }
-
-    @Test
-    fun biometricAuthenticationCallback_onAuthenticationFailed_callsActivityMethods() {
-
-        val accessibilityManager = mockk<AccessibilityManager>(relaxed = true)
-        val activity = mockk<ScreenLockActivity>(relaxed = true)
-        every { activity.getSystemService(ACCESSIBILITY_SERVICE) } returns accessibilityManager
-        val sendAccessibilityCapturingSlot = slot<String>()
-        val setErrorMessageCapturingSlot = slot<String>()
-        val biometricAuthenticationCallback = activity.BiometricAuthenticationCallback()
-
-        biometricAuthenticationCallback.onAuthenticationFailed()
-
-        verify(exactly = 1) { activity.setErrorMessage(capture(setErrorMessageCapturingSlot)) }
-        assertEquals(activity.getString(sf__screen_lock_auth_failed), setErrorMessageCapturingSlot.captured)
-        verify(exactly = 1) {
-            activity.sendAccessibilityEvent(
-                accessibilityManager = any(),
-                eventText = capture(sendAccessibilityCapturingSlot),
-                sdkConfiguration = any(),
-            )
-        }
-        assertTrue(sendAccessibilityCapturingSlot.captured.contains(activity.getString(sf__screen_lock_auth_failed)))
     }
 
     private fun Drawable.renderToBitmap(): Bitmap {

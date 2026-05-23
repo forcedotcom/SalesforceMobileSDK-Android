@@ -30,6 +30,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.HandlerThread;
 
 import androidx.core.content.ContextCompat;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -44,6 +46,8 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests for AuthConfigUtil.
@@ -121,25 +125,36 @@ public class AuthConfigUtilTest {
         Assert.assertNull("Auth config should be null", authConfig);
     }
 
-    @Test(timeout = 5_000)
-    public void testBroadcastSucceeds() throws ExecutionException, InterruptedException {
+    @Test(timeout = 30_000)
+    public void testBroadcastSucceeds() throws ExecutionException, InterruptedException, TimeoutException {
         testBroadcast(MY_DOMAIN_ENDPOINT, true);
     }
 
-    @Test(timeout = 5_000)
-    public void testBroadcastFails() throws ExecutionException, InterruptedException {
+    @Test(timeout = 30_000)
+    public void testBroadcastFails() throws ExecutionException, InterruptedException, TimeoutException {
         testBroadcast(SANDBOX_ENDPOINT, false);
     }
 
-    private void testBroadcast(String endpoint, Boolean expected) throws InterruptedException, ExecutionException {
+    private void testBroadcast(String endpoint, Boolean expected)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        // Receive the broadcast on a background HandlerThread rather than the main thread.
+        // Other tests in this shard launch Activities on the main thread; by the time
+        // sendBroadcast is invoked, the main looper can be backed up enough that the
+        // receiver's onReceive doesn't run before the test's timeout, even though the
+        // broadcast was dispatched. A dedicated Handler decouples broadcast delivery
+        // from main-thread saturation.
+        final HandlerThread handlerThread = new HandlerThread("AuthConfigUtilTest-receiver");
+        handlerThread.start();
+        final Handler handler = new Handler(handlerThread.getLooper());
         final TestBroadcastReceiver receiver = new TestBroadcastReceiver();
         ContextCompat.registerReceiver(SalesforceSDKManager.getInstance().getAppContext(), receiver,
-                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+                new IntentFilter(AuthConfigUtil.AUTH_CONFIG_COMPLETE_INTENT_ACTION), null,
+                handler, ContextCompat.RECEIVER_NOT_EXPORTED);
 
         try {
             AuthConfigUtil.getMyDomainAuthConfig(endpoint);
 
-            final Intent intent = receiver.getIntent().get();
+            final Intent intent = receiver.getIntent().get(20, TimeUnit.SECONDS);
             Assert.assertTrue("The intent extra should be set", intent.hasExtra(AuthConfigUtil.WAS_REQUEST_SUCCESSFUL_EXTRA));
 
             final boolean extra = intent.getBooleanExtra(AuthConfigUtil.WAS_REQUEST_SUCCESSFUL_EXTRA, !expected);
@@ -150,6 +165,7 @@ public class AuthConfigUtilTest {
             }
         } finally {
             SalesforceSDKManager.getInstance().getAppContext().unregisterReceiver(receiver);
+            handlerThread.quitSafely();
         }
     }
 }
