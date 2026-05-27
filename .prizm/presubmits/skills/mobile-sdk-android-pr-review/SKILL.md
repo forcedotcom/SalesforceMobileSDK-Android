@@ -649,7 +649,6 @@ test target is `libs/test/<Library>Test/`.
 | MobileSync | `libs/MobileSync/` | 1, 4, 6, 8 |
 | SalesforceAnalytics | `libs/SalesforceAnalytics/` | 1, 2 (PII), 6, 8 |
 | SalesforceHybrid | `libs/SalesforceHybrid/` | 1, 2, 4, 6, 8 |
-| SalesforceReact | `libs/SalesforceReact/` | 1, 4, 6, 8 |
 
 ## Diff Source Fallback
 
