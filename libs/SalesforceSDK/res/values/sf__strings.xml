@@ -127,4 +127,16 @@
     <string name="sf__login_options_redirect_uri_field_content_description">Redirect URI Field</string>
     <string name="sf__login_options_scopes_field_content_description">Scopes Field</string>
     <string name="sf__login_options_save_button_content_description">Save Button</string>
+    <string name="sf__login_options_save_and_login">Save and Login</string>
+
+    <!-- Welcome Discovery Simulation (Login Options).  Mirrors iOS DiscoveryResultEditor strings.
+         translatable="false" because this editor only appears in debug / dev-support builds. -->
+    <string name="sf__login_options_discovery_simulate_title" translatable="false">Simulate Discovery Result</string>
+    <string name="sf__login_options_discovery_toggle_content_description" translatable="false">Toggle Simulate Discovery Result</string>
+    <string name="sf__login_options_discovery_login_host_label" translatable="false">My Domain Login Host</string>
+    <string name="sf__login_options_discovery_username_label" translatable="false">User Name</string>
+    <string name="sf__login_options_discovery_save_button" translatable="false">Save Simulated Result</string>
+    <string name="sf__login_options_discovery_login_host_field_content_description" translatable="false">Discovery Login Host Field</string>
+    <string name="sf__login_options_discovery_username_field_content_description" translatable="false">Discovery Username Field</string>
+    <string name="sf__login_options_discovery_save_button_content_description" translatable="false">Save Simulated Result Button</string>
 </resources>

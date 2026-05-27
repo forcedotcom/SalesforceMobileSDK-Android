@@ -100,6 +100,32 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         composeTestRule.waitForIdle()
     }
 
+    /**
+     * Flips the Simulate Discovery Result toggle on, types host + username, taps Save.
+     * Mirrors iOS `LoginOptionsPageObject.configure(...)`.  Tapping Save is what arms
+     * `SalesforceSDKManager.simulatedDiscoveryResult`; the editor's Save -> manager wiring
+     * is independently covered by the unit test
+     * `LoginOptionsActivityTest.discoveryResultEditor_saveButton_armsSdkManagerSimulatedResult`.
+     */
+    fun setSimulatedDiscoveryResult(loginHost: String, username: String) {
+        toggleIfOff(getString(R.string.sf__login_options_discovery_toggle_content_description))
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_login_host_field_content_description)
+        ).performScrollTo().performTextReplacement(loginHost)
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_username_field_content_description)
+        ).performTextReplacement(username)
+
+        closeSoftKeyboard()
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_save_button_content_description)
+        ).performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+    }
+
     private fun isToggleOn(contentDescription: String): Boolean =
         composeTestRule.onNodeWithContentDescription(contentDescription)
             .fetchSemanticsNode()

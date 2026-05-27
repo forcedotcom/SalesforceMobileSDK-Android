@@ -975,6 +975,44 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
+     * If [SalesforceSDKManager.simulatedDiscoveryResult] has been armed by the Login Options
+     * Discovery Result Editor, consume it and dispatch the same hint+host intent the real
+     * `sfdc://discocallback` callback URL handler would dispatch.  This is the test seam
+     * mirroring iOS' `simulatedDomainDiscoveryResult` hook.
+     *
+     * The WebView's current URL is set to ABOUT_BLANK before dispatching so that the
+     * subsequent OAuth-URL reload triggered by [applySalesforceWelcomeLoginHintAndHost]'s
+     * `addCustomLoginServer` is not suppressed by [LoginViewModel.LoginUrlSource]'s
+     * same-host short-circuit when the simulated host happens to equal the previously
+     * selected server.
+     *
+     * @return Boolean true when the simulated result was applied and the welcome.salesforce.com
+     * discovery WebView load should be skipped, false otherwise.
+     */
+    @VisibleForTesting
+    internal fun applySimulatedDiscoveryResultIfApplicable(): Boolean {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        // Defense-in-depth: refuse to consume a simulated result outside debug builds, mirroring
+        // iOS' `#if DEBUG` wrap on the same hook.
+        if (!sdkManager.isDebugBuild) return false
+        val simulated = sdkManager.simulatedDiscoveryResult ?: return false
+
+        // Consume the simulated result so subsequent welcome-discovery selections run the real flow
+        // unless re-armed via Login Options.
+        sdkManager.simulatedDiscoveryResult = null
+
+        // Reset the WebView so the post-intent reload isn't dropped by the same-host short-circuit.
+        viewModel.loginUrl.value = ABOUT_BLANK
+
+        startDefaultLoginWithHintAndHost(
+            context = this,
+            loginHint = simulated.loginHint,
+            loginHost = simulated.loginHost,
+        )
+        return true
+    }
+
+    /**
      * If the intent has the Salesforce Welcome login hint and host, applies
      * those for use in the generation of the OAuth URL.  This is used by
      * Salesforce Welcome for external linking to default login with a specific
@@ -1044,16 +1082,23 @@ open class LoginActivity : FragmentActivity() {
         // If the pending login server is a change to a new Salesforce Welcome Discovery URL and host.
         if (isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)) {
 
-            // Navigate to Salesforce Welcome Discovery.
-            startActivity(
-                Intent(
-                    this,
-                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
-                ).apply {
-                    data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
-                    flags = FLAG_ACTIVITY_SINGLE_TOP
-                })
-            true
+            // If a simulated discovery result has been armed via Login Options, bypass the real
+            // welcome.salesforce.com discovery WebView and route directly to default login with
+            // the injected hint and host.  Mirrors iOS' simulatedDomainDiscoveryResult hook.
+            if (applySimulatedDiscoveryResultIfApplicable()) {
+                true
+            } else {
+                // Navigate to Salesforce Welcome Discovery.
+                startActivity(
+                    Intent(
+                        this,
+                        SalesforceSDKManager.getInstance().webViewLoginActivityClass
+                    ).apply {
+                        data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
+                        flags = FLAG_ACTIVITY_SINGLE_TOP
+                    })
+                true
+            }
         }
 
         // If the pending login server isn't a Salesforce Welcome Discovery URL but the previous was...
@@ -1484,6 +1529,17 @@ open class LoginActivity : FragmentActivity() {
         /** The URL path used by Salesforce Welcome Discovery URLs */
         @VisibleForTesting
         const val SALESFORCE_WELCOME_DISCOVERY_URL_PATH = "/discovery"
+
+        /**
+         * The result of a simulated Welcome Discovery flow. Holds the values that the real
+         * `sfdc://discocallback?login_hint=&my_domain=` URL would have provided.  Set on
+         * [SalesforceSDKManager.simulatedDiscoveryResult] from the Login Options screen to
+         * bypass the email round-trip during automated tests.
+         */
+        data class SimulatedDiscoveryResult(
+            val loginHint: String,
+            val loginHost: String,
+        )
 
         /**
          * Determines if the provided URL has the Salesforce Welcome Discovery

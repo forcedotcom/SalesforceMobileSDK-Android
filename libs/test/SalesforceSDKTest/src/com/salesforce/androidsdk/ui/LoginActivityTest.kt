@@ -43,7 +43,10 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.LoginServerManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -322,6 +325,71 @@ class LoginActivityTest {
                     it.flags == FLAG_ACTIVITY_SINGLE_TOP
                 }
             )
+        }
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_noArmedResult_returnsFalse() {
+        SalesforceSDKManager.getInstance().simulatedDiscoveryResult = null
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.applySimulatedDiscoveryResultIfApplicable() } answers { callOriginal() }
+
+        assertFalse(activity.applySimulatedDiscoveryResultIfApplicable())
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_armedResult_consumesAndReturnsTrue() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        sdkManager.simulatedDiscoveryResult = SimulatedDiscoveryResult(
+            loginHint = "user@example.com",
+            loginHost = "test.my.example.com",
+        )
+        try {
+            val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            every { viewModel.loginUrl } returns loginUrl
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.applySimulatedDiscoveryResultIfApplicable() } answers { callOriginal() }
+
+            assertTrue(activity.applySimulatedDiscoveryResultIfApplicable())
+            // Armed result is consumed (cleared) on apply.
+            org.junit.Assert.assertNull(sdkManager.simulatedDiscoveryResult)
+            // WebView is reset so the next reload isn't suppressed by same-host short-circuit.
+            verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
+        } finally {
+            sdkManager.simulatedDiscoveryResult = null
+        }
+    }
+
+    @Test
+    fun switchDefaultOrSalesforceWelcomeDiscoveryLogin_consumesArmedSimulationInsteadOfLoadingDiscoveryWebView() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        sdkManager.simulatedDiscoveryResult = SimulatedDiscoveryResult(
+            loginHint = "user@example.com",
+            loginHost = "test.my.example.com",
+        )
+        try {
+            val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            every { viewModel.loginUrl } returns loginUrl
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.applySimulatedDiscoveryResultIfApplicable() } answers { callOriginal() }
+            every { activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(any()) } answers { callOriginal() }
+
+            assertTrue(
+                activity.switchDefaultOrSalesforceWelcomeDiscoveryLogin(
+                    "https://welcome.example.com/discovery".toUri()
+                )
+            )
+            // Discovery WebView intent should NOT be dispatched - the simulation hook handled it.
+            verify(exactly = 0) {
+                activity.startActivity(match { it.data?.path?.contains("/discovery") == true })
+            }
+            org.junit.Assert.assertNull(sdkManager.simulatedDiscoveryResult)
+        } finally {
+            sdkManager.simulatedDiscoveryResult = null
         }
     }
 

@@ -410,4 +410,82 @@ class LoginOptionsActivityTest {
         composeTestRule.activity.finish()
         assertTrue(SalesforceSDKManager.getInstance().loginDevMenuReload)
     }
+
+    // region Welcome Discovery — DiscoveryResultEditor
+
+    @Test
+    fun applySimulatedDiscoveryResult_emptyHost_returnsNull() {
+        assertNull(applySimulatedDiscoveryResult(loginHost = "", username = "user@example.com"))
+        assertNull(applySimulatedDiscoveryResult(loginHost = "   ", username = "user@example.com"))
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_validHost_returnsTrimmedResult() {
+        val result = applySimulatedDiscoveryResult(
+            loginHost = "  test.my.salesforce.com  ",
+            username = "  user@example.com  ",
+        )
+        assertNotNull(result)
+        assertEquals("test.my.salesforce.com", result?.loginHost)
+        assertEquals("user@example.com", result?.loginHint)
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_validHostEmptyUser_keepsEmptyUser() {
+        // iOS allows empty user (host-only), so do we.
+        val result = applySimulatedDiscoveryResult(
+            loginHost = "test.my.salesforce.com",
+            username = "",
+        )
+        assertNotNull(result)
+        assertEquals("test.my.salesforce.com", result?.loginHost)
+        assertEquals("", result?.loginHint)
+    }
+
+    @Test
+    fun discoveryResultEditor_saveButton_armsSdkManagerSimulatedResult() {
+        val toggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_toggle_content_description
+            ),
+        )
+        val saveButton = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_save_button_content_description
+            ),
+        )
+        val hostField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_login_host_field_content_description
+            ),
+        )
+        val userField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_username_field_content_description
+            ),
+        )
+
+        assertNull(SalesforceSDKManager.getInstance().simulatedDiscoveryResult)
+
+        toggle.performScrollTo()
+        toggle.performClick()
+        composeTestRule.waitForIdle()
+
+        hostField.performScrollTo()
+        hostField.performTextInput("test.my.salesforce.com")
+        userField.performTextInput("user@example.com")
+        saveButton.performScrollTo()
+        saveButton.performClick()
+        composeTestRule.waitForIdle()
+
+        val armed = SalesforceSDKManager.getInstance().simulatedDiscoveryResult
+        assertNotNull(armed)
+        assertEquals("test.my.salesforce.com", armed?.loginHost)
+        assertEquals("user@example.com", armed?.loginHint)
+
+        // Cleanup: clear simulation so it doesn't leak to other tests.
+        SalesforceSDKManager.getInstance().simulatedDiscoveryResult = null
+    }
+
+    // endregion
 }

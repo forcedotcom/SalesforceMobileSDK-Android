@@ -165,14 +165,16 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         useHybridAuthToken: Boolean,
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
+        useWelcomeDiscovery: Boolean,
     ) {
         super.loginAndValidate(
-            knownAppConfig,
-            scopeSelection,
-            useWebServerFlow,
+            knownAppConfig = knownAppConfig,
+            scopeSelection = scopeSelection,
+            useWebServerFlow = useWebServerFlow,
             useHybridAuthToken = false,
-            knownLoginHostConfig,
+            knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,
+            useWelcomeDiscovery = useWelcomeDiscovery,
         )
     }
 }

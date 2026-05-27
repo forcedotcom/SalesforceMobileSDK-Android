@@ -476,6 +476,21 @@ open class SalesforceSDKManager protected constructor(
     internal var loginDevMenuReload = false
 
     /**
+     * When set, the next launch of [com.salesforce.androidsdk.ui.LoginActivity] against
+     * [com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL] is short-circuited
+     * to use these values instead of running the real Welcome Discovery WebView flow.  This
+     * mirrors the iOS `simulatedDomainDiscoveryResult` hook and is the seam used by automated
+     * UI tests to inject a login hint and My Domain.
+     *
+     * The setter is a no-op in release builds (only honored when [isDebugBuild] is true) so
+     * release apps cannot be coerced into bypassing the real discovery flow.
+     */
+    var simulatedDiscoveryResult: com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult? = null
+        set(value) {
+            if (isDebugBuild) field = value
+        }
+
+    /**
      * The regular expression pattern used to detect "Use Custom Domain" input
      * from login web view.
      *
