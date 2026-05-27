@@ -113,6 +113,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.migrateRefreshToken
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -203,16 +204,49 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         // Set current user when it changes to update UI.
         DisposableEffect(Unit) {
+            val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    currentUser.value = UserAccountManager.getInstance().currentUser
+                    with(UserAccountManager.getInstance()) {
+                        this.currentUser?.let {
+                            currentUser.value = it
+                            return
+                        }
+
+                        // After an SDK-initiated logout the stored current user
+                        // may be cleared even when other accounts remain (e.g.
+                        // refresh-token revocation logs out one of N users).
+                        // Fall back to the first remaining authenticated user.
+                        val fallback = authenticatedUsers?.firstOrNull()
+                        currentUser.value = fallback
+
+                        // Persist the switch in the SDK (so subsequent SDK calls
+                        // pick up the right user). Defer to allow any in-flight
+                        // logout sequence to finish; otherwise switchToUser ->
+                        // peekRestClient throws AccountInfoNotFoundException
+                        // ("User is logging out") because isLoggingOut is still
+                        // true when the broadcast lands.
+                        if (fallback != null) {
+                            mainHandler.postDelayed({
+                                if (!SalesforceSDKManager.getInstance().isLoggingOut &&
+                                    this.currentUser == null
+                                ) {
+                                    runCatching {
+                                        UserAccountManager.getInstance().switchToUser(fallback)
+                                    }
+                                }
+                            }, /* delayMillis = */ 100)
+                        }
+                    }
                 }
             }
             val filter = IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION)
             filter.addAction(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
             filter.addAction(ClientManager.INSTANCE_URL_UPDATE_INTENT)
+            filter.addAction(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)
             ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             onDispose {
+                mainHandler.removeCallbacksAndMessages(null)
                 context.unregisterReceiver(receiver)
             }
         }
@@ -699,9 +733,9 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     ?.coerceToText(context)
                     ?.toString() ?: ""
             ) }
-            val alertBody = context.getString(
-                /* resId = */ R.string.json_import,
-                /* ...formatArgs = */ CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
+            val alertBody = stringResource(
+                R.string.json_import,
+                CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
             )
 
             @Suppress("AssignedValueIsNeverRead")

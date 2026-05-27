@@ -28,6 +28,9 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
@@ -42,10 +45,12 @@ import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URI
 
 /**
  * Tests for multi-user login scenarios.
@@ -232,6 +237,71 @@ class MultiUserLoginTests: AuthFlowTest() {
         assertEquals(userRefreshToken, userSwitchRefreshToken)
     }
 
+    /**
+     * Revokes the secondary user's refresh token server-side and verifies
+     * that the SDK logs that user out on the next refresh attempt while
+     * leaving the primary user untouched.
+     */
+    @Test
+    fun testMultiUser_revokeOtherUserRefreshToken() {
+        // Initial user (User A) logs in with the static boot config (CA Opaque).
+        loginAndValidate(knownAppConfig = CA_OPAQUE)
+        val (userAccessToken, userRefreshToken) = app.getTokens()
+
+        // Other user (User B) logs in with a dynamic config (ECA Opaque).
+        loginOtherUserAndValidate(knownAppConfig = ECA_OPAQUE)
+
+        // Snapshot User B's account before revocation.
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val otherUserAccount = userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        val otherUserRefreshToken = otherUserAccount.refreshToken
+        val otherUserLoginServer = otherUserAccount.loginServer
+
+        // Invalidate User B's access token first, while it is still valid.
+        // The in-app revoke button uses the access token to authenticate
+        // the POST, so it must run before any server-side revocation that
+        // could invalidate the access token as a side effect.
+        app.revokeAccessToken()
+
+        // Server-side revoke User B's refresh token. The next refresh
+        // attempt will fail and the SDK will log User B out.
+        OAuth2.revokeRefreshToken(
+            HttpAccess.DEFAULT,
+            URI(otherUserLoginServer),
+            otherUserRefreshToken,
+            OAuth2.LogoutReason.UNKNOWN,
+        )
+
+        // Trigger an API request. The SDK detects the missing access token,
+        // attempts a refresh, the refresh fails (refresh token revoked
+        // above), getNewAuthToken returns null, and SalesforceSDKManager
+        // logs User B out.
+        app.triggerApiRequestIgnoringResult()
+
+        // Poll until User B is gone, rather than sleeping a fixed duration.
+        waitForUserCount(userAccountManager, expectedCount = 1)
+
+        val remainingUsers = userAccountManager.authenticatedUsers ?: emptyList()
+        assertEquals(
+            "Expected exactly one user (User A) to remain after revoking User B's refresh token",
+            1, remainingUsers.size,
+        )
+        val userAUsername = testConfig.getUser(REGULAR_AUTH, user).username
+        assertEquals(userAUsername, remainingUsers.first().username)
+
+        // With User A, validate the original tokens are intact and a refresh still succeeds.
+        app.validateUser(REGULAR_AUTH, user)
+        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
+        val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
+        assertEquals(userAccessToken, userPostAccessToken)
+        assertEquals(userRefreshToken, userPostRefreshToken)
+
+        app.revokeAccessToken()
+        app.validateApiRequest()
+    }
+
     @Test
     fun testMultiUser_tokenMigration_backgroundUser() {
         // Initial user
@@ -300,5 +370,33 @@ class MultiUserLoginTests: AuthFlowTest() {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
         app.validateUser(knownLoginHostConfig, knownUserConfig)
+    }
+
+    /**
+     * Polls the user account manager until the authenticated user count
+     * reaches [expectedCount]. Used after triggering an automatic logout to
+     * avoid a fixed-duration sleep.
+     */
+    private fun waitForUserCount(
+        userAccountManager: com.salesforce.androidsdk.accounts.UserAccountManager,
+        expectedCount: Int,
+        timeoutMs: Long = USER_COUNT_TIMEOUT_MS,
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val count = userAccountManager.authenticatedUsers?.size ?: 0
+            if (count == expectedCount) return
+            Thread.sleep(POLL_INTERVAL_MS)
+        }
+        val finalCount = userAccountManager.authenticatedUsers?.size ?: 0
+        throw AssertionError(
+            "Timed out after ${timeoutMs}ms waiting for user count to reach " +
+                "$expectedCount (was $finalCount)"
+        )
+    }
+
+    companion object {
+        private const val USER_COUNT_TIMEOUT_MS = 15_000L
+        private const val POLL_INTERVAL_MS = 250L
     }
 }

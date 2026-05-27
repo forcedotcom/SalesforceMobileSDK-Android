@@ -22,10 +22,9 @@ MobileSync
 
 SalesforceHybrid
   └── SalesforceSDK
-
-SalesforceReact
-  └── SalesforceSDK
 ```
+
+**Note:** `SalesforceReact` has been removed from this repo as of SDK 14.0. All React Native code (bridges, activity, SDK manager) now lives in `SalesforceMobileSDK-ReactNative/android/` and is distributed via the `react-native-force` npm package.
 
 ### Library Descriptions
 
@@ -36,7 +35,6 @@ SalesforceReact
 | **SmartStore** | `libs/SmartStore/` | Encrypted on-device SQLite storage (backed by SQLCipher). Soup-based data model with indexing and Smart SQL query support |
 | **MobileSync** | `libs/MobileSync/` | Bidirectional data sync between device (SmartStore) and Salesforce cloud. Sync targets, sync managers, layout/metadata sync. `MobileSyncSDKManager` |
 | **SalesforceHybrid** | `libs/SalesforceHybrid/` | Support for Cordova-based hybrid applications |
-| **SalesforceReact** | `libs/SalesforceReact/` | Support for React Native applications |
 
 ### Android Reference Docs
 - [Android Javadoc](https://forcedotcom.github.io/SalesforceMobileSDK-Android/index.html)

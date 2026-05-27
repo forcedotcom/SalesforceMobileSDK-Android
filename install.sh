@@ -12,14 +12,6 @@ git submodule update
 # Restore bootconfig.json in shared submodule to committed placeholders
 git -C external/shared checkout -- samples/mobilesyncexplorer/bootconfig.json samples/accounteditor/bootconfig.json 2>/dev/null || true
 
-# get react native
-pushd "libs/SalesforceReact"
-rm -rf node_modules
-rm yarn.lock
-yarn install
-./node_modules/.bin/react-native bundle --platform android --dev true --entry-file node_modules/react-native-force/test/alltests.js --bundle-output ../test/SalesforceReactTest/assets/index.android.bundle --assets-dest ../test/SalesforceReactTest/assets/
-popd
-
 # Apply bootconfig placeholder substitution. Usage:
 #   apply_bootconfig_paths [sample_file] path1 path2 ...
 # First arg is sample path (or empty for no sample). If sample is set, copy sample over each path (overwriting if present).

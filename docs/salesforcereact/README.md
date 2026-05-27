@@ -1,5 +1,9 @@
 # SalesforceReact Library
 
+> **MOVED**: As of SDK 14.0, the SalesforceReact bridge code has moved from this repository (`libs/SalesforceReact/`) to the `SalesforceMobileSDK-ReactNative` repository (`android/` directory). This enables React Native autolinking and unifies all bridge code (iOS + Android + JavaScript) in a single repo. See `SalesforceMobileSDK-ReactNative/CLAUDE.md` for the current architecture.
+>
+> What remains in this repo: `SalesforceReactActivity` and `SalesforceReactSDKManager` (app/UI layer), which are dependencies of the bridge code in the ReactNative repo.
+
 The SalesforceReact library provides React Native integration for the Salesforce Mobile SDK on Android. It enables developers to build React Native applications that leverage Salesforce authentication, data storage, synchronization, and REST API capabilities.
 
 ## Overview

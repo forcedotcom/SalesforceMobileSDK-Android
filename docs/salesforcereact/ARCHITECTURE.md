@@ -1,5 +1,7 @@
 # SalesforceReact Architecture
 
+> **MOVED**: As of SDK 14.0, the Android bridge modules (SFOauthReactBridge, SFNetReactBridge, SFSmartStoreReactBridge, SFMobileSyncReactBridge) have moved to `SalesforceMobileSDK-ReactNative/android/`. Module names are now unified with the `SF*` prefix on both platforms. See `SalesforceMobileSDK-ReactNative/docs/ARCHITECTURE.md` for the current cross-platform architecture.
+
 This document provides a deep technical dive into the architecture of the SalesforceReact library, including design patterns, component relationships, and data flow.
 
 ## Table of Contents
@@ -804,31 +806,59 @@ public void onSuccess(RestRequest request, RestResponse response) {
 3. **Async operations**: All I/O is asynchronous to prevent blocking
 4. **Connection pooling**: RestClient reuses OkHttp connections
 
-## Future Architecture Considerations
+## New Architecture (TurboModules)
 
-### New Architecture Migration
+As of Mobile SDK 14.0, all Android bridge modules implement React Native's TurboModule interface for improved performance and type safety.
 
-React Native's "New Architecture" introduces:
-- **TurboModules**: Lazy-loaded native modules with type safety
-- **Fabric**: New rendering system
-- **JSI**: JavaScript Interface for direct JS ↔ Native communication
+### Implementation
 
-Migration would involve:
-1. Converting `ReactContextBaseJavaModule` to `TurboModule`
-2. Defining TypeScript specs for type safety
-3. Replacing callback pattern with promises/async-await
-4. Direct object passing instead of string serialization
+All bridge classes:
+- Extend `ReactContextBaseJavaModule` (backward compat)
+- Implement `TurboModule` interface (new architecture)
+- Written in Kotlin
+- Use unified single-callback pattern matching iOS
 
-### Codegen Specifications
+```kotlin
+class SalesforceOauthReactBridge(reactContext: ReactApplicationContext) :
+    ReactContextBaseJavaModule(reactContext), TurboModule {
 
-Example TurboModule spec:
-```typescript
-export interface Spec extends TurboModule {
-  authenticate(): Promise<Credentials>;
-  getAuthCredentials(): Promise<Credentials>;
-  logout(): Promise<void>;
+    @ReactMethod
+    fun getAuthCredentials(args: ReadableMap, callback: Callback) {
+        // callback(null, result) for success
+        // callback(errorMessage) for error
+    }
 }
 ```
+
+### Callback Pattern
+
+Both iOS and Android now use a unified single-callback pattern:
+- **Success**: `callback.invoke(null, resultString)` 
+- **Error**: `callback.invoke(errorMessage)`
+
+The JavaScript `exec()` function handles both platforms identically:
+```typescript
+module[methodName](args, (error, result) => {
+  if (error) errorCB(safeJSONparse(error));
+  else successCB(safeJSONparse(result));
+});
+```
+
+### TypeScript Codegen Specs
+
+TurboModule specs are defined in `react-native-force/src/specs/`:
+- `NativeSFOauthReactBridge.ts`
+- `NativeSFNetReactBridge.ts`
+- `NativeSFSmartStoreReactBridge.ts`
+- `NativeSFMobileSyncReactBridge.ts`
+
+These specs enable React Native's Codegen to generate type-safe bindings.
+
+## Future Architecture Considerations
+
+### React Native Upgrade
+
+Before the 14.0 release, an upgrade to a React Native version supporting AGP 9+ is planned. This will eliminate the AGP compatibility patching currently done in template `installandroid.js` scripts.
 
 ## Summary
 

@@ -1,5 +1,7 @@
 # SalesforceReact API Reference
 
+> **MOVED**: As of SDK 14.0, the bridge module classes (SFOauthReactBridge, SFNetReactBridge, SFSmartStoreReactBridge, SFMobileSyncReactBridge, ReactBridgeHelper) have moved to `SalesforceMobileSDK-ReactNative/android/`. The API below documents the app/UI layer classes that remain in this repo.
+
 Complete API documentation for all public classes and methods in the SalesforceReact library.
 
 ## Table of Contents
