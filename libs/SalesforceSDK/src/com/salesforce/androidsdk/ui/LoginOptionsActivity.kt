@@ -382,38 +382,44 @@ fun LoginOptionsScreen(
             BootConfigView(overrideConfig)
         }
 
-        HorizontalDivider()
+        // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
+        // the process as UI-testing (and only in debug builds, enforced by the setter).
+        // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
+        val sdkManager = SalesforceSDKManager.getInstance()
+        if (sdkManager.isDebugBuild && sdkManager.isUiTesting) {
+            HorizontalDivider()
 
-        var simulateDiscovery by remember {
-            mutableStateOf(SalesforceSDKManager.getInstance().simulatedDiscoveryResult != null)
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.sf__login_options_discovery_simulate_title),
-                modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
-            )
-            val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
-            Switch(
-                checked = simulateDiscovery,
-                onCheckedChange = {
-                    simulateDiscovery = it
-                    if (!simulateDiscovery) {
-                        SalesforceSDKManager.getInstance().simulatedDiscoveryResult = null
+            var simulateDiscovery by remember {
+                mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.sf__login_options_discovery_simulate_title),
+                    modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                )
+                val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                Switch(
+                    checked = simulateDiscovery,
+                    onCheckedChange = {
+                        simulateDiscovery = it
+                        if (!simulateDiscovery) {
+                            sdkManager.simulatedDiscoveryResult = null
+                        }
+                    },
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = toggleDesc
+                        toggleableState = ToggleableState(simulateDiscovery)
+                        role = Role.Switch
                     }
-                },
-                modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = toggleDesc
-                    toggleableState = ToggleableState(simulateDiscovery)
-                    role = Role.Switch
-                }
-            )
-        }
+                )
+            }
 
-        if (simulateDiscovery) {
-            DiscoveryResultEditor()
+            if (simulateDiscovery) {
+                DiscoveryResultEditor()
+            }
         }
     }
 }

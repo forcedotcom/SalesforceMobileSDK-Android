@@ -161,8 +161,15 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     fun changeServer(knownLoginHostConfig: KnownLoginHostConfig) {
-        val url = testConfig.getLoginHost(knownLoginHostConfig).url
+        changeServerByUrl(testConfig.getLoginHost(knownLoginHostConfig).url)
+    }
 
+    /**
+     * Selects a server from the server picker bottom sheet by matching its URL substring.
+     * Used for servers that aren't represented in `ui_test_config.json` (e.g.
+     * `welcome.salesforce.com/discovery`).
+     */
+    fun changeServerByUrl(url: String) {
         // Tap "More Options" three-dot menu (Compose IconButton)
         composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
             .performClick()

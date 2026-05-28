@@ -27,6 +27,7 @@
 package com.salesforce.samples.authflowtester.testUtility
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -72,7 +73,12 @@ abstract class AuthFlowTest {
     val composeTestRule = createEmptyComposeRule()
 
     @get:Rule(order = 2)
-    val activityRule = ActivityScenarioRule(AuthFlowTesterActivity::class.java)
+    val activityRule = ActivityScenarioRule<AuthFlowTesterActivity>(
+        Intent(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            AuthFlowTesterActivity::class.java,
+        ).putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
+    )
 
     val loginOptions = LoginOptionsPageObject(composeTestRule)
     val app = AuthFlowTesterPageObject(composeTestRule)
@@ -93,8 +99,6 @@ abstract class AuthFlowTest {
     @After
     open fun cleanup() {
         with(SalesforceSDKManager.getInstance()) {
-            // Reset Welcome Discovery simulation between tests (mirrors iOS tearDown).
-            simulatedDiscoveryResult = null
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
                     account = userAccountManager.buildAccount(userAccount),

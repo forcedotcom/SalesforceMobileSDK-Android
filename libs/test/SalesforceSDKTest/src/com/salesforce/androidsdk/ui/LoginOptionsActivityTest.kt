@@ -111,7 +111,7 @@ class LoginOptionsActivityTest {
             composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description),
         )
         saveButton = composeTestRule.onNodeWithText(
-            composeTestRule.activity.getString(R.string.sf__server_url_save),
+            composeTestRule.activity.getString(R.string.sf__login_options_save_and_login),
         )
     }
 
@@ -444,6 +444,12 @@ class LoginOptionsActivityTest {
 
     @Test
     fun discoveryResultEditor_saveButton_armsSdkManagerSimulatedResult() {
+        // The editor is gated on isUiTesting; flip it on for this test (debug build)
+        // and recompose so the gated UI is rendered.
+        SalesforceSDKManager.getInstance().isUiTesting = true
+        composeTestRule.activity.runOnUiThread { composeTestRule.activity.recreate() }
+        composeTestRule.waitForIdle()
+
         val toggle = composeTestRule.onNodeWithContentDescription(
             composeTestRule.activity.getString(
                 R.string.sf__login_options_discovery_toggle_content_description
@@ -483,8 +489,9 @@ class LoginOptionsActivityTest {
         assertEquals("test.my.salesforce.com", armed?.loginHost)
         assertEquals("user@example.com", armed?.loginHint)
 
-        // Cleanup: clear simulation so it doesn't leak to other tests.
+        // Cleanup: clear simulation + UI testing flag so they don't leak.
         SalesforceSDKManager.getInstance().simulatedDiscoveryResult = null
+        SalesforceSDKManager.getInstance().isUiTesting = false
     }
 
     // endregion

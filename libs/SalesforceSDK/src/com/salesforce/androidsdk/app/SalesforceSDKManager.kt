@@ -485,7 +485,23 @@ open class SalesforceSDKManager protected constructor(
      * The setter is a no-op in release builds (only honored when [isDebugBuild] is true) so
      * release apps cannot be coerced into bypassing the real discovery flow.
      */
-    var simulatedDiscoveryResult: com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult? = null
+    internal var simulatedDiscoveryResult: LoginActivity.Companion.SimulatedDiscoveryResult? = null
+        set(value) {
+            if (isDebugBuild) field = value
+        }
+
+    /**
+     * When true (and [isDebugBuild] is also true), debug-only UI test affordances such as the
+     * Welcome Discovery simulation editor in
+     * [com.salesforce.androidsdk.ui.LoginOptionsActivity] are visible.  Mirrors iOS' check for
+     * the `IS_UI_TESTING` launch argument in `LoginOptionsViewController.swift`.
+     *
+     * Set by a sample app's launcher Activity from an Intent extra when the activity is
+     * launched by the UI test runner.  The setter is a no-op in release builds so manual
+     * launches and release-build apps never expose the affordances.
+     */
+    @VisibleForTesting
+    var isUiTesting: Boolean = false
         set(value) {
             if (isDebugBuild) field = value
         }

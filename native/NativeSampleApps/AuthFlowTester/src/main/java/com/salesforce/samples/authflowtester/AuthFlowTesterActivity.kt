@@ -172,11 +172,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Make debug-only UI test affordances visible when launched by the UI test runner.
+        // Mirrors iOS' IS_UI_TESTING launch argument check in LoginOptionsViewController.swift.
+        SalesforceSDKManager.getInstance().isUiTesting =
+            intent.getBooleanExtra(EXTRA_IS_UI_TESTING, false)
+
         setContent {
             MaterialTheme(colorScheme = getColorScheme()) {
                 TesterUI()
             }
         }
+    }
+
+    companion object {
+        /** Intent extra: when true (in a debug build) shows UI-test-only affordances. */
+        const val EXTRA_IS_UI_TESTING = "IS_UI_TESTING"
     }
 
     override fun onResume(client: RestClient?) {
