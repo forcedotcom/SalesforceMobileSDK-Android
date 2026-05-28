@@ -34,9 +34,6 @@ jobs:
         if: ${{ inputs.lib == 'SalesforceHybrid' }}
         run: |
           npm install -g cordova
-      - name: React Native Dependencies
-        if: ${{ inputs.lib  == 'SalesforceReact' }}
-        run: npm install -g typescript
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'

@@ -1,5 +1,7 @@
 # SalesforceReact Testing Guide
 
+> **MOVED**: As of SDK 14.0, Android bridge tests have moved to `SalesforceMobileSDK-ReactNative/androidTests/`, mirroring the `iosTests/` directory pattern. The `androidTests/` directory in the ReactNative repo contains the test app, test bridge, and pre-bundled JavaScript test suite.
+
 This guide describes the test infrastructure for the SalesforceReact library in the SalesforceMobileSDK-Android repository.
 
 ## Table of Contents

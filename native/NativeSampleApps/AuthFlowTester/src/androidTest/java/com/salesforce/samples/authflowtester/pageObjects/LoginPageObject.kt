@@ -75,6 +75,21 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     /**
+     * Returns true when the LoginActivity top bar is currently in front
+     * (detected via the SDK's "More Options" content description). Used by
+     * negative tests to assert the user did not advance past login.
+     */
+    fun isLoginScreenVisible(): Boolean =
+        try {
+            composeTestRule
+                .onAllNodesWithContentDescription(getString(R.string.sf__more_options))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
+
+    /**
      * Welcome Discovery login: the OAuth `login_hint` already pre-filled the username
      * field on page 1; we still tap Continue to advance to page 2, then enter the password
      * and submit.  Mirrors iOS performWelcomeLogin.
@@ -146,15 +161,8 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     fun changeServer(knownLoginHostConfig: KnownLoginHostConfig) {
-        changeServerByUrl(testConfig.getLoginHost(knownLoginHostConfig).url)
-    }
+        val url = testConfig.getLoginHost(knownLoginHostConfig).url
 
-    /**
-     * Selects a server from the server picker bottom sheet by matching its URL substring.
-     * Used for servers that aren't represented in `ui_test_config.json` (e.g.
-     * `welcome.salesforce.com/discovery`).
-     */
-    fun changeServerByUrl(url: String) {
         // Tap "More Options" three-dot menu (Compose IconButton)
         composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
             .performClick()

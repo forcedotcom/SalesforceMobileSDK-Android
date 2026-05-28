@@ -173,14 +173,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
             .performScrollToNode(hasContentDescription(REVOKE_BUTTON_CONTENT_DESC))
 
-        waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
-        // Use performSemanticsAction instead of performClick because
-        // performScrollTo doesn't trigger nested scroll, leaving the button
-        // behind the collapsed top bar where touch input gets intercepted.
-        composeTestRule.onNodeWithContentDescription(REVOKE_BUTTON_CONTENT_DESC)
-            .performSemanticsAction(SemanticsActions.OnClick)
-
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        clickRevokeButton()
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.revoke_successful))
 
@@ -190,17 +183,76 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     fun validateApiRequest() {
-        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
-        composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
-            .performSemanticsAction(SemanticsActions.OnClick)
-
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        clickRequestButton()
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.request_successful))
 
         composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
             .performClick()
         composeTestRule.waitForIdle()
+    }
+
+    /** Clicks the revoke-access-token button and waits for its result dialog. */
+    private fun clickRevokeButton() = clickAndWaitForAlert(REVOKE_BUTTON_CONTENT_DESC)
+
+    /** Clicks the make-REST-API-request button and waits for its result dialog. */
+    private fun clickRequestButton() = clickAndWaitForAlert(REQUEST_BUTTON_CONTENT_DESC)
+
+    /**
+     * Clicks the button identified by [buttonContentDesc] and waits for the
+     * resulting alert dialog to appear. Waits for Compose to be idle before
+     * clicking so the OnClick semantic is registered (after a user switch or
+     * activity resume, the button can be momentarily out of composition).
+     * Retries the click once if the alert does not appear within TIMEOUT_MS
+     * and the button is still in its initial (clickable) state — the network
+     * call may have failed silently, leaving showAlertDialog=false.
+     */
+    private fun clickAndWaitForAlert(buttonContentDesc: String) {
+        waitForNode(buttonContentDesc, timeoutMillis = TIMEOUT_MS)
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        try {
+            waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        } catch (e: AssertionError) {
+            // The button's OnClick semantic is removed while the coroutine
+            // is in flight (Material3 Button drops it when enabled=false).
+            // If the OnClick is still present, the first click was a no-op
+            // and we can retry; otherwise rethrow.
+            val hasOnClick = composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+                .fetchSemanticsNode()
+                .config.contains(SemanticsActions.OnClick)
+            if (!hasOnClick) throw e
+
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        }
+    }
+
+    /**
+     * Taps the "Make REST API Request" button without asserting outcome.
+     * Used to trigger an automatic refresh that is expected to fail (e.g. when
+     * the user's refresh token has been revoked). Dismisses the result alert
+     * (which may show success or failure) so the test can proceed.
+     */
+    fun triggerApiRequestIgnoringResult() {
+        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        // The alert may or may not appear (the SDK could log the user out
+        // before the dialog renders). Best-effort dismiss.
+        try {
+            waitForNode(ALERT_POSITIVE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+            composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
+                .performClick()
+            composeTestRule.waitForIdle()
+        } catch (_: AssertionError) {
+            // Dialog never appeared, that's OK.
+        }
     }
 
     fun getTokens(): Tokens {

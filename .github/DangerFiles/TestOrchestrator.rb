@@ -7,7 +7,7 @@ warn("Big PR, try to keep changes smaller if you can.", sticky: true) if git.lin
 fail("Please re-submit this PR to the dev branch, we may have already fixed your issue.", sticky: true) if github.branch_for_base != "dev"
 
 # List of Android libraries for testing
-LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid', 'SalesforceReact']
+LIBS = ['SalesforceAnalytics', 'SalesforceSDK', 'SmartStore', 'MobileSync', 'SalesforceHybrid']
 
 modified_libs = Set[]
 for file in (git.modified_files + git.added_files);

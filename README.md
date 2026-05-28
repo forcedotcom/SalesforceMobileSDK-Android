@@ -41,7 +41,8 @@ HTML5 is quickly emerging as dominant technology for developing cross-platform m
 | **SmartStore** | Encrypted local storage (SQLCipher) |
 | **MobileSync** | Data synchronization framework |
 | **SalesforceHybrid** | Cordova integration for hybrid apps |
-| **SalesforceReact** | React Native bridge modules |
+
+> **Note:** As of SDK 14.0, `SalesforceReact` has moved to the [SalesforceMobileSDK-ReactNative](https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative) repository and is distributed via the `react-native-force` npm package.
 
 ## Getting Started
 

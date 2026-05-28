@@ -6,8 +6,8 @@ on:
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
 
-# Run the native libraries first so that the native, Hybrid and React MobileSync tests 
-# don't run simultaniously (to prevents flappers).
+# Run the native libraries first so that the native and Hybrid MobileSync tests
+# don't run simultaneously (to prevent flappers).
 jobs:
   android-nightly:
     strategy:
@@ -25,17 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         lib: [SalesforceHybrid]
-    uses: ./.github/workflows/reusable-lib-workflow.yaml
-    with:
-      lib: ${{ matrix.lib }}
-    secrets: inherit
-  android-nightly-React:
-    if: success() || failure()
-    needs: [android-nightly-Hybrid]
-    strategy:
-      fail-fast: false
-      matrix:
-        lib: [SalesforceReact]
     uses: ./.github/workflows/reusable-lib-workflow.yaml
     with:
       lib: ${{ matrix.lib }}

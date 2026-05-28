@@ -42,13 +42,6 @@ coverage:
           - "libs/MobileSync/src/"
         flags: 
           - MobileSync
-      SalesforceReact:
-        threshold: 0%
-        paths:
-          - "libs/SalesforceReact/src/"
-        flags:
-          - SalesforceReact
-
     # Pull Request Requirements
     patch: 
       SalesforceAnalytics:
@@ -81,13 +74,6 @@ coverage:
           - "libs/MobileSync/src/"
         flags: 
           - MobileSync
-      SalesforceReact:
-        target: 80%
-        paths:
-          - "libs/SalesforceReact/src/"
-        flags:
-          - SalesforceReact
-
 ignore:
   - "hybrid"
   - "native"
@@ -122,7 +108,3 @@ component_management:
     - component_id: MobileSync
       paths: 
         - "libs/MobileSync/src/"
-    - component_id: SalesforceReact
-      name: React
-      paths: 
-        - "libs/SalesforceReact/src/"

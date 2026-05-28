@@ -48,7 +48,6 @@ dependencies {
     add("dokka", project(":libs:SmartStore"))
     add("dokka", project(":libs:MobileSync"))
     add("dokka", project(":libs:SalesforceHybrid"))
-    add("dokka", project(":libs:SalesforceReact"))
 }
 
 tasks.register<Jar>("javadocJar") {

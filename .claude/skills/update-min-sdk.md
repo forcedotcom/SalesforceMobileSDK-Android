@@ -24,7 +24,6 @@ Update `minSdk` in all `build.gradle.kts` files:
 - `libs/SmartStore/build.gradle.kts`
 - `libs/MobileSync/build.gradle.kts`
 - `libs/SalesforceHybrid/build.gradle.kts`
-- `libs/SalesforceReact/build.gradle.kts`
 
 **Native Sample Apps:**
 - `native/NativeSampleApps/RestExplorer/build.gradle.kts`

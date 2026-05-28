@@ -84,11 +84,39 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         saveOverrideBootConfig()
     }
 
+    /**
+     * Sets dynamic config with arbitrary values. Used by negative tests to
+     * inject deliberately invalid consumer keys or scopes.
+     */
+    fun setOverrideBootConfigRaw(
+        consumerKey: String,
+        redirectUri: String,
+        scopes: String? = null,
+    ) {
+        enableOverrideBootConfig()
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_consumer_key_field_content_description)
+        ).performTextReplacement(consumerKey)
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_redirect_uri_field_content_description)
+        ).performTextReplacement(redirectUri)
+
+        if (scopes != null) {
+            composeTestRule.onNodeWithContentDescription(
+                getString(R.string.sf__login_options_scopes_field_content_description)
+            ).performTextReplacement(scopes)
+        }
+
+        saveOverrideBootConfig()
+    }
+
     private fun enableOverrideBootConfig() = toggleIfOff(
         getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
     )
 
-    private fun disableOverrideBootConfig() = toggleIfOn(
+    fun disableOverrideBootConfig() = toggleIfOn(
         getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
     )
 
