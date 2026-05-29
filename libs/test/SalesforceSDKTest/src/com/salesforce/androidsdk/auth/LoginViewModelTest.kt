@@ -423,6 +423,26 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun applyPendingServer_withWelcomeDiscoveryMyDomain_doesNotPolluteLoginServerManager() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        val originalSelectedServer = loginServerManager.selectedLoginServer
+        val originalServersCount = loginServerManager.loginServers.size
+        val myDomainUrl = "https://acme.my.salesforce.com"
+
+        viewModel.pendingServer.value = myDomainUrl
+        viewModel.applyPendingServer(pendingLoginServer = myDomainUrl)
+        Thread.sleep(200)
+
+        assertEquals(myDomainUrl, viewModel.selectedServer.value)
+        assertNotNull(viewModel.loginUrl.value)
+        assertTrue(viewModel.loginUrl.value!!.startsWith(myDomainUrl))
+
+        assertEquals(originalSelectedServer, loginServerManager.selectedLoginServer)
+        assertEquals(originalServersCount, loginServerManager.loginServers.size)
+        assertNull(loginServerManager.getLoginServerFromURL(myDomainUrl))
+    }
+
+    @Test
     fun testGetValidSeverUrl() {
         assertNull(viewModel.getValidServerUrl(""))
         assertNull(viewModel.getValidServerUrl("not_a_url_at_all"))
@@ -1283,7 +1303,7 @@ class LoginViewModelTest {
 
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = null)
         assert(viewModel.previousPendingServer == null)
-        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) }
     }
 
     @Test
@@ -1300,7 +1320,7 @@ class LoginViewModelTest {
 
         assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
-        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) }
     }
 
     @Test
@@ -1308,7 +1328,7 @@ class LoginViewModelTest {
 
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         val callbackSlot = slot<() -> Unit>()
-        every { sdkManager.fetchAuthenticationConfiguration(any(), capture(callbackSlot)) } answers {
+        every { sdkManager.fetchAuthenticationConfiguration(any(), any(), capture(callbackSlot)) } answers {
             callbackSlot.captured.invoke()
             mockk<Job>()
         }
@@ -1320,7 +1340,13 @@ class LoginViewModelTest {
 
         assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
-        verify(exactly = 1) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 1) {
+            sdkManager.fetchAuthenticationConfiguration(
+                httpAccess = any(),
+                loginServerUrl = exampleUrl,
+                completion = any(),
+            )
+        }
         verify(exactly = 1) { job.cancel() }
     }
 

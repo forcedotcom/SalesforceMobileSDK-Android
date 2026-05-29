@@ -981,10 +981,10 @@ open class LoginActivity : FragmentActivity() {
      * mirroring iOS' `simulatedDomainDiscoveryResult` hook.
      *
      * The WebView's current URL is set to ABOUT_BLANK before dispatching so that the
-     * subsequent OAuth-URL reload triggered by [applySalesforceWelcomeLoginHintAndHost]'s
-     * `addCustomLoginServer` is not suppressed by [LoginViewModel.LoginUrlSource]'s
-     * same-host short-circuit when the simulated host happens to equal the previously
-     * selected server.
+     * subsequent OAuth-URL reload triggered by [applySalesforceWelcomeLoginHintAndHost]
+     * setting [LoginViewModel.pendingServer] is not suppressed by
+     * [LoginViewModel.LoginUrlSource]'s same-host short-circuit when the simulated host
+     * happens to equal the previously selected server.
      *
      * @return Boolean true when the simulated result was applied and the welcome.salesforce.com
      * discovery WebView load should be skipped, false otherwise.
@@ -1018,16 +1018,20 @@ open class LoginActivity : FragmentActivity() {
      * Salesforce Welcome for external linking to default login with a specific
      * login username hint and My Domain log in server.  It is also used in the
      * Salesforce Welcome Discovery flow.
+     *
+     * The My Domain drives [LoginViewModel.pendingServer] for this login
+     * attempt only and is intentionally not persisted to
+     * [com.salesforce.androidsdk.config.LoginServerManager].
+     *
      * @param intent The activity's intent
      */
-    private fun applySalesforceWelcomeLoginHintAndHost(intent: Intent) {
-        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
-
+    @VisibleForTesting
+    internal fun applySalesforceWelcomeLoginHintAndHost(intent: Intent) {
         viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
 
         intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
             val loginUrl = "https://$loginHost"
-            loginServerManager.addCustomLoginServer(loginHost, loginUrl)
+            viewModel.pendingServer.value = loginUrl
         }
     }
 

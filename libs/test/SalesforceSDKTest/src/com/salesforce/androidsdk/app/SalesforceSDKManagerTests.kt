@@ -289,6 +289,33 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun fetchAuthenticationConfiguration_withLoginServerUrlOverride_usesOverrideOverPersistedSelectedServer() {
+
+        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+            LoginServer("Production", PRODUCTION_LOGIN_URL, false)
+        )
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+                loginServerUrl = "https://acme.my.salesforce.com",
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+        assertEquals(
+            PRODUCTION_LOGIN_URL,
+            SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer.url,
+        )
+    }
+
+    @Test
     fun salesforceSdkManager_ClearsAppAttestationHostName_ForNonMyDomainServer() {
 
         // Create test instance with production server (non-My Domain)

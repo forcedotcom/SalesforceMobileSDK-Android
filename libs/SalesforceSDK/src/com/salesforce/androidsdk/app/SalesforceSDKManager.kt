@@ -2001,15 +2001,23 @@ open class SalesforceSDKManager protected constructor(
      * @param httpAccess The HTTP access to use for API integration.  Defaults
      * to null to use the default HTTP access.  This parameter is intended for
      * testing purposes only and should not be used in release builds.
+     * @param loginServerUrl Optional override for the login server URL whose
+     * authentication configuration should be fetched.  Defaults to null which
+     * uses the [LoginServerManager]'s currently selected server.  Callers
+     * driving a transient server (e.g., a Welcome Discovery My Domain that is
+     * intentionally not persisted to the server list) should pass the
+     * transient URL here so browser login and app attestation are configured
+     * for the right server.
      * @param completion An optional function to invoke at the end of the action
      */
     internal fun fetchAuthenticationConfiguration(
         httpAccess: HttpAccess? = null,
+        loginServerUrl: String? = null,
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
         withTimeoutOrNull(5000L) {
-            val loginServer = loginServerManager.selectedLoginServer.url.trim()
+            val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
             if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
                 setBrowserLoginEnabled(
                     browserLoginEnabled = false,

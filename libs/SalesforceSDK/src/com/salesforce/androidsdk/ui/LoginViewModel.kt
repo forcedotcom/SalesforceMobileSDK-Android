@@ -344,7 +344,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      */
     internal fun applyPendingServer(
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-        pendingLoginServer: String?
+        pendingLoginServer: String?,
     ) {
         val pendingLoginServerUnwrapped: String = pendingLoginServer ?: return
 
@@ -358,7 +358,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
         else {
             authenticationConfigurationFetchJob?.cancel()
-            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
+            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration(
+                loginServerUrl = pendingLoginServerUnwrapped,
+            ) {
                 selectedServer.postValue(pendingLoginServerUnwrapped)
                 authenticationConfigurationFetchJob = null
             }

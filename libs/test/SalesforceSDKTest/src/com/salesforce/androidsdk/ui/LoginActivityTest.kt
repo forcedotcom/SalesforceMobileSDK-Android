@@ -46,7 +46,6 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeD
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.config.LoginServerManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -391,6 +390,69 @@ class LoginActivityTest {
         } finally {
             sdkManager.simulatedDiscoveryResult = null
         }
+    }
+
+    @Test
+    fun applySalesforceWelcomeLoginHintAndHost_setsPendingServer_andDoesNotPersistToLoginServerManager() {
+        val loginHost = "acme.my.salesforce.com"
+        val loginHint = "user@acme.com"
+        val expectedLoginUrl = "https://$loginHost"
+
+        val intent = mockk<Intent>(relaxed = true)
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HINT) } returns loginHint
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) } returns loginHost
+
+        val pendingServer = mockk<MediatorLiveData<String>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.pendingServer } returns pendingServer
+        every { viewModel.loginHint = any() } just Runs
+
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalSelectedServer = sdkManager.loginServerManager.selectedLoginServer
+        val originalServersCount = sdkManager.loginServerManager.loginServers.size
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.applySalesforceWelcomeLoginHintAndHost(intent) } answers { callOriginal() }
+
+        activity.applySalesforceWelcomeLoginHintAndHost(intent)
+
+        verify(exactly = 1) { viewModel.loginHint = loginHint }
+        verify(exactly = 1) { pendingServer.value = expectedLoginUrl }
+        org.junit.Assert.assertEquals(
+            originalSelectedServer,
+            sdkManager.loginServerManager.selectedLoginServer
+        )
+        org.junit.Assert.assertEquals(
+            originalServersCount,
+            sdkManager.loginServerManager.loginServers.size
+        )
+        org.junit.Assert.assertNull(
+            sdkManager.loginServerManager.getLoginServerFromURL(expectedLoginUrl)
+        )
+    }
+
+    @Test
+    fun applySalesforceWelcomeLoginHintAndHost_withoutLoginHostExtra_doesNotTouchPendingServer() {
+        val loginHint = "user@acme.com"
+
+        val intent = mockk<Intent>(relaxed = true)
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HINT) } returns loginHint
+        every { intent.getStringExtra(EXTRA_KEY_LOGIN_HOST) } returns null
+
+        val pendingServer = mockk<MediatorLiveData<String>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.pendingServer } returns pendingServer
+        every { viewModel.loginHint = any() } just Runs
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.applySalesforceWelcomeLoginHintAndHost(intent) } answers { callOriginal() }
+
+        activity.applySalesforceWelcomeLoginHintAndHost(intent)
+
+        verify(exactly = 1) { viewModel.loginHint = loginHint }
+        verify(exactly = 0) { pendingServer.value = any() }
     }
 
     // endregion
