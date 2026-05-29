@@ -1,10 +1,13 @@
 name: Nightly Tests
 
-on: 
+on:
   schedule:
-    - cron: "0 6 * * 2,6"  # cron is UTC, this translates to 10 PM PST Mon and Fri.
+    - cron: "30 6 * * 2-6"  # cron is UTC; 10:30 PM PT every weekday (Mon-Fri).
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 # Run the native libraries first so that the native and Hybrid MobileSync tests
 # don't run simultaneously (to prevent flappers).
@@ -17,7 +20,10 @@ jobs:
     uses: ./.github/workflows/reusable-lib-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
-    secrets: inherit
+    secrets:
+      TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   android-nightly-Hybrid:
     if: success() || failure()
     needs: [android-nightly]
@@ -28,7 +34,15 @@ jobs:
     uses: ./.github/workflows/reusable-lib-workflow.yaml
     with:
       lib: ${{ matrix.lib }}
-    secrets: inherit
+    secrets:
+      TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   android-nightly-UI-Tests:
     uses: ./.github/workflows/reusable-ui-workflow.yaml
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
