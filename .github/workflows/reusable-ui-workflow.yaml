@@ -4,6 +4,21 @@ on:
       is_pr:
         type: boolean
         default: false
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
+        required: true
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY:
+        required: true
+      UI_TEST_CONFIG:
+        required: true
+      GCLOUD_SERVICE_KEY:
+        required: true
+      CODECOV_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   test-android:
@@ -11,15 +26,17 @@ jobs:
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
         with:
+          persist-credentials: false
           # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
           fetch-depth: 100
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ ! inputs.is_pr }}
         with:
+          persist-credentials: false
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
         env:
@@ -29,30 +46,44 @@ jobs:
         run: |
           ./install.sh
           echo $UI_TEST_CONFIG > ./shared/test/ui_test_config.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9  # v4.8.0
         with:
           distribution: 'zulu'
           java-version: '21'
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407  # v3.2.2
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1  # v4.4.4
         with:
           # This is the actual Gradle version (not AGP), which can be found in the gradle-wrapper.properties file.
           gradle-version: "8.14.3"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - name: Build App for Testing
+        id: build-app
         if: success() || failure()
         run: |
-          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug
+          mkdir -p build_logs
+          set -o pipefail
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleDebug 2>&1 | tee "build_logs/assembleDebug-AuthFlowTester.log"
       - name: Build UI Tests
+        id: build-ui-tests
         run: |
-          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest
-      - uses: 'google-github-actions/auth@v2'
+          mkdir -p build_logs
+          set -o pipefail
+          ./gradlew native:NativeSampleApps:AuthFlowTester:assembleAndroidTest 2>&1 | tee "build_logs/assembleAndroidTest-AuthFlowTester.log"
+      - name: Archive build logs on failure
+        if: failure() && (steps.build-app.outcome == 'failure' || steps.build-ui-tests.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: build-logs-authflowtester-ui
+          path: build_logs/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed'  # v2.1.13
         if: success() || failure()
         with:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
-      - uses: 'google-github-actions/setup-gcloud@v2'
+      - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
         if: success() || failure()
       - name: Run PR Tests
         continue-on-error: true
@@ -60,9 +91,10 @@ jobs:
         env:
           # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
           PR_API_VERSION: "35"
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          GCLOUD_RESULTS_DIR=authflowtester-pr-build-${{github.run_number}}
-          
+          GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
+
           PR_TESTS="class com.salesforce.samples.authflowtester.BootConfigLoginTests#testCAOpaque_DefaultScopes_WebServerFlow, \
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAOpaque_DefaultScopes, \
             class com.salesforce.samples.authflowtester.ECALoginTests#testECAJwt_AllScopes, \
@@ -70,7 +102,7 @@ jobs:
             class com.salesforce.samples.authflowtester.MultiUserLoginTests#testSameApp_SameScopes_uniqueTokens, \
             class com.salesforce.samples.authflowtester.BeaconLoginTests#testBeaconOpaque_DefaultScopes, \
             class com.salesforce.samples.authflowtester.AdvancedAuthBeaconLoginTests#testBeaconOpaque_DefaultScopes"
-          
+
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
@@ -78,7 +110,7 @@ jobs:
             --environment-variables clearPackageData=true \
             --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
             --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device model=MediumPhone.arm,version="${PR_API_VERSION}",locale=en,orientation=portrait \
+            --device "model=MediumPhone.arm,version=${PR_API_VERSION},locale=en,orientation=portrait" \
             --directories-to-pull=/sdcard \
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
@@ -91,13 +123,14 @@ jobs:
         if: ${{ ! inputs.is_pr }}
         env:
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          GCLOUD_RESULTS_DIR=authflowtester-single-user-build-${{github.run_number}}
+          GCLOUD_RESULTS_DIR="authflowtester-single-user-build-${RUN_NUMBER}"
           DEVICE_ARGS=()
           for LEVEL in $FULL_API_RANGE; do
             DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
           done
-          
+
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
@@ -118,13 +151,14 @@ jobs:
         if: ${{ ! inputs.is_pr }}
         env:
           FULL_API_RANGE: "28 29 30 31 32 33 34 35 36"
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          GCLOUD_RESULTS_DIR=authflowtester-multi-user-build-${{github.run_number}}
+          GCLOUD_RESULTS_DIR="authflowtester-multi-user-build-${RUN_NUMBER}"
           DEVICE_ARGS=()
           for LEVEL in $FULL_API_RANGE; do
             DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
           done
-          
+
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
             --type instrumentation \
@@ -145,6 +179,7 @@ jobs:
         if: success() || failure()
         env:
           IS_PR: ${{ inputs.is_pr }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           mkdir -p firebase_results
           BUCKET="gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw"
@@ -191,24 +226,24 @@ jobs:
             done
           }
 
-          if $IS_PR ; then
-            BUCKET_PATH="${BUCKET}/authflowtester-pr-build-${{github.run_number}}"
+          if [ "$IS_PR" = "true" ] ; then
+            BUCKET_PATH="${BUCKET}/authflowtester-pr-build-${RUN_NUMBER}"
             if gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
               copy_results_by_api_level "${BUCKET_PATH}" "pr"
             fi
           else
-            SINGLE_PATH="${BUCKET}/authflowtester-single-user-build-${{github.run_number}}"
+            SINGLE_PATH="${BUCKET}/authflowtester-single-user-build-${RUN_NUMBER}"
             if gsutil ls "${SINGLE_PATH}" > /dev/null 2>&1; then
               copy_results_by_api_level "${SINGLE_PATH}" "single-user"
             fi
 
-            MULTI_PATH="${BUCKET}/authflowtester-multi-user-build-${{github.run_number}}"
+            MULTI_PATH="${BUCKET}/authflowtester-multi-user-build-${RUN_NUMBER}"
             if gsutil ls "${MULTI_PATH}" > /dev/null 2>&1; then
               copy_results_by_api_level "${MULTI_PATH}" "multi-user"
             fi
           fi
       - name: Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@3a81627bfac62268172037048872e8ebd4207e6d  # v6.4.1
         if: success() || failure()
         with:
           check_name: AuthFlowTester Test Results
@@ -224,12 +259,12 @@ jobs:
           report_paths: 'firebase_results/**.xml'
       - name: Archive APK
         if: success() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: AuthFlowTester-debug-${{ github.run_number }}
           path: native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         if: success() || failure()
         with:
           name: ui-test-results

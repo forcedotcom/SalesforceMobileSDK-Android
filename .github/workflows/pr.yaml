@@ -1,44 +1,57 @@
 name: Pull Request
 
 on:
-  # Dangerous without Member Check setup!
-  pull_request_target:
+  # Pull_request_target is required to grant secrets/write-permission to fork PRs.
+  # Mitigated by per-job Member Check (see "Check Write Permission" + "Validate Write Permission" steps).
+  # Reference: team Github Actions Tribal Knowledge doc.
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     branches: [dev, master]
+
+permissions:
+  contents: read
 
 jobs:
   test-orchestrator:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
     outputs:
       libs: ${{ steps.test-orchestrator.outputs.libs }}
     steps:
       - name: Check Write Permission
-        uses: octokit/request-action@v2.x
+        uses: octokit/request-action@dad4362715b7fb2ddedf9772c8670824af564f0d  # v2.4.0
         id: check_permissions
         with:
           route: GET /repos/${{ github.repository }}/collaborators/${{ github.triggering_actor }}/permission
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Debug Permission Response
+        env:
+          PERMISSION_DATA: ${{ steps.check_permissions.outputs.data }}
         run: |
-          echo "Permission raw response: ${{ steps.check_permissions.outputs.data }}"
+          echo "Permission raw response: ${PERMISSION_DATA}"
       - name: Validate Write Permission
+        env:
+          PERMISSION: ${{ fromJson(steps.check_permissions.outputs.data).permission }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         run: |
-          permission=$(echo "${{ fromJson(steps.check_permissions.outputs.data).permission }}")
-          echo "User ${{ github.triggering_actor }} has permission: $permission"
-          if [[ "$permission" != "write" && "$permission" != "admin" ]]; then
-            echo "User ${{ github.triggering_actor }} does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
+          echo "User ${TRIGGERING_ACTOR} has permission: ${PERMISSION}"
+          if [ "${PERMISSION}" != "write" ] && [ "${PERMISSION}" != "admin" ]; then
+            echo "User ${TRIGGERING_ACTOR} does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
             exit 1
           fi
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
+          persist-credentials: false
           # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
           fetch-depth: 100
           # This is dangerous without the member check
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f  # v1.310.0
         with:
           ruby-version: '3.2'
           bundler-cache: true
@@ -49,6 +62,9 @@ jobs:
         run: bundle exec danger --dangerfile=.github/DangerFiles/TestOrchestrator.rb --danger_id="TestOrchestrator"
 
   unit-tests-pr:
+    permissions:
+      contents: read
+      pull-requests: write
     needs: [test-orchestrator]
     strategy:
       fail-fast: false
@@ -58,11 +74,22 @@ jobs:
     with:
       lib: ${{ matrix.lib }}
       is_pr: true
-    secrets: inherit
+    secrets:
+      TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   ui-tests-pr:
+    permissions:
+      contents: read
+      pull-requests: write
     needs: [test-orchestrator]
     uses: ./.github/workflows/reusable-ui-workflow.yaml
     with:
       is_pr: true
-    secrets: inherit
+    secrets:
+      MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
+      MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
+      UI_TEST_CONFIG: ${{ secrets.UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
