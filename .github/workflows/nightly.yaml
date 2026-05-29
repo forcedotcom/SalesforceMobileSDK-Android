@@ -13,6 +13,9 @@ permissions:
 # don't run simultaneously (to prevent flappers).
 jobs:
   android-nightly:
+    permissions:
+      contents: read
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +28,9 @@ jobs:
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   android-nightly-Hybrid:
+    permissions:
+      contents: read
+      pull-requests: write
     if: success() || failure()
     needs: [android-nightly]
     strategy:
@@ -39,6 +45,9 @@ jobs:
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   android-nightly-UI-Tests:
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ./.github/workflows/reusable-ui-workflow.yaml
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}

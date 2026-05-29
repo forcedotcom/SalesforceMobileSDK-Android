@@ -62,6 +62,9 @@ jobs:
         run: bundle exec danger --dangerfile=.github/DangerFiles/TestOrchestrator.rb --danger_id="TestOrchestrator"
 
   unit-tests-pr:
+    permissions:
+      contents: read
+      pull-requests: write
     needs: [test-orchestrator]
     strategy:
       fail-fast: false
@@ -77,6 +80,9 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   ui-tests-pr:
+    permissions:
+      contents: read
+      pull-requests: write
     needs: [test-orchestrator]
     uses: ./.github/workflows/reusable-ui-workflow.yaml
     with:
