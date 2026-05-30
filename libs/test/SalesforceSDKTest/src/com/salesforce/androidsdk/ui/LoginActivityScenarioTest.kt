@@ -52,7 +52,7 @@ import org.junit.runner.RunWith
 class LoginActivityScenarioTest {
 
     @Test
-    fun viewModelLoginHint_UpdatesOn_onNewIntentWithSalesforceWelcomeLoginHintIntentExtras() {
+    fun viewModelLoginHint_UpdatesOn_applyWelcomeLoginHintAndHostIntentExtras() {
         val expectedLoginHint = "ietf_example_domain_reserved_for_test@example.com"
         val expectedLoginServerHostname = "welcome.salesforce.com"
         val expectedPendingServer = "https://$expectedLoginServerHostname"
@@ -62,17 +62,20 @@ class LoginActivityScenarioTest {
 
         // Production never receives the welcome login hint+host extras as the initial
         // launch intent: they are dispatched via [LoginActivity.startDefaultLoginWithHintAndHost]
-        // (internal, FLAG_ACTIVITY_SINGLE_TOP) onto the running LoginActivity, so the
-        // extras always arrive through onNewIntent.  Mirror that here.
+        // (internal, FLAG_ACTIVITY_SINGLE_TOP) onto the running LoginActivity and arrive
+        // through onNewIntent, which calls applySalesforceWelcomeLoginHintAndHost.  Drive
+        // that function directly here since onNewIntent itself is protected.
         launch<LoginActivity>(
             Intent(getApplicationContext(), LoginActivity::class.java)
         ).use { activityScenario ->
 
-            val newIntent = Intent(getApplicationContext(), LoginActivity::class.java).apply {
+            val intentWithExtras = Intent(getApplicationContext(), LoginActivity::class.java).apply {
                 putExtra(EXTRA_KEY_LOGIN_HINT, expectedLoginHint)
                 putExtra(EXTRA_KEY_LOGIN_HOST, expectedLoginServerHostname)
             }
-            activityScenario.onActivity { activity -> activity.onNewIntent(newIntent) }
+            activityScenario.onActivity { activity ->
+                activity.applySalesforceWelcomeLoginHintAndHost(intentWithExtras)
+            }
 
             activityScenario.onActivity { activity ->
                 assertEquals(expectedLoginHint, activity.viewModel.loginHint)
