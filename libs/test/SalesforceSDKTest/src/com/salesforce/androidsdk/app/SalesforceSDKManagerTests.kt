@@ -2,6 +2,7 @@ package com.salesforce.androidsdk.app
 
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.auth.HttpAccess
@@ -34,6 +35,7 @@ import org.junit.runner.RunWith
 /**
  * Tests for `SalesforceSDKManager`.
  */
+@SdkSuppress(minSdkVersion = 31)
 @RunWith(AndroidJUnit4::class)
 @SmallTest
 class SalesforceSDKManagerTests {

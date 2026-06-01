@@ -50,6 +50,7 @@ androidx-test-uiautomator = "2.3.0"
 androidx-test-orchestrator = "1.6.1"
 androidx-arch-core-testing = "2.2.0"
 mockk-android = "1.14.9"
+kotlin-reflect = "2.3.20"
 
 [libraries]
 # Kotlin / serialization
@@ -125,3 +126,4 @@ androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", 
 androidx-test-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
 androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch-core-testing" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk-android" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-reflect" }

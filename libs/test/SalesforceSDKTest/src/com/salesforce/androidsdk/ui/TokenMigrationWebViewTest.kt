@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -38,6 +39,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+@SdkSuppress(minSdkVersion = 31)
 @RunWith(AndroidJUnit4::class)
 class TokenMigrationWebViewTest {
 

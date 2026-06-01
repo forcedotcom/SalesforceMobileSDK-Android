@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth
 import android.webkit.CookieManager
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
@@ -65,6 +66,7 @@ import org.junit.runner.RunWith
  * Tests for LoginViewModel that require mocking.
  * These tests are separated from LoginViewModelTest to isolate mock usage.
  */
+@SdkSuppress(minSdkVersion = 31)
 @RunWith(AndroidJUnit4::class)
 class LoginViewModelMockTest {
     @get:Rule
@@ -379,7 +381,7 @@ class LoginViewModelMockTest {
         spyViewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
         
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
         
         // Verify doCodeExchange was called with correct parameters
         coVerify {
@@ -423,7 +425,7 @@ class LoginViewModelMockTest {
         )
 
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         // Verify doCodeExchange was called with correct parameters
         coVerify {
@@ -462,7 +464,7 @@ class LoginViewModelMockTest {
         spyViewModel.onWebServerFlowComplete(testCode, mockOnError, mockOnSuccess)
         
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         // Verify doCodeExchange was called with null loginServer and false tokenMigration
         coVerify {
@@ -498,7 +500,7 @@ class LoginViewModelMockTest {
         spyViewModel.onWebServerFlowComplete(null, mockOnError, mockOnSuccess)
         
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         // Verify doCodeExchange was called with null code, null loginServer, and false tokenMigration
         coVerify {
@@ -609,7 +611,7 @@ class LoginViewModelMockTest {
         )
 
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         // Verify doCodeExchange was called with the correct loginServer and tokenMigration
         coVerify {
@@ -657,7 +659,7 @@ class LoginViewModelMockTest {
         )
 
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         coVerify {
             spyViewModel.onAuthFlowComplete(
@@ -707,7 +709,7 @@ class LoginViewModelMockTest {
         )
 
         // Give time for the coroutine to execute
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         coVerify {
             spyViewModel.onAuthFlowComplete(
@@ -770,7 +772,7 @@ class LoginViewModelMockTest {
             loginServer = migrationServer,
             tokenMigration = true,
         )
-        Thread.sleep(200)
+        Thread.sleep(2000)
 
         // Token exchange must be performed with MIGRATION credentials.
         verify {

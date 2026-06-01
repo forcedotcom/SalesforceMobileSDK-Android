@@ -55,6 +55,7 @@ dependencies {
     androidTestImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.kotlin.reflect)
 }
 
 android { // TODO: This cannot be resolved until newDSL=true

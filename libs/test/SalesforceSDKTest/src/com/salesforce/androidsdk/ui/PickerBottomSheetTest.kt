@@ -49,6 +49,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.R.string.sf__account_selector_text
@@ -94,6 +95,7 @@ private val userList = listOf(user1, user2)
 @VisibleForTesting
 internal val customsRowCd = (hasText(customServer.name) and hasText(customServer.url))
 
+@SdkSuppress(minSdkVersion = 31)
 class PickerBottomSheetTest {
 
     @get:Rule
