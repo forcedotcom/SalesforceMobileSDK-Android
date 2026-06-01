@@ -57,7 +57,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.LIGHT
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
-import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
@@ -212,21 +211,25 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      *
      * When no Front-Door Bridge URL is in use, Web Server Flow is
      * enabled when web server authentication or browser login are enabled.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
      * @return True if Web Server Flow is enabled, false if User-Agent Flow is
      * enabled.
      */
-    internal val useWebServerFlow: Boolean
-        get() = with(SalesforceSDKManager.getInstance()) {
-            // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
-            if (isUsingFrontDoorBridge) {
-                // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
-                frontdoorBridgeCodeVerifier != null
-            }
-            // Second, when not using a front-door bridge URL, the app's preferences can be used.
-            else {
-                useWebServerAuthentication || isBrowserLoginEnabled || singleServerCustomTabActivity
-            }
+    internal fun useWebServerFlow(
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+    ): Boolean = with(sdkManager) {
+        // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
+        if (isUsingFrontDoorBridge) {
+            // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
+            frontdoorBridgeCodeVerifier != null
         }
+        // Second, when not using a front-door bridge URL, the app's preferences can be used.
+        // App attestation always requires Web Server Flow because attestation is only supported at the token endpoint.
+        else {
+            useWebServerAuthentication || isBrowserLoginEnabled || singleServerCustomTabActivity || appAttestationClient != null
+        }
+    }
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -459,13 +462,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
-        // Populate the additional parameter map with app attestation, if applicable.
         val additionalParameters = mutableMapOf<String, String>()
-        sdkManager.appAttestationClient?.run {
-            val challenge = fetchMobileAppAttestationChallenge() ?: return@run
-            val attestation = createAppAttestation(challenge) ?: return@run
-            additionalParameters[ATTESTATION] = attestation
-        }
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
@@ -512,14 +509,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
 
-            // Populate the additional parameter map with app attestation, if applicable.
-            sdkManager.appAttestationClient?.run {
-                val challenge = fetchMobileAppAttestationChallenge() ?: return@run
-                val attestation = createAppAttestation(challenge) ?: return@run
-                additionalParams[ATTESTATION] = attestation
-            }
-
-
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
                 sdkManager.useHybridAuthentication,
@@ -544,7 +533,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 else -> webServerAuthorizationUrl.toString()
             }.toString()
 
-            val webViewUrlValue = if (useWebServerFlow) {
+            val webViewUrlValue = if (useWebServerFlow(sdkManager)) {
                 browserTabUrlValue
             } else {
                 val userAgentAuthorizationUrl = OAuth2.getAuthorizationUrl(

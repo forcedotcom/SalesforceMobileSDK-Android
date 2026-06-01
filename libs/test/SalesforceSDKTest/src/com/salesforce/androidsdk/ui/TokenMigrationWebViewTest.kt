@@ -65,7 +65,7 @@ class TokenMigrationWebViewTest {
             every { authFinished } returns mutableStateOf(false)
             every { loadingIndicator } returns null
             every { oAuthConfig } returns mockOAuthConfig
-            every { useWebServerFlow } returns true
+            every { useWebServerFlow(any()) } returns true
         }
 
         // Wire up the factory so the activity's `by viewModels` delegate returns mockViewModel
@@ -148,7 +148,7 @@ class TokenMigrationWebViewTest {
         val mockResultCallback = createMockResultCallback()
         val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "instanceServer")
 
-        every { mockViewModel.useWebServerFlow } returns true
+        every { mockViewModel.useWebServerFlow(any()) } returns true
 
         val mockRequest = createMockWebResourceRequest("testapp://oauth/callback?code=test_code")
         InstrumentationRegistry.getInstrumentation().runOnMainSync {

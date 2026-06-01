@@ -261,11 +261,8 @@ public class OAuth2 {
      *                                   the default OAuth scope is provided.
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be
-     *                                   added to the request. When using
-     *                                   Salesforce Mobile App Attestation, the
-     *                                   "attestation" parameter should be added
-     *                                   to this map.
+     * @param addlParams                 Any additional parameters to add to the
+     *                                   authorization request.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
@@ -307,11 +304,8 @@ public class OAuth2 {
      * @param loginHint                  When applicable, the Salesforce Welcome Login hint
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be
-     *                                   added to the request. When using
-     *                                   Salesforce Mobile App Attestation, the
-     *                                   "attestation" parameter should be added
-     *                                   to this map.
+     * @param addlParams                 Any additional parameters to add to the
+     *                                   authorization request.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
