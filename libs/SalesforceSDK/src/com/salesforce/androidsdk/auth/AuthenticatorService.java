@@ -147,9 +147,18 @@ public class AuthenticatorService extends Service {
 
                 return resBundle;
             } catch (OAuthFailedException ofe) {
+                SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " +
+                        ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
+
+                // For retriable attestation errors, return error bundle without redirecting to login.
+                if ("user_blocked_retry".equals(ofe.response.error)) {
+                    Bundle resBundle = new Bundle();
+                    resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
+                    resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
+                    return resBundle;
+                }
+
                 if (ofe.isRefreshTokenInvalid()) {
-                    SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
-                            ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
                     return makeAuthIntentBundle(response, options);
                 }
 

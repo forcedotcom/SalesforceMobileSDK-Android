@@ -236,6 +236,7 @@ public class OAuth2 {
         UNEXPECTED,              // Unexpected error or crash
         UNEXPECTED_RESPONSE,     // Unexpected response from server
         UNKNOWN,                 // Unknown
+        USER_BLOCKED,            // Device/app blocked by server (e.g. failed attestation)
         USER_LOGOUT,             // User initiated logout
         REFRESH_TOKEN_ROTATED;   // Refresh token rotated
 

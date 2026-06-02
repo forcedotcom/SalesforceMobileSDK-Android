@@ -60,6 +60,8 @@ public class ClientManager {
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
+    public static final String EXTRA_TOKEN_ERROR_TYPE = "token_error_type";
+    public static final String EXTRA_TOKEN_ERROR_DESCRIPTION = "token_error_description";
     private static final String TAG = "ClientManager";
 
     private final AccountManager accountManager;
@@ -427,29 +429,11 @@ public class ClientManager {
                 clientManager.invalidateToken(lastNewAuthToken);
                 final UserAccount userAccount = refreshStaleToken(matchingAccount);
 
-                // NB: userAccount will be null if refresh token is no longer valid
-                newAuthToken = userAccount != null ? userAccount.getAuthToken() : null;
-                newInstanceUrl =  userAccount != null ? userAccount.getInstanceServer() : null;
+                newAuthToken = userAccount.getAuthToken();
+                newInstanceUrl = userAccount.getInstanceServer();
 
                 Intent broadcastIntent;
-                if (newAuthToken == null) {
-                    if (clientManager.revokedTokenShouldLogout) {
-
-                        // Check if a looper exists before trying to prepare another one.
-                        if (Looper.myLooper() == null) {
-                            Looper.prepare();
-                        }
-                        boolean showLoginPage = accounts.length == 1;
-                        // Note: As of writing (2024) this call will never succeed because revoke API is an
-                        // authenticated endpoint.  However, there is no harm in attempting and the debug logs
-                        // produced may help developers better understand the state of their app.
-                        SalesforceSDKManager.getInstance()
-                                .logout(matchingAccount, null, showLoginPage, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED);
-                    }
-
-                    // Broadcasts an intent that the refresh token has been revoked.
-                    broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
-                } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
+                if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
 
                     // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
                     broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
@@ -458,6 +442,48 @@ public class ClientManager {
                     // Broadcasts an intent that the access token has been refreshed.
                     broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                     EventBuilderHelper.createAndStoreEvent("tokenRefresh", null, TAG, null);
+                }
+                broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
+                SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
+            } catch (OAuth2.OAuthFailedException ofe) {
+                shouldUpdateCache = true;
+                final OAuth2.TokenErrorResponse tokenError = ofe.getTokenErrorResponse();
+                final String errorType = tokenError != null ? tokenError.error : null;
+                final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
+
+                if (!"user_blocked_retry".equals(errorType)) {
+                    // Terminal error (user_blocked, invalid_grant, etc.) — logout.
+                    if (clientManager.revokedTokenShouldLogout) {
+                        if (Looper.myLooper() == null) {
+                            Looper.prepare();
+                        }
+                        Account[] accounts = clientManager.getAccounts();
+                        Account matchingAccount = null;
+                        if (refreshToken != null) {
+                            for (Account account : accounts) {
+                                UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
+                                if (user != null && refreshToken.equals(user.getRefreshToken())) {
+                                    matchingAccount = account;
+                                    break;
+                                }
+                            }
+                        }
+                        boolean showLoginPage = accounts.length == 1;
+                        OAuth2.LogoutReason reason = "user_blocked".equals(errorType)
+                                ? OAuth2.LogoutReason.USER_BLOCKED
+                                : OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
+                        SalesforceSDKManager.getInstance()
+                                .logout(matchingAccount, null, showLoginPage, reason);
+                    }
+                }
+
+                // Broadcast revoke intent with error details for all OAuth failures.
+                Intent broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                if (errorType != null) {
+                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_TYPE, errorType);
+                }
+                if (errorDesc != null) {
+                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_DESCRIPTION, errorDesc);
                 }
                 broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                 SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
@@ -490,7 +516,7 @@ public class ClientManager {
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
-        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException {
+        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuth2.OAuthFailedException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
@@ -515,12 +541,10 @@ public class ClientManager {
 
                 return updatedUserAccount;
             } catch (OAuth2.OAuthFailedException ofe) {
-                if (ofe.isRefreshTokenInvalid()) {
-                    SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
-                            ofe.getTokenErrorResponse().error + ", Status Code: " +
-                            ofe.getHttpStatusCode() + ")", ofe);
-                }
-                return null;
+                SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " +
+                        ofe.getTokenErrorResponse().error + ", Status Code: " +
+                        ofe.getHttpStatusCode() + ")", ofe);
+                throw ofe;
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while getting new auth token", e);
                 throw new NetworkErrorException(e);
