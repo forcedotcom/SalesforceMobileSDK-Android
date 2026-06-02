@@ -965,6 +965,12 @@ class LoginViewModelTest {
         assertFalse(freshViewModel.useWebServerFlow(sdkManager))
     }
 
+    @Test
+    fun useWebServerFlow_UsesDefaultSdkManager_WhenNoParameterProvided() {
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertTrue(freshViewModel.useWebServerFlow())
+    }
+
     // endregion
 
     @Test
