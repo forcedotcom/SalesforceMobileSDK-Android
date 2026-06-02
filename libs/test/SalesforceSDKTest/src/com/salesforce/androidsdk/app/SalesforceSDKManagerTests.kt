@@ -459,6 +459,39 @@ class SalesforceSDKManagerTests {
     }
 
 
+    @Test
+    fun initNative_WithGoogleCloudProjectId_CreatesInstanceWithAppAttestationClient() {
+        val instanceField = SalesforceSDKManager::class.java.getDeclaredField("INSTANCE")
+        instanceField.isAccessible = true
+        val originalInstance = instanceField.get(null)
+
+        try {
+            instanceField.set(null, null)
+
+            SalesforceSDKManager.initNative(
+                getInstrumentation().targetContext,
+                LoginActivity::class.java,
+                762473690072L,
+            )
+
+            assertNotNull(SalesforceSDKManager.getInstance().appAttestationClient)
+        } finally {
+            instanceField.set(null, originalInstance)
+        }
+    }
+
+    @Test
+    fun initNative_WithoutGoogleCloudProjectId_CreatesInstanceWithoutAppAttestationClient() {
+        val sdkManager = TestSalesforceSDKManagerWithAttestation(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+            googleCloudProjectId = null,
+        )
+
+        assertNull(sdkManager.appAttestationClient)
+    }
+
     /**
      * Helper to create a test [SalesforceSDKManager] instance with optional
      * [googleCloudProjectId] for app attestation tests.

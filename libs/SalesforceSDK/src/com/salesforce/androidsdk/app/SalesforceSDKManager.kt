@@ -191,11 +191,19 @@ open class SalesforceSDKManager protected constructor(
     googleCloudProjectId: Long? = null,
 ) : DefaultLifecycleObserver {
 
+    @JvmOverloads
     constructor(
         context: Context,
         mainActivity: Class<out Activity>,
-        loginActivity: Class<out Activity>? = null
-    ) : this(context, mainActivity, loginActivity, nativeLoginActivity = null)
+        loginActivity: Class<out Activity>? = null,
+        googleCloudProjectId: Long? = null,
+    ) : this(
+        context = context,
+        mainActivity = mainActivity,
+        loginActivity = loginActivity,
+        nativeLoginActivity = null,
+        googleCloudProjectId = googleCloudProjectId
+    )
 
     /** The Android context */
     val appContext: Context = context
@@ -1879,6 +1887,28 @@ open class SalesforceSDKManager protected constructor(
             mainActivity,
             loginActivity,
             nativeLoginActivity,
+        )
+
+        /**
+         * Initializes required components with Salesforce App Attestation
+         * enabled. Native apps must call one overload of this method before
+         * using the Salesforce Mobile SDK.
+         *
+         * @param context The Android context
+         * @param mainActivity The app's main activity class
+         * @param googleCloudProjectId The Google Cloud Project ID to use with
+         * Google Play Integrity API and Salesforce App Attestation
+         */
+        @JvmStatic
+        fun initNative(
+            context: Context,
+            mainActivity: Class<out Activity>,
+            googleCloudProjectId: Long,
+        ) = init(
+            context,
+            mainActivity,
+            LoginActivity::class.java,
+            googleCloudProjectId = googleCloudProjectId,
         )
 
         /**
