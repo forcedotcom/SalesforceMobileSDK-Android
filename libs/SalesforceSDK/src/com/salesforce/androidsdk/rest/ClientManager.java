@@ -40,6 +40,8 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
+import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_BLOCKED;
 import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
 import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
 import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
@@ -480,8 +482,8 @@ public class ClientManager {
                         }
                         final boolean showLoginPage = accounts.length == 1;
                         final LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
-                                ? LogoutReason.USER_BLOCKED
-                                : LogoutReason.REFRESH_TOKEN_EXPIRED;
+                                ? USER_BLOCKED
+                                : REFRESH_TOKEN_EXPIRED;
                         SalesforceSDKManager.getInstance()
                                 .logout(matchingAccount, null, showLoginPage, reason);
                     }
