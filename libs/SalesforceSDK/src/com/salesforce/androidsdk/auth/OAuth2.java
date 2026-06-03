@@ -105,6 +105,9 @@ public class OAuth2 {
     public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
 
+    public static final String USER_BLOCKED_ERROR = "user_blocked";
+    public static final String USER_BLOCKED_RETRY_ERROR = "user_blocked_retry";
+
     /**
      *  OAuth 2.0 authorization endpoint request body parameter names:
      *  Salesforce App Attestation External Client App Attestation
@@ -114,8 +117,6 @@ public class OAuth2 {
      * <p>
      *  TODO: Make this internal when no longer referenced by Java. ECJ20260421
      */
-    public static final String USER_BLOCKED_ERROR = "user_blocked";
-    public static final String USER_BLOCKED_RETRY_ERROR = "user_blocked_retry";
     public static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
