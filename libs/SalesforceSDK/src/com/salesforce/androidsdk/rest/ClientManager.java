@@ -458,7 +458,6 @@ public class ClientManager {
                 broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                 SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
             } catch (OAuthFailedException ofe) {
-                shouldUpdateCache = true;
                 final TokenErrorResponse tokenError = ofe.getTokenErrorResponse();
                 final String errorType = tokenError != null ? tokenError.error : null;
                 final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
