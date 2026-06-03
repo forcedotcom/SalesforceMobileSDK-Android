@@ -64,7 +64,10 @@ public class ClientManager {
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
+    /** Intent extra: the {@code error} value from the token endpoint response (e.g. "user_blocked", "invalid_grant"). */
     public static final String EXTRA_TOKEN_ERROR_TYPE = "token_error_type";
+
+    /** Intent extra: the {@code error_description} value from the token endpoint response. */
     public static final String EXTRA_TOKEN_ERROR_DESCRIPTION = "token_error_description";
     private static final String TAG = "ClientManager";
 
