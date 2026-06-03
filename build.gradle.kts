@@ -29,4 +29,10 @@ allprojects {
             languageVersion = "1.6"
         }
     }
+
+    configurations.matching { it.name.contains("androidTest") }.configureEach {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-reflect:1.9.24")
+        }
+    }
 }
