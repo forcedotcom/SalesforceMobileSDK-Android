@@ -471,7 +471,7 @@ public class ClientManager {
                         Account matchingAccount = null;
                         if (refreshToken != null) {
                             for (Account account : accounts) {
-                                UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
+                                final UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
                                 if (user != null && refreshToken.equals(user.getRefreshToken())) {
                                     matchingAccount = account;
                                     break;
