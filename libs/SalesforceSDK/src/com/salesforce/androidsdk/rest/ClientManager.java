@@ -42,11 +42,14 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
 import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
-import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason;
+import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason;
+import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.auth.OAuth2.TokenErrorResponse;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -452,9 +455,9 @@ public class ClientManager {
                 }
                 broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                 SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
-            } catch (OAuth2.OAuthFailedException ofe) {
+            } catch (OAuthFailedException ofe) {
                 shouldUpdateCache = true;
-                final OAuth2.TokenErrorResponse tokenError = ofe.getTokenErrorResponse();
+                final TokenErrorResponse tokenError = ofe.getTokenErrorResponse();
                 final String errorType = tokenError != null ? tokenError.error : null;
                 final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
 
@@ -523,11 +526,11 @@ public class ClientManager {
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
-        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuth2.OAuthFailedException {
+        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuthFailedException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
-                final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
+                final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
                         new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), refreshToken, addlParamsMap);
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
@@ -547,7 +550,7 @@ public class ClientManager {
                 }
 
                 return updatedUserAccount;
-            } catch (OAuth2.OAuthFailedException ofe) {
+            } catch (OAuthFailedException ofe) {
                 SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.getTokenErrorResponse().error + ", Status Code: " + ofe.getHttpStatusCode() + ")", ofe);
                 throw ofe;
             } catch (Exception e) {
