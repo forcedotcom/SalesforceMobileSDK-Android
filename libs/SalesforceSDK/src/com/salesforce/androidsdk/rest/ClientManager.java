@@ -461,7 +461,7 @@ public class ClientManager {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
                         }
-                        Account[] accounts = clientManager.getAccounts();
+                        final Account[] accounts = clientManager.getAccounts();
                         Account matchingAccount = null;
                         if (refreshToken != null) {
                             for (Account account : accounts) {
@@ -472,8 +472,8 @@ public class ClientManager {
                                 }
                             }
                         }
-                        boolean showLoginPage = accounts.length == 1;
-                        LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
+                        final boolean showLoginPage = accounts.length == 1;
+                        final LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
                                 ? LogoutReason.USER_BLOCKED
                                 : LogoutReason.REFRESH_TOKEN_EXPIRED;
                         SalesforceSDKManager.getInstance()
@@ -482,7 +482,7 @@ public class ClientManager {
                 }
 
                 // Broadcast revoke intent with error details for all OAuth failures.
-                Intent broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                final Intent broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                 if (errorType != null) {
                     broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_TYPE, errorType);
                 }

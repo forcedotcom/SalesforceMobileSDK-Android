@@ -153,7 +153,7 @@ public class AuthenticatorService extends Service {
 
                 // For retriable attestation errors, return error bundle without redirecting to login.
                 if (USER_BLOCKED_RETRY_ERROR.equals(ofe.response.error)) {
-                    Bundle resBundle = new Bundle();
+                    final Bundle resBundle = new Bundle();
                     resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
                     resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
                     return resBundle;
@@ -163,7 +163,7 @@ public class AuthenticatorService extends Service {
                     return makeAuthIntentBundle(response, options);
                 }
 
-                Bundle resBundle = new Bundle();
+                final Bundle resBundle = new Bundle();
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
                 return resBundle;
