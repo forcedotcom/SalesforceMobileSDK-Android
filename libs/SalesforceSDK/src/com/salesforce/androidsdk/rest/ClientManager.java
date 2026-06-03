@@ -40,6 +40,9 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
+
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -451,7 +454,7 @@ public class ClientManager {
                 final String errorType = tokenError != null ? tokenError.error : null;
                 final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
 
-                if (!OAuth2.USER_BLOCKED_RETRY_ERROR.equals(errorType)) {
+                if (!USER_BLOCKED_RETRY_ERROR.equals(errorType)) {
                     // Terminal error (user_blocked, invalid_grant, etc.) — logout.
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
@@ -469,7 +472,7 @@ public class ClientManager {
                             }
                         }
                         boolean showLoginPage = accounts.length == 1;
-                        OAuth2.LogoutReason reason = OAuth2.USER_BLOCKED_ERROR.equals(errorType)
+                        OAuth2.LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
                                 ? OAuth2.LogoutReason.USER_BLOCKED
                                 : OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
                         SalesforceSDKManager.getInstance()
