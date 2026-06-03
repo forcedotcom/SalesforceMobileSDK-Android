@@ -541,9 +541,7 @@ public class ClientManager {
 
                 return updatedUserAccount;
             } catch (OAuth2.OAuthFailedException ofe) {
-                SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " +
-                        ofe.getTokenErrorResponse().error + ", Status Code: " +
-                        ofe.getHttpStatusCode() + ")", ofe);
+                SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.getTokenErrorResponse().error + ", Status Code: " + ofe.getHttpStatusCode() + ")", ofe);
                 throw ofe;
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Exception thrown while getting new auth token", e);
