@@ -150,7 +150,7 @@ public class AuthenticatorService extends Service {
                 SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
 
                 // For retriable attestation errors, return error bundle without redirecting to login.
-                if ("user_blocked_retry".equals(ofe.response.error)) {
+                if (OAuth2.USER_BLOCKED_RETRY_ERROR.equals(ofe.response.error)) {
                     Bundle resBundle = new Bundle();
                     resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
                     resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);

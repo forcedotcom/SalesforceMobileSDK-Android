@@ -451,7 +451,7 @@ public class ClientManager {
                 final String errorType = tokenError != null ? tokenError.error : null;
                 final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
 
-                if (!"user_blocked_retry".equals(errorType)) {
+                if (!OAuth2.USER_BLOCKED_RETRY_ERROR.equals(errorType)) {
                     // Terminal error (user_blocked, invalid_grant, etc.) — logout.
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
@@ -469,7 +469,7 @@ public class ClientManager {
                             }
                         }
                         boolean showLoginPage = accounts.length == 1;
-                        OAuth2.LogoutReason reason = "user_blocked".equals(errorType)
+                        OAuth2.LogoutReason reason = OAuth2.USER_BLOCKED_ERROR.equals(errorType)
                                 ? OAuth2.LogoutReason.USER_BLOCKED
                                 : OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
                         SalesforceSDKManager.getInstance()

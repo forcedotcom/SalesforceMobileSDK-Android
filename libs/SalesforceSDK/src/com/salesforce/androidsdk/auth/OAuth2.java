@@ -114,6 +114,8 @@ public class OAuth2 {
      * <p>
      *  TODO: Make this internal when no longer referenced by Java. ECJ20260421
      */
+    public static final String USER_BLOCKED_ERROR = "user_blocked";
+    public static final String USER_BLOCKED_RETRY_ERROR = "user_blocked_retry";
     public static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
