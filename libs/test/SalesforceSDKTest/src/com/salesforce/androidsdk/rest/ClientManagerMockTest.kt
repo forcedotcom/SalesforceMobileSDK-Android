@@ -15,6 +15,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.rest.ClientManager.EXTRA_TOKEN_ERROR
 import com.salesforce.androidsdk.rest.ClientManager.EXTRA_TOKEN_ERROR_DESCRIPTION
+import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -603,10 +604,15 @@ class ClientManagerMockTest {
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
     }
 
-    @Test
-    fun testGetNewAuthToken_UserBlocked_LogsOutWithUserBlockedReason() {
+    private data class TokenErrorResult(
+        val authTokenProvider: ClientManager.AccMgrAuthTokenProvider,
+        val broadcastIntentSlot: CapturingSlot<Intent>,
+        val mockAccount: Account,
+    )
+
+    private fun setupTokenErrorScenario(error: String, errorDescription: String): TokenErrorResult {
         val errorBody = """
-            {"error": "user_blocked", "error_description": "Device failed integrity check"}
+            {"error": "$error", "error_description": "$errorDescription"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
         every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
@@ -617,7 +623,6 @@ class ClientManagerMockTest {
                 }
             }
         }
-        val broadcastIntentSlot = slot<Intent>()
         val mockAccount = mockk<Account>(relaxed = true)
         val mockUser = mockk<UserAccount>(relaxed = true) {
             every { authToken } returns OLD_ACCESS_TOKEN
@@ -635,103 +640,51 @@ class ClientManagerMockTest {
             OLD_ACCESS_TOKEN,
             REFRESH_TOKEN,
         )
+        return TokenErrorResult(authTokenProvider, slot(), mockAccount)
+    }
 
-        Assert.assertNull(authTokenProvider.getNewAuthToken())
+    @Test
+    fun testGetNewAuthToken_UserBlocked_LogsOutWithUserBlockedReason() {
+        val result = setupTokenErrorScenario("user_blocked", "Device failed integrity check")
+
+        Assert.assertNull(result.authTokenProvider.getNewAuthToken())
         verify(exactly = 1) {
-            mockSDKManager.logout(mockAccount, any(), true, OAuth2.LogoutReason.USER_BLOCKED)
-            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+            mockSDKManager.logout(result.mockAccount, any(), true, OAuth2.LogoutReason.USER_BLOCKED)
+            mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
         }
-        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("user_blocked", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
-        Assert.assertEquals("Device failed integrity check", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
+        Assert.assertEquals("user_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("Device failed integrity check", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
     @Test
     fun testGetNewAuthToken_UserBlockedRetry_DoesNotLogout() {
-        val errorBody = """
-            {"error": "user_blocked_retry", "error_description": "Attestation verification pending"}
-        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
-            every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                    every { code } returns 400
-                    every { body } returns errorBody
-                }
-            }
-        }
-        val broadcastIntentSlot = slot<Intent>()
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-        }
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        val result = setupTokenErrorScenario("user_blocked_retry", "Attestation verification pending")
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
-
-        Assert.assertNull(authTokenProvider.getNewAuthToken())
+        Assert.assertNull(result.authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
             mockSDKManager.logout(any(), any(), any(), any())
         }
         verify(exactly = 1) {
-            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+            mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
         }
-        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("user_blocked_retry", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
-        Assert.assertEquals("Attestation verification pending", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
+        Assert.assertEquals("user_blocked_retry", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("Attestation verification pending", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
     @Test
     fun testGetNewAuthToken_InvalidGrant_LogsOutWithRefreshTokenExpired() {
-        val errorBody = """
-            {"error": "invalid_grant", "error_description": "expired authorization code"}
-        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
-            every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                    every { code } returns 400
-                    every { body } returns errorBody
-                }
-            }
-        }
-        val broadcastIntentSlot = slot<Intent>()
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-        }
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        val result = setupTokenErrorScenario("invalid_grant", "expired authorization code")
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
-
-        Assert.assertNull(authTokenProvider.getNewAuthToken())
+        Assert.assertNull(result.authTokenProvider.getNewAuthToken())
         verify(exactly = 1) {
-            mockSDKManager.logout(mockAccount, any(), true, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED)
-            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+            mockSDKManager.logout(result.mockAccount, any(), true, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED)
+            mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
         }
-        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("invalid_grant", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
-        Assert.assertEquals("expired authorization code", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
+        Assert.assertEquals("invalid_grant", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("expired authorization code", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 }
 
