@@ -70,7 +70,7 @@ public class ClientManager {
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
     /** Intent extra: the {@code error} value from the token endpoint response (e.g. "user_blocked", "invalid_grant"). */
-    public static final String EXTRA_TOKEN_ERROR_TYPE = "token_error_type";
+    public static final String EXTRA_TOKEN_ERROR = "token_error";
 
     /** Intent extra: the {@code error_description} value from the token endpoint response. */
     public static final String EXTRA_TOKEN_ERROR_DESCRIPTION = "token_error_description";
@@ -491,7 +491,7 @@ public class ClientManager {
                 // Broadcast revoke intent with error details for all OAuth failures.
                 final Intent broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                 if (errorType != null) {
-                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_TYPE, errorType);
+                    broadcastIntent.putExtra(EXTRA_TOKEN_ERROR, errorType);
                 }
                 if (errorDesc != null) {
                     broadcastIntent.putExtra(EXTRA_TOKEN_ERROR_DESCRIPTION, errorDesc);

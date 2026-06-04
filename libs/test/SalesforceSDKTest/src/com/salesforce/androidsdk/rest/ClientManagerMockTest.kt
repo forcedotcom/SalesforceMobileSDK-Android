@@ -13,6 +13,8 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.rest.ClientManager.EXTRA_TOKEN_ERROR
+import com.salesforce.androidsdk.rest.ClientManager.EXTRA_TOKEN_ERROR_DESCRIPTION
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -640,8 +642,8 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("user_blocked", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_TYPE))
-        Assert.assertEquals("Device failed integrity check", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals("user_blocked", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("Device failed integrity check", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
     @Test
@@ -685,8 +687,8 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("user_blocked_retry", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_TYPE))
-        Assert.assertEquals("Attestation verification pending", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals("user_blocked_retry", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("Attestation verification pending", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
     @Test
@@ -728,8 +730,8 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        Assert.assertEquals("invalid_grant", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_TYPE))
-        Assert.assertEquals("expired authorization code", broadcastIntentSlot.captured.getStringExtra(ClientManager.EXTRA_TOKEN_ERROR_DESCRIPTION))
+        Assert.assertEquals("invalid_grant", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertEquals("expired authorization code", broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 }
 
