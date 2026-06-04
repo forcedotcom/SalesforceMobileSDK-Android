@@ -49,7 +49,13 @@ androidx-test-espresso = "3.7.0"
 androidx-test-uiautomator = "2.3.0"
 androidx-test-orchestrator = "1.6.1"
 androidx-arch-core-testing = "2.2.0"
-mockk-android = "1.14.9"
+# TODO: Update when resolved or min API > 32
+# Pinned to 1.14.5 — the highest release before mockk's `isKotlinInline()` check
+# (added in 1.14.6) crashes with ArrayIndexOutOfBoundsException on Android 12/12L
+# (API 31/32) due to a platform bug where Context/ContextWrapper abstract methods
+# report empty getParameterAnnotations(). https://github.com/mockk/mockk/issues/1512
+#noinspection NewerVersionAvailable
+mockk-android = "1.14.5"
 
 [libraries]
 # Kotlin / serialization
