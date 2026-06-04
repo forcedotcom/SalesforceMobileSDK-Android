@@ -483,6 +483,9 @@ public class ClientManager {
                         final LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
                                 ? USER_BLOCKED
                                 : REFRESH_TOKEN_EXPIRED;
+                        // Note: As of writing (2024) this call will never succeed because revoke API is an
+                        // authenticated endpoint.  However, there is no harm in attempting and the debug logs
+                        // produced may help developers better understand the state of their app.
                         SalesforceSDKManager.getInstance()
                                 .logout(matchingAccount, null, showLoginPage, reason);
                     }
