@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import static com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.CLIENT_BLOCKED;
 import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
-import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_BLOCKED;
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
 import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
 
 import android.accounts.Account;
@@ -69,7 +69,7 @@ public class ClientManager {
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
-    /** Intent extra: the {@code error} value from the token endpoint response (e.g. "user_blocked", "invalid_grant"). */
+    /** Intent extra: the {@code error} value from the token endpoint response (e.g. "client_blocked", "invalid_grant"). */
     public static final String EXTRA_TOKEN_ERROR = "token_error";
 
     /** Intent extra: the {@code error_description} value from the token endpoint response. */
@@ -440,7 +440,7 @@ public class ClientManager {
 
                 /*
                  * Invalidate current auth token. After a prior
-                 * user_blocked_retry the cached token is null because
+                 * client_blocked_retry the cached token is null because
                  * that path clears it without logging out.
                  * AccountManager.invalidateAuthToken is a no-op for
                  * null, but guarding here avoids a wasteful call whose
@@ -474,15 +474,15 @@ public class ClientManager {
                 final String errorType = tokenError.error;
                 final String errorDesc = tokenError.errorDescription;
 
-                if (!USER_BLOCKED_RETRY_ERROR.equals(errorType)) {
-                    // Terminal error (user_blocked, invalid_grant, etc.) — logout.
+                if (!CLIENT_BLOCKED_RETRY_ERROR.equals(errorType)) {
+                    // Terminal error (client_blocked, invalid_grant, etc.) — logout.
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
                         }
                         final boolean showLoginPage = accounts.length == 1;
-                        final LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
-                                ? USER_BLOCKED
+                        final LogoutReason reason = CLIENT_BLOCKED_ERROR.equals(errorType)
+                                ? CLIENT_BLOCKED
                                 : REFRESH_TOKEN_EXPIRED;
                         // Note: As of writing (2024) this call will never succeed because revoke API is an
                         // authenticated endpoint.  However, there is no harm in attempting and the debug logs

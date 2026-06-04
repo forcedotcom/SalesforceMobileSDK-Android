@@ -2,8 +2,11 @@ package com.salesforce.androidsdk.auth
 
 import android.accounts.AbstractAccountAuthenticator
 import android.accounts.Account
-import android.accounts.AccountManager
+import android.accounts.AccountManager.KEY_ERROR_CODE
+import android.accounts.AccountManager.KEY_ERROR_MESSAGE
+import android.accounts.AccountManager.KEY_INTENT
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -42,7 +45,7 @@ class AuthenticatorServiceTest {
             every { packageName } returns "packageName"
             every { filesDir } returns targetContext.filesDir
             every { getSharedPreferences(any(), any()) } answers {
-                targetContext.getSharedPreferences(firstArg(), Context.MODE_PRIVATE)
+                targetContext.getSharedPreferences(firstArg(), MODE_PRIVATE)
             }
         }
 
@@ -102,24 +105,24 @@ class AuthenticatorServiceTest {
     }
 
     @Test
-    fun testGetAuthToken_userBlockedRetry_returnsErrorBundle() {
-        setupTokenErrorResponse("user_blocked_retry", "Attestation verification pending")
+    fun testGetAuthToken_clientBlockedRetry_returnsErrorBundle() {
+        setupTokenErrorResponse("client_blocked_retry", "Attestation verification pending")
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
-        assertEquals("user_blocked_retry", result.getString(AccountManager.KEY_ERROR_CODE))
-        assertEquals("Attestation verification pending", result.getString(AccountManager.KEY_ERROR_MESSAGE))
-        assertNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
+        assertEquals("client_blocked_retry", result.getString(KEY_ERROR_CODE))
+        assertEquals("Attestation verification pending", result.getString(KEY_ERROR_MESSAGE))
+        assertNull(result.getParcelable<android.content.Intent>(KEY_INTENT))
     }
 
     @Test
-    fun testGetAuthToken_userBlocked_returnsLoginIntent() {
-        setupTokenErrorResponse("user_blocked", "Device failed integrity check")
+    fun testGetAuthToken_clientBlocked_returnsLoginIntent() {
+        setupTokenErrorResponse("client_blocked", "Device failed integrity check")
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
-        assertNotNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
-        assertNull(result.getString(AccountManager.KEY_ERROR_CODE))
+        assertNotNull(result.getParcelable<android.content.Intent>(KEY_INTENT))
+        assertNull(result.getString(KEY_ERROR_CODE))
     }
 
     @Test
@@ -128,8 +131,8 @@ class AuthenticatorServiceTest {
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
-        assertNotNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
-        assertNull(result.getString(AccountManager.KEY_ERROR_CODE))
+        assertNotNull(result.getParcelable<android.content.Intent>(KEY_INTENT))
+        assertNull(result.getString(KEY_ERROR_CODE))
     }
 
     @Test
@@ -138,8 +141,8 @@ class AuthenticatorServiceTest {
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
-        assertEquals("server_error", result.getString(AccountManager.KEY_ERROR_CODE))
-        assertEquals("Internal server error", result.getString(AccountManager.KEY_ERROR_MESSAGE))
-        assertNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
+        assertEquals("server_error", result.getString(KEY_ERROR_CODE))
+        assertEquals("Internal server error", result.getString(KEY_ERROR_MESSAGE))
+        assertNull(result.getParcelable<android.content.Intent>(KEY_INTENT))
     }
 }

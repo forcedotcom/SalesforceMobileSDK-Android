@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR;
 
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
@@ -152,7 +152,7 @@ public class AuthenticatorService extends Service {
                 SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
 
                 // Terminal errors (except retriable attestation) redirect to login.
-                if (!USER_BLOCKED_RETRY_ERROR.equals(ofe.response.error) && ofe.isRefreshTokenInvalid()) {
+                if (!CLIENT_BLOCKED_RETRY_ERROR.equals(ofe.response.error) && ofe.isRefreshTokenInvalid()) {
                     return makeAuthIntentBundle(response, options);
                 }
 
