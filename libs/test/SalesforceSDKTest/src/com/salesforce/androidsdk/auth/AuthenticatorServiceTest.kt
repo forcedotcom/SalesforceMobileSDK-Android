@@ -86,10 +86,9 @@ class AuthenticatorServiceTest {
         unmockkAll()
     }
 
-    @Test
-    fun testGetAuthToken_userBlockedRetry_returnsErrorBundle() {
+    private fun setupTokenErrorResponse(error: String, errorDescription: String) {
         val errorBody = """
-            {"error": "user_blocked_retry", "error_description": "Attestation verification pending"}
+            {"error": "$error", "error_description": "$errorDescription"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
         every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
@@ -100,6 +99,11 @@ class AuthenticatorServiceTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun testGetAuthToken_userBlockedRetry_returnsErrorBundle() {
+        setupTokenErrorResponse("user_blocked_retry", "Attestation verification pending")
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
@@ -110,18 +114,7 @@ class AuthenticatorServiceTest {
 
     @Test
     fun testGetAuthToken_userBlocked_returnsLoginIntent() {
-        val errorBody = """
-            {"error": "user_blocked", "error_description": "Device failed integrity check"}
-        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
-            every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                    every { code } returns 400
-                    every { body } returns errorBody
-                }
-            }
-        }
+        setupTokenErrorResponse("user_blocked", "Device failed integrity check")
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
@@ -131,18 +124,7 @@ class AuthenticatorServiceTest {
 
     @Test
     fun testGetAuthToken_invalidGrant_returnsLoginIntent() {
-        val errorBody = """
-            {"error": "invalid_grant", "error_description": "expired authorization code"}
-        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
-            every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                    every { code } returns 400
-                    every { body } returns errorBody
-                }
-            }
-        }
+        setupTokenErrorResponse("invalid_grant", "expired authorization code")
 
         val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
 
