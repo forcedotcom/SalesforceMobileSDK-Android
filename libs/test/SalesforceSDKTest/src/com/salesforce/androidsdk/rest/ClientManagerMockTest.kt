@@ -787,5 +787,53 @@ class ClientManagerMockTest {
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
         Assert.assertEquals("user_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
     }
+
+    @Test
+    fun testGetNewAuthToken_NullInstanceUrl_BroadcastsRefreshIntent() {
+        val responseBody = """
+                {
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
+                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "token_type": "Bearer",
+                    "issued_at": "1234567890",
+                    "signature": "mock-signature"
+                }
+            """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns mockk<Response>(relaxed = true) {
+                    every { isSuccessful } returns true
+                    every { close() } just runs
+                    every { body } returns responseBody
+                }
+            }
+        }
+        val broadcastIntentSlot = slot<Intent>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { instanceServer } returns null
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager,
+            null,
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        val result = authTokenProvider.getNewAuthToken()
+        Assert.assertEquals(REFRESHED_ACCESS_TOKEN, result)
+        verify(exactly = 1) { mockAppContext.sendBroadcast(capture(broadcastIntentSlot)) }
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REFRESH_INTENT, broadcastIntentSlot.captured.action)
+    }
 }
 
