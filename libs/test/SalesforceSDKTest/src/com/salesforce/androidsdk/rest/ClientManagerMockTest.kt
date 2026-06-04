@@ -614,6 +614,7 @@ class ClientManagerMockTest {
         error: String,
         errorDescription: String,
         httpStatus: Int = 400,
+        revokedTokenShouldLogout: Boolean = true,
     ): TokenErrorResult {
         val errorBody = """
             {"error": "$error", "error_description": "$errorDescription"}
@@ -633,7 +634,9 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val clientManagerSpy = spyk(clientManager)
+        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
+        val cm = ClientManager(targetContext, UserAccountManagerTest.TEST_ACCOUNT_TYPE, revokedTokenShouldLogout)
+        val clientManagerSpy = spyk(cm)
         every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
@@ -769,6 +772,20 @@ class ClientManagerMockTest {
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
         // invalidateToken still only called once total (from first call when token was non-null).
         verify(exactly = 1) { clientManagerSpy.invalidateToken(any()) }
+    }
+
+    @Test
+    fun testGetNewAuthToken_TerminalError_RevokedTokenShouldNotLogout_SkipsLogout() {
+        val result = setupTokenErrorScenario(
+            "user_blocked", "Device failed integrity check",
+            revokedTokenShouldLogout = false,
+        )
+
+        Assert.assertNull(result.authTokenProvider.getNewAuthToken())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+        verify(exactly = 1) { mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot)) }
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
+        Assert.assertEquals("user_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
     }
 }
 
