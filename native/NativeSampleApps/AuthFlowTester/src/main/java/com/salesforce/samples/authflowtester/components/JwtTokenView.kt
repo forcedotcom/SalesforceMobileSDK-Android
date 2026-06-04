@@ -28,8 +28,6 @@
 package com.salesforce.samples.authflowtester.components
 
 import android.content.res.Configuration
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -131,7 +129,6 @@ private fun generateJwtJSON(jwtToken: JwtAccessToken?): String {
 }
 
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)

@@ -85,7 +85,6 @@ class BiometricAuthenticationCallbackTest {
             activity.finishSuccess(
                 accessibilityManager = any(),
                 screenLockManager = any(),
-                sdkConfiguration = any(),
             )
         }
     }
@@ -108,7 +107,6 @@ class BiometricAuthenticationCallbackTest {
             activity.sendAccessibilityEvent(
                 accessibilityManager = any(),
                 eventText = capture(sendAccessibilityCapturingSlot),
-                sdkConfiguration = any(),
             )
         }
         assertTrue(sendAccessibilityCapturingSlot.captured.contains(activity.getString(sf__screen_lock_auth_failed)))

@@ -26,10 +26,7 @@
  */
 package com.salesforce.androidsdk.auth
 
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -59,14 +56,8 @@ class ScreenLockViewModelTest {
     }
 
     @Test
-    fun viewModel_biometricAuthenticators_updatesOn_api30Plus() {
-        val biometricAuthenticators = viewModel.biometricAuthenticators(R)
+    fun viewModel_biometricAuthenticators_returnsStrongOrDeviceCredential() {
+        val biometricAuthenticators = viewModel.biometricAuthenticators()
         assertEquals(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, biometricAuthenticators)
-    }
-
-    @Test
-    fun viewModel_biometricAuthenticators_updatesOn_api29Minus() {
-        val biometricAuthenticators = viewModel.biometricAuthenticators(Q)
-        assertEquals(BIOMETRIC_WEAK or DEVICE_CREDENTIAL, biometricAuthenticators)
     }
 }

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
-import android.os.Build
 import android.webkit.WebView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -517,12 +516,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 
 @Composable
 internal fun Modifier.applyImePaddingConditionally() : Modifier =
-    // TODO:  Remove when min API is > 29
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        windowInsetsPadding(WindowInsets.ime)
-    } else {
-        this
-    }
+    windowInsetsPadding(WindowInsets.ime)
 
 @ExcludeFromJacocoGeneratedReport
 @Preview // Note: the light and dark previews should look the same.

@@ -30,8 +30,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
@@ -354,7 +352,6 @@ private fun copyToClipboard(context: Context, title: String, text: String) {
     clipboard.setPrimaryClip(clip)
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -370,7 +367,6 @@ private fun InfoRowViewPreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -386,7 +382,6 @@ private fun InfoRowViewSensitivePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -421,7 +416,6 @@ private fun InfoRowSectionFallbackThemePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -460,7 +454,6 @@ private fun UserCredentialsViewFallbackThemePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)

@@ -32,9 +32,6 @@ import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.net.Uri
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
 import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
@@ -43,7 +40,6 @@ import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
 import androidx.biometric.BiometricPrompt
@@ -954,22 +950,15 @@ internal class NativeLoginManager(
             return false
         }
 
-        // TODO: Remove when min API > 29.
-        val authenticators = when {
-            SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-            else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-        }
+        val authenticators = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
         if (biometricManager.canAuthenticate(authenticators) != BIOMETRIC_SUCCESS) {
             return false
         }
 
         val username = accountManager.currentUser?.username ?: ""
-        var hasFaceUnlock = false
-        if (SDK_INT >= Q) {
-            hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
-                    || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
-        }
+        val hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
+                || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(activity.resources.getString(sf__biometric_opt_in_title))

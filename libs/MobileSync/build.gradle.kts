@@ -28,7 +28,7 @@ android { // TODO: This cannot be resolved until newDSL=true
     compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 31
         consumerProguardFiles("consumer-rules.pro")
     }
 

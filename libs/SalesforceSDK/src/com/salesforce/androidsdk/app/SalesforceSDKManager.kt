@@ -42,9 +42,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
 import android.os.Build.VERSION.RELEASE
-import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION.SECURITY_PATCH
-import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper.getMainLooper
@@ -52,8 +50,6 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
-import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
@@ -1624,16 +1620,11 @@ open class SalesforceSDKManager protected constructor(
              * This covers the case where OS dark theme is true, but app has
              * disabled.
              */
-            if (SDK_INT > R) {
-                runCatching {
-                    activity.window?.insetsController?.setSystemBarsAppearance(
-                        APPEARANCE_LIGHT_STATUS_BARS,
-                        APPEARANCE_LIGHT_STATUS_BARS
-                    )
-                }
-            } else {
-                // TODO: Remove with minimum API >= 30
-                activity.window?.decorView?.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            runCatching {
+                activity.window?.insetsController?.setSystemBarsAppearance(
+                    APPEARANCE_LIGHT_STATUS_BARS,
+                    APPEARANCE_LIGHT_STATUS_BARS
+                )
             }
         }
     }

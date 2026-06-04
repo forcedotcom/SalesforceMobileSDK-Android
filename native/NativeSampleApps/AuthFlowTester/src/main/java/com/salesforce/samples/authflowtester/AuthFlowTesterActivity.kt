@@ -32,7 +32,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ScrollView
@@ -40,7 +39,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -874,22 +872,14 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     @Composable
     fun getColorScheme(): ColorScheme {
         return with(SalesforceSDKManager.getInstance()) {
-            when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                    if (isDarkTheme) {
-                        dynamicDarkColorScheme(this@AuthFlowTesterActivity)
-                    } else {
-                        dynamicLightColorScheme(this@AuthFlowTesterActivity)
-                    }
-                }
-                else -> {
-                    if (isDarkTheme) sfDarkColors() else sfLightColors()
-                }
+            if (isDarkTheme) {
+                dynamicDarkColorScheme(this@AuthFlowTesterActivity)
+            } else {
+                dynamicLightColorScheme(this@AuthFlowTesterActivity)
             }
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -905,7 +895,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -928,7 +917,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -996,7 +984,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)

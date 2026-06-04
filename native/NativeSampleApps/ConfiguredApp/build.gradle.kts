@@ -17,7 +17,7 @@ android { // TODO: This cannot be resolved until newDSL=true
 
     defaultConfig {
         targetSdk = 37
-        minSdk = 28
+        minSdk = 31
     }
 
     sourceSets {

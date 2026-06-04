@@ -27,10 +27,6 @@
 package com.salesforce.androidsdk.ui
 
 import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.P
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
-import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES.TIRAMISU
 import androidx.annotation.ChecksSdkIntAtLeast
 
@@ -46,21 +42,6 @@ internal fun noOp() {}
  * The Android SDK configuration.
  */
 object AndroidSdkConfiguration {
-
-    @get:ChecksSdkIntAtLeast(api = P)
-    val isP = true
-
-    @get:ChecksSdkIntAtLeast(api = Q)
-    val isQ
-        get() = SDK_INT >= Q
-
-    @get:ChecksSdkIntAtLeast(api = R)
-    val isR
-        get() = SDK_INT >= R
-
-    @get:ChecksSdkIntAtLeast(api = S)
-    val isS
-        get() = SDK_INT >= S
 
     @get:ChecksSdkIntAtLeast(api = TIRAMISU)
     val isTiramisu

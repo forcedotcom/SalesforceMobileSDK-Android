@@ -32,7 +32,6 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
-import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -47,8 +46,6 @@ import android.net.http.SslError.SSL_IDMISMATCH
 import android.net.http.SslError.SSL_NOTYETVALID
 import android.net.http.SslError.SSL_UNTRUSTED
 import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
@@ -81,7 +78,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
@@ -673,31 +669,17 @@ open class LoginActivity : FragmentActivity() {
             }
 
             BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                /*
-                 * Prompts the user to setup OS screen lock and biometric
-                 * TODO: Remove when min API > 29
-                 */
-                when {
-                    SDK_INT >= R -> viewModel.biometricAuthenticationButtonAction.value = {
-                        startActivityForResult(
-                            Intent(
-                                ACTION_BIOMETRIC_ENROLL
-                            ).apply {
-                                putExtra(
-                                    EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
-                                    authenticators
-                                )
-                            },
-                            SETUP_REQUEST_CODE
-                        )
-                    }
-
-                    else -> viewModel.biometricAuthenticationButtonAction.value = {
-                        startActivityForResult(
-                            Intent(ACTION_SET_NEW_PASSWORD),
-                            SETUP_REQUEST_CODE
-                        )
-                    }
+                // Prompts the user to setup OS screen lock and biometric
+                viewModel.biometricAuthenticationButtonAction.value = {
+                    startActivityForResult(
+                        Intent(ACTION_BIOMETRIC_ENROLL).apply {
+                            putExtra(
+                                EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                authenticators
+                            )
+                        },
+                        SETUP_REQUEST_CODE
+                    )
                 }
                 viewModel.biometricAuthenticationButtonText.intValue = sf__setup_biometric_unlock
             }
@@ -740,22 +722,15 @@ open class LoginActivity : FragmentActivity() {
     }
 
     private val authenticators
-        get() = // TODO: Remove when min API > 29.
-            when {
-                SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-                else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-            }
+        get() = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
     private val promptInfo: PromptInfo
         get() {
-            var hasFaceUnlock = false
-            if (SDK_INT >= Q) {
-                hasFaceUnlock = packageManager.hasSystemFeature(
-                    FEATURE_FACE
-                ) || packageManager.hasSystemFeature(
-                    FEATURE_IRIS
-                )
-            }
+            val hasFaceUnlock = packageManager.hasSystemFeature(
+                FEATURE_FACE
+            ) || packageManager.hasSystemFeature(
+                FEATURE_IRIS
+            )
             val subtitle = SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username ?: ""
 
             return PromptInfo.Builder()
