@@ -438,8 +438,18 @@ public class ClientManager {
                 // We found a matching account, so we'll attempt a refresh and should update the cache.
                 shouldUpdateCache = true;
 
-                // Invalidate current auth token.
-                clientManager.invalidateToken(lastNewAuthToken);
+                /*
+                 * Invalidate current auth token. After a prior
+                 * user_blocked_retry the cached token is null because
+                 * that path clears it without logging out.
+                 * AccountManager.invalidateAuthToken is a no-op for
+                 * null, but guarding here avoids a wasteful call whose
+                 * frequency increases with retriable attestation
+                 * errors.
+                 */
+                if (lastNewAuthToken != null) {
+                    clientManager.invalidateToken(lastNewAuthToken);
+                }
                 final UserAccount userAccount = refreshStaleToken(matchingAccount);
 
                 newAuthToken = userAccount.getAuthToken();
