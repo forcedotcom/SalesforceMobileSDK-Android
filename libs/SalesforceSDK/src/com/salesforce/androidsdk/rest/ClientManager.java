@@ -411,17 +411,18 @@ public class ClientManager {
             String newAuthToken = null;
             String newInstanceUrl = null;
             boolean shouldUpdateCache = false;
+            Account[] accounts = null;
+            Account matchingAccount = null;
 
             try {
                 // Only check for matching account inside synchronized thread that
                 // is actually getting the new auth token.
-                UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-                Account[] accounts = clientManager.getAccounts();
-                Account matchingAccount = null;
+                final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+                accounts = clientManager.getAccounts();
 
                 if (refreshToken != null) {
                     for (Account account : accounts) {
-                        UserAccount user = userAccountManager.buildUserAccount(account);
+                        final UserAccount user = userAccountManager.buildUserAccount(account);
                         if (user != null && refreshToken.equals(user.getRefreshToken())) {
                             matchingAccount = account;
                             break;
@@ -467,17 +468,6 @@ public class ClientManager {
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
-                        }
-                        final Account[] accounts = clientManager.getAccounts();
-                        Account matchingAccount = null;
-                        if (refreshToken != null) {
-                            for (Account account : accounts) {
-                                final UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
-                                if (user != null && refreshToken.equals(user.getRefreshToken())) {
-                                    matchingAccount = account;
-                                    break;
-                                }
-                            }
                         }
                         final boolean showLoginPage = accounts.length == 1;
                         final LogoutReason reason = USER_BLOCKED_ERROR.equals(errorType)
