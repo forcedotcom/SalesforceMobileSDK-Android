@@ -151,15 +151,8 @@ public class AuthenticatorService extends Service {
             } catch (OAuthFailedException ofe) {
                 SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
 
-                // For retriable attestation errors, return error bundle without redirecting to login.
-                if (USER_BLOCKED_RETRY_ERROR.equals(ofe.response.error)) {
-                    final Bundle resBundle = new Bundle();
-                    resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
-                    resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
-                    return resBundle;
-                }
-
-                if (ofe.isRefreshTokenInvalid()) {
+                // Terminal errors (except retriable attestation) redirect to login.
+                if (!USER_BLOCKED_RETRY_ERROR.equals(ofe.response.error) && ofe.isRefreshTokenInvalid()) {
                     return makeAuthIntentBundle(response, options);
                 }
 
