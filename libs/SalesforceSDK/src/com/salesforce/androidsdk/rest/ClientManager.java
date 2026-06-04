@@ -469,9 +469,10 @@ public class ClientManager {
                 broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                 SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
             } catch (OAuthFailedException ofe) {
+                // tokenError is never null — OAuthFailedException's constructor requires it.
                 final TokenErrorResponse tokenError = ofe.getTokenErrorResponse();
-                final String errorType = tokenError != null ? tokenError.error : null;
-                final String errorDesc = tokenError != null ? tokenError.errorDescription : null;
+                final String errorType = tokenError.error;
+                final String errorDesc = tokenError.errorDescription;
 
                 if (!USER_BLOCKED_RETRY_ERROR.equals(errorType)) {
                     // Terminal error (user_blocked, invalid_grant, etc.) — logout.
