@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
+
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
@@ -41,8 +43,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
-
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 

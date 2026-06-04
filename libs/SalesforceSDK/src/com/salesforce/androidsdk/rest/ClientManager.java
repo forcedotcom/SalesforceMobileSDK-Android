@@ -26,6 +26,12 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
+import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_BLOCKED;
+import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
+import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.NetworkErrorException;
@@ -40,12 +46,6 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
-import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_BLOCKED;
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_ERROR;
-import static com.salesforce.androidsdk.auth.OAuth2.USER_BLOCKED_RETRY_ERROR;
-import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
-
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason;
