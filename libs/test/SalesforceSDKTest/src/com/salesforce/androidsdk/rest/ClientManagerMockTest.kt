@@ -610,7 +610,11 @@ class ClientManagerMockTest {
         val mockAccount: Account,
     )
 
-    private fun setupTokenErrorScenario(error: String, errorDescription: String): TokenErrorResult {
+    private fun setupTokenErrorScenario(
+        error: String,
+        errorDescription: String,
+        httpStatus: Int = 400,
+    ): TokenErrorResult {
         val errorBody = """
             {"error": "$error", "error_description": "$errorDescription"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
@@ -618,7 +622,7 @@ class ClientManagerMockTest {
             every { newCall(any()) } returns mockk<Call> {
                 every { execute() } returns mockk<Response>(relaxed = true) {
                     every { isSuccessful } returns false
-                    every { code } returns 400
+                    every { code } returns httpStatus
                     every { body } returns errorBody
                 }
             }
@@ -685,6 +689,86 @@ class ClientManagerMockTest {
         Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
         Assert.assertEquals("invalid_grant", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
         Assert.assertEquals("expired authorization code", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+    }
+
+    @Test
+    fun testGetNewAuthToken_UnparseableErrorResponse_BroadcastsWithoutExtras() {
+        val malformedBody = "not json at all"
+            .toResponseBody("text/plain".toMediaType())
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns mockk<Response>(relaxed = true) {
+                    every { isSuccessful } returns false
+                    every { code } returns 400
+                    every { body } returns malformedBody
+                }
+            }
+        }
+        val broadcastIntentSlot = slot<Intent>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+        }
+        val clientManagerSpy = spyk(clientManager)
+        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            clientManagerSpy,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        Assert.assertNull(authTokenProvider.getNewAuthToken())
+        verify(exactly = 1) {
+            mockSDKManager.logout(mockAccount, any(), true, OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED)
+            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+        }
+        Assert.assertEquals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
+        Assert.assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        Assert.assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+    }
+
+    @Test
+    fun testGetNewAuthToken_UserBlockedRetry_SubsequentCallSkipsInvalidateToken() {
+        val result = setupTokenErrorScenario("user_blocked_retry", "Attestation verification pending")
+        val clientManagerSpy = spyk(clientManager)
+        every { clientManagerSpy.accounts } returns arrayOf(result.mockAccount)
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            clientManagerSpy,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        // First call: user_blocked_retry clears lastNewAuthToken to null.
+        Assert.assertNull(authTokenProvider.getNewAuthToken())
+        verify(exactly = 1) { clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN) }
+
+        // Set up a second error response for the second call.
+        val errorBody2 = """
+            {"error": "user_blocked_retry", "error_description": "Still pending"}
+        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns mockk<Response>(relaxed = true) {
+                    every { isSuccessful } returns false
+                    every { code } returns 400
+                    every { body } returns errorBody2
+                }
+            }
+        }
+
+        // Second call: lastNewAuthToken is null, so invalidateToken should be skipped.
+        Assert.assertNull(authTokenProvider.getNewAuthToken())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+        // invalidateToken still only called once total (from first call when token was non-null).
+        verify(exactly = 1) { clientManagerSpy.invalidateToken(any()) }
     }
 }
 

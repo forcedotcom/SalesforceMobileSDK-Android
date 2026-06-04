@@ -86,7 +86,7 @@ class AuthenticatorServiceTest {
         unmockkAll()
     }
 
-    private fun setupTokenErrorResponse(error: String, errorDescription: String) {
+    private fun setupTokenErrorResponse(error: String, errorDescription: String, httpStatus: Int = 400) {
         val errorBody = """
             {"error": "$error", "error_description": "$errorDescription"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
@@ -94,7 +94,7 @@ class AuthenticatorServiceTest {
             every { newCall(any()) } returns mockk<Call> {
                 every { execute() } returns mockk<Response>(relaxed = true) {
                     every { isSuccessful } returns false
-                    every { code } returns 400
+                    every { code } returns httpStatus
                     every { body } returns errorBody
                 }
             }
@@ -130,5 +130,16 @@ class AuthenticatorServiceTest {
 
         assertNotNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
         assertNull(result.getString(AccountManager.KEY_ERROR_CODE))
+    }
+
+    @Test
+    fun testGetAuthToken_serverError500_returnsErrorBundle() {
+        setupTokenErrorResponse("server_error", "Internal server error", httpStatus = 500)
+
+        val result = authenticator.getAuthToken(null, mockAccount, "authTokenType", null)
+
+        assertEquals("server_error", result.getString(AccountManager.KEY_ERROR_CODE))
+        assertEquals("Internal server error", result.getString(AccountManager.KEY_ERROR_MESSAGE))
+        assertNull(result.getParcelable<android.content.Intent>(AccountManager.KEY_INTENT))
     }
 }
