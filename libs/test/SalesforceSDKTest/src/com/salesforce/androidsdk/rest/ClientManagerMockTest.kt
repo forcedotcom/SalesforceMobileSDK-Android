@@ -840,5 +840,55 @@ class ClientManagerMockTest {
         verify(exactly = 1) { mockAppContext.sendBroadcast(capture(broadcastIntentSlot)) }
         assertEquals(ACCESS_TOKEN_REFRESH_INTENT, broadcastIntentSlot.captured.action)
     }
+
+    @Test
+    fun testGetNewAuthToken_MalformedResponse_MissingAccessToken_LogsOut() {
+        val responseBody = """
+                {
+                    "instance_url": "https://login.salesforce.com",
+                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "token_type": "Bearer",
+                    "issued_at": "1234567890",
+                    "signature": "mock-signature"
+                }
+            """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns mockk<Response>(relaxed = true) {
+                    every { isSuccessful } returns true
+                    every { close() } just runs
+                    every { body } returns responseBody
+                }
+            }
+        }
+        val broadcastIntentSlot = slot<Intent>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+        }
+        val clientManagerSpy = spyk(clientManager)
+        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
+            clientManagerSpy,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            REFRESH_TOKEN,
+        )
+
+        assertNull(authTokenProvider.getNewAuthToken())
+        verify(exactly = 1) {
+            mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED)
+            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+        }
+        assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
+        assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
+    }
 }
 
