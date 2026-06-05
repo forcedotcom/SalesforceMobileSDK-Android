@@ -890,5 +890,38 @@ class ClientManagerMockTest {
         assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
         assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
+
+    @Test
+    fun testGetNewAuthToken_NullUserAccount_LogsOut() {
+        val broadcastIntentSlot = slot<Intent>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+        }
+        val clientManagerSpy = spyk(clientManager)
+        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+
+        val authTokenProvider = spyk(
+            ClientManager.AccMgrAuthTokenProvider(
+                clientManagerSpy,
+                "https://login.salesforce.com",
+                OLD_ACCESS_TOKEN,
+                REFRESH_TOKEN,
+            )
+        )
+        every { authTokenProvider["refreshStaleToken"](any<Account>()) } returns null
+
+        assertNull(authTokenProvider.getNewAuthToken())
+        verify(exactly = 1) {
+            mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED)
+            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
+        }
+        assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
+        assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+    }
 }
 

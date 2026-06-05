@@ -41,6 +41,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
 
+import androidx.annotation.NonNull;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -452,6 +454,11 @@ public class ClientManager {
                 }
                 final UserAccount userAccount = refreshStaleToken(matchingAccount);
 
+                //noinspection ConstantValue
+                if (userAccount == null) {
+                    throw new MalformedTokenException("refreshStaleToken returned null");
+                }
+
                 newAuthToken = userAccount.getAuthToken();
                 newInstanceUrl = userAccount.getInstanceServer();
 
@@ -548,6 +555,7 @@ public class ClientManager {
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
+        @NonNull
         private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuthFailedException, MalformedTokenException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
