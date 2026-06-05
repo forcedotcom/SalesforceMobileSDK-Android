@@ -1124,9 +1124,11 @@ open class LoginActivity : FragmentActivity() {
      * @param uri The URL to apply as the initial URL if it is a valid
      * Salesforce Welcome Discovery mobile URL
      */
-    private fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
+    @VisibleForTesting
+    internal fun useSalesforceWelcomeDiscoveryMobileUrl(uri: Uri) {
         if (isSalesforceWelcomeDiscoveryMobileUrl(uri)) {
             viewModel.loginUrl.postValue(uri.toString())
+            viewModel.browserCustomTabUrl.postValue(uri.toString())
         }
     }
 

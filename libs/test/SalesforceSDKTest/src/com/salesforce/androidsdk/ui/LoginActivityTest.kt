@@ -177,6 +177,63 @@ class LoginActivityTest {
         verify(exactly = 1) { activity.loadLoginPageInCustomTab(eq(testUrl), any()) }
     }
 
+    /**
+     * Regression test for Login for Admin with Welcome Discovery: the discovery flow
+     * does not run through [LoginViewModel.generateAuthorizationUrl], so
+     * [LoginActivity.useSalesforceWelcomeDiscoveryMobileUrl] is the only writer that
+     * sets the WebView and custom-tab URLs while the user is on the discovery page.
+     * Both [LoginViewModel.loginUrl] and [LoginViewModel.browserCustomTabUrl] must be
+     * updated so that any feature reading either one — including Login for Admin via
+     * `browserCustomTabUrl` — opens the same discovery URL the WebView is showing.
+     */
+    @Test
+    fun useSalesforceWelcomeDiscoveryMobileUrl_setsBothLoginUrlAndBrowserCustomTabUrl() {
+        val welcomeDiscoveryUrl = "https://welcome.salesforce.com$SALESFORCE_WELCOME_DISCOVERY_URL_PATH" +
+                "?$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID=X" +
+                "&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION=Y" +
+                "&$SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL=Z"
+
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.useSalesforceWelcomeDiscoveryMobileUrl(any()) } answers { callOriginal() }
+
+        activity.useSalesforceWelcomeDiscoveryMobileUrl(welcomeDiscoveryUrl.toUri())
+
+        verify(exactly = 1) { loginUrl.postValue(welcomeDiscoveryUrl) }
+        verify(exactly = 1) { browserCustomTabUrl.postValue(welcomeDiscoveryUrl) }
+    }
+
+    /**
+     * Negative regression test: a non-discovery URL must not be applied as either the
+     * WebView URL or the custom-tab URL.  This guards [isSalesforceWelcomeDiscoveryMobileUrl]
+     * against accidentally accepting URLs that lack the Welcome Discovery query parameters.
+     */
+    @Test
+    fun useSalesforceWelcomeDiscoveryMobileUrl_withNonDiscoveryUrl_doesNotTouchLiveData() {
+        val nonDiscoveryUrl = "https://login.salesforce.com/services/oauth2/authorize?response_type=code"
+
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.useSalesforceWelcomeDiscoveryMobileUrl(any()) } answers { callOriginal() }
+
+        activity.useSalesforceWelcomeDiscoveryMobileUrl(nonDiscoveryUrl.toUri())
+
+        verify(exactly = 0) { loginUrl.postValue(any()) }
+        verify(exactly = 0) { browserCustomTabUrl.postValue(any()) }
+    }
+
     // endregion
 
     @Test
