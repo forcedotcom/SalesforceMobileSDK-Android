@@ -587,9 +587,19 @@ open class LoginActivity : FragmentActivity() {
         )
 
         viewModel.clearCookies()
+        val isLightningTokenEndpointFailure = e is OAuthFailedException
+            && e.tokenErrorResponse.error == "unsupported_grant_type"
+            && viewModel.selectedServer.value?.contains(".lightning.") == true
+        if (isLightningTokenEndpointFailure) {
+            w(TAG, "Code exchange failed with unsupported_grant_type against Lightning URL: ${viewModel.selectedServer.value}. Lightning URLs do not support authorization_code grant type. Use a My Domain login server URL instead.")
+        }
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
-            makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
+            if (isLightningTokenEndpointFailure) {
+                makeText(this, "Can't use Lightning URL for code exchange. Use My Domain login server URL.", LENGTH_LONG).show()
+            } else {
+                makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
+            }
             viewModel.reloadWebView()
         }
     }
