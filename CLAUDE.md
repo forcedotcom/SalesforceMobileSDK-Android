@@ -182,6 +182,7 @@ When reviewing PRs (or acting as an AI reviewer), verify:
 These rules apply when Claude Code operates as an agent in these repos:
 
 ### Do
+- Before committing, verify changes against the Code Review Checklist in this file. Do not rely on reviewers to catch issues the checklist already covers.
 - Always run the test suite for the affected library before creating a commit. Before running the suite, check that `test_credentials.json` exists in `shared/test`.
 - When fixing a bug, write a failing test first, then fix the code.
 - Check both iOS and Android repos when investigating a feature — the behavior should be consistent across platforms.
