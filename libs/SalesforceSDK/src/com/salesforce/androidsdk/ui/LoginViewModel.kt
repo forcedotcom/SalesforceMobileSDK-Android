@@ -72,7 +72,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -80,8 +79,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
+import kotlin.coroutines.CoroutineContext
 
-open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
+/**
+ * View model for the login activity managing OAuth authorization URL
+ * generation, server selection, and authentication flow state.
+ * @param bootConfig The boot configuration providing default OAuth
+ * client credentials, redirect URI, and scopes
+ * @param backgroundContext The coroutine context used for background
+ * work such as OAuth configuration resolution and URL generation.
+ * This parameter is intended for testing purposes only. Defaults to
+ * [IO]
+ */
+open class LoginViewModel(
+    val bootConfig: BootConfig,
+    @get:VisibleForTesting internal val backgroundContext: CoroutineContext = IO,
+) : ViewModel() {
 
     // region UI Customization
 
@@ -297,7 +310,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 }
 
                 viewModelScope.launch {
-                    generateAuthorizationUrl(server)
+                    generateAuthorizationUrl(
+                        server = server,
+                        coroutineContext = backgroundContext,
+                    )
                 }
             }
         }
@@ -451,7 +467,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * Generates an OAuth authorization URL for token migration given a login
      * [server] and [migrationOAuthConfig].
      */
-    internal suspend fun generateMigrationAuthorizationPath(
+    internal fun generateMigrationAuthorizationPath(
         server: String,
         migrationOAuthConfig: OAuthConfig,
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
@@ -683,7 +699,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             if (newHost != null && newHost == currentHost) return
 
             scope.launch {
-                viewModel.generateAuthorizationUrl(server = server)
+                viewModel.generateAuthorizationUrl(
+                    server = server,
+                    coroutineContext = viewModel.backgroundContext,
+                )
             }
         }
     }

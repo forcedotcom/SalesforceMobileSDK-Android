@@ -48,12 +48,15 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -77,12 +80,19 @@ class LoginViewModelTest {
     @get:Rule
     val instantExecutorRule: InstantTaskExecutorRule = InstantTaskExecutorRule()
 
+    private val testDispatcher = StandardTestDispatcher()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val bootConfig = BootConfig.getBootConfig(context)
-    private val viewModel = LoginViewModel(bootConfig)
+    private lateinit var viewModel: LoginViewModel
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        viewModel = LoginViewModel(
+            bootConfig = bootConfig,
+            backgroundContext = testDispatcher,
+        )
+
         // This is required for the LiveData to actually update during the test
         // because it isn't actually being observed since there is no lifecycle.
         viewModel.pendingServer.observeForever {
@@ -92,12 +102,12 @@ class LoginViewModelTest {
         viewModel.selectedServer.observeForever { }
         viewModel.loginUrl.observeForever { }
 
-        // Give the LiveData sources time to propagate through the MediatorLiveData
-        Thread.sleep(100)
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @After
     fun teardown() {
+        Dispatchers.resetMain()
         SalesforceSDKManager.getInstance().loginServerManager.reset()
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
     }
@@ -151,9 +161,8 @@ class LoginViewModelTest {
         assertFalse(viewModel.loginUrl.value!!.contains(FAKE_SERVER_URL))
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        // Wait for loginUrl to update after selectedServer change (async coroutine)
-        Thread.sleep(200)
         assertNotNull(viewModel.loginUrl.value)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
         assertTrue(viewModel.loginUrl.value!!.startsWith("https://$FAKE_SERVER_URL"))
@@ -165,9 +174,6 @@ class LoginViewModelTest {
     fun browserCustomTabUrl_IsPopulated_AfterAuthorizationUrlGeneration() {
         // Observe so the MediatorLiveData actually propagates in the test environment.
         viewModel.browserCustomTabUrl.observeForever { }
-
-        // The setup() already triggers URL generation; wait for async completion.
-        Thread.sleep(200)
 
         val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
         assertNotNull("browserCustomTabUrl should be populated for the admin flow", browserCustomTabUrl)
@@ -191,7 +197,7 @@ class LoginViewModelTest {
             SalesforceSDKManager.getInstance().useWebServerAuthentication = false
 
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
             val loginUrl = viewModel.loginUrl.value
@@ -228,8 +234,6 @@ class LoginViewModelTest {
     fun browserCustomTabUrl_UpdatesOn_selectedServerChange() {
         viewModel.browserCustomTabUrl.observeForever { }
 
-        // Wait for initial generation.
-        Thread.sleep(200)
         val initialUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(initialUrl)
         assertFalse(
@@ -238,7 +242,7 @@ class LoginViewModelTest {
         )
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         val updatedUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(updatedUrl)
@@ -361,8 +365,7 @@ class LoginViewModelTest {
         assertEquals(originalAuthUrl, viewModel.loginUrl.value)
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
-        // Wait for async update
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
@@ -376,8 +379,7 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
         viewModel.reloadWebView()
-        // Wait for async update
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotNull(newCodeChallenge)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
@@ -394,8 +396,7 @@ class LoginViewModelTest {
         viewModel.jwt = FAKE_JWT
         viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
         viewModel.reloadWebView()
-        // Wait for async update
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
         assertNotEquals(expectedUrl, viewModel.loginUrl.value)
 
         codeChallenge = getSHA256Hash(viewModel.codeVerifier)
@@ -427,7 +428,7 @@ class LoginViewModelTest {
 
         viewModel.pendingServer.value = myDomainUrl
         viewModel.applyPendingServer(pendingLoginServer = myDomainUrl)
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(myDomainUrl, viewModel.selectedServer.value)
         assertNotNull(viewModel.loginUrl.value)
@@ -466,7 +467,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL contains the custom consumer key and redirect URI
         val loginUrl = viewModel.loginUrl.value!!
@@ -482,7 +483,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL contains the boot config values
         val loginUrl = viewModel.loginUrl.value!!
@@ -515,7 +516,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the custom app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -556,7 +557,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the debug override values, not app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -718,7 +719,7 @@ class LoginViewModelTest {
 
             // Test with test server
             viewModel.selectedServer.value = "https://test.salesforce.com"
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
             var loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain test consumer key. URL: $loginUrl",
                 loginUrl.contains("test_consumer_key"))
@@ -729,7 +730,7 @@ class LoginViewModelTest {
 
             // Test with production server
             viewModel.selectedServer.value = "https://login.salesforce.com"
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
             loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain prod consumer key. URL: $loginUrl",
                 loginUrl.contains("prod_consumer_key"))
@@ -755,7 +756,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL is generated correctly without scopes
         val loginUrl = viewModel.loginUrl.value!!
@@ -779,7 +780,7 @@ class LoginViewModelTest {
 
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL did not change
         assertEquals("frontDoorBridgeUrl should still be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
@@ -803,12 +804,11 @@ class LoginViewModelTest {
             viewModel.reloadWebView()
 
             // Verify URL was set to ABOUT_BLANK for User Agent Flow
-            // NOTE:  If this is flaky we should use Turbine to test the actual state changes.
             assertEquals("loginUrl should be set to ABOUT_BLANK for User Agent Flow",
                 ABOUT_BLANK, viewModel.loginUrl.value)
 
-            // Wait for the new authorization URL to be generated
-            Thread.sleep(200)
+            // Advance the coroutine to generate the new URL
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify a new URL was generated
             val newUrl = viewModel.loginUrl.value
@@ -832,16 +832,11 @@ class LoginViewModelTest {
 
         // Call reloadWebView
         viewModel.reloadWebView()
-
-        // Give a brief moment to check if ABOUT_BLANK would be set
-        Thread.sleep(50)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL was NOT set to ABOUT_BLANK for Web Server Flow
         assertNotEquals("loginUrl should NOT be ABOUT_BLANK for Web Server Flow",
             ABOUT_BLANK, viewModel.loginUrl.value)
-
-        // Wait for the new authorization URL to be generated
-        Thread.sleep(200)
 
         // Verify a new URL was generated with different code challenge
         val newUrl = viewModel.loginUrl.value
@@ -858,11 +853,11 @@ class LoginViewModelTest {
 
         // Set selectedServer to null
         viewModel.selectedServer.value = null
-        Thread.sleep(100)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL did not change
         assertEquals("loginUrl should not change when selectedServer is null",
@@ -883,7 +878,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the boot config values (fallback)
             val loginUrl = viewModel.loginUrl.value!!
