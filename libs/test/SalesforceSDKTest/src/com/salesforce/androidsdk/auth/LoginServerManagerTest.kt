@@ -601,8 +601,8 @@ class LoginServerManagerMockTest {
 
         val sharedPreferences = mockk<SharedPreferences>(relaxed = true)
         every { sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0) } returns 1
-        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns null
-        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns null
+        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns "Production"
+        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns "https://login.salesforce.com"
         every { sharedPreferences.getBoolean(String.format(IS_CUSTOM, 0), false) } returns false
 
         val context = mockk<Context>()

@@ -226,14 +226,15 @@ public class LoginServerManager {
 
 			// Default to the first login server on the list.
 			if (!loginServers.isEmpty()) {
-				selectedServer.postValue(loginServers.get(0));
+				selectedLoginServer = loginServers.get(0);
+				selectedServer.postValue(selectedLoginServer);
 			}
 
 			// Store the selected login server.
-			setSelectedLoginServer(selectedServer.getValue());
+			setSelectedLoginServer(selectedLoginServer);
 		}
 
-		return selectedServer.getValue();
+		return selectedLoginServer;
 	}
 
 	/**
