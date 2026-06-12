@@ -33,13 +33,19 @@ import io.mockk.verify
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.net.URLDecoder
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val OLD_ACCESS_TOKEN = "old-token"
 private const val REFRESHED_ACCESS_TOKEN = "refreshed-auth-token"
@@ -112,10 +118,16 @@ class ClientManagerMockTest {
                 every { execute() } returns refreshResponse
             }
         }
+
+        // REFRESH_STATES is static and survives across Robolectric/instrumented tests;
+        // unmockkAll() won't clear it. Reset so a leftover refreshing=true can't corrupt
+        // later tests.
+        ClientManager.AccMgrAuthTokenProvider.resetRefreshStateForTest()
     }
 
     @After
     fun tearDown() {
+        ClientManager.AccMgrAuthTokenProvider.resetRefreshStateForTest()
         unmockkAll()
     }
 
@@ -458,11 +470,13 @@ class ClientManagerMockTest {
         }
 
         val mockAccount = mockk<Account>(relaxed = true)
-        // The persisted account's refresh token follows whatever updateAccount
-        // was last called with (i.e., the most recent rotated value).
+        // The persisted account's tokens follow whatever updateAccount was last called with
+        // (i.e., the most recent rotated values). Both access and refresh tokens advance
+        // together, as they do in production when a refreshed UserAccount is persisted.
+        var persistedAuthToken = OLD_ACCESS_TOKEN
         var persistedRefreshToken = REFRESH_TOKEN
         val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
+            every { authToken } answers { persistedAuthToken }
             every { refreshToken } answers { persistedRefreshToken }
             every { loginServer } returns "https://login.salesforce.com"
         }
@@ -472,6 +486,7 @@ class ClientManagerMockTest {
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.updateAccount(mockAccount, any()) } answers {
+            persistedAuthToken = secondArg<UserAccount>().authToken
             persistedRefreshToken = secondArg<UserAccount>().refreshToken
             mockk()
         }
@@ -923,5 +938,414 @@ class ClientManagerMockTest {
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
         assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
     }
+
+    // region Concurrent Refresh Tests
+
+    /*
+        Concurrency / Refresh Token Rotation (RTR): when several providers that
+        share one account all need to refresh at once (e.g. on resume), exactly
+        one provider (the "winner") must hit the token endpoint. The others
+        ("losers") must wait for and adopt the winner's fresh access token —
+        never POST in parallel, never log the user out. Without app-global,
+        per-account serialization a loser would POST an already-rotated refresh
+        token, get invalid_grant, and log out.
+     */
+    @Test
+    fun testGetNewAuthToken_ConcurrentBurst_SingleRefresh_NoLogout() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        // Winner signals it is inside the network call (holding refreshing=true).
+        val winnerInExecute = CountDownLatch(1)
+        // Held until losers are confirmed parked; releasing lets the winner publish.
+        val releaseWinner = CountDownLatch(1)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    winnerInExecute.countDown()
+                    releaseWinner.await(5, TimeUnit.SECONDS)
+                    successResponse(ROTATED_REFRESH_TOKEN)
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val providers = (0 until 4).map {
+            ClientManager.AccMgrAuthTokenProvider(
+                mockClientManager,
+                "https://login.salesforce.com",
+                OLD_ACCESS_TOKEN,
+                REFRESH_TOKEN,
+            )
+        }
+
+        val results = arrayOfNulls<String>(providers.size)
+        // Start the winner first and wait until it is actually inside execute(), so the
+        // other three are guaranteed to become losers and park (no fixed sleep).
+        val winnerThread = Thread { results[0] = providers[0].getNewAuthToken() }
+        winnerThread.start()
+        assertEquals(true, winnerInExecute.await(5, TimeUnit.SECONDS))
+
+        val loserThreads = (1 until providers.size).map { i ->
+            Thread { results[i] = providers[i].getNewAuthToken() }
+        }
+        loserThreads.forEach { it.start() }
+        awaitThreadsParked(loserThreads, loserThreads.size)
+
+        // Losers are parked; release the winner to publish its result.
+        releaseWinner.countDown()
+        (loserThreads + winnerThread).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        // Exactly one rotation hit the token endpoint.
+        assertEquals(1, tokenEndpointCalls.get())
+        // All four callers received the refreshed access token.
+        results.forEach { assertEquals(REFRESHED_ACCESS_TOKEN, it) }
+        // Only the winner updates the account; no logout for losers.
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(mockAccount, any()) }
+    }
+
+    /*
+        Recheck-under-lock guardrail (the idle-provider scenario). A provider that did not take
+        part in the resume burst still carries an OLD access + refresh token. It later makes a
+        request, gets a 401, and calls getNewAuthToken(). By then another provider already
+        refreshed and storage holds the NEW access + refresh token. The winner must NOT POST a
+        (redundant, rotation-triggering) refresh — it must detect that storage advanced past its
+        own tokens and ADOPT them.
+
+        - Correct code: zero token-endpoint POSTs, returns the stored (new) access token, adopts
+          the rotated refresh token, zero logout.
+        - Without the guardrail: a needless POST would occur (asserted by postedTokens being empty).
+     */
+    @Test
+    fun testGetNewAuthToken_StorageAdvanced_AdoptsWithoutRefreshing() {
+        val newAccessToken = REFRESHED_ACCESS_TOKEN     // already in storage from another refresh
+        val newRefreshToken = ROTATED_REFRESH_TOKEN     // already rotated into storage
+        val postedTokens = mutableListOf<String?>()
+
+        // Any token-endpoint call would be a bug; record posts so we can assert none happened.
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } answers {
+                postedTokens.add(postedRefreshToken(firstArg()))
+                mockk<Call> { every { execute() } answers { successResponse(newRefreshToken) } }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        // Storage already holds the NEW tokens (a concurrent/earlier provider refreshed).
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns newAccessToken
+            every { refreshToken } returns newRefreshToken
+            every { instanceServer } returns "https://login.salesforce.com"
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+
+        // Provider still holds the OLD access token and OLD refresh token (it was idle during
+        // the burst). It must match the account on the OLD refresh token, which is what it has.
+        val provider = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager,
+            "https://login.salesforce.com",
+            OLD_ACCESS_TOKEN,
+            newRefreshToken,
+        )
+
+        // Adopts the stored access token without any network refresh.
+        assertEquals(newAccessToken, provider.getNewAuthToken())
+        assertEquals(emptyList<String?>(), postedTokens)
+        assertEquals(newRefreshToken, provider.refreshToken)
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+        verify(exactly = 0) { mockUserAccountManager.updateAccount(any(), any()) }
+    }
+
+    /*
+        Winner fails: when the winner's refresh returns invalid_grant, the parked losers must each
+        return null WITHOUT logging out and WITHOUT broadcasting. Only the winner may attempt
+        logout/broadcast.
+     */
+    @Test
+    fun testGetNewAuthToken_ConcurrentBurst_WinnerFails_LosersReturnNullNoLogout() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        val winnerInExecute = CountDownLatch(1)
+        val releaseWinner = CountDownLatch(1)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    winnerInExecute.countDown()
+                    releaseWinner.await(5, TimeUnit.SECONDS)
+                    invalidGrantResponse()
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        // Real (spied) client manager so revokedTokenShouldLogout=true logout path is reachable.
+        val clientManagerSpy = spyk(clientManager)
+        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+
+        val providers = (0 until 4).map {
+            ClientManager.AccMgrAuthTokenProvider(
+                clientManagerSpy,
+                "https://login.salesforce.com",
+                OLD_ACCESS_TOKEN,
+                REFRESH_TOKEN,
+            )
+        }
+        val results = arrayOfNulls<String>(providers.size)
+
+        val winnerThread = Thread { results[0] = providers[0].getNewAuthToken() }
+        winnerThread.start()
+        assertEquals(true, winnerInExecute.await(5, TimeUnit.SECONDS))
+
+        val loserThreads = (1 until providers.size).map { i ->
+            Thread { results[i] = providers[i].getNewAuthToken() }
+        }
+        loserThreads.forEach { it.start() }
+        awaitThreadsParked(loserThreads, loserThreads.size)
+
+        releaseWinner.countDown()
+        (loserThreads + winnerThread).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        // Exactly one POST (the winner's). Losers never re-attempted.
+        assertEquals(1, tokenEndpointCalls.get())
+        // All callers got null (winner failed, losers adopt the failed result).
+        results.forEach { assertNull(it) }
+        // Only the winner may attempt logout; it does so exactly once.
+        verify(exactly = 1) { mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED) }
+        // Only one broadcast total (the winner's revoke broadcast); losers do not broadcast.
+        verify(exactly = 1) { mockAppContext.sendBroadcast(any()) }
+    }
+
+    /*
+        Null instance URL must not strand losers. The winner refreshes successfully but the
+        response carries no instance_url. A parked loser must still return a non-null token and a
+        non-null getInstanceUrl() (falling back to its own constructor instance URL), so that
+        RestClient.refreshAccessToken does not throw.
+     */
+    @Test
+    fun testGetNewAuthToken_ConcurrentBurst_NullInstanceUrlLoser_KeepsOwnInstanceUrl() {
+        val winnerInExecute = CountDownLatch(1)
+        val releaseWinner = CountDownLatch(1)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    winnerInExecute.countDown()
+                    releaseWinner.await(5, TimeUnit.SECONDS)
+                    successResponse(refreshToken = null, instanceUrl = null)
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { instanceServer } returns null
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val winner = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://winner.instance.url", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+        val loser = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://loser.instance.url", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+
+        val results = arrayOfNulls<String>(2)
+        val winnerThread = Thread { results[0] = winner.getNewAuthToken() }
+        winnerThread.start()
+        assertEquals(true, winnerInExecute.await(5, TimeUnit.SECONDS))
+
+        val loserThread = Thread { results[1] = loser.getNewAuthToken() }
+        loserThread.start()
+        awaitThreadsParked(listOf(loserThread), 1)
+
+        releaseWinner.countDown()
+        listOf(winnerThread, loserThread).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        // Loser received the refreshed token.
+        assertEquals(REFRESHED_ACCESS_TOKEN, results[1])
+        // Loser kept its own (non-null) instance URL since the winner published none.
+        assertEquals("https://loser.instance.url", loser.instanceUrl)
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
+    /*
+        Interrupted loser. A loser interrupted while parked must return cleanly (here: null,
+        because no result was published yet) and must NEVER fall through into the winner block
+        (which would double-refresh / risk a stale POST). It also re-asserts the interrupt flag.
+     */
+    @Test
+    fun testGetNewAuthToken_InterruptedLoser_ReturnsCleanlyWithoutWinnerBody() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        val winnerInExecute = CountDownLatch(1)
+        val releaseWinner = CountDownLatch(1)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    winnerInExecute.countDown()
+                    releaseWinner.await(5, TimeUnit.SECONDS)
+                    successResponse(ROTATED_REFRESH_TOKEN)
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        val winner = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+        val loser = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+
+        val winnerThread = Thread { winner.getNewAuthToken() }
+        winnerThread.start()
+        assertEquals(true, winnerInExecute.await(5, TimeUnit.SECONDS))
+
+        val loserResult = arrayOfNulls<String>(1)
+        val loserThrew = arrayOfNulls<Throwable>(1)
+        val loserThread = Thread {
+            try {
+                loserResult[0] = loser.getNewAuthToken()
+            } catch (t: Throwable) {
+                loserThrew[0] = t
+            }
+        }
+        loserThread.start()
+        awaitThreadsParked(listOf(loserThread), 1)
+
+        // Interrupt the parked loser; it must return cleanly without entering the winner body.
+        loserThread.interrupt()
+        loserThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertNull(loserThrew[0])
+        assertNull(loserResult[0])
+        // The loser did NOT perform its own refresh (winner is still the only POST so far).
+        assertEquals(1, tokenEndpointCalls.get())
+
+        // Let the winner finish cleanly.
+        releaseWinner.countDown()
+        winnerThread.join(TimeUnit.SECONDS.toMillis(5))
+        assertEquals(1, tokenEndpointCalls.get())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
+    // endregion
+
+    // region Concurrency test helpers
+
+    /** Reads the refresh_token value out of an OkHttp token-endpoint request's form body. */
+    private fun postedRefreshToken(request: Request): String? {
+        val buffer = Buffer()
+        request.body?.writeTo(buffer)
+        // Form body looks like: grant_type=...&client_id=...&refresh_token=VALUE&format=json
+        return buffer.readUtf8().split("&")
+            .firstOrNull { it.startsWith("refresh_token=") }
+            ?.substringAfter("refresh_token=")
+            ?.let { URLDecoder.decode(it, "UTF-8") }
+    }
+
+    /** Deterministically blocks until [count] threads are parked in WAITING/TIMED_WAITING. */
+    private fun awaitThreadsParked(threads: List<Thread>, count: Int) {
+        val deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5)
+        while (System.currentTimeMillis() < deadline) {
+            val parked = threads.count {
+                it.state == Thread.State.WAITING || it.state == Thread.State.TIMED_WAITING
+            }
+            if (parked >= count) return
+            Thread.yield()
+        }
+        throw AssertionError("Timed out waiting for $count threads to park; states=${threads.map { it.state }}")
+    }
+
+    private fun successResponse(refreshToken: String?, instanceUrl: String? = "https://login.salesforce.com"): Response {
+        val instanceLine = if (instanceUrl != null) "\"instance_url\": \"$instanceUrl\"," else ""
+        val refreshLine = if (refreshToken != null) "\"refresh_token\": \"$refreshToken\"," else ""
+        val responseBody = """
+                {
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
+                    $refreshLine
+                    $instanceLine
+                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "token_type": "Bearer",
+                    "issued_at": "1234567890",
+                    "signature": "mock-signature"
+                }
+            """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        return mockk(relaxed = true) {
+            every { isSuccessful } returns true
+            every { close() } just runs
+            every { body } returns responseBody
+        }
+    }
+
+    private fun invalidGrantResponse(): Response {
+        val errorBody = """
+            {"error": "invalid_grant", "error_description": "expired access/refresh token"}
+        """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
+        return mockk(relaxed = true) {
+            every { isSuccessful } returns false
+            every { code } returns 400
+            every { body } returns errorBody
+        }
+    }
+
+    // endregion
 }
 

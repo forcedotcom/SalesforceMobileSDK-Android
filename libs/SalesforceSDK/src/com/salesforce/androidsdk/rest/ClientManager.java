@@ -60,6 +60,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -366,8 +367,44 @@ public class ClientManager {
      */
     public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
 
-        private boolean gettingAuthToken;
-        private final Object lock = new Object();
+        /**
+         * App-global, per-account refresh coordination state.
+         *
+         * <p>Many subsystems each hold their own {@link RestClient} and therefore their own
+         * {@code AccMgrAuthTokenProvider} instance, each carrying a construction-time refresh-token
+         * snapshot. Without app-global serialization, a token-refresh storm (e.g. on resume) could
+         * have multiple providers POST in true parallel. With server-side Refresh Token Rotation
+         * (RTR) the loser then POSTs an already-rotated refresh token, gets {@code invalid_grant},
+         * and logs the user out. This per-account state serializes refreshes so exactly one provider
+         * (the "winner") performs the network refresh and the others ("losers") adopt its result.
+         */
+        private static final class RefreshState {
+            // Dedicated monitor for this state's winner/loser coordination. A private final lock
+            // object (rather than synchronizing on the RefreshState reference itself) makes the
+            // intent explicit and avoids the "synchronization on local variable" inspection.
+            final Object lock = new Object();
+            boolean refreshing;
+            String newAuthToken;        // winner's fresh access token (null on failure)
+            String newInstanceUrl;      // winner's instance URL (losers need it; see RestClient.refreshAccessToken)
+            String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
+            long lastRefreshTime = -1;
+            boolean failed;
+        }
+
+        private static final ConcurrentHashMap<String, RefreshState> REFRESH_STATES = new ConcurrentHashMap<>();
+
+        /**
+         * Clears the app-global per-account refresh coordination state. Test-only: {@code REFRESH_STATES}
+         * is static and survives across tests, so it must be reset between them.
+         */
+        @androidx.annotation.VisibleForTesting
+        static void resetRefreshStateForTest() {
+            REFRESH_STATES.clear();
+        }
+
+        /** Bounded safety-net so a loser never parks forever if a winner is somehow lost. */
+        private static final long LOSER_WAIT_TIMEOUT_MILLIS = 30_000L;
+
         private final ClientManager clientManager;
         private String lastNewAuthToken;
         // Mutable to support server-side Refresh Token Rotation (RTR).
@@ -397,63 +434,134 @@ public class ClientManager {
         public String getNewAuthToken() {
             SalesforceSDKLogger.i(TAG, "Need new access token");
 
-            // Wait if another thread is already fetching an access token
-            synchronized (lock) {
-                if (gettingAuthToken) {
-                    try {
-                        lock.wait();
-                    } catch (InterruptedException e) {
-                        SalesforceSDKLogger.w(TAG, "Exception thrown while getting new auth token", e);
+            // The matching loop and the no-match early-out MUST run before any shared-state
+            // election so that a no-match path (e.g. account removed during refresh) never
+            // marks a RefreshState as refreshing — preserving the no deadlock fix and
+            // logout-during-refresh semantics.
+            final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
+            final Account[] accounts = clientManager.getAccounts();
+            Account matchingAccount = null;
+            String stateKey = null;
+
+            if (refreshToken != null && accounts != null) {
+                for (Account account : accounts) {
+                    final UserAccount user = userAccountManager.buildUserAccount(account);
+                    if (user != null && refreshToken.equals(user.getRefreshToken())) {
+                        matchingAccount = account;
+                        final String userId = user.getUserId();
+                        final String orgId = user.getOrgId();
+                        if (userId == null || orgId == null) {
+                            SalesforceSDKLogger.w(TAG, "Cannot serialize token refresh: " +
+                                    "account is missing userId or orgId");
+                            return null;
+                        }
+                        stateKey = userId + ":" + orgId;
+                        break;
                     }
-                    return lastNewAuthToken;
                 }
-                gettingAuthToken = true;
             }
 
-            String newAuthToken = null;
-            String newInstanceUrl = null;
-            boolean shouldUpdateCache = false;
-            Account[] accounts = null;
-            Account matchingAccount = null;
+            // Fail early to ensure we don't logout the current user below by sending null.
+            if (matchingAccount == null) {
+                return null;
+            }
 
-            try {
-                // Only check for matching account inside synchronized thread that
-                // is actually getting the new auth token.
-                final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-                accounts = clientManager.getAccounts();
-
-                if (refreshToken != null) {
-                    for (Account account : accounts) {
-                        final UserAccount user = userAccountManager.buildUserAccount(account);
-                        if (user != null && refreshToken.equals(user.getRefreshToken())) {
-                            matchingAccount = account;
-                            break;
+            // Elect winner/loser on the SINGLE coordination primitive (the per-account state).
+            // Losers wait (looping on the condition to absorb spurious/lost wakeups) for the
+            // winner's published result and adopt it without re-attempting, logging out, or
+            // broadcasting.
+            final RefreshState state = REFRESH_STATES.computeIfAbsent(stateKey, k -> new RefreshState());
+            synchronized (state.lock) {
+                if (state.refreshing) {
+                    final long deadline = System.currentTimeMillis() + LOSER_WAIT_TIMEOUT_MILLIS;
+                    boolean published;
+                    try {
+                        // Loop on the condition (absorbs spurious/lost wakeups); bounded so a
+                        // lost winner can't strand us forever.
+                        while (state.refreshing) {
+                            final long timeRemaining = deadline - System.currentTimeMillis();
+                            if (timeRemaining <= 0) {
+                                break;
+                            }
+                            state.lock.wait(timeRemaining);
                         }
+                        published = !state.refreshing;
+                    } catch (InterruptedException e) {
+                        SalesforceSDKLogger.w(TAG, "Interrupted while waiting for in-flight token refresh", e);
+                        Thread.currentThread().interrupt();
+                        // Adopt a result only if one was actually published; otherwise null.
+                        if (!state.refreshing && state.newAuthToken != null) {
+                            adoptWinnerResult(state);
+                            return state.newAuthToken;
+                        }
+                        return null;
                     }
-                }
 
-                // Fail early to ensure we don't logout the current user below by sending null.
-                if (matchingAccount == null) {
+                    if (published) {
+                        adoptWinnerResult(state);
+                        return state.newAuthToken;
+                    }
+                    // Timed out waiting for an in-flight refresh on this account. Becoming a
+                    // second concurrent refresher would risk a parallel stale refresh-token POST
+                    // and a spurious logout, so fail safe: return null rather than refresh
+                    // uncoordinated. The caller's request fails and can retry; the in-flight
+                    // winner (if merely slow) still completes and serves the next caller.
                     return null;
                 }
 
-                // We found a matching account, so we'll attempt a refresh and should update the cache.
-                shouldUpdateCache = true;
+                // Become the winner.
+                state.refreshing = true;
+                state.failed = false;
+                state.newAuthToken = null;
+                state.newInstanceUrl = null;
+                state.rotatedRefreshToken = null;
+            }
 
+            // The winner performs the refresh. The entire body below runs inside one try/finally
+            // whose finally ALWAYS publishes (or marks failed) and notifies, so no early return
+            // can leave state.refreshing stuck true.
+            String newAuthToken = null;
+            String newInstanceUrl = null;
+
+            try {
                 /*
-                 * Invalidate current auth token. After a prior
-                 * client_blocked_retry the cached token is null because
-                 * that path clears it without logging out.
-                 * AccountManager.invalidateAuthToken is a no-op for
-                 * null, but guarding here avoids a wasteful call whose
-                 * frequency increases with retriable attestation
-                 * errors.
+                 * Recheck-under-lock guardrail. We hold the per-account refresh slot, but the
+                 * 401/403 that sent us here may have been provoked by a token this provider was
+                 * still using from BEFORE a concurrent (or earlier) refresh already rotated it.
+                 * Re-read the account's current tokens from storage: if EITHER the access token
+                 * or the refresh token in storage has advanced past what this provider last used,
+                 * someone already refreshed — adopt their tokens and skip a redundant network POST.
+                 *
+                 * Under Refresh Token Rotation every needless POST rotates the refresh token again
+                 * and widens the window for a stale-token logout, so avoiding it is a correctness
+                 * guardrail, not an optimization. If the adopted access token is itself stale, the
+                 * caller's replayed request 401s again and the next getNewAuthToken() — now holding
+                 * the latest tokens — performs a real refresh (self-correcting, never a loop).
                  */
                 if (lastNewAuthToken != null) {
+                    final UserAccount currentAccount =
+                            UserAccountManager.getInstance().buildUserAccount(matchingAccount);
+                    if (currentAccount != null) {
+                        final String storedAuthToken = currentAccount.getAuthToken();
+                        final String storedRefreshToken = currentAccount.getRefreshToken();
+                        final boolean haveLatestTokens =
+                                java.util.Objects.equals(storedAuthToken, lastNewAuthToken)
+                                        && java.util.Objects.equals(storedRefreshToken, this.refreshToken);
+                        if (!haveLatestTokens && storedAuthToken != null) {
+                            // Storage advanced past us — adopt without refreshing or broadcasting.
+                            SalesforceSDKLogger.i(TAG,
+                                    "Access/refresh token already advanced in storage; adopting without refresh");
+                            newAuthToken = storedAuthToken;
+                            newInstanceUrl = currentAccount.getInstanceServer();
+                            this.refreshToken = storedRefreshToken;
+                            return newAuthToken;
+                        }
+                    }
+
                     clientManager.invalidateToken(lastNewAuthToken);
                 }
-                final UserAccount userAccount = refreshStaleToken(matchingAccount);
 
+                final UserAccount userAccount = refreshStaleToken(matchingAccount);
                 //noinspection ConstantValue
                 if (userAccount == null) {
                     throw new MalformedTokenException("refreshStaleToken returned null");
@@ -529,17 +637,50 @@ public class ClientManager {
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
             } finally {
-                synchronized (lock) {
-                    gettingAuthToken = false;
-                    if (shouldUpdateCache) {
-                        lastNewAuthToken = newAuthToken;
-                        lastNewInstanceUrl = newInstanceUrl;
-                        lastRefreshTime  = System.currentTimeMillis();
+                // Update this instance's own cache so its getters stay correct.
+                lastNewAuthToken = newAuthToken;
+                lastNewInstanceUrl = newInstanceUrl;
+                lastRefreshTime = System.currentTimeMillis();
+                // Publish the result to the per-account state and wake any waiting losers.
+                // This is the SINGLE publish path and ALWAYS runs on every winner exit path so
+                // losers never wait forever and never wake without a definitive result.
+                synchronized (state.lock) {
+                    state.refreshing = false;
+                    if (newAuthToken != null) {
+                        state.newAuthToken = newAuthToken;
+                        state.newInstanceUrl = newInstanceUrl;
+                        state.rotatedRefreshToken = this.refreshToken;
+                        state.lastRefreshTime = System.currentTimeMillis();
+                        state.failed = false;
+                    } else {
+                        state.newAuthToken = null;
+                        state.newInstanceUrl = null;
+                        state.failed = true;
                     }
-                    lock.notifyAll();
+                    state.lock.notifyAll();
                 }
             }
             return newAuthToken;
+        }
+
+        /**
+         * Copies the winner's refresh result from the shared per-account state into this loser
+         * instance's cache so that this instance's getters return consistent values.
+         *
+         * <p>Instance URL and refresh token are only overwritten when the winner actually
+         * published a non-null value; otherwise this loser keeps its own constructor values so
+         * {@link #getInstanceUrl()} stays non-null even when the refresh response carried no
+         * instance_url (a valid case — see {@code RestClient.refreshAccessToken}).
+         */
+        private void adoptWinnerResult(RefreshState state) {
+            this.lastNewAuthToken = state.newAuthToken;
+            this.lastRefreshTime = state.lastRefreshTime;
+            if (state.newInstanceUrl != null) {
+                this.lastNewInstanceUrl = state.newInstanceUrl;
+            }
+            if (state.rotatedRefreshToken != null) {
+                this.refreshToken = state.rotatedRefreshToken;
+            }
         }
 
         @Override
@@ -559,9 +700,14 @@ public class ClientManager {
         private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuthFailedException, MalformedTokenException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
             final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
+            // Refresh with the LIVE persisted refresh token, not this provider's
+            // construction-time snapshot. With server-side Refresh Token Rotation (RTR), a prior
+            // refresh on another provider may have already rotated the token; reading the current
+            // value avoids POSTing a stale token that would fail with invalid_grant.
+            final String currentRefreshToken = originalUserAccount.getRefreshToken();
             try {
                 final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), refreshToken, addlParamsMap);
+                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), currentRefreshToken, addlParamsMap);
 
                 if (tr.authToken == null) {
                     throw new MalformedTokenException("Token endpoint returned null access token");
