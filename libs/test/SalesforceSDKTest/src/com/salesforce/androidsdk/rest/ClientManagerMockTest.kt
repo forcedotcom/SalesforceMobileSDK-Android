@@ -1061,8 +1061,11 @@ class ClientManagerMockTest {
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
 
-        // Provider still holds the OLD access token and OLD refresh token (it was idle during
-        // the burst). It must match the account on the OLD refresh token, which is what it has.
+        // Provider holds the OLD access token but the current (already-rotated) refresh token
+        // from storage — it was idle during the burst, so its access token is stale while its
+        // refresh token already matches what the winner persisted. The account match succeeds on
+        // that refresh token, and the recheck-under-lock then adopts the stored access token
+        // instead of POSTing.
         val provider = ClientManager.AccMgrAuthTokenProvider(
             mockClientManager,
             "https://login.salesforce.com",
@@ -1309,7 +1312,7 @@ class ClientManagerMockTest {
                 it.state == Thread.State.WAITING || it.state == Thread.State.TIMED_WAITING
             }
             if (parked >= count) return
-            Thread.yield()
+            Thread.sleep(50)
         }
         throw AssertionError("Timed out waiting for $count threads to park; states=${threads.map { it.state }}")
     }

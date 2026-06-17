@@ -388,7 +388,6 @@ public class ClientManager {
             String newInstanceUrl;      // winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
             long lastRefreshTime = -1;
-            boolean failed;
         }
 
         private static final ConcurrentHashMap<String, RefreshState> REFRESH_STATES = new ConcurrentHashMap<>();
@@ -511,7 +510,6 @@ public class ClientManager {
 
                 // Become the winner.
                 state.refreshing = true;
-                state.failed = false;
                 state.newAuthToken = null;
                 state.newInstanceUrl = null;
                 state.rotatedRefreshToken = null;
@@ -651,11 +649,9 @@ public class ClientManager {
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
                         state.lastRefreshTime = System.currentTimeMillis();
-                        state.failed = false;
                     } else {
                         state.newAuthToken = null;
                         state.newInstanceUrl = null;
-                        state.failed = true;
                     }
                     state.lock.notifyAll();
                 }
