@@ -109,6 +109,7 @@ import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
+import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__lightning_url_code_exchange_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
@@ -125,6 +126,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
@@ -584,6 +586,8 @@ open class LoginActivity : FragmentActivity() {
         )
 
         viewModel.clearCookies()
+        val isClientBlocked = e is OAuthFailedException
+            && e.tokenErrorResponse.error == CLIENT_BLOCKED_ERROR
         val isLightningTokenEndpointFailure = e is OAuthFailedException
             && e.tokenErrorResponse.error == "unsupported_grant_type"
             && viewModel.selectedServer.value?.contains(".lightning.") == true
@@ -592,11 +596,12 @@ open class LoginActivity : FragmentActivity() {
         }
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
-            if (isLightningTokenEndpointFailure) {
-                makeText(this, getString(sf__lightning_url_code_exchange_error), LENGTH_LONG).show()
-            } else {
-                makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
+            val toastMessage = when {
+                isClientBlocked -> getString(sf__app_blocked_error)
+                isLightningTokenEndpointFailure -> getString(sf__lightning_url_code_exchange_error)
+                else -> "$error : $errorDesc"
             }
+            makeText(this, toastMessage, LENGTH_LONG).show()
             viewModel.reloadWebView()
         }
     }

@@ -787,6 +787,107 @@ class LoginViewModelMockTest {
 
     // endregion
 
+    // region doCodeExchange Error Path Tests
+
+    @Test
+    fun doCodeExchange_whenExchangeCodeThrowsClientBlocked_callsOnAuthFlowError() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+
+        val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
+        every { tokenErrorResponse.error } returns OAuth2.CLIENT_BLOCKED_ERROR
+        every { tokenErrorResponse.errorDescription } returns "App is blocked"
+        val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 403)
+
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } throws oauthException
+
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        Thread.sleep(200)
+
+        verify {
+            mockOnError("Token Request Error", any(), oauthException)
+        }
+    }
+
+    @Test
+    fun doCodeExchange_whenExchangeCodeThrowsIOException_callsOnAuthFlowError() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+
+        val ioException = java.io.IOException("Network error")
+
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } throws ioException
+
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        Thread.sleep(200)
+
+        verify {
+            mockOnError("Token Request Error", "Network error", ioException)
+        }
+    }
+
+    @Test
+    fun doCodeExchange_whenExchangeCodeThrowsOAuthFailed_neverCallsOnAuthFlowComplete() = runBlocking {
+        val testCode = "test_auth_code"
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+
+        val spyViewModel = spyk(viewModel)
+
+        // Force OAuth2 class initialization before mocking
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+
+        val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
+        every { tokenErrorResponse.error } returns "invalid_grant"
+        every { tokenErrorResponse.errorDescription } returns "Expired authorization code"
+        val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 400)
+
+        every {
+            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+        } throws oauthException
+
+        coEvery {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        } just runs
+
+        spyViewModel.selectedServer.value = "https://test.salesforce.com"
+        Thread.sleep(100)
+
+        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        Thread.sleep(200)
+
+        coVerify(exactly = 0) {
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
+        }
+    }
+
+    // endregion
+
     // region showBiometricAuthenticationButton Tests
 
     @Test
