@@ -88,8 +88,8 @@ class LoginActivityAuthErrorTest {
     @Test
     fun onAuthFlowError_givenClientBlocked_broadcastsWithCorrectExtras() {
         val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        every { tokenErrorResponse.error } returns CLIENT_BLOCKED_ERROR
-        every { tokenErrorResponse.errorDescription } returns "App is blocked by admin"
+        tokenErrorResponse.error = CLIENT_BLOCKED_ERROR
+        tokenErrorResponse.errorDescription = "App is blocked by admin"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
 
         every {
@@ -139,8 +139,8 @@ class LoginActivityAuthErrorTest {
     @Test
     fun onAuthFlowError_givenClientBlocked_showsAppBlockedToast() {
         val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        every { tokenErrorResponse.error } returns CLIENT_BLOCKED_ERROR
-        every { tokenErrorResponse.errorDescription } returns "App is blocked"
+        tokenErrorResponse.error = CLIENT_BLOCKED_ERROR
+        tokenErrorResponse.errorDescription = "App is blocked"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
 
         every {
@@ -176,8 +176,8 @@ class LoginActivityAuthErrorTest {
     @Test
     fun onAuthFlowError_givenGenericOAuthError_broadcastsWithCorrectExtras() {
         val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        every { tokenErrorResponse.error } returns "invalid_grant"
-        every { tokenErrorResponse.errorDescription } returns "Expired authorization code"
+        tokenErrorResponse.error = "invalid_grant"
+        tokenErrorResponse.errorDescription = "Expired authorization code"
         val oauthException = OAuthFailedException(tokenErrorResponse, 400)
 
         every {

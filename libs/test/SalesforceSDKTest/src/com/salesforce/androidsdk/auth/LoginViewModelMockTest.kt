@@ -802,8 +802,8 @@ class LoginViewModelMockTest {
         mockkStatic(OAuth2::class)
 
         val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        every { tokenErrorResponse.error } returns OAuth2.CLIENT_BLOCKED_ERROR
-        every { tokenErrorResponse.errorDescription } returns "App is blocked"
+        tokenErrorResponse.error = OAuth2.CLIENT_BLOCKED_ERROR
+        tokenErrorResponse.errorDescription = "App is blocked"
         val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 403)
 
         every {
@@ -863,8 +863,8 @@ class LoginViewModelMockTest {
         mockkStatic(OAuth2::class)
 
         val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        every { tokenErrorResponse.error } returns "invalid_grant"
-        every { tokenErrorResponse.errorDescription } returns "Expired authorization code"
+        tokenErrorResponse.error = "invalid_grant"
+        tokenErrorResponse.errorDescription = "Expired authorization code"
         val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 400)
 
         every {
