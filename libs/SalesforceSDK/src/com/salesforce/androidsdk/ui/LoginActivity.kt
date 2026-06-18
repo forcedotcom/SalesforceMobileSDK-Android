@@ -230,7 +230,7 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // Private variables
-    private var baseUserAgentString = "";
+    private var baseUserAgentString = ""
     private var wasBackgrounded = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
