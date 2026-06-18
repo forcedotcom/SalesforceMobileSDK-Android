@@ -795,89 +795,70 @@ class LoginViewModelMockTest {
 
     // region doCodeExchange Error Path Tests
 
-    @Test
-    fun doCodeExchange_whenExchangeCodeThrowsClientBlocked_callsOnAuthFlowError() = runBlocking {
-        val testCode = "test_auth_code"
-        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
-        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
-
-        val spyViewModel = spyk(viewModel)
-
-        // Force OAuth2 class initialization before mocking
+    private fun setupExchangeCodeMock(throws: Throwable) {
         TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
+        every {
+            exchangeCode(any(), any(), any(), any(), any(), any())
+        } throws throws
+    }
+
+    @Test
+    fun doCodeExchange_whenExchangeCodeThrowsClientBlocked_callsOnAuthFlowError() = runBlocking {
+        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
+        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
+        val spyViewModel = spyk(viewModel)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
         tokenErrorResponse.error = CLIENT_BLOCKED_ERROR
         tokenErrorResponse.errorDescription = "App is blocked"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
-
-        every {
-            exchangeCode(any(), any(), any(), any(), any(), any())
-        } throws oauthException
+        setupExchangeCodeMock(oauthException)
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        spyViewModel.doCodeExchange("test_auth_code", mockOnError, mockOnSuccess)
 
-        verify {
-            mockOnError("Token Request Error", any(), oauthException)
-        }
+        verify { mockOnError("Token Request Error", any(), oauthException) }
+        verify(exactly = 0) { mockOnSuccess(any()) }
     }
 
     @Test
     fun doCodeExchange_whenExchangeCodeThrowsIOException_callsOnAuthFlowError() = runBlocking {
-        val testCode = "test_auth_code"
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
-
         val spyViewModel = spyk(viewModel)
 
-        // Force OAuth2 class initialization before mocking
-        TIMESTAMP_FORMAT
-        mockkStatic(OAuth2::class)
-
         val ioException = IOException("Network error")
-
-        every {
-            exchangeCode(any(), any(), any(), any(), any(), any())
-        } throws ioException
+        setupExchangeCodeMock(ioException)
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        spyViewModel.doCodeExchange("test_auth_code", mockOnError, mockOnSuccess)
 
-        verify {
-            mockOnError("Token Request Error", "Network error", ioException)
-        }
+        verify { mockOnError("Token Request Error", "Network error", ioException) }
+        verify(exactly = 0) { mockOnSuccess(any()) }
     }
 
     @Test
     fun doCodeExchange_whenExchangeCodeThrowsOAuthFailed_neverCallsOnAuthFlowComplete() = runBlocking {
-        val testCode = "test_auth_code"
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
-
         val spyViewModel = spyk(viewModel)
-
-        // Force OAuth2 class initialization before mocking
-        TIMESTAMP_FORMAT
-        mockkStatic(OAuth2::class)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
         tokenErrorResponse.error = "invalid_grant"
         tokenErrorResponse.errorDescription = "Expired authorization code"
         val oauthException = OAuthFailedException(tokenErrorResponse, 400)
-
-        every {
-            exchangeCode(any(), any(), any(), any(), any(), any())
-        } throws oauthException
+        setupExchangeCodeMock(oauthException)
 
         coEvery {
             spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
         } just runs
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
+        spyViewModel.doCodeExchange("test_auth_code", mockOnError, mockOnSuccess)
 
+        verify { mockOnError("Token Request Error", any(), oauthException) }
+        verify(exactly = 0) { mockOnSuccess(any()) }
         coVerify(exactly = 0) {
             spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
         }
