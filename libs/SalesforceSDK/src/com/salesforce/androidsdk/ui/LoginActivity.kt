@@ -127,6 +127,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
+import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
@@ -587,7 +588,8 @@ open class LoginActivity : FragmentActivity() {
 
         viewModel.clearCookies()
         val isClientBlocked = e is OAuthFailedException
-            && e.tokenErrorResponse.error == CLIENT_BLOCKED_ERROR
+            && (e.tokenErrorResponse.error == CLIENT_BLOCKED_ERROR
+                || e.tokenErrorResponse.error == CLIENT_BLOCKED_RETRY_ERROR)
         val isLightningTokenEndpointFailure = e is OAuthFailedException
             && e.tokenErrorResponse.error == "unsupported_grant_type"
             && viewModel.selectedServer.value?.contains(".lightning.") == true
