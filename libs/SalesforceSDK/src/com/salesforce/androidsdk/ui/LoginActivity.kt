@@ -106,10 +106,10 @@ import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
-import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__lightning_url_code_exchange_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
