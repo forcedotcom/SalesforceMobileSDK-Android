@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
+import com.salesforce.androidsdk.auth.OAuth2.TIMESTAMP_FORMAT
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.TokenErrorResponse
 import com.salesforce.androidsdk.config.BootConfig
@@ -638,7 +639,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
@@ -686,7 +687,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
@@ -740,7 +741,7 @@ class LoginViewModelMockTest {
         val mockTokenResponse: TokenEndpointResponse = mockk(relaxed = true)
 
         // Force OAuth2 class initialization before mocking to avoid ExceptionInInitializerError
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
@@ -802,7 +803,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         // Force OAuth2 class initialization before mocking
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
@@ -834,7 +835,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         // Force OAuth2 class initialization before mocking
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
         val ioException = IOException("Network error")
@@ -863,7 +864,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         // Force OAuth2 class initialization before mocking
-        OAuth2.TIMESTAMP_FORMAT
+        TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
