@@ -1580,7 +1580,7 @@ open class LoginActivity : FragmentActivity() {
          * Determines if the provided URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback.  The client id (consumer
          * key) of the URL must match the boot config's consumer key.
-         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * @param uri The URL to examine for the Salesforce Welcome Discovery
          * path and parameters for mobile callback
          * @return Boolean true if the URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback and matches the boot config's
