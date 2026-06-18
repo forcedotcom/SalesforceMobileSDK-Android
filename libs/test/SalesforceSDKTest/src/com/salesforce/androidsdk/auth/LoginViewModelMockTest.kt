@@ -816,10 +816,7 @@ class LoginViewModelMockTest {
         } throws oauthException
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        Thread.sleep(100)
-
         spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
-        Thread.sleep(200)
 
         verify {
             mockOnError("Token Request Error", any(), oauthException)
@@ -845,10 +842,7 @@ class LoginViewModelMockTest {
         } throws ioException
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        Thread.sleep(100)
-
         spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
-        Thread.sleep(200)
 
         verify {
             mockOnError("Token Request Error", "Network error", ioException)
@@ -881,10 +875,7 @@ class LoginViewModelMockTest {
         } just runs
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
-        Thread.sleep(100)
-
         spyViewModel.doCodeExchange(testCode, mockOnError, mockOnSuccess)
-        Thread.sleep(200)
 
         coVerify(exactly = 0) {
             spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
