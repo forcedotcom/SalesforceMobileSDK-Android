@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TIMESTAMP_FORMAT
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.TokenErrorResponse
+import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
@@ -642,7 +643,7 @@ class LoginViewModelMockTest {
         TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } returns mockTokenResponse
 
         // Mock doCodeExchange to prevent actual execution
@@ -690,7 +691,7 @@ class LoginViewModelMockTest {
         TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } returns mockTokenResponse
 
         // Mock doCodeExchange to prevent actual execution
@@ -744,7 +745,7 @@ class LoginViewModelMockTest {
         TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } returns mockTokenResponse
 
         // Spy so we can short-circuit account creation, leaving exchangeCode as the observable.
@@ -779,7 +780,7 @@ class LoginViewModelMockTest {
 
         // Token exchange must be performed with MIGRATION credentials.
         verify {
-            OAuth2.exchangeCode(
+            exchangeCode(
                 /* httpAccessor = */ any(),
                 /* loginServer = */ any(),
                 /* clientId = */ migrationConsumerKey,
@@ -812,7 +813,7 @@ class LoginViewModelMockTest {
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
 
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } throws oauthException
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
@@ -838,7 +839,7 @@ class LoginViewModelMockTest {
         val ioException = IOException("Network error")
 
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } throws ioException
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
@@ -867,7 +868,7 @@ class LoginViewModelMockTest {
         val oauthException = OAuthFailedException(tokenErrorResponse, 400)
 
         every {
-            OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
+            exchangeCode(any(), any(), any(), any(), any(), any())
         } throws oauthException
 
         coEvery {
