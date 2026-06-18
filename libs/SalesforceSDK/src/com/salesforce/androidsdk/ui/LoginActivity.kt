@@ -941,7 +941,7 @@ open class LoginActivity : FragmentActivity() {
         // Set welcome discovery feature flag if applicable
         if (isLoginWithWelcomeDiscovery(intent)) {
             SalesforceSDKManager.getInstance()
-                .registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN);
+                .registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN)
         }
         else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(
