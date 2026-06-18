@@ -35,11 +35,15 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
+import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.OAuth2.TokenErrorResponse
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginViewModel
+import java.io.IOException
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -801,10 +805,10 @@ class LoginViewModelMockTest {
         OAuth2.TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
-        val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
-        tokenErrorResponse.error = OAuth2.CLIENT_BLOCKED_ERROR
+        val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
+        tokenErrorResponse.error = CLIENT_BLOCKED_ERROR
         tokenErrorResponse.errorDescription = "App is blocked"
-        val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 403)
+        val oauthException = OAuthFailedException(tokenErrorResponse, 403)
 
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
@@ -833,7 +837,7 @@ class LoginViewModelMockTest {
         OAuth2.TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
-        val ioException = java.io.IOException("Network error")
+        val ioException = IOException("Network error")
 
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
@@ -862,10 +866,10 @@ class LoginViewModelMockTest {
         OAuth2.TIMESTAMP_FORMAT
         mockkStatic(OAuth2::class)
 
-        val tokenErrorResponse = mockk<OAuth2.TokenErrorResponse>(relaxed = true)
+        val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
         tokenErrorResponse.error = "invalid_grant"
         tokenErrorResponse.errorDescription = "Expired authorization code"
-        val oauthException = OAuth2.OAuthFailedException(tokenErrorResponse, 400)
+        val oauthException = OAuthFailedException(tokenErrorResponse, 400)
 
         every {
             OAuth2.exchangeCode(any(), any(), any(), any(), any(), any())
