@@ -1659,7 +1659,7 @@ open class LoginActivity : FragmentActivity() {
      * Activity result callback for the "Login for Admin" custom tab.
      */
     @VisibleForTesting
-    internal inner class AdminCustomTabActivityResult : ActivityResultCallback<ActivityResult> {
+    internal class AdminCustomTabActivityResult : ActivityResultCallback<ActivityResult> {
         override fun onActivityResult(result: ActivityResult) {
             // Intentional no-op: keep the existing WebView visible on cancel.
         }

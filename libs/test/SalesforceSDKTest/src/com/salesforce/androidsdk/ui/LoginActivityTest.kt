@@ -129,7 +129,7 @@ class LoginActivityTest {
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
 
-        val adminResult = activity.AdminCustomTabActivityResult()
+        val adminResult = LoginActivity.AdminCustomTabActivityResult()
         adminResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
 
         // Contrast with CustomTabActivityResult which calls these on cancel; the admin
