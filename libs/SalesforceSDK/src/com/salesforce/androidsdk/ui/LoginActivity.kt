@@ -1130,7 +1130,7 @@ open class LoginActivity : FragmentActivity() {
                 loginHint = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT) ?: return false,
                 loginHost = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN)?.toUri()?.host ?: return false
             )
-            return true
+            true
         } else false
     }
 
