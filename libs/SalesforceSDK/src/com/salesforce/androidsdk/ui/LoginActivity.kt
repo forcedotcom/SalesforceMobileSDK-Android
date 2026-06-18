@@ -946,7 +946,7 @@ open class LoginActivity : FragmentActivity() {
         else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(
                 FEATURE_WELCOME_DISCOVERY_LOGIN
-            );
+            )
         }
 
         // Re-apply user agent to WebView
