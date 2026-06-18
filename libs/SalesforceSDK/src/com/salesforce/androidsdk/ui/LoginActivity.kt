@@ -1539,7 +1539,7 @@ open class LoginActivity : FragmentActivity() {
         /**
          * Determines if the provided URL has the Salesforce Welcome Discovery
          * path.
-         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * @param uri The URL to examine for the Salesforce Welcome Discovery
          * path
          * @return Boolean true if the URL has the Salesforce Welcome Discovery
          * path or false otherwise
