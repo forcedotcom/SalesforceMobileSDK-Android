@@ -596,12 +596,12 @@ open class LoginActivity : FragmentActivity() {
         }
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
-            val toastMessage = when {
+            val message = when {
                 isClientBlocked -> getString(sf__app_blocked_error)
                 isLightningTokenEndpointFailure -> getString(sf__lightning_url_code_exchange_error)
                 else -> "$error : $errorDesc"
             }
-            makeText(this, toastMessage, LENGTH_LONG).show()
+            makeText(this, message, LENGTH_LONG).show()
             viewModel.reloadWebView()
         }
     }
