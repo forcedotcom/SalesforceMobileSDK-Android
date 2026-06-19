@@ -150,7 +150,6 @@ import org.json.JSONObject
 import java.lang.String.format
 import java.net.URI
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
@@ -768,9 +767,17 @@ open class LoginActivity : FragmentActivity() {
      *  Launches the current login server in a Custom Tab. This allows Admins
      *  to authenticate with a Passkey or by other methods that require
      *  Advanced/Browser Authentication.
+     *
+     *  This function is a no-op for Welcome Discovery.
      */
     @Deprecated(message = "This function will be replaced by a permanent solution in 14.0.")
     fun launchLoginForAdminsAction() {
+        val selectedServer = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.toUri()
+        if (selectedServer?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } == true) {
+            w(TAG, "launchLoginForAdminsAction is a no-op for Welcome Discovery; " +
+                    "LFA requires an app-unique OAuth callback")
+            return
+        }
         val loginUrl = viewModel.browserCustomTabUrl.value ?: return
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }
@@ -1035,31 +1042,6 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * Creates a Salesforce Welcome Discovery mobile URL using the provided
-     * Salesforce Welcome Discovery host and path URL.
-     * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
-     * Discovery host and path URL
-     * @return A Salesforce Welcome Discovery mobile URL with all required
-     * parameters
-     */
-    private fun generateSalesforceWelcomeDiscoveryMobileUrl(
-        salesforceWelcomeDiscoveryHostAndPathUrl: Uri
-    ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.oAuthConfig.consumerKey,
-        )
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
-            URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8")
-        )
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL,
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL
-        )
-        .build()
-
-    /**
      * Switches between default or Salesforce Welcome Discovery log in as needed
      * using the provided pending login server URL.
      * @param pendingLoginServerUri The pending login server URL
@@ -1084,7 +1066,7 @@ open class LoginActivity : FragmentActivity() {
                         this,
                         SalesforceSDKManager.getInstance().webViewLoginActivityClass
                     ).apply {
-                        data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
+                        data = viewModel.generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
                         flags = FLAG_ACTIVITY_SINGLE_TOP
                     })
                 true
@@ -1496,7 +1478,7 @@ open class LoginActivity : FragmentActivity() {
         // region Salesforce Welcome Login Private Implementation
 
         /** The default Salesforce Welcome Discovery mobile callback URL.  This value is fixed until future Salesforce Welcome updates */
-        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL = "sfdc://discocallback"
+        internal const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL = "sfdc://discocallback"
 
         /** The Salesforce Welcome Discovery mobile callback URL's "login hint" parameter key */
         private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT = "login_hint"

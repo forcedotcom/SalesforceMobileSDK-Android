@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_URL_PATH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -150,6 +151,12 @@ class LoginActivityTest {
         every { activity.viewModel } returns viewModel
         every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
 
+        // Contract guard: launchLoginForAdminsAction is the non-Welcome-Discovery path.  Gating is at
+        // the Compose call site (LoginView).  This pins the contract so a future in-function
+        // short-circuit cannot silently hide gating logic.
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(
+            (viewModel.selectedServer.value ?: "").toUri()))
+
         activity.launchLoginForAdminsAction()
 
         verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
@@ -166,6 +173,12 @@ class LoginActivityTest {
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
         every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
+
+        // Contract guard: launchLoginForAdminsAction is the non-Welcome-Discovery path.  Gating is at
+        // the Compose call site (LoginView).  This pins the contract so a future in-function
+        // short-circuit cannot silently hide gating logic.
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(
+            (viewModel.selectedServer.value ?: "").toUri()))
 
         activity.launchLoginForAdminsAction()
 

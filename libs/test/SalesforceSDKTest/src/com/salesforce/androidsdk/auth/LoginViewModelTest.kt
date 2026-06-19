@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
 import io.mockk.coEvery
@@ -69,6 +70,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URI
+import java.net.URLEncoder
 
 private const val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
 private const val FAKE_JWT = "1234"
@@ -778,12 +780,119 @@ class LoginViewModelTest {
         assertTrue("isUsingFrontDoorBridge should be true", viewModel.isUsingFrontDoorBridge)
         assertEquals("frontDoorBridgeUrl should be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
 
+        // Precondition: invariant ("frontdoor wins over reload") only holds when the
+        // LoginServerManager-selected server is NOT a Welcome Discovery URL.  The Welcome Discovery
+        // branch in reloadWebView intentionally runs before the frontdoor short-circuit.
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(
+            (SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url ?: "").toUri()))
+
         // Call reloadWebView
         viewModel.reloadWebView()
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL did not change
         assertEquals("frontDoorBridgeUrl should still be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsWelcomeDiscovery_whenReloadWebView_thenLoginUrlIsDiscoveryMobileUrl() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        // Simulate Phase 2: VM's selectedServer is the discovered My Domain even though
+        // LoginServerManager still has Welcome Discovery selected.
+        viewModel.selectedServer.value = "https://acme.my.salesforce.com"
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(resultUri!!))
+        assertEquals(viewModel.oAuthConfig.consumerKey,
+            resultUri.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID))
+        assertFalse(viewModel.loginUrl.value!!.contains("/services/oauth2/authorize"))
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsNotWelcomeDiscovery_whenReloadWebView_thenLoginUrlIsAuthUrl() {
+        // LoginServerManager defaults to Production (login.salesforce.com).
+        viewModel.selectedServer.value = "https://login.salesforce.com"
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val url = viewModel.loginUrl.value
+        assertNotNull(url)
+        assertTrue(url!!.contains("/services/oauth2/authorize"))
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(url.toUri()))
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsWelcomeDiscovery_whenIsUsingFrontDoorBridge_andReloadWebView_thenLoginUrlIsDiscoveryMobileUrl() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        val frontdoorUrl = "https://example.my.salesforce.com/secur/frontdoor.jsp?sid=fake"
+        viewModel.loginWithFrontDoorBridgeUrl(frontdoorUrl, pkceCodeVerifier = null)
+        assertTrue(viewModel.isUsingFrontDoorBridge)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(resultUri!!))
+        assertNotEquals(frontdoorUrl, viewModel.loginUrl.value)
+    }
+
+    /**
+     * Regression guard for the Phase-2 reload bug: when the user is in Phase 2 of the Welcome
+     * Discovery flow, viewModel.selectedServer is the discovered My Domain (NOT the Welcome URL),
+     * but LoginServerManager retains Welcome as the user's actual server selection.  Reload must
+     * return the WebView to Phase 1.
+     */
+    @Test
+    fun test_givenInPhase2OfWelcomeDiscovery_whenReloadWebView_thenLoginUrlReturnsToPhase1() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        // Phase 2 state: VM mirrors the My Domain from applySalesforceWelcomeLoginHintAndHost.
+        val myDomainUrl = "https://acme.my.salesforce.com"
+        viewModel.selectedServer.value = myDomainUrl
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertEquals("welcome.salesforce.com", resultUri!!.host)
+        assertEquals(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_URL_PATH, resultUri.path)
+        assertFalse(viewModel.loginUrl.value!!.contains(myDomainUrl))
+        assertFalse(viewModel.loginUrl.value!!.contains("/services/oauth2/authorize"))
+
+        // Reload must also realign VM-level selectedServer back to the Welcome URL so the top
+        // app bar title (defaultTitleText reads selectedServer.value) and the Compose menu
+        // gating ("Login for Admin" hidden when selectedServer is the discovery URL) follow.
+        assertEquals(WELCOME_LOGIN_URL, viewModel.selectedServer.value)
+    }
+
+    @Test
+    fun test_givenConsumerKeyAndAppVersion_whenGenerateSalesforceWelcomeDiscoveryMobileUrl_thenReturnsExpectedUrl() {
+        val input = "https://welcome.salesforce.com/discovery".toUri()
+        val result = viewModel.generateSalesforceWelcomeDiscoveryMobileUrl(input)
+
+        assertEquals("welcome.salesforce.com", result.host)
+        assertEquals("/discovery", result.path)
+        assertEquals(viewModel.oAuthConfig.consumerKey,
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID))
+        assertEquals(URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8"),
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION))
+        assertEquals("sfdc://discocallback",
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL))
+        // Companion validator round-trip:
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(result))
     }
 
     @Test

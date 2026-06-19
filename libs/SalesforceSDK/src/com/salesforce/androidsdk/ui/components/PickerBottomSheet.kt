@@ -131,9 +131,11 @@ import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import androidx.core.net.toUri
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.CORNER_RADIUS
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
@@ -177,6 +179,12 @@ internal fun TestablePickerBottomSheet(
             if (newSelectedServer != SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer) {
                 viewModel.loading.value = true
                 SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
+            } else if (LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(newSelectedServer.url.toUri())) {
+                // Re-selecting Welcome Discovery while it is already the selected server should
+                // return the WebView to Phase 1 (welcome.salesforce.com/discovery), even though
+                // LoginServerManager's selection didn't change.  This mirrors the reload-button
+                // behavior the user expects when stuck on a discovered My Domain in Phase 2.
+                viewModel.reloadWebView()
             }
         }
     }
