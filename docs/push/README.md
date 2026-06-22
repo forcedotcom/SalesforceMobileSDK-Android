@@ -12,9 +12,10 @@ This document covers the push notification subsystem in `libs/SalesforceSDK`. Al
 4. [Key Classes](#key-classes)
 5. [Registration Lifecycle](#registration-lifecycle)
 6. [Re-registration Modes](#re-registration-modes)
-7. [Encrypted Push Notifications](#encrypted-push-notifications)
-8. [Actionable Notifications](#actionable-notifications)
-9. [Testing](#testing)
+7. [Foreground Registration Mode](#foreground-registration-mode)
+8. [Encrypted Push Notifications](#encrypted-push-notifications)
+9. [Actionable Notifications](#actionable-notifications)
+10. [Testing](#testing)
 
 ---
 
@@ -109,10 +110,13 @@ Utility singleton for push operations. The main entry points for the app.
 
 Handles communication with the Salesforce `MobilePushServiceDevice` REST endpoint. Subclass this to customize the registration or unregistration requests.
 
-Key companion object property:
+Key companion object properties:
 ```kotlin
 var pushNotificationsRegistrationType: PushNotificationReRegistrationType
     = ReRegistrationOnAppForeground   // default
+
+var foregroundRegistrationMode: PushNotificationForegroundRegistrationMode
+    = PushNotificationForegroundRegistrationMode.ALL_USERS   // default
 ```
 
 Key methods:
@@ -241,6 +245,28 @@ PushService.pushNotificationsRegistrationType =
 | `ReRegisterPeriodically` | Re-registers all users every six days via a periodic `WorkManager` task, regardless of foreground/background |
 
 `ReRegisterPeriodically` is useful to counteract periodic SFDC API cleanup that de-registers devices after extended inactivity.
+
+---
+
+## Foreground Registration Mode
+
+When `pushNotificationsRegistrationType` is `ReRegistrationOnAppForeground`, a separate property controls **which users** are re-registered each time the app foregrounds:
+
+```kotlin
+PushService.foregroundRegistrationMode =
+    PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER
+```
+
+| Value | Behaviour |
+|---|---|
+| `ALL_USERS` | Re-registers every authenticated user **(default)** |
+| `CURRENT_USER` | Re-registers only the currently active user (pre-14.0 behaviour) |
+
+`foregroundRegistrationMode` only takes effect when `pushNotificationsRegistrationType` is `ReRegistrationOnAppForeground`. It is ignored for `ReRegistrationDisabled` and `ReRegisterPeriodically`.
+
+### Why `CURRENT_USER` exists
+
+Some Publisher customers are billed **per login event**. An FCM token refresh on a background user triggers a re-registration request which in turn counts as a billable login. With `ALL_USERS` (the default), background users that haven't foregrounded recently may have their tokens refreshed when the app comes to the foreground. Set `CURRENT_USER` to prevent this for those deployments.
 
 ---
 

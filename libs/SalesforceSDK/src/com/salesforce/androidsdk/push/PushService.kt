@@ -568,6 +568,15 @@ open class PushService {
         /** The active push notifications registration type */
         var pushNotificationsRegistrationType = ReRegistrationOnAppForeground
 
+        /**
+         * Controls which users are re-registered when the app foregrounds.
+         * Defaults to [PushNotificationForegroundRegistrationMode.ALL_USERS].
+         * Only applies when [pushNotificationsRegistrationType] is
+         * [PushNotificationReRegistrationType.ReRegistrationOnAppForeground].
+         */
+        var foregroundRegistrationMode: PushNotificationForegroundRegistrationMode =
+            PushNotificationForegroundRegistrationMode.ALL_USERS
+
         // Salesforce push notification constants.
         private const val MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice"
         private const val ANDROID_GCM = "androidGcm"
@@ -728,5 +737,27 @@ open class PushService {
          * de-registers push notifications
          */
         ReRegisterPeriodically
+    }
+
+    /**
+     * Controls which users are re-registered for push notifications when the app returns to the
+     * foreground. Only applies when [pushNotificationsRegistrationType] is
+     * [PushNotificationReRegistrationType.ReRegistrationOnAppForeground].
+     */
+    enum class PushNotificationForegroundRegistrationMode {
+
+        /**
+         * Re-registers all authenticated users when the app foregrounds. This is the default.
+         */
+        ALL_USERS,
+
+        /**
+         * Re-registers only the current user when the app foregrounds.
+         *
+         * Use this to preserve pre-14.0 behaviour, or if your app is billed per login event
+         * (e.g. some Publisher customers) and you want to avoid triggering token refreshes —
+         * and thus billable logins — for background users.
+         */
+        CURRENT_USER
     }
 }

@@ -23,7 +23,10 @@ import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.push.PushService.PushNotificationForegroundRegistrationMode.ALL_USERS
+import com.salesforce.androidsdk.push.PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
+import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER_TEST
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBody
@@ -33,8 +36,13 @@ import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.f
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
+import androidx.lifecycle.LifecycleOwner
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.serialization.json.Json.Default.encodeToJsonElement
 import kotlinx.serialization.json.Json.Default.encodeToString
@@ -89,6 +97,8 @@ class PushServiceTest {
     fun tearDown() {
 
         VERSION_NUMBER_TEST = null
+        PushService.foregroundRegistrationMode = ALL_USERS
+        PushService.pushNotificationsRegistrationType = ReRegistrationOnAppForeground
         cleanupAccounts(accountManager)
 
         userAccountManager = null
@@ -945,6 +955,93 @@ class PushServiceTest {
     fun testRemoveNotificationsCategories() {
         PushService().removeNotificationsCategories()
     }
+
+    // region Foreground Registration Mode Tests
+
+    @Test
+    fun test_givenDefault_thenForegroundRegistrationModeIsAllUsers() {
+        assertEquals(ALL_USERS, PushService.foregroundRegistrationMode)
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenSet_thenForegroundRegistrationModeIsCurrentUser() {
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        assertEquals(CURRENT_USER, PushService.foregroundRegistrationMode)
+    }
+
+    @Test
+    fun test_givenModeAllUsers_whenAppEntersForeground_thenRegisterCalledWithNullAccount() {
+        PushService.pushNotificationsRegistrationType = ReRegistrationOnAppForeground
+        PushService.foregroundRegistrationMode = ALL_USERS
+        createTestAccountInAccountManager(userAccountManager)
+
+        mockkObject(PushMessaging)
+        every { PushMessaging.register(any(), any(), any()) } just Runs
+
+        try {
+            SalesforceSDKManager.getInstance().onResume(mockk<LifecycleOwner>())
+            // account = null causes the worker to iterate all authenticated users
+            verify { PushMessaging.register(any(), null, false) }
+        } finally {
+            unmockkObject(PushMessaging)
+        }
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenAppEntersForeground_thenRegisterCalledWithCurrentUser() {
+        PushService.pushNotificationsRegistrationType = ReRegistrationOnAppForeground
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        createTestAccountInAccountManager(userAccountManager)
+        val currentUser = userAccountManager?.currentUser
+
+        mockkObject(PushMessaging)
+        every { PushMessaging.register(any(), any(), any()) } just Runs
+
+        try {
+            SalesforceSDKManager.getInstance().onResume(mockk<LifecycleOwner>())
+            verify { PushMessaging.register(any(), currentUser, false) }
+        } finally {
+            unmockkObject(PushMessaging)
+        }
+    }
+
+    @Test
+    fun test_givenModeAllUsers_whenNoAuthenticatedUsers_whenAppEntersForeground_thenNoRegistrationOccurs() {
+        PushService.pushNotificationsRegistrationType = ReRegistrationOnAppForeground
+        PushService.foregroundRegistrationMode = ALL_USERS
+        // No accounts created
+
+        mockkObject(PushMessaging)
+        every { PushMessaging.register(any(), any(), any()) } just Runs
+
+        try {
+            SalesforceSDKManager.getInstance().onResume(mockk<LifecycleOwner>())
+            // With ALL_USERS, register is called with null regardless of how many accounts exist.
+            // The worker then iterates the (empty) authenticated user list and does nothing.
+            verify { PushMessaging.register(any(), null, false) }
+        } finally {
+            unmockkObject(PushMessaging)
+        }
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenNoCurrentUser_whenAppEntersForeground_thenNoRegistrationOccurs() {
+        PushService.pushNotificationsRegistrationType = ReRegistrationOnAppForeground
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        // No accounts — currentUser will be null
+
+        mockkObject(PushMessaging)
+        every { PushMessaging.register(any(), any(), any()) } just Runs
+
+        try {
+            SalesforceSDKManager.getInstance().onResume(mockk<LifecycleOwner>())
+            verify(exactly = 0) { PushMessaging.register(any(), any(), any()) }
+        } finally {
+            unmockkObject(PushMessaging)
+        }
+    }
+
+    // endregion
 
     companion object {
 

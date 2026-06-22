@@ -1744,15 +1744,18 @@ open class SalesforceSDKManager protected constructor(
         (screenLockManager as ScreenLockManager?)?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
-        // Review push-notifications registration for the current user, if enabled.
-        userAccountManager.currentUser?.let { userAccount ->
-            if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
-                register(
-                    context = appContext,
-                    account = userAccount,
-                    recreateKey = false
-                )
+        // Review push-notifications registration on foreground, if enabled.
+        if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
+            val accountToRegister = when (PushService.foregroundRegistrationMode) {
+                PushService.PushNotificationForegroundRegistrationMode.ALL_USERS -> null
+                PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER ->
+                    userAccountManager.currentUser ?: return@onResume
             }
+            register(
+                context = appContext,
+                account = accountToRegister,
+                recreateKey = false
+            )
         }
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
