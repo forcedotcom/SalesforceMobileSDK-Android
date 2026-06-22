@@ -384,8 +384,14 @@ public class ClientManager {
             // intent explicit and avoids the "synchronization on local variable" inspection.
             final Object lock = new Object();
             boolean refreshing;
-            String newAuthToken;        // winner's fresh access token (null on failure)
-            String newInstanceUrl;      // winner's instance URL (losers need it; see RestClient.refreshAccessToken)
+            // Incremented once per SUCCESSFUL publish (never on a failed refresh). A waiting loser
+            // snapshots this value before sleeping and treats any change on wakeup as "a fresh
+            // result was published while I waited." This is robust to a *subsequent* winner that
+            // has already re-set refreshing=true (the consecutive-cycle race) and to spurious
+            // wakeups — neither of which the refreshing flag alone can distinguish.
+            long publishGeneration = 0;
+            String newAuthToken;        // last winner's fresh access token (null on failure)
+            String newInstanceUrl;      // last winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
             long lastRefreshTime = -1;
         }
@@ -403,6 +409,19 @@ public class ClientManager {
 
         /** Bounded safety-net so a loser never parks forever if a winner is somehow lost. */
         private static final long LOSER_WAIT_TIMEOUT_MILLIS = 30_000L;
+
+        /**
+         * A fresh provider that arrives right after a refresh cycle completed (so it found
+         * {@code refreshing == false}) adopts that just-published token instead of starting a new
+         * refresh, as long as the publish is this recent. This closes the consecutive-cycle race
+         * for fresh arrivers: it stops a freshly-arriving provider from electing itself a new
+         * winner microseconds after another winner published — which under Refresh Token Rotation
+         * would mean a redundant POST that rotates the token again and widens the stale-token
+         * logout window. Kept small: it only needs to exceed the notify-to-reacquire window (sub-
+         * millisecond in practice), and a shorter window minimizes the time a server-revoked token
+         * could be re-handed before the next request's 401 forces a real refresh.
+         */
+        private static final long RECENT_REFRESH_THRESHOLD_MILLIS = 3_000L;
 
         private final ClientManager clientManager;
         private String lastNewAuthToken;
@@ -472,24 +491,34 @@ public class ClientManager {
             final RefreshState state = REFRESH_STATES.computeIfAbsent(stateKey, k -> new RefreshState());
             synchronized (state.lock) {
                 if (state.refreshing) {
+                    // Snapshot the publish generation BEFORE waiting. We adopt on a *generation
+                    // change* (an edge), not on observing refreshing==false (a level). This rescues
+                    // the consecutive-cycle race: if a subsequent winner has already flipped
+                    // refreshing back to true by the time we re-acquire the lock, we still detect
+                    // that the prior winner published a result while we waited and adopt it, rather
+                    // than re-parking against a deadline that began ticking during an unrelated
+                    // earlier cycle.
+                    final long startGeneration = state.publishGeneration;
                     final long deadline = System.currentTimeMillis() + LOSER_WAIT_TIMEOUT_MILLIS;
                     boolean published;
                     try {
-                        // Loop on the condition (absorbs spurious/lost wakeups); bounded so a
-                        // lost winner can't strand us forever.
-                        while (state.refreshing) {
+                        // Loop until a new result is published (generation advanced) or the
+                        // in-flight refresh ends without one. Bounded so a lost winner can't
+                        // strand us forever. The generation guard also absorbs spurious/lost
+                        // wakeups.
+                        while (state.refreshing && state.publishGeneration == startGeneration) {
                             final long timeRemaining = deadline - System.currentTimeMillis();
                             if (timeRemaining <= 0) {
                                 break;
                             }
                             state.lock.wait(timeRemaining);
                         }
-                        published = !state.refreshing;
+                        published = state.publishGeneration != startGeneration;
                     } catch (InterruptedException e) {
                         SalesforceSDKLogger.w(TAG, "Interrupted while waiting for in-flight token refresh", e);
                         Thread.currentThread().interrupt();
-                        // Adopt a result only if one was actually published; otherwise null.
-                        if (!state.refreshing && state.newAuthToken != null) {
+                        // Adopt a result only if one was actually published while we waited.
+                        if (state.publishGeneration != startGeneration && state.newAuthToken != null) {
                             adoptWinnerResult(state);
                             return state.newAuthToken;
                         }
@@ -508,11 +537,31 @@ public class ClientManager {
                     return null;
                 }
 
-                // Become the winner.
+                // Fresh arriver (found refreshing==false). If a winner published very recently,
+                // adopt that result instead of starting a redundant refresh — closing the
+                // consecutive-cycle race for threads that arrive just after a cycle completes.
+                //
+                // The freshness window alone is not sufficient: we must also confirm the published
+                // token actually differs from the one THIS provider just failed a request with
+                // (lastNewAuthToken). Without that difference check we could hand our caller back
+                // the very token it just got a 401/403 on (e.g. when this provider was itself the
+                // recent winner), causing an immediate repeat 401. This mirrors the recheck-under-
+                // lock storage guardrail below, which likewise POSTs a real refresh when storage
+                // has NOT advanced past this provider's tokens.
+                if (state.newAuthToken != null
+                        && !java.util.Objects.equals(state.newAuthToken, lastNewAuthToken)
+                        && System.currentTimeMillis() - state.lastRefreshTime < RECENT_REFRESH_THRESHOLD_MILLIS) {
+                    adoptWinnerResult(state);
+                    return state.newAuthToken;
+                }
+
+                // Become the winner. Note: the previously-published newAuthToken/newInstanceUrl/
+                // rotatedRefreshToken are intentionally NOT cleared here. A loser of the prior
+                // cycle that is woken after we re-set refreshing=true must still be able to read
+                // that last-good result via the publishGeneration edge above; clearing it would
+                // re-introduce the consecutive-cycle null-return. The success branch of the finally
+                // publish overwrites these fields with our own result anyway.
                 state.refreshing = true;
-                state.newAuthToken = null;
-                state.newInstanceUrl = null;
-                state.rotatedRefreshToken = null;
             }
 
             // The winner performs the refresh. The entire body below runs inside one try/finally
@@ -649,10 +698,21 @@ public class ClientManager {
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
                         state.lastRefreshTime = System.currentTimeMillis();
-                    } else {
-                        state.newAuthToken = null;
-                        state.newInstanceUrl = null;
+                        // Mark a fresh result as available. Bumped ONLY on success so a loser woken
+                        // by a failed cycle sees an unchanged generation and correctly returns null
+                        // (rather than adopting a non-result), while a loser that started waiting
+                        // before an earlier success still adopts that success via the edge.
+                        state.publishGeneration++;
                     }
+                    // On failure we deliberately leave newAuthToken/newInstanceUrl/rotatedRefreshToken
+                    // and lastRefreshTime UNCHANGED rather than nulling them. publishGeneration is
+                    // the sole adopt signal: a loser of THIS failed cycle sees an unchanged
+                    // generation and returns null, while a loser that began waiting before an
+                    // EARLIER success must still be able to adopt that success — nulling here would
+                    // wipe the last-good result out from under it and re-introduce a spurious-null
+                    // (the consecutive-cycle race, success-then-failure variant). Fresh arrivers
+                    // cannot wrongly adopt a stale token because the recency window keys off
+                    // lastRefreshTime, which only a success advances.
                     state.lock.notifyAll();
                 }
             }

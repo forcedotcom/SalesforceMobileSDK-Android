@@ -1289,6 +1289,119 @@ class ClientManagerMockTest {
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
     }
 
+    /*
+        Fresh-arriver recency adopt. A provider that arrives just after a refresh cycle completed
+        (refreshing==false) and whose own stale token differs from the freshly-published one adopts
+        that recent result instead of issuing a redundant network refresh. Closes the consecutive-
+        cycle race for fresh arrivers and avoids an RTR-rotating redundant POST.
+     */
+    @Test
+    fun testGetNewAuthToken_FreshArriver_RecentPublish_AdoptsWithoutRefreshing() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    successResponse(ROTATED_REFRESH_TOKEN)
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+
+        // First provider performs the real refresh and publishes the result into the shared state.
+        val winner = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+        assertEquals(REFRESHED_ACCESS_TOKEN, winner.getNewAuthToken())
+        assertEquals(1, tokenEndpointCalls.get())
+
+        // Fresh arriver still holding the OLD (now-401'd) access token. It differs from the recently
+        // published token, so the recency window lets it adopt without a second POST.
+        val freshArriver = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+        assertEquals(REFRESHED_ACCESS_TOKEN, freshArriver.getNewAuthToken())
+
+        // No second network refresh occurred — the fresh arriver adopted the recent result.
+        assertEquals(1, tokenEndpointCalls.get())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
+    /*
+        Recency-adopt difference guard. A fresh arriver whose own last token EQUALS the recently
+        published token (e.g. it was itself the recent winner and just got a 401 on that very token)
+        must NOT re-adopt it — that would re-serve the dead token and 401 again. It must perform a
+        real refresh. Two sequential refreshes by the same provider exercise this directly.
+     */
+    @Test
+    fun testGetNewAuthToken_FreshArriver_SameTokenAsPublished_DiffGuardForcesRefresh() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        // Each refresh rotates to a distinct refresh token and advances persisted storage so the
+        // recheck-under-lock guardrail does not short-circuit the second (legitimately needed) POST.
+        val firstRotated = ROTATED_REFRESH_TOKEN
+        val secondRotated = "rotated-refresh-token-2"
+        var persistedAuthToken = OLD_ACCESS_TOKEN
+        var persistedRefreshToken = REFRESH_TOKEN
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    val rt = if (tokenEndpointCalls.incrementAndGet() == 1) firstRotated else secondRotated
+                    successResponse(rt)
+                }
+            }
+        }
+
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } answers { persistedAuthToken }
+            every { refreshToken } answers { persistedRefreshToken }
+            every { loginServer } returns "https://login.salesforce.com"
+            every { userId } returns "userId"
+            every { orgId } returns "orgId"
+        }
+        val mockClientManager = mockk<ClientManager>(relaxed = true) {
+            every { accounts } returns arrayOf(mockAccount)
+        }
+        every { mockUserAccountManager.currentUser } returns mockUser
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } answers {
+            persistedAuthToken = secondArg<UserAccount>().authToken
+            persistedRefreshToken = secondArg<UserAccount>().refreshToken
+            mockk()
+        }
+
+        val provider = ClientManager.AccMgrAuthTokenProvider(
+            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+        )
+
+        // First refresh: real POST, publishes REFRESHED_ACCESS_TOKEN; provider's lastNewAuthToken
+        // now equals the published token.
+        assertEquals(REFRESHED_ACCESS_TOKEN, provider.getNewAuthToken())
+        assertEquals(1, tokenEndpointCalls.get())
+
+        // Second refresh immediately after (well within the recency window). The diff guard must
+        // block recency-adopt because state.newAuthToken == this.lastNewAuthToken, forcing a real
+        // POST rather than re-handing the just-401'd token.
+        assertEquals(REFRESHED_ACCESS_TOKEN, provider.getNewAuthToken())
+        assertEquals(2, tokenEndpointCalls.get())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
     // endregion
 
     // region Concurrency test helpers
