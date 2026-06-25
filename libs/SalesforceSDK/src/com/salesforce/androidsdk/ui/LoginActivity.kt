@@ -548,9 +548,10 @@ open class LoginActivity : FragmentActivity() {
             sdkManager.registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN, userAccount)
         }
 
-        // BW: set per-user based on whether this session actually used a Custom Tab.
-        // isBrowserLoginEnabled is unreliable here — Login for Admin uses a Custom Tab
-        // without setting that flag. completedViaBrowserTab is true for both paths.
+        // BW: promote transient global to per-user, then clear global.
+        // completedViaBrowserTab is true for both regular and Login for Admin Custom Tab paths.
+        // The global was set in loadLoginPageInCustomTab() so it appears in UA during login.
+        sdkManager.unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN)
         if (completedViaBrowserTab) {
             sdkManager.registerUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
         } else {
@@ -812,6 +813,7 @@ open class LoginActivity : FragmentActivity() {
     @VisibleForTesting
     internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
         completedViaBrowserTab = true
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN)
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*
              * Set a custom animation to slide in and out for Chrome custom tab
