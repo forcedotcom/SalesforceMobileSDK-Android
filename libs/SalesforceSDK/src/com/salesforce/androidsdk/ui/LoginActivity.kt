@@ -772,7 +772,14 @@ open class LoginActivity : FragmentActivity() {
      */
     @Deprecated(message = "This function will be replaced by a permanent solution in 14.0.")
     fun launchLoginForAdminsAction() {
-        val selectedServer = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url?.toUri()
+        // Guard against launching a Custom Tab on the Welcome Discovery Phase 1 page, whose
+        // callback (sfdc://discocallback) is not app-unique.  This MUST use the same signal as the
+        // menu-item visibility gating in LoginView (viewModel.selectedServer), NOT
+        // LoginServerManager.selectedLoginServer: the latter stays welcome.salesforce.com through
+        // BOTH phases, while selectedServer is the discovered My Domain in Phase 2 — where LFA is
+        // valid and the menu item is shown.  Keying off LoginServerManager here would no-op the
+        // action in Phase 2 even though the menu offers it.
+        val selectedServer = viewModel.selectedServer.value?.toUri()
         if (selectedServer?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } == true) {
             w(TAG, "launchLoginForAdminsAction is a no-op for Welcome Discovery; " +
                     "LFA requires an app-unique OAuth callback")
@@ -1234,8 +1241,15 @@ open class LoginActivity : FragmentActivity() {
                     return@evaluateJavascript
                 }
 
-                viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
-                    ?: return@evaluateJavascript
+                viewModel.dynamicBackgroundColor.value =
+                    if (url?.toUri()?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } == true) {
+                        // The Welcome Discovery Phase 1 page (welcome.salesforce.com/discovery)
+                        // reports a dark computed background in some states (e.g. after logout),
+                        // which would tint the top and bottom app bars black.
+                        Color.White
+                    } else {
+                        validateAndExtractBackgroundColor(result) ?: return@evaluateJavascript
+                    }
 
                 // Ensure Status Bar Icons are readable no matter which OS theme is used.
                 val titleTextColorLight = viewModel.titleTextColor?.luminance()?.let { it < 0.5 }

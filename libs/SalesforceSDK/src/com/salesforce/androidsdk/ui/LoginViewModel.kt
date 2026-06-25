@@ -344,17 +344,10 @@ open class LoginViewModel(
                     // onPageFinished, which runs after the new page loads — the gap leaves the
                     // Phase-2 color visible on the bar even though the WebView URL has changed.
                     dynamicBackgroundColor.value = White
-                    // Set loginUrl first so LoginUrlSource's same-host short-circuit (host of new
-                    // selectedServer == host of current loginUrl) suppresses an auth-URL regen
-                    // when we reset selectedServer below.
+                    // Must precede selectedServer reset — LoginUrlSource same-host short-circuit.
                     loginUrl.value =
                         generateSalesforceWelcomeDiscoveryMobileUrl(selectedLoginServerUri).toString()
-                    // Reset VM-level selectedServer back to the Welcome URL so the top app bar
-                    // title (via defaultTitleText), menu gating in Compose (LoginView reads
-                    // viewModel.selectedServer to hide "Login for Admin" on Phase 1), and any
-                    // other observers of selectedServer realign with Phase 1.  In Phase 2 this
-                    // value had been overwritten with the discovered My Domain by
-                    // applySalesforceWelcomeLoginHintAndHost → applyPendingServer.
+                    // Must follow loginUrl — depends on same-host short-circuit seeing new loginUrl.
                     val welcomeUrl = selectedLoginServerUri.toString()
                     if (selectedServer.value != welcomeUrl) {
                         selectedServer.value = welcomeUrl
