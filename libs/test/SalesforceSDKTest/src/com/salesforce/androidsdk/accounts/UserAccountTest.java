@@ -44,8 +44,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -721,6 +723,70 @@ public class UserAccountTest {
         response.put("language", TEST_LANGUAGE);
         response.put("locale", TEST_LOCALE);
         return new OAuth2.IdServiceResponse(response);
+    }
+
+    /**
+     * Tests that feature flags survive a toJson round-trip.
+     * Verifies that the FEATURE_FLAGS key is present in the serialized JSON and that the
+     * flags can be read back by manually parsing the JSON array (since the JSON constructor
+     * does not populate featureFlags — that path goes through AccountManager).
+     */
+    @Test
+    public void test_givenUserAccountWithFlags_whenToJson_thenFeatureFlagsKeyPresent() throws JSONException {
+        final UserAccount account = createTestAccount();
+        account.setFeatureFlags(new HashSet<>(Arrays.asList("BW", "WD")));
+
+        final JSONObject json = account.toJson(createAdditionalOauthKeys());
+
+        Assert.assertTrue("JSON should contain FEATURE_FLAGS key", json.has(UserAccount.FEATURE_FLAGS));
+
+        // Verify both flags are serialized in the JSON array
+        org.json.JSONArray flagsArray = json.getJSONArray(UserAccount.FEATURE_FLAGS);
+        HashSet<String> serialized = new HashSet<>();
+        for (int i = 0; i < flagsArray.length(); i++) {
+            serialized.add(flagsArray.getString(i));
+        }
+        Assert.assertTrue("Serialized flags should contain BW", serialized.contains("BW"));
+        Assert.assertTrue("Serialized flags should contain WD", serialized.contains("WD"));
+    }
+
+    /**
+     * Tests that a UserAccount built from JSON without a FEATURE_FLAGS key returns an empty set.
+     */
+    @Test
+    public void test_givenUserAccountJsonMissingFeatureFlags_whenFromJson_thenEmptySet() throws JSONException {
+        final JSONObject testJSON = createTestAccountJSON();
+        // Confirm the helper JSON does not include FEATURE_FLAGS
+        Assert.assertFalse("Test JSON should not have FEATURE_FLAGS", testJSON.has(UserAccount.FEATURE_FLAGS));
+
+        final UserAccount account = new UserAccount(testJSON, "SalesforceSDKTest", createAdditionalOauthKeys());
+
+        Assert.assertNotNull("featureFlags should never be null", account.getFeatureFlags());
+        Assert.assertTrue("featureFlags should be empty when key is absent", account.getFeatureFlags().isEmpty());
+    }
+
+    /**
+     * Tests that setFeatureFlags/getFeatureFlags are symmetric.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetFeatureFlags_thenGetFeatureFlagsReturnsSameValues() {
+        final UserAccount account = createTestAccount();
+        final HashSet<String> flags = new HashSet<>(Arrays.asList("AA", "BB", "CC"));
+        account.setFeatureFlags(flags);
+
+        Assert.assertEquals("getFeatureFlags should return the set values", flags, account.getFeatureFlags());
+    }
+
+    /**
+     * Tests that setFeatureFlags(null) results in an empty set, not a NullPointerException.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetFeatureFlagsNull_thenEmptySet() {
+        final UserAccount account = createTestAccount();
+        account.setFeatureFlags(null);
+
+        Assert.assertNotNull("featureFlags should never be null after setFeatureFlags(null)", account.getFeatureFlags());
+        Assert.assertTrue("featureFlags should be empty after setFeatureFlags(null)", account.getFeatureFlags().isEmpty());
     }
 
     /**

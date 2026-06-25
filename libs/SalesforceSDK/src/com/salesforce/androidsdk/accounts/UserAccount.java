@@ -49,8 +49,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class represents a single user account that is currently
@@ -100,6 +104,7 @@ public class UserAccount {
 	public static final String BEACON_CHILD_CONSUMER_KEY = "auto_installed_app_org_consumer_key";
 	public static final String BEACON_CHILD_CONSUMER_SECRET = "auto_installed_app_org_consumer_secret";
 	public static final String SCOPE = "scope";
+	public static final String FEATURE_FLAGS = "feature_flags";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -147,6 +152,7 @@ public class UserAccount {
 	private String beaconChildConsumerKey;
 	private String beaconChildConsumerSecret;
 	private String scope;
+	private Set<String> featureFlags = new java.util.HashSet<>();
 
 	/**
 	 * Parameterized constructor.
@@ -761,6 +767,24 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the persisted per-user feature flags (e.g. BW, SU, MS).
+	 *
+	 * @return Unmodifiable set of feature flag codes.
+	 */
+	public Set<String> getFeatureFlags() {
+		return Collections.unmodifiableSet(featureFlags);
+	}
+
+	/**
+	 * Replaces the in-memory set of persisted per-user feature flags.
+	 *
+	 * @param flags The new set of feature flags.
+	 */
+	public void setFeatureFlags(Set<String> flags) {
+		featureFlags = flags != null ? new HashSet<>(flags) : new HashSet<>();
+	}
+
+	/**
 	 * Fetches this user's profile photo from the cache.
 	 *
 	 * @return User's profile photo.
@@ -1024,6 +1048,11 @@ public class UserAccount {
 			object.put(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
 			object.put(BEACON_CHILD_CONSUMER_SECRET, beaconChildConsumerSecret);
 			object.put(SCOPE, scope);
+			if (!featureFlags.isEmpty()) {
+				org.json.JSONArray flagsArray = new org.json.JSONArray();
+				for (String f : featureFlags) flagsArray.put(f);
+				object.put(FEATURE_FLAGS, flagsArray);
+			}
 			object = MapUtil.addMapToJSONObject(additionalOauthValues, additionalOauthKeys, object);
 		} catch (JSONException e) {
 			SalesforceSDKLogger.e(TAG, "Unable to convert to JSON", e);

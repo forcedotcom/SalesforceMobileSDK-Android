@@ -121,6 +121,7 @@ import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
 import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -233,6 +234,7 @@ open class LoginActivity : FragmentActivity() {
     // Private variables
     private var baseUserAgentString = ""
     private var wasBackgrounded = false
+    private var completedViaBrowserTab = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
@@ -537,6 +539,31 @@ open class LoginActivity : FragmentActivity() {
      * @param userAccount The newly created user account.
      */
     protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+
+        // WD: write per-user and clear transient global
+        val usedWelcomeDiscovery = sdkManager.isGlobalFeatureRegistered(FEATURE_WELCOME_DISCOVERY_LOGIN)
+        sdkManager.unregisterUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN)
+        if (usedWelcomeDiscovery) {
+            sdkManager.registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN, userAccount)
+        }
+
+        // BW: set per-user based on whether this session actually used a Custom Tab.
+        // isBrowserLoginEnabled is unreliable here — Login for Admin uses a Custom Tab
+        // without setting that flag. completedViaBrowserTab is true for both paths.
+        if (completedViaBrowserTab) {
+            sdkManager.registerUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
+        }
+
+        // QR: write per-user and clear transient global
+        val usedQrLogin = sdkManager.isGlobalFeatureRegistered(FEATURE_QR_CODE_LOGIN)
+        sdkManager.unregisterUsedAppFeature(FEATURE_QR_CODE_LOGIN)
+        if (usedQrLogin) {
+            sdkManager.registerUsedAppFeature(FEATURE_QR_CODE_LOGIN, userAccount)
+        }
+
         // Create account and save result before switching to new user
         accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
 
@@ -784,6 +811,7 @@ open class LoginActivity : FragmentActivity() {
 
     @VisibleForTesting
     internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+        completedViaBrowserTab = true
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*
              * Set a custom animation to slide in and out for Chrome custom tab

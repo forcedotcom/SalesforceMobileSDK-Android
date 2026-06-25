@@ -50,9 +50,12 @@ import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -553,6 +556,7 @@ public class UserAccountManager {
 		final String beaconChildConsumerKey = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
 		final String beaconChildConsumerSecret = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, encryptionKey);
 		final String scope = decryptUserData(account, AuthenticatorService.KEY_SCOPE, encryptionKey);
+		final String featureFlagsRaw = decryptUserData(account, AuthenticatorService.KEY_FEATURE_FLAGS, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
 		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
@@ -571,7 +575,7 @@ public class UserAccountManager {
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		} else {
-			return UserAccountBuilder.getInstance()
+			final UserAccount userAccount = UserAccountBuilder.getInstance()
 					.authToken(authToken)
 					.refreshToken(refreshToken)
 					.loginServer(loginServer)
@@ -610,6 +614,10 @@ public class UserAccountManager {
 					.scope(scope)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
+			if (!TextUtils.isEmpty(featureFlagsRaw)) {
+				userAccount.setFeatureFlags(new HashSet<>(Arrays.asList(featureFlagsRaw.split(","))));
+			}
+			return userAccount;
 		}
 	}
 
@@ -758,6 +766,11 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerKey(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerSecret(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_SCOPE, SalesforceSDKManager.encrypt(userAccount.getScope(), encryptionKey));
+		final Set<String> featureFlags = userAccount.getFeatureFlags();
+		if (!featureFlags.isEmpty()) {
+			extras.putString(AuthenticatorService.KEY_FEATURE_FLAGS,
+				SalesforceSDKManager.encrypt(android.text.TextUtils.join(",", featureFlags), encryptionKey));
+		}
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {

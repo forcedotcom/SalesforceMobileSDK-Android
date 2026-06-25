@@ -4,6 +4,9 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
+import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
@@ -519,6 +522,106 @@ class SalesforceSDKManagerTests {
         assertNull(sdkManager.appAttestationClient)
     }
 
+    // -------------------------------------------------------------------------
+    // Per-user feature flag tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun test_givenTwoUsers_whenRegisterFeatureForUserA_thenOnlyUserAUAContainsFlag() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val userB = buildMinimalUserAccount(orgId = "org2", userId = "user2")
+
+        sdkManager.registerUsedAppFeature("XY", userA)
+
+        try {
+            assertTrue(
+                "getUserAgent for userA should contain XY",
+                sdkManager.getUserAgent("", userA).contains("XY")
+            )
+            assertFalse(
+                "getUserAgent for userB should NOT contain XY",
+                sdkManager.getUserAgent("", userB).contains("XY")
+            )
+        } finally {
+            sdkManager.unregisterUsedAppFeature("XY", userA)
+        }
+    }
+
+    @Test
+    fun test_givenGlobalAndPerUserFlags_whenGetUserAgentForUser_thenUnionPresent() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val userB = buildMinimalUserAccount(orgId = "org2", userId = "user2")
+
+        sdkManager.registerUsedAppFeature("GL")
+        sdkManager.registerUsedAppFeature("PU", userA)
+
+        try {
+            val agentA = sdkManager.getUserAgent("", userA)
+            assertTrue("getUserAgent for userA should contain global flag GL", agentA.contains("GL"))
+            assertTrue("getUserAgent for userA should contain per-user flag PU", agentA.contains("PU"))
+
+            val agentB = sdkManager.getUserAgent("", userB)
+            assertTrue("getUserAgent for userB should contain global flag GL", agentB.contains("GL"))
+            assertFalse("getUserAgent for userB should NOT contain per-user flag PU", agentB.contains("PU"))
+        } finally {
+            sdkManager.unregisterUsedAppFeature("GL")
+            sdkManager.unregisterUsedAppFeature("PU", userA)
+        }
+    }
+
+    @Test
+    fun test_givenNullUser_whenRegisterUsedAppFeature_thenGlobalFlagRegistered() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+
+        sdkManager.registerUsedAppFeature("GF", null)
+
+        try {
+            assertTrue(
+                "isGlobalFeatureRegistered should return true for GF",
+                sdkManager.isGlobalFeatureRegistered("GF")
+            )
+        } finally {
+            sdkManager.unregisterUsedAppFeature("GF")
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers for per-user feature flag tests
+    // -------------------------------------------------------------------------
+
+    /**
+     * Builds a minimal [UserAccount] for testing using known test constants.
+     * orgId and userId are parameterized so tests can create distinct users.
+     */
+    private fun buildMinimalUserAccount(orgId: String, userId: String): UserAccount =
+        UserAccountBuilder.getInstance()
+            .authToken("test_auth_token")
+            .refreshToken("test_refresh_token")
+            .loginServer("https://test.salesforce.com")
+            .idUrl("https://test.salesforce.com/$orgId/$userId")
+            .instanceServer("https://cs1.salesforce.com")
+            .orgId(orgId)
+            .userId(userId)
+            .username("user_${userId}@example.com")
+            .accountName("user_$userId (https://cs1.salesforce.com) (SalesforceSDKTest)")
+            .build()
+
+    /**
+     * Creates a [SalesforceSDKManager] subclass whose [UserAccountManager] is fully
+     * mocked so that [persistUserFeatureFlags] cannot reach [AccountManager].
+     * This keeps per-user feature flag tests in-memory only.
+     */
+    private fun createSdkManagerWithMockedAccountManager(): SalesforceSDKManager =
+        TestSalesforceSDKManagerWithMockedAccounts(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+        )
+
     /**
      * Helper to create a test [SalesforceSDKManager] instance with optional
      * [googleCloudProjectId] for app attestation tests.
@@ -570,6 +673,29 @@ class SalesforceSDKManagerTests {
                 ))
                 // No-op for reset() to avoid SharedPreferences access
                 every { reset() } just runs
+            }
+        }
+    }
+
+    /**
+     * A [SalesforceSDKManager] subclass that replaces [userAccountManager] with a
+     * relaxed mock so that [persistUserFeatureFlags] cannot reach [AccountManager].
+     * Per-user feature flag tests use this to stay fully in-memory.
+     */
+    private class TestSalesforceSDKManagerWithMockedAccounts(
+        context: android.content.Context,
+        mainActivity: Class<out Activity>,
+        loginActivity: Class<out Activity>? = null,
+    ) : SalesforceSDKManager(context, mainActivity, loginActivity) {
+
+        override val userAccountManager: UserAccountManager by lazy {
+            mockk<UserAccountManager>(relaxed = true).apply {
+                // buildAccount returns null → persistUserFeatureFlags exits early
+                every { buildAccount(any()) } returns null
+                // currentUser returns null → getUserAgent falls back to no per-user key
+                every { currentUser } returns null
+                // authenticatedUsers returns null → hydratePerUserFeatures is a no-op
+                every { authenticatedUsers } returns null
             }
         }
     }

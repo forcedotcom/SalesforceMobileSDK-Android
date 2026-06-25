@@ -827,7 +827,7 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                 instance = SyncManager(store, restClient)
                 instance.also { INSTANCES[uniqueId] = it }
             }
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC)
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC, user)
             return instance
         }
 
