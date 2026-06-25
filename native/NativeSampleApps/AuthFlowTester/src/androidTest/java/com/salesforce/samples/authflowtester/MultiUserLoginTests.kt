@@ -421,6 +421,21 @@ class MultiUserLoginTests: AuthFlowTest() {
         // Switch back to User B — BW back, MU still present
         switchToUserAndValidate(otherUser, ADVANCED_AUTH)
         app.validateUserAgent(ADVANCED_AUTH, isMultiUser = true)
+
+        // Log out User B via SDK — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(ADVANCED_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+
+        // Back on User A — MU gone, no BW
+        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
     }
 
     companion object {
