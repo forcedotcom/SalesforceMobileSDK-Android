@@ -39,6 +39,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQU
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -360,6 +361,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             useHybridAuthToken,
             knownLoginHostConfig,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
     }
 
@@ -370,6 +372,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
         app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUserAgent(knownLoginHostConfig, isMultiUser = true)
     }
 
     /**
@@ -393,6 +396,31 @@ class MultiUserLoginTests: AuthFlowTest() {
             "Timed out after ${timeoutMs}ms waiting for user count to reach " +
                 "$expectedCount (was $finalCount)"
         )
+    }
+
+    @Test
+    fun testAdvancedAuthUser_HasBWFlag_RegularAuthUser_DoesNot() {
+        // User A: regular auth — no BW
+        loginAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
+            isMultiUser = false,
+        )
+
+        // User B: advanced auth — has BW; now 2 users → MU
+        loginOtherUserAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = ADVANCED_AUTH,
+        )
+
+        // Switch to User A — no BW, MU still present
+        switchToUserAndValidate(user)
+        app.validateUserAgent(REGULAR_AUTH, isMultiUser = true)
+
+        // Switch back to User B — BW back, MU still present
+        switchToUserAndValidate(otherUser, ADVANCED_AUTH)
+        app.validateUserAgent(ADVANCED_AUTH, isMultiUser = true)
     }
 
     companion object {

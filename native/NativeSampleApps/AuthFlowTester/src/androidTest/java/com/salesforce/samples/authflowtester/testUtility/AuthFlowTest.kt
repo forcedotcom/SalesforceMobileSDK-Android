@@ -138,6 +138,7 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         useWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
     ) {
         val loginPage = when(knownLoginHostConfig) {
             REGULAR_AUTH -> LoginPageObject(composeTestRule)
@@ -217,6 +218,7 @@ abstract class AuthFlowTest {
         app.validateUser(knownLoginHostConfig, knownUserConfig)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
+        app.validateUserAgent(knownLoginHostConfig, useWelcomeDiscovery, isMultiUser)
     }
 
     companion object {

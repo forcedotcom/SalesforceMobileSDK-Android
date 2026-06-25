@@ -54,6 +54,7 @@ import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
+import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
@@ -478,5 +479,46 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         return node.fetchSemanticsNode()
             .config[SemanticsProperties.Text]
             .last().text // Value is last; first is the label
+    }
+
+    fun validateUserAgent(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+    ) {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        val ua = getText(USER_AGENT_CONTENT_DESC)
+
+        assert(ua.contains("SalesforceMobileSDK/")) {
+            "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
+        }
+        assert(ua.contains("ftr_")) {
+            "User agent missing 'ftr_' segment: $ua"
+        }
+
+        // Parse flag codes from the ftr_XXXX segment
+        val ftrSegment = ua.substringAfter("ftr_").substringBefore(" ")
+        val flags = ftrSegment.split(".").toSet()
+
+        when (knownLoginHostConfig) {
+            KnownLoginHostConfig.ADVANCED_AUTH -> assert("BW" in flags) {
+                "Expected 'BW' flag for ADVANCED_AUTH in: $ua"
+            }
+            KnownLoginHostConfig.REGULAR_AUTH -> assert("BW" !in flags) {
+                "Expected no 'BW' flag for REGULAR_AUTH in: $ua"
+            }
+        }
+
+        if (usesWelcomeDiscovery) {
+            assert("WD" in flags) {
+                "Expected 'WD' flag for Welcome Discovery in: $ua"
+            }
+        }
+
+        if (isMultiUser) {
+            assert("MU" in flags) {
+                "Expected 'MU' flag for multi-user in: $ua"
+            }
+        }
     }
 }
