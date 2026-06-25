@@ -1384,7 +1384,9 @@ open class SalesforceSDKManager protected constructor(
 
     /** Hydrates per-user features from persisted accounts at startup */
     private fun hydratePerUserFeatures() {
-        val users = userAccountManager.authenticatedUsers ?: return
+        // Use getInstance() directly — this is called from the constructor init block before the
+        // userAccountManager lazy delegate is initialized, so we can't use the property here.
+        val users = UserAccountManager.getInstance().authenticatedUsers ?: return
         for (u in users) {
             val flags = u.featureFlags
             if (flags.isNotEmpty()) {
