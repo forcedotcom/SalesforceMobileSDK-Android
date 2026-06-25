@@ -215,10 +215,9 @@ abstract class AuthFlowTest {
         }
         app.waitForAppLoad()
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
-        app.validateUserAgent(knownLoginHostConfig, useWelcomeDiscovery, isMultiUser)
     }
 
     companion object {

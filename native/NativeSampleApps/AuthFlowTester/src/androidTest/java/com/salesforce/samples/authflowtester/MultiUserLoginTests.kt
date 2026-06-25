@@ -371,8 +371,7 @@ class MultiUserLoginTests: AuthFlowTest() {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
-        app.validateUserAgent(knownLoginHostConfig, isMultiUser = true)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
     }
 
     /**
@@ -416,11 +415,9 @@ class MultiUserLoginTests: AuthFlowTest() {
 
         // Switch to User A — no BW, MU still present
         switchToUserAndValidate(user)
-        app.validateUserAgent(REGULAR_AUTH, isMultiUser = true)
 
         // Switch back to User B — BW back, MU still present
         switchToUserAndValidate(otherUser, ADVANCED_AUTH)
-        app.validateUserAgent(ADVANCED_AUTH, isMultiUser = true)
 
         // Log out User B via SDK — auto-switches to User A; MU must be gone
         val sdkManager = SalesforceSDKManager.getInstance()

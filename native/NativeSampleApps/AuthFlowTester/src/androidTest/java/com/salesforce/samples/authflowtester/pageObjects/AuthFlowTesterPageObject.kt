@@ -265,11 +265,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
-    fun validateUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+    fun validateUser(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        knownUserConfig: KnownUserConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+    ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         waitForNode(CREDS_SECTION_CONTENT_DESC)
-        
+
         // Wait for the UI to update asynchronously after login or user switch.
         // The view may be recreated and collapsed when the current user state updates.
         try {
@@ -298,6 +303,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
         }
         assertEquals(expected.username, getText(USERNAME))
+
+        // Validate feature flags — UI is already settled, reuse the existing layout traversal
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -487,8 +496,15 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        val ua = getText(USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser)
+    }
 
+    private fun validateUserAgent(
+        ua: String,
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+    ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
         }
