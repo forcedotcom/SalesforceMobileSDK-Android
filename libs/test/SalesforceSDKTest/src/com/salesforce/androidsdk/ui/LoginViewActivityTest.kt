@@ -353,6 +353,26 @@ class LoginViewActivityTest {
     }
 
     @Test
+    fun test_givenOnLoginForAdminsIsNull_whenDropdownMenuOpened_thenLoginForAdminsItemIsAbsent() {
+        androidComposeTestRule.setContent {
+            DefaultTopAppBarTestWrapper(
+                onLoginForAdmins = null,
+            )
+        }
+
+        val menu = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__more_options)
+        )
+        val loginForAdminsButton = androidComposeTestRule.onNodeWithText(
+            androidComposeTestRule.activity.getString(R.string.sf__login_for_admins)
+        )
+
+        menu.assertIsDisplayed()
+        menu.performClick()
+        loginForAdminsButton.assertDoesNotExist()
+    }
+
+    @Test
     fun bottomAppBar_WithNoButton_DisplaysCorrectly() {
         androidComposeTestRule.setContent {
             DefaultBottomAppBarTestWrapper()
@@ -540,7 +560,7 @@ class LoginViewActivityTest {
         shouldShowBackButton: Boolean = false,
         showDevSupport: (() -> Unit)? = { },
         finish: () -> Unit = { },
-        onLoginForAdmins: (() -> Unit) = { },
+        onLoginForAdmins: (() -> Unit)? = { },
     ) {
         DefaultTopAppBar(
             backgroundColor, titleText, titleTextColor, showServerPicker, clearCookies,

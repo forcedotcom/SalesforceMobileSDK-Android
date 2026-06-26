@@ -90,6 +90,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.core.net.toUri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -147,10 +148,16 @@ fun LoginView() {
     val viewModel: LoginViewModel =
         viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     val frontDoorBridgeUrl = viewModel.frontDoorBridgeUrl.observeAsState()
+    // Observe selectedServer and loginUrl AS COMPOSE STATE so that recomposition triggers when
+    // either changes — and so titleText is read inside Compose's snapshot system, not via the
+    // non-reactive `defaultTitleText` getter chain (which reads LiveData.getValue() directly and
+    // is invisible to Compose).
+    val selectedServer = viewModel.selectedServer.observeAsState()
+    val loginUrl = viewModel.loginUrl.observeAsState()
     val titleText = if (frontDoorBridgeUrl.value != null) {
         viewModel.frontdoorBridgeServer ?: ""
     } else {
-        viewModel.titleText ?: viewModel.defaultTitleText
+        viewModel.titleText ?: if (loginUrl.value == LoginActivity.ABOUT_BLANK) "" else selectedServer.value ?: ""
     }
     val showDevSupport = with(SalesforceSDKManager.getInstance()) {
         return@with if (isDebugBuild && isDevSupportEnabled()) {
@@ -160,6 +167,10 @@ fun LoginView() {
         }
     }
 
+    // During WD phase 2, selectedServer is the My Domain, so this is false and LFA is shown.
+    // See LoginActivity guard for the programmatic defense-in-depth check.
+    val isWelcomeDiscoveryServer = selectedServer.value
+        ?.let { LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(it.toUri()) } == true
     val topAppBar = viewModel.topAppBar ?: {
         DefaultTopAppBar(
             backgroundColor = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value,
@@ -172,7 +183,9 @@ fun LoginView() {
             shouldShowBackButton = viewModel.shouldShowBackButton,
             showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
-            onLoginForAdmins = { activity.launchLoginForAdminsAction() },
+            onLoginForAdmins = if (isWelcomeDiscoveryServer) null else {
+                { activity.launchLoginForAdminsAction() }
+            },
         )
     }
 

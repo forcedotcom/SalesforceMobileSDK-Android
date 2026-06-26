@@ -79,6 +79,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
+import java.net.URLEncoder
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -299,8 +300,62 @@ open class LoginViewModel(
         loginUrl.addSource(selectedServer, LoginUrlSource())
     }
 
+    /**
+     * Creates a Salesforce Welcome Discovery mobile URL using the provided
+     * Salesforce Welcome Discovery host and path URL.
+     * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
+     * Discovery host and path URL
+     * @return A Salesforce Welcome Discovery mobile URL with all required
+     * parameters
+     */
+    internal fun generateSalesforceWelcomeDiscoveryMobileUrl(
+        salesforceWelcomeDiscoveryHostAndPathUrl: Uri
+    ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
+            oAuthConfig.consumerKey,
+        )
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
+            URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8")
+        )
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL,
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL
+        )
+        .build()
+
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
+        // If the user-selected login server (per LoginServerManager) is Salesforce Welcome
+        // Discovery, load the Phase 1 discovery mobile URL directly instead of regenerating a
+        // Phase-2-style auth URL.  We intentionally do NOT key off `selectedServer.value` here:
+        // during Phase 2, the VM's selectedServer is the discovered My Domain, while the
+        // LoginServerManager retains Welcome Discovery as the user's actual server selection.
+        // This branch runs BEFORE the isUsingFrontDoorBridge short-circuit by design — Welcome
+        // Discovery and frontdoor bridge are mutually exclusive in practice, but defense-in-depth
+        // ordering ensures a stray frontdoor URL cannot suppress the discovery reload.
+        SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url
+            ?.toUri()?.let { selectedLoginServerUri ->
+                if (isSalesforceWelcomeDiscoveryUrlPath(selectedLoginServerUri)) {
+                    // Reset the top app bar background to White synchronously so the bar flips
+                    // immediately when the user reloads/re-selects Welcome Discovery from Phase 2.
+                    // dynamicBackgroundColor is otherwise only updated by AuthWebViewClient.
+                    // onPageFinished, which runs after the new page loads — the gap leaves the
+                    // Phase-2 color visible on the bar even though the WebView URL has changed.
+                    dynamicBackgroundColor.value = White
+                    // Must precede selectedServer reset — LoginUrlSource same-host short-circuit.
+                    loginUrl.value =
+                        generateSalesforceWelcomeDiscoveryMobileUrl(selectedLoginServerUri).toString()
+                    // Must follow loginUrl — depends on same-host short-circuit seeing new loginUrl.
+                    val welcomeUrl = selectedLoginServerUri.toString()
+                    if (selectedServer.value != welcomeUrl) {
+                        selectedServer.value = welcomeUrl
+                    }
+                    return
+                }
+            }
+
         if (!isUsingFrontDoorBridge) {
             selectedServer.value?.let { server ->
                 // The Web Server Flow code challenge makes the authorization url unique each time,

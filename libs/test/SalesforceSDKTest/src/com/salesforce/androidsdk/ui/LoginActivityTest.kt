@@ -143,8 +143,11 @@ class LoginActivityTest {
     fun onLoginForAdminsClick_withNullBrowserCustomTabUrl_doesNotLaunchCustomTab() {
         val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
         every { browserCustomTabUrl.value } returns null
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        every { selectedServer.value } returns "https://example.com"
         val viewModel = mockk<LoginViewModel>(relaxed = true)
         every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
 
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
@@ -160,8 +163,11 @@ class LoginActivityTest {
         val testUrl = "https://example.com/services/oauth2/authorize"
         val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
         every { browserCustomTabUrl.value } returns testUrl
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        every { selectedServer.value } returns "https://example.com"
         val viewModel = mockk<LoginViewModel>(relaxed = true)
         every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
 
         val activity = mockk<LoginActivity>(relaxed = true)
         every { activity.viewModel } returns viewModel
@@ -175,6 +181,56 @@ class LoginActivityTest {
         // getter for `adminLoginCustomTabLauncher`. The admin-vs-regular launcher routing is
         // enforced structurally by the 2-line body of `onLoginForAdminsClick`.
         verify(exactly = 1) { activity.loadLoginPageInCustomTab(eq(testUrl), any()) }
+    }
+
+    /**
+     * Phase 2 of Welcome Discovery: viewModel.selectedServer is the discovered My Domain (even
+     * though LoginServerManager still has the Welcome URL selected).  Login for Admin is valid
+     * here and MUST launch the Custom Tab.  Regression guard: keying the no-op off
+     * LoginServerManager.selectedLoginServer instead of viewModel.selectedServer broke this.
+     */
+    @Test
+    fun onLoginForAdminsClick_inWelcomeDiscoveryPhase2_launchesCustomTabAgainstMyDomain() {
+        val testUrl = "https://acme.my.salesforce.com/services/oauth2/authorize"
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns testUrl
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        // Phase 2: selectedServer is the discovered My Domain, NOT the Welcome URL.
+        every { selectedServer.value } returns "https://acme.my.salesforce.com"
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
+
+        activity.launchLoginForAdminsAction()
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(eq(testUrl), any()) }
+    }
+
+    /**
+     * Phase 1 of Welcome Discovery: viewModel.selectedServer is the Welcome Discovery URL, whose
+     * callback (sfdc://discocallback) is not app-unique.  Login for Admin MUST be a no-op here.
+     */
+    @Test
+    fun onLoginForAdminsClick_inWelcomeDiscoveryPhase1_doesNotLaunchCustomTab() {
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns "https://welcome.salesforce.com/discovery"
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        every { selectedServer.value } returns "https://welcome.salesforce.com/discovery"
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
+
+        activity.launchLoginForAdminsAction()
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
     }
 
     // endregion
