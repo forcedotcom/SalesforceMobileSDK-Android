@@ -4,6 +4,9 @@ on:
       is_pr:
         type: boolean
         default: false
+      run_all_ui_tests:
+        type: boolean
+        default: false
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL:
         required: true
