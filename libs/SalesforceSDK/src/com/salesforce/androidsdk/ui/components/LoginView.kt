@@ -167,6 +167,8 @@ fun LoginView() {
         }
     }
 
+    // During WD phase 2, selectedServer is the My Domain, so this is false and LFA is shown.
+    // See LoginActivity guard for the programmatic defense-in-depth check.
     val isWelcomeDiscoveryServer = selectedServer.value
         ?.let { LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(it.toUri()) } == true
     val topAppBar = viewModel.topAppBar ?: {
