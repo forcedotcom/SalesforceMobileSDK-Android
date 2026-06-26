@@ -139,8 +139,7 @@ jobs:
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
-            --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests" \
-            --timeout=20m \
+            --timeout=30m \
             --num-flaky-test-attempts=1
       - name: Run All Single User Tests
         continue-on-error: true
