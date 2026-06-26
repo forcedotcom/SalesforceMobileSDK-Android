@@ -5,7 +5,7 @@ on:
   # Mitigated by per-job Member Check (see "Check Write Permission" + "Validate Write Permission" steps).
   # Reference: team Github Actions Tribal Knowledge doc.
   pull_request_target:  # zizmor: ignore[dangerous-triggers]
-    branches: [dev, master, fix-reusable-ui-workflow-missing-input]
+    branches: [dev, master]
     paths-ignore:
       - '**/*.md'
       - 'LICENSE'
