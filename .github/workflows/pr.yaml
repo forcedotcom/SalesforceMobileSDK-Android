@@ -92,6 +92,7 @@ jobs:
     uses: ./.github/workflows/reusable-ui-workflow.yaml
     with:
       is_pr: true
+      run_all_ui_tests: ${{ needs.test-orchestrator.outputs.run_all_ui_tests == 'true' }}
     secrets:
       MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CALLBACK_URL }}
       MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY: ${{ secrets.MSDK_ANDROID_REMOTE_ACCESS_CONSUMER_KEY }}
