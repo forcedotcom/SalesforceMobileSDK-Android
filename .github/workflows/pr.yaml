@@ -25,6 +25,7 @@ jobs:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
     outputs:
       libs: ${{ steps.test-orchestrator.outputs.libs }}
+      run_all_ui_tests: ${{ steps.test-orchestrator.outputs.run_all_ui_tests }}
     steps:
       - name: Check Write Permission
         uses: octokit/request-action@dad4362715b7fb2ddedf9772c8670824af564f0d  # v2.4.0
