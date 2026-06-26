@@ -259,7 +259,7 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
         app.validateOAuthValues(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
         app.validateApiRequest()
     }

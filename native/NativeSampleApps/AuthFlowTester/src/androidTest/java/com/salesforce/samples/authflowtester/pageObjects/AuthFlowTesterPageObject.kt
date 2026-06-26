@@ -270,6 +270,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         knownUserConfig: KnownUserConfig,
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -306,7 +307,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -494,9 +495,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         knownLoginHostConfig: KnownLoginHostConfig,
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth)
     }
 
     private fun validateUserAgent(
@@ -504,6 +506,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         knownLoginHostConfig: KnownLoginHostConfig,
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
     ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
@@ -516,12 +519,14 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val ftrSegment = ua.substringAfter("ftr_").substringBefore(" ")
         val flags = ftrSegment.split(".").toSet()
 
-        when (knownLoginHostConfig) {
-            KnownLoginHostConfig.ADVANCED_AUTH -> assert("BW" in flags) {
-                "Expected 'BW' flag for ADVANCED_AUTH in: $ua"
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == KnownLoginHostConfig.ADVANCED_AUTH
+        if (shouldHaveBW) {
+            assert("BW" in flags) {
+                "Expected 'BW' flag for browser-based auth in: $ua"
             }
-            KnownLoginHostConfig.REGULAR_AUTH -> assert("BW" !in flags) {
-                "Expected no 'BW' flag for REGULAR_AUTH in: $ua"
+        } else {
+            assert("BW" !in flags) {
+                "Expected no 'BW' flag for in-app WebView auth in: $ua"
             }
         }
 
