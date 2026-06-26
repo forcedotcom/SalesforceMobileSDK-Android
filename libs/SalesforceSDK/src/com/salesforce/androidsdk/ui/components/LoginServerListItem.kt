@@ -75,6 +75,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -195,7 +196,8 @@ fun LoginServerListItem(
                             modifier = Modifier
                                 .padding(end = PADDING_SIZE.dp)
                                 .size(ICON_SIZE.dp)
-                                .offset { offset },
+                                .offset { offset }
+                                .testTag(LoginViewTestTags.SERVER_DELETE_BUTTON),
                         ) {
                             Icon(
                                 Icons.TwoTone.Delete,
@@ -225,6 +227,7 @@ fun LoginServerListItem(
                         .background(colorScheme.error)
                         .width(DELETE_BUTTON_SIZE.dp)
                         .height(rowHeightDp.value)
+                        .testTag(LoginViewTestTags.SERVER_CONFIRM_DELETE_BUTTON)
                         .clickable { removeServer(server) },
                 ) {
                     val deleteContentDescription = stringResource(sf__server_delete_content_description)
