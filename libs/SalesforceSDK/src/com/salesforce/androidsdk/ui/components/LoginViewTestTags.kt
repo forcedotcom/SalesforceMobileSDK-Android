@@ -112,10 +112,24 @@ object LoginViewTestTags {
     // endregion
 
     // region Server list item
-    /** Trash icon on a custom server row that arms the slide-to-delete affordance. */
+    /**
+     * Trash icon on a custom server row that arms the slide-to-delete affordance.
+     *
+     * Every custom server row carries this same tag by design, so a bare match resolves to
+     * multiple nodes. To target a specific row, combine it with a content matcher that
+     * identifies the row:
+     * ```
+     * onNode(hasTestTag(SERVER_DELETE_BUTTON) and hasAncestor(hasText("MyOrg")))
+     * ```
+     */
     const val SERVER_DELETE_BUTTON = "sf__server_delete_button"
 
-    /** Revealed confirm-delete target on a custom server row. */
+    /**
+     * Revealed confirm-delete target on a custom server row.
+     *
+     * Shared across all custom rows just like [SERVER_DELETE_BUTTON]; combine it with a content
+     * matcher (e.g. `and hasAncestor(hasText("MyOrg"))`) to target a specific row.
+     */
     const val SERVER_CONFIRM_DELETE_BUTTON = "sf__server_confirm_delete_button"
     // endregion
 }
