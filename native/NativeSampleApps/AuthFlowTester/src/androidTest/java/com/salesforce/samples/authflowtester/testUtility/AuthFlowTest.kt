@@ -222,12 +222,32 @@ abstract class AuthFlowTest {
     }
 
     /**
+     * Force-stops and relaunches the app process.
+     *
+     * Uses `am force-stop` via UiAutomator shell so the SDK must reload all state from disk,
+     * exercising the same persistence code path as a real device restart. The instrumentation
+     * process stays alive; the Compose/UiAutomator bridge reattaches by package name.
+     */
+    fun restartApp() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val packageName = context.packageName
+
+        UiDevice.getInstance(instrumentation).executeShellCommand("am force-stop $packageName")
+        Thread.sleep(1_000)
+
+        val launchIntent = Intent(context, AuthFlowTesterActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
+        }
+        context.startActivity(launchIntent)
+        app.waitForAppLoad()
+    }
+
+    /**
      * Force-stops and relaunches the app, then validates the persisted user session.
      *
-     * Mirrors iOS `restartAndValidateUser`. Uses `am force-stop` via UiAutomator to fully
-     * kill the process (not just recreate the activity), then relaunches via an explicit
-     * intent so the SDK reads all state from disk, exercising the same persistence code
-     * path as a real device restart.
+     * Mirrors iOS `restartAndValidateUser`.
      */
     fun restartAndValidateUser(
         knownAppConfig: KnownAppConfig,
@@ -236,23 +256,43 @@ abstract class AuthFlowTest {
         usesWelcomeDiscovery: Boolean = false,
         expectAdvancedAuth: Boolean = false,
     ) {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val context = instrumentation.targetContext
-        val packageName = context.packageName
-
-        // Kill the app process entirely so the SDK must reload state from disk.
-        UiDevice.getInstance(instrumentation).executeShellCommand("am force-stop $packageName")
-        Thread.sleep(1_000)
-
-        // Relaunch via explicit intent (mirrors how the ActivityScenarioRule would launch it).
-        val launchIntent = Intent(context, AuthFlowTesterActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
-        }
-        context.startActivity(launchIntent)
-
-        app.waitForAppLoad()
+        restartApp()
         app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth)
+    }
+
+    /**
+     * Adds a second account by tapping "Add New Account", logs in, and validates.
+     * Mirrors iOS `loginOtherUserAndValidate`.
+     */
+    fun addOtherUserAndValidate(
+        knownAppConfig: KnownAppConfig,
+        scopeSelection: ScopeSelection = EMPTY,
+        useWebServerFlow: Boolean = true,
+        useHybridAuthToken: Boolean = true,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ) {
+        app.addNewAccount()
+        loginAndValidate(
+            knownAppConfig = knownAppConfig,
+            scopeSelection = scopeSelection,
+            useWebServerFlow = useWebServerFlow,
+            useHybridAuthToken = useHybridAuthToken,
+            knownLoginHostConfig = knownLoginHostConfig,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+        )
+    }
+
+    /**
+     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
+     */
+    fun switchToUserAndValidateUser(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ) {
+        app.switchToUser(knownUserConfig)
+        composeTestRule.waitForIdle()
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
     }
 
     companion object {
