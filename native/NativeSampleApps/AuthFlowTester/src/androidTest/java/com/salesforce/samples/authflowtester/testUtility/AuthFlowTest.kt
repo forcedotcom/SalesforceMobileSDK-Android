@@ -35,6 +35,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -218,6 +219,40 @@ abstract class AuthFlowTest {
         app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
+    }
+
+    /**
+     * Force-stops and relaunches the app, then validates the persisted user session.
+     *
+     * Mirrors iOS `restartAndValidateUser`. Uses `am force-stop` via UiAutomator to fully
+     * kill the process (not just recreate the activity), then relaunches via an explicit
+     * intent so the SDK reads all state from disk, exercising the same persistence code
+     * path as a real device restart.
+     */
+    fun restartAndValidateUser(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = user,
+        usesWelcomeDiscovery: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+    ) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val packageName = context.packageName
+
+        // Kill the app process entirely so the SDK must reload state from disk.
+        UiDevice.getInstance(instrumentation).executeShellCommand("am force-stop $packageName")
+        Thread.sleep(1_000)
+
+        // Relaunch via explicit intent (mirrors how the ActivityScenarioRule would launch it).
+        val launchIntent = Intent(context, AuthFlowTesterActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
+        }
+        context.startActivity(launchIntent)
+
+        app.waitForAppLoad()
+        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth)
     }
 
     companion object {
