@@ -222,18 +222,31 @@ abstract class AuthFlowTest {
     }
 
     /**
-     * Force-stops and relaunches the app process.
+     * Kills the app process and relaunches it, so the SDK reloads all state from disk.
      *
-     * Uses `am force-stop` via UiAutomator shell so the SDK must reload all state from disk,
-     * exercising the same persistence code path as a real device restart. The instrumentation
-     * process stays alive; the Compose/UiAutomator bridge reattaches by package name.
+     * `am force-stop <package>` kills the instrumentation process too because the test
+     * runner shares the app's process. Instead, we get all PIDs for the package via
+     * `pidof`, exclude our own instrumentation PID, and kill only the app PID(s).
+     * This leaves the instrumentation alive while forcing the app to restart cold.
+     *
+     * After the kill, we relaunch via an explicit intent so the SDK re-runs
+     * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
      */
     fun restartApp() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val packageName = context.packageName
+        val device = UiDevice.getInstance(instrumentation)
+        val myPid = android.os.Process.myPid()
 
-        UiDevice.getInstance(instrumentation).executeShellCommand("am force-stop $packageName")
+        // Kill all processes in the package except the instrumentation runner's own PID.
+        val pidOutput = device.executeShellCommand("pidof $packageName").trim()
+        if (pidOutput.isNotEmpty()) {
+            pidOutput.split("\\s+".toRegex())
+                .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it != myPid }
+                .forEach { pid -> device.executeShellCommand("kill -9 $pid") }
+        }
         Thread.sleep(1_000)
 
         val launchIntent = Intent(context, AuthFlowTesterActivity::class.java).apply {
