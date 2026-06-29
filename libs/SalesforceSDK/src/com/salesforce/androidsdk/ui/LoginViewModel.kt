@@ -466,6 +466,7 @@ open class LoginViewModel(
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         tokenMigration: Boolean = false,
         loginServer: String? = null,
+        credentialsIdentifier: String? = null,
     ) {
         // Clear cookies after successful authentication to prevent automatic re-login if the user tries to add another user right away.
         if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
@@ -480,6 +481,7 @@ open class LoginViewModel(
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
             tokenMigration = tokenMigration,
+            credentialsIdentifier = credentialsIdentifier,
         )
     }
 
@@ -667,6 +669,8 @@ open class LoginViewModel(
             }
             val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
 
+            val credentialsIdentifier = java.util.UUID.randomUUID().toString()
+
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
                 URI.create(server),
@@ -674,9 +678,11 @@ open class LoginViewModel(
                 code,
                 verifier,
                 oAuthConfig.redirectUri,
+                SalesforceSDKManager.getInstance(),
+                credentialsIdentifier,
             )
 
-            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server)
+            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)

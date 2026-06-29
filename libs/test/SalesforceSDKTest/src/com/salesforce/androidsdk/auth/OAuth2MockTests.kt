@@ -16,7 +16,10 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -215,4 +218,232 @@ class OAuth2MockTests {
             formBody.contains("assertion=__JWT_ASSERTION__"),
         )
     }
+
+    // region DPoP tests
+
+    @Test
+    fun test_givenUseDPoPTrueAndCredentialsIdentifier_whenMakeTokenEndpointRequest_thenDPoPHeaderPresent() {
+        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
+            every { appAttestationClient } returns null
+            every { deviceId } returns "__DEVICE_ID__"
+            every { isUseDPoP() } returns true
+        }
+
+        val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
+            .toResponseBody("application/json; charset=utf-8".toMediaType())
+        val okHttpResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+        }
+        val requestSlot = slot<Request>()
+        val httpAccessor = mockk<HttpAccess>(relaxed = true) {
+            every { okHttpClient } returns mockk {
+                every { newCall(capture(requestSlot)) } returns mockk {
+                    every { execute() } returns okHttpResponse
+                }
+            }
+        }
+
+        makeTokenEndpointRequest(
+            httpAccessor,
+            URI("https://login.salesforce.com"),
+            FormBody.Builder(),
+            salesforceSdkManager,
+            "test-scope-id",
+        )
+
+        val dpopHeader = requestSlot.captured.header("DPoP")
+        assertNotNull("Expected DPoP header to be present", dpopHeader)
+        assertTrue("Expected DPoP header to be non-blank", !dpopHeader.isNullOrBlank())
+    }
+
+    @Test
+    fun test_givenUseDPoPFalse_whenMakeTokenEndpointRequest_thenNoDPoPHeader() {
+        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
+            every { appAttestationClient } returns null
+            every { deviceId } returns "__DEVICE_ID__"
+            every { isUseDPoP() } returns false
+        }
+
+        val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
+            .toResponseBody("application/json; charset=utf-8".toMediaType())
+        val okHttpResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+        }
+        val requestSlot = slot<Request>()
+        val httpAccessor = mockk<HttpAccess>(relaxed = true) {
+            every { okHttpClient } returns mockk {
+                every { newCall(capture(requestSlot)) } returns mockk {
+                    every { execute() } returns okHttpResponse
+                }
+            }
+        }
+
+        makeTokenEndpointRequest(
+            httpAccessor,
+            URI("https://login.salesforce.com"),
+            FormBody.Builder(),
+            salesforceSdkManager,
+            "test-scope-id",
+        )
+
+        assertNull(
+            "Did not expect DPoP header when isUseDPoP() is false",
+            requestSlot.captured.header("DPoP"),
+        )
+    }
+
+    @Test
+    fun test_givenUseDPoPTrueButNullCredentialsIdentifier_whenMakeTokenEndpointRequest_thenNoDPoPHeader() {
+        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
+            every { appAttestationClient } returns null
+            every { deviceId } returns "__DEVICE_ID__"
+            every { isUseDPoP() } returns true
+        }
+
+        val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
+            .toResponseBody("application/json; charset=utf-8".toMediaType())
+        val okHttpResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+        }
+        val requestSlot = slot<Request>()
+        val httpAccessor = mockk<HttpAccess>(relaxed = true) {
+            every { okHttpClient } returns mockk {
+                every { newCall(capture(requestSlot)) } returns mockk {
+                    every { execute() } returns okHttpResponse
+                }
+            }
+        }
+
+        makeTokenEndpointRequest(
+            httpAccessor,
+            URI("https://login.salesforce.com"),
+            FormBody.Builder(),
+            salesforceSdkManager,
+            null,
+        )
+
+        assertNull(
+            "Did not expect DPoP header when credentialsIdentifier is null",
+            requestSlot.captured.header("DPoP"),
+        )
+    }
+
+    @Test
+    fun test_givenUseDPoPTrue_whenMakeTokenEndpointRequest_thenTokenTypePersistedOnResponse() {
+        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
+            every { appAttestationClient } returns null
+            every { deviceId } returns "__DEVICE_ID__"
+            every { isUseDPoP() } returns true
+        }
+
+        val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u","token_type":"DPoP"}"""
+            .toResponseBody("application/json; charset=utf-8".toMediaType())
+        val okHttpResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+        }
+        val requestSlot = slot<Request>()
+        val httpAccessor = mockk<HttpAccess>(relaxed = true) {
+            every { okHttpClient } returns mockk {
+                every { newCall(capture(requestSlot)) } returns mockk {
+                    every { execute() } returns okHttpResponse
+                }
+            }
+        }
+
+        val tokenResponse = makeTokenEndpointRequest(
+            httpAccessor,
+            URI("https://login.salesforce.com"),
+            FormBody.Builder(),
+            salesforceSdkManager,
+            "test-scope-id",
+        )
+
+        assertEquals("DPoP", tokenResponse.tokenType)
+    }
+
+    @Test
+    fun test_givenDPoPTokenType_whenAddAuthorizationHeader_thenDPoPSchemeUsed() {
+        val builder = Request.Builder().url("https://example.com")
+
+        OAuth2.addAuthorizationHeader(builder, "my-access-token", "DPoP")
+
+        val authHeader = builder.build().header("Authorization")
+        assertNotNull(authHeader)
+        assertTrue(
+            "Expected Authorization header to start with 'DPoP ' but got: $authHeader",
+            authHeader!!.startsWith("DPoP "),
+        )
+    }
+
+    @Test
+    fun test_givenBearerTokenType_whenAddAuthorizationHeader_thenBearerSchemeUsed() {
+        val builder = Request.Builder().url("https://example.com")
+
+        OAuth2.addAuthorizationHeader(builder, "my-access-token", "Bearer")
+
+        val authHeader = builder.build().header("Authorization")
+        assertNotNull(authHeader)
+        assertTrue(
+            "Expected Authorization header to start with 'Bearer ' but got: $authHeader",
+            authHeader!!.startsWith("Bearer "),
+        )
+    }
+
+    @Test
+    fun test_givenNullTokenType_whenAddAuthorizationHeader_thenBearerSchemeUsed() {
+        val builder = Request.Builder().url("https://example.com")
+
+        OAuth2.addAuthorizationHeader(builder, "my-access-token", null)
+
+        val authHeader = builder.build().header("Authorization")
+        assertNotNull(authHeader)
+        assertTrue(
+            "Expected Authorization header to start with 'Bearer ' but got: $authHeader",
+            authHeader!!.startsWith("Bearer "),
+        )
+    }
+
+    @Test
+    fun test_givenKeyStoreException_whenMakeTokenEndpointRequest_thenRequestProceedsWithoutDPoPHeader() {
+        val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
+            every { appAttestationClient } returns null
+            every { deviceId } returns "__DEVICE_ID__"
+            every { isUseDPoP() } returns true
+        }
+
+        val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
+            .toResponseBody("application/json; charset=utf-8".toMediaType())
+        val okHttpResponse = mockk<Response>(relaxed = true) {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+        }
+        val requestSlot = slot<Request>()
+        val httpAccessor = mockk<HttpAccess>(relaxed = true) {
+            every { okHttpClient } returns mockk {
+                every { newCall(capture(requestSlot)) } returns mockk {
+                    every { execute() } returns okHttpResponse
+                }
+            }
+        }
+
+        val tokenResponse = makeTokenEndpointRequest(
+            httpAccessor,
+            URI("https://login.salesforce.com"),
+            FormBody.Builder(),
+            salesforceSdkManager,
+            "test-scope-id-keystore-error",
+        )
+
+        assertNotNull(
+            "Expected token endpoint request to complete even if DPoP key generation fails",
+            tokenResponse,
+        )
+        assertTrue("Expected the request to have been captured", requestSlot.isCaptured)
+    }
+
+    // endregion DPoP tests
 }

@@ -394,6 +394,7 @@ public class ClientManager {
             String newAuthToken;        // last winner's fresh access token (null on failure)
             String newInstanceUrl;      // last winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
+            String newTokenType;        // last winner's token type (e.g. "Bearer" or "DPoP")
             long lastRefreshTime = -1;
         }
 
@@ -430,6 +431,7 @@ public class ClientManager {
         private String refreshToken;
         private String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
+        private String lastTokenType;
 
         /**
          * Constructor
@@ -570,6 +572,7 @@ public class ClientManager {
             // can leave state.refreshing stuck true.
             String newAuthToken = null;
             String newInstanceUrl = null;
+            String newTokenType = null;
 
             try {
                 /*
@@ -601,6 +604,7 @@ public class ClientManager {
                                     "Access/refresh token already advanced in storage; adopting without refresh");
                             newAuthToken = storedAuthToken;
                             newInstanceUrl = currentAccount.getInstanceServer();
+                            newTokenType = currentAccount.getTokenType();
                             this.refreshToken = storedRefreshToken;
                             return newAuthToken;
                         }
@@ -617,6 +621,7 @@ public class ClientManager {
 
                 newAuthToken = userAccount.getAuthToken();
                 newInstanceUrl = userAccount.getInstanceServer();
+                newTokenType = userAccount.getTokenType();
 
                 Intent broadcastIntent;
                 if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
@@ -688,6 +693,7 @@ public class ClientManager {
                 // Update this instance's own cache so its getters stay correct.
                 lastNewAuthToken = newAuthToken;
                 lastNewInstanceUrl = newInstanceUrl;
+                lastTokenType = newTokenType;
                 lastRefreshTime = System.currentTimeMillis();
                 // Publish the result to the per-account state and wake any waiting losers.
                 // This is the SINGLE publish path and ALWAYS runs on every winner exit path so
@@ -698,6 +704,7 @@ public class ClientManager {
                         state.newAuthToken = newAuthToken;
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
+                        state.newTokenType = newTokenType;
                         state.lastRefreshTime = System.currentTimeMillis();
                         // Mark a fresh result as available. Bumped ONLY on success so a loser woken
                         // by a failed cycle sees an unchanged generation and correctly returns null
@@ -732,6 +739,7 @@ public class ClientManager {
         private void adoptWinnerResult(RefreshState state) {
             this.lastNewAuthToken = state.newAuthToken;
             this.lastRefreshTime = state.lastRefreshTime;
+            this.lastTokenType = state.newTokenType;
             if (state.newInstanceUrl != null) {
                 this.lastNewInstanceUrl = state.newInstanceUrl;
             }
@@ -753,6 +761,9 @@ public class ClientManager {
         @Override
         public String getInstanceUrl() { return lastNewInstanceUrl; }
 
+        @Override
+        public String getTokenType() { return lastTokenType; }
+
         @NonNull
         private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuthFailedException, MalformedTokenException {
             UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
@@ -766,7 +777,8 @@ public class ClientManager {
                 final URI tokenServer = OAuth2.overrideLoginServerIfNeeded(originalUserAccount);
                 SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
                 final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
-                        tokenServer, originalUserAccount.getClientIdForRefresh(), currentRefreshToken, addlParamsMap);
+                        tokenServer, originalUserAccount.getClientIdForRefresh(), currentRefreshToken, addlParamsMap,
+                        originalUserAccount.getDpopScope());
 
                 if (tr.authToken == null) {
                     throw new MalformedTokenException("Token endpoint returned null access token");
