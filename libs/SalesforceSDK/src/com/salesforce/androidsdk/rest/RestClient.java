@@ -259,7 +259,8 @@ public class RestClient {
         data.put(LOGIN_URL, clientInfo.loginUrl.toString());
         data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
         data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+        UserAccount currentUser = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent("", currentUser));
         data.put(COMMUNITY_ID, clientInfo.communityId);
         data.put(COMMUNITY_URL, clientInfo.communityUrl);
         return new JSONObject(data);
