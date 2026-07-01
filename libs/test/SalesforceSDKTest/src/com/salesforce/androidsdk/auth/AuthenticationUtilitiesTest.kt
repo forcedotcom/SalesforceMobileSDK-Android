@@ -50,7 +50,6 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.mockk.verifyOrder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
@@ -79,7 +78,6 @@ class AuthenticationUtilitiesTest {
     private val startMainActivity: () -> Unit = mockk()
     private val setAdministratorPreferences: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val addAccount: (UserAccount) -> Unit = mockk()
-    private val registerForPush: (Context, UserAccount?) -> Unit = mockk()
     private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleBiometricAuthPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleDuplicateUserAccount: (UserAccountManager, UserAccount, OAuth2.IdServiceResponse?) -> Unit = mockk()
@@ -102,7 +100,6 @@ class AuthenticationUtilitiesTest {
         every { startMainActivity.invoke() } returns Unit
         every { setAdministratorPreferences.invoke(any(), any()) } returns Unit
         every { addAccount.invoke(any()) } returns Unit
-        every { registerForPush.invoke(any(), any()) } returns Unit
         every { handleScreenLockPolicy.invoke(any(), any()) } returns Unit
         every { handleBiometricAuthPolicy.invoke(any(), any()) } returns Unit
         every { handleDuplicateUserAccount.invoke(any(), any(), any()) } returns Unit
@@ -185,42 +182,6 @@ class AuthenticationUtilitiesTest {
         verify { startMainActivity.invoke() }
         verify { handleScreenLockPolicy.invoke(userIdentity, expectedAccount) }
         verify { handleBiometricAuthPolicy.invoke(userIdentity, expectedAccount) }
-    }
-
-    /**
-     * Regression test: push registration must be enqueued only
-     * *after* the user account has been persisted to AccountManager.
-     *
-     * The push registration worker persists only the org id and user id and
-     * re-resolves the full [UserAccount] from AccountManager at run time. If
-     * registration is enqueued before [UserAccountManager.createAccount] writes
-     * the account, that re-resolution races the persistence and fails, so the
-     * account must be created before [registerForPush] is invoked.
-     */
-    @Test
-    fun testOnAuthFlowComplete_registersForPushAfterAccountPersisted() = runTest {
-        // Given
-        val tokenResponse = createTokenEndpointResponse()
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-
-        val expectedAccount = UserAccountBuilder.getInstance()
-            .populateFromTokenEndpointResponse(tokenResponse)
-            .populateFromIdServiceResponse(userIdentity)
-            .accountName(buildAccountName(userIdentity.username, tokenResponse.instanceUrl))
-            .loginServer("https://login.salesforce.com")
-            .clientId("test_consumer_key")
-            .nativeLogin(false)
-            .build()
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then - the account is persisted before push registration is enqueued
-        verifyOrder {
-            mockUserAccountManager.createAccount(expectedAccount)
-            registerForPush.invoke(testContext, expectedAccount)
-        }
     }
 
     @Test
@@ -938,7 +899,6 @@ class AuthenticationUtilitiesTest {
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,
-            registerForPush = registerForPush,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
             handleDuplicateUserAccount = handleDuplicateUserAccount

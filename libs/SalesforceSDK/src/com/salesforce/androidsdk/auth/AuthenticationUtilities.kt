@@ -112,7 +112,6 @@ internal suspend fun onAuthFlowComplete(
     startMainActivity: () -> Unit = ::startMainActivityHelper,
     setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
-    registerForPush: (context: Context, account: UserAccount?) -> Unit = ::registerForPushHelper,
     handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
@@ -212,7 +211,7 @@ internal suspend fun onAuthFlowComplete(
      * account is written races the persistence and makes that re-resolution
      * fail.
      */
-    registerForPush(context, account)
+    register(context, account)
 
     // Let the calling process resume
     onAuthFlowSuccess(account)
@@ -380,13 +379,6 @@ private fun startMainActivityHelper() {
  */
 private fun updateLoggingPrefsHelper(account: UserAccount) {
     SalesforceAnalyticsManager.getInstance(account)?.updateLoggingPrefs()
-}
-
-/**
- * Helper method to register for push notifications if set up by the app.
- */
-private fun registerForPushHelper(context: Context, account: UserAccount?) {
-    register(context, account)
 }
 
 /**
