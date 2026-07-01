@@ -26,27 +26,36 @@
  */
 package com.salesforce.androidsdk.push
 
+import android.accounts.AccountManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.work.Data
 import androidx.work.ListenableWorker.Result
+import androidx.work.ListenableWorker.Result.failure
+import androidx.work.ListenableWorker.Result.success
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
-import com.salesforce.androidsdk.accounts.UserAccountTest.createTestAccount
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
+import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ORG_ID
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USER_ID
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
-import com.salesforce.androidsdk.push.PushService.Companion.encryptUserAccountJson
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Tests for [PushNotificationsRegistrationChangeWorker]'s handling of the
- * encrypted `USER_ACCOUNT` payload.
+ * `ORG_ID`/`USER_ID` payload.
  *
  * Regression coverage: the worker must fail (rather than silently widen the
- * registration scope to all users) when a specific-account payload cannot be
- * decrypted, and must still treat an absent payload as the "all authenticated
- * users" signal.
+ * registration scope to all users) when specified identifiers no longer
+ * resolve to a stored account, and must still treat absent identifiers as the
+ * "all authenticated users" signal.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -54,36 +63,50 @@ class PushNotificationsRegistrationChangeWorkerTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun buildWorker(inputData: androidx.work.Data) =
+    private val accountManager = AccountManager.get(context)
+
+    @Before
+    fun setUp() {
+        cleanupAccounts(accountManager)
+    }
+
+    @After
+    fun tearDown() {
+        cleanupAccounts(accountManager)
+    }
+
+    private fun buildWorker(inputData: Data) =
         TestListenableWorkerBuilder<PushNotificationsRegistrationChangeWorker>(
             context = context,
             inputData = inputData
         ).build()
 
     /**
-     * A present-but-undecryptable `USER_ACCOUNT` payload is a bad required
-     * input: the worker must return [Result.failure] rather than fall through
-     * to the all-users path. (Registration work is re-enqueued with REPLACE on
-     * the next foreground/login, so the discarded worker is replaced.)
+     * Present identifiers that no longer resolve to a stored account are a bad
+     * required input: the worker must return [Result.failure] rather than fall
+     * through to the all-users path. (Registration work is re-enqueued with
+     * REPLACE on the next foreground/login, so the discarded worker is
+     * replaced.)
      */
     @Test
-    fun testDoWork_undecryptableUserAccount_returnsFailure() {
+    fun testDoWork_unresolvableUserAccount_returnsFailure() {
         val worker = buildWorker(
             workDataOf(
                 "ACTION" to Register.name,
-                "USER_ACCOUNT" to "this-is-not-a-valid-encrypted-payload"
+                "ORG_ID" to "org-that-does-not-exist",
+                "USER_ID" to "user-that-does-not-exist"
             )
         )
 
         val result = worker.doWork()
 
-        assertEquals(Result.failure(), result)
+        assertEquals(failure(), result)
     }
 
     /**
-     * An absent `USER_ACCOUNT` payload legitimately specifies all authenticated
-     * users. With no authenticated users present, the worker completes
-     * successfully (iterating an empty user set) rather than failing.
+     * Absent identifiers legitimately specify all authenticated users. With no
+     * authenticated users present, the worker completes successfully (iterating
+     * an empty user set) rather than failing.
      */
     @Test
     fun testDoWork_absentUserAccount_returnsSuccess() {
@@ -95,29 +118,28 @@ class PushNotificationsRegistrationChangeWorkerTest {
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        assertEquals(success(), result)
     }
 
     /**
-     * A present, decryptable `USER_ACCOUNT` payload is reconstructed into a
+     * Present identifiers that resolve to a stored account re-resolve to that
      * specific account and the worker completes successfully. Exercises the
-     * decrypt-then-deserialize path for a specified account.
+     * re-resolution path for a specified account.
      */
     @Test
-    fun testDoWork_validEncryptedUserAccount_returnsSuccess() {
-        val encryptedUserAccount = encryptUserAccountJson(
-            createTestAccount().toJson().toString()
-        )
+    fun testDoWork_resolvableUserAccount_returnsSuccess() {
+        createTestAccountInAccountManager(UserAccountManager.getInstance())
         val worker = buildWorker(
             workDataOf(
                 "ACTION" to Register.name,
-                "USER_ACCOUNT" to encryptedUserAccount
+                "ORG_ID" to TEST_ORG_ID,
+                "USER_ID" to TEST_USER_ID
             )
         )
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        assertEquals(success(), result)
     }
 
     /**
@@ -130,6 +152,6 @@ class PushNotificationsRegistrationChangeWorkerTest {
 
         val result = worker.doWork()
 
-        assertEquals(Result.failure(), result)
+        assertEquals(failure(), result)
     }
 }
