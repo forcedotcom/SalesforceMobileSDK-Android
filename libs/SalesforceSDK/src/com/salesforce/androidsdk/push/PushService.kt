@@ -45,6 +45,9 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_PUSH_NOTIFICATIONS
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.decrypt
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encrypt
+import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_EVENT
@@ -57,6 +60,7 @@ import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegisterPeriodically
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
@@ -656,7 +660,15 @@ open class PushService {
             val workManager = WorkManager.getInstance(context)
             // Require network connectivity in case the user is logging out while offline.
             val constraints = Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
-            val userAccountJson = userAccount?.toJson()?.toString()
+            /*
+             * Encrypt the user account payload before it is persisted by
+             * WorkManager, which stores input Data unencrypted in its Room
+             * database. Serializing the full user account directly would leave
+             * the auth token, refresh token, and session cookies in plaintext
+             * on disk. Encrypt in transit using the SDK's AES-GCM + Android
+             * Keystore crypto; the worker decrypts on read.
+             */
+            val userAccountJson = encryptUserAccountJson(userAccount?.toJson()?.toString())
             val workData = Data.Builder()
                 .putString("USER_ACCOUNT", userAccountJson)
                 .putString("ACTION", action.name)
@@ -716,6 +728,51 @@ open class PushService {
                     )
                 }
             }
+        }
+
+        /**
+         * Encrypts the serialized user account for storage in the WorkManager
+         * input [Data].
+         *
+         * WorkManager persists input data unencrypted in its Room database, so
+         * the serialized user account (which contains the auth token, refresh
+         * token, and session cookies) must be encrypted before it is enqueued.
+         * A null payload is passed through as null, preserving the worker's
+         * "null account means all authenticated users" contract.
+         *
+         * @param userAccountJson The serialized user account, or null for all
+         * user accounts
+         * @return The encrypted payload, or null if [userAccountJson] is null
+         */
+        @VisibleForTesting
+        internal fun encryptUserAccountJson(
+            userAccountJson: String?
+        ) = userAccountJson?.let { json ->
+            encrypt(json, encryptionKey)
+        }
+
+        /**
+         * Decrypts a user account payload read from the WorkManager input
+         * [Data] by [PushNotificationsRegistrationChangeWorker].
+         *
+         * Returns null for a null payload and, rather than throwing, also
+         * returns null for a payload that cannot be decrypted (corrupt,
+         * tampered, or a legacy plaintext payload). The caller is responsible
+         * for distinguishing these cases: the worker only calls this when a
+         * payload is present, so a null result there signals an undecryptable
+         * payload and the worker fails the work accordingly.
+         *
+         * @param encryptedUserAccountJson The encrypted payload, or null for
+         * all user accounts
+         * @return The decrypted user account JSON, or null if the payload is
+         * null or cannot be decrypted
+         */
+        internal fun decryptUserAccountJson(
+            encryptedUserAccountJson: String?
+        ) = encryptedUserAccountJson?.let { encrypted ->
+            runCatching {
+                decrypt(encrypted, encryptionKey)
+            }.getOrNull()
         }
     }
 

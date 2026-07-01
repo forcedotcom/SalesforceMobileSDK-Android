@@ -34,6 +34,7 @@ import androidx.work.WorkerParameters
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.Companion.decryptUserAccountJson
 import org.json.JSONObject
 
 /**
@@ -62,9 +63,25 @@ internal class PushNotificationsRegistrationChangeWorker(
         val pushNotificationsRegistrationAction = PushNotificationsRegistrationAction.valueOf(
             inputData.getString("ACTION") ?: return failure() /* Action is required */
         )
-        val userAccount = inputData.getString("USER_ACCOUNT")?.let { userAccountJson ->
+        /*
+         * The user account payload is encrypted at enqueue time by
+         * PushService.enqueuePushNotificationsRegistrationWork so it is not
+         * persisted in plaintext by WorkManager. An absent payload legitimately
+         * specifies all authenticated users, so only decrypt when a payload is
+         * actually present. A present-but-undecryptable payload (corrupt,
+         * tampered, or a legacy plaintext payload enqueued before the app was
+         * upgraded) is a bad required input: fail the work rather than silently
+         * widening the scope to all users. This is safe because the SDK
+         * re-enqueues registration work with REPLACE on the next app foreground
+         * or login, so a discarded worker is automatically replaced.
+         */
+        val encryptedUserAccount = inputData.getString("USER_ACCOUNT")
+        val userAccount = if (encryptedUserAccount == null) {
+            null /* User account is optional where null specifies all accounts */
+        } else {
+            val userAccountJson = decryptUserAccountJson(encryptedUserAccount) ?: return failure() /* Undecryptable account payload */
             UserAccount(JSONObject(userAccountJson))
-        } /* User account is optional where null specifies all accounts */
+        }
 
         // Instantiate push notifications registrar...
         val pushNotificationsRegistrar = SalesforceSDKManager.getInstance().pushServiceType.newInstance()
