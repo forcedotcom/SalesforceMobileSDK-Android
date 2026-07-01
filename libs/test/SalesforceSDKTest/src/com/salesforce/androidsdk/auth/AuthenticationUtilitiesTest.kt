@@ -188,7 +188,7 @@ class AuthenticationUtilitiesTest {
     }
 
     /**
-     * Regression test for W-19280949: push registration must be enqueued only
+     * Regression test: push registration must be enqueued only
      * *after* the user account has been persisted to AccountManager.
      *
      * The push registration worker persists only the org id and user id and
