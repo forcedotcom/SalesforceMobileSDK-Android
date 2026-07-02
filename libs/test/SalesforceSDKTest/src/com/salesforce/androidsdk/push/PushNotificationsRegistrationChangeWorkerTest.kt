@@ -40,22 +40,29 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ORG_ID
+import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ORG_ID_2
 import com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USER_ID
+import com.salesforce.androidsdk.accounts.UserAccountTest.createOtherTestAccount
+import com.salesforce.androidsdk.accounts.UserAccountTest.createTestAccount
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Deregister
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.TargetAccounts
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Tests for [PushNotificationsRegistrationChangeWorker]'s handling of the
- * `ORG_ID`/`USER_ID` payload.
+ * `ORG_ID`/`USER_ID` payload and legacy pre-14.0 `USER_ACCOUNT` payloads.
  *
- * Regression coverage: the worker must fail (rather than silently widen the
- * registration scope to all users) when specified identifiers no longer
- * resolve to a stored account, and must still treat absent identifiers as the
- * "all authenticated users" signal.
+ * Regression coverage: the worker must resolve to the exact set of accounts a
+ * work request targets — failing (rather than silently widening the scope to
+ * all users) when specified identifiers no longer resolve to a stored account
+ * or a legacy payload is unparseable, while still treating absent identifiers
+ * as the "all authenticated users" signal.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -143,6 +150,26 @@ class PushNotificationsRegistrationChangeWorkerTest {
     }
 
     /**
+     * A resolvable account with a `Deregister` action also completes
+     * successfully. Exercises the deregister branch of the registration action.
+     */
+    @Test
+    fun testDoWork_deregisterResolvableUserAccount_returnsSuccess() {
+        createTestAccountInAccountManager(UserAccountManager.getInstance())
+        val worker = buildWorker(
+            workDataOf(
+                "ACTION" to Deregister.name,
+                "ORG_ID" to TEST_ORG_ID,
+                "USER_ID" to TEST_USER_ID
+            )
+        )
+
+        val result = worker.doWork()
+
+        assertEquals(success(), result)
+    }
+
+    /**
      * A missing `ACTION` is a required-input failure — pre-existing behavior,
      * asserted here to guard against regressions from the payload changes.
      */
@@ -154,4 +181,115 @@ class PushNotificationsRegistrationChangeWorkerTest {
 
         assertEquals(failure(), result)
     }
+
+    // region Target account resolution (incl. legacy USER_ACCOUNT payload migration)
+
+    /**
+     * A pre-14.0 SDK persisted the full account JSON under `USER_ACCOUNT` (no
+     * discrete `ORG_ID`/`USER_ID`). Such a single-user job can survive an
+     * in-place app upgrade and run against this worker. It must migrate the
+     * legacy payload — reading only the identifiers and re-resolving from secure
+     * storage — and target ONLY that account, NOT every authenticated user.
+     * This is the defect at its core: with account B also present, resolution
+     * must yield exactly account A.
+     */
+    @Test
+    fun testResolveTargetAccounts_legacyUserAccountPayload_targetsOnlyThatUser() {
+        // Seed two authenticated accounts (A = targeted, B = bystander).
+        val userAccountManager = UserAccountManager.getInstance()
+        userAccountManager.createAccount(createTestAccount())          // TEST_ORG_ID / TEST_USER_ID
+        userAccountManager.createAccount(createOtherTestAccount())     // TEST_ORG_ID_2 / TEST_USER_ID_2
+
+        val worker = buildWorker(
+            workDataOf(
+                // Legacy payload: full account JSON, no ORG_ID/USER_ID.
+                "USER_ACCOUNT" to createTestAccount().toJson().toString()
+            )
+        )
+
+        val resolution = worker.resolveTargetAccounts()
+
+        assertTrue(
+            "A legacy payload must resolve to a concrete account set",
+            resolution is TargetAccounts.Accounts
+        )
+        val users = (resolution as TargetAccounts.Accounts).users
+        assertEquals(
+            "Legacy payload must target exactly one account",
+            1,
+            users.size
+        )
+        assertEquals(TEST_ORG_ID, users.single().orgId)
+        assertEquals(TEST_USER_ID, users.single().userId)
+        assertTrue(
+            "Resolution must not include the bystander account B",
+            users.none { it.orgId == TEST_ORG_ID_2 }
+        )
+    }
+
+    /**
+     * A present-but-unparseable legacy `USER_ACCOUNT` blob is a bad required
+     * input: resolution must fail rather than fall through to the all-users
+     * path and widen scope.
+     */
+    @Test
+    fun testResolveTargetAccounts_malformedLegacyUserAccount_returnsFail() {
+        val userAccountManager = UserAccountManager.getInstance()
+        userAccountManager.createAccount(createTestAccount())
+        userAccountManager.createAccount(createOtherTestAccount())
+
+        val worker = buildWorker(
+            workDataOf(
+                "USER_ACCOUNT" to "{ this is not valid account json"
+            )
+        )
+
+        assertEquals(TargetAccounts.Fail, worker.resolveTargetAccounts())
+    }
+
+    /**
+     * A partial identifier payload — one of `ORG_ID`/`USER_ID` present, the
+     * other absent, and no legacy `USER_ACCOUNT` — does not enter the legacy
+     * migration (which requires both identifiers absent) and cannot resolve an
+     * account, so resolution fails rather than widening scope.
+     */
+    @Test
+    fun testResolveTargetAccounts_partialIdentifierWithoutLegacyPayload_returnsFail() {
+        val userAccountManager = UserAccountManager.getInstance()
+        userAccountManager.createAccount(createTestAccount())
+        userAccountManager.createAccount(createOtherTestAccount())
+
+        val worker = buildWorker(
+            workDataOf(
+                "USER_ID" to TEST_USER_ID
+            )
+        )
+
+        assertEquals(TargetAccounts.Fail, worker.resolveTargetAccounts())
+    }
+
+    /**
+     * Regression: with NO identifiers and NO legacy payload (the periodic
+     * re-register job), resolution still targets all authenticated users. The
+     * migration must not disturb this path.
+     */
+    @Test
+    fun testResolveTargetAccounts_absentIdentifiers_targetsAllAuthenticatedUsers() {
+        val userAccountManager = UserAccountManager.getInstance()
+        userAccountManager.createAccount(createTestAccount())
+        userAccountManager.createAccount(createOtherTestAccount())
+
+        val worker = buildWorker(workDataOf())
+
+        val resolution = worker.resolveTargetAccounts()
+
+        assertTrue(resolution is TargetAccounts.Accounts)
+        assertEquals(
+            "Absent identifiers must fan out to all authenticated users",
+            setOf(TEST_ORG_ID, TEST_ORG_ID_2),
+            (resolution as TargetAccounts.Accounts).users.map { it.orgId }.toSet()
+        )
+    }
+
+    // endregion
 }
