@@ -271,6 +271,7 @@ fun InfoRowView(
     label: String,
     value: String?,
     isSensitive: Boolean = false,
+    contentDescription: String = label,
 ) {
     var isValueVisible by remember { mutableStateOf(!isSensitive) }
     val emptyText = stringResource(R.string.empty_placeholder)
@@ -321,7 +322,7 @@ fun InfoRowView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(VALUE_WEIGHT)
                 .padding(end = (INNER_CARD_PADDING /2).dp)
-                .semantics { contentDescription = label },
+                .semantics { this.contentDescription = contentDescription },
         )
 
         if (isSensitive && !value.isNullOrEmpty()) {

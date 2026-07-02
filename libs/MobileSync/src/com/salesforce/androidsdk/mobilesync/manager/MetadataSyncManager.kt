@@ -236,7 +236,7 @@ class MetadataSyncManager private constructor(
                 INSTANCES[uniqueId] = it
             }
             SalesforceSDKManager.getInstance()
-                .registerUsedAppFeature(Features.FEATURE_METADATA_SYNC)
+                .registerUsedAppFeature(Features.FEATURE_METADATA_SYNC, user)
             return instance
         }
 

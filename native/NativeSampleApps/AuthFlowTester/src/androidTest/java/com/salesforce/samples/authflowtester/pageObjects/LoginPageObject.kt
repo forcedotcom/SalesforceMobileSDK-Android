@@ -31,9 +31,9 @@ import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -46,6 +46,7 @@ import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
 import androidx.test.espresso.web.webdriver.DriverAtoms.webKeys
 import androidx.test.espresso.web.webdriver.Locator
 import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
@@ -87,6 +88,21 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     /**
+     * Returns true when the LoginActivity top bar is currently in front
+     * (detected via the SDK's locale-invariant "More Options" test tag). Used by
+     * negative tests to assert the user did not advance past login.
+     */
+    fun isLoginScreenVisible(): Boolean =
+        try {
+            composeTestRule
+                .onAllNodesWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
+
+    /**
      * Welcome Discovery login: the OAuth `login_hint` already pre-filled the username
      * field on page 1; we still tap Continue to advance to page 2, then enter the password
      * and submit.  Mirrors iOS performWelcomeLogin.
@@ -101,12 +117,12 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     fun openLoginOptions() {
         // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
             .performClick()
         composeTestRule.waitForIdle()
 
         // Tap "Developer Support" dropdown menu item
-        composeTestRule.onNodeWithText(getString(R.string.sf__dev_support_title_menu_item))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_DEV_SUPPORT)
             .performClick()
         composeTestRule.waitForIdle()
 
@@ -171,12 +187,12 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      */
     fun tapLoginForAdminsMenuItem() {
         // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
             .performClick()
         composeTestRule.waitForIdle()
 
         // Tap "Login for Admins" dropdown menu item
-        composeTestRule.onNodeWithText(getString(R.string.sf__login_for_admins))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_LOGIN_FOR_ADMINS)
             .performClick()
         composeTestRule.waitForIdle()
     }
@@ -192,20 +208,19 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      */
     fun changeServerByUrl(url: String) {
         // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithContentDescription(getString(R.string.sf__more_options))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
             .performClick()
         composeTestRule.waitForIdle()
 
         // Tap "Change Server" dropdown menu item
-        composeTestRule.onNodeWithText(getString(R.string.sf__pick_server))
+        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_PICK_SERVER)
             .performClick()
 
         // Wait for server picker bottom sheet to appear
         try {
             composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithContentDescription(
-                    getString(R.string.sf__server_picker_content_description)
-                ).fetchSemanticsNodes().isNotEmpty()
+                composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                    .fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: ComposeTimeoutException) {
             throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)

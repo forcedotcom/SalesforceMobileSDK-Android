@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegisterPeriodically
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
@@ -656,9 +657,17 @@ open class PushService {
             val workManager = WorkManager.getInstance(context)
             // Require network connectivity in case the user is logging out while offline.
             val constraints = Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
-            val userAccountJson = userAccount?.toJson()?.toString()
+            /*
+             * Persist only the non-sensitive org id and user id needed to
+             * re-resolve the target user account, never the account itself.
+             * WorkManager stores input Data unencrypted in its Room database,
+             * so serializing the full user account would leave the auth token,
+             * refresh token, and session cookies in plaintext on disk. The
+             * worker re-resolves the full account from secure storage on read.
+             */
             val workData = Data.Builder()
-                .putString("USER_ACCOUNT", userAccountJson)
+                .putString("ORG_ID", userAccount?.orgId)
+                .putString("USER_ID", userAccount?.userId)
                 .putString("ACTION", action.name)
                 .build()
 

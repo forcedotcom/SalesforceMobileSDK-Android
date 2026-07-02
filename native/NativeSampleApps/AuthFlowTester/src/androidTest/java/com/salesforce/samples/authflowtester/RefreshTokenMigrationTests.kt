@@ -205,6 +205,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
         useWelcomeDiscovery: Boolean,
+        isMultiUser: Boolean,
     ) {
         super.loginAndValidate(
             knownAppConfig = knownAppConfig,
@@ -214,6 +215,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,
             useWelcomeDiscovery = useWelcomeDiscovery,
+            isMultiUser = isMultiUser,
         )
     }
 }

@@ -36,11 +36,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
+import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -105,6 +107,7 @@ private const val BEACON_CHILD_CONSUMER_SECRET = "Beacon Child Consumer Secret"
 
 // Other fields
 private const val ADDITIONAL_OAUTH_FIELDS = "Additional OAuth Fields"
+private const val USER_AGENT_LABEL = "User Agent"
 
 @Composable
 fun UserCredentialsView(currentUser: UserAccount?) {
@@ -166,8 +169,17 @@ fun UserCredentialsView(currentUser: UserAccount?) {
 
         InfoSection(title = OTHER) {
             InfoRowView(label = ADDITIONAL_OAUTH_FIELDS, value = formatAdditionalOAuthFields(currentUser))
+            InfoRowView(
+                label = USER_AGENT_LABEL,
+                value = getUserAgentString(currentUser),
+                contentDescription = USER_AGENT_CONTENT_DESC,
+            )
         }
     }
+}
+
+private fun getUserAgentString(user: UserAccount?): String {
+    return if (user != null) SalesforceSDKManager.getInstance().getUserAgent("", user) else ""
 }
 
 private fun formatScopes(user: UserAccount?): String? {
@@ -246,6 +258,7 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
 
             putJsonObject(OTHER) {
                 put(ADDITIONAL_OAUTH_FIELDS, formatAdditionalOAuthFields(user))
+                put(USER_AGENT_LABEL, getUserAgentString(user))
             }
         }
 

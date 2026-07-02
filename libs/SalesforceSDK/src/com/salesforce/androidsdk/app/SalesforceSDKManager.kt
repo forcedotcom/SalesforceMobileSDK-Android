@@ -154,6 +154,7 @@ import java.net.URI
 import java.util.Locale.US
 import java.util.SortedSet
 import java.util.UUID.randomUUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
 import kotlin.time.Duration.Companion.milliseconds
@@ -408,6 +409,9 @@ open class SalesforceSDKManager protected constructor(
 
     /** App feature codes for reporting in the user agent header */
     private val features: SortedSet<String?>
+
+    /** Per-user feature codes keyed by "orgId/userId" */
+    private val perUserFeatures: ConcurrentHashMap<String, ConcurrentSkipListSet<String>> = ConcurrentHashMap()
 
     /**
      * An additional list of OAuth keys to fetch and store from the token
@@ -1283,8 +1287,24 @@ open class SalesforceSDKManager protected constructor(
      * @param qualifier The user agent qualifier
      * @return The user agent string to use for all requests
      */
-    open fun getUserAgent(qualifier: String) =
-        String.format(
+    open fun getUserAgent(qualifier: String) = getUserAgent(qualifier, null)
+
+    /**
+     * Returns a per-user agent string. Feature flags include both global and user-specific codes.
+     *
+     * @param qualifier The user agent qualifier
+     * @param user The user account, or null to use the current user
+     * @return The user agent string to use for all requests
+     */
+    open fun getUserAgent(qualifier: String, user: UserAccount?) : String {
+        val resolvedUser = user ?: userAccountManager.currentUser
+        val userKey = resolvedUser?.let { "${it.orgId}/${it.userId}" }
+        val userFeatures = userKey?.let { perUserFeatures[it] } ?: emptySet<String>()
+        val allFeatures = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER).apply {
+            addAll(features.filterNotNull())
+            addAll(userFeatures)
+        }
+        return String.format(
             "SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s SecurityPatch/%s",
             SDK_VERSION,
             RELEASE,
@@ -1293,9 +1313,10 @@ open class SalesforceSDKManager protected constructor(
             appVersion,
             "$appType$qualifier",
             deviceId,
-            join(".", features),
+            join(".", allFeatures),
             SECURITY_PATCH
         )
+    }
 
     /** The app version */
     val appVersion: String
@@ -1331,6 +1352,59 @@ open class SalesforceSDKManager protected constructor(
      */
     fun unregisterUsedAppFeature(appFeatureCode: String?) =
         features.remove(appFeatureCode)
+
+    /**
+     * Returns true if the feature code is in the global (non-user-specific) set.
+     * @param appFeatureCode The app feature code
+     */
+    fun isGlobalFeatureRegistered(appFeatureCode: String) = features.contains(appFeatureCode)
+
+    /**
+     * Adds a per-user app feature code for reporting in the user agent header.
+     * Falls back to the global set when user is null.
+     * @param appFeatureCode The app feature code
+     * @param user The user account to associate the feature with
+     */
+    fun registerUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
+        if (user == null) { registerUsedAppFeature(appFeatureCode); return }
+        val key = "${user.orgId}/${user.userId}"
+        val set = perUserFeatures.getOrPut(key) { ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER) }
+        set.add(appFeatureCode)
+        persistUserFeatureFlags(user, set)
+    }
+
+    /**
+     * Removes a per-user app feature code from reporting in the user agent header.
+     * Falls back to the global set when user is null.
+     * @param appFeatureCode The app feature code
+     * @param user The user account to remove the feature from
+     */
+    fun unregisterUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
+        if (user == null) { unregisterUsedAppFeature(appFeatureCode); return }
+        val key = "${user.orgId}/${user.userId}"
+        perUserFeatures[key]?.remove(appFeatureCode)
+        persistUserFeatureFlags(user, perUserFeatures[key] ?: emptySet())
+    }
+
+    private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
+        user.featureFlags = HashSet(flags)
+        val account = userAccountManager.buildAccount(user) ?: return
+        userAccountManager.updateAccount(account, user)
+    }
+
+    /** Hydrates per-user features from persisted accounts at startup */
+    private fun hydratePerUserFeatures() {
+        val users = userAccountManager.authenticatedUsers ?: return
+        for (u in users) {
+            val flags = u.featureFlags
+            if (flags.isNotEmpty()) {
+                val key = "${u.orgId}/${u.userId}"
+                val set = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER)
+                set.addAll(flags)
+                perUserFeatures[key] = set
+            }
+        }
+    }
 
     /** The app type */
     open val appType = "Native"
@@ -1821,6 +1895,9 @@ open class SalesforceSDKManager protected constructor(
                     nativeLoginActivity,
                     googleCloudProjectId,
                 )
+                // Hydrate after INSTANCE is set — UserAccountManager.getInstance() checks
+                // SalesforceSDKManager.getInstance() internally, which requires INSTANCE != null.
+                INSTANCE?.hydratePerUserFeatures()
             }
             initInternal(context)
             EventsObservable.get().notifyEvent(

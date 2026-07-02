@@ -254,7 +254,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbNamePrefix)) {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER, account);
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
                 dbNamePrefix, account, communityId);
 

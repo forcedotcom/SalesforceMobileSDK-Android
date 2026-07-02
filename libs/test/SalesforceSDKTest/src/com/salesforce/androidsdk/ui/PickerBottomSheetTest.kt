@@ -45,18 +45,15 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onChildAt
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
-import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.rule.GrantPermissionRule
-import com.salesforce.androidsdk.R.string.sf__account_selector_text
-import com.salesforce.androidsdk.R.string.sf__custom_url_button
-import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.components.AddConnection
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.androidsdk.ui.components.PickerBottomSheet
 import com.salesforce.androidsdk.ui.components.PickerStyle
 import com.salesforce.androidsdk.ui.components.TestablePickerBottomSheet
@@ -66,9 +63,6 @@ import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 
-private const val NAME_FIELD_IDENTIFIER = "Name"
-private const val URL_FIELD_IDENTIFIER = "URL"
-private const val SAVE_BUTTON_IDENTIFIER = "Save"
 private const val TEST_NAME = "Production"
 private const val VALID_URL = "https://login.salesforce.com"
 private const val INVALID_URL = "invalid"
@@ -128,10 +122,8 @@ class PickerBottomSheetTest {
             )
         }
 
-        val context = getInstrumentation().targetContext
-        val button = composeTestRule.onNode(hasText(context.getString(sf__account_selector_text)))
-
-        button.assertIsDisplayed()
+        // Anchor on the locale-invariant container tag rather than the localized title text.
+        composeTestRule.onNodeWithTag(LoginViewTestTags.ACCOUNT_PICKER).assertIsDisplayed()
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -145,10 +137,8 @@ class PickerBottomSheetTest {
             )
         }
 
-        val context = getInstrumentation().targetContext
-        val button = composeTestRule.onNode(hasText(context.getString(sf__pick_server)))
-
-        button.assertIsDisplayed()
+        // Anchor on the locale-invariant container tag rather than the localized title text.
+        composeTestRule.onNodeWithTag(LoginViewTestTags.SERVER_PICKER).assertIsDisplayed()
     }
 
     // endregion
@@ -168,9 +158,9 @@ class PickerBottomSheetTest {
             AddConnection(getValidServer = serverValidator)
         }
 
-        val nameField = composeTestRule.onNodeWithText(NAME_FIELD_IDENTIFIER)
-        val urlField = composeTestRule.onNodeWithText(URL_FIELD_IDENTIFIER)
-        val saveButton = composeTestRule.onNodeWithText(SAVE_BUTTON_IDENTIFIER)
+        val nameField = composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CUSTOM_LABEL)
+        val urlField = composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CUSTOM_URL)
+        val saveButton = composeTestRule.onNodeWithTag(LoginViewTestTags.APPLY_BUTTON)
         saveButton.assertIsDisplayed()
         saveButton.assertIsNotEnabled()
 
@@ -201,9 +191,9 @@ class PickerBottomSheetTest {
             )
         }
 
-        val nameField = composeTestRule.onNodeWithText(NAME_FIELD_IDENTIFIER)
-        val urlField = composeTestRule.onNodeWithText(URL_FIELD_IDENTIFIER)
-        val saveButton = composeTestRule.onNodeWithText(SAVE_BUTTON_IDENTIFIER)
+        val nameField = composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CUSTOM_LABEL)
+        val urlField = composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CUSTOM_URL)
+        val saveButton = composeTestRule.onNodeWithTag(LoginViewTestTags.APPLY_BUTTON)
 
         nameField.performTextInput(TEST_NAME)
         urlField.performTextInput(VALID_URL)
@@ -304,10 +294,7 @@ class PickerBottomSheetTest {
             )
         }
 
-        val context = getInstrumentation().targetContext
-        val button = composeTestRule.onNode(hasText(context.getString(sf__custom_url_button)))
-
-        button.assertIsDisplayed()
+        composeTestRule.onNodeWithTag(LoginViewTestTags.CUSTOM_URL_BUTTON).assertIsDisplayed()
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -320,10 +307,7 @@ class PickerBottomSheetTest {
             )
         }
 
-        val context = getInstrumentation().targetContext
-        val button = composeTestRule.onNode(hasText(context.getString(sf__custom_url_button)))
-
-        button.assertDoesNotExist()
+        composeTestRule.onNodeWithTag(LoginViewTestTags.CUSTOM_URL_BUTTON).assertDoesNotExist()
     }
 
     @OptIn(ExperimentalMaterial3Api::class)

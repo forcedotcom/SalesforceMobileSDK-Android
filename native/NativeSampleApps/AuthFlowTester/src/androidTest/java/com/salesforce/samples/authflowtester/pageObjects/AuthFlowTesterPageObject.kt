@@ -54,6 +54,7 @@ import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
+import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
@@ -264,11 +265,17 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
-    fun validateUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+    fun validateUser(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        knownUserConfig: KnownUserConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+    ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         waitForNode(CREDS_SECTION_CONTENT_DESC)
-        
+
         // Wait for the UI to update asynchronously after login or user switch.
         // The view may be recreated and collapsed when the current user state updates.
         try {
@@ -297,6 +304,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
         }
         assertEquals(expected.username, getText(USERNAME))
+
+        // Validate feature flags — UI is already settled, reuse the existing layout traversal
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -478,5 +489,77 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         return node.fetchSemanticsNode()
             .config[SemanticsProperties.Text]
             .last().text // Value is last; first is the label
+    }
+
+    fun validateUserAgent(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+        isRtr: Boolean = false,
+    ) {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr)
+    }
+
+    private fun validateUserAgent(
+        ua: String,
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+        isRtr: Boolean = false,
+    ) {
+        assert(ua.contains("SalesforceMobileSDK/")) {
+            "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
+        }
+        assert(ua.contains("ftr_")) {
+            "User agent missing 'ftr_' segment: $ua"
+        }
+
+        // Parse flag codes from the ftr_XXXX segment
+        val ftrSegment = ua.substringAfter("ftr_").substringBefore(" ")
+        val flags = ftrSegment.split(".").toSet()
+
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == KnownLoginHostConfig.ADVANCED_AUTH
+        if (shouldHaveBW) {
+            assert("BW" in flags) {
+                "Expected 'BW' flag for browser-based auth in: $ua"
+            }
+        } else {
+            assert("BW" !in flags) {
+                "Expected no 'BW' flag for in-app WebView auth in: $ua"
+            }
+        }
+
+        if (usesWelcomeDiscovery) {
+            assert("WD" in flags) {
+                "Expected 'WD' flag for Welcome Discovery in: $ua"
+            }
+        } else {
+            assert("WD" !in flags) {
+                "Expected no 'WD' flag when Welcome Discovery was not used in: $ua"
+            }
+        }
+
+        if (isMultiUser) {
+            assert("MU" in flags) {
+                "Expected 'MU' flag for multi-user in: $ua"
+            }
+        } else {
+            assert("MU" !in flags) {
+                "Expected no 'MU' flag when only one user is logged in, in: $ua"
+            }
+        }
+
+        if (isRtr) {
+            assert("RT" in flags) {
+                "Expected 'RT' flag after Refresh Token Rotation in: $ua"
+            }
+        } else {
+            assert("RT" !in flags) {
+                "Expected no 'RT' flag when Refresh Token Rotation has not occurred in: $ua"
+            }
+        }
     }
 }

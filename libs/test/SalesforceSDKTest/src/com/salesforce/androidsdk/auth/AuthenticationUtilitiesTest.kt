@@ -451,7 +451,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK) }
+        verify { mockSdkManager.registerUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify { mockScreenLockManager.storeMobilePolicy(account, enabled = true, 600000) }
     }
 
@@ -472,7 +472,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK) }
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -511,7 +511,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleScreenLockPolicy(null, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK) }
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account) }
         verify { mockScreenLockManager.cleanUp(account) }
     }
 
@@ -555,7 +555,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleBiometricAuthPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH) }
+        verify { mockSdkManager.registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account) }
         verify { mockBioAuthManager.storeMobilePolicy(account, enabled = true, 900000) }
     }
 
@@ -576,7 +576,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleBiometricAuthPolicy(userIdentity, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH) }
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account) }
         verify { mockBioAuthManager.cleanUp(account) }
     }
 
@@ -617,7 +617,7 @@ class AuthenticationUtilitiesTest {
         com.salesforce.androidsdk.auth.handleBiometricAuthPolicy(null, account)
 
         // Then
-        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH) }
+        verify { mockSdkManager.unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account) }
         verify { mockBioAuthManager.cleanUp(account) }
     }
 

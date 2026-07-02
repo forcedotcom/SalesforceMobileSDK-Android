@@ -134,6 +134,22 @@ Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discov
 | `testWelcomeDiscovery_RegularAuthLoginHost` | Regular Auth | ECA Opaque |
 | `testWelcomeDiscovery_AdvancedAuthLoginHost` | Advanced Auth | Beacon Opaque |
 
+#### LoginWithRestartTests
+Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested: BW (browser-based / advanced auth) and WD (welcome discovery).
+
+| Test | App Config | Scopes | Config Type | Feature Flag |
+|------|-----------|--------|-------------|--------------|
+| `testCAOpaque_DefaultScopes_WithRestart` | CA Opaque | Default | Static | — |
+| `testECAOpaque_DefaultScopes_WithRestart` | ECA Opaque | Default | Static | — |
+| `testBeaconOpaque_DefaultScopes_WithRestart` | Beacon Opaque | Default | Static | — |
+| `testECAJwt_DefaultScopes_DynamicConfiguration_WithRestart` | ECA JWT | Default | Dynamic | — |
+| `testECAJwt_SubsetScopes_DynamicConfiguration_WithRestart` | ECA JWT | Subset | Dynamic | — |
+| `testBeaconJwt_DefaultScopes_DynamicConfiguration_WithRestart` | Beacon JWT | Default | Dynamic | — |
+| `testBeaconJwt_SubsetScopes_DynamicConfiguration_WithRestart` | Beacon JWT | Subset | Dynamic | — |
+| `testAdvancedAuth_WithRestart` | Beacon Opaque | Default | Static | BW |
+| `testWelcomeDiscovery_WithRestart` | ECA Opaque | Default | Static | WD |
+| `testMultiUserRestart` | ECA Opaque + ECA JWT | Default | Mixed | — |
+
 ### Validation Per Test
 
 Each `loginAndValidate` call performs the following checks:
@@ -151,13 +167,17 @@ Multi-user tests additionally verify:
 - **User switching** preserves each user's tokens and OAuth configuration
 - **Token refresh** targets the correct user's app after switching
 
+Restart tests additionally verify:
+- Session credentials are **reloaded from disk** after a cold process restart
+- Per-user feature flags (BW, WD) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
+
 ## Architecture
 
 ### Test Infrastructure
 
 | Component | Description |
 |-----------|-------------|
-| `AuthFlowTest` | Abstract base class providing `loginAndValidate` and `migrateAndValidate` orchestration. Uses `ActivityScenarioRule` + `ComposeTestRule`. Assigns users based on API level to spread credential usage across Firebase Test Lab devices. |
+| `AuthFlowTest` | Abstract base class providing `loginAndValidate`, `migrateAndValidate`, and `restartAndValidateUser` orchestration. Also exposes `restartApp()` (kills only the app process via `pidof` filtered by `myPid`, then relaunches), `addOtherUserAndValidate()`, and `switchToUserAndValidateUser()` helpers for restart and multi-user flows. Uses `ActivityScenarioRule` + `ComposeTestRule`. Assigns users based on API level to spread credential usage across Firebase Test Lab devices. |
 | `UITestConfig` | Deserializes `ui_test_config.json` (from `shared/test/`) into typed enums: `KnownAppConfig`, `KnownLoginHostConfig`, `KnownUserConfig`, `ScopeSelection`. |
 
 ### Page Objects

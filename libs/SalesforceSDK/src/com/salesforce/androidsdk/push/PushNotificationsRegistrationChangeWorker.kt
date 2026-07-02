@@ -31,10 +31,8 @@ import androidx.work.ListenableWorker.Result.failure
 import androidx.work.ListenableWorker.Result.success
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
-import org.json.JSONObject
 
 /**
  * An Android background tasks worker for push notifications.
@@ -62,9 +60,27 @@ internal class PushNotificationsRegistrationChangeWorker(
         val pushNotificationsRegistrationAction = PushNotificationsRegistrationAction.valueOf(
             inputData.getString("ACTION") ?: return failure() /* Action is required */
         )
-        val userAccount = inputData.getString("USER_ACCOUNT")?.let { userAccountJson ->
-            UserAccount(JSONObject(userAccountJson))
-        } /* User account is optional where null specifies all accounts */
+        /*
+         * The enqueuer persists only the non-sensitive org id and user id, so
+         * the full user account (with its auth token, refresh token, and
+         * session cookies) is never written to WorkManager's unencrypted
+         * storage. Re-resolve the account from secure storage here. Absent
+         * identifiers legitimately specify all authenticated users; present
+         * identifiers that no longer resolve to a stored account (for example,
+         * the user logged out before this work ran) are a bad required input:
+         * fail the work rather than silently widening the scope to all users.
+         * This is safe because the SDK re-enqueues registration work with
+         * REPLACE on the next app foreground or login, so a discarded worker is
+         * automatically replaced.
+         */
+        val orgId = inputData.getString("ORG_ID")
+        val userId = inputData.getString("USER_ID")
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val userAccount = if (orgId == null && userId == null) {
+            null /* User account is optional where null specifies all accounts */
+        } else {
+            userAccountManager.getUserFromOrgAndUserId(orgId, userId) ?: return failure() /* Unresolvable account */
+        }
 
         // Instantiate push notifications registrar...
         val pushNotificationsRegistrar = SalesforceSDKManager.getInstance().pushServiceType.newInstance()
@@ -75,7 +91,7 @@ internal class PushNotificationsRegistrationChangeWorker(
             // ...The input data didn't provide a user account...
             null ->
                 // ...Change push notification registration for all user accounts.
-                SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
+                userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
                     pushNotificationsRegistrar.performRegistrationChange(
                         pushNotificationsRegistrationAction == Register,
                         nextUserAccount

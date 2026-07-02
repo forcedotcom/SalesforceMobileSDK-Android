@@ -39,6 +39,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQU
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -360,6 +361,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             useHybridAuthToken,
             knownLoginHostConfig,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
     }
 
@@ -369,7 +371,7 @@ class MultiUserLoginTests: AuthFlowTest() {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
     }
 
     /**
@@ -393,6 +395,44 @@ class MultiUserLoginTests: AuthFlowTest() {
             "Timed out after ${timeoutMs}ms waiting for user count to reach " +
                 "$expectedCount (was $finalCount)"
         )
+    }
+
+    @Test
+    fun testAdvancedAuthUser_HasBWFlag_RegularAuthUser_DoesNot() {
+        // User A: regular auth — no BW
+        loginAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
+            isMultiUser = false,
+        )
+
+        // User B: advanced auth — has BW; now 2 users → MU
+        loginOtherUserAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = ADVANCED_AUTH,
+        )
+
+        // Switch to User A — no BW, MU still present
+        switchToUserAndValidate(user)
+
+        // Switch back to User B — BW back, MU still present
+        switchToUserAndValidate(otherUser, ADVANCED_AUTH)
+
+        // Log out User B via SDK — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(ADVANCED_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+
+        // Back on User A — MU gone, no BW
+        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
     }
 
     companion object {

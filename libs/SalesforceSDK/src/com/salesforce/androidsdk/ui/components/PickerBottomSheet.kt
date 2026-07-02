@@ -90,6 +90,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -101,6 +102,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -250,7 +252,7 @@ internal fun TestablePickerBottomSheet(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 @VisibleForTesting
 internal fun PickerBottomSheet(
@@ -269,6 +271,15 @@ internal fun PickerBottomSheet(
     val containerContentDescription = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> stringResource(sf__server_picker_content_description)
         PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
+    }
+    // Stable, locale-invariant test anchor for the picker container and its add button.
+    val containerTestTag = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> LoginViewTestTags.SERVER_PICKER
+        PickerStyle.UserAccountPicker -> LoginViewTestTags.ACCOUNT_PICKER
+    }
+    val addButtonTestTag = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> LoginViewTestTags.CUSTOM_URL_BUTTON
+        PickerStyle.UserAccountPicker -> LoginViewTestTags.ADD_NEW_ACCOUNT_BUTTON
     }
     val addButtonContentDescription = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button_content_description)
@@ -300,7 +311,13 @@ internal fun PickerBottomSheet(
             Column(
                 modifier = Modifier
                     .animateContentSize()
-                    .semantics { contentDescription = containerContentDescription }
+                    // The bottom sheet is hosted in its own window/composition, so opt in here too
+                    // to expose Compose testTags as Android resource-ids for UI automation.
+                    .semantics {
+                        testTagsAsResourceId = true
+                        contentDescription = containerContentDescription
+                    }
+                    .testTag(containerTestTag)
                     .focusRequester(pickerFocus)
                     .focusable(),
             ) {
@@ -326,7 +343,9 @@ internal fun PickerBottomSheet(
                                     disabledContainerColor = Color.Transparent,
                                     disabledContentColor = Color.Transparent,
                                 ),
-                                modifier = Modifier.size(ICON_SIZE.dp),
+                                modifier = Modifier
+                                    .size(ICON_SIZE.dp)
+                                    .testTag(LoginViewTestTags.PICKER_BACK_BUTTON),
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
@@ -362,7 +381,9 @@ internal fun PickerBottomSheet(
                                 disabledContainerColor = Color.Transparent,
                                 disabledContentColor = Color.Transparent,
                             ),
-                            modifier = Modifier.size(ICON_SIZE.dp),
+                            modifier = Modifier
+                                .size(ICON_SIZE.dp)
+                                .testTag(LoginViewTestTags.PICKER_CLOSE_BUTTON),
                         ) {
                             Icon(
                                 Icons.Default.Close,
@@ -475,6 +496,7 @@ internal fun PickerBottomSheet(
                                                 modifier = Modifier
                                                     .padding(PADDING_SIZE.dp)
                                                     .fillMaxWidth()
+                                                    .testTag(addButtonTestTag)
                                                     .semantics { contentDescription = addButtonContentDescription },
                                                 shape = RoundedCornerShape(CORNER_RADIUS.dp),
                                                 contentPadding = PaddingValues(PADDING_SIZE.dp),
@@ -538,7 +560,7 @@ internal fun AddConnection(
                     .fillMaxWidth()
                     .padding(PADDING_SIZE.dp)
                     .focusRequester(focusRequester)
-                    .testTag("sf__picker_custom_label")
+                    .testTag(LoginViewTestTags.PICKER_CUSTOM_LABEL)
                     .semantics { contentDescription = nameFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -562,7 +584,7 @@ internal fun AddConnection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp)
-                    .testTag("sf__picker_custom_url")
+                    .testTag(LoginViewTestTags.PICKER_CUSTOM_URL)
                     .semantics { contentDescription = urlFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -586,7 +608,7 @@ internal fun AddConnection(
             modifier = Modifier
                 .padding(PADDING_SIZE.dp)
                 .fillMaxWidth()
-                .testTag("sf__apply_button")
+                .testTag(LoginViewTestTags.APPLY_BUTTON)
                 .semantics { contentDescription = applyButtonDesc },
             shape = RoundedCornerShape(CORNER_RADIUS.dp),
             contentPadding = PaddingValues(PADDING_SIZE.dp),

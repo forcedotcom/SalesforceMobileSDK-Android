@@ -34,6 +34,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -218,6 +219,7 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         useWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
     ) {
         // Under the default forced advanced authentication (useWebServerFlow = true) every login
         // completes in a Custom Tab: a ChromeCustomTabPageObject serves both roles — its
@@ -308,9 +310,96 @@ abstract class AuthFlowTest {
         }
         app.waitForAppLoad()
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
+    }
+
+    /**
+     * Kills the app process and relaunches it, so the SDK reloads all state from disk.
+     *
+     * `am force-stop <package>` kills the instrumentation process too because the test
+     * runner shares the app's process. Instead, we get all PIDs for the package via
+     * `pidof`, exclude our own instrumentation PID, and kill only the app PID(s).
+     * This leaves the instrumentation alive while forcing the app to restart cold.
+     *
+     * After the kill, we relaunch via an explicit intent so the SDK re-runs
+     * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
+     */
+    fun restartApp() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        val packageName = context.packageName
+        val device = UiDevice.getInstance(instrumentation)
+        val myPid = android.os.Process.myPid()
+
+        // Kill all processes in the package except the instrumentation runner's own PID.
+        val pidOutput = device.executeShellCommand("pidof $packageName").trim()
+        if (pidOutput.isNotEmpty()) {
+            pidOutput.split("\\s+".toRegex())
+                .mapNotNull { it.trim().toIntOrNull() }
+                .filter { it != myPid }
+                .forEach { pid -> device.executeShellCommand("kill -9 $pid") }
+        }
+        Thread.sleep(1_000)
+
+        val launchIntent = Intent(context, AuthFlowTesterActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
+        }
+        context.startActivity(launchIntent)
+        app.waitForAppLoad()
+    }
+
+    /**
+     * Force-stops and relaunches the app, then validates the persisted user session.
+     *
+     * Mirrors iOS `restartAndValidateUser`.
+     */
+    fun restartAndValidateUser(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = user,
+        usesWelcomeDiscovery: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+    ) {
+        restartApp()
+        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth)
+    }
+
+    /**
+     * Adds a second account by tapping "Add New Account", logs in, and validates.
+     * Mirrors iOS `loginOtherUserAndValidate`.
+     */
+    fun addOtherUserAndValidate(
+        knownAppConfig: KnownAppConfig,
+        scopeSelection: ScopeSelection = EMPTY,
+        useWebServerFlow: Boolean = true,
+        useHybridAuthToken: Boolean = true,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ) {
+        app.addNewAccount()
+        loginAndValidate(
+            knownAppConfig = knownAppConfig,
+            scopeSelection = scopeSelection,
+            useWebServerFlow = useWebServerFlow,
+            useHybridAuthToken = useHybridAuthToken,
+            knownLoginHostConfig = knownLoginHostConfig,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+        )
+    }
+
+    /**
+     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
+     */
+    fun switchToUserAndValidateUser(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ) {
+        app.switchToUser(knownUserConfig)
+        composeTestRule.waitForIdle()
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
     }
 
     companion object {
@@ -374,7 +463,7 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
         app.validateOAuthValues(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -476,7 +565,10 @@ abstract class AuthFlowTest {
         app.validateApiRequest()
     }
 
-    fun assertRevokeAndRefreshWorks(isRtr: Boolean) {
+    fun assertRevokeAndRefreshWorks(
+        isRtr: Boolean,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+    ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
         app.validateApiRequest()
@@ -489,5 +581,7 @@ abstract class AuthFlowTest {
         } else {
             assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
         }
+
+        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr)
     }
 }

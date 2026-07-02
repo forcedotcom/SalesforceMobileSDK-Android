@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -786,6 +787,8 @@ public class ClientManager {
                 // update this provider's cached copy.
                 if (tr.refreshToken != null && !tr.refreshToken.equals(refreshToken)) {
                     refreshToken = tr.refreshToken;
+                    // Surface RTR as a per-user feature flag
+                    SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RTR, updatedUserAccount);
                 }
 
                 return updatedUserAccount;

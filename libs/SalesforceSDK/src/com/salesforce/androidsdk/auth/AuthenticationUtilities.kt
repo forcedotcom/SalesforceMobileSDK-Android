@@ -203,6 +203,16 @@ internal suspend fun onAuthFlowComplete(
         startMainActivity()
     }
 
+    /*
+     * Register for push notifications if setup by the app. This must happen
+     * after the account has been persisted (createAccount/persistAccount
+     * above), because the push registration worker re-resolves the target
+     * account from AccountManager by org id and user id; enqueuing before the
+     * account is written races the persistence and makes that re-resolution
+     * fail.
+     */
+    register(context, account)
+
     // Let the calling process resume
     onAuthFlowSuccess(account)
 
@@ -272,17 +282,10 @@ private fun HttpUrl.isSalesforceUrl(): Boolean {
     return salesforceHosts.map { host.endsWith(it) }.any { it }
 }
 
-private fun addAccount(account: UserAccount?, context: Context, isTestRun: Boolean, loginServerManager: LoginServerManager) {
+private fun addAccount(account: UserAccount?, isTestRun: Boolean, loginServerManager: LoginServerManager) {
 
     // Download profile photo
     account?.downloadProfilePhoto()
-
-    /*
-     * Registers for push notifications if setup by the app. This step needs
-     * to happen after the account has been added by client manager, so that
-     * the push service has all the account info it needs.
-     */
-    register(context, account)
 
     when {
         isTestRun -> logAddAccount(account, loginServerManager)
@@ -391,7 +394,7 @@ internal fun handleScreenLockPolicy(
 
     // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
         internalScreenLockManager?.storeMobilePolicy(
             account,
@@ -399,7 +402,7 @@ internal fun handleScreenLockPolicy(
             timeoutInMills,
         )
     } else if (internalScreenLockManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         internalScreenLockManager.cleanUp(account)
     }
 }
@@ -416,7 +419,7 @@ internal fun handleBiometricAuthPolicy(
         SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?
 
     if (userIdentity?.biometricAuth == true) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account)
         val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
         internalBiometricAuthenticationManager?.storeMobilePolicy(
             account,
@@ -424,7 +427,7 @@ internal fun handleBiometricAuthPolicy(
             timeoutInMills
         )
     } else if (internalBiometricAuthenticationManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account)
         internalBiometricAuthenticationManager.cleanUp(account)
     }
 }
@@ -437,7 +440,6 @@ private fun addAccountHelper(
 ) {
     addAccount(
         account,
-        SalesforceSDKManager.getInstance().appContext,
         SalesforceSDKManager.getInstance().isTestRun,
         SalesforceSDKManager.getInstance().loginServerManager
     )
