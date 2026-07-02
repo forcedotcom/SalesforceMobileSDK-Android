@@ -227,51 +227,65 @@ class LoginActivityScenarioTest {
 
     @Test
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
+        // This test drives the in-app WebView reload path, which only exists when advanced
+        // authentication is NOT forced.  With the force flag on (the default) the login server's
+        // auth-config fetch enables browser login, causing LoginActivity to launch a Chrome Custom
+        // Tab over itself; the tab stops the activity so it never returns to RESUMED and the
+        // moveToState() calls below fail.  Pin the flag off before launching so the WebView path is
+        // exercised, and restore it afterward so we don't leak state onto the shared singleton.
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        sdkManager.forceAdvancedAuthentication = false
+
         // Set loginDevMenuReload to false initially
-        SalesforceSDKManager.getInstance().loginDevMenuReload = false
+        sdkManager.loginDevMenuReload = false
 
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
-            // Get the initial login URL
-            var initialUrl: String? = null
-            activityScenario.onActivity { activity ->
-                initialUrl = activity.viewModel.loginUrl.value
-            }
-
-            // Pause the activity (simulating going to dev menu)
-            activityScenario.moveToState(STARTED)
-
-            // Simulate changing login options in dev menu
-            activityScenario.onActivity { _ ->
-                SalesforceSDKManager.getInstance().loginDevMenuReload = true
-            }
-
-            // Resume the activity
-            activityScenario.moveToState(RESUMED)
-
-            // Verify the webview was reloaded (URL should be regenerated)
-            activityScenario.onActivity { activity ->
-                // The reload flag should be reset to false
-                assertFalse(
-                    "loginDevMenuReload should be reset to false after reload",
-                    SalesforceSDKManager.getInstance().loginDevMenuReload
+        try {
+            launch<LoginActivity>(
+                Intent(
+                    getApplicationContext(),
+                    LoginActivity::class.java
                 )
+            ).use { activityScenario ->
+                // Get the initial login URL
+                var initialUrl: String? = null
+                activityScenario.onActivity { activity ->
+                    initialUrl = activity.viewModel.loginUrl.value
+                }
 
-                // For Web Server Flow, the URL changes each time due to code challenge
-                // Verify that reloadWebView was called by checking the URL changed
-                val newUrl = activity.viewModel.loginUrl.value
-                if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
-                    // Web Server Flow generates a new code challenge each time
-                    assertTrue(
-                        "Login URL should have changed after reload for Web Server Flow",
-                        newUrl != initialUrl
+                // Pause the activity (simulating going to dev menu)
+                activityScenario.moveToState(STARTED)
+
+                // Simulate changing login options in dev menu
+                activityScenario.onActivity { _ ->
+                    SalesforceSDKManager.getInstance().loginDevMenuReload = true
+                }
+
+                // Resume the activity
+                activityScenario.moveToState(RESUMED)
+
+                // Verify the webview was reloaded (URL should be regenerated)
+                activityScenario.onActivity { activity ->
+                    // The reload flag should be reset to false
+                    assertFalse(
+                        "loginDevMenuReload should be reset to false after reload",
+                        SalesforceSDKManager.getInstance().loginDevMenuReload
                     )
+
+                    // For Web Server Flow, the URL changes each time due to code challenge
+                    // Verify that reloadWebView was called by checking the URL changed
+                    val newUrl = activity.viewModel.loginUrl.value
+                    if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                        // Web Server Flow generates a new code challenge each time
+                        assertTrue(
+                            "Login URL should have changed after reload for Web Server Flow",
+                            newUrl != initialUrl
+                        )
+                    }
                 }
             }
+        } finally {
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
 

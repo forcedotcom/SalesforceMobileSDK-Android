@@ -194,9 +194,20 @@ class LoginViewModelTest {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
 
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        val originalBrowserLoginEnabled = sdkManager.isBrowserLoginEnabled
         try {
+            // This test validates the User Agent flow WebView modality, which only exists when
+            // advanced authentication is NOT forced.  With the force flag on (the default) browser
+            // login is enabled, so useWebServerFlow() would be true and the WebView itself would use
+            // the Web Server flow — leaving no "User Agent flow active" scenario to validate.  Pin
+            // both the flag and the browser-login gate off so the assertion is deterministic
+            // regardless of state left on the shared singleton by earlier tests.
+            sdkManager.forceAdvancedAuthentication = false
+            sdkManager.isBrowserLoginEnabled = false
             // Force User Agent flow for the WebView.
-            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+            sdkManager.useWebServerAuthentication = false
 
             viewModel.reloadWebView()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -228,7 +239,9 @@ class LoginViewModelTest {
                 loginUrl!!.contains("response_type=code")
             )
         } finally {
-            SalesforceSDKManager.getInstance().useWebServerAuthentication = true
+            sdkManager.useWebServerAuthentication = true
+            sdkManager.isBrowserLoginEnabled = originalBrowserLoginEnabled
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
 

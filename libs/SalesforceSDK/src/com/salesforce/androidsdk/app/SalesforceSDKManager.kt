@@ -1596,7 +1596,7 @@ open class SalesforceSDKManager protected constructor(
 //                "Use Web Server Authentication" to "$useWebServerAuthentication",
 //                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
 //                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
-//                "Force Advanced Authentication", "$forceAdvancedAuthentication",
+//                "Force Advanced Authentication" to "$forceAdvancedAuthentication",
 //                "Browser Login Enabled" to "$isBrowserLoginEnabled",
 //                "IDP Enabled" to "$isIDPLoginFlowEnabled",
 //                "Identity Provider" to "$isIdentityProvider",
