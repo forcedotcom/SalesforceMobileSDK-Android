@@ -34,6 +34,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -45,6 +47,23 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
  * Page object for the SDK's Login Options screen.
  */
 class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
+
+    private val device by lazy { UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()) }
+
+    /**
+     * Dismisses the Login Options screen with a system back press when there is nothing to Save
+     * (the Save button is what normally calls `activity.finish()`).
+     *
+     * Uses UiAutomator's [UiDevice.pressBack] rather than `Espresso.pressBack()`: dismissing
+     * LoginOptionsActivity re-arms the dev-menu reload, so LoginActivity immediately re-launches the
+     * Chrome Custom Tab (a separate process) and stops itself.  `Espresso.pressBack()` asserts an
+     * app activity is RESUMED afterward and would throw `NoActivityResumedException` ("Pressed back
+     * and killed the app") once the tab is in front; UiAutomator dispatches the key without that
+     * post-condition.
+     */
+    fun dismiss() {
+        device.pressBack()
+    }
 
     fun enableWebServerFlow() = toggleIfOff(
         getString(R.string.sf__login_options_webserver_toggle_content_description)

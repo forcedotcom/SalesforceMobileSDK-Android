@@ -26,11 +26,17 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
@@ -58,7 +64,68 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         tapLogin()
         setPassword(password)
         tapLogin()
-        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
+        // Under forced advanced authentication every login completes in the Custom Tab, so the
+        // OAuth approval page is always rendered there regardless of the configured host.
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
+    }
+
+    override fun welcomeLogin(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        skipGoogleSignIn()
+        val (_, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
+        // The OAuth login_hint already pre-filled the username; advance, enter password, submit.
+        tapLogin()
+        setPassword(password)
+        tapLogin()
+        AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
+    }
+
+    /**
+     * Forced advanced authentication auto-launches a Chrome Custom Tab over the Compose
+     * LoginActivity, so its top bar (and the "More Options" menu the [LoginPageObject] Compose
+     * actions depend on) is not reachable while the tab is in front. This backs out of the tab
+     * to surface the LoginActivity again.
+     *
+     * Backing out returns `RESULT_CANCELED`, which the SDK handles by clearing the WebView and
+     * raising the login-server-picker bottom sheet (`clearWebView(showServerPicker = true)`). The
+     * picker's scrim sits over the top bar, so it is dismissed here as well, leaving the bare
+     * LoginActivity ready for a Compose top-bar action (Login Options, Change Server, Login for
+     * Admins). After that action changes the dynamic config or server, the SDK re-launches the
+     * Custom Tab (debug `loginDevMenuReload` -> `reloadWebView`) and login completes in the tab.
+     *
+     * The Custom Tab launches asynchronously (after the auth-config network fetch resolves and the
+     * OAuth URL is generated), so this waits up to [TIMEOUT_MS] for the tab to appear before
+     * backing out. No-op when no Custom Tab appears within the timeout (we are already on the
+     * LoginActivity).
+     */
+    override fun backOutToLoginActivity() {
+        val closeButton = device.findObject(
+            UiSelector().resourceId("com.android.chrome:id/close_button")
+        )
+        if (!closeButton.waitForExists(TIMEOUT_MS)) {
+            return
+        }
+        closeButton.click()
+        dismissServerPickerIfPresent()
+    }
+
+    /** Dismisses the login-server-picker bottom sheet via its Close button, if it is showing. */
+    private fun dismissServerPickerIfPresent() {
+        val closeDescription = getString(R.string.sf__server_close_button_content_description)
+        val appeared = try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule.onAllNodesWithContentDescription(closeDescription)
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            true
+        } catch (_: ComposeTimeoutException) {
+            // The picker never appeared (e.g. shared browser session re-auth); nothing to dismiss.
+            false
+        }
+
+        if (appeared) {
+            composeTestRule.onNodeWithContentDescription(closeDescription).performClick()
+            composeTestRule.waitForIdle()
+        }
     }
 
     override fun setUsername(name: String) {
@@ -129,15 +196,32 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         }
     }
 
-    fun tapCloseButton(): Boolean {
+    /**
+     * True when a Chrome Custom Tab is currently in front, detected via its close button.
+     * Used by negative tests to assert the user remained in the auth flow (tab) rather than
+     * advancing into the app.
+     */
+    fun isCustomTabDisplayed(): Boolean {
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
-        return if (closeButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
-            closeButton.click()
-            true
-        } else {
-            false
-        }
+        return closeButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)
+    }
+
+    /**
+     * Waits up to [timeoutMs] for a Chrome Custom Tab to come to the front (detected via its close
+     * button) and returns whether it appeared.
+     *
+     * Unlike [isCustomTabDisplayed] (which uses [QUICK_CHECK_TIMEOUT_MS] for tabs that either show
+     * immediately or not at all), this uses the full [TIMEOUT_MS] window so it can wait out the
+     * asynchronous auth-config fetch that precedes a tab (re)launch under forced advanced
+     * authentication. Best-effort: a `false` return simply means no tab launched within the
+     * window, in which case the caller proceeds as if already on the LoginActivity.
+     */
+    fun waitForCustomTab(timeoutMs: Long = TIMEOUT_MS): Boolean {
+        val closeButton = device.findObject(
+            UiSelector().resourceId("com.android.chrome:id/close_button")
+        )
+        return closeButton.waitForExists(timeoutMs)
     }
 }

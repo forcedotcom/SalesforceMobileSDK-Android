@@ -31,7 +31,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
@@ -90,12 +90,20 @@ class NegativeLoginTests : AuthFlowTest() {
         val (userAccessToken, userRefreshToken) = app.getTokens()
 
         // Open the user picker and add a new account, which routes through the
-        // login screen. Set a different dynamic config (ECA Opaque) but do not
-        // submit credentials.
+        // login screen. Under forced advanced authentication the login screen
+        // auto-launches a Chrome Custom Tab, so back out of it to reach the top
+        // bar before opening Login Options. Set a different dynamic config (ECA
+        // Opaque) but do not submit credentials.
         app.addNewAccount()
-        val loginPage = LoginPageObject(composeTestRule)
+        val loginPage = ChromeCustomTabPageObject(composeTestRule)
+        loginPage.backOutToLoginActivity()
         loginPage.openLoginOptions()
         loginOptions.setOverrideBootConfig(ECA_OPAQUE, EMPTY)
+
+        // Saving Login Options re-launches the Custom Tab. Back out of it (and dismiss the
+        // resulting server picker) so navigateBackToApp only has to walk the remaining
+        // LoginActivity -> AccountSwitcher -> AuthFlowTester stack.
+        loginPage.backOutToLoginActivity()
         navigateBackToApp()
 
         // The existing user must remain the only authenticated account.

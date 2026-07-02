@@ -45,8 +45,6 @@ import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
 import androidx.test.espresso.web.webdriver.DriverAtoms.webKeys
 import androidx.test.espresso.web.webdriver.Locator
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -57,13 +55,27 @@ internal const val PASSWORD_ID = "password"
 internal const val LOGIN_BUTTON_ID = "Login"
 
 /**
+ * Interval between retries of the dev-support dialog tap in [LoginPageObject.openLoginOptions].
+ * Short enough to re-issue a tap promptly once the dialog's fade-in animation completes.
+ */
+private const val DIALOG_TAP_RETRY_INTERVAL_MS = 250L
+
+/**
  * Page object for the Salesforce login WebView.
  * Uses Espresso WebView APIs since the login form is an in-app WebView
  * embedded via AndroidView in the SDK's LoginActivity Compose layout.
  */
 open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
-    private val device by lazy { UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()) }
+    /**
+     * Surfaces the LoginActivity so its Compose top bar can be driven.  For the in-app WebView
+     * login this is a no-op: the WebView is embedded in the LoginActivity, so the top bar is
+     * already in front.  [ChromeCustomTabPageObject] overrides this to back out of the Chrome
+     * Custom Tab that forced advanced authentication launches over the activity.
+     */
+    open fun backOutToLoginActivity() {
+        // No-op: the WebView login is already on the LoginActivity.
+    }
 
     open fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
@@ -73,21 +85,6 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
-
-    /**
-     * Returns true when the LoginActivity top bar is currently in front
-     * (detected via the SDK's "More Options" content description). Used by
-     * negative tests to assert the user did not advance past login.
-     */
-    fun isLoginScreenVisible(): Boolean =
-        try {
-            composeTestRule
-                .onAllNodesWithContentDescription(getString(R.string.sf__more_options))
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        } catch (_: Throwable) {
-            false
-        }
 
     /**
      * Welcome Discovery login: the OAuth `login_hint` already pre-filled the username
@@ -125,20 +122,44 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Developer Support dialog to appear", e)
         }
 
-        // Tap "Login Options" in the native AlertDialog (not Compose)
-        onView(withText(getString(R.string.sf__dev_support_login_options_title)))
-            .inRoot(isDialog())
-            .perform(click())
-
-        // Wait for LoginOptionsActivity's Compose content to render.
-        try {
-            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithContentDescription(
-                    getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
-                ).fetchSemanticsNodes().isNotEmpty()
+        // Tap "Login Options" in the native AlertDialog (not Compose) and wait for
+        // LoginOptionsActivity's Compose content to render.
+        //
+        // The dev-support dialog is shown from a coroutine (SalesforceSDKManager.showDevSupportDialog)
+        // and its window fades in.  On a device with animations enabled (unlike Firebase Test Lab,
+        // which disables them), a single tap issued the instant the dialog view exists can land while
+        // the window opacity is still below Android's anti-tap-jacking threshold, in which case
+        // InputDispatcher silently drops the touch ("Not sending motion ... opacity ... is below the
+        // threshold") and the activity never launches.  Re-issue the tap until the screen renders so a
+        // touch dropped during the fade-in is simply retried once the window is opaque.
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        var rendered = false
+        while (!rendered && System.currentTimeMillis() < deadline) {
+            // Re-issue the tap only while the dialog is still up.  A successful tap dismisses the
+            // dialog, so once it is gone a prior tap landed and we just keep waiting for the render;
+            // tapping a missing dialog would throw NoMatchingRootException.
+            try {
+                onView(withText(getString(R.string.sf__dev_support_login_options_title)))
+                    .inRoot(isDialog())
+                    .perform(click())
+            } catch (_: RuntimeException) {
+                // Dialog no longer present (a prior tap already dismissed it); fall through to wait.
             }
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Login Options screen to render", e)
+
+            rendered = try {
+                composeTestRule.waitUntil(timeoutMillis = DIALOG_TAP_RETRY_INTERVAL_MS) {
+                    composeTestRule.onAllNodesWithContentDescription(
+                        getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
+                    ).fetchSemanticsNodes().isNotEmpty()
+                }
+                true
+            } catch (_: ComposeTimeoutException) {
+                false
+            }
+        }
+
+        if (!rendered) {
+            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for Login Options screen to render")
         }
         Thread.sleep(TIMEOUT_MS / 4)
     }
