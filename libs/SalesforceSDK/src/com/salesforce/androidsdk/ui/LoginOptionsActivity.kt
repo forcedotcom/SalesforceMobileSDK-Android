@@ -95,9 +95,14 @@ import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
     val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
+
+    // This dev-menu toggle is the intended consumer of the deprecated force-advanced-auth flag, so
+    // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
+    @Suppress("DEPRECATION")
     val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
 
     @OptIn(ExperimentalMaterial3Api::class)
+    @Suppress("DEPRECATION")
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

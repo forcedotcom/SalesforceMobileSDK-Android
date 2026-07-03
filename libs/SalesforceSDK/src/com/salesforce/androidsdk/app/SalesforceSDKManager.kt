@@ -481,6 +481,11 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var useHybridAuthentication = true
 
+    // Backing field for [forceAdvancedAuthentication].  The SDK reads this directly so its own
+    // internal use of the flag doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _forceAdvancedAuthentication = true
+
     /**
      * Forces advanced (browser based) authentication to always be used for login, regardless of
      * the target server's auth configuration, including standard login servers with no My Domain.
@@ -489,7 +494,11 @@ open class SalesforceSDKManager protected constructor(
     @Deprecated("Will be removed in 15.0 when WebView login is removed entirely.")
     @get:JvmName("shouldForceAdvancedAuthentication")
     @set:Synchronized
-    var forceAdvancedAuthentication = true
+    var forceAdvancedAuthentication: Boolean
+        get() = _forceAdvancedAuthentication
+        set(value) {
+            _forceAdvancedAuthentication = value
+        }
 
     // Used to ensure the webview is reloaded when Dev Menu Login Options are changed.
     internal var loginDevMenuReload = false
@@ -1561,7 +1570,7 @@ open class SalesforceSDKManager protected constructor(
             "User Agent", userAgent,
             "Use Web Server Authentication", "$useWebServerAuthentication",
             "Use Hybrid Authentication Token", "$useHybridAuthentication",
-            "Force Advanced Authentication", "$forceAdvancedAuthentication",
+            "Force Advanced Authentication", "$_forceAdvancedAuthentication",
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
@@ -1596,7 +1605,7 @@ open class SalesforceSDKManager protected constructor(
 //                "Use Web Server Authentication" to "$useWebServerAuthentication",
 //                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
 //                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
-//                "Force Advanced Authentication" to "$forceAdvancedAuthentication",
+//                "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
 //                "Browser Login Enabled" to "$isBrowserLoginEnabled",
 //                "IDP Enabled" to "$isIDPLoginFlowEnabled",
 //                "Identity Provider" to "$isIdentityProvider",
@@ -2167,7 +2176,7 @@ open class SalesforceSDKManager protected constructor(
                     // Standard login servers have no auth-config to source a shared-session value from, so
                     // browser login is gated solely on the force flag and shared session stays false.
                     setBrowserLoginEnabled(
-                        browserLoginEnabled = forceAdvancedAuthentication,
+                        browserLoginEnabled = _forceAdvancedAuthentication,
                         shareBrowserSessionEnabled = false
                     )
 
@@ -2176,7 +2185,7 @@ open class SalesforceSDKManager protected constructor(
                 }
                 else -> getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
                     setBrowserLoginEnabled(
-                        browserLoginEnabled = forceAdvancedAuthentication || (authConfig?.isBrowserLoginEnabled ?: false),
+                        browserLoginEnabled = _forceAdvancedAuthentication || (authConfig?.isBrowserLoginEnabled ?: false),
                         shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
                     )
 

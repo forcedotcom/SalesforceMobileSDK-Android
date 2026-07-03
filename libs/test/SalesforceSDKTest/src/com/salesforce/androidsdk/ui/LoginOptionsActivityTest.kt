@@ -88,6 +88,7 @@ class LoginOptionsActivityTest {
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun setup() {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
@@ -122,6 +123,7 @@ class LoginOptionsActivityTest {
     }
 
     @After
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun teardown() {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
@@ -243,6 +245,7 @@ class LoginOptionsActivityTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun loginOptionsActivity_ForceAdvancedAuthToggle_ReflectsAndUpdatesSdkManager() {
         // Set initial state via the activity's LiveData: force flag off.
         composeTestRule.activity.runOnUiThread {
@@ -282,6 +285,7 @@ class LoginOptionsActivityTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Deliberately exercises the deprecated forceAdvancedAuthentication flag and devSupportInfos.
     fun devSupportInfos_IncludesForceAdvancedAuthentication_WithCurrentValue() {
         // The dev-support info surfaces the force-advanced-authentication flag and its value.
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true

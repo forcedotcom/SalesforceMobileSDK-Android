@@ -96,6 +96,7 @@ class SalesforceSDKManagerTests {
     }
 
     @After
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun teardown() {
         // Reset all singleton state to ensure test isolation
         // This prevents state leakage between tests
@@ -109,6 +110,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForMyDomainLoginServer() {
 
         // Legacy behavior: with the force flag off, browser login follows the server's
@@ -151,6 +153,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForSandboxLoginServer() {
 
         // Legacy behavior: with the force flag off, a standard sandbox login server
@@ -215,6 +218,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_DoesNotUpdate_onFetchAuthenticationConfigurationWithError() {
 
         // Legacy behavior: with the force flag off, a failed auth-config fetch leaves the
@@ -244,6 +248,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForProductionLoginServer() {
 
         // Legacy behavior: with the force flag off, a standard production login server
@@ -274,6 +279,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_withLoginServerUrlOverride_usesOverrideOverPersistedSelectedServer() {
 
         // Legacy behavior: with the force flag off, the overridden My Domain server follows
@@ -305,6 +311,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOnAndMyDomainOptsOut_EnablesBrowserLogin() {
 
         // The force flag is on by default, but set it explicitly for clarity.
@@ -334,6 +341,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOnAndMyDomainSharesSession_KeepsShareBrowserSessionEnabled() {
 
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
@@ -362,6 +370,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOnAndStandardLoginServer_EnablesBrowserLoginWithoutSharedSession() {
 
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
@@ -392,6 +401,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOffAndServerOptsOut_DisablesBrowserLogin() {
 
         // With the force flag off, browser login follows the server's auth-config.
@@ -419,6 +429,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOffAndServerOptsIn_EnablesBrowserLogin() {
 
         // With the force flag off, browser login follows the server's auth-config - the legacy
@@ -447,6 +458,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun forceAdvancedAuthentication_FreshManager_DefaultsToTrue() {
 
         // A freshly initialized manager defaults the force-advanced-authentication flag to true.
@@ -456,6 +468,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOnAndWelcomeDiscoveryHost_DisablesBrowserLogin() {
 
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
@@ -479,6 +492,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_ForceFlagOnAndNonHttpsServer_DisablesBrowserLogin() {
 
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true

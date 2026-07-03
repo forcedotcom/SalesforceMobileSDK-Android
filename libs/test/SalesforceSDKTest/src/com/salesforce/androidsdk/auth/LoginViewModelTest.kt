@@ -190,6 +190,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun browserCustomTabUrl_UsesWebServerFlow_EvenWhenUserAgentFlowIsActive() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
@@ -246,6 +247,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun browserCustomTabUrl_UsesWebServerFlow_WhenForceFlagOnAndWebServerAuthDisabled() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
