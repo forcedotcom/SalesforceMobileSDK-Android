@@ -378,6 +378,12 @@ class SalesforceSDKManagerTests {
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
 
+        // Deliberately differs from the My Domain tests above: persist a standard server via
+        // setSelectedLoginServer and omit the loginServerUrl override so the default no-override
+        // branch of fetchAuthenticationConfiguration is exercised (it resolves the target from
+        // loginServerManager.selectedLoginServer).  A standard server (Production) is required to
+        // reach the isStandardLoginServer branch; the transient My Domain override used elsewhere
+        // would fall through to the My Domain auth-config path instead.
         SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
             LoginServer(
                 "Production",
