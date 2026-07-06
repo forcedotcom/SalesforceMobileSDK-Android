@@ -40,13 +40,18 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.AD
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 
-private const val RETRY_COUNT = 3
 /**
  * Short timeout for checking optional local Chrome UI elements that either appear
  * immediately or not at all (e.g., first-run dialogs, password save prompts).
  * These are not dependent on server-side rendering.
  */
 private const val QUICK_CHECK_TIMEOUT_MS = 500L
+
+/**
+ * Ceiling for clearing Chrome's First Run Experience, which on a cold profile (every FTL device) is
+ * a slow multi-page sequence. Longer than [TIMEOUT_MS]; only fully spent when no tab ever appears.
+ */
+private const val FRE_DISMISS_TIMEOUT_MS = 30_000L
 
 /**
  * Handles Custom Tab interactions.
@@ -80,24 +85,16 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
-     * Forced advanced authentication auto-launches a Chrome Custom Tab over the Compose
-     * LoginActivity, so its top bar (and the "More Options" menu the [LoginPageObject] Compose
-     * actions depend on) is not reachable while the tab is in front. This backs out of the tab
-     * to surface the LoginActivity again.
-     *
-     * Backing out returns `RESULT_CANCELED`, which the SDK handles by clearing the WebView and
-     * raising the login-server-picker bottom sheet (`clearWebView(showServerPicker = true)`). The
-     * picker's scrim sits over the top bar, so it is dismissed here as well, leaving the bare
-     * LoginActivity ready for a Compose top-bar action (Login Options, Change Server, Login for
-     * Admins). After that action changes the dynamic config or server, the SDK re-launches the
-     * Custom Tab (debug `loginDevMenuReload` -> `reloadWebView`) and login completes in the tab.
-     *
-     * The Custom Tab launches asynchronously (after the auth-config network fetch resolves and the
-     * OAuth URL is generated), so this waits up to [TIMEOUT_MS] for the tab to appear before
-     * backing out. No-op when no Custom Tab appears within the timeout (we are already on the
+     * Surfaces the LoginActivity by backing out of the Custom Tab that forced advanced auth
+     * auto-launches over it (the tab hides the Compose top bar the [LoginPageObject] actions need).
+     * Backing out returns `RESULT_CANCELED`, which the SDK handles by raising the server-picker
+     * bottom sheet; that is dismissed here too so a subsequent top-bar action can re-launch the tab.
+     * Waits up to [TIMEOUT_MS] for the async tab launch; no-op if no tab appears (already on the
      * LoginActivity).
      */
     override fun backOutToLoginActivity() {
+        // Clear the FRE first; until it is gone it covers the tab toolbar (the close button).
+        skipGoogleSignIn()
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
@@ -169,31 +166,72 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         loginButton.click()
     }
 
+    /**
+     * Clears Chrome's First Run Experience so the Custom Tab can render. On a cold Chrome (every FTL
+     * device, since `clearPackageData=true` wipes Chrome per test) the tab's first launch is covered
+     * by a multi-page FRE that renders slowly, hiding the tab toolbar every tab-facing helper keys
+     * off. Loops until the tab is in front, dismissing whichever FRE control shows each pass. Called
+     * first by every entry point that touches the tab, and idempotent: a warm Chrome returns at once.
+     */
     fun skipGoogleSignIn() {
-        val continueButton = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/signin_fre_dismiss_button")
-        )
-        val noButton = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/negative_button")
-        )
-        val legacyContinueButton = device.findObject(
-            UiSelector().resourceId("com.android.chrome:id/terms_accept")
-        )
+        val deadline = System.currentTimeMillis() + FRE_DISMISS_TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            if (isCustomTabDisplayed()) {
+                return
+            }
+            if (!dismissOneFreControl()) {
+                // Nothing to dismiss yet; the next FRE page may still be rendering, so re-check.
+                device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
+            }
+        }
+    }
 
-        repeat(times = RETRY_COUNT) {
-            if (continueButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
-                continueButton.click()
-                return@repeat
-            } else if (legacyContinueButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
-                legacyContinueButton.click()
-                return@repeat
+    /**
+     * Dismisses a single FRE control if one is on screen, returning true if it clicked something.
+     * Decline buttons are tried before accept buttons so the flow advances without a Google sign-in;
+     * each is matched by resource id first, then by its en-locale label (FTL pins `locale=en`).
+     */
+    private fun dismissOneFreControl(): Boolean {
+        val dismissByIdOrText = listOf(
+            "com.android.chrome:id/signin_fre_dismiss_button",
+            "com.android.chrome:id/negative_button",
+        )
+        for (resourceId in dismissByIdOrText) {
+            val button = device.findObject(UiSelector().resourceId(resourceId))
+            if (button.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
+                button.click()
+                return true
+            }
+        }
+        for (label in listOf("Use without an account", "No thanks", "No Thanks")) {
+            val button = device.findObject(UiSelector().textContains(label))
+            if (button.exists()) {
+                button.click()
+                return true
             }
         }
 
-        if (noButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
-            noButton.click()
-            return
+        // The initial UMA/ToS page has no decline option; accepting it is required to advance.
+        val acceptByIdOrText = listOf(
+            "com.android.chrome:id/terms_accept",
+            "com.android.chrome:id/positive_button",
+        )
+        for (resourceId in acceptByIdOrText) {
+            val button = device.findObject(UiSelector().resourceId(resourceId))
+            if (button.waitForExists(QUICK_CHECK_TIMEOUT_MS)) {
+                button.click()
+                return true
+            }
         }
+        for (label in listOf("Accept & continue", "Got it")) {
+            val button = device.findObject(UiSelector().textContains(label))
+            if (button.exists()) {
+                button.click()
+                return true
+            }
+        }
+
+        return false
     }
 
     /**
@@ -209,16 +247,14 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
-     * Waits up to [timeoutMs] for a Chrome Custom Tab to come to the front (detected via its close
-     * button) and returns whether it appeared.
-     *
-     * Unlike [isCustomTabDisplayed] (which uses [QUICK_CHECK_TIMEOUT_MS] for tabs that either show
-     * immediately or not at all), this uses the full [TIMEOUT_MS] window so it can wait out the
-     * asynchronous auth-config fetch that precedes a tab (re)launch under forced advanced
-     * authentication. Best-effort: a `false` return simply means no tab launched within the
-     * window, in which case the caller proceeds as if already on the LoginActivity.
+     * Waits up to [timeoutMs] for the Custom Tab to come to the front, returning whether it did.
+     * Uses the full [TIMEOUT_MS] window (vs [isCustomTabDisplayed]) to wait out the async auth-config
+     * fetch preceding a tab (re)launch. Best-effort: `false` means no tab launched, so the caller
+     * proceeds as if already on the LoginActivity.
      */
     fun waitForCustomTab(timeoutMs: Long = TIMEOUT_MS): Boolean {
+        // Clear the FRE first; until it is gone it covers the tab toolbar (the close button).
+        skipGoogleSignIn()
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
