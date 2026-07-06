@@ -625,9 +625,15 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             "sendSyncWithMobileSyncUserAgent called with request: ",
             restRequest
         )
+        val clientInfo = restClient?.getClientInfo()
+        val user: UserAccount? = if (clientInfo != null) {
+            SalesforceSDKManager.getInstance()
+                .userAccountManager
+                .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId)
+        } else null
         return restClient?.sendSync(
             restRequest,
-            UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC))
+            UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC, user))
         ) ?: throw MobileSyncException("No rest client")
     }
 

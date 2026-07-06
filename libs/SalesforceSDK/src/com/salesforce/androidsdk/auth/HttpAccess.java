@@ -30,6 +30,9 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import androidx.annotation.Nullable;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import java.io.IOException;
@@ -189,20 +192,25 @@ public class HttpAccess {
     public static class UserAgentInterceptor implements Interceptor {
 
         private String userAgent;
+        @Nullable private UserAccount user;
 
         public UserAgentInterceptor() {
-            // User this constructor to have the user agent computed for each call
+            // Use this constructor to have the user agent computed for each call (falls back to current user)
         }
 
         public UserAgentInterceptor(String userAgent) {
             this.userAgent = userAgent;
         }
 
+        public UserAgentInterceptor(@Nullable UserAccount user) {
+            this.user = user;
+        }
+
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request originalRequest = chain.request();
             Request requestWithUserAgent = originalRequest.newBuilder()
-                    .header(HttpAccess.USER_AGENT, userAgent == null ? SalesforceSDKManager.getInstance().getUserAgent() : userAgent)
+                    .header(HttpAccess.USER_AGENT, userAgent != null ? userAgent : SalesforceSDKManager.getInstance().getUserAgent("", user))
                     .build();
             return chain.proceed(requestWithUserAgent);
         }

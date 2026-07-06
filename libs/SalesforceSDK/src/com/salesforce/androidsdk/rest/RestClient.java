@@ -209,6 +209,10 @@ public class RestClient {
             okHttpClientBuilder = httpAccessor.createNewClientBuilder();
             if (!cacheKey.equals("unauthenticated")) {
                 okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
+                final UserAccount user = SalesforceSDKManager.getInstance()
+                        .getUserAccountManager()
+                        .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
+                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(user));
             }
 
             OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
@@ -259,8 +263,10 @@ public class RestClient {
         data.put(LOGIN_URL, clientInfo.loginUrl.toString());
         data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
         data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-        UserAccount currentUser = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent("", currentUser));
+        UserAccount user = SalesforceSDKManager.getInstance()
+                .getUserAccountManager()
+                .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
+        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent("", user));
         data.put(COMMUNITY_ID, clientInfo.communityId);
         data.put(COMMUNITY_URL, clientInfo.communityUrl);
         return new JSONObject(data);

@@ -30,6 +30,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -46,9 +48,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -176,5 +180,120 @@ public class HttpAccessTest {
 		final String userAgent = http.getUserAgent();
         Assert.assertTrue("User agent should start with SalesforceMobileSDK/<version>",
 				userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
+	}
+
+	/**
+	 * Verifies that UserAgentInterceptor with a UserAccount stamps per-user flags into
+	 * the User-Agent header.
+	 */
+	@Test
+	public void test_givenUserAgentInterceptorWithUser_whenIntercept_thenHeaderContainsUserFlags()
+			throws Exception {
+		final UserAccount user = buildMinimalUserAccount("testOrg1", "testUser1");
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("ZZ", user);
+		try {
+			final String header = captureUserAgentHeader(new HttpAccess.UserAgentInterceptor(user));
+			Assert.assertTrue(
+					"User-Agent header should contain per-user flag ZZ",
+					header.contains("ZZ"));
+			Assert.assertTrue(
+					"User-Agent header should start with SalesforceMobileSDK/",
+					header.startsWith("SalesforceMobileSDK/"));
+		} finally {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("ZZ", user);
+		}
+	}
+
+	/**
+	 * Verifies that the no-arg UserAgentInterceptor still produces a valid User-Agent header
+	 * (regression guard for the original constructor path).
+	 */
+	@Test
+	public void test_givenUserAgentInterceptorNoArgs_whenIntercept_thenHeaderStartsWithSalesforceMobileSDK()
+			throws Exception {
+		final String header = captureUserAgentHeader(new HttpAccess.UserAgentInterceptor());
+		Assert.assertTrue(
+				"User-Agent header should start with SalesforceMobileSDK/",
+				header.startsWith("SalesforceMobileSDK/"));
+	}
+
+	/**
+	 * Verifies that a UserAgentInterceptor for user A does NOT include flags registered
+	 * for user B (per-user isolation on the wire).
+	 */
+	@Test
+	public void test_givenTwoUsers_whenInterceptorForUserA_thenHeaderExcludesUserBFlags()
+			throws Exception {
+		final UserAccount userA = buildMinimalUserAccount("orgA", "userA");
+		final UserAccount userB = buildMinimalUserAccount("orgB", "userB");
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("UA", userA);
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("UB", userB);
+		try {
+			final String header = captureUserAgentHeader(new HttpAccess.UserAgentInterceptor(userA));
+			Assert.assertTrue("User-Agent should contain userA flag UA", header.contains("UA"));
+			Assert.assertFalse("User-Agent should NOT contain userB flag UB", header.contains("UB"));
+		} finally {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("UA", userA);
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("UB", userB);
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Runs the given interceptor against a dummy GET request and returns the
+	 * User-Agent header that the interceptor stamped on the outgoing request.
+	 * Uses a capturing chain so no real network call is made.
+	 */
+	private static String captureUserAgentHeader(HttpAccess.UserAgentInterceptor interceptor)
+			throws IOException {
+		final AtomicReference<String> captured = new AtomicReference<>();
+		final HttpUrl dummyUrl = new HttpUrl.Builder()
+				.scheme("https").host("test.salesforce.com").build();
+		final Request original = new Request.Builder().url(dummyUrl).build();
+
+		interceptor.intercept(new Interceptor.Chain() {
+			@Override
+			public Request request() { return original; }
+
+			@Override
+			public Response proceed(Request request) {
+				captured.set(request.header("User-Agent"));
+				// Return a minimal non-null response to satisfy the chain contract.
+				return new Response.Builder()
+						.request(request)
+						.protocol(okhttp3.Protocol.HTTP_1_1)
+						.code(200)
+						.message("OK")
+						.build();
+			}
+
+			@Override public okhttp3.Connection connection() { return null; }
+			@Override public okhttp3.Call call() { throw new UnsupportedOperationException(); }
+			@Override public int connectTimeoutMillis() { return 0; }
+			@Override public Interceptor.Chain withConnectTimeout(int t, java.util.concurrent.TimeUnit u) { return this; }
+			@Override public int readTimeoutMillis() { return 0; }
+			@Override public Interceptor.Chain withReadTimeout(int t, java.util.concurrent.TimeUnit u) { return this; }
+			@Override public int writeTimeoutMillis() { return 0; }
+			@Override public Interceptor.Chain withWriteTimeout(int t, java.util.concurrent.TimeUnit u) { return this; }
+		});
+
+		return captured.get();
+	}
+
+	private static UserAccount buildMinimalUserAccount(String orgId, String userId) {
+		return UserAccountBuilder.getInstance()
+				.authToken("tok")
+				.refreshToken("rtok")
+				.loginServer("https://login.salesforce.com")
+				.idUrl("https://login.salesforce.com/id/" + orgId + "/" + userId)
+				.instanceServer("https://cs1.salesforce.com")
+				.orgId(orgId)
+				.userId(userId)
+				.username("user_" + userId + "@example.com")
+				.accountName("user_" + userId + " (https://cs1.salesforce.com) (SalesforceSDKTest)")
+				.build();
 	}
 }
