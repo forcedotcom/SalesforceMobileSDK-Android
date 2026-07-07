@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,24 +26,40 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.app.Application
-import com.salesforce.androidsdk.app.SalesforceSDKManager
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
+import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.DPOP_AUTH
+import org.junit.Test
+import org.junit.runner.RunWith
 
-class AuthFlowTesterApplication : Application() {
+/**
+ * Tests for login flows using a DPoP-enabled External Client App (ECA) on the sdb6-2 org.
+ *
+ * NB: Tests use the first user from the dpop_auth section of ui_test_config.json.
+ */
+@RunWith(AndroidJUnit4::class)
+@LargeTest
+class DPoPLoginTests : AuthFlowTest() {
 
-    companion object {
-        private const val FEATURE_APP_USES_KOTLIN = "KT"
+    // region ECA JWT DPoP Tests
+
+    // Login with ECA JWT DPoP using hybrid auth token flow.
+    @Test
+    fun testECAJwtDPoP_Hybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true, knownLoginHostConfig = DPOP_AUTH)
+        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
+        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        SalesforceSDKManager.initNative(
-            applicationContext,
-            AuthFlowTesterActivity::class.java,
-        )
-
-        with(SalesforceSDKManager.getInstance()) {
-            registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
-        }
+    // Login with ECA JWT DPoP without hybrid auth token.
+    @Test
+    fun testECAJwtDPoP_NoHybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true, knownLoginHostConfig = DPOP_AUTH)
+        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
+        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
     }
+
+    // endregion
 }

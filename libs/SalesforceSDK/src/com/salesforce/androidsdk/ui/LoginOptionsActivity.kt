@@ -100,6 +100,7 @@ class LoginOptionsActivity: ComponentActivity() {
     // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
     @Suppress("DEPRECATION")
     val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
+    val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().isUseDPoP())
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Suppress("DEPRECATION")
@@ -129,6 +130,13 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().forceAdvancedAuthentication = value
             },
         )
+        useDPoP.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                // onChanged lambda
+                value -> SalesforceSDKManager.getInstance().setUseDPoP(value)
+            },
+        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -147,6 +155,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         useWebServer,
                         useHybridToken,
                         forceAdvancedAuth,
+                        useDPoP,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
                 }
@@ -325,6 +334,7 @@ fun LoginOptionsScreen(
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
     forceAdvancedAuth: MutableLiveData<Boolean>,
+    useDPoP: MutableLiveData<Boolean>,
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
     sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
@@ -351,6 +361,11 @@ fun LoginOptionsScreen(
             "Force Advanced Authentication",
             stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
             forceAdvancedAuth,
+        )
+        OptionToggle(
+            "Use DPoP",
+            stringResource(R.string.sf__login_options_dpop_toggle_content_description),
+            useDPoP,
         )
 
         HorizontalDivider()
@@ -569,6 +584,7 @@ fun LoginOptionsScreenPreview() {
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
         forceAdvancedAuth = MutableLiveData(true),
+        useDPoP = MutableLiveData(false),
         overrideConfig = null,
         bootConfig = object : BootConfig() {
             override fun getRemoteAccessConsumerKey() = consumerKey

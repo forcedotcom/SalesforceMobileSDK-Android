@@ -111,6 +111,7 @@ abstract class AuthFlowTest {
             forceAdvancedAuthentication = true
             useWebServerAuthentication = true
             useHybridAuthentication = true
+            setUseDPoP(false)
 
             // Reset the selected login server back to REGULAR_AUTH.
             val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
@@ -216,6 +217,7 @@ abstract class AuthFlowTest {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         useWelcomeDiscovery: Boolean = false,
@@ -237,7 +239,7 @@ abstract class AuthFlowTest {
 
         ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
 
-        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken ||
+        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP ||
                 knownAppConfig != CA_OPAQUE || scopeSelection != EMPTY ||
                 useWelcomeDiscovery
 
@@ -255,6 +257,10 @@ abstract class AuthFlowTest {
 
             if (!useHybridAuthToken) {
                 loginOptions.disableHybridAuthToken()
+            }
+
+            if (useDPoP) {
+                loginOptions.enableDPoP()
             }
 
             // Set simulated discovery result first - its Save does NOT dismiss the activity,
