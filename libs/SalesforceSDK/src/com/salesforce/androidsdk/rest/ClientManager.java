@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import static com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR;
-import static com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR;
 import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.CLIENT_BLOCKED;
 import static com.salesforce.androidsdk.auth.OAuth2.LogoutReason.REFRESH_TOKEN_EXPIRED;
 import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
@@ -51,6 +49,7 @@ import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuthErrorCode;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
@@ -646,23 +645,26 @@ public class ClientManager {
                  */
                 final String errorType;
                 final String errorDesc;
+                final OAuthErrorCode errorCode;
                 if (e instanceof OAuthFailedException) {
                     final TokenErrorResponse tokenError = ((OAuthFailedException) e).getTokenErrorResponse();
                     errorType = tokenError.error;
                     errorDesc = tokenError.errorDescription;
+                    errorCode = tokenError.errorCode;
                 } else {
                     errorType = null;
                     errorDesc = null;
+                    errorCode = OAuthErrorCode.UNKNOWN;
                 }
 
-                if (!CLIENT_BLOCKED_RETRY_ERROR.equals(errorType)) {
+                if (errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY) {
                     // Terminal error (client_blocked, invalid_grant, malformed token, etc.) — logout.
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
                         }
                         final boolean showLoginPage = accounts.length == 1;
-                        final LogoutReason reason = CLIENT_BLOCKED_ERROR.equals(errorType)
+                        final LogoutReason reason = errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
                                 ? CLIENT_BLOCKED
                                 : REFRESH_TOKEN_EXPIRED;
                         // Note: As of writing (2024) this call will never succeed because revoke API is an
