@@ -77,19 +77,23 @@ class LoginOptionsActivityTest {
 
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
+    private var originalForceAdvancedAuth: Boolean = true
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
     private lateinit var scopesField: SemanticsNodeInteraction
     private lateinit var webserverToggle: SemanticsNodeInteraction
     private lateinit var hybridToggle: SemanticsNodeInteraction
+    private lateinit var forceAdvancedAuthToggle: SemanticsNodeInteraction
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun setup() {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
+        originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -110,16 +114,21 @@ class LoginOptionsActivityTest {
         hybridToggle = composeTestRule.onNodeWithContentDescription(
             composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description),
         )
+        forceAdvancedAuthToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+        )
         saveButton = composeTestRule.onNodeWithText(
             composeTestRule.activity.getString(R.string.sf__login_options_save_and_login),
         )
     }
 
     @After
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun teardown() {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
     }
@@ -233,6 +242,65 @@ class LoginOptionsActivityTest {
             false,
             composeTestRule.activity.useHybridToken.value
         )
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun loginOptionsActivity_ForceAdvancedAuthToggle_ReflectsAndUpdatesSdkManager() {
+        // Set initial state via the activity's LiveData: force flag off.
+        composeTestRule.activity.runOnUiThread {
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+            composeTestRule.activity.forceAdvancedAuth.value = false
+        }
+        composeTestRule.waitForIdle()
+
+        // The toggle reflects the SDK manager value.
+        forceAdvancedAuthToggle.performScrollTo()
+        forceAdvancedAuthToggle.assertIsDisplayed()
+        forceAdvancedAuthToggle.assertIsOff()
+        assertFalse(
+            "Force Advanced Authentication should be disabled initially",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+
+        // Toggling on writes the value through to the SDK manager.
+        forceAdvancedAuthToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        forceAdvancedAuthToggle.assertIsOn()
+        assertTrue(
+            "Force Advanced Authentication should be enabled after toggling on",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+
+        // Toggling off writes the value back through to the SDK manager.
+        forceAdvancedAuthToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        forceAdvancedAuthToggle.assertIsOff()
+        assertFalse(
+            "Force Advanced Authentication should be disabled after toggling off",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Deliberately exercises the deprecated forceAdvancedAuthentication flag and devSupportInfos.
+    fun devSupportInfos_IncludesForceAdvancedAuthentication_WithCurrentValue() {
+        // The dev-support info surfaces the force-advanced-authentication flag and its value.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+        val devSupportInfosOn = SalesforceSDKManager.getInstance().devSupportInfos
+        val labelIndexOn = devSupportInfosOn.indexOf("Force Advanced Authentication")
+        assertTrue(
+            "devSupportInfos should include the Force Advanced Authentication label",
+            labelIndexOn >= 0
+        )
+        assertEquals("true", devSupportInfosOn[labelIndexOn + 1])
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+        val devSupportInfosOff = SalesforceSDKManager.getInstance().devSupportInfos
+        val labelIndexOff = devSupportInfosOff.indexOf("Force Advanced Authentication")
+        assertEquals("false", devSupportInfosOff[labelIndexOff + 1])
     }
 
     @Test

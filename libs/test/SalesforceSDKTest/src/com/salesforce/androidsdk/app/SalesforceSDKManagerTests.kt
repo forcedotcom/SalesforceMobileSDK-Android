@@ -96,6 +96,7 @@ class SalesforceSDKManagerTests {
     }
 
     @After
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun teardown() {
         // Reset all singleton state to ensure test isolation
         // This prevents state leakage between tests
@@ -103,27 +104,26 @@ class SalesforceSDKManagerTests {
             loginServerManager.reset()
             isBrowserLoginEnabled = false
             isShareBrowserSessionEnabled = false
+            forceAdvancedAuthentication = true
         }
         unmockkAll()
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForMyDomainLoginServer() {
+
+        // Legacy behavior: with the force flag off, browser login follows the server's
+        // auth-config (which opts out in responseBodyString).
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
 
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
 
-        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Example",
-                "https://www.example.com",
-                true
-            )
-        )
-
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
                 httpAccess = httpAccess,
+                loginServerUrl = "https://www.example.com", // IETF-Reserved Test Domain
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
@@ -139,17 +139,10 @@ class SalesforceSDKManagerTests {
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
 
-        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Welcome",
-                WELCOME_LOGIN_URL,
-                true
-            )
-        )
-
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
                 httpAccess = httpAccess,
+                loginServerUrl = WELCOME_LOGIN_URL,
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
@@ -160,7 +153,12 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForSandboxLoginServer() {
+
+        // Legacy behavior: with the force flag off, a standard sandbox login server
+        // disables browser login.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
 
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
@@ -185,17 +183,10 @@ class SalesforceSDKManagerTests {
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
 
-        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Non-HTTPS",
-                "http://www.example.com", // IETF-Reserved Test Domain
-                true
-            )
-        )
-
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
                 httpAccess = httpAccess,
+                loginServerUrl = "http://www.example.com", // IETF-Reserved Test Domain
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
@@ -211,17 +202,10 @@ class SalesforceSDKManagerTests {
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
 
-        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Invalid",
-                "invalid_url",
-                true
-            )
-        )
-
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
                 httpAccess = httpAccess,
+                loginServerUrl = "invalid_url",
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
@@ -234,19 +218,16 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_DoesNotUpdate_onFetchAuthenticationConfigurationWithError() {
+
+        // Legacy behavior: with the force flag off, a failed auth-config fetch leaves the
+        // (false) browser-login values unchanged.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
 
         // Login Server: "My Domain"/Other URL, OkHttpClient Throws And Catch By AuthConfigUtil
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
-
-        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
-            LoginServer(
-                "Example",
-                "https://www.example.com",
-                true
-            )
-        )
 
         // Mocks
         val httpAccessThrows = mockk<HttpAccess>()
@@ -255,6 +236,7 @@ class SalesforceSDKManagerTests {
         runBlocking {
             SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
                 httpAccess = httpAccessThrows,
+                loginServerUrl = "https://www.example.com",
             ) {
                 /* Completion Does Not Require Verification */
             }.join()
@@ -266,7 +248,12 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForProductionLoginServer() {
+
+        // Legacy behavior: with the force flag off, a standard production login server
+        // disables browser login.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
 
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
         SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
@@ -292,7 +279,12 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun fetchAuthenticationConfiguration_withLoginServerUrlOverride_usesOverrideOverPersistedSelectedServer() {
+
+        // Legacy behavior: with the force flag off, the overridden My Domain server follows
+        // its auth-config (which opts out in responseBodyString).
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
 
         SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
             LoginServer("Production", PRODUCTION_LOGIN_URL, false)
@@ -316,6 +308,217 @@ class SalesforceSDKManagerTests {
             PRODUCTION_LOGIN_URL,
             SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer.url,
         )
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOnAndMyDomainOptsOut_EnablesBrowserLogin() {
+
+        // The force flag is on by default, but set it explicitly for clarity.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
+
+        // My Domain auth-config that opts out of browser login; the force flag must still
+        // enable it.
+        val httpAccessOptOut = buildHttpAccessReturning(
+            useNativeBrowser = false,
+            shareBrowserSession = false,
+        )
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccessOptOut,
+                loginServerUrl = "https://www.example.com",
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertTrue(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOnAndMyDomainSharesSession_KeepsShareBrowserSessionEnabled() {
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
+
+        // My Domain auth-config that opts in to a shared browser session.  The force flag must
+        // not clobber the server's shared-session value.
+        val httpAccessShareSession = buildHttpAccessReturning(
+            useNativeBrowser = true,
+            shareBrowserSession = true,
+        )
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccessShareSession,
+                loginServerUrl = "https://www.example.com",
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertTrue(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertTrue(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOnAndStandardLoginServer_EnablesBrowserLoginWithoutSharedSession() {
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
+
+        // Deliberately differs from the My Domain tests above: persist a standard server via
+        // setSelectedLoginServer and omit the loginServerUrl override so the default no-override
+        // branch of fetchAuthenticationConfiguration is exercised (it resolves the target from
+        // loginServerManager.selectedLoginServer).  A standard server (Production) is required to
+        // reach the isStandardLoginServer branch; the transient My Domain override used elsewhere
+        // would fall through to the My Domain auth-config path instead.
+        SalesforceSDKManager.getInstance().loginServerManager.setSelectedLoginServer(
+            LoginServer(
+                "Production",
+                PRODUCTION_LOGIN_URL,
+                false
+            )
+        )
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        // Standard login servers have no auth-config, so browser login is gated solely on the
+        // force flag and shared session stays false.
+        assertTrue(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOffAndServerOptsOut_DisablesBrowserLogin() {
+
+        // With the force flag off, browser login follows the server's auth-config.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
+
+        val httpAccessOptOut = buildHttpAccessReturning(
+            useNativeBrowser = false,
+            shareBrowserSession = false,
+        )
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccessOptOut,
+                loginServerUrl = "https://www.example.com",
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOffAndServerOptsIn_EnablesBrowserLogin() {
+
+        // With the force flag off, browser login follows the server's auth-config - the legacy
+        // opt-in path must continue to work.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = false
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = false
+
+        val httpAccessOptIn = buildHttpAccessReturning(
+            useNativeBrowser = true,
+            shareBrowserSession = false,
+        )
+
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccessOptIn,
+                loginServerUrl = "https://www.example.com",
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertTrue(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun forceAdvancedAuthentication_FreshManager_DefaultsToTrue() {
+
+        // A freshly initialized manager defaults the force-advanced-authentication flag to true.
+        val salesforceSdkManager = createTestSalesforceSDKManager()
+
+        assertTrue(salesforceSdkManager.forceAdvancedAuthentication)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOnAndWelcomeDiscoveryHost_DisablesBrowserLogin() {
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
+
+        // The Welcome Discovery host is excluded from forced advanced authentication (phase-1
+        // exclusion) and keeps the legacy disabled behavior even with the force flag on.
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+                loginServerUrl = WELCOME_LOGIN_URL,
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun fetchAuthenticationConfiguration_ForceFlagOnAndNonHttpsServer_DisablesBrowserLogin() {
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true
+        SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled = true
+
+        // Non-HTTPS servers are excluded from forced advanced authentication and keep the legacy
+        // disabled behavior even with the force flag on.
+        runBlocking {
+            SalesforceSDKManager.getInstance().fetchAuthenticationConfiguration(
+                httpAccess = httpAccess,
+                loginServerUrl = "http://www.example.com", // IETF-Reserved Test Domain
+            ) {
+                /* Completion Does Not Require Verification */
+            }.join()
+        }
+
+        assertFalse(SalesforceSDKManager.getInstance().isBrowserLoginEnabled)
+        assertFalse(SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled)
     }
 
     @Test
@@ -394,11 +597,16 @@ class SalesforceSDKManagerTests {
 
     @Test
     fun getDevActions_ReturnsAllActions_ForNonLoginActivity() {
-        // Arrange
+        // Arrange: a manager with a signed-in user, so Logout/Switch User are eligible.
+        // Stubbing the current user keeps this deterministic instead of depending on
+        // whatever Salesforce account happens to be present on the test device.
+        val salesforceSdkManager = createTestSalesforceSDKManagerWithCurrentUser(
+            mockk<UserAccount>(relaxed = true)
+        )
         val mockActivity = mockk<Activity>(relaxed = true)
 
         // Act
-        val devActions = SalesforceSDKManager.getInstance().getDevActions(mockActivity)
+        val devActions = salesforceSdkManager.getDevActions(mockActivity)
 
         // Assert
         assertEquals(4, devActions.size)
@@ -414,11 +622,16 @@ class SalesforceSDKManagerTests {
 
     @Test
     fun getDevActions_ExcludesLogoutAndSwitchUser_ForLoginActivity() {
-        // Arrange
+        // Arrange: even with a signed-in user, the Login screen must never expose
+        // Logout/Switch User.  Stubbing the current user proves the LoginActivity check
+        // is what excludes them (not merely the absence of a user).
+        val salesforceSdkManager = createTestSalesforceSDKManagerWithCurrentUser(
+            mockk<UserAccount>(relaxed = true)
+        )
         val mockLoginActivity = mockk<LoginActivity>(relaxed = true)
 
         // Act
-        val devActions = SalesforceSDKManager.getInstance().getDevActions(mockLoginActivity)
+        val devActions = salesforceSdkManager.getDevActions(mockLoginActivity)
 
         // Assert
         assertEquals(2, devActions.size)
@@ -428,6 +641,24 @@ class SalesforceSDKManagerTests {
         assertFalse(devActions.containsKey("Switch User"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
+    }
+
+    @Test
+    fun getDevActions_ExcludesLogoutAndSwitchUser_WhenNoCurrentUser() {
+        // Arrange: no signed-in user (cachedCurrentUser == null), so Logout/Switch User
+        // are excluded even on a non-Login activity.
+        val salesforceSdkManager = createTestSalesforceSDKManagerWithCurrentUser(null)
+        val mockActivity = mockk<Activity>(relaxed = true)
+
+        // Act
+        val devActions = salesforceSdkManager.getDevActions(mockActivity)
+
+        // Assert
+        assertEquals(2, devActions.size)
+        assertTrue(devActions.containsKey("Show dev info"))
+        assertTrue(devActions.containsKey("Login Options"))
+        assertFalse(devActions.containsKey("Logout"))
+        assertFalse(devActions.containsKey("Switch User"))
     }
 
     @Test
@@ -650,6 +881,43 @@ class SalesforceSDKManagerTests {
         )
 
     /**
+     * Builds an [HttpAccess] mock whose My Domain auth-config response advertises the provided
+     * `UseAndroidNativeBrowserForAuthentication` and `shareBrowserSessionAndroid` values.  This
+     * mirrors the default mock wiring in [setup] but lets a test vary the auth-config body so the
+     * force-advanced-authentication decision can be exercised against opt-in / opt-out servers.
+     */
+    private fun buildHttpAccessReturning(
+        useNativeBrowser: Boolean,
+        shareBrowserSession: Boolean,
+    ): HttpAccess {
+        val bodyJson =
+            "{\"MobileSDK\":{\"UseAndroidNativeBrowserForAuthentication\":$useNativeBrowser,\"shareBrowserSessionAndroid\":$shareBrowserSession}}"
+
+        val responseBody = mockk<ResponseBody>().apply {
+            every { contentType() } returns "application/json;charset=UTF-8".toMediaType()
+            every { bytes() } returns bodyJson.toByteArray()
+        }
+
+        val response = mockk<Response>().apply {
+            every { isSuccessful } returns true
+            every { body } returns responseBody
+            every { close() } just runs
+        }
+
+        val call = mockk<Call>().apply {
+            every { execute() } returns response
+        }
+
+        val okHttpClient = mockk<OkHttpClient>().apply {
+            every { newCall(any()) } returns call
+        }
+
+        return mockk<HttpAccess>().apply {
+            every { getOkHttpClient() } returns okHttpClient
+        }
+    }
+
+    /**
      * Helper to create a test [SalesforceSDKManager] instance with optional
      * [googleCloudProjectId] for app attestation tests.
      */
@@ -671,6 +939,26 @@ class SalesforceSDKManagerTests {
     }
 
     /**
+     * Builds a test [SalesforceSDKManager] whose [UserAccountManager.getCachedCurrentUser]
+     * returns [currentUser] (which may be null).  This lets dev-menu tests control the
+     * signed-in state deterministically instead of depending on the accounts present on
+     * the test device.
+     */
+    private fun createTestSalesforceSDKManagerWithCurrentUser(
+        currentUser: UserAccount?
+    ): SalesforceSDKManager {
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true).apply {
+            every { cachedCurrentUser } returns currentUser
+        }
+        return TestSalesforceSDKManagerWithAttestation(
+            context = getInstrumentation().targetContext,
+            mainActivity = LoginActivity::class.java,
+            loginActivity = LoginActivity::class.java,
+            testUserAccountManager = userAccountManager,
+        )
+    }
+
+    /**
      * A minimal subclass of [SalesforceSDKManager] that exposes the protected
      * primary constructor so that tests can supply a [googleCloudProjectId].
      *
@@ -683,6 +971,7 @@ class SalesforceSDKManagerTests {
         loginActivity: Class<out Activity>? = null,
         googleCloudProjectId: Long? = null,
         private val testLoginServer: LoginServer? = null,
+        private val testUserAccountManager: UserAccountManager? = null,
     ) : SalesforceSDKManager(context, mainActivity, loginActivity, null, googleCloudProjectId) {
 
         /**
@@ -701,6 +990,16 @@ class SalesforceSDKManagerTests {
                 // No-op for reset() to avoid SharedPreferences access
                 every { reset() } just runs
             }
+        }
+
+        /**
+         * Override to provide a test-supplied UserAccountManager so tests can control
+         * the cached current user deterministically, instead of depending on whatever
+         * Salesforce account happens to be present on the device.  Falls back to the
+         * default (device-backed) manager when no test instance is supplied.
+         */
+        override val userAccountManager: UserAccountManager by lazy {
+            testUserAccountManager ?: super.userAccountManager
         }
     }
 

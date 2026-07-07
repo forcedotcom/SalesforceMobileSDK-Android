@@ -158,6 +158,7 @@ import java.util.UUID.randomUUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
+import kotlin.time.Duration.Companion.milliseconds
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
@@ -494,6 +495,25 @@ open class SalesforceSDKManager protected constructor(
     @get:JvmName("shouldUseHybridAuthentication")
     @set:Synchronized
     var useHybridAuthentication = true
+
+    // Backing field for [forceAdvancedAuthentication].  The SDK reads this directly so its own
+    // internal use of the flag doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _forceAdvancedAuthentication = true
+
+    /**
+     * Forces advanced (browser based) authentication to always be used for login, regardless of
+     * the target server's auth configuration, including standard login servers with no My Domain.
+     * Defaults to true.
+     */
+    @Deprecated("Will be removed in 15.0 when WebView login is removed entirely.")
+    @get:JvmName("shouldForceAdvancedAuthentication")
+    @set:Synchronized
+    var forceAdvancedAuthentication: Boolean
+        get() = _forceAdvancedAuthentication
+        set(value) {
+            _forceAdvancedAuthentication = value
+        }
 
     // Used to ensure the webview is reloaded when Dev Menu Login Options are changed.
     internal var loginDevMenuReload = false
@@ -1572,6 +1592,7 @@ open class SalesforceSDKManager protected constructor(
             "User Agent", userAgent,
             "Use Web Server Authentication", "$useWebServerAuthentication",
             "Use Hybrid Authentication Token", "$useHybridAuthentication",
+            "Force Advanced Authentication", "$_forceAdvancedAuthentication",
             "Browser Login Enabled", "$isBrowserLoginEnabled",
             "IDP Enabled", "$isIDPLoginFlowEnabled",
             "Identity Provider", "$isIdentityProvider",
@@ -1606,6 +1627,7 @@ open class SalesforceSDKManager protected constructor(
 //                "Use Web Server Authentication" to "$useWebServerAuthentication",
 //                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
 //                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
+//                "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
 //                "Browser Login Enabled" to "$isBrowserLoginEnabled",
 //                "IDP Enabled" to "$isIDPLoginFlowEnabled",
 //                "Identity Provider" to "$isIdentityProvider",
@@ -2156,28 +2178,42 @@ open class SalesforceSDKManager protected constructor(
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
-        withTimeoutOrNull(5000L) {
+        withTimeoutOrNull(5000L.milliseconds) {
             val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
-            if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
-                setBrowserLoginEnabled(
-                    browserLoginEnabled = false,
-                    shareBrowserSessionEnabled = false
-                )
+            val isStandardLoginServer = loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL
+            val isInvalidServer = !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
 
-                // Disable Salesforce App Attestation for login servers that are not My Domain servers.
-                appAttestationClient?.apiHostName = null
+            when {
+                loginServer == WELCOME_LOGIN_URL || isInvalidServer -> {
+                    // The Welcome Discovery host and malformed servers are never forced into advanced authentication
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = false,
+                        shareBrowserSessionEnabled = false
+                    )
 
-                return@withTimeoutOrNull
-            }
+                    // Disable Salesforce App Attestation for login servers that are not My Domain servers.
+                    appAttestationClient?.apiHostName = null
+                }
+                isStandardLoginServer -> {
+                    // Standard login servers have no auth-config to source a shared-session value from, so
+                    // browser login is gated solely on the force flag and shared session stays false.
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = _forceAdvancedAuthentication,
+                        shareBrowserSessionEnabled = false
+                    )
 
-            getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
-                setBrowserLoginEnabled(
-                    browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
-                    shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
-                )
+                    // Disable Salesforce App Attestation for login servers that are not My Domain servers.
+                    appAttestationClient?.apiHostName = null
+                }
+                else -> getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = _forceAdvancedAuthentication || (authConfig?.isBrowserLoginEnabled ?: false),
+                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                    )
 
-                // Consider enabling Salesforce App Attestation for login servers that are My Domain servers.
-                appAttestationClient?.apiHostName = loginServer.toUri().host
+                    // Consider enabling Salesforce App Attestation for login servers that are My Domain servers.
+                    appAttestationClient?.apiHostName = loginServer.toUri().host
+                }
             }
         }
 

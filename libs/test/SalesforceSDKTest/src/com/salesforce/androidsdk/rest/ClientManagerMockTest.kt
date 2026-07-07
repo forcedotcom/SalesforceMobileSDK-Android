@@ -81,7 +81,7 @@ class ClientManagerMockTest {
                 logout(any(), any(), any(), any())
             } returns Unit
             every { registerUsedAppFeature(any()) } returns true
-            every { registerUsedAppFeature(any(), any()) } returns true
+            every { registerUsedAppFeature(any(), any()) } just runs
             every { unregisterUsedAppFeature(any()) } returns true
             every { userAccountManager } returns mockUserAccountManager
             every { deviceId } returns "test-device-id-123"

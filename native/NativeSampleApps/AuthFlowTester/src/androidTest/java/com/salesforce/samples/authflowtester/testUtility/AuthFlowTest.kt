@@ -31,7 +31,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -41,8 +40,8 @@ import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
-import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
+import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
@@ -87,14 +86,14 @@ abstract class AuthFlowTest {
     val user: KnownUserConfig by lazy {
         val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
             .applicationInfo.minSdkVersion
-        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.values().count()
-        KnownUserConfig.values()[userNumber]
+        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
+        KnownUserConfig.entries[userNumber]
     }
 
     // For MultiUser tests
     val otherUser: KnownUserConfig by lazy {
-        val userNumber = (user.ordinal + 1) % KnownUserConfig.values().count()
-        KnownUserConfig.values()[userNumber]
+        val userNumber = (user.ordinal + 1) % KnownUserConfig.entries.toTypedArray().count()
+        KnownUserConfig.entries[userNumber]
     }
 
     @After
@@ -107,27 +106,108 @@ abstract class AuthFlowTest {
                     showLoginPage = false,
                 )
             }
+
+            // Restore the mutable SDK auth options to their defaults.
+            forceAdvancedAuthentication = true
+            useWebServerAuthentication = true
+            useHybridAuthentication = true
+
+            // Reset the selected login server back to REGULAR_AUTH.
+            val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
+            loginServerManager.getLoginServerFromURL(regularAuthUrl)?.let { regularAuthServer ->
+                loginServerManager.setSelectedLoginServer(regularAuthServer)
+            }
         }
     }
 
     /**
-     * Ensures we're on REGULAR_AUTH server before opening Login Options.
-     * Server selection is "sticky" so previous test might have left it on ADVANCED_AUTH.
+     * Sets the mutable [SalesforceSDKManager] options that select the login surface.
+     *
+     * Disabling forced advanced authentication is how the User Agent Flow tests reach the in-app
+     * WebView: it is the pre-14.0 behavior the flag now defaults away from.  Both the force flag
+     * and the derived [SalesforceSDKManager.isBrowserLoginEnabled] cache are written because the
+     * latter is only recomputed on a real server change (via `fetchAuthenticationConfiguration`),
+     * not on a same-server WebView reload — see [ensureRegularAuthServer].  [cleanup] restores the
+     * defaults so this never leaks into the forced-advanced-auth majority of tests.
      */
-    private fun ensureRegularAuthServer() {
-        // Close any Chrome Custom Tab that might be open from previous test
-        val chromeTab = ChromeCustomTabPageObject(composeTestRule)
-        if (chromeTab.tapCloseButton()) {
-            Thread.sleep(500)  // Wait for Chrome tab to close
+    private fun setForcedAdvancedAuthEnabled(enabled: Boolean) {
+        with(SalesforceSDKManager.getInstance()) {
+            forceAdvancedAuthentication = enabled
+            isBrowserLoginEnabled = enabled
         }
+    }
 
-        // Switch back to REGULAR_AUTH using LoginServerManager
+    /**
+     * Ensures we're on the REGULAR_AUTH server before driving the login flow.
+     * Server selection is "sticky" so a previous test might have left it on ADVANCED_AUTH.
+     *
+     * The LoginActivity always launches with the default `forceAdvancedAuthentication = true`, so
+     * it auto-launches a Custom Tab over itself.  When we are already on REGULAR_AUTH and
+     * want the Custom Tab, that auto-launched tab is exactly the surface we want and we leave it
+     * untouched.
+     *
+     * We only back out (and dismiss the resulting server picker) when we actually need to change
+     * something: switch off a sticky ADVANCED_AUTH selection, or turn off forced advanced
+     * authentication for the User Agent Flow so the surface reloads as the in-app WebView.  Backing
+     * out also guarantees the launch-time auth-config fetch has completed — the tab only appears
+     * once it resolves — so the browser-login state has settled and can be safely overridden below
+     * without an in-flight fetch clobbering it.
+     *
+     * @param expectCustomTab True for the default forced-advanced-auth (Custom Tab) flows; when a
+     * server switch is needed the REGULAR_AUTH re-selection re-launches the tab and we wait for it.
+     * False for the User Agent Flow cases, which disable forced advanced authentication so the
+     * re-selection loads the in-app WebView instead.
+     */
+    private fun ensureRegularAuthServer(expectCustomTab: Boolean) {
+        val chromePage = ChromeCustomTabPageObject(composeTestRule)
         val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
         val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        val alreadyOnRegularAuth =
+            loginServerManager.selectedLoginServer?.url?.trim() == regularAuthUrl.trim()
+
+        if (expectCustomTab && alreadyOnRegularAuth) {
+            // Majority path: forced advanced authentication auto-launched the Custom Tab on the
+            // already-selected REGULAR_AUTH server, so it is exactly the surface we want.  Leave it
+            // in front and let the caller complete login in it; only make sure it has finished
+            // launching (the launch is async, gated on the auth-config fetch) before returning.
+            chromePage.waitForCustomTab()
+            return
+        }
+
+        // We need to change the server and/or the login surface.  Resume the LoginActivity by
+        // backing out of the auto-launched Custom Tab first.
+        chromePage.backOutToLoginActivity()
+
+        if (!expectCustomTab) {
+            // User Agent Flow requires the in-app WebView, which is only used when browser (Custom
+            // Tab) login is disabled.  Turn off forced advanced authentication so the re-selection
+            // below recomputes browser login as disabled, and clear the cached flag directly so a
+            // same-server re-selection (which only reloads the WebView without re-running the
+            // auth-config fetch) also sees it disabled.  Safe here because the back-out above proves
+            // the launch-time fetch has settled.  See LoginViewModel.useWebServerFlow / the
+            // browserCustomTab launch gate.
+            setForcedAdvancedAuthEnabled(false)
+        }
+
+        // Switch to REGULAR_AUTH using LoginServerManager. With the activity resumed this fires the
+        // pending-server observers.  A real server change re-runs the auth-config fetch; a
+        // same-server re-selection (the flag-off case, already on REGULAR_AUTH) just reloads the
+        // login surface — now as the in-app WebView.
         val regularAuthServer = loginServerManager.getLoginServerFromURL(regularAuthUrl)
         if (regularAuthServer != null) {
             loginServerManager.setSelectedLoginServer(regularAuthServer)
-            Thread.sleep(500)  // Wait for server change to take effect
+
+            if (expectCustomTab) {
+                // Reaching here means the server actually changed (a sticky ADVANCED_AUTH
+                // selection).  The re-launch is asynchronous: the SDK first runs an auth-config
+                // network fetch (bounded by a multi-second timeout) and only then generates the
+                // OAuth URL and launches the Custom Tab. Wait for that tab to actually appear rather
+                // than sleeping a fixed interval, so the harness is settled on the REGULAR_AUTH tab
+                // before the caller's next step. (No-op if no tab launches within the window.)
+                chromePage.waitForCustomTab()
+            }
+            // For the WebView path there is nothing to wait for: the WebView page-object actions
+            // retry internally until the reloaded login form is ready.
         }
     }
 
@@ -141,12 +221,21 @@ abstract class AuthFlowTest {
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
     ) {
-        val loginPage = when(knownLoginHostConfig) {
-            REGULAR_AUTH -> LoginPageObject(composeTestRule)
-            ADVANCED_AUTH -> ChromeCustomTabPageObject(composeTestRule)
-        }
+        // Under the default forced advanced authentication (useWebServerFlow = true) every login
+        // completes in a Custom Tab: a ChromeCustomTabPageObject serves both roles — its
+        // inherited Compose actions (openLoginOptions/changeServer) drive the LoginActivity top bar
+        // after backing out of the tab, and its overridden credential actions drive the tab itself.
+        //
+        // The User Agent Flow (useWebServerFlow = false) cannot run through the Custom Tab — browser
+        // login forces Web Server Flow/PKCE — so those cases disable forced advanced authentication
+        // (see [ensureRegularAuthServer]) and drive the in-app WebView via the base LoginPageObject
+        // instead.  Its backOutToLoginActivity() is a no-op, so the shared flow below is safe either
+        // way.
+        val loginPage: LoginPageObject =
+            if (useWebServerFlow) ChromeCustomTabPageObject(composeTestRule)
+            else LoginPageObject(composeTestRule)
 
-        ensureRegularAuthServer()
+        ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
 
         val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken ||
                 knownAppConfig != CA_OPAQUE || scopeSelection != EMPTY ||
@@ -154,6 +243,10 @@ abstract class AuthFlowTest {
 
         if (needsLoginOptions) {
 
+            // Reach Login Options via the top bar.  For the Custom Tab flow the auto-launched tab
+            // covers the top bar, so back out first; for the WebView flow this is a no-op (the top
+            // bar is already in front).
+            loginPage.backOutToLoginActivity()
             loginPage.openLoginOptions()
 
             if (!useWebServerFlow) {
@@ -177,12 +270,15 @@ abstract class AuthFlowTest {
             }
 
             if (knownAppConfig == CA_OPAQUE && scopeSelection == EMPTY) {
-                // No boot config override needed; nothing to save in that section.
-                Espresso.pressBack()
+                // No boot config override needed; nothing to save in that section, so dismiss with a
+                // system back press (which finishes the activity just like the Save button would).
+                loginOptions.dismiss()
             } else {
                 // setOverrideBootConfig taps Save which calls activity.finish().
                 loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection)
             }
+            // Dismissing Login Options re-arms the dev-menu reload (loginDevMenuReload), so the
+            // SDK regenerates the OAuth URL and re-launches the Custom Tab on LoginActivity.onResume.
         }
 
         if (useWelcomeDiscovery) {
@@ -192,26 +288,24 @@ abstract class AuthFlowTest {
             // simulated host with the simulated login_hint.  We then complete login with
             // the standard flow (which retypes the username; the pre-fill is exercised
             // server-side via the OAuth login_hint parameter).
-            val webViewLoginPage = LoginPageObject(composeTestRule)
-            webViewLoginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
-
-            // The simulated host determines the surface: regular_auth -> in-app WebView,
-            // advanced_auth -> Chrome Custom Tab.  In both cases the OAuth login_hint
-            // already pre-filled the username; only the password step remains.
-            val welcomeLoginPage: LoginPageObject = when (knownLoginHostConfig) {
-                REGULAR_AUTH -> webViewLoginPage
-                ADVANCED_AUTH -> {
-                    val chrome = ChromeCustomTabPageObject(composeTestRule)
-                    chrome.skipGoogleSignIn()
-                    chrome
-                }
-            }
-            welcomeLoginPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
+            //
+            // Changing the server is a top-bar action, so back out of the (re-launched) Custom
+            // Tab first.  Forced advanced authentication then drives the simulated My Domain into
+            // the Custom Tab for both hosts, where only the password step remains.
+            loginPage.backOutToLoginActivity()
+            loginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
+            loginPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
         } else {
             if (knownLoginHostConfig != REGULAR_AUTH) {
+                // A non-regular host only occurs on the forced-advanced-auth (Custom Tab) path;
+                // switching servers is a top-bar action, so back out of the tab first.  Selecting
+                // the new server re-launches the Custom Tab on that host.
+                loginPage.backOutToLoginActivity()
                 loginPage.changeServer(knownLoginHostConfig)
             }
 
+            // Credentials are entered on the surface now in front: the Custom Tab for the
+            // forced-advanced-auth flow, or the in-app WebView for the User Agent Flow.
             loginPage.login(knownLoginHostConfig, knownUserConfig)
         }
         app.waitForAppLoad()
@@ -314,24 +408,46 @@ abstract class AuthFlowTest {
     }
 
     /**
-     * Exercises the "Login for Admins" flow: starts on the REGULAR_AUTH server (in-app
-     * WebView), opens the overflow menu, taps "Login for Admins" to launch a Chrome
-     * Custom Tab, completes login in Chrome, and validates the resulting user/tokens.
+     * Exercises the "Login for Admins" flow: starts on the REGULAR_AUTH server, opens the
+     * overflow menu, taps "Login for Admins" to launch a Chrome Custom Tab, completes login in
+     * Chrome, and validates the resulting user/tokens.
+     *
+     * "Login for Admins" always hands off to a Custom Tab built from the cached
+     * [com.salesforce.androidsdk.ui.LoginViewModel.browserCustomTabUrl], which is always the Web
+     * Server Flow/PKCE URL regardless of `useWebServerFlow` — that is the point of the feature: an
+     * org can require a browser-based admin sign-in even when the app itself uses the in-app WebView.
+     *
+     * @param useWebServerFlow True (default) exercises the forced-advanced-auth login surface: the
+     * LoginActivity auto-launches a Custom Tab, so each top-bar action (Login Options, then Login
+     * for Admins) is preceded by a back-out — which `clearWebView` performs while preserving the
+     * cached admin tab URL.  False disables forced advanced authentication so the base login uses
+     * the in-app WebView (with Web Server Flow off); the admin hand-off still launches its Custom
+     * Tab.  The back-outs are no-ops on the WebView path, so both share one code path.
      */
     fun adminLoginAndValidate(useWebServerFlow: Boolean = true) {
-        val loginPage = LoginPageObject(composeTestRule)
+        // The top-bar surface (Login Options / Login for Admins menu) is the Custom Tab for the
+        // default forced-advanced-auth flow, or the in-app WebView when it is disabled.  The admin
+        // hand-off always completes in a Custom Tab.
+        val topBarPage: LoginPageObject =
+            if (useWebServerFlow) ChromeCustomTabPageObject(composeTestRule)
+            else LoginPageObject(composeTestRule)
         val chromePage = ChromeCustomTabPageObject(composeTestRule)
 
-        ensureRegularAuthServer()
+        ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
 
-        loginPage.openLoginOptions()
+        // Reach Login Options via the top bar (back-out is a no-op on the WebView path).
+        topBarPage.backOutToLoginActivity()
+        topBarPage.openLoginOptions()
         if (!useWebServerFlow) {
             loginOptions.disableWebServerFlow()
         }
         loginOptions.setOverrideBootConfig(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
 
-        // Launch the admin custom tab from the WebView login view.
-        loginPage.tapLoginForAdminsMenuItem()
+        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path;
+        // back out again to reach the overflow menu (no-op on the WebView path), then launch the
+        // dedicated admin custom tab.
+        topBarPage.backOutToLoginActivity()
+        topBarPage.tapLoginForAdminsMenuItem()
 
         // Complete login in Chrome. User credentials are the REGULAR_AUTH server's users
         // since that is the selected login host; the admin flow just swaps the surface
@@ -356,14 +472,18 @@ abstract class AuthFlowTest {
      * Opens Login Options, applies the supplied dynamic boot-config override
      * (arbitrary consumer key, redirect URI, scopes), submits credentials, and
      * expects login to fail. Asserts that no new authenticated user account
-     * was created and the LoginActivity remains in front.
+     * was created and the login flow (Custom Tab) remains in front.
+     *
+     * Under forced advanced authentication credentials are entered in the
+     * Chrome Custom Tab. On failure the OAuth flow never redirects to the
+     * callback URL, so the tab stays in front (showing either the OAuth error
+     * page or the still-unsubmitted login form) and no user is created.
      *
      * Uses bounded polling to confirm the failure: at any point during the
      * wait, if a new user account appears or the AuthFlowTester app loads,
      * the test fails immediately (login should not have succeeded). The
-     * polling window terminates once the LoginActivity remains visible
-     * without a user being created — the steady-state we expect after the
-     * SDK's reloadWebView call.
+     * polling window terminates once the Custom Tab remains in front without a
+     * user being created — the steady-state we expect for a rejected login.
      */
     fun loginAndExpectFailure(
         consumerKey: String,
@@ -371,20 +491,24 @@ abstract class AuthFlowTest {
         scopes: String? = null,
         knownUserConfig: KnownUserConfig = user,
     ) {
-        val loginPage = LoginPageObject(composeTestRule)
-        ensureRegularAuthServer()
+        val loginPage = ChromeCustomTabPageObject(composeTestRule)
+        ensureRegularAuthServer(expectCustomTab = true)
 
         val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
         val initialUserCount = userAccountManager.authenticatedUsers?.size ?: 0
 
+        // Back out of the auto-launched Custom Tab to reach Login Options, apply the override,
+        // then let the Custom Tab re-launch with the new dynamic config.
+        loginPage.backOutToLoginActivity()
         loginPage.openLoginOptions()
         loginOptions.setOverrideBootConfigRaw(consumerKey, redirectUri, scopes)
 
-        // Submit credentials. Some failure modes (e.g. invalid consumer key)
-        // cause the OAuth /authorize endpoint to render an error page rather
-        // than the username form, in which case the WebView never exposes
-        // the username/password elements and the page-object actions throw.
-        // That is itself a successful failure: the user could not log in.
+        // Submit credentials in the Custom Tab. Some failure modes (e.g. invalid consumer key)
+        // cause the OAuth /authorize endpoint to render an error page rather than the username
+        // form, in which case the tab never exposes the username/password fields and the
+        // page-object actions throw. That is itself a successful failure: the user could not
+        // log in.
+        loginPage.skipGoogleSignIn()
         val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
         try {
             loginPage.setUsername(username)
@@ -392,11 +516,11 @@ abstract class AuthFlowTest {
             loginPage.setPassword(password)
             loginPage.tapLogin()
         } catch (e: AssertionError) {
-            // Verify the failure was due to a missing login form, not a
-            // different test-infrastructure issue. The LoginActivity must
-            // still be in front (otherwise we crashed somewhere unexpected).
-            assert(loginPage.isLoginScreenVisible()) {
-                "WebView page-object action threw outside the LoginActivity: ${e.message}"
+            // Verify the failure was due to a missing login form, not a different
+            // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
+            // crashed somewhere unexpected).
+            assert(loginPage.isCustomTabDisplayed()) {
+                "Custom Tab page-object action threw without the Custom Tab in front: ${e.message}"
             }
         }
 
@@ -413,9 +537,9 @@ abstract class AuthFlowTest {
             Thread.sleep(POLL_INTERVAL_MS)
         }
 
-        // After the polling window, confirm we are still on the login screen.
-        assert(loginPage.isLoginScreenVisible()) {
-            "Expected to remain on the login screen after a failed login"
+        // After the polling window, confirm we are still in the login flow (Custom Tab).
+        assert(loginPage.isCustomTabDisplayed()) {
+            "Expected to remain in the login flow (Custom Tab) after a failed login"
         }
     }
 

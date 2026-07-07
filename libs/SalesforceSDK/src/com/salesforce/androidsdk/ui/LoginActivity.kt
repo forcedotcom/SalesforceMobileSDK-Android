@@ -127,8 +127,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
-import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
-import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR
+import com.salesforce.androidsdk.auth.OAuthErrorCode
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
@@ -615,10 +614,10 @@ open class LoginActivity : FragmentActivity() {
 
         viewModel.clearCookies()
         val isClientBlocked = e is OAuthFailedException
-            && (e.tokenErrorResponse.error == CLIENT_BLOCKED_ERROR
-                || e.tokenErrorResponse.error == CLIENT_BLOCKED_RETRY_ERROR)
+            && (e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
+                || e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY)
         val isLightningTokenEndpointFailure = e is OAuthFailedException
-            && e.tokenErrorResponse.error == "unsupported_grant_type"
+            && e.tokenErrorResponse.errorCode == OAuthErrorCode.UNSUPPORTED_GRANT_TYPE
             && viewModel.selectedServer.value?.contains(".lightning.") == true
         if (isLightningTokenEndpointFailure) {
             w(TAG, "Code exchange failed with unsupported_grant_type against Lightning URL: ${viewModel.selectedServer.value}. Lightning URLs do not support authorization_code grant type. Use a My Domain login server URL instead.")

@@ -52,6 +52,46 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!-- Intent filter for advanced authentication with CA Opaque app -->
+            <intent-filter>
+                <data android:scheme="caadvancedopaque"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Intent filter for advanced authentication with CA JWT app -->
+            <intent-filter>
+                <data android:scheme="caadvancedjwt"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Intent filter for advanced authentication with ECA Opaque app -->
+            <intent-filter>
+                <data android:scheme="ecaadvancedopaque"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Intent filter for advanced authentication with ECA JWT app -->
+            <intent-filter>
+                <data android:scheme="ecaadvancedjwt"
+                    android:host="success"
+                    android:path="/done" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
