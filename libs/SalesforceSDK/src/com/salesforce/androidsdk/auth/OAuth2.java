@@ -107,12 +107,6 @@ public class OAuth2 {
     public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
 
-    /** Token endpoint error: device/app permanently blocked by attestation. Triggers logout. */
-    public static final String CLIENT_BLOCKED_ERROR = "client_blocked";
-
-    /** Token endpoint error: attestation could not be verified but may succeed on retry. Does not trigger logout. */
-    public static final String CLIENT_BLOCKED_RETRY_ERROR = "client_blocked_retry";
-
     /**
      *  OAuth 2.0 authorization endpoint request body parameter names:
      *  Salesforce App Attestation External Client App Attestation
@@ -894,6 +888,7 @@ public class OAuth2 {
 
         public String error;
         public String errorDescription;
+        public OAuthErrorCode errorCode;
 
         /**
          * Parameterized constructor built from an error response.
@@ -905,8 +900,10 @@ public class OAuth2 {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse.getString(ERROR_DESCRIPTION);
+                errorCode = OAuthErrorCode.from(error);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token error response", e);
+                errorCode = OAuthErrorCode.UNKNOWN;
             }
         }
 

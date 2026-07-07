@@ -35,8 +35,6 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_ERROR
-import com.salesforce.androidsdk.auth.OAuth2.CLIENT_BLOCKED_RETRY_ERROR
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TIMESTAMP_FORMAT
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -811,7 +809,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
-        tokenErrorResponse.error = CLIENT_BLOCKED_ERROR
+        tokenErrorResponse.error = "client_blocked"
         tokenErrorResponse.errorDescription = "App is blocked"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
         setupExchangeCodeMock(oauthException)
@@ -830,7 +828,7 @@ class LoginViewModelMockTest {
         val spyViewModel = spyk(viewModel)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
-        tokenErrorResponse.error = CLIENT_BLOCKED_RETRY_ERROR
+        tokenErrorResponse.error = "client_blocked_retry"
         tokenErrorResponse.errorDescription = "App is blocked (retry)"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
         setupExchangeCodeMock(oauthException)
