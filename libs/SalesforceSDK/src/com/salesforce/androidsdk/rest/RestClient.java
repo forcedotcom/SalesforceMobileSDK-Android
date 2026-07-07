@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder;
 import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
@@ -919,12 +920,14 @@ public class RestClient {
             if (credentialsIdentifier == null || credentialsIdentifier.isEmpty()) return;
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(url);
+                final String host = HttpUrl.get(url).host();
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final java.security.KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof(method, htu, keyPair, null, authToken);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof(method, htu, keyPair, nonce, authToken);
                 builder.header(DPOP, proof);
             } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header in interceptor, proceeding without it", e);
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof", e);
             }
         }
 

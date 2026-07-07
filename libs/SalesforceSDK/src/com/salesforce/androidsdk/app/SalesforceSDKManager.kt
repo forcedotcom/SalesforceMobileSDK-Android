@@ -96,6 +96,7 @@ import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
@@ -1259,6 +1260,7 @@ open class SalesforceSDKManager protected constructor(
         userAccount?.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
             runCatching {
                 DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                DPoPNonceCache.clear(id)
             }.onFailure { e ->
                 w(TAG, "Failed to delete DPoP key pair on logout", e)
             }

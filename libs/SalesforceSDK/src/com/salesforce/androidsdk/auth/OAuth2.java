@@ -37,6 +37,7 @@ import androidx.annotation.WorkerThread;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder;
 import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import okhttp3.FormBody;
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -617,18 +619,53 @@ public class OAuth2 {
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken, tokenType);
+        final String identityHost = HttpUrl.get(identityServiceIdUrl).host();
         if (DPOP.equals(tokenType) && credentialsIdentifier != null && SalesforceSDKManager.getInstance().isUseDPoP()) {
-            // Fail-closed: a DPoP-bound identity request without a proof header will be rejected
-            // by the server regardless, so surface the error rather than sending an unusable request.
-            // This matches iOS SFIdentityCoordinator behaviour (commit 97a62410a).
-            final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
-            final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-            final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-            final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, null, authToken);
-            builder.header(DPOP, proof);
+            try {
+                // Fail-closed: a DPoP-bound identity request without a proof header will be rejected
+                // by the server regardless, so surface the error rather than sending an unusable request.
+                // This matches iOS SFIdentityCoordinator behaviour (commit 97a62410a).
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, identityHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
+                builder.header(DPOP, proof);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
+            }
         }
         final Request request = builder.build();
-        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+
+        // Harvest nonce from every response.
+        if (DPOP.equals(tokenType) && credentialsIdentifier != null && SalesforceSDKManager.getInstance().isUseDPoP()) {
+            final String responseNonce = response.header("DPoP-Nonce");
+            if (!TextUtils.isEmpty(responseNonce)) {
+                DPoPNonceCache.INSTANCE.store(credentialsIdentifier, identityHost, responseNonce);
+            }
+        }
+
+        // Nonce challenge: server requires a nonce. Retry once (fail-closed on second failure).
+        if (DPOP.equals(tokenType) && credentialsIdentifier != null
+                && SalesforceSDKManager.getInstance().isUseDPoP()
+                && isNonceChallenge(response)) {
+            response.close();
+            try {
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, identityHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
+                final Request.Builder retryBuilder = new Request.Builder().url(identityServiceIdUrl).get();
+                addAuthorizationHeader(retryBuilder, authToken, tokenType);
+                retryBuilder.header(DPOP, proof);
+                response = httpAccessor.getOkHttpClient().newCall(retryBuilder.build()).execute();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header on nonce retry", e);
+            }
+        }
+
         return new IdServiceResponse(response);
     }
 
@@ -692,6 +729,7 @@ public class OAuth2 {
         }
 
         final String refreshPath = sb.toString();
+        final String tokenHost = HttpUrl.get(refreshPath).host();
         final RequestBody body = formBodyBuilder.build();
         final Request.Builder requestBuilder = new Request.Builder().url(refreshPath).post(body);
 
@@ -700,7 +738,8 @@ public class OAuth2 {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, null, null);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
                 requestBuilder.header(DPOP, proof);
             } catch (Exception e) {
                 SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
@@ -708,13 +747,51 @@ public class OAuth2 {
         }
 
         final Request request = requestBuilder.build();
-        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+
+        // Harvest nonce from every response (proactive caching for next call).
+        if (credentialsIdentifier != null && salesforceSdkManager.isUseDPoP()) {
+            final String responseNonce = response.header("DPoP-Nonce");
+            if (!TextUtils.isEmpty(responseNonce)) {
+                DPoPNonceCache.INSTANCE.store(credentialsIdentifier, tokenHost, responseNonce);
+            }
+        }
+
+        // Nonce challenge: server requires a nonce. Retry once with the harvested nonce.
+        if (credentialsIdentifier != null && salesforceSdkManager.isUseDPoP()
+                && isNonceChallenge(response)) {
+            response.close();
+            try {
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
+                final Request retryRequest = request.newBuilder().header(DPOP, proof).build();
+                response = httpAccessor.getOkHttpClient().newCall(retryRequest).execute();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header on nonce retry", e);
+            }
+        }
+
         if (response.isSuccessful()) {
             final TokenEndpointResponse tokenResponse = new TokenEndpointResponse(response);
             tokenResponse.credentialsIdentifier = credentialsIdentifier;
             return tokenResponse;
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
+        }
+    }
+
+    private static boolean isNonceChallenge(Response response) {
+        final int code = response.code();
+        if (code != HttpURLConnection.HTTP_BAD_REQUEST && code != HttpURLConnection.HTTP_UNAUTHORIZED) {
+            return false;
+        }
+        try {
+            return response.peekBody(512).string().contains("use_dpop_nonce");
+        } catch (IOException e) {
+            return false;
         }
     }
 
