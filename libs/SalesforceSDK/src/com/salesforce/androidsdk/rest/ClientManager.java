@@ -657,14 +657,14 @@ public class ClientManager {
                     errorCode = OAuthErrorCode.UNKNOWN;
                 }
 
-                if (errorCode != OAuthErrorCode.CLIENT_BLOCKED_RETRY) {
+                if (errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY) {
                     // Terminal error (client_blocked, invalid_grant, malformed token, etc.) — logout.
                     if (clientManager.revokedTokenShouldLogout) {
                         if (Looper.myLooper() == null) {
                             Looper.prepare();
                         }
                         final boolean showLoginPage = accounts.length == 1;
-                        final LogoutReason reason = errorCode == OAuthErrorCode.CLIENT_BLOCKED
+                        final LogoutReason reason = errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
                                 ? CLIENT_BLOCKED
                                 : REFRESH_TOKEN_EXPIRED;
                         // Note: As of writing (2024) this call will never succeed because revoke API is an

@@ -614,8 +614,8 @@ open class LoginActivity : FragmentActivity() {
 
         viewModel.clearCookies()
         val isClientBlocked = e is OAuthFailedException
-            && (e.tokenErrorResponse.errorCode == OAuthErrorCode.CLIENT_BLOCKED
-                || e.tokenErrorResponse.errorCode == OAuthErrorCode.CLIENT_BLOCKED_RETRY)
+            && (e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
+                || e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY)
         val isLightningTokenEndpointFailure = e is OAuthFailedException
             && e.tokenErrorResponse.errorCode == OAuthErrorCode.UNSUPPORTED_GRANT_TYPE
             && viewModel.selectedServer.value?.contains(".lightning.") == true

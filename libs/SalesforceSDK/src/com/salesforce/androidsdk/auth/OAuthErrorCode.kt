@@ -38,8 +38,8 @@ enum class OAuthErrorCode(val error: String?) {
     APP_NOT_FOUND("app_not_found"),
     AUTHORIZATION_PENDING("authorization_pending"),
     BAD_JTI_CLAIM("bad_jti_claim"),
-    CLIENT_BLOCKED("client_blocked"),
-    CLIENT_BLOCKED_RETRY("client_blocked_retry"),
+    APP_ATTESTATION_FAILED("client_blocked"),
+    APP_ATTESTATION_FAILED_RETRY("client_blocked_retry"),
     ECAPP_POLICY_NOT_FOUND("ecapp_policy_not_found"),
     EXCEEDED_REGISTRATION_LIMIT("exceeded_registration_limit"),
     FAIL_CLOSE_APP_BLOCKED("fail_close_app_blocked"),
@@ -49,6 +49,7 @@ enum class OAuthErrorCode(val error: String?) {
     INVALID_APP_ACCESS("invalid_app_access"),
     INVALID_ASSERTION_TYPE("invalid_assertion_type"),
     INVALID_BASIC_AUTH_HEADER("invalid_basic_auth_header"),
+    INVALID_DPOP_PROOF("invalid_dpop_proof"),
     INVALID_CLIENT("invalid_client"),
     INVALID_CLIENT_ID("invalid_client_id"),
     INVALID_DISTRIBUTION_STATE("invalid_distribution_state"),
@@ -75,6 +76,7 @@ enum class OAuthErrorCode(val error: String?) {
     UNSUPPORTED_GRANT_TYPE("unsupported_grant_type"),
     UNSUPPORTED_RESPONSE_TYPE("unsupported_response_type"),
     UNSUPPORTED_TOKEN_TYPE("unsupported_token_type"),
+    USE_DPOP_NONCE("use_dpop_nonce"),
     UNKNOWN(null),
     ;
 
