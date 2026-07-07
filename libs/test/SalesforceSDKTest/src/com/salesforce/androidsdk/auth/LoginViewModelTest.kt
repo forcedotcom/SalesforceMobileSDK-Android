@@ -190,13 +190,25 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun browserCustomTabUrl_UsesWebServerFlow_EvenWhenUserAgentFlowIsActive() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
 
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        val originalBrowserLoginEnabled = sdkManager.isBrowserLoginEnabled
         try {
+            // This test validates the User Agent flow WebView modality, which only exists when
+            // advanced authentication is NOT forced.  With the force flag on (the default) browser
+            // login is enabled, so useWebServerFlow() would be true and the WebView itself would use
+            // the Web Server flow — leaving no "User Agent flow active" scenario to validate.  Pin
+            // both the flag and the browser-login gate off so the assertion is deterministic
+            // regardless of state left on the shared singleton by earlier tests.
+            sdkManager.forceAdvancedAuthentication = false
+            sdkManager.isBrowserLoginEnabled = false
             // Force User Agent flow for the WebView.
-            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+            sdkManager.useWebServerAuthentication = false
 
             viewModel.reloadWebView()
             testDispatcher.scheduler.advanceUntilIdle()
@@ -228,7 +240,48 @@ class LoginViewModelTest {
                 loginUrl!!.contains("response_type=code")
             )
         } finally {
+            sdkManager.useWebServerAuthentication = true
+            sdkManager.isBrowserLoginEnabled = originalBrowserLoginEnabled
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun browserCustomTabUrl_UsesWebServerFlow_WhenForceFlagOnAndWebServerAuthDisabled() {
+        viewModel.browserCustomTabUrl.observeForever { }
+        viewModel.loginUrl.observeForever { }
+
+        val originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        try {
+            // Security invariant: even when the force-advanced-authentication flag is on AND the
+            // app has opted out of the Web Server flow for the WebView, the browser custom tab
+            // (advanced authentication) must always use the Web Server flow (response_type=code +
+            // PKCE) and never the User Agent flow (response_type=token).
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+
+            viewModel.reloadWebView()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
+            assertNotNull("browserCustomTabUrl should always be generated", browserCustomTabUrl)
+
+            assertTrue(
+                "browserCustomTabUrl should use response_type=code. URL: $browserCustomTabUrl",
+                browserCustomTabUrl!!.contains("response_type=code")
+            )
+            assertTrue(
+                "browserCustomTabUrl should include a PKCE code_challenge. URL: $browserCustomTabUrl",
+                browserCustomTabUrl.contains("code_challenge=")
+            )
+            assertFalse(
+                "browserCustomTabUrl must never use the User Agent flow (response_type=token). URL: $browserCustomTabUrl",
+                browserCustomTabUrl.contains("response_type=token")
+            )
+        } finally {
             SalesforceSDKManager.getInstance().useWebServerAuthentication = true
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
 

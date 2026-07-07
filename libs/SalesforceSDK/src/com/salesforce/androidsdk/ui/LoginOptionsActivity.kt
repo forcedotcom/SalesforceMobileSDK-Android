@@ -96,7 +96,13 @@ class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
     val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
 
+    // This dev-menu toggle is the intended consumer of the deprecated force-advanced-auth flag, so
+    // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
+    @Suppress("DEPRECATION")
+    val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
+
     @OptIn(ExperimentalMaterial3Api::class)
+    @Suppress("DEPRECATION")
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,6 +122,13 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().useHybridAuthentication = value
             },
         )
+        forceAdvancedAuth.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                // onChanged lambda
+                value -> SalesforceSDKManager.getInstance().forceAdvancedAuthentication = value
+            },
+        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -133,6 +146,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         innerPadding,
                         useWebServer,
                         useHybridToken,
+                        forceAdvancedAuth,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
                 }
@@ -310,8 +324,10 @@ fun LoginOptionsScreen(
     innerPadding: PaddingValues,
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
+    forceAdvancedAuth: MutableLiveData<Boolean>,
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
+    sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
 ) {
     var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
 
@@ -330,6 +346,11 @@ fun LoginOptionsScreen(
             "Use Hybrid Auth Token",
             stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
             useHybridToken,
+        )
+        OptionToggle(
+            "Force Advanced Authentication",
+            stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+            forceAdvancedAuth,
         )
 
         HorizontalDivider()
@@ -385,8 +406,7 @@ fun LoginOptionsScreen(
         // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
         // the process as UI-testing (and only in debug builds, enforced by the setter).
         // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
-        val sdkManager = SalesforceSDKManager.getInstance()
-        if (sdkManager.isDebugBuild && sdkManager.isUiTesting) {
+        if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
             HorizontalDivider()
 
             var simulateDiscovery by remember {
@@ -548,10 +568,12 @@ fun LoginOptionsScreenPreview() {
         innerPadding = PaddingValues(0.dp),
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
+        forceAdvancedAuth = MutableLiveData(true),
         overrideConfig = null,
         bootConfig = object : BootConfig() {
             override fun getRemoteAccessConsumerKey() = consumerKey
             override fun getOauthRedirectURI() = redirect
         },
+        sdkManager = null,
     )
 }
