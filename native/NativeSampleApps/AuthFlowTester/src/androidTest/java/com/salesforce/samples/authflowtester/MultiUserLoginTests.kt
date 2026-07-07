@@ -359,6 +359,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             scopeSelection,
             useWebServerFlow,
             useHybridAuthToken,
+            useDPoP = false,
             knownLoginHostConfig,
             knownUserConfig = otherUser,
             isMultiUser = true,
