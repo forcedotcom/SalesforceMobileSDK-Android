@@ -47,8 +47,16 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset |
 | `testECAJwt_AllScopes` | ECA JWT | All |
 
+#### DPoPLoginTests
+Tests for ECA configurations with DPoP (Demonstrating Proof of Possession) enabled. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, and the access token refreshes correctly (without refresh token rotation for non-RTR apps). DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
+
+| Test | App Config | Hybrid |
+|------|-----------|--------|
+| `testECAJwtDPoP_Hybrid` | ECA JWT DPoP | Yes |
+| `testECAJwtDPoP_NoHybrid` | ECA JWT DPoP | No |
+
 #### RTRLoginTests
-Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps.
+Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. Includes DPoP+RTR tests that combine both features.
 
 | Test | App Config | Hybrid |
 |------|-----------|--------|
@@ -56,6 +64,8 @@ Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies
 | `testECAJwtRtr_NoHybrid` | ECA JWT RTR | No |
 | `testECAOpaqueRtr_Hybrid` | ECA Opaque RTR | Yes |
 | `testECAOpaqueRtr_NoHybrid` | ECA Opaque RTR | No |
+| `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes |
+| `testECAJwtDPoPRtr_NoHybrid` | ECA JWT DPoP RTR | No |
 
 #### BeaconLoginTests
 Beacon app login tests for lightweight authentication use cases, covering both opaque and JWT token formats.
@@ -111,6 +121,8 @@ Tests the SDK's refresh token migration flow, which exchanges tokens when an app
 | `testMigrateCA_To_ECA` | Migrate CA → ECA → CA (with rollback) |
 | `testMigrateCA_To_BeaconAndBack` | Migrate CA → Beacon → CA (with rollback) |
 | `testMigrateBeaconOpaque_To_JWTAndBack` | Migrate Beacon Opaque → JWT → Opaque (with rollback) |
+| `testMigrate_ECAJwtDPoP_AddMoreScopes` | Scope upgrade within the same ECA JWT DPoP app |
+| `testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr` | Migrate from ECA JWT DPoP to ECA JWT DPoP+RTR |
 
 #### MultiUserLoginTests
 End-to-end tests for multi-user scenarios: logging in two users, switching between them, and validating that each user's tokens and OAuth configuration are preserved independently.
@@ -125,6 +137,7 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testDifferentApps_differentScopes` | Two users on different apps with different scopes |
 | `testMultiUser_tokenMigration` | Migrate one user's tokens while the other remains unaffected |
 | `testMultiUser_tokenMigration_backgroundUser` | Migrate a background user's tokens; validate foreground user is unaffected and refresh works correctly post-switch |
+| `testECAJwtDPoP_MultiUser_UniqueTokens` | Two users on ECA JWT DPoP; validates unique DPoP-bound tokens and independent revoke+refresh per user |
 
 #### WelcomeLoginTests
 Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discovery Result Editor" to inject a simulated discovery result (login hint + My Domain), then drives the same code path the real callback URL would have produced.
@@ -135,7 +148,7 @@ Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discov
 | `testWelcomeDiscovery_AdvancedAuthLoginHost` | Advanced Auth | Beacon Opaque |
 
 #### LoginWithRestartTests
-Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested: BW (browser-based / advanced auth) and WD (welcome discovery).
+Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested: BW (browser-based / advanced auth) and WD (welcome discovery). The DPoP restart test additionally validates that the DPoP EC key pair stored in AndroidKeyStore survives a process kill.
 
 | Test | App Config | Scopes | Config Type | Feature Flag |
 |------|-----------|--------|-------------|--------------|
@@ -149,6 +162,7 @@ Tests that user sessions and per-user feature flags persist across a cold app re
 | `testAdvancedAuth_WithRestart` | Beacon Opaque | Default | Static | BW |
 | `testWelcomeDiscovery_WithRestart` | ECA Opaque | Default | Static | WD |
 | `testMultiUserRestart` | ECA Opaque + ECA JWT | Default | Mixed | — |
+| `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | Default | Dynamic | — |
 
 ### Validation Per Test
 
@@ -193,7 +207,7 @@ Restart tests additionally verify:
 
 ### Configuration
 
-- **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `ECA_OPAQUE_RTR`, `ECA_JWT_RTR`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
+- **App configs** (`KnownAppConfig`): `ECA_OPAQUE`, `ECA_JWT`, `ECA_OPAQUE_RTR`, `ECA_JWT_RTR`, `ECA_JWT_DPOP`, `ECA_JWT_DPOP_RTR`, `BEACON_OPAQUE`, `BEACON_JWT`, `CA_OPAQUE`, `CA_JWT`
 - **Login hosts** (`KnownLoginHostConfig`): `REGULAR_AUTH` (in-app WebView), `ADVANCED_AUTH` (Chrome Custom Tab)
 - **Scope options** (`ScopeSelection`): `EMPTY` (default/boot config scopes), `SUBSET` (all minus `sfap_api`), `ALL`
 - **Users** (`KnownUserConfig`): `FIRST` through `FIFTH`, assigned per API level
@@ -217,6 +231,7 @@ The Login Options screen allows you to override the default boot config for the 
 - **Web Server Flow toggle** — enable or disable the web server OAuth flow (default: on). When off, the user agent flow is used.
 - **Hybrid Auth Token toggle** — enable or disable hybrid authentication tokens (default: on).
 - **Override Boot Config toggle** — when enabled, exposes fields to enter a custom **Consumer Key**, **Redirect URI**, and **Scopes** (space-separated). Tap **Save** to apply. This lets you test different app configurations (CA, ECA, Beacon) without rebuilding the app.
+- **Use DPoP toggle** — enable or disable DPoP (Demonstrating Proof of Possession) for the current login attempt (default: off). When on, the SDK generates an EC P-256 key pair in AndroidKeyStore and attaches DPoP proof JWTs at token exchange and on every API call. Only meaningful when logging in with a DPoP-enabled ECA.
 - **Discovery Result Editor toggle** — when enabled, exposes fields to simulate a Welcome Discovery result by entering a **Login Host** and **Username**. Tap **Save** to arm the simulated discovery result for the next login attempt. This simulates receiving a discovery callback without requiring email verification.
 
 ### Change Server
