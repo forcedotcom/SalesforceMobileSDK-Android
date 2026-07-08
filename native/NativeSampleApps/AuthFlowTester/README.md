@@ -60,6 +60,7 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, and restar
 | `testMigrate_ECAJwtDPoP_AddMoreScopes` | ECA JWT DPoP | — | Scope upgrade; DPoP binding preserved |
 | `testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr` | ECA JWT DPoP → ECA JWT DPoP RTR | — | Migrate from DPoP to DPoP+RTR |
 | `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
+| `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 
 #### RTRLoginTests
 Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. DPoP+RTR tests live in `DPoPLoginTests`.
@@ -96,7 +97,7 @@ Tests for Beacon app login flows using advanced authentication with Chrome Custo
 | `testBeaconJwt_AllScopes` | Beacon JWT | All | Advanced Auth |
 
 #### LoginForAdminTests
-Tests for the "Login for Admins" menu flow, which launches OAuth in a Chrome Custom Tab while the in-app WebView remains loaded. Intended for orgs requiring browser-based admin sign-in (client certificates, SSO) even when the app uses the in-app WebView. Always uses Web Server Flow + PKCE.
+Tests for the "Login for Admins" menu flow, which launches OAuth in a Chrome Custom Tab while the in-app WebView remains loaded. Intended for orgs requiring browser-based admin sign-in (client certificates, SSO) even when the app uses the in-app WebView. Always uses Web Server Flow + PKCE. The DPoP variant lives in `DPoPLoginTests`.
 
 | Test | WebView Flow | Description |
 |------|-------------|-------------|

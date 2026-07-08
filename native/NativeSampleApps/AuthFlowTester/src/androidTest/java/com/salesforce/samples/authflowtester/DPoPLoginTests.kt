@@ -177,4 +177,14 @@ class DPoPLoginTests : AuthFlowTest() {
     }
 
     // endregion
+
+    // region DPoP Login for Admins Tests
+
+    // Login for Admins with DPoP ECA; verifies the admin Custom Tab hand-off works with DPoP.
+    @Test
+    fun testLoginForAdmin_DPoP() {
+        adminLoginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+    }
+
+    // endregion
 }
