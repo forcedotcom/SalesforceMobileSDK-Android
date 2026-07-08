@@ -575,9 +575,11 @@ abstract class AuthFlowTest {
 
     fun assertRevokeAndRefreshWorks(
         isRtr: Boolean,
+        isDpop: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
+        val preNonce = if (isDpop) app.getDpopInfo().nonce else null
         app.revokeAccessToken()
         app.validateApiRequest()
         val (postAccessToken, postRefreshToken) = app.getTokens()
@@ -588,6 +590,12 @@ abstract class AuthFlowTest {
             assert(preRefreshToken != postRefreshToken) { "Refresh token should have rotated (RTR app)" }
         } else {
             assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
+        }
+
+        if (isDpop) {
+            val postNonce = app.getDpopInfo().nonce
+            assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
+            assert(preNonce != postNonce) { "DPoP nonce should have changed after token refresh (server issues new nonce with each /token response)" }
         }
 
         app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr)

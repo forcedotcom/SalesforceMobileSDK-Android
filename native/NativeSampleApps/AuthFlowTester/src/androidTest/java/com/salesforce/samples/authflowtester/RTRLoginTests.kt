@@ -93,16 +93,16 @@ class RTRLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
     }
 
     // Login with ECA JWT DPoP RTR without hybrid auth token.
     @Test
     fun testECAJwtDPoPRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
     }
 
     // endregion

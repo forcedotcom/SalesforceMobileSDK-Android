@@ -57,8 +57,10 @@ import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.DPOP_NONCE
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
+import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
 import com.salesforce.samples.authflowtester.components.USERNAME
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
@@ -75,6 +77,11 @@ import com.salesforce.androidsdk.R as sdkR
 data class Tokens(
     val accessToken: String,
     val refreshToken: String,
+)
+
+data class DpopInfo(
+    val tokenType: String,
+    val nonce: String,
 )
 
 /**
@@ -265,6 +272,14 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
+    fun getDpopInfo(): DpopInfo {
+        expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
+        return DpopInfo(
+            tokenType = getText(OAUTH_TOKEN_TYPE),
+            nonce = getSensitiveValue(DPOP_NONCE),
+        )
+    }
+
     fun validateUser(
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
@@ -326,6 +341,12 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assert(accessToken.isNotEmpty()) { "Expected non-empty opaque access token" }
         }
         assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
+
+        if (expected.isDpop) {
+            val dpopInfo = getDpopInfo()
+            assertEquals("DPoP", dpopInfo.tokenType)
+            assert(dpopInfo.nonce.isNotEmpty()) { "Expected non-empty DPoP nonce after token exchange" }
+        }
     }
 
     fun migrateToNewApp(

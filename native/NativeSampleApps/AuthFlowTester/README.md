@@ -171,6 +171,11 @@ Each `loginAndValidate` call performs the following checks:
 2. **OAuth values** — consumer key, scopes granted, and token format (opaque vs JWT) match the app configuration
 3. **Token format** — opaque tokens are exactly 112 characters; JWT tokens exceed that length; refresh tokens are 87 characters
 4. **API request** — a REST API call succeeds with the issued tokens
+5. **DPoP (DPoP apps only)** — `OAuth Token Type` is `"DPoP"` and the DPoP nonce is non-empty after login
+
+`assertRevokeAndRefreshWorks` additionally verifies for DPoP apps:
+- **Token type preserved** — `OAuth Token Type` remains `"DPoP"` after refresh
+- **Nonce rotated** — the DPoP nonce changes after each token refresh cycle (server issues a new nonce with each `/token` response), proving the server processed the DPoP proof and did not silently ignore the header
 
 Migration tests additionally verify:
 - Access and refresh tokens are **replaced** (not reused)
@@ -184,6 +189,7 @@ Multi-user tests additionally verify:
 Restart tests additionally verify:
 - Session credentials are **reloaded from disk** after a cold process restart
 - Per-user feature flags (BW, WD) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
+- DPoP EC key pairs stored in **AndroidKeyStore** survive a process kill and restart
 
 ## Architecture
 
@@ -201,7 +207,7 @@ Restart tests additionally verify:
 | `BasePageObject` | Shared context and string resolution | Compose Test |
 | `LoginPageObject` | Salesforce login WebView (username, password, login button, server picker, login options) | Espresso Web + Compose Test |
 | `ChromeCustomTabPageObject` | Advanced auth login in Chrome Custom Tab (extends `LoginPageObject`) | UIAutomator |
-| `LoginOptionsPageObject` | SDK Login Options screen (toggle web server flow, hybrid token, override boot config) | Compose Test |
+| `LoginOptionsPageObject` | SDK Login Options screen (toggle web server flow, hybrid token, DPoP, override boot config) | Compose Test |
 | `AuthorizationPageObject` | OAuth "Allow" button handling after login or migration | UIAutomator |
 | `AuthFlowTesterPageObject` | Main app screen (credentials, tokens, user switching, migration, API requests, revocation) | Compose Test + UIAutomator |
 
@@ -247,7 +253,7 @@ This switches between regular authentication (in-app WebView) and advanced authe
 
 The main screen shows expandable cards for the current user's data:
 
-- **User Credentials** — expand to inspect identity (username, user ID, org ID), OAuth client configuration (client ID, login domain), tokens (access token, refresh token, format, scopes), URLs, community info, domains/SIDs, cookies/security, and beacon fields. Sensitive values are masked by default; tap a row to reveal the full value. Long-press any row to copy its value to the clipboard. Tap the share icon on a card header to export the full section as JSON.
+- **User Credentials** — expand to inspect identity (username, user ID, org ID), OAuth client configuration (client ID, login domain), tokens (access token, refresh token, format, OAuth token type, scopes), URLs, community info, domains/SIDs, cookies/security, beacon fields, and a **DPoP** section (shown only for DPoP sessions) with the current server-issued DPoP nonce. Sensitive values are masked by default; tap a row to reveal the full value. Long-press any row to copy its value to the clipboard. Tap the share icon on a card header to export the full section as JSON.
 - **JWT Details** — appears only when the current user has a JWT access token. Shows decoded header (algorithm, key ID, token type, version) and payload (audience, expiration, issuer, subject, scopes, client ID).
 - **OAuth Configuration** — displays the currently configured boot config values: consumer key, callback URL, and scopes.
 

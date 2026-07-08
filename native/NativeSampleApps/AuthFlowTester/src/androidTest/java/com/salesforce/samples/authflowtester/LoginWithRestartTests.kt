@@ -241,6 +241,8 @@ class LoginWithRestartTests : AuthFlowTest() {
             knownLoginHostConfig = REGULAR_AUTH,
         )
         // After restart the key pair must still be valid — revoke+refresh proves it.
-        assertRevokeAndRefreshWorks(isRtr = false)
+        // The nonce-change assertion also confirms the server accepted the DPoP proof
+        // built with the key pair loaded from AndroidKeyStore after restart.
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
     }
 }

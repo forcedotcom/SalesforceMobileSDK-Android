@@ -229,17 +229,15 @@ class MultiUserLoginTests: AuthFlowTest() {
         assertNotEquals(userAccessToken, otherUserAccessToken)
         assertNotEquals(userRefreshToken, otherUserRefreshToken)
 
-        // Switch back to initial user; revoke + refresh must work
+        // Switch back to initial user; revoke + refresh must work with DPoP nonce rotation
         switchToUserAndValidate(user)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY)
-        app.revokeAccessToken()
-        app.validateApiRequest()
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
 
-        // Switch to other user; revoke + refresh must work independently
+        // Switch to other user; revoke + refresh must work independently with its own nonce
         switchToUserAndValidate(otherUser)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY)
-        app.revokeAccessToken()
-        app.validateApiRequest()
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
     }
 
     // Test MultiUser Token Migration.  This test also demonstrates the app restart validation
