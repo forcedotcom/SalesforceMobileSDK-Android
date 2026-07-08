@@ -30,13 +30,20 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Tests for login flows using a DPoP-enabled External Client App (ECA) on the sdb6-2 org.
+ * Tests for all DPoP-enabled login flows: basic login, RTR, multi-user, migration, and restart.
  *
- * NB: Tests use the first user from the dpop_auth section of ui_test_config.json.
+ * DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after
+ * each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property,
+ * not an org property.
+ *
+ * NB: Tests use the first user from ui_test_config.json
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -57,6 +64,115 @@ class DPoPLoginTests : AuthFlowTest() {
     fun testECAJwtDPoP_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+    }
+
+    // endregion
+
+    // region ECA JWT DPoP RTR Tests
+
+    // Login with ECA JWT DPoP RTR using hybrid auth token flow.
+    @Test
+    fun testECAJwtDPoPRtr_Hybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+    }
+
+    // Login with ECA JWT DPoP RTR without hybrid auth token.
+    @Test
+    fun testECAJwtDPoPRtr_NoHybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+    }
+
+    // endregion
+
+    // region DPoP Multi-User Tests
+
+    // Both users log in with a DPoP ECA; tokens are unique and revoke+refresh works per-user.
+    @Test
+    fun testECAJwtDPoP_MultiUser_UniqueTokens() {
+        // Initial user with DPoP
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val (userAccessToken, userRefreshToken) = app.getTokens()
+
+        // Other user with DPoP
+        addOtherUserAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val (otherUserAccessToken, otherUserRefreshToken) = app.getTokens()
+
+        // Tokens must be unique across users
+        assertNotEquals(userAccessToken, otherUserAccessToken)
+        assertNotEquals(userRefreshToken, otherUserRefreshToken)
+
+        // Switch back to initial user; revoke + refresh must work with DPoP nonce rotation
+        switchToUserAndValidateUser(user)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+
+        // Switch to other user; revoke + refresh must work independently with its own nonce
+        switchToUserAndValidateUser(otherUser)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+    }
+
+    // endregion
+
+    // region DPoP Migration Tests
+
+    // Login with DPoP ECA, migrate to same ECA with more scopes — DPoP binding preserved.
+    @Test
+    fun testMigrate_ECAJwtDPoP_AddMoreScopes() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP,
+            scopeSelection = ScopeSelection.SUBSET,
+            useDPoP = true,
+        )
+        migrateAndValidate(
+            ECA_JWT_DPOP,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // Login with DPoP ECA, migrate to DPoP+RTR ECA — refresh token rotation now enabled.
+    @Test
+    fun testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP,
+            useDPoP = true,
+        )
+        migrateAndValidate(
+            ECA_JWT_DPOP_RTR,
+        )
+    }
+
+    // endregion
+
+    // region DPoP Restart Tests
+
+    /**
+     * Login with DPoP ECA, restart app, verify the DPoP key pair and session survive the restart
+     * and that revoke+refresh still works (key pair reloaded from AndroidKeyStore, not regenerated).
+     *
+     * Note: restartApp() kills the process and relaunches it, which re-runs
+     * Application.onCreate(). A real app would call setUseDPoP(true) there; AuthFlowTester
+     * does not, so we re-enable DPoP explicitly via the hydratePerUserFeatures path that
+     * reads the per-user DPoP flag from the persisted UserAccount. This test validates that
+     * the key pair stored in AndroidKeyStore survives across process restarts.
+     */
+    @Test
+    fun testECAJwtDPoP_WithRestart() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP,
+            useDPoP = true,
+        )
+        restartAndValidateUser(
+            knownAppConfig = ECA_JWT_DPOP,
+        )
+        // After restart the key pair must still be valid — revoke+refresh proves it.
+        // The nonce-change assertion also confirms the server accepted the DPoP proof
+        // built with the key pair loaded from AndroidKeyStore after restart.
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
     }
 

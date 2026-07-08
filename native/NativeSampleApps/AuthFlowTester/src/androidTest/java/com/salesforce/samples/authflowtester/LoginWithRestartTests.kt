@@ -33,7 +33,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_J
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
@@ -217,32 +216,4 @@ class LoginWithRestartTests : AuthFlowTest() {
         app.validateApiRequest()
     }
 
-    // MARK: - DPoP Restart
-
-    /**
-     * Login with DPoP ECA, restart app, verify the DPoP key pair and session survive the restart
-     * and that revoke+refresh still works (key pair reloaded from AndroidKeyStore, not regenerated).
-     *
-     * Note: restartApp() kills the process and relaunches it, which re-runs
-     * Application.onCreate(). A real app would call setUseDPoP(true) there; AuthFlowTester
-     * does not, so we re-enable DPoP explicitly via the hydratePerUserFeatures path that
-     * reads the per-user DPoP flag from the persisted UserAccount. This test validates that
-     * the key pair stored in AndroidKeyStore survives across process restarts.
-     */
-    @Test
-    fun testECAJwtDPoP_WithRestart() {
-        loginAndValidate(
-            knownAppConfig = ECA_JWT_DPOP,
-            useDPoP = true,
-            knownLoginHostConfig = REGULAR_AUTH,
-        )
-        restartAndValidateUser(
-            knownAppConfig = ECA_JWT_DPOP,
-            knownLoginHostConfig = REGULAR_AUTH,
-        )
-        // After restart the key pair must still be valid — revoke+refresh proves it.
-        // The nonce-change assertion also confirms the server accepted the DPoP proof
-        // built with the key pair loaded from AndroidKeyStore after restart.
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
-    }
 }
