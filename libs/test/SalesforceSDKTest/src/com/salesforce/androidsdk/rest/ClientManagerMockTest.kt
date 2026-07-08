@@ -90,7 +90,7 @@ class ClientManagerMockTest {
             every { appAttestationClient } returns null
             every { appContext } returns mockAppContext
             every { isDevSupportEnabled() } returns true
-            every { isUseDPoP() } returns false
+            every { useDPoP } returns false
         }
         every { SalesforceSDKManager.getInstance() } returns mockSDKManager
         mockkStatic(UserAccountManager::class)

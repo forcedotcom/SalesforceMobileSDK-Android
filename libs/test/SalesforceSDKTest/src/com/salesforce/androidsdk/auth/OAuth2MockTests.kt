@@ -226,7 +226,7 @@ class OAuth2MockTests {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { isUseDPoP() } returns true
+            every { useDPoP } returns true
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
@@ -262,7 +262,7 @@ class OAuth2MockTests {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { isUseDPoP() } returns false
+            every { useDPoP } returns false
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
@@ -299,7 +299,7 @@ class OAuth2MockTests {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { isUseDPoP() } returns true
+            every { useDPoP } returns true
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
@@ -336,7 +336,7 @@ class OAuth2MockTests {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { isUseDPoP() } returns true
+            every { useDPoP } returns true
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u","token_type":"DPoP"}"""
@@ -412,7 +412,7 @@ class OAuth2MockTests {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { isUseDPoP() } returns true
+            every { useDPoP } returns true
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
