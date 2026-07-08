@@ -382,6 +382,7 @@ abstract class AuthFlowTest {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         app.addNewAccount()
@@ -390,6 +391,7 @@ abstract class AuthFlowTest {
             scopeSelection = scopeSelection,
             useWebServerFlow = useWebServerFlow,
             useHybridAuthToken = useHybridAuthToken,
+            useDPoP = useDPoP,
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = otherUser,
             isMultiUser = true,

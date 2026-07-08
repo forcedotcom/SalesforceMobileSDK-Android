@@ -37,6 +37,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_J
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
@@ -213,6 +214,34 @@ class MultiUserLoginTests: AuthFlowTest() {
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
     }
 
+    // Both users log in with a DPoP ECA; tokens are unique and revoke+refresh works per-user.
+    @Test
+    fun testECAJwtDPoP_MultiUser_UniqueTokens() {
+        // Initial user with DPoP
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val (userAccessToken, userRefreshToken) = app.getTokens()
+
+        // Other user with DPoP
+        loginOtherUserAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val (otherUserAccessToken, otherUserRefreshToken) = app.getTokens()
+
+        // Tokens must be unique across users
+        assertNotEquals(userAccessToken, otherUserAccessToken)
+        assertNotEquals(userRefreshToken, otherUserRefreshToken)
+
+        // Switch back to initial user; revoke + refresh must work
+        switchToUserAndValidate(user)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY)
+        app.revokeAccessToken()
+        app.validateApiRequest()
+
+        // Switch to other user; revoke + refresh must work independently
+        switchToUserAndValidate(otherUser)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY)
+        app.revokeAccessToken()
+        app.validateApiRequest()
+    }
+
     // Test MultiUser Token Migration.  This test also demonstrates the app restart validation
     // since tokens are read from disk, not memory, on user switch.
     @Test
@@ -351,16 +380,17 @@ class MultiUserLoginTests: AuthFlowTest() {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         app.addNewAccount()
         loginAndValidate(
-            knownAppConfig,
-            scopeSelection,
-            useWebServerFlow,
-            useHybridAuthToken,
-            useDPoP = false,
-            knownLoginHostConfig,
+            knownAppConfig = knownAppConfig,
+            scopeSelection = scopeSelection,
+            useWebServerFlow = useWebServerFlow,
+            useHybridAuthToken = useHybridAuthToken,
+            useDPoP = useDPoP,
+            knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = otherUser,
             isMultiUser = true,
         )

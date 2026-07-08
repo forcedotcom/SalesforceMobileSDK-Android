@@ -197,6 +197,36 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
 
     // endregion
 
+    // region DPoP migrations
+
+    // Login with DPoP ECA, migrate to same ECA with more scopes — DPoP binding preserved.
+    @Test
+    fun testMigrate_ECAJwtDPoP_AddMoreScopes() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.ECA_JWT_DPOP,
+            scopeSelection = ScopeSelection.SUBSET,
+            useDPoP = true,
+        )
+        migrateAndValidate(
+            KnownAppConfig.ECA_JWT_DPOP,
+            scopeSelection = ScopeSelection.ALL,
+        )
+    }
+
+    // Login with DPoP ECA, migrate to DPoP+RTR ECA — refresh token rotation now enabled.
+    @Test
+    fun testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.ECA_JWT_DPOP,
+            useDPoP = true,
+        )
+        migrateAndValidate(
+            KnownAppConfig.ECA_JWT_DPOP_RTR,
+        )
+    }
+
+    // endregion
+
     override fun loginAndValidate(
         knownAppConfig: KnownAppConfig,
         scopeSelection: ScopeSelection,
@@ -212,7 +242,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = knownAppConfig,
             scopeSelection = scopeSelection,
             useWebServerFlow = useWebServerFlow,
-            useHybridAuthToken = false,
+            useHybridAuthToken = useHybridAuthToken,
             useDPoP = useDPoP,
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,

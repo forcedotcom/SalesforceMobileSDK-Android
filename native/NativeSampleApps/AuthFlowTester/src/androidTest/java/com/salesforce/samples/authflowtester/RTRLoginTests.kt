@@ -29,6 +29,7 @@ package com.salesforce.samples.authflowtester
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE_RTR
 import org.junit.Ignore
@@ -80,6 +81,26 @@ class RTRLoginTests : AuthFlowTest() {
     @Test
     fun testECAOpaqueRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_OPAQUE_RTR, useHybridAuthToken = false)
+        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true)
+    }
+
+    // endregion
+
+    // region ECA JWT DPoP RTR Tests
+
+    // Login with ECA JWT DPoP RTR using hybrid auth token flow.
+    @Test
+    fun testECAJwtDPoPRtr_Hybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true)
+    }
+
+    // Login with ECA JWT DPoP RTR without hybrid auth token.
+    @Test
+    fun testECAJwtDPoPRtr_NoHybrid() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
         assertRevokeAndRefreshWorks(isRtr = true)
         assertRevokeAndRefreshWorks(isRtr = true)
     }

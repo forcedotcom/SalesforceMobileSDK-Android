@@ -50,7 +50,6 @@ enum class KnownUserConfig {
 enum class KnownLoginHostConfig {
     REGULAR_AUTH,
     ADVANCED_AUTH,
-    DPOP_AUTH,
 }
 
 enum class KnownAppConfig {
@@ -63,6 +62,7 @@ enum class KnownAppConfig {
     CA_OPAQUE,
     CA_JWT,
     ECA_JWT_DPOP,
+    ECA_JWT_DPOP_RTR,
 }
 
 val testConfig: UITestConfig by lazy {

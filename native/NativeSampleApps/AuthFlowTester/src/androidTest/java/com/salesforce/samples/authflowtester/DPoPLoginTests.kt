@@ -30,7 +30,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.DPOP_AUTH
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -48,17 +47,17 @@ class DPoPLoginTests : AuthFlowTest() {
     // Login with ECA JWT DPoP using hybrid auth token flow.
     @Test
     fun testECAJwtDPoP_Hybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true, knownLoginHostConfig = DPOP_AUTH)
-        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
-        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        assertRevokeAndRefreshWorks(isRtr = false)
+        assertRevokeAndRefreshWorks(isRtr = false)
     }
 
     // Login with ECA JWT DPoP without hybrid auth token.
     @Test
     fun testECAJwtDPoP_NoHybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true, knownLoginHostConfig = DPOP_AUTH)
-        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
-        assertRevokeAndRefreshWorks(isRtr = false, knownLoginHostConfig = DPOP_AUTH)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
+        assertRevokeAndRefreshWorks(isRtr = false)
+        assertRevokeAndRefreshWorks(isRtr = false)
     }
 
     // endregion
