@@ -100,7 +100,7 @@ class LoginOptionsActivity: ComponentActivity() {
     // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
     @Suppress("DEPRECATION")
     val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
-    val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().isUseDPoP())
+    val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().useDPoP)
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Suppress("DEPRECATION")
@@ -134,7 +134,7 @@ class LoginOptionsActivity: ComponentActivity() {
             /* owner = */ this,
             Observer<Boolean> {
                 // onChanged lambda
-                value -> SalesforceSDKManager.getInstance().setUseDPoP(value)
+                value -> SalesforceSDKManager.getInstance().useDPoP = value
             },
         )
 

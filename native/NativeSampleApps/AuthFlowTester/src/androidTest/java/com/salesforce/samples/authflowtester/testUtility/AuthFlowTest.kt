@@ -111,7 +111,7 @@ abstract class AuthFlowTest {
             forceAdvancedAuthentication = true
             useWebServerAuthentication = true
             useHybridAuthentication = true
-            setUseDPoP(false)
+            useDPoP = false
 
             // Reset the selected login server back to REGULAR_AUTH.
             val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
