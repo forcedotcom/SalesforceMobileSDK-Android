@@ -31,7 +31,7 @@ play-integrity = "1.6.0"
 accompanist = "0.37.3"
 
 # SmartStore
-sqlcipher-android = "4.16.0"
+sqlcipher-android = "4.17.0"
 
 # Hybrid / React Native
 cordova-framework = "15.0.0"
