@@ -222,7 +222,6 @@ abstract class AuthFlowTest {
         knownUserConfig: KnownUserConfig = user,
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
-        isDpop: Boolean = false,
     ) {
         // Under the default forced advanced authentication (useWebServerFlow = true) every login
         // completes in a Custom Tab: a ChromeCustomTabPageObject serves both roles — its
@@ -317,6 +316,7 @@ abstract class AuthFlowTest {
         }
         app.waitForAppLoad()
 
+        val isDpop = useDPoP
         app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, isDpop = isDpop)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
