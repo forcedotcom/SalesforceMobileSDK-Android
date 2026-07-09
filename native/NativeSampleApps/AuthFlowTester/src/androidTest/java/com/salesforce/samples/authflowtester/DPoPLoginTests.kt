@@ -54,7 +54,7 @@ class DPoPLoginTests : AuthFlowTest() {
     // Login with ECA JWT DPoP using hybrid auth token flow.
     @Test
     fun testECAJwtDPoP_Hybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
     }
@@ -62,7 +62,7 @@ class DPoPLoginTests : AuthFlowTest() {
     // Login with ECA JWT DPoP without hybrid auth token.
     @Test
     fun testECAJwtDPoP_NoHybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
     }
@@ -74,7 +74,7 @@ class DPoPLoginTests : AuthFlowTest() {
     // Login with ECA JWT DPoP RTR using hybrid auth token flow.
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
     }
@@ -82,7 +82,7 @@ class DPoPLoginTests : AuthFlowTest() {
     // Login with ECA JWT DPoP RTR without hybrid auth token.
     @Test
     fun testECAJwtDPoPRtr_NoHybrid() {
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
         assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
     }
@@ -95,7 +95,7 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoP_MultiUser_UniqueTokens() {
         // Initial user with DPoP
-        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true, isDpop = true)
         val (userAccessToken, userRefreshToken) = app.getTokens()
 
         // Other user with DPoP
@@ -128,6 +128,7 @@ class DPoPLoginTests : AuthFlowTest() {
             knownAppConfig = ECA_JWT_DPOP,
             scopeSelection = ScopeSelection.SUBSET,
             useDPoP = true,
+            isDpop = true,
         )
         migrateAndValidate(
             ECA_JWT_DPOP,
@@ -141,6 +142,7 @@ class DPoPLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             useDPoP = true,
+            isDpop = true,
         )
         migrateAndValidate(
             ECA_JWT_DPOP_RTR,
@@ -166,6 +168,7 @@ class DPoPLoginTests : AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
             useDPoP = true,
+            isDpop = true,
         )
         restartAndValidateUser(
             knownAppConfig = ECA_JWT_DPOP,
