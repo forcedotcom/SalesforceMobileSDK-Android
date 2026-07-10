@@ -656,6 +656,7 @@ class DevSupportInfoTest {
             "Token Format", "oauth2",
             "Access Token Expiration", "Unknown",
             "Beacon Child Consumer Key", user.beaconChildConsumerKey ?: "None",
+            "OAuth Token Type", "Bearer",
         ))
         
         // Add runtime config
