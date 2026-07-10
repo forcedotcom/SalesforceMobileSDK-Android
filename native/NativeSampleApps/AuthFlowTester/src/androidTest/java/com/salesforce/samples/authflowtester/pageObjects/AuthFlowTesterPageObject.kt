@@ -57,6 +57,7 @@ import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
 import com.salesforce.samples.authflowtester.components.DPOP_NONCE
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
@@ -82,6 +83,7 @@ data class Tokens(
 data class DpopInfo(
     val tokenType: String,
     val nonce: String,
+    val keyThumbprint: String,
 )
 
 /**
@@ -277,6 +279,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         return DpopInfo(
             tokenType = getText(OAUTH_TOKEN_TYPE),
             nonce = getSensitiveValue(DPOP_NONCE),
+            keyThumbprint = getText(DPOP_KEY_THUMBPRINT),
         )
     }
 
@@ -347,6 +350,9 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             val dpopInfo = getDpopInfo()
             assertEquals("DPoP", dpopInfo.tokenType)
             assert(dpopInfo.nonce.isNotEmpty()) { "Expected non-empty DPoP nonce after token exchange" }
+            assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+                "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
+            }
         }
     }
 
