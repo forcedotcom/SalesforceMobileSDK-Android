@@ -356,13 +356,13 @@ class MultiUserLoginTests: AuthFlowTest() {
     ) {
         app.addNewAccount()
         loginAndValidate(
-            knownAppConfig = knownAppConfig,
-            scopeSelection = scopeSelection,
-            useWebServerFlow = useWebServerFlow,
-            useHybridAuthToken = useHybridAuthToken,
-            useDPoP = useDPoP,
-            knownLoginHostConfig = knownLoginHostConfig,
-            knownUserConfig = otherUser,
+            knownAppConfig,
+            scopeSelection,
+            useWebServerFlow,
+            useHybridAuthToken,
+            useDPoP,
+            knownLoginHostConfig,
+            otherUser,
             isMultiUser = true,
         )
     }
