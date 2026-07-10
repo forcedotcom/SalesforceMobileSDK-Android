@@ -316,7 +316,8 @@ abstract class AuthFlowTest {
         }
         app.waitForAppLoad()
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser)
+        val isDpop = useDPoP
+        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, isDpop = isDpop)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
     }
@@ -605,6 +606,6 @@ abstract class AuthFlowTest {
             assert(preNonce != postNonce) { "DPoP nonce should have changed after token refresh (server issues new nonce with each /token response)" }
         }
 
-        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr)
+        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr, isDpop = isDpop)
     }
 }

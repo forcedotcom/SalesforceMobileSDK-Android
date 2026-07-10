@@ -286,6 +286,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -322,7 +323,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -518,9 +519,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop)
     }
 
     private fun validateUserAgent(
@@ -530,6 +532,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
@@ -580,6 +583,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         } else {
             assert("RT" !in flags) {
                 "Expected no 'RT' flag when Refresh Token Rotation has not occurred in: $ua"
+            }
+        }
+
+        if (isDpop) {
+            assert("DP" in flags) {
+                "Expected 'DP' flag for DPoP session in: $ua"
+            }
+        } else {
+            assert("DP" !in flags) {
+                "Expected no 'DP' flag for non-DPoP session in: $ua"
             }
         }
     }
