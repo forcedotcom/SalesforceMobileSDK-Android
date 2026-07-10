@@ -37,6 +37,8 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.hamcrest.CoreMatchers.allOf;
 
+import android.Manifest;
+import android.os.Build;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
@@ -44,6 +46,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.rule.GrantPermissionRule;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
@@ -57,6 +60,7 @@ import com.salesforce.androidsdk.smartstore.ui.KeyValueStoreInspectorActivity;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -77,6 +81,12 @@ public class KeyValueStoreInspectorActivityTest {
     private final String VALUE_2 = "this is a different value in ";
     private final String VALUE_3 = "this is a third value in ";
     private final String GLOBAL_STORE_TEXT = KeyValueStoreInspectorActivity.GLOBAL_STORE;
+
+    // Pre-grant POST_NOTIFICATIONS so the permission dialog doesn't steal focus from the activity
+    @Rule
+    public GrantPermissionRule permissionRule = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            ? GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+            : GrantPermissionRule.grant();
 
     public ActivityScenario<KeyValueStoreInspectorActivity> activityScenario;
     public KeyValueStoreInspectorActivity keyValueStoreInspectorActivity;
