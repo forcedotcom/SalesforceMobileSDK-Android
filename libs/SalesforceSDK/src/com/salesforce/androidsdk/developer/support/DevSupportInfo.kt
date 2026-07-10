@@ -34,7 +34,7 @@ import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
-import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.security.interfaces.ECPublicKey
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -173,7 +173,7 @@ data class DevSupportInfo(
             if (currentUser.tokenType == "DPoP") {
                 val credId = currentUser.credentialsIdentifier
                 val host = currentUser.instanceServer
-                    ?.let { runCatching { HttpUrl.get(it).host() }.getOrNull() } ?: ""
+                    ?.toHttpUrlOrNull()?.host ?: ""
                 val nonce = credId?.let { DPoPNonceCache.get(it, host) }
                 rows.add("DPoP Nonce" to (nonce?.ifEmpty { "None" } ?: "None"))
                 val thumbprint = credId?.let {
