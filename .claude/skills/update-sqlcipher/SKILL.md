@@ -178,6 +178,7 @@ When creating the PR:
 
 Recent SQLCipher updates in the project:
 
+- **4.17.0** - SQLite 3.53.3, LibTomCrypt 1.18.2 (2026-07-08)
 - **4.16.0** - SQLite 3.53.1, LibTomCrypt 1.18.2 (2026-05-12)
 - **4.15.0** - Previous version
 - **4.10.0** - Previous version (PR #2744)

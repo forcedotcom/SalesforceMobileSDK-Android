@@ -33,7 +33,9 @@ import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import android.Manifest;
 import android.content.Context;
+import android.os.Build;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
@@ -42,6 +44,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.GrantPermissionRule;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
@@ -59,6 +62,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,6 +84,12 @@ public class SmartStoreInspectorActivityTest {
 
 	private Context targetContext;
 	private SmartStore store;
+
+	// Pre-grant POST_NOTIFICATIONS so the permission dialog doesn't steal focus from the activity
+	@Rule
+	public GrantPermissionRule permissionRule = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+			? GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
+			: GrantPermissionRule.grant();
 
 	public ActivityScenario<SmartStoreInspectorActivity> activityScenario;
 	public SmartStoreInspectorActivity smartStoreInspectorActivity;
