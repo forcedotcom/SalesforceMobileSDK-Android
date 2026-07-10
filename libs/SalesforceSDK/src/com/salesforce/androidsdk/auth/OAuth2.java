@@ -624,7 +624,6 @@ public class OAuth2 {
             try {
                 // Fail-closed: a DPoP-bound identity request without a proof header will be rejected
                 // by the server regardless, so surface the error rather than sending an unusable request.
-                // This matches iOS SFIdentityCoordinator behaviour (commit 97a62410a).
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
