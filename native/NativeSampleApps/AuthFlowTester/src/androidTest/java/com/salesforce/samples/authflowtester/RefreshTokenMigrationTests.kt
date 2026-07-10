@@ -212,7 +212,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = knownAppConfig,
             scopeSelection = scopeSelection,
             useWebServerFlow = useWebServerFlow,
-            useHybridAuthToken = useHybridAuthToken,
+            useHybridAuthToken = false, // TODO: W-20524841 — Pass useHybridAuthToken once server bug is fixed.
             useDPoP = useDPoP,
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,
