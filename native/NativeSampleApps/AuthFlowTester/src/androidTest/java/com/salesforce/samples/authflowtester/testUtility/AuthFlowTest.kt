@@ -111,6 +111,7 @@ abstract class AuthFlowTest {
             forceAdvancedAuthentication = true
             useWebServerAuthentication = true
             useHybridAuthentication = true
+            useDPoP = false
 
             // Reset the selected login server back to REGULAR_AUTH.
             val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url
@@ -216,6 +217,7 @@ abstract class AuthFlowTest {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         useWelcomeDiscovery: Boolean = false,
@@ -237,7 +239,7 @@ abstract class AuthFlowTest {
 
         ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
 
-        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken ||
+        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP ||
                 knownAppConfig != CA_OPAQUE || scopeSelection != EMPTY ||
                 useWelcomeDiscovery
 
@@ -255,6 +257,10 @@ abstract class AuthFlowTest {
 
             if (!useHybridAuthToken) {
                 loginOptions.disableHybridAuthToken()
+            }
+
+            if (useDPoP) {
+                loginOptions.enableDPoP()
             }
 
             // Set simulated discovery result first - its Save does NOT dismiss the activity,
@@ -376,6 +382,7 @@ abstract class AuthFlowTest {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         app.addNewAccount()
@@ -384,6 +391,7 @@ abstract class AuthFlowTest {
             scopeSelection = scopeSelection,
             useWebServerFlow = useWebServerFlow,
             useHybridAuthToken = useHybridAuthToken,
+            useDPoP = useDPoP,
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = otherUser,
             isMultiUser = true,
@@ -424,7 +432,11 @@ abstract class AuthFlowTest {
      * the in-app WebView (with Web Server Flow off); the admin hand-off still launches its Custom
      * Tab.  The back-outs are no-ops on the WebView path, so both share one code path.
      */
-    fun adminLoginAndValidate(useWebServerFlow: Boolean = true) {
+    fun adminLoginAndValidate(
+        useWebServerFlow: Boolean = true,
+        knownAppConfig: KnownAppConfig = KnownAppConfig.BEACON_OPAQUE,
+        useDPoP: Boolean = false,
+    ) {
         // The top-bar surface (Login Options / Login for Admins menu) is the Custom Tab for the
         // default forced-advanced-auth flow, or the in-app WebView when it is disabled.  The admin
         // hand-off always completes in a Custom Tab.
@@ -441,7 +453,10 @@ abstract class AuthFlowTest {
         if (!useWebServerFlow) {
             loginOptions.disableWebServerFlow()
         }
-        loginOptions.setOverrideBootConfig(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
+        if (useDPoP) {
+            loginOptions.enableDPoP()
+        }
+        loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection = EMPTY)
 
         // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path;
         // back out again to reach the overflow menu (no-op on the WebView path), then launch the
@@ -464,7 +479,7 @@ abstract class AuthFlowTest {
 
         app.waitForAppLoad()
         app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
-        app.validateOAuthValues(KnownAppConfig.BEACON_OPAQUE, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
 
@@ -567,9 +582,11 @@ abstract class AuthFlowTest {
 
     fun assertRevokeAndRefreshWorks(
         isRtr: Boolean,
+        isDpop: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
+        val preNonce = if (isDpop) app.getDpopInfo().nonce else null
         app.revokeAccessToken()
         app.validateApiRequest()
         val (postAccessToken, postRefreshToken) = app.getTokens()
@@ -580,6 +597,12 @@ abstract class AuthFlowTest {
             assert(preRefreshToken != postRefreshToken) { "Refresh token should have rotated (RTR app)" }
         } else {
             assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
+        }
+
+        if (isDpop) {
+            val postNonce = app.getDpopInfo().nonce
+            assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
+            assert(preNonce != postNonce) { "DPoP nonce should have changed after token refresh (server issues new nonce with each /token response)" }
         }
 
         app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr)

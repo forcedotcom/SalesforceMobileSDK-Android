@@ -436,13 +436,8 @@ open class SalesforceSDKManager protected constructor(
      * requests and use the `DPoP` Authorization scheme for resource requests
      * when the token endpoint advertises `token_type: DPoP`.
      */
-    private var useDPoP = false
-
-    fun isUseDPoP(): Boolean = useDPoP
-
-    fun setUseDPoP(useDPoP: Boolean) {
-        this.useDPoP = useDPoP
-    }
+    @get:JvmName("isUseDPoP")
+    var useDPoP: Boolean = false
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.

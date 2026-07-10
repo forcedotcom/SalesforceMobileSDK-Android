@@ -88,7 +88,7 @@ class OAuthRefreshInterceptorNonceTest {
 
         mockkObject(SalesforceSDKManager)
         val mockSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
-            every { isUseDPoP() } returns true
+            every { useDPoP } returns true
         }
         every { SalesforceSDKManager.getInstance() } returns mockSdkManager
     }

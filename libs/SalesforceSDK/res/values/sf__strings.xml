@@ -125,6 +125,7 @@
     <string name="sf__login_options_webserver_toggle_content_description">Toggle Web Server</string>
     <string name="sf__login_options_hybrid_toggle_content_description">Toggle Hybrid Token</string>
     <string name="sf__login_options_force_advanced_auth_toggle_content_description">Toggle Force Advanced Authentication</string>
+    <string name="sf__login_options_dpop_toggle_content_description">Toggle DPoP</string>
     <string name="sf__login_options_dynamic_config_toggle_content_description">Toggle Dynamic Config</string>
     <string name="sf__login_options_consumer_key_field_content_description">Consumer Key Field</string>
     <string name="sf__login_options_redirect_uri_field_content_description">Redirect URI Field</string>
