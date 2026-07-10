@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.developer.support
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
 import io.mockk.every
@@ -672,6 +673,54 @@ class DevSupportInfoTest {
         assertEquals(fromSecondaryConstructor, fromLegacy)
     }
 
+    @Test
+    fun currentUserSection_BearerSession_ShowsTokenTypeNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = "Bearer")
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
+    }
+
+    @Test
+    fun currentUserSection_NullTokenType_ShowsBearerNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
+    }
+
+    @Test
+    fun currentUserSection_DPoPSession_ShowsDPoPRows() {
+        // credentialsIdentifier is null here so thumbprint/nonce fall back to "Unavailable"/"None"
+        val user = createMockUserAccount(tokenType = "DPoP", credentialsIdentifier = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("DPoP", section.find { it.first == "OAuth Token Type" }?.second)
+        assertTrue(section.any { it.first == "DPoP Nonce" })
+        assertTrue(section.any { it.first == "DPoP Key Thumbprint" })
+        assertEquals("None", section.find { it.first == "DPoP Nonce" }?.second)
+        assertEquals("Unavailable", section.find { it.first == "DPoP Key Thumbprint" }?.second)
+    }
+
+    @Test
+    fun jwkThumbprint_ProducesValidBase64UrlString() {
+        // Generate a key pair using the standard Java security API (no Android Keystore needed in unit tests)
+        val keyPairGenerator = java.security.KeyPairGenerator.getInstance("EC")
+        keyPairGenerator.initialize(java.security.spec.ECGenParameterSpec("secp256r1"))
+        val keyPair = keyPairGenerator.generateKeyPair()
+        val publicKey = keyPair.public as java.security.interfaces.ECPublicKey
+
+        val thumbprint = DPoPProofBuilder.jwkThumbprint(publicKey)
+
+        // base64url of a 32-byte SHA-256 digest = 43 characters (no padding)
+        assertEquals(43, thumbprint.length)
+        assertTrue(thumbprint.matches(Regex("[A-Za-z0-9_-]+")))
+    }
+
     // Helper methods
 
     private fun createMockRuntimeConfig(
@@ -697,7 +746,9 @@ class DevSupportInfoTest {
         scope: String = "api web",
         instanceServer: String = "https://test.salesforce.com",
         tokenFormat: String = "oauth2",
-        authToken: String = "test_token"
+        authToken: String = "test_token",
+        tokenType: String? = null,
+        credentialsIdentifier: String? = null,
     ): UserAccount {
         return UserAccount(
             Bundle().apply {
@@ -729,6 +780,8 @@ class DevSupportInfoTest {
                 putString(UserAccount.LOCALE, "en_US")
                 putString(UserAccount.SCOPE, scope)
                 putString(UserAccount.TOKEN_FORMAT, tokenFormat)
+                tokenType?.let { putString(UserAccount.TOKEN_TYPE, it) }
+                credentialsIdentifier?.let { putString(UserAccount.CREDENTIALS_IDENTIFIER, it) }
             }
         )
     }

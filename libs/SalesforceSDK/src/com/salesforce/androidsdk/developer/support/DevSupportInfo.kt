@@ -29,8 +29,13 @@ package com.salesforce.androidsdk.developer.support
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
+import okhttp3.HttpUrl
+import java.security.interfaces.ECPublicKey
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -95,6 +100,9 @@ data class DevSupportInfo(
                 "Token Format",
                 "Access Token Expiration",
                 "Beacon Child Consumer Key",
+                "OAuth Token Type",
+                "DPoP Nonce",
+                "DPoP Key Thumbprint",
             )
             val runtimeConfigSection = legacyDevInfo.createSection(
                 sectionTitle = "Runtime Configuration",
@@ -152,7 +160,7 @@ data class DevSupportInfo(
                 }
             }
 
-            return "Current User" to listOf(
+            val rows = mutableListOf(
                 "Username" to currentUser.username,
                 "Consumer Key" to currentUser.clientId,
                 "Scopes" to currentUser.scope,
@@ -160,7 +168,24 @@ data class DevSupportInfo(
                 "Token Format" to (currentUser.tokenFormat?.ifBlank { "Opaque" } ?: "Opaque"),
                 "Access Token Expiration" to accessTokenExpiration,
                 "Beacon Child Consumer Key" to (currentUser.beaconChildConsumerKey ?: "None"),
+                "OAuth Token Type" to (currentUser.tokenType?.ifBlank { "Bearer" } ?: "Bearer"),
             )
+            if (currentUser.tokenType == "DPoP") {
+                val credId = currentUser.credentialsIdentifier
+                val host = currentUser.instanceServer
+                    ?.let { runCatching { HttpUrl.get(it).host() }.getOrNull() } ?: ""
+                val nonce = credId?.let { DPoPNonceCache.get(it, host) }
+                rows.add("DPoP Nonce" to (nonce?.ifEmpty { "None" } ?: "None"))
+                val thumbprint = credId?.let {
+                    runCatching {
+                        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
+                        val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+                        DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+                    }.getOrElse { "Unavailable" }
+                } ?: "Unavailable"
+                rows.add("DPoP Key Thumbprint" to thumbprint)
+            }
+            return "Current User" to rows
         }
 
         fun parseRuntimeConfig(config: RuntimeConfig): DevInfoList {
