@@ -619,16 +619,12 @@ public class OAuth2 {
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken, tokenType);
-        final String identityHost = HttpUrl.get(identityServiceIdUrl).host();
         if (DPOP.equals(tokenType) && credentialsIdentifier != null && SalesforceSDKManager.getInstance().isUseDPoP()) {
             try {
-                // Fail-closed: a DPoP-bound identity request without a proof header will be rejected
-                // by the server regardless, so surface the error rather than sending an unusable request.
-                // This matches iOS SFIdentityCoordinator behaviour (commit 97a62410a).
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, identityHost);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, HttpUrl.get(identityServiceIdUrl).host());
                 final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
                 builder.header(DPOP, proof);
             } catch (Exception e) {
@@ -636,36 +632,11 @@ public class OAuth2 {
             }
         }
         final Request request = builder.build();
-        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
-
-        // Harvest nonce from every response.
-        if (DPOP.equals(tokenType) && credentialsIdentifier != null && SalesforceSDKManager.getInstance().isUseDPoP()) {
-            final String responseNonce = response.header("DPoP-Nonce");
-            if (!TextUtils.isEmpty(responseNonce)) {
-                DPoPNonceCache.INSTANCE.store(credentialsIdentifier, identityHost, responseNonce);
-            }
-        }
-
-        // Nonce challenge: server requires a nonce. Retry once (fail-closed on second failure).
-        if (DPOP.equals(tokenType) && credentialsIdentifier != null
-                && SalesforceSDKManager.getInstance().isUseDPoP()
-                && isNonceChallenge(response)) {
-            response.close();
-            try {
-                final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
-                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, identityHost);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
-                final Request.Builder retryBuilder = new Request.Builder().url(identityServiceIdUrl).get();
-                addAuthorizationHeader(retryBuilder, authToken, tokenType);
-                retryBuilder.header(DPOP, proof);
-                response = httpAccessor.getOkHttpClient().newCall(retryBuilder.build()).execute();
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header on nonce retry", e);
-            }
-        }
-
+        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        // Nonce failures on the identity endpoint fall through to SFOAuthSessionRefresher /
+        // OAuthRefreshInterceptor, which re-enters the token endpoint where nonce harvest+retry
+        // already lives. Salesforce only issues DPoP-Nonce on token-endpoint responses, so
+        // inline harvest+retry here would never fire against the server in practice.
         return new IdServiceResponse(response);
     }
 
