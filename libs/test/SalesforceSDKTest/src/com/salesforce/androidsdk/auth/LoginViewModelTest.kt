@@ -371,6 +371,81 @@ class LoginViewModelTest {
 
     // endregion
 
+    // region DPoP dpop_jkt Tests
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AddsDpopJktToUrl() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL when useDPoP=true, got: $url"
+        }
+        // thumbprint must be 43-char base64url
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenNotUseDPoP_DoesNotAddDpopJktToUrl() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(!url.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in authorization URL when useDPoP=false, got: $url"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_SetsPendingCredentialsIdentifier() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        assert(viewModel.pendingCredentialsIdentifier != null) {
+            "Expected pendingCredentialsIdentifier to be set after generateAuthorizationUrl with useDPoP=true"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenNotUseDPoP_DoesNotSetPendingCredentialsIdentifier() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        assert(viewModel.pendingCredentialsIdentifier == null) {
+            "Expected pendingCredentialsIdentifier to be null when useDPoP=false"
+        }
+    }
+
+    // endregion
+
     // region frontDoorBridgeUrl Tests
 
     @Test
