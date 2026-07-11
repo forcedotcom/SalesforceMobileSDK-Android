@@ -495,7 +495,7 @@ open class SalesforceSDKManager protected constructor(
     // Backing field for [forceAdvancedAuthentication].  The SDK reads this directly so its own
     // internal use of the flag doesn't trigger the deprecation warning on the public property.
     @Volatile
-    private var _forceAdvancedAuthentication = false
+    private var _forceAdvancedAuthentication = true
 
     /**
      * Forces advanced (browser based) authentication to always be used for login, regardless of
