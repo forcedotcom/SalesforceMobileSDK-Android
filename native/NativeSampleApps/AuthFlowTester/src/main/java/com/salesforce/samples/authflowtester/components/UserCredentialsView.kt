@@ -38,7 +38,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
+import java.security.interfaces.ECPublicKey
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
@@ -82,6 +85,7 @@ const val SCOPES = "Scopes"
 
 // DPoP fields
 const val DPOP_NONCE = "DPoP Nonce"
+const val DPOP_KEY_THUMBPRINT = "DPoP Key Thumbprint"
 
 // URLs fields
 private const val INSTANCE_URL = "Instance URL"
@@ -187,6 +191,10 @@ fun UserCredentialsView(currentUser: UserAccount?) {
                         },
                     isSensitive = true,
                 )
+                InfoRowView(
+                    label = DPOP_KEY_THUMBPRINT,
+                    value = computeDpopThumbprint(currentUser.credentialsIdentifier),
+                )
             }
         }
 
@@ -221,6 +229,16 @@ private fun formatAdditionalOAuthFields(user: UserAccount?): String? {
     } catch (_: Exception) {
         null
     }
+}
+
+private fun computeDpopThumbprint(credentialsIdentifier: String?): String {
+    return credentialsIdentifier?.let {
+        runCatching {
+            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+            DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+        }.getOrElse { "Unavailable" }
+    } ?: "Unavailable"
 }
 
 private fun generateCredentialsJSON(user: UserAccount?): String {
@@ -290,6 +308,7 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
                             DPoPNonceCache.get(id, host)
                         }
                     put(DPOP_NONCE, nonce)
+                    put(DPOP_KEY_THUMBPRINT, computeDpopThumbprint(user.credentialsIdentifier))
                 }
             }
 

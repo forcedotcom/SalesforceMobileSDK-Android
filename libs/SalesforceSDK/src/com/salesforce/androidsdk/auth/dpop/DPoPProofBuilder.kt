@@ -36,6 +36,16 @@ import java.security.interfaces.ECPublicKey
 
 object DPoPProofBuilder {
 
+    fun jwkThumbprint(publicKey: ECPublicKey): String {
+        val point = publicKey.w
+        val x = base64url(toUnsigned32(point.affineX.toByteArray()))
+        val y = base64url(toUnsigned32(point.affineY.toByteArray()))
+        // RFC 7638: members sorted lexicographically, no whitespace
+        val canonical = """{"crv":"P-256","kty":"EC","x":"$x","y":"$y"}"""
+        val digest = MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
+        return base64url(digest)
+    }
+
     fun buildProof(
         httpMethod: String,
         htu: String,
