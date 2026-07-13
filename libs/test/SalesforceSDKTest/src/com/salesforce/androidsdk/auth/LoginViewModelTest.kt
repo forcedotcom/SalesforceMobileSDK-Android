@@ -383,7 +383,7 @@ class LoginViewModelTest {
         every { sdkManagerMock.debugOverrideAppConfig } returns null
         every { sdkManagerMock.useDPoP } returns true
 
-        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
         val url = viewModel.loginUrl.value ?: ""
         assert(url.contains("dpop_jkt=")) {
             "Expected dpop_jkt in authorization URL when useDPoP=true, got: $url"
@@ -422,7 +422,7 @@ class LoginViewModelTest {
         every { sdkManagerMock.debugOverrideAppConfig } returns null
         every { sdkManagerMock.useDPoP } returns true
 
-        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
         assert(viewModel.pendingCredentialsIdentifier != null) {
             "Expected pendingCredentialsIdentifier to be set after generateAuthorizationUrl with useDPoP=true"
         }
@@ -718,6 +718,7 @@ class LoginViewModelTest {
         // generateAuthorizationUrl reads isBrowserLoginEnabled to decide whether to invoke
         // the onBrowserCustomTabReady callback; not relevant to this assertion but must be stubbed.
         every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.useDPoP } returns false
         every { sdkManagerMock.appConfigForLoginHost } returns { _ ->
             OAuthConfig(
                 consumerKey = appConfigConsumerKey,
@@ -780,6 +781,7 @@ class LoginViewModelTest {
             )
         }
         every { sdkManagerMock.appAttestationClient } returns null
+        every { sdkManagerMock.useDPoP } returns false
         val debugConsumerKey = "debug_override_key_789"
         val debugRedirectUri = "debug://redirect"
         val debugScopes = listOf("api", "debug_scope")

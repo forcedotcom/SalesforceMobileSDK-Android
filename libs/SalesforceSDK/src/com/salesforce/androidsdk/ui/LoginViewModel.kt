@@ -549,7 +549,7 @@ open class LoginViewModel(
 
         val additionalParameters = mutableMapOf<String, String>()
 
-        maybeAddDpopJkt(server, sdkManager, additionalParameters)
+        addDpopJktIfNeeded(server, sdkManager, additionalParameters)
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
@@ -596,7 +596,7 @@ open class LoginViewModel(
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
 
-            maybeAddDpopJkt(server, sdkManager, additionalParams)
+            addDpopJktIfNeeded(server, sdkManager, additionalParams)
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
@@ -728,7 +728,7 @@ open class LoginViewModel(
      * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
      * support DPoP code binding and reject the parameter.
      */
-    private fun maybeAddDpopJkt(
+    private fun addDpopJktIfNeeded(
         server: String,
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
