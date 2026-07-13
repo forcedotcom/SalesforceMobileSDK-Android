@@ -69,6 +69,11 @@
       "doc": ".prizm/presubmits/skills/mobile-sdk-android-pr-review/SKILL.md",
       "scope": ".prizm/presubmits/skills/mobile-sdk-android-pr-review",
       "description": "Prizm PR review skill for Mobile SDK Android"
+    },
+    {
+      "doc": "docs/mobilesync/README.md",
+      "scope": "libs/MobileSync",
+      "description": "MobileSync library — Android API reference: SyncManager, all sync targets, SyncState, SyncOptions, SOQL/SOSL builders, JSON-driven configuration"
     }
   ]
 }
