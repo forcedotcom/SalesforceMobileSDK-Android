@@ -11,7 +11,7 @@
     <string name="sf__managed_app_error">Authentication only allowed from managed device.</string>
     <string name="sf__jwt_authentication_error">JWT authentication error. Please try again.</string>
     <string name="sf__lightning_url_code_exchange_error">Lightning URLs are not supported for OAuth code exchange. Use your My Domain URL instead.</string>
-    <string name="sf__app_blocked_error">This app could not be verified. Contact support.</string>
+    <string name="sf__app_blocked_error">The app couldn\'t be verified. Contact your Salesforce admin.</string>
 
     <!-- SSL errors -->
     <string name="sf__ssl_error">SSL error: %s.</string>
