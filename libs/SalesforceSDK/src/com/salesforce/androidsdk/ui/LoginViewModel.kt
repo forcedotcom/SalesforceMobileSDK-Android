@@ -549,21 +549,7 @@ open class LoginViewModel(
 
         val additionalParameters = mutableMapOf<String, String>()
 
-        val isMyDomainServer = server != PRODUCTION_LOGIN_URL
-            && server != SANDBOX_LOGIN_URL
-            && server != WELCOME_LOGIN_URL
-        if (sdkManager.useDPoP && isMyDomainServer) {
-            runCatching {
-                val credId = java.util.UUID.randomUUID().toString()
-                val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
-                val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
-                val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
-                additionalParameters["dpop_jkt"] = thumbprint
-                pendingCredentialsIdentifier = credId
-            }.onFailure { t ->
-                android.util.Log.w("LoginViewModel", "Failed to compute dpop_jkt for migration /authorize; proceeding without it", t)
-            }
-        }
+        maybeAddDpopJkt(server, sdkManager, additionalParameters)
 
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
@@ -610,24 +596,7 @@ open class LoginViewModel(
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
 
-            // dpop_jkt is only sent for custom/my-domain login servers. Pool servers
-            // (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
-            // support DPoP code binding and would reject the parameter.
-            val isMyDomainServer = server != PRODUCTION_LOGIN_URL
-                && server != SANDBOX_LOGIN_URL
-                && server != WELCOME_LOGIN_URL
-            if (sdkManager.useDPoP && isMyDomainServer) {
-                runCatching {
-                    val credId = java.util.UUID.randomUUID().toString()
-                    val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
-                    val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
-                    val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
-                    additionalParams["dpop_jkt"] = thumbprint
-                    pendingCredentialsIdentifier = credId
-                }.onFailure { t ->
-                    android.util.Log.w("LoginViewModel", "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
-                }
-            }
+            maybeAddDpopJkt(server, sdkManager, additionalParams)
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
@@ -753,6 +722,32 @@ open class LoginViewModel(
     }
 
     // endregion
+
+    /**
+     * Adds `dpop_jkt` to [params] when DPoP is enabled and [server] is a my-domain server.
+     * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
+     * support DPoP code binding and reject the parameter.
+     */
+    private fun maybeAddDpopJkt(
+        server: String,
+        sdkManager: SalesforceSDKManager,
+        params: MutableMap<String, String>,
+    ) {
+        val isMyDomainServer = server != PRODUCTION_LOGIN_URL
+            && server != SANDBOX_LOGIN_URL
+            && server != WELCOME_LOGIN_URL
+        if (!sdkManager.useDPoP || !isMyDomainServer) return
+        runCatching {
+            val credId = java.util.UUID.randomUUID().toString()
+            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+            val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+            params["dpop_jkt"] = thumbprint
+            pendingCredentialsIdentifier = credId
+        }.onFailure { t ->
+            android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
+        }
+    }
 
     companion object {
 
