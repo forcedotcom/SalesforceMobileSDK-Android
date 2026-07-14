@@ -736,8 +736,20 @@ open class LoginViewModel(
         val isMyDomainServer = server != PRODUCTION_LOGIN_URL
             && server != SANDBOX_LOGIN_URL
             && server != WELCOME_LOGIN_URL
-        if (!sdkManager.useDPoP || !isMyDomainServer) return
+        if (!sdkManager.useDPoP || !isMyDomainServer) {
+            // Clear any stale dpop_jkt and its key from a previous server-picker entry.
+            params.remove("dpop_jkt")
+            pendingCredentialsIdentifier?.let {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+            }
+            pendingCredentialsIdentifier = null
+            return
+        }
         runCatching {
+            // Delete any orphaned key from a prior server-picker navigation before generating a new one.
+            pendingCredentialsIdentifier?.let {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+            }
             val credId = java.util.UUID.randomUUID().toString()
             val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
