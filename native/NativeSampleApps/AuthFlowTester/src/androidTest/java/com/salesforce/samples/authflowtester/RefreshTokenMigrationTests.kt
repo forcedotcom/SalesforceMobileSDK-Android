@@ -205,6 +205,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         useDPoP: Boolean,
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
+        forceAdvancedAuthentication: Boolean,
         useWelcomeDiscovery: Boolean,
         isMultiUser: Boolean,
     ) {
@@ -214,6 +215,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             useWebServerFlow = useWebServerFlow,
             useHybridAuthToken = false, // TODO: W-20524841 — Pass useHybridAuthToken once server bug is fixed.
             useDPoP = useDPoP,
+            forceAdvancedAuthentication = forceAdvancedAuthentication,
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,
             useWelcomeDiscovery = useWelcomeDiscovery,
