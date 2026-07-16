@@ -104,8 +104,6 @@ import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
@@ -2177,7 +2175,6 @@ open class SalesforceSDKManager protected constructor(
         // If this takes more than five seconds it can cause Android's application not responding report.
         withTimeoutOrNull(5000L.milliseconds) {
             val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
-            val isStandardLoginServer = loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL
             val isInvalidServer = !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
 
             when {
@@ -2191,7 +2188,7 @@ open class SalesforceSDKManager protected constructor(
                     // Disable Salesforce App Attestation for login servers that are not My Domain servers.
                     appAttestationClient?.apiHostName = null
                 }
-                isStandardLoginServer -> {
+                LoginServerManager.isPoolServer(loginServer) -> {
                     // Standard login servers have no auth-config to source a shared-session value from, so
                     // browser login is gated solely on the force flag and shared session stays false.
                     setBrowserLoginEnabled(

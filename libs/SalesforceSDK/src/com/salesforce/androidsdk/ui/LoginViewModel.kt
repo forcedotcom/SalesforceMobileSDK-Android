@@ -65,10 +65,8 @@ import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
-import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
@@ -733,9 +731,7 @@ open class LoginViewModel(
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
     ) {
-        val isMyDomainServer = server != PRODUCTION_LOGIN_URL
-            && server != SANDBOX_LOGIN_URL
-            && server != WELCOME_LOGIN_URL
+        val isMyDomainServer = !LoginServerManager.isPoolServer(server)
         if (!sdkManager.useDPoP || !isMyDomainServer) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
