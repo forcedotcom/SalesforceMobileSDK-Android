@@ -33,6 +33,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import org.junit.Assert.assertNotEquals
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -71,7 +72,9 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // region ECA JWT DPoP RTR Tests
 
-    // Login with ECA JWT DPoP RTR using hybrid auth token flow.
+    // TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows.
+    // Server currently returns invalid_grant for RTR + JWT tokens in hybrid flow.
+    @Ignore("TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows")
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
@@ -107,14 +110,14 @@ class DPoPLoginTests : AuthFlowTest() {
         assertNotEquals(userRefreshToken, otherUserRefreshToken)
 
         // Switch back to initial user; revoke + refresh must work with DPoP nonce rotation
-        switchToUserAndValidateUser(user)
+        switchToUserAndValidateUser(user, isDpop = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
 
         // Switch to other user; revoke + refresh must work independently with its own nonce
-        switchToUserAndValidateUser(otherUser)
+        switchToUserAndValidateUser(otherUser, isDpop = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
     }
 
     // endregion
@@ -132,18 +135,23 @@ class DPoPLoginTests : AuthFlowTest() {
         migrateAndValidate(
             ECA_JWT_DPOP,
             scopeSelection = ScopeSelection.ALL,
+            isDpop = true,
         )
     }
 
     // Login with DPoP ECA, migrate to DPoP+RTR ECA — refresh token rotation now enabled.
+    // Uses useHybridAuthToken = false: the server rejects hybrid grants with RTR + JWT enabled
+    // (W-22512846), so the non-hybrid path is used as a workaround.
     @Test
     fun testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
+            useHybridAuthToken = false,
             useDPoP = true,
         )
         migrateAndValidate(
             ECA_JWT_DPOP_RTR,
+            isDpop = true,
         )
     }
 
@@ -169,6 +177,7 @@ class DPoPLoginTests : AuthFlowTest() {
         )
         restartAndValidateUser(
             knownAppConfig = ECA_JWT_DPOP,
+            isDpop = true,
         )
         // After restart the key pair must still be valid — revoke+refresh proves it.
         // The nonce-change assertion also confirms the server accepted the DPoP proof

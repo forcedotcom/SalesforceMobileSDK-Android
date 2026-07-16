@@ -61,8 +61,11 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
 import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts
@@ -80,6 +83,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
 import java.net.URLEncoder
+import java.security.interfaces.ECPublicKey
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -201,6 +205,10 @@ open class LoginViewModel(
 
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
+
+    /** Credentials identifier pre-generated for a pending DPoP login; reused in doCodeExchange(). */
+    @VisibleForTesting
+    internal var pendingCredentialsIdentifier: String? = null
 
     /** JWT string used for JWT Auth Flow. */
     var jwt: String? = null
@@ -539,6 +547,8 @@ open class LoginViewModel(
 
         val additionalParameters = mutableMapOf<String, String>()
 
+        addDpopJktIfNeeded(server, sdkManager, additionalParameters)
+
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
             sdkManager.useHybridAuthentication,
@@ -583,6 +593,8 @@ open class LoginViewModel(
 
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
+
+            addDpopJktIfNeeded(server, sdkManager, additionalParams)
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
@@ -669,7 +681,8 @@ open class LoginViewModel(
             }
             val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
 
-            val credentialsIdentifier = java.util.UUID.randomUUID().toString()
+            val credentialsIdentifier = pendingCredentialsIdentifier?.also { pendingCredentialsIdentifier = null }
+                ?: java.util.UUID.randomUUID().toString()
 
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
@@ -707,6 +720,42 @@ open class LoginViewModel(
     }
 
     // endregion
+
+    /**
+     * Adds `dpop_jkt` to [params] when DPoP is enabled and [server] is a my-domain server.
+     * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
+     * support DPoP code binding and reject the parameter.
+     */
+    private fun addDpopJktIfNeeded(
+        server: String,
+        sdkManager: SalesforceSDKManager,
+        params: MutableMap<String, String>,
+    ) {
+        val isMyDomainServer = !LoginServerManager.isPoolServer(server)
+        if (!sdkManager.useDPoP || !isMyDomainServer) {
+            // Clear any stale dpop_jkt and its key from a previous server-picker entry.
+            params.remove("dpop_jkt")
+            pendingCredentialsIdentifier?.let {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+            }
+            pendingCredentialsIdentifier = null
+            return
+        }
+        runCatching {
+            // Delete any orphaned key from a prior server-picker navigation before generating a new one.
+            pendingCredentialsIdentifier?.let {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+            }
+            val credId = java.util.UUID.randomUUID().toString()
+            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+            val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+            params["dpop_jkt"] = thumbprint
+            pendingCredentialsIdentifier = credId
+        }.onFailure { t ->
+            android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
+        }
+    }
 
     companion object {
 
