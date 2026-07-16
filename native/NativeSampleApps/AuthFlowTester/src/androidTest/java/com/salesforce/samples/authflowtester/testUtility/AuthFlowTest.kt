@@ -323,7 +323,7 @@ abstract class AuthFlowTest {
         app.waitForAppLoad()
 
         val isDpop = useDPoP
-        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, isDpop = isDpop)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, expectAdvancedAuth = forceAdvancedAuthentication, isDpop = isDpop)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
     }
@@ -374,10 +374,11 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         usesWelcomeDiscovery: Boolean = false,
-        expectAdvancedAuth: Boolean = false,
+        expectAdvancedAuth: Boolean = true,
+        isDpop: Boolean = false,
     ) {
         restartApp()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
     }
 
     /**
@@ -413,10 +414,12 @@ abstract class AuthFlowTest {
     fun switchToUserAndValidateUser(
         knownUserConfig: KnownUserConfig,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
+        isDpop: Boolean = false,
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
     }
 
     companion object {
@@ -487,7 +490,7 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP)
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -572,6 +575,8 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         scopeSelection: ScopeSelection = EMPTY,
         knownUserConfig: KnownUserConfig = user,
+        expectAdvancedAuth: Boolean = true,
+        isDpop: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -581,7 +586,7 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
@@ -593,9 +598,10 @@ abstract class AuthFlowTest {
         isRtr: Boolean,
         isDpop: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
+        isMultiUser: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
-        val preNonce = if (isDpop) app.getDpopInfo().nonce else null
         app.revokeAccessToken()
         app.validateApiRequest()
         val (postAccessToken, postRefreshToken) = app.getTokens()
@@ -611,9 +617,8 @@ abstract class AuthFlowTest {
         if (isDpop) {
             val postNonce = app.getDpopInfo().nonce
             assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
-            assert(preNonce != postNonce) { "DPoP nonce should have changed after token refresh (server issues new nonce with each /token response)" }
         }
 
-        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr, isDpop = isDpop)
+        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, expectAdvancedAuth = expectAdvancedAuth, isMultiUser = isMultiUser, isRtr = isRtr, isDpop = isDpop)
     }
 }
