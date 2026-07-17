@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.ui
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -103,7 +105,7 @@ open class ManageSpaceActivity : ComponentActivity() {
                     showLoginPage = false,
                     reason = USER_LOGOUT
                 )
-                clearApplicationUserData()
+                (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).clearApplicationUserData()
             },
             titleText = stringResource(sf__manage_space_title),
             textText = stringResource(sf__manage_space_confirmation),
