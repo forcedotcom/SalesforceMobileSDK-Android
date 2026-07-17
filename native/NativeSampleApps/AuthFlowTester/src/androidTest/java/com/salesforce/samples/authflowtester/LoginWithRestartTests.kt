@@ -215,4 +215,5 @@ class LoginWithRestartTests : AuthFlowTest() {
         switchToUserAndValidateUser(otherUser)
         app.validateApiRequest()
     }
+
 }

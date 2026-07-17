@@ -57,8 +57,11 @@ import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
+import com.salesforce.samples.authflowtester.components.DPOP_NONCE
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
+import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
 import com.salesforce.samples.authflowtester.components.USERNAME
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
@@ -75,6 +78,12 @@ import com.salesforce.androidsdk.R as sdkR
 data class Tokens(
     val accessToken: String,
     val refreshToken: String,
+)
+
+data class DpopInfo(
+    val tokenType: String,
+    val nonce: String,
+    val keyThumbprint: String,
 )
 
 /**
@@ -265,12 +274,22 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
+    fun getDpopInfo(): DpopInfo {
+        expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
+        return DpopInfo(
+            tokenType = getText(OAUTH_TOKEN_TYPE),
+            nonce = getSensitiveValue(DPOP_NONCE),
+            keyThumbprint = getText(DPOP_KEY_THUMBPRINT),
+        )
+    }
+
     fun validateUser(
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -307,7 +326,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -326,6 +345,15 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assert(accessToken.isNotEmpty()) { "Expected non-empty opaque access token" }
         }
         assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
+
+        if (expected.isDpop) {
+            val dpopInfo = getDpopInfo()
+            assertEquals("DPoP", dpopInfo.tokenType)
+            assert(dpopInfo.nonce.isNotEmpty()) { "Expected non-empty DPoP nonce after token exchange" }
+            assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+                "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
+            }
+        }
     }
 
     fun migrateToNewApp(
@@ -497,9 +525,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop)
     }
 
     private fun validateUserAgent(
@@ -509,6 +538,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
+        isDpop: Boolean = false,
     ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
@@ -559,6 +589,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         } else {
             assert("RT" !in flags) {
                 "Expected no 'RT' flag when Refresh Token Rotation has not occurred in: $ua"
+            }
+        }
+
+        if (isDpop) {
+            assert("DP" in flags) {
+                "Expected 'DP' flag for DPoP session in: $ua"
+            }
+        } else {
+            assert("DP" !in flags) {
+                "Expected no 'DP' flag for non-DPoP session in: $ua"
             }
         }
     }

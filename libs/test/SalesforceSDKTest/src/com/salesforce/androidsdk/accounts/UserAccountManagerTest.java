@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.accounts;
 
 import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CREDENTIALS_IDENTIFIER;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_TOKEN_TYPE;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USERNAME;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.checkSameUserAccount;
 
@@ -41,6 +43,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
@@ -190,6 +193,57 @@ public class UserAccountManagerTest {
                 "Snapshot built before rotation should reflect the latest persisted refresh token",
                 rotatedRefreshToken,
                 staleUser.getRefreshToken());
+    }
+
+    /*
+     * Regression test for DPoP fields not persisted in AccountManager.
+     *
+     * credentialsIdentifier and tokenType were omitted from buildAuthBundle /
+     * buildUserAccount, so both came back null after any process restart.
+     * This caused the DPoP proof to be skipped on token refresh, resulting in
+     * the server rejecting the request with "app requires proof of possession".
+     */
+    @Test
+    public void test_givenDPoPAccount_whenCreateAndBuildUserAccount_thenCredentialsIdentifierAndTokenTypeRoundTrip() {
+        UserAccount userAccount = UserAccountTest.createTestAccount();
+        Assert.assertEquals("Precondition: test account must have credentialsIdentifier set",
+                TEST_CREDENTIALS_IDENTIFIER, userAccount.getCredentialsIdentifier());
+        Assert.assertEquals("Precondition: test account must have tokenType set",
+                TEST_TOKEN_TYPE, userAccount.getTokenType());
+
+        userAccMgr.createAccount(userAccount);
+        Account account = userAccMgr.getCurrentAccount();
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+
+        Assert.assertEquals("credentialsIdentifier must survive createAccount → buildUserAccount round-trip",
+                TEST_CREDENTIALS_IDENTIFIER, restored.getCredentialsIdentifier());
+        Assert.assertEquals("tokenType must survive createAccount → buildUserAccount round-trip",
+                TEST_TOKEN_TYPE, restored.getTokenType());
+    }
+
+    /*
+     * Regression test: updateAccount must also persist credentialsIdentifier and tokenType.
+     */
+    @Test
+    public void test_givenDPoPAccount_whenUpdateAccount_thenCredentialsIdentifierAndTokenTypeRoundTrip() {
+        UserAccount original = UserAccountTest.createTestAccount();
+        userAccMgr.createAccount(original);
+        Account account = userAccMgr.getCurrentAccount();
+
+        final String newCredId = "updated-credentials-id";
+        final String newTokenType = "DPoP";
+        UserAccount updated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .credentialsIdentifier(newCredId)
+                .tokenType(newTokenType)
+                .build();
+        userAccMgr.updateAccount(account, updated);
+
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals("credentialsIdentifier must survive updateAccount → buildUserAccount round-trip",
+                newCredId, restored.getCredentialsIdentifier());
+        Assert.assertEquals("tokenType must survive updateAccount → buildUserAccount round-trip",
+                newTokenType, restored.getTokenType());
     }
 
     /**

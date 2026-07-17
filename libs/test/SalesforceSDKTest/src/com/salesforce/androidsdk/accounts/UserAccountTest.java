@@ -107,6 +107,8 @@ public class UserAccountTest {
     public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
     public static final String TEST_BEACON_CHILD_CONSUMER_SECRET = "test-beacon-child-consumer-secret";
     public static final String TEST_SCOPE = "api web openid refresh_token";
+    public static final String TEST_CREDENTIALS_IDENTIFIER = "test-credentials-identifier-uuid";
+    public static final String TEST_TOKEN_TYPE = "DPoP";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -428,6 +430,8 @@ public class UserAccountTest {
         object.put(UserAccount.SCOPE, TEST_SCOPE);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
+        object.put(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.put(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -476,6 +480,8 @@ public class UserAccountTest {
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object.putString(UserAccount.SCOPE, TEST_SCOPE);
+        object.putString(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.putString(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -522,6 +528,8 @@ public class UserAccountTest {
                 .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)
                 .beaconChildConsumerSecret(TEST_BEACON_CHILD_CONSUMER_SECRET)
                 .scope(TEST_SCOPE)
+                .credentialsIdentifier(TEST_CREDENTIALS_IDENTIFIER)
+                .tokenType(TEST_TOKEN_TYPE)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }

@@ -44,10 +44,11 @@ class NativeLoginManagerTest {
     private lateinit var bioAuthManager: BiometricAuthenticationManager
 
     /** Retained before any mocking so that tearDown can clean up regardless of mock state. */
-    private val realUserAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+    private lateinit var realUserAccountManager: UserAccountManager
 
     @Before
     fun setUp() {
+        realUserAccountManager = SalesforceSDKManager.getInstance().userAccountManager
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
     }
 
@@ -377,10 +378,11 @@ class NativeLoginManagerTest {
         val mockAppAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
             coEvery { fetchMobileAppAttestationChallenge() } returns null
         }
-        mockkObject(SalesforceSDKManager)
-        val spySdkManager = spyk(SalesforceSDKManager.getInstance())
-        every { SalesforceSDKManager.getInstance() } returns spySdkManager
+        val realSdkManager = SalesforceSDKManager.getInstance()
+        val spySdkManager = spyk(realSdkManager)
         every { spySdkManager.appAttestationClient } returns mockAppAttestationClient
+        mockkObject(SalesforceSDKManager)
+        every { SalesforceSDKManager.getInstance() } returns spySdkManager
 
         val restClient = createRestClientStubbingFailedLoginResponse()
         mgr = createNativeLoginManagerForTest(restClient = restClient)
@@ -435,10 +437,11 @@ class NativeLoginManagerTest {
                 createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
             } returns attestation
         }
-        mockkObject(SalesforceSDKManager)
-        val spySdkManager = spyk(SalesforceSDKManager.getInstance())
-        every { SalesforceSDKManager.getInstance() } returns spySdkManager
+        val realSdkManager = SalesforceSDKManager.getInstance()
+        val spySdkManager = spyk(realSdkManager)
         every { spySdkManager.appAttestationClient } returns mockAppAttestationClient
+        mockkObject(SalesforceSDKManager)
+        every { SalesforceSDKManager.getInstance() } returns spySdkManager
     }
 
     private fun createRestClientStubbingFailedLoginResponse(): RestClient {

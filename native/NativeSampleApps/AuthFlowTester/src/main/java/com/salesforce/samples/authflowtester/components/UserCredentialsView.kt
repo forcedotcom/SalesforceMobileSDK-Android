@@ -38,6 +38,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
+import java.security.interfaces.ECPublicKey
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
@@ -60,6 +64,7 @@ private const val COMMUNITY = "Community"
 private const val DOMAINS_AND_SIDS = "Domains and SIDs"
 private const val COOKIES_AND_SECURITY = "Cookies and Security"
 private const val BEACON = "Beacon"
+private const val DPOP = "DPoP"
 private const val OTHER = "Other"
 
 // User Identity fields
@@ -75,7 +80,12 @@ private const val DOMAIN = "Domain"
 const val ACCESS_TOKEN = "Access Token"
 const val REFRESH_TOKEN = "Refresh Token"
 const val TOKEN_FORMAT = "Token Format"
+const val OAUTH_TOKEN_TYPE = "OAuth Token Type"
 const val SCOPES = "Scopes"
+
+// DPoP fields
+const val DPOP_NONCE = "DPoP Nonce"
+const val DPOP_KEY_THUMBPRINT = "DPoP Key Thumbprint"
 
 // URLs fields
 private const val INSTANCE_URL = "Instance URL"
@@ -131,6 +141,7 @@ fun UserCredentialsView(currentUser: UserAccount?) {
             InfoRowView(label = ACCESS_TOKEN, value = currentUser?.authToken, isSensitive = true)
             InfoRowView(label = REFRESH_TOKEN, value = currentUser?.refreshToken, isSensitive = true)
             InfoRowView(label = TOKEN_FORMAT, value = currentUser?.tokenFormat?.ifBlank { "Opaque" })
+            InfoRowView(label = OAUTH_TOKEN_TYPE, value = currentUser?.tokenType?.ifBlank { "Bearer" } ?: "Bearer")
             InfoRowView(label = SCOPES, value = formatScopes(currentUser))
         }
 
@@ -167,6 +178,26 @@ fun UserCredentialsView(currentUser: UserAccount?) {
             InfoRowView(label = BEACON_CHILD_CONSUMER_SECRET, value = currentUser?.beaconChildConsumerSecret, isSensitive = true)
         }
 
+        if (currentUser?.tokenType == "DPoP") {
+            InfoSection(title = DPOP) {
+                InfoRowView(
+                    label = DPOP_NONCE,
+                    value = currentUser.credentialsIdentifier
+                        ?.let { id ->
+                            val host = currentUser.loginServer
+                                ?.removePrefix("https://")?.removePrefix("http://")
+                                ?: ""
+                            DPoPNonceCache.get(id, host)
+                        },
+                    isSensitive = true,
+                )
+                InfoRowView(
+                    label = DPOP_KEY_THUMBPRINT,
+                    value = computeDpopThumbprint(currentUser.credentialsIdentifier),
+                )
+            }
+        }
+
         InfoSection(title = OTHER) {
             InfoRowView(label = ADDITIONAL_OAUTH_FIELDS, value = formatAdditionalOAuthFields(currentUser))
             InfoRowView(
@@ -200,6 +231,16 @@ private fun formatAdditionalOAuthFields(user: UserAccount?): String? {
     }
 }
 
+private fun computeDpopThumbprint(credentialsIdentifier: String?): String {
+    return credentialsIdentifier?.let {
+        runCatching {
+            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+            DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+        }.getOrElse { "Unavailable" }
+    } ?: "Unavailable"
+}
+
 private fun generateCredentialsJSON(user: UserAccount?): String {
     if (user == null) return "{}"
 
@@ -220,6 +261,7 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
                 put(ACCESS_TOKEN, user.authToken)
                 put(REFRESH_TOKEN, user.refreshToken)
                 put(TOKEN_FORMAT, user.tokenFormat)
+                put(OAUTH_TOKEN_TYPE, user.tokenType ?: "Bearer")
                 put(SCOPES, formatScopes(user))
             }
 
@@ -254,6 +296,20 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
             putJsonObject(BEACON) {
                 put(BEACON_CHILD_CONSUMER_KEY, user.beaconChildConsumerKey)
                 put(BEACON_CHILD_CONSUMER_SECRET, user.beaconChildConsumerSecret)
+            }
+
+            if (user.tokenType == "DPoP") {
+                putJsonObject(DPOP) {
+                    val nonce = user.credentialsIdentifier
+                        ?.let { id ->
+                            val host = user.loginServer
+                                ?.removePrefix("https://")?.removePrefix("http://")
+                                ?: ""
+                            DPoPNonceCache.get(id, host)
+                        }
+                    put(DPOP_NONCE, nonce)
+                    put(DPOP_KEY_THUMBPRINT, computeDpopThumbprint(user.credentialsIdentifier))
+                }
             }
 
             putJsonObject(OTHER) {
