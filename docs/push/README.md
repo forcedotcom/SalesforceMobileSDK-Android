@@ -315,34 +315,6 @@ SalesforceSDKManager.getInstance().invokeServerNotificationAction(
 
 ---
 
-### `PushService` Subclassing
-
-To customize the registration payload or react to status changes, subclass `PushService`:
-
-```kotlin
-class MyPushService : PushService() {
-    override fun onPushNotificationRegistrationStatus(status: Int, userAccount: UserAccount?) {
-        when (status) {
-            REGISTRATION_STATUS_SUCCEEDED -> { /* analytics, logging */ }
-            REGISTRATION_STATUS_FAILED    -> { /* alert / retry logic */ }
-        }
-    }
-
-    override fun onSendRegisterPushNotificationRequest(
-        requestBodyJsonFields: Map<String, Any?>?,
-        restClient: RestClient
-    ): RestResponse {
-        // Modify requestBodyJsonFields before posting, then call super
-        return super.onSendRegisterPushNotificationRequest(requestBodyJsonFields, restClient)
-    }
-}
-
-// Register:
-SalesforceSDKManager.getInstance().pushServiceType = MyPushService::class.java
-```
-
----
-
 ### React Native Apps
 
 For React Native apps, the setup is identical to the native Android setup above, with one substitution: use `SalesforceReactSDKManager.getInstance()` in place of `SalesforceSDKManager.getInstance()`:
