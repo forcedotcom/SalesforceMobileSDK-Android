@@ -277,15 +277,18 @@ data class SalesforceActionableNotificationContent(val sfdc: Sfdc?) {
 }
 ```
 
-Parse from the `content` key of the received `data` map:
+Parse from the `"content"` key of the received `data` map (the full JSON wraps the `sfdc` object):
 ```kotlin
 override fun onPushMessageReceived(data: Map<String?, String?>?) {
-    val json = data?.get("sfdc.content") ?: data?.get("content") ?: return
-    val notification = SalesforceActionableNotificationContent.fromJson(json)
-    val notificationId = notification.sfdc?.nid
+    val sfdc = data?.get("content")
+        ?.let { SalesforceActionableNotificationContent.fromJson(it) }
+        ?.sfdc ?: return
+    val notificationId = sfdc.nid
     // use notificationId with SalesforceSDKManager.invokeServerNotificationAction(...)
 }
 ```
+
+**Note on `Act`:** `sfdc.act?.group` is a string identifier that matches `notificationType.actionGroups[].name` — the action *buttons* (with `label` and `actionKey`) live on the notification type fetched from the API, not inside the `act` field of the incoming payload.
 
 ---
 
@@ -425,22 +428,88 @@ No app-side configuration is required beyond normal SDK setup.
 
 Requires Salesforce API version **v64.0 or later**.
 
-After successful device registration, the SDK automatically fetches notification types from `GET /vXX.0/connect/notifications/types` and stores them per user. It also creates Android `NotificationChannel` objects for each Salesforce notification type via `PushService.registerNotificationChannels(...)`.
+After successful device registration, the SDK automatically fetches notification types from `GET /vXX.0/connect/notifications/types` and stores them per user. It creates one `NotificationChannel` per Salesforce notification type (channel ID = `notificationType.type`, importance `HIGH`), grouped under a `NotificationChannelGroup` named `"Salesforce Notifications"`.
 
-To invoke a server-side action when the user taps a notification button:
+Actionable notifications require three collaborating pieces:
+
+1. **Payload parsing** — parse `"content"` in `onPushMessageReceived`, look up the notification type by `notifType`.
+2. **Notification building** — construct a `NotificationCompat` with action buttons sourced from the notification type's `actionGroups`.
+3. **Action handling** — a `BroadcastReceiver` receives the `PendingIntent` when the user taps a button and calls `invokeServerNotificationAction`.
+
+### 1. Parse payload and build the notification
 
 ```kotlin
 override fun onPushMessageReceived(data: Map<String?, String?>?) {
-    val json = data?.get("sfdc.content") ?: return
-    val content = SalesforceActionableNotificationContent.fromJson(json)
-    val nid = content.sfdc?.nid ?: return
-    // When user taps an action:
-    SalesforceSDKManager.getInstance().invokeServerNotificationAction(
-        notificationId = nid,
-        actionKey = "your_action_key",
-        restClient = SalesforceSDKManager.getInstance().clientManager.peekRestClient()
-    )
+    // Payload key is "content" — the SDK has already decrypted it
+    val sfdc = data?.get("content")
+        ?.let { SalesforceActionableNotificationContent.fromJson(it) }
+        ?.sfdc ?: return
+
+    // Look up the stored notification type (fetched automatically after registration)
+    val notifType = sfdc.notifType?.let {
+        SalesforceSDKManager.getInstance().getNotificationsType(it)
+    } ?: return
+
+    // Build notification using notifType.type as the channel ID
+    val notification = NotificationCompat.Builder(context, notifType.type).apply {
+        setContentTitle(sfdc.alertTitle)
+        setContentText(sfdc.alert)
+        setStyle(NotificationCompat.BigTextStyle().bigText(sfdc.alertBody))
+
+        // Action buttons come from the notification type's actionGroups,
+        // matched by sfdc.act?.group (the payload carries a group name, not the buttons)
+        notifType.actionGroups
+            ?.firstOrNull { it.name == sfdc.act?.group }
+            ?.actions
+            ?.forEach { action ->
+                addAction(
+                    android.R.drawable.ic_menu_send,
+                    action.label,
+                    PendingIntent.getBroadcast(
+                        context, 0,
+                        Intent("com.example.PUSH_ACTION").apply {
+                            putExtra("notificationId", sfdc.nid)
+                            putExtra("actionKey", action.actionKey)
+                        },
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+            }
+    }.build()
+    context.getSystemService(NotificationManager::class.java)
+        .notify(sfdc.nid.hashCode(), notification)
 }
+```
+
+### 2. Handle the action tap with a BroadcastReceiver
+
+```kotlin
+class PushActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val nid = intent.getStringExtra("notificationId") ?: return
+        val actionKey = intent.getStringExtra("actionKey") ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // restClient defaults to clientManager.peekRestClient(currentUser)
+                SalesforceSDKManager.getInstance()
+                    .invokeServerNotificationAction(notificationId = nid, actionKey = actionKey)
+            } catch (e: Exception) {
+                Log.e("Push", "Action invocation failed", e)
+            }
+        }
+    }
+}
+```
+
+Register the receiver in `Application.onCreate()` (not in the manifest — use `RECEIVER_NOT_EXPORTED` to prevent external apps from sending intents to it):
+
+```kotlin
+ContextCompat.registerReceiver(
+    this,
+    PushActionReceiver(),
+    IntentFilter("com.example.PUSH_ACTION"),
+    ContextCompat.RECEIVER_NOT_EXPORTED
+)
 ```
 
 ---
