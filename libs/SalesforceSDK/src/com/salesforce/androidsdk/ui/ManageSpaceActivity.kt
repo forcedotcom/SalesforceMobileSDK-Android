@@ -103,6 +103,7 @@ open class ManageSpaceActivity : ComponentActivity() {
                     showLoginPage = false,
                     reason = USER_LOGOUT
                 )
+                clearApplicationUserData()
             },
             titleText = stringResource(sf__manage_space_title),
             textText = stringResource(sf__manage_space_confirmation),
