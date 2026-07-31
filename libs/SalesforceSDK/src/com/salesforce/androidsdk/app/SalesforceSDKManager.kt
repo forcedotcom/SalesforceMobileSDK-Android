@@ -37,6 +37,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.IntentFilter
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -74,6 +75,7 @@ import com.salesforce.androidsdk.R.string.sf__dev_support_title
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
@@ -88,6 +90,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AppAttestationClient
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_USER_ID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
@@ -113,11 +117,9 @@ import com.salesforce.androidsdk.developer.support.notifications.local.ShowDevel
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
 import com.salesforce.androidsdk.push.PushMessaging
-import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.getNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
 import com.salesforce.androidsdk.push.PushMessaging.register
-import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
@@ -273,7 +275,7 @@ open class SalesforceSDKManager protected constructor(
             remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { loginServer ->
                 resolveOAuthConfigForLoginServer(loginServer).consumerKey
             },
-            restClient = clientManager.peekUnauthenticatedRestClient()
+            restClient = getUnauthenticatedRestClient()
         )
     }
 
@@ -366,9 +368,14 @@ open class SalesforceSDKManager protected constructor(
             field = value
         }
 
-    /** Indicates if logout is in progress */
+    private val loggingOutAccounts = ConcurrentHashMap.newKeySet<Account>()
+
+    /** Indicates if any logout is in progress. */
     var isLoggingOut = false
         private set
+
+    /** Returns whether this exact Android account is currently being logged out. */
+    fun isLoggingOut(account: Account): Boolean = loggingOutAccounts.contains(account)
 
     /** The Salesforce SDK manager's admin settings manager */
     var adminSettingsManager: AdminSettingsManager? = null
@@ -709,17 +716,6 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
-    /**
-     * Indicates if the Salesforce Mobile SDK should automatically log out when
-     * the access token is revoked. When overriding this method to return false,
-     * the subclass is responsible for handling cleanup when the access token is
-     * revoked.
-     *
-     * @return True if the Salesforce Mobile SDK should automatically logout when
-     * the access token is revoked
-     */
-    open fun shouldLogoutWhenTokenRevoked() = true
-
     /** The Salesforce SDK manager's user account manager */
     open val userAccountManager: UserAccountManager by lazy {
         UserAccountManager.getInstance()
@@ -803,10 +799,11 @@ open class SalesforceSDKManager protected constructor(
     fun invokeServerNotificationAction(
         notificationId: String,
         actionKey: String,
-        restClient: RestClient = clientManager.peekRestClient(userAccountManager.currentUser)
+        restClient: RestClient? = clientManager?.peekRestClient()
     ): NotificationsActionsResponseBody? {
+        val authenticatedClient = restClient ?: return null
         return NotificationsApiClient(
-            restClient = restClient
+            restClient = authenticatedClient
         ).submitNotificationAction(
             notificationId = notificationId,
             actionKey = actionKey
@@ -891,17 +888,18 @@ open class SalesforceSDKManager protected constructor(
     private fun cleanUp(
         frontActivity: Activity?,
         userAccount: UserAccount?,
-        shouldDismissActivity: Boolean
+        shouldDismissActivity: Boolean,
+        isLastPersistedAccount: Boolean =
+            (userAccountManager.authenticatedUsers?.size ?: 0) <= 1,
     ) {
         // Clean up within this process
         cleanUp(userAccount)
 
         // Clean up Salesforce SDK manager instances in separate processes
         sendCleanupIntent(userAccount)
-        val users = userAccountManager.authenticatedUsers
 
         // If this is the last account, finish the front activity if specified
-        if (shouldDismissActivity && frontActivity != null && (users == null || users.size <= 1)) {
+        if (shouldDismissActivity && frontActivity != null && isLastPersistedAccount) {
             frontActivity.finish()
         }
 
@@ -913,7 +911,7 @@ open class SalesforceSDKManager protected constructor(
          * since there might be other accounts on that same org and these
          * policies are stored at the org level.
          */
-        if (users == null || users.size <= 1) {
+        if (isLastPersistedAccount) {
             adminSettingsManager?.resetAll()
             adminPermsManager?.resetAll()
             adminSettingsManager = null
@@ -980,7 +978,7 @@ open class SalesforceSDKManager protected constructor(
          */
         val userAccMgr = userAccountManager
         val accounts = userAccMgr.authenticatedUsers
-        if (accounts == null || accounts.size == 0) {
+        if (accounts == null || accounts.isEmpty()) {
             startLoginPage()
         } else if (accounts.size == 1) {
             userAccMgr.switchToUser(
@@ -1023,121 +1021,6 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Unregisters from push notifications.
-     * @param clientMgr The client manager
-     * @param showLoginPage Shows the login page after push notification
-     * unregistration
-     * @param refreshToken The refresh token
-     * @param loginServer The login server
-     * @param account The user account
-     * @param frontActivity The front activity
-     * @param isLastAccount Indicates if the account is the last authenticated
-     * account
-     */
-    @Synchronized
-    private fun unregisterPush(
-        clientMgr: ClientManager,
-        showLoginPage: Boolean,
-        refreshToken: String,
-        loginServer: String?,
-        account: Account?,
-        frontActivity: Activity?,
-        isLastAccount: Boolean,
-        logoutReason: LogoutReason,
-    ) {
-        val intentFilter = IntentFilter(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
-
-        val pushUnregisterReceiver = object : BroadcastReceiver() {
-
-            override fun onReceive(
-                context: Context,
-                intent: Intent
-            ) {
-                if (UNREGISTERED_ATTEMPT_COMPLETE_EVENT == intent.action) {
-                    runCatching {
-                        appContext.unregisterReceiver(this)
-                    }.onFailure { e ->
-                        e(TAG, "Exception occurred while un-registering", e)
-                    }
-                    removeAccount(
-                        clientMgr,
-                        showLoginPage,
-                        refreshToken,
-                        loginServer,
-                        account,
-                        frontActivity,
-                        logoutReason,
-                    )
-                }
-            }
-        }
-
-        registerReceiver(
-            appContext,
-            pushUnregisterReceiver,
-            intentFilter,
-            RECEIVER_NOT_EXPORTED
-        )
-
-        // Unregisters from notifications on logout
-        unregister(
-            appContext,
-            userAccountManager.buildUserAccount(account),
-            isLastAccount
-        )
-    }
-
-    /**
-     * Destroys the stored authentication credentials (removes the account)
-     * and, if requested, restarts the app.
-     *
-     * This overload uses a null user account.
-     *
-     * @param frontActivity The front activity
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     */
-    open fun logout(
-        /* Note: Kotlin's @JvmOverloads annotations does not correctly
-           generate this overload due to a JVM naming conflict.         */
-        frontActivity: Activity?,
-        showLoginPage: Boolean = true,
-    ) {
-        logout(null, frontActivity, showLoginPage)
-    }
-
-    /**
-     * Destroys the stored authentication credentials (removes the account)
-     * and, if requested, restarts the app.
-     *
-     * @param account The user account to logout. Defaults to the current user
-     * account
-     * @param frontActivity The front activity
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     */
-    @JvmOverloads
-    open fun logout(
-        account: Account? = null,
-        frontActivity: Activity?,
-        showLoginPage: Boolean = true,
-    ) {
-        logout(
-            account = account,
-            frontActivity = frontActivity,
-            showLoginPage = showLoginPage,
-            reason = UNKNOWN
-        )
-    }
-
-    // Note the below overload exists because @JvmOverloads generates non-overrideable
-    // signatures for all but the overload with all params. see:
-    // https://youtrack.jetbrains.com/issue/KT-33240/Generated-overloads-for-JvmOverloads-on-open-methods-should-be-final
-    //
-    // I highly doubt any apps are overriding the above function but it is technically breaking and shouldn't be
-    // combined until Mobile SDK 13.0.  TODO: remove above method and move @JvmOverloads to below overload -- or remove open.
-
-    /**
      * Destroys the stored authentication credentials (removes the account)
      * and, if requested, restarts the app.
      *
@@ -1149,108 +1032,114 @@ open class SalesforceSDKManager protected constructor(
      * @param reason The reason for the logout.
      */
     open fun logout(
-        account: Account? = null,
+        account: Account? = userAccountManager.currentAccount,
         frontActivity: Activity?,
         showLoginPage: Boolean = true,
         reason: LogoutReason = UNKNOWN,
     ) {
-        val clientMgr = ClientManager(
-            appContext,
-            accountType,
-            shouldLogoutWhenTokenRevoked()
-        )
-
-        val accountToLogout = account ?: clientMgr.account
-
-        isLoggingOut = true
-        val mgr = AccountManager.get(appContext)
-        var refreshToken: String? = null
-        var loginServer: String? = null
-        if (accountToLogout != null) {
-            val encryptionKey = encryptionKey
-            refreshToken = decrypt(
-                mgr.getPassword(accountToLogout),
-                encryptionKey
-            )
-            loginServer = decrypt(
-                mgr.getUserData(
-                    accountToLogout,
-                    KEY_INSTANCE_URL
-                ),
-                encryptionKey
-            )
+        val accountToLogout = account ?: userAccountManager.currentAccount
+        if (accountToLogout == null) {
+            cleanUp(frontActivity, null, showLoginPage)
+            clearWebViewCookiesAfterLogout()
+            notifyLogoutComplete(showLoginPage, reason, null)
+            return
         }
 
-        /*
-         * Makes a call to un-register from push notifications only if the
-         * refresh token is available.
-         */
-        val userAcc = userAccountManager.buildUserAccount(accountToLogout)
-        val numAccounts = mgr.getAccountsByType(accountType).size
-        if (isRegistered(
-                appContext,
-                userAcc
-            ) && refreshToken != null
-        ) {
-            unregisterPush(
-                clientMgr,
-                showLoginPage,
-                refreshToken,
-                loginServer,
-                accountToLogout,
-                frontActivity,
-                isLastAccount = (numAccounts == 1),
-                reason,
-            )
-        } else {
+        val accountManager = AccountManager.get(appContext)
+        val persistedAccount = accountManager.getAccountsByType(accountToLogout.type)
+            .firstOrNull { it == accountToLogout }
+            ?: return
+        if (!startLogout(persistedAccount)) {
+            w(TAG, "Ignoring a duplicate logout for an account already being logged out")
+            return
+        }
+
+        try {
+            val userAccount = userAccountManager.buildUserAccount(persistedAccount)
+            if (userAccount == null) {
+                purgeMalformedPersistedAccount(
+                    account = persistedAccount,
+                    cleanupUser = buildPersistedIdentityForCleanup(persistedAccount),
+                    frontActivity = frontActivity,
+                    showLoginPage = showLoginPage,
+                    logoutReason = reason,
+                    accountManager = accountManager,
+                )
+                return
+            }
+
+            val refreshToken = userAccount.refreshTokenForPersistence
+            val loginServer = userAccount.loginServer
+            val isLastAccount =
+                accountManager.getAccountsByType(persistedAccount.type).size == 1
+
+            if (isRegistered(appContext, userAccount)) {
+                runCatching {
+                    PushMessaging.unregisterForLogout(
+                        appContext,
+                        userAccount,
+                        isLastAccount,
+                    )
+                }.onFailure { error ->
+                    e(
+                        TAG,
+                        "Starting push notification un-registration failed; continuing logout",
+                        error,
+                    )
+                }
+            }
+
             removeAccount(
-                clientMgr,
-                showLoginPage,
-                refreshToken,
-                loginServer,
-                accountToLogout,
-                frontActivity,
-                reason,
+                showLoginPage = showLoginPage,
+                account = persistedAccount,
+                userAccount = userAccount,
+                refreshToken = refreshToken,
+                loginServer = loginServer,
+                frontActivity = frontActivity,
+                logoutReason = reason,
+                accountManager = accountManager,
             )
+        } finally {
+            finishLogout(persistedAccount)
         }
     }
 
     /**
-     * Removes the account upon logout.
-     *
-     * @param clientMgr The client manager instance
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     * @param refreshToken The refresh token
-     * @param loginServer The login server
-     * @param account The user account
-     * @param frontActivity The front activity
+     * Removes a valid persisted account and completes local logout. Push unregistration and token
+     * revocation are best-effort operations and never delay removal of local credentials.
      */
     private fun removeAccount(
-        clientMgr: ClientManager,
         showLoginPage: Boolean,
+        account: Account,
+        userAccount: UserAccount,
         refreshToken: String?,
         loginServer: String?,
-        account: Account?,
         frontActivity: Activity?,
         logoutReason: LogoutReason,
+        accountManager: AccountManager,
     ) {
-        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
+        val removed = runCatching {
+            accountManager.removeAccountExplicitly(account)
+        }.onFailure { error ->
+            e(TAG, "Removing the persisted account failed", error)
+        }.getOrDefault(false)
+        if (!removed) {
+            e(TAG, "The persisted account could not be removed")
+            return
+        }
+        val isLastPersistedAccount =
+            accountManager.getAccountsByType(account.type).isEmpty()
         cleanUp(
             frontActivity,
             userAccount,
-            showLoginPage
+            showLoginPage,
+            isLastPersistedAccount,
         )
-        clientMgr.removeAccount(account)
-        isLoggingOut = false
 
-        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
-        CookieManager.getInstance().removeAllCookies(null)
-
+        clearWebViewCookiesAfterLogout()
         notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
-        // Revoke the existing refresh token
-        if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
+        if (refreshToken != null && loginServer != null) {
             CoroutineScope(Default).launch {
                 runCatching {
                     revokeRefreshToken(
@@ -1259,10 +1148,106 @@ open class SalesforceSDKManager protected constructor(
                         refreshToken,
                         logoutReason,
                     )
-                }.onFailure { e ->
-                    w(TAG, "Revoking token failed", e)
+                }.onFailure { error ->
+                    w(TAG, "Revoking token failed", error)
                 }
             }
+        }
+    }
+
+    /**
+     * Removes an exact persisted account that cannot be rebuilt into a usable authenticated user.
+     * This path deliberately performs only local cleanup: malformed state cannot safely identify a
+     * push registration or a refresh token to revoke.
+     */
+    private fun purgeMalformedPersistedAccount(
+        account: Account,
+        cleanupUser: UserAccount?,
+        frontActivity: Activity?,
+        showLoginPage: Boolean,
+        logoutReason: LogoutReason,
+        accountManager: AccountManager,
+    ) {
+        val removed = runCatching {
+            accountManager.removeAccountExplicitly(account)
+        }.onFailure { error ->
+            w(TAG, "Removing a malformed persisted account failed", error)
+        }.getOrDefault(false)
+        val isLastPersistedAccount =
+            removed && accountManager.getAccountsByType(account.type).isEmpty()
+        val storedUserId = userAccountManager.storedUserId
+        val storedOrgId = userAccountManager.storedOrgId
+        val removedIdentityWasSelected =
+            cleanupUser?.userId == storedUserId && cleanupUser.orgId == storedOrgId
+        val selectedIdentityStillExists = removed &&
+            userAccountManager.authenticatedUsers?.any {
+                it.userId == storedUserId && it.orgId == storedOrgId
+            } == true
+
+        runCatching {
+            cleanUp(
+                frontActivity,
+                cleanupUser,
+                showLoginPage,
+                isLastPersistedAccount,
+            )
+        }.onFailure { error ->
+            w(TAG, "Cleaning local state for a malformed account failed", error)
+        }
+        runCatching {
+            clearWebViewCookiesAfterLogout()
+        }.onFailure { error ->
+            w(TAG, "Clearing cookies for a malformed account failed", error)
+        }
+        if (removed) {
+            if (removedIdentityWasSelected && !selectedIdentityStillExists) {
+                userAccountManager.clearStoredCurrentUserInfo()
+            }
+            runCatching {
+                notifyLogoutComplete(showLoginPage, logoutReason, cleanupUser)
+            }.onFailure { error ->
+                w(TAG, "Completing malformed account logout notification failed", error)
+            }
+        } else {
+            w(TAG, "Malformed persisted account could not be removed")
+        }
+    }
+
+    private fun buildPersistedIdentityForCleanup(account: Account): UserAccount? =
+        runCatching {
+            val accountManager = AccountManager.get(appContext)
+            val userId = decrypt(accountManager.getUserData(account, KEY_USER_ID), encryptionKey)
+            val orgId = decrypt(accountManager.getUserData(account, KEY_ORG_ID), encryptionKey)
+            if (userId.isNullOrBlank() || orgId.isNullOrBlank()) {
+                null
+            } else {
+                UserAccountBuilder.getInstance()
+                    .accountName(account.name)
+                    .userId(userId)
+                    .orgId(orgId)
+                    .build()
+            }
+        }.getOrNull()
+
+    /** Clears the process-wide WebView cookie jar after logout. */
+    @VisibleForTesting
+    internal open fun clearWebViewCookiesAfterLogout() {
+        CookieManager.getInstance().removeAllCookies(null)
+    }
+
+    private fun startLogout(account: Account): Boolean =
+        synchronized(loggingOutAccounts) {
+            loggingOutAccounts.add(account).also { added ->
+                if (added) {
+                    isLoggingOut = true
+                }
+            }
+        }
+
+    private fun finishLogout(account: Account) {
+        synchronized(loggingOutAccounts) {
+            loggingOutAccounts.remove(account)
+            isLoggingOut = loggingOutAccounts.isNotEmpty()
         }
     }
 
@@ -1440,28 +1425,56 @@ open class SalesforceSDKManager protected constructor(
             }
         """.trimIndent()
 
-    /** The client manager */
-    val clientManager by lazy {
-        ClientManager(
-            appContext,
-            accountType,
-            true
-        )
-    }
+    /**
+     * Returns a manager bound to the user who is current at the time of access,
+     * or null when there is no current user. Retaining the returned manager
+     * retains that user's identity even if the application later switches
+     * users.
+     */
+    val clientManager: ClientManager?
+        get() = userAccountManager.currentUser?.let { user ->
+            ClientManager(appContext, user)
+        }?.takeIf { manager -> manager.account != null }
 
     /**
-     * Returns a client manager for the provided parameters.
-     * @return A new client manager for the provided parameters
+     * Returns an authenticated client for the current user or starts login when
+     * no persisted user is current.
      */
-    @Suppress("unused")
-    fun getClientManager(
-        jwt: String?,
-        url: String?
-    ): ClientManager = ClientManager(
-        appContext,
-        accountType,
-        true
+    fun getRestClient(
+        activityContext: Activity,
+        restClientCallback: RestClientCallback,
+    ) {
+        val user = userAccountManager.currentUser
+        if (user != null) {
+            ClientManager(appContext, user).peekRestClient()?.let { client ->
+                restClientCallback.authenticatedRestClient(client)
+            } ?: w(TAG, "Unable to create a REST client for the current user")
+            return
+        }
+
+        val loginIntent = Intent(activityContext, loginActivityClass).apply {
+            setPackage(activityContext.packageName)
+            flags = FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        // LoginActivity completes through SDK broadcasts rather than an
+        // Activity result. Starting for result keeps the caller's task alive
+        // so its receivers remain registered while login is displayed.
+        activityContext.startActivityForResult(loginIntent, 0)
+    }
+
+    /** Returns a client that carries no persisted user credentials. */
+    fun getUnauthenticatedRestClient() = RestClient(
+        RestClient.UnauthenticatedClientInfo(),
+        null,
+        DEFAULT,
+        null,
     )
+
+    /** Callback used by [getRestClient]. */
+    fun interface RestClientCallback {
+        fun authenticatedRestClient(client: RestClient)
+    }
 
     /**
      * Displays developer support for a specified Android activity.

@@ -59,7 +59,6 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
-import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
@@ -202,9 +201,6 @@ open class LoginViewModel(
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
 
-    /** JWT string used for JWT Auth Flow. */
-    var jwt: String? = null
-
     /** Connected App/External Client App client Id. */
     @Deprecated("Will be removed in Mobile SDK 14.0, please use " +
             "SalesforceSDKManager.getInstance().appConfigForLoginHost.")
@@ -266,9 +262,6 @@ open class LoginViewModel(
 
     /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
     internal var loginHint: String? = null
-
-    // Auth code we receive from the JWT swap for magic links.
-    internal var authCodeForJwtFlow: String? = null
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
     internal val isUsingFrontDoorBridge: Boolean
@@ -471,7 +464,6 @@ open class LoginViewModel(
         if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
             clearCookies()
         }
-        authCodeForJwtFlow = null
         onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = loginServer ?: selectedServer.value ?: "",
@@ -573,12 +565,6 @@ open class LoginViewModel(
         val (browserTabUrl, webViewUrl) = withContext(coroutineContext) {
             oAuthConfig = sdkManager.resolveOAuthConfigForLoginServer(server)
 
-            val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
-            val additionalParams = when {
-                jwtFlow -> mutableMapOf()
-                else -> additionalParameters
-            }
-
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
 
@@ -592,19 +578,10 @@ open class LoginViewModel(
                 loginHint,
                 authorizationDisplayType,
                 codeChallenge,
-                additionalParams
+                additionalParameters
             )
 
-            val browserTabUrlValue = when {
-                jwtFlow -> getFrontdoorUrl(
-                    webServerAuthorizationUrl,
-                    authCodeForJwtFlow,
-                    selectedServer.value,
-                    mapOf<String, String>()
-                )
-
-                else -> webServerAuthorizationUrl.toString()
-            }.toString()
+            val browserTabUrlValue = webServerAuthorizationUrl.toString()
 
             val webViewUrlValue = if (useWebServerFlow(sdkManager)) {
                 browserTabUrlValue
@@ -619,19 +596,9 @@ open class LoginViewModel(
                     loginHint,
                     authorizationDisplayType,
                     codeChallenge,
-                    additionalParams
+                    additionalParameters
                 )
-
-                when {
-                    jwtFlow -> getFrontdoorUrl(
-                        userAgentAuthorizationUrl,
-                        authCodeForJwtFlow,
-                        selectedServer.value,
-                        mapOf<String, String>(),
-                    )
-
-                    else -> userAgentAuthorizationUrl
-                }.toString()
+                userAgentAuthorizationUrl.toString()
             }
 
             // The Salesforce Welcome login hint is only used once.

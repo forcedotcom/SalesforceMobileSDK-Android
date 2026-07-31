@@ -175,6 +175,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             knownAppConfig = KnownAppConfig.ECA_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
+            expectAdvancedAuth = false,
         )
     }
 
@@ -192,6 +193,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
+            expectAdvancedAuth = false,
         )
     }
 

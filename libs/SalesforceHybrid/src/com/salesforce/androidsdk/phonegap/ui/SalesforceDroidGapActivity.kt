@@ -33,7 +33,9 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.view.KeyEvent
 import android.webkit.URLUtil.isHttpsUrl
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.lifecycleScope
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException
@@ -64,6 +66,7 @@ import com.salesforce.androidsdk.util.AuthConfigUtil.getMyDomainAuthConfig
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.GapWebViewCreateComplete
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.isSameUser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.launch
@@ -74,7 +77,6 @@ import org.apache.cordova.CordovaActivity
 import org.apache.cordova.CordovaWebView
 import org.apache.cordova.CordovaWebViewEngine
 import org.apache.cordova.CordovaWebViewImpl.createEngine
-
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -113,6 +115,14 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     /** Manager for cookies in web view */
     private val salesforceCookieManager: SalesforceWebViewCookieManager = SalesforceWebViewCookieManager()
 
+    @VisibleForTesting
+    internal var setAuthenticatedCookies: (UserAccount) -> Unit = { user ->
+        salesforceCookieManager.setCookies(user)
+    }
+
+    @VisibleForTesting
+    internal var recreateAfterUserSwitch: () -> Unit = ::recreate
+
     /**
      * Called when the activity is first created.
      */
@@ -123,9 +133,6 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
         // Get the boot configuration
         bootConfig = getBootConfig(this)
-
-        // Get the client manager
-        clientManager = buildClientManager()
 
         // Set up global stores and syncs defined in static configs
         SalesforceHybridSDKManager.getInstance().run {
@@ -179,15 +186,9 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
         // Will call this.onResume(RestClient client) with a null client
     }
 
-    /* Called from delegate with null */
+    /* Called by the delegate after current-user-or-login resolution. */
     override fun onResume(restClient: RestClient?) {
-
-        // Get the REST client when logged in
-        this.restClient = runCatching {
-            clientManager?.peekRestClient()
-        }.getOrNull()
-
-        when (this.restClient) {
+        when (val currentUser = bindCurrentUserClient(restClient)) {
             // When not logged in
             null -> {
                 when {
@@ -198,7 +199,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
 
             // Logged in
             else -> {
-                salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
+                setAuthenticatedCookies(currentUser)
 
                 when {
                     // Web app never loaded
@@ -356,55 +357,52 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
      * @param callbackContext When not null credentials/errors are sent through
      * to callbackContext.success()/error()
      */
-    fun authenticate(
-        callbackContext: CallbackContext?
-    ) {
+    fun authenticate(callbackContext: CallbackContext?) {
         i(TAG, "authenticate called")
 
-        clientManager?.getRestClient(this) { client ->
-            when (client) {
-
-                null -> {
-                    i(TAG, "authenticate callback triggered with null client")
-                    logout(null)
-                }
-
-                else -> {
-                    i(TAG, "authenticate callback triggered with actual client")
-                    restClient = client
-
-                    /*
-                     * Do a cheap REST call to refresh the access token if
-                     * needed. If the login took place a while back (e.g. the
-                     * already logged in application was restarted), then the
-                     * returned session ID (access token) might be stale. This
-                     * is not an issue if one uses exclusively REST client for
-                     * calling the server because it takes care of refreshing
-                     * the access token when needed, but a stale session ID will
-                     * cause the web view to redirect to the web login
-                     */
-                    restClient?.sendAsync(
-                        getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
-                            override fun onSuccess(
-                                request: RestRequest,
-                                response: RestResponse
-                            ) =
-                                runOnUiThread {
-                                    /*
-                                     * The client instance being used here needs
-                                     * to be refreshed, to ensure we use the new
-                                     * access token
-                                     */
-                                    restClient = clientManager?.peekRestClient()
-                                    getAuthCredentials(callbackContext)
-                                }
-
-                            override fun onError(exception: Exception) {
-                                callbackContext?.error(exception.message)
-                            }
-                        })
-                }
+        SalesforceSDKManager.getInstance().getRestClient(this) { client ->
+            i(TAG, "authenticate callback triggered with actual client")
+            val authenticatedUser = bindCurrentUserClient(client)
+            val authenticatedManager = clientManager
+            val authenticatedClient = restClient
+            if (authenticatedUser == null || authenticatedManager == null || authenticatedClient == null) {
+                callbackContext?.error("Authenticated user changed")
+                return@getRestClient
             }
+
+            /*
+             * Do a cheap REST call to refresh the access token if
+             * needed. If the login took place a while back (e.g. the
+             * already logged in application was restarted), then the
+             * returned session ID (access token) might be stale. This
+             * is not an issue if one uses exclusively REST client for
+             * calling the server because it takes care of refreshing
+             * the access token when needed, but a stale session ID will
+             * cause the web view to redirect to the web login
+             */
+            authenticatedClient.sendAsync(
+                getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
+                    override fun onSuccess(
+                        request: RestRequest,
+                        response: RestResponse
+                    ) =
+                        runOnUiThread {
+                            /*
+                             * The client instance being used here needs
+                             * to be refreshed, to ensure we use the new
+                             * access token
+                             */
+                            if (rebuildClientAfterRefresh(authenticatedUser, authenticatedManager)) {
+                                getAuthCredentials(callbackContext)
+                            } else {
+                                callbackContext?.error("Authenticated user changed")
+                            }
+                        }
+
+                    override fun onError(exception: Exception) {
+                        callbackContext?.error(exception.message)
+                    }
+                })
         }
     }
 
@@ -443,11 +441,15 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
          */
 
         if (restClient == null) {
-            clientManager?.getRestClient(this) { recreate() }
+            SalesforceSDKManager.getInstance().getRestClient(this) { recreate() }
             return
         }
 
-        restClient?.sendAsync(
+        val expectedManager = clientManager ?: return
+        val expectedUser = boundCurrentUser() ?: return
+        val expectedClient = restClient ?: return
+
+        expectedClient.sendAsync(
             getCheapRequest(VERSION_NUMBER), object : AsyncRequestCallback {
 
                 override fun onSuccess(
@@ -462,15 +464,24 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
                     // At this point, we can simply load the page we were trying to
                     // go to initially.
 
-                    loadRemoteStartPage(url)
+                    runOnUiThread {
+                        if (isStillBoundTo(expectedUser, expectedManager)) {
+                            loadRemoteStartPage(url)
+                        }
+                    }
                 }
 
                 override fun onError(exception: Exception) {
                     w(TAG, "refresh callback - refresh failed", exception)
 
                     // Only logout if we are NOT offline
-                    if (exception !is NoNetworkException) {
-                        logout(null)
+                    if (exception !is NoNetworkException &&
+                        isStillBoundTo(expectedUser, expectedManager)
+                    ) {
+                        SalesforceSDKManager.getInstance().logout(
+                            account = expectedManager.account,
+                            frontActivity = this@SalesforceDroidGapActivity,
+                        )
                     }
                 }
             })
@@ -551,16 +562,92 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     override fun onLogoutComplete() {}
 
     override fun onUserSwitched() {
-        restClient?.let { restClient ->
-            runCatching {
-                val currentClient = clientManager?.peekRestClient() ?: return
-                if (currentClient.clientInfo.userId != restClient.clientInfo?.userId) {
-                    recreate()
-                }
-            }.onFailure {
-                i(TAG, "restartIfUserSwitched - no user account found")
-            }
+        val previousClientInfo = restClient?.clientInfo
+        val currentUser = bindCurrentUserClient()
+        if (currentUser == null) {
+            i(TAG, "restartIfUserSwitched - no user account found")
+            recreateAfterUserSwitch()
+        } else if (!currentUser.isSameUser(previousClientInfo)) {
+            recreateAfterUserSwitch()
         }
+    }
+
+    /**
+     * Binds this current-user activity to one manager, client, and persisted user snapshot.
+     * A callback for a user who is no longer current is rejected rather than retained.
+     */
+    @VisibleForTesting
+    internal fun bindCurrentUserClient(callbackClient: RestClient? = null): UserAccount? {
+        val userAccountManager = UserAccountManager.getInstance()
+        val currentUser = userAccountManager.currentUser ?: return clearClientBinding()
+        val manager = buildClientManager() ?: return clearClientBinding()
+        val account = manager.account ?: return clearClientBinding()
+        val managerUser = userAccountManager.buildUserAccount(account)
+            ?.takeIf { it == currentUser }
+            ?: return clearClientBinding()
+        val client = callbackClient ?: manager.peekRestClient()
+            ?: return clearClientBinding()
+        if (!managerUser.isSameUser(client.clientInfo)) {
+            return clearClientBinding()
+        }
+        if (managerUser != userAccountManager.currentUser) {
+            return clearClientBinding()
+        }
+
+        clientManager = manager
+        restClient = client
+        return managerUser
+    }
+
+    /** Rebuilds a refreshed client only while the request's user remains current. */
+    @VisibleForTesting
+    internal fun rebuildClientAfterRefresh(
+        expectedUser: UserAccount,
+        expectedManager: ClientManager,
+    ): Boolean {
+        val userAccountManager = UserAccountManager.getInstance()
+        val currentUser = userAccountManager.currentUser
+        val expectedAccount = expectedManager.account ?: return false
+        val liveExpectedUser = userAccountManager.buildUserAccount(expectedAccount)
+        if (expectedUser != currentUser ||
+            expectedUser != liveExpectedUser
+        ) {
+            return false
+        }
+
+        val refreshedClient = expectedManager.peekRestClient() ?: return false
+        return bindCurrentUserClient(refreshedClient) == expectedUser
+    }
+
+    /** Returns the live user only when the activity manager, client, and current user still agree. */
+    @VisibleForTesting
+    internal fun boundCurrentUser(): UserAccount? {
+        val manager = clientManager ?: return null
+        val client = restClient ?: return null
+        val userAccountManager = UserAccountManager.getInstance()
+        val currentUser = userAccountManager.currentUser ?: return null
+        val account = manager.account ?: return null
+        val boundUser = userAccountManager.buildUserAccount(account)
+            ?.takeIf { user ->
+                user == currentUser &&
+                    user.isSameUser(client.clientInfo)
+            }
+            ?: return null
+        return boundUser.takeIf {
+            it == userAccountManager.currentUser
+        }
+    }
+
+    private fun isStillBoundTo(
+        expectedUser: UserAccount,
+        expectedManager: ClientManager,
+    ) = clientManager === expectedManager &&
+        boundCurrentUser() == expectedUser
+
+    private fun clearClientBinding(): UserAccount? {
+        clientManager = null
+        restClient = null
+        return null
     }
 
     private fun doAuthConfig() {
@@ -592,7 +679,7 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
             if (intent.action == ClientManager.ACCESS_TOKEN_REFRESH_INTENT
                 || intent.action == ClientManager.INSTANCE_URL_UPDATE_INTENT) {
                 d(TAG, "TokenRefreshReceiver onReceive")
-                salesforceCookieManager.setCookies(UserAccountManager.getInstance().currentUser)
+                boundCurrentUser()?.let(setAuthenticatedCookies)
             }
         }
     }
@@ -603,6 +690,3 @@ open class SalesforceDroidGapActivity : CordovaActivity(), SalesforceActivityInt
     }
 
 }
-
-
-

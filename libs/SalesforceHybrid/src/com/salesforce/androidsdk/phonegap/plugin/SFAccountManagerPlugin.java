@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.content.Intent;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 
@@ -133,7 +134,13 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         		account = new UserAccount(user);
         	}
         }
-        SalesforceSDKManager.getInstance().getUserAccountManager().signoutUser(account, cordova.getActivity());
+        final UserAccountManager userAccountManager =
+                SalesforceSDKManager.getInstance().getUserAccountManager();
+        if (account == null) {
+            userAccountManager.signoutCurrentUser(cordova.getActivity());
+        } else {
+            userAccountManager.signoutUser(account, cordova.getActivity());
+        }
         callbackContext.success();
     }
 

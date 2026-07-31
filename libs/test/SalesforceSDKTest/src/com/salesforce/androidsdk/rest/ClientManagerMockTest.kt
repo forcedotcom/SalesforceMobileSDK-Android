@@ -1,12 +1,15 @@
 package com.salesforce.androidsdk.rest
 
 import android.accounts.Account
+import android.accounts.AccountManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.os.Bundle
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest
 import com.salesforce.androidsdk.analytics.EventBuilderHelper
@@ -40,12 +43,14 @@ import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.net.URLDecoder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 private const val OLD_ACCESS_TOKEN = "old-token"
 private const val REFRESHED_ACCESS_TOKEN = "refreshed-auth-token"
@@ -54,16 +59,15 @@ private const val ROTATED_REFRESH_TOKEN = "rotated-refresh-token"
 
 @SmallTest
 class ClientManagerMockTest {
-    private lateinit var clientManager: ClientManager
     private lateinit var mockSDKManager: SalesforceSDKManager
     private lateinit var mockAppContext: Context
     private lateinit var mockUserAccountManager: UserAccountManager
+    private lateinit var mockOkHttpClient: OkHttpClient
     private lateinit var refreshResponse: Response
 
     @Before
     fun setUp() {
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-        clientManager = ClientManager(targetContext, UserAccountManagerTest.TEST_ACCOUNT_TYPE, true)
         mockUserAccountManager = mockk(relaxed = true)
         mockAppContext = mockk(relaxed = true) {
             every { packageName } returns "packageName"
@@ -99,7 +103,7 @@ class ClientManagerMockTest {
 
         val responseBody = """
                 {
-                    "access_token": $REFRESHED_ACCESS_TOKEN,
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
                     "instance_url": "https://login.salesforce.com",
                     "id": "https://login.salesforce.com/id/orgId/userId",
                     "token_type": "Bearer",
@@ -114,11 +118,12 @@ class ClientManagerMockTest {
         }
 
         mockkObject(HttpAccess.DEFAULT)
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+        mockOkHttpClient = mockk {
             every { newCall(any()) } returns mockk<Call> {
                 every { execute() } returns refreshResponse
             }
         }
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockOkHttpClient
 
         // REFRESH_STATES is static and survives across Robolectric/instrumented tests;
         // unmockkAll() won't clear it. Reset so a leftover refreshing=true can't corrupt
@@ -140,29 +145,23 @@ class ClientManagerMockTest {
         val mockUser = mockk<UserAccount>(relaxed = true) {
             every { authToken } returns OLD_ACCESS_TOKEN
             every { refreshToken } returns REFRESH_TOKEN
+            every { instanceServer } returns "https://login.salesforce.com"
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         val result = authTokenProvider.getNewAuthToken()
         assertEquals(REFRESHED_ACCESS_TOKEN, result)
+        assertTrue(authTokenProvider.lastRefreshTime > 0)
 
         verify(exactly = 0) {
             mockSDKManager.logout(any(), any(), any(), any())
         }
         verify(exactly = 1) {
-            mockClientManager.invalidateToken(OLD_ACCESS_TOKEN)
             mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
@@ -180,18 +179,11 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://not.login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         val result = authTokenProvider.getNewAuthToken()
         assertEquals(REFRESHED_ACCESS_TOKEN, result)
@@ -200,7 +192,6 @@ class ClientManagerMockTest {
             mockSDKManager.logout(any(), any(), any(), any())
         }
         verify(exactly = 1) {
-            mockClientManager.invalidateToken(OLD_ACCESS_TOKEN)
             mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
@@ -210,20 +201,21 @@ class ClientManagerMockTest {
 
     @Test
     fun testGetNewAuthToken_NoAccounts() {
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns emptyArray<Account>()
+        val mockAccount = mockk<Account>(relaxed = true)
+        val mockUser = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns REFRESH_TOKEN
+            every { loginServer } returns "https://login.salesforce.com"
         }
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
+        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns null
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
+            mockOkHttpClient.newCall(any())
             mockSDKManager.logout(any(), any(), any(), any())
-            mockClientManager.invalidateToken(any())
             mockAppContext.sendBroadcast(any())
         }
     }
@@ -235,22 +227,14 @@ class ClientManagerMockTest {
             every { authToken } returns "not-matching"
             every { refreshToken } returns "not-matching"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
             mockSDKManager.logout(any(), any(), any(), any())
-            mockClientManager.invalidateToken(any())
             mockAppContext.sendBroadcast(any())
         }
     }
@@ -262,22 +246,14 @@ class ClientManagerMockTest {
             every { authToken } returns "not-matching"
             every { refreshToken } returns "not-matching"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "",
-            null,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
             mockSDKManager.logout(any(), any(), any(), any())
-            mockClientManager.invalidateToken(any())
             mockAppContext.sendBroadcast(any())
         }
     }
@@ -298,29 +274,20 @@ class ClientManagerMockTest {
             every { refreshToken } returns "user2Refresh"
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount, mockAccount2)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount, mockAccount2))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount2) } returns mockUser2
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns mockk()
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns Bundle()
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
-            mockClientManager.invalidateToken(user2Token)
             mockSDKManager.logout(any(), any(), any(), any())
             mockUserAccountManager.updateAccount(mockAccount2, any())
         }
         verify(exactly = 1) {
-            mockClientManager.invalidateToken(OLD_ACCESS_TOKEN)
             mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
         }
         assertEquals(REFRESHED_ACCESS_TOKEN, userSlot.captured.authToken)
@@ -330,9 +297,7 @@ class ClientManagerMockTest {
     fun testGetNewAuthToken_Revoked() {
         every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                }
+                every { execute() } returns invalidGrantResponse()
             }
         }
         val broadcastIntentSlot = slot<Intent>()
@@ -343,25 +308,18 @@ class ClientManagerMockTest {
             every { loginServer } returns "https://login.salesforce.com"
         }
 
-        // Use the real clientManager instead of a full mock because revokedTokenShouldLogout is private.
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        // Use a bound manager so terminal cleanup targets this exact account.
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
             mockUserAccountManager.updateAccount(any(), any())
         }
         verify(exactly = 1) {
-            clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN)
             mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED)
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
@@ -404,19 +362,12 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         // First refresh: server rotates the refresh token.
         assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
@@ -481,23 +432,16 @@ class ClientManagerMockTest {
             every { refreshToken } answers { persistedRefreshToken }
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.updateAccount(mockAccount, any()) } answers {
             persistedAuthToken = secondArg<UserAccount>().authToken
             persistedRefreshToken = secondArg<UserAccount>().refreshToken
-            mockk()
+            Bundle()
         }
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         // First refresh succeeds, rotates to firstRotated.
         assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
@@ -533,31 +477,22 @@ class ClientManagerMockTest {
             every { refreshToken } returns "user2Refresh"
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount, mockAccount2)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount, mockAccount2))
         // The account that we are not refreshing for is the current account.
         every { mockUserAccountManager.currentUser } returns mockUser2
         every { mockUserAccountManager.currentAccount } returns mockAccount2
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount2) } returns mockUser2
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns mockk()
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns Bundle()
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         assertEquals(REFRESHED_ACCESS_TOKEN, authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
-            mockClientManager.invalidateToken(user2Token)
             mockSDKManager.logout(any(), any(), any(), any())
             mockUserAccountManager.updateAccount(mockAccount2, any())
         }
         verify(exactly = 1) {
-            mockClientManager.invalidateToken(OLD_ACCESS_TOKEN)
             mockUserAccountManager.updateAccount(mockAccount, capture(userSlot))
         }
         assertEquals(REFRESHED_ACCESS_TOKEN, userSlot.captured.authToken)
@@ -572,9 +507,7 @@ class ClientManagerMockTest {
     fun testGetNewAuthToken_Multiuser_RevokeNonCurrentUser() {
         every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
-                every { execute() } returns mockk<Response>(relaxed = true) {
-                    every { isSuccessful } returns false
-                }
+                every { execute() } returns invalidGrantResponse()
             }
         }
         val broadcastIntentSlot = slot<Intent>()
@@ -596,21 +529,14 @@ class ClientManagerMockTest {
         every { mockUserAccountManager.currentAccount } returns mockAccount2
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount2) } returns mockUser2
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
-        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns mockk()
-        // Use the real clientManager instead of a full mock because revokedTokenShouldLogout is private.
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount, mockAccount2)
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
+        every { mockUserAccountManager.updateAccount(mockAccount2, any()) } returns Bundle()
+        // Use a bound manager so terminal cleanup targets the non-current account.
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount, mockAccount2))
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
-            clientManagerSpy.invalidateToken(user2Token)
             mockUserAccountManager.updateAccount(any(), any())
             mockSDKManager.logout(mockAccount2, any(), any(), any())
             mockSDKManager.logout(null, any(), any(), any())
@@ -618,7 +544,6 @@ class ClientManagerMockTest {
         }
 
         verify(exactly = 1) {
-            clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN)
             mockSDKManager.logout(mockAccount, any(), false, REFRESH_TOKEN_EXPIRED)
             mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
         }
@@ -635,7 +560,6 @@ class ClientManagerMockTest {
         error: String,
         errorDescription: String,
         httpStatus: Int = 400,
-        revokedTokenShouldLogout: Boolean = true,
     ): TokenErrorResult {
         val errorBody = """
             {"error": "$error", "error_description": "$errorDescription"}
@@ -655,19 +579,11 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val cm = ClientManager(targetContext, UserAccountManagerTest.TEST_ACCOUNT_TYPE, revokedTokenShouldLogout)
-        val clientManagerSpy = spyk(cm)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
         return TokenErrorResult(authTokenProvider, slot(), mockAccount)
     }
 
@@ -735,17 +651,11 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 1) {
@@ -758,27 +668,21 @@ class ClientManagerMockTest {
     }
 
     @Test
-    fun testGetNewAuthToken_ClientBlockedRetry_SubsequentCallSkipsInvalidateToken() {
+    fun testGetNewAuthToken_ClientBlockedRetry_SubsequentCallRemainsRetryable() {
         val result = setupTokenErrorScenario("client_blocked_retry", "Attestation verification pending")
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(result.mockAccount)
+        val clientManagerSpy = boundClientManager(result.mockAccount, arrayOf(result.mockAccount))
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
+        val firstHttpClient = HttpAccess.DEFAULT.okHttpClient
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
-
-        // First call: client_blocked_retry clears lastNewAuthToken to null.
         assertNull(authTokenProvider.getNewAuthToken())
-        verify(exactly = 1) { clientManagerSpy.invalidateToken(OLD_ACCESS_TOKEN) }
+        assertEquals(-1L, authTokenProvider.lastRefreshTime)
+        verify(exactly = 1) { firstHttpClient.newCall(any()) }
 
         // Set up a second error response for the second call.
         val errorBody2 = """
             {"error": "client_blocked_retry", "error_description": "Still pending"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
-        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+        val secondHttpClient = mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
                 every { execute() } returns mockk<Response>(relaxed = true) {
                     every { isSuccessful } returns false
@@ -787,26 +691,46 @@ class ClientManagerMockTest {
                 }
             }
         }
+        every { HttpAccess.DEFAULT.okHttpClient } returns secondHttpClient
 
-        // Second call: lastNewAuthToken is null, so invalidateToken should be skipped.
+        // The second attempt remains retryable and has no terminal cleanup side effect.
         assertNull(authTokenProvider.getNewAuthToken())
+        assertEquals(-1L, authTokenProvider.lastRefreshTime)
+        verify(exactly = 1) { secondHttpClient.newCall(any()) }
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
-        // invalidateToken still only called once total (from first call when token was non-null).
-        verify(exactly = 1) { clientManagerSpy.invalidateToken(any()) }
     }
 
     @Test
-    fun testGetNewAuthToken_TerminalError_RevokedTokenShouldNotLogout_SkipsLogout() {
+    fun testGetNewAuthToken_TerminalError_AlwaysLogsOutBoundAccount() {
         val result = setupTokenErrorScenario(
             "client_blocked", "Device failed integrity check",
-            revokedTokenShouldLogout = false,
         )
 
         assertNull(result.authTokenProvider.getNewAuthToken())
-        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+        verify(exactly = 1) {
+            mockSDKManager.logout(result.mockAccount, any(), true, CLIENT_BLOCKED)
+        }
         verify(exactly = 1) { mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot)) }
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
         assertEquals("client_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+    }
+
+    @Test
+    fun testGetNewAuthToken_OAuthErrorRemainsTerminalRegardlessOfHttpStatus() {
+        val result = setupTokenErrorScenario(
+            "client_blocked",
+            "Device failed integrity check",
+            httpStatus = 500,
+        )
+
+        assertNull(result.authTokenProvider.getNewAuthToken())
+        verify(exactly = 1) {
+            mockSDKManager.logout(result.mockAccount, any(), true, CLIENT_BLOCKED)
+        }
+        verify(exactly = 1) {
+            mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
+        }
+        assertEquals(ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
     }
 
     @Test
@@ -837,19 +761,12 @@ class ClientManagerMockTest {
             every { loginServer } returns "https://login.salesforce.com"
             every { instanceServer } returns null
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            null,
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         val result = authTokenProvider.getNewAuthToken()
         assertEquals(REFRESHED_ACCESS_TOKEN, result)
@@ -884,18 +801,12 @@ class ClientManagerMockTest {
             every { refreshToken } returns REFRESH_TOKEN
             every { loginServer } returns "https://login.salesforce.com"
         }
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
 
-        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(
-            clientManagerSpy,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            REFRESH_TOKEN,
-        )
+        val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
 
         assertNull(authTokenProvider.getNewAuthToken())
         verify(exactly = 1) {
@@ -905,39 +816,6 @@ class ClientManagerMockTest {
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
         assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
         assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
-    }
-
-    @Test
-    fun testGetNewAuthToken_NullUserAccount_LogsOut() {
-        val broadcastIntentSlot = slot<Intent>()
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-        }
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-
-        val authTokenProvider = spyk(
-            ClientManager.AccMgrAuthTokenProvider(
-                clientManagerSpy,
-                "https://login.salesforce.com",
-                OLD_ACCESS_TOKEN,
-                REFRESH_TOKEN,
-            )
-        )
-        every { authTokenProvider["refreshStaleToken"](any<Account>()) } returns null
-
-        assertNull(authTokenProvider.getNewAuthToken())
-        verify(exactly = 1) {
-            mockSDKManager.logout(mockAccount, any(), true, REFRESH_TOKEN_EXPIRED)
-            mockAppContext.sendBroadcast(capture(broadcastIntentSlot))
-        }
-        assertEquals(ACCESS_TOKEN_REVOKE_INTENT, broadcastIntentSlot.captured.action)
-        assertNull(broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
     }
 
     // region Concurrent Refresh Tests
@@ -970,28 +848,10 @@ class ClientManagerMockTest {
             }
         }
 
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-            every { userId } returns "userId"
-            every { orgId } returns "orgId"
-        }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        val fixture = boundFixture()
 
         val providers = (0 until 4).map {
-            ClientManager.AccMgrAuthTokenProvider(
-                mockClientManager,
-                "https://login.salesforce.com",
-                OLD_ACCESS_TOKEN,
-                REFRESH_TOKEN,
-            )
+            ClientManager.AccMgrAuthTokenProvider(fixture.manager)
         }
 
         val results = arrayOfNulls<String>(providers.size)
@@ -1017,7 +877,9 @@ class ClientManagerMockTest {
         results.forEach { assertEquals(REFRESHED_ACCESS_TOKEN, it) }
         // Only the winner updates the account; no logout for losers.
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
-        verify(exactly = 1) { mockUserAccountManager.updateAccount(mockAccount, any()) }
+        verify(exactly = 1) {
+            mockUserAccountManager.updateAccount(fixture.account, any())
+        }
     }
 
     /*
@@ -1046,47 +908,21 @@ class ClientManagerMockTest {
             }
         }
 
-        val mockAccount = mockk<Account>(relaxed = true)
-        // Storage already holds the NEW tokens (a concurrent/earlier provider refreshed).
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns newAccessToken
-            every { refreshToken } returns newRefreshToken
-            every { instanceServer } returns "https://login.salesforce.com"
-            every { loginServer } returns "https://login.salesforce.com"
-            every { userId } returns "userId"
-            every { orgId } returns "orgId"
-        }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-
-        // Provider holds the OLD access token but the current (already-rotated) refresh token
-        // from storage — it was idle during the burst, so its access token is stale while its
-        // refresh token already matches what the winner persisted. The account match succeeds on
-        // that refresh token, and the recheck-under-lock then adopts the stored access token
-        // instead of POSTing.
-        val provider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager,
-            "https://login.salesforce.com",
-            OLD_ACCESS_TOKEN,
-            newRefreshToken,
-        )
+        val fixture = boundFixture()
+        // Construct while storage still has the old generation, then simulate another provider
+        // atomically advancing the persisted access/refresh/instance tuple.
+        val provider = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+        fixture.liveUser.set(testUser(newAccessToken, newRefreshToken))
 
         // Adopts the stored access token without any network refresh.
         assertEquals(newAccessToken, provider.getNewAuthToken())
+        assertTrue(provider.lastRefreshTime > 0)
         assertEquals(emptyList<String?>(), postedTokens)
         assertEquals(newRefreshToken, provider.refreshToken)
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
         verify(exactly = 0) { mockUserAccountManager.updateAccount(any(), any()) }
     }
 
-    /*
-        Winner fails: when the winner's refresh returns invalid_grant, the parked losers must each
-        return null WITHOUT logging out and WITHOUT broadcasting. Only the winner may attempt
-        logout/broadcast.
-     */
     @Test
     fun testGetNewAuthToken_ConcurrentBurst_WinnerFails_LosersReturnNullNoLogout() {
         val tokenEndpointCalls = AtomicInteger(0)
@@ -1112,19 +948,13 @@ class ClientManagerMockTest {
             every { userId } returns "userId"
             every { orgId } returns "orgId"
         }
-        // Real (spied) client manager so revokedTokenShouldLogout=true logout path is reachable.
-        val clientManagerSpy = spyk(clientManager)
-        every { clientManagerSpy.accounts } returns arrayOf(mockAccount)
+        // Bound manager ensures the winner's terminal cleanup targets the exact account.
+        val clientManagerSpy = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
 
         val providers = (0 until 4).map {
-            ClientManager.AccMgrAuthTokenProvider(
-                clientManagerSpy,
-                "https://login.salesforce.com",
-                OLD_ACCESS_TOKEN,
-                REFRESH_TOKEN,
-            )
+            ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
         }
         val results = arrayOfNulls<String>(providers.size)
 
@@ -1172,27 +1002,13 @@ class ClientManagerMockTest {
             }
         }
 
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-            every { instanceServer } returns null
-            every { userId } returns "userId"
-            every { orgId } returns "orgId"
-        }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        val fixture = boundFixture(instanceUrl = "https://account.instance.url")
 
         val winner = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://winner.instance.url", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+            fixture.manager, "https://winner.instance.url",
         )
         val loser = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://loser.instance.url", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
+            fixture.manager, "https://loser.instance.url",
         )
 
         val results = arrayOfNulls<String>(2)
@@ -1244,19 +1060,13 @@ class ClientManagerMockTest {
             every { userId } returns "userId"
             every { orgId } returns "orgId"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns Bundle()
 
-        val winner = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
-        )
-        val loser = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
-        )
+        val winner = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
+        val loser = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         val winnerThread = Thread { winner.getNewAuthToken() }
         winnerThread.start()
@@ -1308,33 +1118,18 @@ class ClientManagerMockTest {
             }
         }
 
-        val mockAccount = mockk<Account>(relaxed = true)
-        val mockUser = mockk<UserAccount>(relaxed = true) {
-            every { authToken } returns OLD_ACCESS_TOKEN
-            every { refreshToken } returns REFRESH_TOKEN
-            every { loginServer } returns "https://login.salesforce.com"
-            every { userId } returns "userId"
-            every { orgId } returns "orgId"
-        }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
-        every { mockUserAccountManager.currentUser } returns mockUser
-        every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
-        every { mockUserAccountManager.updateAccount(mockAccount, any()) } returns mockk()
+        val fixture = boundFixture()
+
+        // Both providers capture the old generation before the winner advances live storage.
+        val winner = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+        val freshArriver = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
 
         // First provider performs the real refresh and publishes the result into the shared state.
-        val winner = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
-        )
         assertEquals(REFRESHED_ACCESS_TOKEN, winner.getNewAuthToken())
         assertEquals(1, tokenEndpointCalls.get())
 
         // Fresh arriver still holding the OLD (now-401'd) access token. It differs from the recently
         // published token, so the recency window lets it adopt without a second POST.
-        val freshArriver = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
-        )
         assertEquals(REFRESHED_ACCESS_TOKEN, freshArriver.getNewAuthToken())
 
         // No second network refresh occurred — the fresh arriver adopted the recent result.
@@ -1375,20 +1170,16 @@ class ClientManagerMockTest {
             every { userId } returns "userId"
             every { orgId } returns "orgId"
         }
-        val mockClientManager = mockk<ClientManager>(relaxed = true) {
-            every { accounts } returns arrayOf(mockAccount)
-        }
+        val mockClientManager = boundClientManager(mockAccount, arrayOf(mockAccount))
         every { mockUserAccountManager.currentUser } returns mockUser
         every { mockUserAccountManager.buildUserAccount(mockAccount) } returns mockUser
         every { mockUserAccountManager.updateAccount(mockAccount, any()) } answers {
             persistedAuthToken = secondArg<UserAccount>().authToken
             persistedRefreshToken = secondArg<UserAccount>().refreshToken
-            mockk()
+            Bundle()
         }
 
-        val provider = ClientManager.AccMgrAuthTokenProvider(
-            mockClientManager, "https://login.salesforce.com", OLD_ACCESS_TOKEN, REFRESH_TOKEN,
-        )
+        val provider = ClientManager.AccMgrAuthTokenProvider(mockClientManager)
 
         // First refresh: real POST, publishes REFRESHED_ACCESS_TOKEN; provider's lastNewAuthToken
         // now equals the published token.
@@ -1403,18 +1194,250 @@ class ClientManagerMockTest {
         verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
     }
 
+    @Test
+    fun testGetNewAuthToken_RemovedWaitingAccountCannotAdoptWinner() {
+        val fixture = boundFixture()
+        val broadcastReached = CountDownLatch(1)
+        val releaseBroadcast = CountDownLatch(1)
+        every { mockAppContext.sendBroadcast(any()) } answers {
+            broadcastReached.countDown()
+            releaseBroadcast.await(5, TimeUnit.SECONDS)
+            Unit
+        }
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns successResponse(ROTATED_REFRESH_TOKEN)
+            }
+        }
+        val winner = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+        val loser = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+        val results = arrayOfNulls<String>(2)
+        val winnerThread = Thread { results[0] = winner.getNewAuthToken() }
+        winnerThread.start()
+        assertEquals(true, broadcastReached.await(5, TimeUnit.SECONDS))
+        val loserThread = Thread { results[1] = loser.getNewAuthToken() }
+        loserThread.start()
+        awaitThreadsParked(listOf(loserThread), 1)
+        fixture.liveUser.set(null)
+
+        releaseBroadcast.countDown()
+        listOf(winnerThread, loserThread).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        assertEquals(REFRESHED_ACCESS_TOKEN, results[0])
+        assertNull(results[1])
+    }
+
+    @Test
+    fun testGetNewAuthToken_EqualTokensStillUpdateOnlyBoundAccount() {
+        val accountA = mockk<Account>(relaxed = true)
+        val accountB = mockk<Account>(relaxed = true)
+        val userA = testUser(OLD_ACCESS_TOKEN, REFRESH_TOKEN, "user-a", "org-a")
+        val userB = testUser(OLD_ACCESS_TOKEN, REFRESH_TOKEN, "user-b", "org-b")
+        every { mockUserAccountManager.buildUserAccount(accountA) } returns userA
+        every { mockUserAccountManager.buildUserAccount(accountB) } returns userB
+        every {
+            mockUserAccountManager.updateAccount(accountA, any())
+        } returns Bundle()
+        val managerA = boundClientManager(accountA, arrayOf(accountA, accountB))
+
+        assertEquals(
+            REFRESHED_ACCESS_TOKEN,
+            ClientManager.AccMgrAuthTokenProvider(managerA).getNewAuthToken(),
+        )
+
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(accountA, any()) }
+        verify(exactly = 0) { mockUserAccountManager.updateAccount(accountB, any()) }
+    }
+
+    @Test
+    fun testRoutingOverrideSurvivesAccountInstanceUpdate() {
+        val fixture = boundFixture(instanceUrl = "https://old.instance.example")
+        val broadcast = slot<Intent>()
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } returns successResponse(
+                    ROTATED_REFRESH_TOKEN,
+                    "https://new.instance.example",
+                )
+            }
+        }
+        val provider = ClientManager.AccMgrAuthTokenProvider(
+            fixture.manager,
+            "https://special.route.example",
+        )
+
+        assertEquals(REFRESHED_ACCESS_TOKEN, provider.getNewAuthToken())
+
+        assertEquals("https://special.route.example", provider.instanceUrl)
+        verify { mockAppContext.sendBroadcast(capture(broadcast)) }
+        assertEquals(INSTANCE_URL_UPDATE_INTENT, broadcast.captured.action)
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun testDeprecatedTokenSnapshotConstructorIgnoresSnapshots() {
+        val userA = testUser()
+        val userB = testUser(
+            authToken = "b-access-token",
+            refreshToken = "b-refresh-token",
+            userId = "user-b",
+            orgId = "org-b",
+            instanceUrl = "https://b.instance.example",
+        )
+        val accountA = Account(userA.accountName, "test-account-type")
+        val accountB = Account(userB.accountName, "test-account-type")
+        val liveUserA = AtomicReference<UserAccount?>(userA)
+        val liveUserB = AtomicReference<UserAccount?>(userB)
+        val accountManager = mockk<AccountManager> {
+            every { getAccountsByType(accountA.type) } returns arrayOf(accountA, accountB)
+        }
+        every { mockUserAccountManager.buildUserAccount(accountA) } answers { liveUserA.get() }
+        every { mockUserAccountManager.buildUserAccount(accountB) } answers { liveUserB.get() }
+        every {
+            mockUserAccountManager.updateAccount(accountA, any())
+        } answers {
+            liveUserA.set(secondArg())
+            Bundle()
+        }
+        val managerA = ClientManager(accountManager, accountA, userA)
+
+        val providerWithBSnapshots = ClientManager.AccMgrAuthTokenProvider(
+            managerA,
+            userB.instanceServer,
+            userB.authToken,
+            userB.refreshTokenForPersistence,
+        )
+
+        assertEquals("https://login.salesforce.com", providerWithBSnapshots.instanceUrl)
+        assertEquals(REFRESH_TOKEN, providerWithBSnapshots.refreshToken)
+        assertEquals(REFRESHED_ACCESS_TOKEN, providerWithBSnapshots.getNewAuthToken())
+
+        val providerWithNullSnapshots = ClientManager.AccMgrAuthTokenProvider(
+            managerA,
+            null,
+            null,
+            null,
+        )
+        assertEquals("https://login.salesforce.com", providerWithNullSnapshots.instanceUrl)
+        assertEquals(REFRESH_TOKEN, providerWithNullSnapshots.refreshToken)
+        assertEquals("b-access-token", liveUserB.get()?.authToken)
+        assertEquals("b-refresh-token", liveUserB.get()?.refreshTokenForPersistence)
+        verify(exactly = 1) { mockOkHttpClient.newCall(any()) }
+        verify(exactly = 1) {
+            mockUserAccountManager.updateAccount(accountA, any())
+        }
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(accountB, any())
+            mockSDKManager.logout(accountB, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun testProviderUsesExactAccountRefreshTokenSnapshot() {
+        val user = mockk<UserAccount>(relaxed = true) {
+            every { authToken } returns OLD_ACCESS_TOKEN
+            every { refreshToken } returns "replacement-account-token"
+            every { refreshTokenForPersistence } returns REFRESH_TOKEN
+            every { instanceServer } returns "https://login.salesforce.com"
+        }
+        val manager = mockk<ClientManager>(relaxed = true) {
+            every { getValidatedUser(any()) } returns user
+        }
+
+        val provider = ClientManager.AccMgrAuthTokenProvider(manager)
+
+        assertEquals(REFRESH_TOKEN, provider.refreshToken)
+    }
+
     // endregion
 
     // region Concurrency test helpers
 
+    private data class BoundFixture(
+        val account: Account,
+        val liveUser: AtomicReference<UserAccount?>,
+        val manager: ClientManager,
+    )
+
+    private fun boundFixture(
+        instanceUrl: String = "https://login.salesforce.com",
+    ): BoundFixture {
+        val account = mockk<Account>(relaxed = true)
+        val liveUser = AtomicReference<UserAccount?>(testUser(instanceUrl = instanceUrl))
+        every { mockUserAccountManager.buildUserAccount(account) } answers { liveUser.get() }
+        every {
+            mockUserAccountManager.updateAccount(account, any())
+        } answers {
+            liveUser.set(secondArg())
+            Bundle()
+        }
+        return BoundFixture(
+            account,
+            liveUser,
+            boundClientManager(account, arrayOf(account)),
+        )
+    }
+
+    private fun testUser(
+        authToken: String? = OLD_ACCESS_TOKEN,
+        refreshToken: String? = REFRESH_TOKEN,
+        userId: String = "userId",
+        orgId: String = "orgId",
+        instanceUrl: String? = "https://login.salesforce.com",
+    ): UserAccount = UserAccountBuilder.getInstance()
+        .accountName("account-$userId")
+        .username("user@example.com")
+        .authToken(authToken)
+        .refreshToken(refreshToken)
+        .instanceServer(instanceUrl)
+        .loginServer("https://login.salesforce.com")
+        .idUrl("https://login.salesforce.com/id/$orgId/$userId")
+        .clientId("client-id")
+        .orgId(orgId)
+        .userId(userId)
+        .build()
+
+    private fun boundClientManager(
+        boundAccount: Account,
+        accounts: Array<Account>,
+    ): ClientManager = mockk(relaxed = true) {
+        every { getAccount() } returns boundAccount
+        every { getValidatedUser(any()) } answers {
+            val storedUser = mockUserAccountManager.buildUserAccount(boundAccount)
+            val persistedRefreshToken = storedUser?.refreshTokenForPersistence
+                ?.takeUnless(String::isEmpty)
+                ?: storedUser?.refreshToken
+            val user = if (storedUser != null
+                && persistedRefreshToken != storedUser.refreshTokenForPersistence) {
+                UserAccountBuilder.getInstance()
+                    .populateFromUserAccount(storedUser)
+                    .refreshToken(persistedRefreshToken)
+                    .build()
+            } else {
+                storedUser
+            }
+            if (firstArg<Boolean>() && (user?.refreshTokenForPersistence == null
+                        || user.loginServer == null
+                        || user.clientIdForRefresh == null)) {
+                null
+            } else {
+                user
+            }
+        }
+        every { getBoundAccountCount() } returns accounts.size
+    }
+
     /** Reads the refresh_token value out of an OkHttp token-endpoint request's form body. */
     private fun postedRefreshToken(request: Request): String? {
+        return postedFormValue(request, "refresh_token")
+    }
+
+    private fun postedFormValue(request: Request, key: String): String? {
         val buffer = Buffer()
         request.body?.writeTo(buffer)
-        // Form body looks like: grant_type=...&client_id=...&refresh_token=VALUE&format=json
         return buffer.readUtf8().split("&")
-            .firstOrNull { it.startsWith("refresh_token=") }
-            ?.substringAfter("refresh_token=")
+            .firstOrNull { it.startsWith("$key=") }
+            ?.substringAfter("$key=")
             ?.let { URLDecoder.decode(it, "UTF-8") }
     }
 
@@ -1465,4 +1488,3 @@ class ClientManagerMockTest {
 
     // endregion
 }
-

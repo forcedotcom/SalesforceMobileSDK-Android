@@ -98,9 +98,7 @@ internal class IDPAuthCodeHelper @VisibleForTesting internal constructor(
     private fun buildRestClient(): RestClient? {
         SalesforceSDKLogger.d(TAG, "Building rest client")
         val context = SalesforceSDKManager.getInstance().appContext
-        val idpAccountType = SalesforceSDKManager.getInstance().accountType
-        val clientManager = ClientManager(context, idpAccountType, false)
-        return clientManager.peekRestClient(userAccount)
+        return ClientManager(context, userAccount).peekRestClient()
     }
 
     /**

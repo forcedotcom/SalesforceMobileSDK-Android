@@ -60,13 +60,13 @@ internal class PushNotificationsRegistrationChangeWorker(
     override fun doWork(): Result {
 
         // Fetch worker input data for registration action and user account.
-        val pushNotificationsRegistrationAction = PushNotificationsRegistrationAction.valueOf(
-            inputData.getString("ACTION") ?: return failure() /* Action is required */
-        )
+        val action = inputData.getString("ACTION")
+            ?.let { runCatching { PushNotificationsRegistrationAction.valueOf(it) }.getOrNull() }
+            ?: return failure()
 
         // Resolve which authenticated accounts this work targets, failing on a
         // bad required input rather than widening the scope to all users.
-        val targetAccounts = when (val resolution = resolveTargetAccounts()) {
+        val targetAccounts = when (val resolution = resolveTargetAccounts(action)) {
             is TargetAccounts.Fail -> return failure()
             is TargetAccounts.Accounts -> resolution.users
         }
@@ -78,7 +78,7 @@ internal class PushNotificationsRegistrationChangeWorker(
         val pushNotificationsRegistrar = SalesforceSDKManager.getInstance().pushServiceType.newInstance()
         targetAccounts.forEach { userAccount ->
             pushNotificationsRegistrar.performRegistrationChange(
-                pushNotificationsRegistrationAction == Register,
+                action == Register,
                 userAccount
             )
         }
@@ -95,7 +95,8 @@ internal class PushNotificationsRegistrationChangeWorker(
      * cookies) is never written to WorkManager's unencrypted storage. Accounts
      * are re-resolved from secure storage here:
      *
-     * - Absent identifiers legitimately specify all authenticated users.
+     * - Absent identifiers specify all authenticated users only for registration.
+     *   Deregistration requires an exact org/user target.
      * - Present identifiers that no longer resolve to a stored account (for
      *   example, the user logged out before this work ran) are a bad required
      *   input: [TargetAccounts.Fail] rather than silently widening the scope to
@@ -117,7 +118,9 @@ internal class PushNotificationsRegistrationChangeWorker(
      * [TargetAccounts.Fail] rather than widen the scope.
      */
     @VisibleForTesting
-    internal fun resolveTargetAccounts(): TargetAccounts {
+    internal fun resolveTargetAccounts(
+        action: PushNotificationsRegistrationAction = Register,
+    ): TargetAccounts {
         var orgId = inputData.getString("ORG_ID")
         var userId = inputData.getString("USER_ID")
         val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -132,13 +135,19 @@ internal class PushNotificationsRegistrationChangeWorker(
             }
         }
 
-        return if (orgId == null && userId == null) {
-            // Absent identifiers specify all authenticated users.
-            TargetAccounts.Accounts(userAccountManager.authenticatedUsers ?: emptyList())
-        } else {
+        if (orgId != null || userId != null) {
+            if (orgId == null || userId == null) {
+                return TargetAccounts.Fail /* Partial identity payload */
+            }
             val userAccount = userAccountManager.getUserFromOrgAndUserId(orgId, userId)
                 ?: return TargetAccounts.Fail /* Unresolvable account */
-            TargetAccounts.Accounts(listOf(userAccount))
+            return TargetAccounts.Accounts(listOf(userAccount))
+        }
+
+        return if (action == Register) {
+            TargetAccounts.Accounts(userAccountManager.authenticatedUsers.orEmpty())
+        } else {
+            TargetAccounts.Fail
         }
     }
 

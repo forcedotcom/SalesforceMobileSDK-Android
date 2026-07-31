@@ -40,8 +40,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
@@ -83,29 +81,21 @@ public class SalesforceActivityDelegate {
     public void onResume(boolean buildRestClient) {
         // Brings up the ScreenLock if needed.
         if (buildRestClient) {
-            // Gets login options.
-            final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+            SalesforceSDKManager.getInstance().getRestClient(
+                    activity,
+                    client -> {
+                        if (client == null) {
+                            SalesforceSDKManager.getInstance()
+                                    .logout(null, activity, true,
+                                            OAuth2.LogoutReason.CORRUPT_STATE_MSDK);
+                            return;
+                        }
+                        ((SalesforceActivityInterface) activity).onResume(client);
 
-            // Gets a rest client.
-            new ClientManager(
-                    SalesforceSDKManager.getInstance().getAppContext(),
-                    accountType,
-                    SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()
-            ).getRestClient(activity, new ClientManager.RestClientCallback() {
-
-                @Override
-                public void authenticatedRestClient(RestClient client) {
-                    if (client == null) {
-                        SalesforceSDKManager.getInstance()
-                                .logout(null, activity, true, OAuth2.LogoutReason.CORRUPT_STATE_MSDK);
-                        return;
-                    }
-                    ((SalesforceActivityInterface) activity).onResume(client);
-
-                    // Lets observers know that rendition is complete.
-                    EventsObservable.get().notifyEvent(EventsObservable.EventType.RenditionComplete);
-                }
-            });
+                        // Lets observers know that rendition is complete.
+                        EventsObservable.get().notifyEvent(
+                                EventsObservable.EventType.RenditionComplete);
+                    });
         }
         else {
             ((SalesforceActivityInterface) activity).onResume(null);

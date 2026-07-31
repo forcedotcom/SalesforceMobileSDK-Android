@@ -183,7 +183,9 @@ class DevInfoActivityTest {
             assertTrue("Runtime config should not be empty", items.isNotEmpty())
             
             items.forEach { (key, _) ->
-                composeTestRule.onNodeWithText(key).assertIsDisplayed()
+                composeTestRule.onNodeWithText(key)
+                    .performScrollTo()
+                    .assertIsDisplayed()
             }
         }
     }

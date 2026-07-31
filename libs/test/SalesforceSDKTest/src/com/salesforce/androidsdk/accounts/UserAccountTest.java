@@ -230,6 +230,18 @@ public class UserAccountTest {
     }
 
     @Test
+    public void testEqualsUsesUserAndOrgIdentityRatherThanAccountName() {
+        final UserAccount original = createTestAccount();
+        final UserAccount sameUserWithDifferentAccountName = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .accountName(TEST_ACCOUNT_NAME_2)
+                .build();
+
+        Assert.assertEquals(original, sameUserWithDifferentAccountName);
+        Assert.assertEquals(original.hashCode(), sameUserWithDifferentAccountName.hashCode());
+    }
+
+    @Test
     public void testGetClientIdForRefresh() {
         UserAccount userWithBeaconChildKey = createTestAccount();
         Assert.assertEquals("Beacon child consumer key should match", TEST_BEACON_CHILD_CONSUMER_KEY, userWithBeaconChildKey.getBeaconChildConsumerKey());

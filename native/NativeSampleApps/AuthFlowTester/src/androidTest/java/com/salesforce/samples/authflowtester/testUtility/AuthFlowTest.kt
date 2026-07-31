@@ -310,7 +310,13 @@ abstract class AuthFlowTest {
         }
         app.waitForAppLoad()
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            useWelcomeDiscovery,
+            isMultiUser,
+            expectAdvancedAuth = useWebServerFlow,
+        )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
     }
@@ -361,7 +367,7 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         knownUserConfig: KnownUserConfig = user,
         usesWelcomeDiscovery: Boolean = false,
-        expectAdvancedAuth: Boolean = false,
+        expectAdvancedAuth: Boolean = true,
     ) {
         restartApp()
         app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth)
@@ -399,7 +405,12 @@ abstract class AuthFlowTest {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = true,
+        )
     }
 
     companion object {
@@ -548,6 +559,8 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         scopeSelection: ScopeSelection = EMPTY,
         knownUserConfig: KnownUserConfig = user,
+        expectAdvancedAuth: Boolean = true,
+        isMultiUser: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -557,7 +570,12 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = isMultiUser,
+            expectAdvancedAuth = expectAdvancedAuth,
+        )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
@@ -582,6 +600,10 @@ abstract class AuthFlowTest {
             assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
         }
 
-        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, isRtr = isRtr)
+        app.validateUserAgent(
+            knownLoginHostConfig = knownLoginHostConfig,
+            expectAdvancedAuth = true,
+            isRtr = isRtr,
+        )
     }
 }

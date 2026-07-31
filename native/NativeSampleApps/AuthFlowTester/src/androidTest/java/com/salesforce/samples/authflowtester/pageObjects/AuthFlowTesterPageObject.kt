@@ -71,6 +71,7 @@ import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
+private const val APP_LOAD_TIMEOUT_MS = 30_000L
 
 data class Tokens(
     val accessToken: String,
@@ -83,7 +84,7 @@ data class Tokens(
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {
-        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = APP_LOAD_TIMEOUT_MS)
     }
 
     fun switchToUser(

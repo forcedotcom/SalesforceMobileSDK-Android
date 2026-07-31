@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.util
 
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import java.net.URL
 import java.net.MalformedURLException
 
@@ -38,4 +40,24 @@ fun String.urlHostOrNull() : String? {
     } catch (_: MalformedURLException) {
         null
     }
+}
+
+/**
+ * Returns whether this account and an authenticated REST client represent the same Salesforce
+ * user.
+ *
+ * [UserAccount.equals] already provides this comparison for two user accounts. This overload is
+ * needed only because [ClientInfo] is a different type. Local Android account names and mutable
+ * client properties such as tokens, instance URLs, and session-cookie fields are intentionally
+ * ignored.
+ */
+fun UserAccount?.isSameUser(clientInfo: ClientInfo?): Boolean {
+    val user = this ?: return false
+    val client = clientInfo ?: return false
+    return !user.userId.isNullOrBlank() &&
+        !user.orgId.isNullOrBlank() &&
+        !client.userId.isNullOrBlank() &&
+        !client.orgId.isNullOrBlank() &&
+        user.userId == client.userId &&
+        user.orgId == client.orgId
 }

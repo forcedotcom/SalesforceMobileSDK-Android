@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.STOPPED
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncDown
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncUp
 import com.salesforce.androidsdk.rest.ApiVersionStrings
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
@@ -826,9 +827,10 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                  * RestClient should be set to the unauthenticated RestClient instance.
                  */
                 val restClient: RestClient? = if (user == null) {
-                    SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
+                    SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
                 } else {
-                    SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+                    ClientManager(SalesforceSDKManager.getInstance().appContext, user)
+                        .peekRestClient()
                 }
                 instance = SyncManager(store, restClient)
                 instance.also { INSTANCES[uniqueId] = it }

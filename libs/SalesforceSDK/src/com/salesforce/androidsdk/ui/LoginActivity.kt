@@ -109,7 +109,6 @@ import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
-import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
 import com.salesforce.androidsdk.R.string.sf__lightning_url_code_exchange_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
@@ -126,11 +125,9 @@ import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
-import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuthErrorCode
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
@@ -312,11 +309,6 @@ open class LoginActivity : FragmentActivity() {
         // Set callback for when browser custom tab URL is ready to launch.
         viewModel.onBrowserCustomTabReady = { url ->
             loadLoginPageInCustomTab(url, customTabLauncher)
-        }
-
-        // Support magic links
-        if (viewModel.jwt != null) {
-            swapJWTForAccessToken()
         }
 
         // Let observers know onCreate is complete.
@@ -753,16 +745,17 @@ open class LoginActivity : FragmentActivity() {
         )
 
     private fun doTokenRefresh(activity: LoginActivity) {
-        SalesforceSDKManager.getInstance().clientManager.getRestClient(
-            activity
-        ) { client ->
-            runCatching {
-                client.oAuthRefreshInterceptor.refreshAccessToken()
-            }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
-            }
-            activity.finish()
+        val client = SalesforceSDKManager.getInstance().clientManager?.peekRestClient()
+        if (client == null) {
+            e(TAG, "Unable to obtain the authenticated client while unlocking.")
+            return
         }
+        runCatching {
+            client.oAuthRefreshInterceptor.refreshAccessToken()
+        }.onFailure { e ->
+            e(TAG, "Error encountered while unlocking.", e)
+        }
+        activity.finish()
     }
 
     private val authenticators
@@ -882,39 +875,6 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "$customTabBrowser does not exist on this device", throwable)
             }.getOrDefault(false)
         }
-
-    private fun swapJWTForAccessToken() {
-        CoroutineScope(IO).launch {
-            runCatching {
-                if (viewModel.jwt.isNullOrBlank()) {
-                    return@launch
-                } else {
-                    swapJWTForTokens(HttpAccess.DEFAULT, URI(viewModel.loginUrl.value), viewModel.jwt)
-                }
-            }.onFailure { throwable: Throwable ->
-                jwtFlowError(throwable)
-            }.onSuccess { tokenResponse: TokenEndpointResponse? ->
-                if (tokenResponse?.authToken != null) {
-                    if (tokenResponse.tokenFormat == "jwt") {
-                        e(TAG, "Frontdoor cannot be used with a JWT access tokens.")
-                        jwtFlowError()
-                    } else {
-                        viewModel.authCodeForJwtFlow = tokenResponse.authToken
-                        viewModel.reloadWebView()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun jwtFlowError(throwable: Throwable? = null) {
-        viewModel.jwt = null
-        onAuthFlowError(
-            error = getString(sf__generic_authentication_error_title),
-            errorDesc = getString(sf__jwt_authentication_error),
-            e = throwable,
-        )
-    }
 
     // endregion
     // region Log In Via Salesforce Identity API UI Bridge Front Door URL Private Implementation
@@ -1224,6 +1184,9 @@ open class LoginActivity : FragmentActivity() {
             val authFlowFinished = formattedUrl.startsWith(callbackUrl)
 
             if (authFlowFinished) {
+                completedViaBrowserTab = false
+                SalesforceSDKManager.getInstance()
+                    .unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN)
                 val params = UriFragmentParser.parse(request.url)
                 val error = params["error"]
                 // Did we fail?

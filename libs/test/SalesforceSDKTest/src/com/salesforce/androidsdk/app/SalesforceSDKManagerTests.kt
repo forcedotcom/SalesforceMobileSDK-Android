@@ -1,23 +1,38 @@
 package com.salesforce.androidsdk.app
 
+import android.accounts.Account
+import android.accounts.AccountManager
 import android.app.Activity
+import android.webkit.CookieManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_USER_ID
 import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.push.PushMessaging
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.util.EventsObservable
+import com.salesforce.androidsdk.util.EventsObservable.EventType.LogoutComplete
+import com.salesforce.androidsdk.util.test.EventsObserver
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
@@ -33,6 +48,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URI
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Tests for `SalesforceSDKManager`.
@@ -719,6 +739,176 @@ class SalesforceSDKManagerTests {
         assertEquals(654321L, client?.googleCloudProjectId)
     }
 
+    @Test
+    fun clientManager_ReturnsNullWhenNoUserIsCurrent() {
+        val salesforceSdkManager = createTestSalesforceSDKManagerWithCurrentUser(null)
+
+        assertNull(salesforceSdkManager.clientManager)
+    }
+
+    @Test
+    fun getUnauthenticatedRestClient_ReturnsCredentialFreeClient() {
+        val client = createTestSalesforceSDKManager().getUnauthenticatedRestClient()
+
+        assertTrue(client.clientInfo is RestClient.UnauthenticatedClientInfo)
+        assertNull(client.authToken)
+        assertNull(client.refreshToken)
+    }
+
+    @Test
+    fun logout_RemovesAccountWithoutWaitingForPushUnregistration() {
+        val fixture = createLogoutFixture(pushRegistered = true)
+        val observedLoggingOut = AtomicBoolean()
+        fixture.sdkManager.onCleanUp = {
+            observedLoggingOut.set(fixture.sdkManager.isLoggingOut(fixture.account))
+        }
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            PushMessaging.unregisterForLogout(any(), fixture.user, false)
+        }
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        assertTrue("Logout state should cover synchronous local cleanup", observedLoggingOut.get())
+        assertFalse(fixture.sdkManager.isLoggingOut)
+        assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
+        assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+    }
+
+    @Test
+    fun logout_AbsentAccountDoesNothing() {
+        val fixture = createLogoutFixture(accountPresent = false)
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        verify(exactly = 0) { fixture.accountManager.removeAccountExplicitly(any()) }
+        verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        assertTrue(fixture.sdkManager.cleanedUsers.isEmpty())
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_MalformedPersistedAccountIsPurgedLocally() {
+        val fixture = createLogoutFixture(malformed = true)
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        assertEquals(1, fixture.sdkManager.cleanedUsers.size)
+        assertEquals(fixture.user.userId, fixture.sdkManager.cleanedUsers.single()?.userId)
+        assertEquals(fixture.user.orgId, fixture.sdkManager.cleanedUsers.single()?.orgId)
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_RevokesCapturedCredentialsAfterLocalRemoval() {
+        val fixture = createLogoutFixture()
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        assertTrue(fixture.revocationCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            OAuth2.revokeRefreshToken(
+                any(),
+                URI("https://login.example.com"),
+                "refresh-token-user",
+                USER_LOGOUT,
+            )
+        }
+    }
+
+    @Test
+    fun logout_PushUnregisterStartupFailureContinuesLocalLogout() {
+        val fixture = createLogoutFixture(pushRegistered = true)
+        every {
+            PushMessaging.unregisterForLogout(any(), fixture.user, false)
+        } throws IllegalStateException("push unregister failed")
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_RegisteredAccountWithoutRefreshTokenStillStartsPushUnregistration() {
+        val fixture = createLogoutFixture(
+            pushRegistered = true,
+            refreshToken = null,
+        )
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            PushMessaging.unregisterForLogout(any(), fixture.user, false)
+        }
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        verify(exactly = 0) {
+            OAuth2.revokeRefreshToken(any(), any(), any(), any())
+        }
+        assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
+    }
+
+    @Test
+    fun logout_FailedAccountRemovalDoesNotReportCompletionOrRevokeToken() {
+        val fixture = createLogoutFixture(removeAccountSucceeds = false)
+        val logoutReported = AtomicBoolean(false)
+        val observer = EventsObserver { event ->
+            if (event.type == LogoutComplete) {
+                logoutReported.set(true)
+            }
+        }
+        EventsObservable.get().registerObserver(observer)
+
+        try {
+            fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+        } finally {
+            EventsObservable.get().unregisterObserver(observer)
+        }
+
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        verify(exactly = 0) {
+            OAuth2.revokeRefreshToken(any(), any(), any(), any())
+        }
+        assertTrue(fixture.sdkManager.cleanedUsers.isEmpty())
+        assertFalse(logoutReported.get())
+        assertFalse(fixture.sdkManager.isLoggingOut)
+        assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
+    }
+
+    @Test
+    fun clearWebViewCookiesAfterLogout_ClearsSharedJar() {
+        val cookieManager = mockk<CookieManager>(relaxed = true)
+        mockkStatic(CookieManager::class)
+        every { CookieManager.getInstance() } returns cookieManager
+        val sdkManager = LogoutTestSalesforceSDKManager(
+            getInstrumentation().targetContext,
+            mockk(relaxed = true),
+        )
+
+        sdkManager.clearWebViewCookiesAfterLogout()
+
+        verify(exactly = 1) { cookieManager.removeAllCookies(null) }
+    }
+
 
     @Test
     fun initNative_WithGoogleCloudProjectId_CreatesInstanceWithAppAttestationClient() {
@@ -958,6 +1148,149 @@ class SalesforceSDKManagerTests {
         )
     }
 
+    private fun createLogoutFixture(
+        pushRegistered: Boolean = false,
+        malformed: Boolean = false,
+        accountPresent: Boolean = true,
+        refreshToken: String? = "refresh-token-user",
+        removeAccountSucceeds: Boolean = true,
+    ): LogoutFixture {
+        val account = Account("logout-account", "logout-account-type")
+        val otherAccount = Account("other-account", "logout-account-type")
+        val user = buildLogoutIdentity(
+            accountName = account.name,
+            userId = "user",
+            orgId = "org",
+            refreshToken = refreshToken,
+        )
+        val otherUser = buildLogoutIdentity(
+            accountName = otherAccount.name,
+            userId = "other-user",
+            orgId = "other-org",
+        )
+        val removalCompleted = CountDownLatch(1)
+        val revocationCompleted = CountDownLatch(1)
+        val accountStillPresent = AtomicBoolean(accountPresent)
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true).apply {
+            every { buildUserAccount(account) } returns if (malformed) null else user
+            every { buildUserAccount(otherAccount) } returns otherUser
+            every { authenticatedUsers } answers {
+                buildList {
+                    if (accountStillPresent.get() && !malformed) {
+                        add(user)
+                    }
+                    add(otherUser)
+                }
+            }
+        }
+        val accountManager = mockk<AccountManager>(relaxed = true).apply {
+            every { getPassword(account) } returns "encrypted-refresh-value"
+            every { getUserData(account, any()) } returns "encrypted-login-value"
+            every { getUserData(account, KEY_USER_ID) } returns "encrypted-persisted-user-id"
+            every { getUserData(account, KEY_ORG_ID) } returns "encrypted-persisted-org-id"
+            every { getAccountsByType(any()) } answers {
+                if (accountStillPresent.get()) {
+                    arrayOf(account, otherAccount)
+                } else {
+                    arrayOf(otherAccount)
+                }
+            }
+            every { removeAccountExplicitly(account) } answers {
+                if (removeAccountSucceeds) {
+                    accountStillPresent.set(false)
+                    removalCompleted.countDown()
+                }
+                removeAccountSucceeds
+            }
+        }
+
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns accountManager
+        mockkStatic(UserAccountManager::class)
+        every { UserAccountManager.getInstance() } returns userAccountManager
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.encryptionKey } returns "fixture-encryption-key"
+        every { SalesforceSDKManager.decrypt("encrypted-refresh-value", any()) } returns "opaque-refresh-value"
+        every { SalesforceSDKManager.decrypt("encrypted-login-value", any()) } returns "https://example.invalid"
+        every {
+            SalesforceSDKManager.decrypt("encrypted-persisted-user-id", any())
+        } returns user.userId
+        every {
+            SalesforceSDKManager.decrypt("encrypted-persisted-org-id", any())
+        } returns user.orgId
+        // Initialize the Kotlin object before MockK retransforms its @JvmStatic methods.
+        PushMessaging.hashCode()
+        mockkObject(PushMessaging)
+        mockkStatic(PushMessaging::class)
+        every { PushMessaging.isRegistered(any(), user) } returns pushRegistered
+        every { PushMessaging.unregisterForLogout(any(), user, false) } just runs
+        // OAuth2 also has a static initializer that must run before MockK retransformation.
+        OAuth2.TIMESTAMP_FORMAT
+        mockkStatic(OAuth2::class)
+        every { OAuth2.revokeRefreshToken(any(), any(), any(), any()) } answers {
+            revocationCompleted.countDown()
+        }
+        mockkStatic(CookieManager::class)
+        every { CookieManager.getInstance() } returns mockk(relaxed = true)
+
+        val sdkManager = LogoutTestSalesforceSDKManager(
+            context = getInstrumentation().targetContext,
+            testUserAccountManager = userAccountManager,
+        )
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+
+        return LogoutFixture(
+            sdkManager = sdkManager,
+            account = account,
+            accountManager = accountManager,
+            user = user,
+            removalCompleted = removalCompleted,
+            revocationCompleted = revocationCompleted,
+        )
+    }
+
+    private fun buildLogoutIdentity(
+        accountName: String,
+        userId: String,
+        orgId: String,
+        refreshToken: String? = "refresh-token-$userId",
+        loginServer: String = "https://login.example.com",
+    ): UserAccount = UserAccountBuilder.getInstance()
+        .accountName(accountName)
+        .userId(userId)
+        .orgId(orgId)
+        .authToken("auth-token-$userId")
+        .refreshToken(refreshToken)
+        .instanceServer("https://instance.example.com")
+        .loginServer(loginServer)
+        .idUrl("https://id.example.com/$orgId/$userId")
+        .build()
+
+    private data class LogoutFixture(
+        val sdkManager: LogoutTestSalesforceSDKManager,
+        val account: Account,
+        val accountManager: AccountManager,
+        val user: UserAccount,
+        val removalCompleted: CountDownLatch,
+        val revocationCompleted: CountDownLatch,
+    )
+
+    private class LogoutTestSalesforceSDKManager(
+        context: android.content.Context,
+        private val testUserAccountManager: UserAccountManager,
+    ) : SalesforceSDKManager(context, LoginActivity::class.java, LoginActivity::class.java) {
+
+        val cleanedUsers = CopyOnWriteArrayList<UserAccount?>()
+        var onCleanUp: (() -> Unit)? = null
+
+        override val userAccountManager: UserAccountManager by lazy { testUserAccountManager }
+
+        override fun cleanUp(userAccount: UserAccount?) {
+            onCleanUp?.invoke()
+            cleanedUsers += userAccount
+        }
+    }
+
     /**
      * A minimal subclass of [SalesforceSDKManager] that exposes the protected
      * primary constructor so that tests can supply a [googleCloudProjectId].
@@ -1016,11 +1349,9 @@ class SalesforceSDKManagerTests {
 
         override val userAccountManager: UserAccountManager by lazy {
             mockk<UserAccountManager>(relaxed = true).apply {
-                // buildAccount returns null → persistUserFeatureFlags exits early
-                every { buildAccount(any()) } returns null
                 // currentUser returns null → getUserAgent falls back to no per-user key
                 every { currentUser } returns null
-                // authenticatedUsers returns null → hydratePerUserFeatures is a no-op
+                // No authenticated users → hydratePerUserFeatures is a no-op
                 every { authenticatedUsers } returns null
             }
         }

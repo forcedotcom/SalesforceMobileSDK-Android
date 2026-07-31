@@ -228,6 +228,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         migrateAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
 
         // Switch back to initial user and assert unaltered.
@@ -293,7 +294,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         assertEquals(userAUsername, remainingUsers.first().username)
 
         // With User A, validate the original tokens are intact and a refresh still succeeds.
-        app.validateUser(REGULAR_AUTH, user)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, userPostAccessToken)
@@ -322,7 +323,12 @@ class MultiUserLoginTests: AuthFlowTest() {
 
         // Validate nothing changed for "otherUser" before user switch
         val (otherUserPostAccessToken, otherUserPostRefreshToken) = app.getTokens()
-        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser)
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+            expectAdvancedAuth = true,
+        )
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
         assertEquals(otherUserRefreshToken, otherUserPostRefreshToken)
@@ -368,10 +374,16 @@ class MultiUserLoginTests: AuthFlowTest() {
     private fun switchToUserAndValidate(
         knownUserConfig: KnownUserConfig,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
     ) {
-        app.switchToUser(knownUserConfig)
+        app.switchToUser(knownUserConfig, knownLoginHostConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth,
+        )
     }
 
     /**
@@ -404,17 +416,18 @@ class MultiUserLoginTests: AuthFlowTest() {
             knownAppConfig = ECA_OPAQUE,
             knownLoginHostConfig = REGULAR_AUTH,
             knownUserConfig = user,
+            useWebServerFlow = false,
             isMultiUser = false,
         )
 
         // User B: advanced auth — has BW; now 2 users → MU
         loginOtherUserAndValidate(
-            knownAppConfig = ECA_OPAQUE,
+            knownAppConfig = BEACON_OPAQUE,
             knownLoginHostConfig = ADVANCED_AUTH,
         )
 
         // Switch to User A — no BW, MU still present
-        switchToUserAndValidate(user)
+        switchToUserAndValidate(user, expectAdvancedAuth = false)
 
         // Switch back to User B — BW back, MU still present
         switchToUserAndValidate(otherUser, ADVANCED_AUTH)
@@ -432,7 +445,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
 
         // Back on User A — MU gone, no BW
-        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
+        app.validateUserAgent(
+            REGULAR_AUTH,
+            isMultiUser = false,
+            expectAdvancedAuth = false,
+        )
     }
 
     companion object {

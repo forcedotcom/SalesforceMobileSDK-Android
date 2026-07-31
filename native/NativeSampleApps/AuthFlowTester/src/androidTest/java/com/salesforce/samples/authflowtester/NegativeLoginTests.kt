@@ -122,7 +122,7 @@ class NegativeLoginTests : AuthFlowTest() {
         // Verify the original user's tokens and config are still intact and
         // a refresh succeeds. navigateBackToApp() above already waited for
         // the AuthFlowTester main screen to reload.
-        app.validateUser(REGULAR_AUTH, user)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (postAccessToken, postRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, postAccessToken)

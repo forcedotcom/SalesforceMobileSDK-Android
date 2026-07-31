@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.auth
 
+import android.app.Instrumentation
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
@@ -7,13 +8,13 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
 import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
 import com.salesforce.androidsdk.rest.RestResponse
@@ -42,18 +43,28 @@ import org.junit.runner.RunWith
 class NativeLoginManagerTest {
     private lateinit var mgr: NativeLoginManager
     private lateinit var bioAuthManager: BiometricAuthenticationManager
+    private lateinit var activityMonitors: List<Instrumentation.ActivityMonitor>
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
     /** Retained before any mocking so that tearDown can clean up regardless of mock state. */
     private val realUserAccountManager = SalesforceSDKManager.getInstance().userAccountManager
 
     @Before
     fun setUp() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        activityMonitors = listOf(
+            sdkManager.webViewLoginActivityClass,
+            sdkManager.loginActivityClass,
+        )
+            .distinctBy { it.name }
+            .map { instrumentation.addMonitor(it.name, null, true) }
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
     }
 
     @After
     fun tearDown() {
-        realUserAccountManager.signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
+        realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
+        activityMonitors.forEach(instrumentation::removeMonitor)
         unmockkAll()
     }
 
@@ -83,7 +94,7 @@ class NativeLoginManagerTest {
         Assert.assertTrue("Should show back button when there is a logged in user.", mgr.shouldShowBackButton)
 
         SalesforceSDKManager.getInstance().userAccountManager
-            .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
+            .signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
         Assert.assertFalse("Should not show back button with no users logged in.", mgr.shouldShowBackButton)
     }
 
@@ -250,9 +261,7 @@ class NativeLoginManagerTest {
         every { mockClient.oAuthRefreshInterceptor } returns mockInterceptor
 
         val mockClientManager = mockk<ClientManager>()
-        every { mockClientManager.getRestClient(any(), any<RestClientCallback>()) } answers {
-            secondArg<RestClientCallback>().authenticatedRestClient(mockClient)
-        }
+        every { mockClientManager.peekRestClient() } returns mockClient
 
         val activity = mockk<FragmentActivity>(relaxed = true)
         mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
@@ -277,9 +286,7 @@ class NativeLoginManagerTest {
         every { mockClient.oAuthRefreshInterceptor } returns mockInterceptor
 
         val mockClientManager = mockk<ClientManager>()
-        every { mockClientManager.getRestClient(any(), any<RestClientCallback>()) } answers {
-            secondArg<RestClientCallback>().authenticatedRestClient(mockClient)
-        }
+        every { mockClientManager.peekRestClient() } returns mockClient
 
         val activity = mockk<FragmentActivity>(relaxed = true)
         mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
@@ -287,6 +294,25 @@ class NativeLoginManagerTest {
         // Should still unlock and finish even if refresh fails.
         Assert.assertFalse("Should be unlocked even after refresh failure.", bioAuthManager.locked)
         verify { activity.finish() }
+    }
+
+    @Test
+    fun testOnBiometricAuthenticationSucceededKeepsLockWhenClientCannotBeBuilt() {
+        bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        addUserAccount()
+        val account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
+        bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
+        bioAuthManager.lock()
+
+        val mockClientManager = mockk<ClientManager>()
+        every { mockClientManager.peekRestClient() } returns null
+
+        val activity = mockk<FragmentActivity>(relaxed = true)
+        mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
+
+        Assert.assertTrue("The biometric lock must remain when no client can be built.", bioAuthManager.locked)
+        verify(exactly = 0) { activity.finish() }
     }
 
     @Test

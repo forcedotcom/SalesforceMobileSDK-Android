@@ -268,6 +268,21 @@ class PushNotificationsRegistrationChangeWorkerTest {
         assertEquals(TargetAccounts.Fail, worker.resolveTargetAccounts())
     }
 
+    /** Unscoped work is valid for registration but never deregistration. */
+    @Test
+    fun testResolveTargetAccounts_absentIdentityDeregister_returnsFail() {
+        val userAccountManager = UserAccountManager.getInstance()
+        userAccountManager.createAccount(createTestAccount())
+        userAccountManager.createAccount(createOtherTestAccount())
+
+        val worker = buildWorker(workDataOf("ACTION" to Deregister.name))
+
+        assertEquals(
+            TargetAccounts.Fail,
+            worker.resolveTargetAccounts(Deregister),
+        )
+    }
+
     /**
      * Regression: with NO identifiers and NO legacy payload (the periodic
      * re-register job), resolution still targets all authenticated users. The

@@ -329,7 +329,7 @@ public class SalesforceSDKUpgradeManager {
             return;
         }
 
-        final AccountManager accountManager = SalesforceSDKManager.getInstance().getClientManager().getAccountManager();
+        final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
         final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
 
         for (Account account : accountManager.getAccountsByType(LEGACY_ACCOUNT_TYPE)) {

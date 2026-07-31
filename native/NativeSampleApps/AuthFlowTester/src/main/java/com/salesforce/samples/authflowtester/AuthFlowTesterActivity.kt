@@ -325,7 +325,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            SalesforceSDKManager.getInstance().logout(null)
+                            SalesforceSDKManager.getInstance().logout(frontActivity = null)
                         }
                     ) {
                         Text(
