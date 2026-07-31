@@ -1618,19 +1618,23 @@ open class SalesforceSDKManager protected constructor(
      * the debug-only "Force Token Refresh" dev action.
      *
      * @param user The user whose access token should be refreshed.
-     * @param restClient The REST client to refresh. Defaults to the user's
-     * client; overridable so tests can supply a mock without a network call.
+     * @param restClient The REST client to refresh, or null to resolve the
+     * user's client via [ClientManager.peekRestClient]. Tests can supply a
+     * mock to avoid a network call.
      * @return A human-readable result message suitable for a Toast. Never
-     * throws — any refresh failure is caught, logged, and returned as a
-     * message (with a null-message fallback to the exception's simple class
-     * name).
+     * throws — resolving the client and refreshing the token both happen
+     * inside the catch, so any failure (including the
+     * AccountInfoNotFoundException that [ClientManager.peekRestClient] raises
+     * when the account is missing or logging out) is caught, logged, and
+     * returned as a message (with a null-message fallback to the exception's
+     * simple class name).
      */
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun forceTokenRefresh(
         user: UserAccount,
-        restClient: RestClient = clientManager.peekRestClient(user)
+        restClient: RestClient? = null
     ): String = try {
-        restClient.refreshAccessToken()
+        (restClient ?: clientManager.peekRestClient(user)).refreshAccessToken()
         "Token refresh complete — check RTR section in dev info"
     } catch (ex: Exception) {
         e(TAG, "Force Token Refresh failed", ex)
@@ -1690,6 +1694,8 @@ open class SalesforceSDKManager protected constructor(
 //                "Identity Provider" to "$isIdentityProvider",
 //            )
 //
+//            // NOTE: carry over the RTR additionalSections.add(...) from the
+//            // live getter below, or RTR drops off the dev info screen.
 //            return DevSupportInfo(
 //                basicInfo,
 //                authConfig,
@@ -1699,7 +1705,14 @@ open class SalesforceSDKManager protected constructor(
 //            )
 //        }
 //
-//  TODO: Replace devSupportInfo with the above implementation when devSupportInfos is removed in 14.0.
+    /*
+     * TODO: Replace devSupportInfo with the above implementation when
+     * devSupportInfos is removed in 14.0. When doing so, preserve the RTR
+     * section appended in the live getter below — the commented-out
+     * implementation above builds DevSupportInfo via its structured
+     * constructor and does not add it, so RTR would otherwise silently drop
+     * from the dev info screen.
+     */
     open val devSupportInfo: DevSupportInfo
         get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos).apply {
             /*

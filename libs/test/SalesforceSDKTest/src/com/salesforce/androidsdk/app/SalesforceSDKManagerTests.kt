@@ -1024,6 +1024,26 @@ class SalesforceSDKManagerTests {
         assertTrue("Failure message should include the exception detail", message.contains("network down"))
     }
 
+    @Test
+    fun test_givenRestClientResolutionThrows_whenForceTokenRefresh_thenReturnsFailureMessageWithoutThrowing() {
+        /*
+         * Arrange: no restClient argument, so forceTokenRefresh must resolve it
+         * via clientManager.peekRestClient(user). For a user with no backing
+         * account that call throws AccountInfoNotFoundException (also the case
+         * when the user is mid-logout or missing auth-token/URL/id data).
+         */
+        val user = mockk<UserAccount>(relaxed = true)
+
+        /*
+         * Act: exercise the production default-argument path. It must not throw
+         * — the failure is caught and surfaced as a message.
+         */
+        val message = SalesforceSDKManager.getInstance().forceTokenRefresh(user)
+
+        // Assert: the failure is reported rather than propagated.
+        assertTrue("Failure message should say the refresh failed", message.contains("failed"))
+    }
+
     // -------------------------------------------------------------------------
     // Helpers for per-user feature flag tests
     // -------------------------------------------------------------------------
