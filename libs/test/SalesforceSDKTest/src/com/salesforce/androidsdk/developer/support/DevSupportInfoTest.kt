@@ -722,6 +722,61 @@ class DevSupportInfoTest {
         assertTrue(thumbprint.matches(Regex("[A-Za-z0-9_-]+")))
     }
 
+    // RTR section
+
+    /** Per-user fields show "N/A" when no user is logged in. */
+    @Test
+    fun rtrSection_NoCurrentUser_ShowsNA() {
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = null, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("N/A", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Before any rotation, shows "RTR Active: false" and
+     * "Last Rotation: Never".
+     */
+    @Test
+    fun rtrSection_UserBeforeRotation_ShowsFalseAndNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = null)
+
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("false", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Blank-timestamp guard: a blank persisted timestamp still reads as
+     * "Never".
+     */
+    @Test
+    fun rtrSection_BlankRotationTime_ShowsNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = "")
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false).second
+
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * After a confirmed rotation, "RTR Active" is true and
+     * "Last Rotation" is the timestamp.
+     */
+    @Test
+    fun rtrSection_UserAfterRotation_ShowsTrueAndTimestamp() {
+        val timestamp = "2026-07-30T12:00:00Z"
+        val user = createMockUserAccount(lastTokenRotationTime = timestamp)
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = true).second
+
+        assertEquals("true", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals(timestamp, rows.find { it.first == "Last Rotation" }?.second)
+    }
+
     // Helper methods
 
     private fun createMockRuntimeConfig(
@@ -750,6 +805,7 @@ class DevSupportInfoTest {
         authToken: String = "test_token",
         tokenType: String? = null,
         credentialsIdentifier: String? = null,
+        lastTokenRotationTime: String? = null,
     ): UserAccount {
         return UserAccount(
             Bundle().apply {
@@ -783,6 +839,7 @@ class DevSupportInfoTest {
                 putString(UserAccount.TOKEN_FORMAT, tokenFormat)
                 tokenType?.let { putString(UserAccount.TOKEN_TYPE, it) }
                 credentialsIdentifier?.let { putString(UserAccount.CREDENTIALS_IDENTIFIER, it) }
+                lastTokenRotationTime?.let { putString(UserAccount.LAST_TOKEN_ROTATION_TIME, it) }
             }
         )
     }

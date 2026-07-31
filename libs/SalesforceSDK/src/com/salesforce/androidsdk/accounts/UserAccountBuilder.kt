@@ -74,6 +74,7 @@ class UserAccountBuilder private constructor() {
     private var scope: String? = null
     private var credentialsIdentifier: String? = null
     private var tokenType: String? = null
+    private var lastTokenRotationTime: String? = null
 
     /**
      * Set fields from token end point response
@@ -181,6 +182,7 @@ class UserAccountBuilder private constructor() {
             .scope(userAccount.scope)
             .credentialsIdentifier(userAccount.credentialsIdentifier)
             .tokenType(userAccount.tokenType)
+            .lastTokenRotationTime(userAccount.lastTokenRotationTime)
     }
 
     /**
@@ -611,6 +613,18 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets the ISO-8601 timestamp of the last confirmed Refresh Token
+     * Rotation (RTR).
+     *
+     * @param lastTokenRotationTime ISO-8601 timestamp of the last confirmed
+     * rotation.
+     * @return Instance of this class.
+     */
+    fun lastTokenRotationTime(lastTokenRotationTime: String?): UserAccountBuilder {
+        return if (!allowUnset && lastTokenRotationTime == null) this else apply { this.lastTokenRotationTime = lastTokenRotationTime }
+    }
+
+    /**
      * Builds and returns a UserAccount object.
      *
      * @return UserAccount object.
@@ -658,6 +672,7 @@ class UserAccountBuilder private constructor() {
         )
         account.credentialsIdentifier = credentialsIdentifier
         account.tokenType = tokenType
+        account.lastTokenRotationTime = lastTokenRotationTime
         return account
     }
 

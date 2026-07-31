@@ -246,6 +246,34 @@ public class UserAccountManagerTest {
                 newTokenType, restored.getTokenType());
     }
 
+    /*
+     * The RTR rotation timestamp must survive the full AccountManager
+     * persistence path (encrypt on updateAccount → decrypt on
+     * buildUserAccount), not just in-memory JSON/Bundle, so the "Last
+     * Rotation" value persists across an app restart. createTestAccount()
+     * leaves lastTokenRotationTime null, so this is the only test that
+     * exercises the new KEY_LAST_TOKEN_ROTATION_TIME encrypt/decrypt branch.
+     */
+    @Test
+    public void test_givenRotatedAccount_whenUpdateAccount_thenLastTokenRotationTimeRoundTrips() {
+        UserAccount original = UserAccountTest.createTestAccount();
+        Assert.assertNull("Precondition: rotation timestamp must start unset",
+                original.getLastTokenRotationTime());
+        userAccMgr.createAccount(original);
+        Account account = userAccMgr.getCurrentAccount();
+
+        final String rotationTime = "2026-07-30T12:34:56Z";
+        UserAccount rotated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .lastTokenRotationTime(rotationTime)
+                .build();
+        userAccMgr.updateAccount(account, rotated);
+
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals("lastTokenRotationTime must survive updateAccount → buildUserAccount round-trip",
+                rotationTime, restored.getLastTokenRotationTime());
+    }
+
     /**
      * Test to get all authenticated users.
      */
