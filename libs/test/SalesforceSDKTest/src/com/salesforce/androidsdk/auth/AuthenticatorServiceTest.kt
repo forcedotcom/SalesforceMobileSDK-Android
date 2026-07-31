@@ -59,6 +59,7 @@ class AuthenticatorServiceTest {
             every { additionalOauthKeys } returns emptyList()
             every { useHybridAuthentication } returns true
             every { appAttestationClient } returns null
+            every { useDPoP } returns false
             @Suppress("UNCHECKED_CAST")
             every { loginActivityClass } returns Class.forName("com.salesforce.androidsdk.ui.LoginActivity") as Class<out android.app.Activity>
         }

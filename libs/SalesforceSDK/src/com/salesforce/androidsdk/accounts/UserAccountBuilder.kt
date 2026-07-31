@@ -72,6 +72,8 @@ class UserAccountBuilder private constructor() {
     private var beaconChildConsumerKey: String? = null
     private var beaconChildConsumerSecret: String? = null
     private var scope: String? = null
+    private var credentialsIdentifier: String? = null
+    private var tokenType: String? = null
 
     /**
      * Set fields from token end point response
@@ -108,6 +110,7 @@ class UserAccountBuilder private constructor() {
             .beaconChildConsumerKey(tr.beaconChildConsumerKey)
             .beaconChildConsumerSecret(tr.beaconChildConsumerSecret)
             .scope(tr.scope)
+            .tokenType(tr.tokenType)
     }
 
     /**
@@ -176,6 +179,8 @@ class UserAccountBuilder private constructor() {
             .beaconChildConsumerKey(userAccount.beaconChildConsumerKey)
             .beaconChildConsumerSecret(userAccount.beaconChildConsumerSecret)
             .scope(userAccount.scope)
+            .credentialsIdentifier(userAccount.credentialsIdentifier)
+            .tokenType(userAccount.tokenType)
     }
 
     /**
@@ -586,12 +591,32 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets credentials identifier (keystore alias for the DPoP keypair).
+     *
+     * @param credentialsIdentifier Credentials identifier.
+     * @return Instance of this class.
+     */
+    fun credentialsIdentifier(credentialsIdentifier: String?): UserAccountBuilder {
+        return if (!allowUnset && credentialsIdentifier == null) this else apply { this.credentialsIdentifier = credentialsIdentifier }
+    }
+
+    /**
+     * Sets token type (e.g. "Bearer" or "DPoP").
+     *
+     * @param tokenType Token type.
+     * @return Instance of this class.
+     */
+    fun tokenType(tokenType: String?): UserAccountBuilder {
+        return if (!allowUnset && tokenType == null) this else apply { this.tokenType = tokenType }
+    }
+
+    /**
      * Builds and returns a UserAccount object.
      *
      * @return UserAccount object.
      */
     fun build(): UserAccount {
-        return UserAccount(
+        val account = UserAccount(
             authToken,
             refreshToken,
             loginServer,
@@ -631,6 +656,9 @@ class UserAccountBuilder private constructor() {
             apiInstanceServer,
             scope,
         )
+        account.credentialsIdentifier = credentialsIdentifier
+        account.tokenType = tokenType
+        return account
     }
 
     companion object {

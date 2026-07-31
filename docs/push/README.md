@@ -2,20 +2,23 @@
 
 This document covers the push notification subsystem in `libs/SalesforceSDK`. All classes live in the package `com.salesforce.androidsdk.push`.
 
+For cross-platform concepts and the shared Salesforce registration model, see the [workspace-level push doc](../../../docs/push/README.md).
+
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
-3. [Architecture](#architecture)
-4. [Key Classes](#key-classes)
-5. [Registration Lifecycle](#registration-lifecycle)
-6. [Re-registration Modes](#re-registration-modes)
-7. [Foreground Registration Mode](#foreground-registration-mode)
-8. [Encrypted Push Notifications](#encrypted-push-notifications)
-9. [Actionable Notifications](#actionable-notifications)
-10. [Testing](#testing)
+3. [Setup](#setup)
+4. [Architecture](#architecture)
+5. [Key Classes](#key-classes)
+6. [Registration Lifecycle](#registration-lifecycle)
+7. [Re-registration Modes](#re-registration-modes)
+8. [Foreground Registration Mode](#foreground-registration-mode)
+9. [Encrypted Push Notifications](#encrypted-push-notifications)
+10. [Actionable Notifications](#actionable-notifications)
+11. [Testing](#testing)
 
 ---
 
@@ -32,7 +35,71 @@ The SDK integrates Firebase Cloud Messaging (FCM) to deliver push notifications 
 | `google-services.json` | Place in your app module root; required for FCM token acquisition |
 | `com.google.gms:google-services` plugin | Apply in your app-level `build.gradle.kts` |
 | `PushNotificationInterface` implementation | Register via `SalesforceSDKManager.getInstance().pushNotificationReceiver` |
+| `POST_NOTIFICATIONS` permission | Required for Android 13+ (API 33+); declare in manifest and request at runtime |
 | External Client App | Connected app with push notification endpoint enabled in your Salesforce org |
+
+---
+
+## Setup
+
+### 1. Add google-services.json
+
+Download `google-services.json` from the [Firebase Console](https://console.firebase.google.com/) and place it in your app module directory (e.g. `app/`).
+
+### 2. Apply the Google Services Gradle Plugin
+
+**`build.gradle.kts`** (project level):
+```kotlin
+buildscript {
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+```
+
+**`app/build.gradle.kts`** (app level):
+```kotlin
+plugins {
+    id("com.google.gms.google-services")
+}
+```
+
+### 3. Declare POST_NOTIFICATIONS Permission (Android 13+)
+
+**`AndroidManifest.xml`**:
+```xml
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+```
+
+Request the permission at runtime in your `Activity` or `MainActivity`:
+```kotlin
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+        != PackageManager.PERMISSION_GRANTED) {
+    requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), requestCode)
+}
+```
+
+### 4. Implement PushNotificationInterface
+
+In your `Application.onCreate()` after `SalesforceSDKManager` is initialized:
+
+```kotlin
+// Native Android apps
+SalesforceSDKManager.getInstance().pushNotificationReceiver =
+    object : PushNotificationInterface {
+        override fun onPushMessageReceived(data: Map<String?, String?>?) {
+            // Handle the notification. The SDK has already decrypted any encrypted payload.
+        }
+        override fun supplyFirebaseMessaging(): FirebaseMessaging? = null
+    }
+
+// React Native apps — use SalesforceReactSDKManager instead
+SalesforceReactSDKManager.getInstance().pushNotificationReceiver =
+    object : PushNotificationInterface { /* ... */ }
+```
+
+That is all. `SFDCFcmListenerService` (declared in the SDK's own `AndroidManifest.xml`) handles FCM token acquisition, Salesforce device registration, decryption, and re-registration automatically.
 
 ---
 
@@ -183,13 +250,88 @@ Encryption scheme: RSA-OAEP-SHA256 wrapping a 128-bit AES key + 128-bit IV.
 Serializable data class modelling the Salesforce actionable notification payload under the `sfdc` key.
 
 ```kotlin
-data class SalesforceActionableNotificationContent(val sfdc: Sfdc?)
+@Serializable
+data class SalesforceActionableNotificationContent(val sfdc: Sfdc?) {
+    companion object {
+        fun fromJson(json: String): SalesforceActionableNotificationContent
+    }
+
+    @Serializable
+    data class Sfdc(
+        val notifType: String? = null,
+        val nid: String? = null,          // notification ID (use for invokeServerNotificationAction)
+        val oid: String? = null,          // org ID
+        val type: Int? = null,
+        val alertTitle: String? = null,
+        val alertBody: String? = null,
+        val alert: String? = null,
+        val sid: String? = null,
+        val rid: String? = null,
+        val targetPageRef: String? = null,
+        val badge: Int? = null,
+        val uid: String? = null,
+        val cid: String? = null,
+        val timestamp: Int? = null,
+        val act: Act? = null              // actionable action descriptor
+    )
+}
 ```
 
-Parse from the `content` field of a received notification:
+Parse from the `"content"` key of the received `data` map (the full JSON wraps the `sfdc` object):
 ```kotlin
-val content = SalesforceActionableNotificationContent.fromJson(jsonString)
+override fun onPushMessageReceived(data: Map<String?, String?>?) {
+    val sfdc = data?.get("content")
+        ?.let { SalesforceActionableNotificationContent.fromJson(it) }
+        ?.sfdc ?: return
+    val notificationId = sfdc.nid
+    // use notificationId with SalesforceSDKManager.invokeServerNotificationAction(...)
+}
 ```
+
+**Note on `Act`:** `sfdc.act?.group` is a string identifier that matches `notificationType.actionGroups[].name` — the action *buttons* (with `label` and `actionKey`) live on the notification type fetched from the API, not inside the `act` field of the incoming payload.
+
+---
+
+### `NotificationsApiClient`
+
+REST client for the Salesforce Notifications API (requires API v64.0+).
+
+```kotlin
+class NotificationsApiClient(private val restClient: RestClient) {
+    fun fetchNotificationsTypes(): NotificationsTypesResponseBody?
+    fun submitNotificationAction(notificationId: String, actionKey: String): NotificationsActionsResponseBody?
+}
+```
+
+Use via `SalesforceSDKManager`:
+```kotlin
+// Fetch stored notification types (populated automatically after registration)
+val type = SalesforceSDKManager.getInstance().getNotificationsType("approval_request")
+
+// Invoke a server-side notification action
+SalesforceSDKManager.getInstance().invokeServerNotificationAction(
+    notificationId = nid,
+    actionKey = actionIdentifier,
+    restClient = restClient
+)
+```
+
+---
+
+### React Native Apps
+
+For React Native apps, the setup is identical to the native Android setup above, with one substitution: use `SalesforceReactSDKManager.getInstance()` in place of `SalesforceSDKManager.getInstance()`:
+
+```kotlin
+// In MainApplication.onCreate(), after SalesforceReactSDKManager.initReactNative(...)
+SalesforceReactSDKManager.getInstance().pushNotificationReceiver =
+    object : PushNotificationInterface {
+        override fun onPushMessageReceived(data: Map<String?, String?>?) { /* ... */ }
+        override fun supplyFirebaseMessaging(): FirebaseMessaging? = null
+    }
+```
+
+There is no JavaScript push bridge — the `react-native-force` package does not export a push module. See [`SalesforceMobileSDK-ReactNative/docs/push/README.md`](https://github.com/forcedotcom/SalesforceMobileSDK-ReactNative/tree/dev/docs/push) for guidance on forwarding push payloads to the JavaScript layer via a custom event emitter.
 
 ---
 
@@ -282,14 +424,105 @@ No app-side configuration is required beyond normal SDK setup.
 
 ---
 
+## Actionable Notifications
+
+Requires Salesforce API version **v64.0 or later**.
+
+After successful device registration, the SDK automatically fetches notification types from `GET /vXX.0/connect/notifications/types` and stores them per user. It creates one `NotificationChannel` per Salesforce notification type (channel ID = `notificationType.type`, importance `HIGH`), grouped under a `NotificationChannelGroup` named `"Salesforce Notifications"`.
+
+Actionable notifications require three collaborating pieces:
+
+1. **Payload parsing** — parse `"content"` in `onPushMessageReceived`, look up the notification type by `notifType`.
+2. **Notification building** — construct a `NotificationCompat` with action buttons sourced from the notification type's `actionGroups`.
+3. **Action handling** — a `BroadcastReceiver` receives the `PendingIntent` when the user taps a button and calls `invokeServerNotificationAction`.
+
+### 1. Parse payload and build the notification
+
+```kotlin
+override fun onPushMessageReceived(data: Map<String?, String?>?) {
+    // Payload key is "content" — the SDK has already decrypted it
+    val sfdc = data?.get("content")
+        ?.let { SalesforceActionableNotificationContent.fromJson(it) }
+        ?.sfdc ?: return
+
+    // Look up the stored notification type (fetched automatically after registration)
+    val notifType = sfdc.notifType?.let {
+        SalesforceSDKManager.getInstance().getNotificationsType(it)
+    } ?: return
+
+    // Build notification using notifType.type as the channel ID
+    val notification = NotificationCompat.Builder(context, notifType.type).apply {
+        setContentTitle(sfdc.alertTitle)
+        setContentText(sfdc.alert)
+        setStyle(NotificationCompat.BigTextStyle().bigText(sfdc.alertBody))
+
+        // Action buttons come from the notification type's actionGroups,
+        // matched by sfdc.act?.group (the payload carries a group name, not the buttons)
+        notifType.actionGroups
+            ?.firstOrNull { it.name == sfdc.act?.group }
+            ?.actions
+            ?.forEach { action ->
+                addAction(
+                    android.R.drawable.ic_menu_send,
+                    action.label,
+                    PendingIntent.getBroadcast(
+                        context, 0,
+                        Intent("com.example.PUSH_ACTION").apply {
+                            putExtra("notificationId", sfdc.nid)
+                            putExtra("actionKey", action.actionKey)
+                        },
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                )
+            }
+    }.build()
+    context.getSystemService(NotificationManager::class.java)
+        .notify(sfdc.nid.hashCode(), notification)
+}
+```
+
+### 2. Handle the action tap with a BroadcastReceiver
+
+```kotlin
+class PushActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val nid = intent.getStringExtra("notificationId") ?: return
+        val actionKey = intent.getStringExtra("actionKey") ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // restClient defaults to clientManager.peekRestClient(currentUser)
+                SalesforceSDKManager.getInstance()
+                    .invokeServerNotificationAction(notificationId = nid, actionKey = actionKey)
+            } catch (e: Exception) {
+                Log.e("Push", "Action invocation failed", e)
+            }
+        }
+    }
+}
+```
+
+Register the receiver in `Application.onCreate()` (not in the manifest — use `RECEIVER_NOT_EXPORTED` to prevent external apps from sending intents to it):
+
+```kotlin
+ContextCompat.registerReceiver(
+    this,
+    PushActionReceiver(),
+    IntentFilter("com.example.PUSH_ACTION"),
+    ContextCompat.RECEIVER_NOT_EXPORTED
+)
+```
+
+---
+
 ## Testing
 
-Push notification tests are in `libs/test/SalesforceSDKTest/src/com/salesforce/androidsdk/app/`:
+Push notification tests are in `libs/test/SalesforceSDKTest/src/com/salesforce/androidsdk/`:
 
 | Test class | Coverage |
 |---|---|
-| `PushServiceTest` | SFDC registration/unregistration endpoint communication, notification channel creation/deletion, status callbacks, HTTP error handling |
-| `PushMessagingTest` | Notification type storage/retrieval, `SalesforceSDKManager` notification API delegation, `NotificationsApiClient` content-type behaviour |
+| `push/PushServiceTest` | SFDC registration/unregistration endpoint communication, notification channel creation/deletion, status callbacks, HTTP error handling |
+| `push/PushMessagingTest` | Notification type storage/retrieval, `SalesforceSDKManager` notification API delegation, `NotificationsApiClient` content-type behaviour |
+| `push/PushNotificationsRegistrationChangeWorkerTest` | WorkManager worker account-resolution logic, legacy pre-14.0 payload migration |
 
 Tests use [MockK](https://mockk.io/) to mock `RestClient` and `RestResponse`. They run as instrumented tests on-device or on Firebase Test Lab:
 

@@ -33,8 +33,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.androidsdk.R as sdkR
 
 private const val TAG = "AuthorizationPageObject"

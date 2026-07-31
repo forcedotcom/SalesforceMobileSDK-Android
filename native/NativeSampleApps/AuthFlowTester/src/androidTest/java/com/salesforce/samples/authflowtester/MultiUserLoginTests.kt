@@ -357,6 +357,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
     ) {
         app.addNewAccount()
@@ -365,8 +366,9 @@ class MultiUserLoginTests: AuthFlowTest() {
             scopeSelection,
             useWebServerFlow,
             useHybridAuthToken,
+            useDPoP,
             knownLoginHostConfig,
-            knownUserConfig = otherUser,
+            otherUser,
             isMultiUser = true,
         )
     }

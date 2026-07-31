@@ -73,6 +73,13 @@ public class LoginServerManager {
 	public static final String WELCOME_LOGIN_URL = "https://welcome.salesforce.com/discovery";
 	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
 
+	/** Returns true when {@code serverUrl} is one of the three Salesforce pool (non-my-domain) servers. */
+	public static boolean isPoolServer(@NonNull String serverUrl) {
+		return PRODUCTION_LOGIN_URL.equals(serverUrl)
+			|| SANDBOX_LOGIN_URL.equals(serverUrl)
+			|| WELCOME_LOGIN_URL.equals(serverUrl);
+	}
+
 	/**
 	 * Shared preferences when non-custom login servers are provided by resources servers.xml
 	 */

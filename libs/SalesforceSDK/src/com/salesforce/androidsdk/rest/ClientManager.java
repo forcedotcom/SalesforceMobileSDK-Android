@@ -159,7 +159,7 @@ public class ClientManager {
                     userAccount.getUserId(), userAccount.getOrgId(), userAccount.getCommunityId(), userAccount.getCommunityUrl(),
                     userAccount.getFirstName(), userAccount.getLastName(), userAccount.getDisplayName(), userAccount.getEmail(), userAccount.getPhotoUrl(), userAccount.getThumbnailUrl(), userAccount.getAdditionalOauthValues(),
                     userAccount.getLightningDomain(), userAccount.getLightningSid(), userAccount.getVFDomain(), userAccount.getVFSid(), userAccount.getContentDomain(), userAccount.getContentSid(), userAccount.getCSRFToken());
-            return new RestClient(clientInfo, userAccount.getAuthToken(), HttpAccess.DEFAULT, authTokenProvider);
+            return new RestClient(clientInfo, userAccount.getAuthToken(), userAccount.getTokenType(), userAccount.getCredentialsIdentifier(), HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
             SalesforceSDKLogger.w(TAG, "Invalid server URL", e);
             return null;
@@ -247,6 +247,7 @@ public class ClientManager {
             String newAuthToken;        // last successful winner's fresh access token
             String newInstanceUrl;      // last winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
+            String newTokenType;        // last winner's token type (e.g. "Bearer" or "DPoP")
             long lastRefreshTime = -1;
         }
 
@@ -285,6 +286,7 @@ public class ClientManager {
         private String refreshToken;
         private String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
+        private String lastTokenType;
 
         /**
          * Constructs a provider whose account identity comes exclusively from its bound manager.
@@ -429,6 +431,7 @@ public class ClientManager {
             // can leave state.refreshing stuck true.
             String newAuthToken = null;
             String newInstanceUrl = null;
+            String newTokenType = null;
 
             try {
                 /*
@@ -462,6 +465,7 @@ public class ClientManager {
                                         + "adopting without refresh");
                         newAuthToken = storedAuthToken;
                         newInstanceUrl = currentAccount.getInstanceServer();
+                        newTokenType = currentAccount.getTokenType();
                         refreshToken = storedRefreshToken;
                         return newAuthToken;
                     }
@@ -486,11 +490,13 @@ public class ClientManager {
 
                 newAuthToken = userAccount.getAuthToken();
                 newInstanceUrl = userAccount.getInstanceServer();
+                newTokenType = userAccount.getTokenType();
 
                 if (clientManager.getValidatedUser(
                         /* requireRefreshFields = */ false) == null) {
                     newAuthToken = null;
                     newInstanceUrl = null;
+                    newTokenType = null;
                     return null;
                 }
 
@@ -574,6 +580,7 @@ public class ClientManager {
                 // storage-adoption paths count as a completed refresh.
                 lastNewAuthToken = newAuthToken;
                 lastNewInstanceUrl = newInstanceUrl;
+                lastTokenType = newTokenType;
                 if (newAuthToken != null) {
                     lastRefreshTime = System.currentTimeMillis();
                 }
@@ -586,6 +593,7 @@ public class ClientManager {
                         state.newAuthToken = newAuthToken;
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
+                        state.newTokenType = newTokenType;
                         state.lastRefreshTime = System.currentTimeMillis();
                         // Bump the generation ONLY on success. A loser woken by a failed cycle sees
                         // no edge and cannot mistake the retained prior result for a new result
@@ -624,12 +632,14 @@ public class ClientManager {
                     || !Objects.equals(liveUser.getAuthToken(), state.newAuthToken)
                     || !Objects.equals(liveUser.getRefreshTokenForPersistence(),
                     state.rotatedRefreshToken)
+                    || !Objects.equals(liveUser.getTokenType(), state.newTokenType)
                     || (state.newInstanceUrl != null
                     && !Objects.equals(liveUser.getInstanceServer(), state.newInstanceUrl))) {
                 return false;
             }
             this.lastNewAuthToken = state.newAuthToken;
             this.lastRefreshTime = state.lastRefreshTime;
+            this.lastTokenType = state.newTokenType;
             if (state.newInstanceUrl != null) {
                 this.lastNewInstanceUrl = state.newInstanceUrl;
             }
@@ -664,6 +674,11 @@ public class ClientManager {
                     : lastNewInstanceUrl;
         }
 
+        @Override
+        public String getTokenType() {
+            return lastTokenType;
+        }
+
         @Nullable
         private UserAccount refreshStaleToken(
                 Account account,
@@ -675,7 +690,8 @@ public class ClientManager {
                 final URI tokenServer = OAuth2.overrideLoginServerIfNeeded(originalUserAccount);
                 SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
                 final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
-                        tokenServer, originalUserAccount.getClientIdForRefresh(), currentRefreshToken, addlParamsMap);
+                        tokenServer, originalUserAccount.getClientIdForRefresh(), currentRefreshToken, addlParamsMap,
+                        originalUserAccount.getCredentialsIdentifier());
 
                 if (tr.authToken == null) {
                     throw new MalformedTokenException("Token endpoint returned null access token");

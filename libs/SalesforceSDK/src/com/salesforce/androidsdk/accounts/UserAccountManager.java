@@ -508,9 +508,8 @@ public class UserAccountManager {
 		}
 
 		// The refresh token is stored as the Account's password (see createAccount), not as user data,
-		// so buildAuthBundle does not include it.  Persist it explicitly here so that server-side
-		// Use the in-memory snapshot rather than getRefreshToken(), which now performs a live lookup
-		// against AccountManager and would return the updated value we may be about to write.
+		// so buildAuthBundle does not include it. Persist it explicitly from the in-memory snapshot;
+		// getRefreshToken() performs a live AccountManager lookup and could return the old value.
 		final String refreshToken = userAccount.getRefreshTokenForPersistence();
 		if (refreshToken != null) {
 			final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
@@ -572,6 +571,8 @@ public class UserAccountManager {
 		final String beaconChildConsumerKey = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
 		final String beaconChildConsumerSecret = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, encryptionKey);
 		final String scope = decryptUserData(account, AuthenticatorService.KEY_SCOPE, encryptionKey);
+		final String credentialsIdentifier = decryptUserData(account, AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, encryptionKey);
+		final String tokenType = decryptUserData(account, AuthenticatorService.KEY_TOKEN_TYPE, encryptionKey);
 		final String featureFlagsRaw = decryptUserData(account, AuthenticatorService.KEY_FEATURE_FLAGS, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
@@ -628,6 +629,8 @@ public class UserAccountManager {
 					.beaconChildConsumerKey(beaconChildConsumerKey)
 					.beaconChildConsumerSecret(beaconChildConsumerSecret)
 					.scope(scope)
+					.credentialsIdentifier(credentialsIdentifier)
+					.tokenType(tokenType)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
 			if (!TextUtils.isEmpty(featureFlagsRaw)) {
@@ -766,6 +769,12 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerKey(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerSecret(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_SCOPE, SalesforceSDKManager.encrypt(userAccount.getScope(), encryptionKey));
+		if (userAccount.getCredentialsIdentifier() != null) {
+			extras.putString(AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, SalesforceSDKManager.encrypt(userAccount.getCredentialsIdentifier(), encryptionKey));
+		}
+		if (userAccount.getTokenType() != null) {
+			extras.putString(AuthenticatorService.KEY_TOKEN_TYPE, SalesforceSDKManager.encrypt(userAccount.getTokenType(), encryptionKey));
+		}
 		final Set<String> featureFlags = userAccount.getFeatureFlags();
 		if (!featureFlags.isEmpty()) {
 			extras.putString(AuthenticatorService.KEY_FEATURE_FLAGS,

@@ -1022,6 +1022,33 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun test_givenDPoPSession_whenRegisterDPFeature_thenDPFlagAppearsInUserAgentForUser() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val userB = buildMinimalUserAccount(orgId = "org2", userId = "user2")
+
+        // Act: simulate what LoginActivity does when tokenType == "DPoP"
+        sdkManager.registerUsedAppFeature(Features.FEATURE_DPOP, userA)
+
+        try {
+            // Assert: DP appears in per-user user agent for userA
+            val agentA = sdkManager.getUserAgent("", userA)
+            assertTrue("User agent for userA should contain ftr_ segment", agentA.contains("ftr_"))
+            assertTrue("User agent for userA should contain DP flag", agentA.contains(Features.FEATURE_DPOP))
+
+            // Assert: DP does NOT appear in user agent for a different user
+            val agentB = sdkManager.getUserAgent("", userB)
+            assertFalse(
+                "User agent for userB should NOT contain DP flag (per-user isolation)",
+                agentB.contains(Features.FEATURE_DPOP)
+            )
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_DPOP, userA)
+        }
+    }
+
+    @Test
     fun test_givenNullUser_whenRegisterUsedAppFeature_thenGlobalFlagRegistered() {
         val sdkManager = SalesforceSDKManager.getInstance()
 

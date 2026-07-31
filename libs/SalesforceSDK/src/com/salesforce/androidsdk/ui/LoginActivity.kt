@@ -121,6 +121,7 @@ import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -553,6 +554,12 @@ open class LoginActivity : FragmentActivity() {
         sdkManager.unregisterUsedAppFeature(FEATURE_QR_CODE_LOGIN)
         if (usedQrLogin) {
             sdkManager.registerUsedAppFeature(FEATURE_QR_CODE_LOGIN, userAccount)
+        }
+
+        if ("DPoP" == userAccount.tokenType) {
+            sdkManager.registerUsedAppFeature(FEATURE_DPOP, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, userAccount)
         }
 
         // Create account and save result before switching to new user

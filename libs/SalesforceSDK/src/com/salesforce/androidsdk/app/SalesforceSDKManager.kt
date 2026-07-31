@@ -99,6 +99,8 @@ import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
@@ -106,8 +108,6 @@ import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
@@ -434,6 +434,15 @@ open class SalesforceSDKManager protected constructor(
      * false.
      */
     var clearCookiesAfterLogin = true
+
+    /**
+     * Opt-in flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449).
+     * When true, the SDK will attach a DPoP proof JWT to token endpoint
+     * requests and use the `DPoP` Authorization scheme for resource requests
+     * when the token endpoint advertises `token_type: DPoP`.
+     */
+    @get:JvmName("isUseDPoP")
+    var useDPoP: Boolean = false
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.
@@ -1135,6 +1144,14 @@ open class SalesforceSDKManager protected constructor(
             showLoginPage,
             isLastPersistedAccount,
         )
+        userAccount.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
+            runCatching {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                DPoPNonceCache.clear(id)
+            }.onFailure { e ->
+                w(TAG, "Failed to delete DPoP key pair on logout", e)
+            }
+        }
 
         clearWebViewCookiesAfterLogout()
         notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
@@ -2169,7 +2186,6 @@ open class SalesforceSDKManager protected constructor(
         // If this takes more than five seconds it can cause Android's application not responding report.
         withTimeoutOrNull(5000L.milliseconds) {
             val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
-            val isStandardLoginServer = loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL
             val isInvalidServer = !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
 
             when {
@@ -2183,7 +2199,7 @@ open class SalesforceSDKManager protected constructor(
                     // Disable Salesforce App Attestation for login servers that are not My Domain servers.
                     appAttestationClient?.apiHostName = null
                 }
-                isStandardLoginServer -> {
+                LoginServerManager.isPoolServer(loginServer) -> {
                     // Standard login servers have no auth-config to source a shared-session value from, so
                     // browser login is gated solely on the force flag and shared session stays false.
                     setBrowserLoginEnabled(

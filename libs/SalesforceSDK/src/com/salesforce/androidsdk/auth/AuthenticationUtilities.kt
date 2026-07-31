@@ -102,6 +102,7 @@ internal suspend fun onAuthFlowComplete(
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
     nativeLogin: Boolean = false,
     tokenMigration: Boolean = false,
+    credentialsIdentifier: String? = null,
     context: Context = SalesforceSDKManager.getInstance().appContext,
     userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
     blockIntegrationUser: Boolean = (SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
@@ -164,6 +165,7 @@ internal suspend fun onAuthFlowComplete(
         .loginServer(loginServer)
         .clientId(consumerKey)
         .nativeLogin(nativeLogin)
+        .credentialsIdentifier(credentialsIdentifier)
         .build()
 
     // Set additional administrator prefs if they exist
@@ -334,6 +336,8 @@ private suspend fun fetchUserIdentity(
                 HttpAccess.DEFAULT,
                 tokenResponse.idUrlWithInstance,
                 tokenResponse.authToken,
+                tokenResponse.tokenType,
+                tokenResponse.credentialsIdentifier,
             )
         }
     }.onFailure { throwable ->
