@@ -107,6 +107,7 @@ public class UserAccount {
 	public static final String FEATURE_FLAGS = "feature_flags";
 	public static final String CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
 	public static final String TOKEN_TYPE = "tokenType";
+	public static final String LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -156,6 +157,7 @@ public class UserAccount {
 	private String scope;
 	private String credentialsIdentifier;
 	private String tokenType;
+	private String lastTokenRotationTime;
 	private Set<String> featureFlags = new java.util.HashSet<>();
 
 	/**
@@ -301,6 +303,7 @@ public class UserAccount {
 			scope = object.optString(SCOPE, null);
 			credentialsIdentifier = object.optString(CREDENTIALS_IDENTIFIER, null);
 			tokenType = object.optString(TOKEN_TYPE, null);
+			lastTokenRotationTime = object.optString(LAST_TOKEN_ROTATION_TIME, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -360,6 +363,7 @@ public class UserAccount {
 			scope = bundle.getString(SCOPE);
 			credentialsIdentifier = bundle.getString(CREDENTIALS_IDENTIFIER);
 			tokenType = bundle.getString(TOKEN_TYPE);
+			lastTokenRotationTime = bundle.getString(LAST_TOKEN_ROTATION_TIME);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -785,6 +789,29 @@ public class UserAccount {
 	public void setTokenType(String tokenType) {
 		this.tokenType = tokenType;
 	}
+
+	/**
+	 * Returns the ISO-8601 timestamp of the last confirmed Refresh Token
+	 * Rotation (RTR) for this user, or null if the refresh token has never
+	 * been rotated.
+	 *
+	 * @return Last token rotation timestamp, or null if not yet rotated.
+	 */
+	public String getLastTokenRotationTime() {
+		return lastTokenRotationTime;
+	}
+
+	/**
+	 * Sets the ISO-8601 timestamp of the last confirmed Refresh Token
+	 * Rotation (RTR).
+	 *
+	 * @param lastTokenRotationTime ISO-8601 timestamp of the last confirmed
+	 *                              rotation.
+	 */
+	public void setLastTokenRotationTime(String lastTokenRotationTime) {
+		this.lastTokenRotationTime = lastTokenRotationTime;
+	}
+
 	/**
 	 * Returns the beacon child consumer key.
 	 *
@@ -1096,6 +1123,7 @@ public class UserAccount {
 			object.put(SCOPE, scope);
 			if (credentialsIdentifier != null) object.put(CREDENTIALS_IDENTIFIER, credentialsIdentifier);
 			if (tokenType != null) object.put(TOKEN_TYPE, tokenType);
+			if (lastTokenRotationTime != null) object.put(LAST_TOKEN_ROTATION_TIME, lastTokenRotationTime);
 			if (!featureFlags.isEmpty()) {
 				org.json.JSONArray flagsArray = new org.json.JSONArray();
 				for (String f : featureFlags) flagsArray.put(f);
@@ -1164,6 +1192,7 @@ public class UserAccount {
 		object.putString(SCOPE, scope);
 		if (credentialsIdentifier != null) object.putString(CREDENTIALS_IDENTIFIER, credentialsIdentifier);
 		if (tokenType != null) object.putString(TOKEN_TYPE, tokenType);
+		if (lastTokenRotationTime != null) object.putString(LAST_TOKEN_ROTATION_TIME, lastTokenRotationTime);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}
