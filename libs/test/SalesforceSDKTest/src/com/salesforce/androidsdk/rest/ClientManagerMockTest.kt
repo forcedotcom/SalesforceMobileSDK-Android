@@ -39,6 +39,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -90,6 +91,7 @@ class ClientManagerMockTest {
             every { appAttestationClient } returns null
             every { appContext } returns mockAppContext
             every { isDevSupportEnabled() } returns true
+            every { useDPoP } returns false
         }
         every { SalesforceSDKManager.getInstance() } returns mockSDKManager
         mockkStatic(UserAccountManager::class)
@@ -99,7 +101,7 @@ class ClientManagerMockTest {
 
         val responseBody = """
                 {
-                    "access_token": $REFRESHED_ACCESS_TOKEN,
+                    "access_token": "$REFRESHED_ACCESS_TOKEN",
                     "instance_url": "https://login.salesforce.com",
                     "id": "https://login.salesforce.com/id/orgId/userId",
                     "token_type": "Bearer",
@@ -429,6 +431,18 @@ class ClientManagerMockTest {
         // ...and so should the provider's in-memory cache, so that subsequent
         // refreshes (and getRefreshToken consumers) use the rotated token.
         assertEquals(ROTATED_REFRESH_TOKEN, authTokenProvider.refreshToken)
+        /*
+         * The confirmed-rotation timestamp must be stamped on the account
+         * captured by this single primary updateAccount call — i.e. persisted
+         * by the authoritative write, NOT as a side effect of
+         * registerUsedAppFeature (mocked out here, hence updateAccount
+         * exactly=1). Guards against the timestamp silently ceasing to persist
+         * if feature registration ever short-circuits.
+         */
+        assertNotNull(
+            "Rotation timestamp must be persisted by the primary updateAccount call",
+            userSlot.captured.lastTokenRotationTime
+        )
     }
 
     /*

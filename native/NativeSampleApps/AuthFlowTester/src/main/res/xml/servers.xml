@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <servers>
+    <server name="DPoP" url="https://sdb6-2.test1.my.pc-rnd.salesforce.com" />
     <server name="UITests" url="https://authflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com" />
     <server name="UITests Adv Auth" url="https://advauthflowtestingmsdksdb38.test1.my.pc-rnd.salesforce.com" />
     <server name="Welcome Discovery" url="https://welcome.salesforce.com/discovery" />

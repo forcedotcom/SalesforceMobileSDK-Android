@@ -10,6 +10,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.ui.LoginActivity
@@ -19,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -609,15 +611,17 @@ class SalesforceSDKManagerTests {
         val devActions = salesforceSdkManager.getDevActions(mockActivity)
 
         // Assert
-        assertEquals(4, devActions.size)
+        assertEquals(5, devActions.size)
         assertTrue(devActions.containsKey("Show dev info"))
         assertTrue(devActions.containsKey("Login Options"))
         assertTrue(devActions.containsKey("Logout"))
         assertTrue(devActions.containsKey("Switch User"))
+        assertTrue(devActions.containsKey("Force Token Refresh"))
         assertNotNull(devActions["Show dev info"])
         assertNotNull(devActions["Login Options"])
         assertNotNull(devActions["Logout"])
         assertNotNull(devActions["Switch User"])
+        assertNotNull(devActions["Force Token Refresh"])
     }
 
     @Test
@@ -832,6 +836,33 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun test_givenDPoPSession_whenRegisterDPFeature_thenDPFlagAppearsInUserAgentForUser() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val userB = buildMinimalUserAccount(orgId = "org2", userId = "user2")
+
+        // Act: simulate what LoginActivity does when tokenType == "DPoP"
+        sdkManager.registerUsedAppFeature(Features.FEATURE_DPOP, userA)
+
+        try {
+            // Assert: DP appears in per-user user agent for userA
+            val agentA = sdkManager.getUserAgent("", userA)
+            assertTrue("User agent for userA should contain ftr_ segment", agentA.contains("ftr_"))
+            assertTrue("User agent for userA should contain DP flag", agentA.contains(Features.FEATURE_DPOP))
+
+            // Assert: DP does NOT appear in user agent for a different user
+            val agentB = sdkManager.getUserAgent("", userB)
+            assertFalse(
+                "User agent for userB should NOT contain DP flag (per-user isolation)",
+                agentB.contains(Features.FEATURE_DPOP)
+            )
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_DPOP, userA)
+        }
+    }
+
+    @Test
     fun test_givenNullUser_whenRegisterUsedAppFeature_thenGlobalFlagRegistered() {
         val sdkManager = SalesforceSDKManager.getInstance()
 
@@ -845,6 +876,172 @@ class SalesforceSDKManagerTests {
         } finally {
             sdkManager.unregisterUsedAppFeature("GF")
         }
+    }
+
+    /*
+     * devSupportInfo RTR section wiring tests
+     *
+     * These exercise the getter that connects isUserFeatureRegistered to
+     * parseRtrSection (the seam DevSupportInfoTest cannot reach, since it
+     * passes rtrActive in explicitly). They prove the getter reads the current
+     * user's per-user RTR flag and reflects it in the RTR section rows.
+     */
+
+    @Test
+    fun test_givenNoCurrentUser_whenDevSupportInfo_thenRtrSectionShowsNA() {
+        // Arrange: no signed-in user.
+        val sdkManager = createTestSalesforceSDKManagerWithCurrentUser(null)
+
+        // Act
+        val rtrSection = sdkManager.devSupportInfo.additionalSections.first { it.first == "RTR" }
+
+        // Assert: per-user fields read "N/A".
+        assertEquals("N/A", rtrSection.second.first { it.first == "RTR Active" }.second)
+        assertEquals("N/A", rtrSection.second.first { it.first == "Last Rotation" }.second)
+    }
+
+    @Test
+    fun test_givenCurrentUserWithoutRTR_whenDevSupportInfo_thenRtrSectionShowsFalseAndNever() {
+        /*
+         * Arrange: a signed-in user whose RTR feature flag has never been
+         * registered and whose lastTokenRotationTime is unset.
+         */
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val sdkManager = createTestSalesforceSDKManagerWithCurrentUser(user)
+
+        // Act
+        val rtrSection = sdkManager.devSupportInfo.additionalSections.first { it.first == "RTR" }
+
+        // Assert: RTR inactive, no rotation yet.
+        assertEquals("false", rtrSection.second.first { it.first == "RTR Active" }.second)
+        assertEquals("Never", rtrSection.second.first { it.first == "Last Rotation" }.second)
+    }
+
+    @Test
+    fun test_givenCurrentUserWithRTRRegistered_whenDevSupportInfo_thenRtrSectionShowsTrue() {
+        /*
+         * Arrange: a signed-in user for whom RTR has been detected and
+         * registered (what ClientManager does on confirmed rotation).
+         */
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val sdkManager = createTestSalesforceSDKManagerWithCurrentUser(user)
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, user)
+
+        try {
+            // Act
+            val rtrSection = sdkManager.devSupportInfo.additionalSections.first { it.first == "RTR" }
+
+            /*
+             * Assert: the getter's rtrActive branch reflects the per-user RT
+             * flag.
+             */
+            assertEquals("true", rtrSection.second.first { it.first == "RTR Active" }.second)
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, user)
+        }
+    }
+
+    @Test
+    fun test_givenNoUserArgAndNoCurrentUser_whenIsUserFeatureRegistered_thenFalse() {
+        /*
+         * Exercises isUserFeatureRegistered's default-argument path (no user
+         * passed) and its no-current-user fallback — the branch the
+         * devSupportInfo getter never reaches because it short-circuits on
+         * currentUser == null before ever calling the helper.
+         */
+        val sdkManager = createTestSalesforceSDKManagerWithCurrentUser(null)
+
+        assertFalse(
+            "isUserFeatureRegistered must be false when there is no user to resolve",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_RTR)
+        )
+    }
+
+    @Test
+    fun test_givenExplicitUserWithoutRTR_whenIsUserFeatureRegistered_thenFalse() {
+        /*
+         * A user with no registered features returns false — the negative
+         * per-user lookup branch, complementing the true branch covered via
+         * the devSupportInfo getter test.
+         */
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+
+        assertFalse(
+            "isUserFeatureRegistered must be false for a user with no registered features",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_RTR, user)
+        )
+    }
+
+    /*
+     * Force Token Refresh dev-action tests
+     *
+     * forceTokenRefresh is the testable core of the debug-only "Force Token
+     * Refresh" dev action; the dev-action lambda only dispatches it onto a
+     * coroutine and shows the returned message in a Toast.
+     */
+
+    @Test
+    fun test_givenRefreshSucceeds_whenForceTokenRefresh_thenReturnsSuccessMessage() {
+        // Arrange: a RestClient that refreshes without error.
+        val user = mockk<UserAccount>(relaxed = true)
+        val restClient = mockk<RestClient>(relaxed = true).apply {
+            every { refreshAccessToken() } just runs
+        }
+
+        // Act
+        val message = SalesforceSDKManager.getInstance().forceTokenRefresh(user, restClient)
+
+        // Assert
+        assertTrue(
+            "Success message should direct the developer to the RTR section",
+            message.contains("check RTR section")
+        )
+    }
+
+    @Test
+    fun test_givenRefreshThrows_whenForceTokenRefresh_thenReturnsFailureMessageWithoutThrowing() {
+        /*
+         * Arrange: a RestClient whose refresh fails with an IOException
+         * carrying a message.
+         */
+        val user = mockk<UserAccount>(relaxed = true)
+        val restClient = mockk<RestClient>(relaxed = true).apply {
+            every { refreshAccessToken() } throws IOException("network down")
+        }
+
+        /*
+         * Act: must not throw — the failure is caught and surfaced as a
+         * message.
+         */
+        val message = SalesforceSDKManager.getInstance().forceTokenRefresh(user, restClient)
+
+        /*
+         * Assert: message reports the failure and includes the exception
+         * detail.
+         */
+        assertTrue("Failure message should say the refresh failed", message.contains("failed"))
+        assertTrue("Failure message should include the exception detail", message.contains("network down"))
+    }
+
+    @Test
+    fun test_givenRestClientResolutionThrows_whenForceTokenRefresh_thenReturnsFailureMessageWithoutThrowing() {
+        /*
+         * Arrange: no restClient argument, so forceTokenRefresh must resolve it
+         * via clientManager.peekRestClient(user). For a user with no backing
+         * account that call throws AccountInfoNotFoundException (also the case
+         * when the user is mid-logout or missing auth-token/URL/id data).
+         */
+        val user = mockk<UserAccount>(relaxed = true)
+
+        /*
+         * Act: exercise the production default-argument path. It must not throw
+         * — the failure is caught and surfaced as a message.
+         */
+        val message = SalesforceSDKManager.getInstance().forceTokenRefresh(user)
+
+        // Assert: the failure is reported rather than propagated.
+        assertTrue("Failure message should say the refresh failed", message.contains("failed"))
     }
 
     // -------------------------------------------------------------------------

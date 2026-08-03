@@ -91,6 +91,9 @@ public class AuthenticatorService extends Service {
     public static final String KEY_BEACON_CHILD_CONSUMER_SECRET = "auto_installed_app_org_consumer_secret";
     public static final String KEY_SCOPE = "scope";
     public static final String KEY_FEATURE_FLAGS = "feature_flags";
+    public static final String KEY_CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
+    public static final String KEY_TOKEN_TYPE = "tokenType";
+    public static final String KEY_LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
 
     private static final String TAG = "AuthenticatorService";
 
@@ -136,7 +139,8 @@ public class AuthenticatorService extends Service {
                 final URI tokenServer = OAuth2.overrideLoginServerIfNeeded(originalUserAccount);
                 SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        tokenServer, originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap);
+                        tokenServer, originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap,
+                        originalUserAccount.getCredentialsIdentifier());
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)

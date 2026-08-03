@@ -61,6 +61,8 @@ enum class KnownAppConfig {
     BEACON_JWT,
     CA_OPAQUE,
     CA_JWT,
+    ECA_JWT_DPOP,
+    ECA_JWT_DPOP_RTR,
 }
 
 val testConfig: UITestConfig by lazy {
@@ -112,6 +114,7 @@ data class AppConfig(
 ) {
     val issuesJwt = name.contains("_jwt")
     val isRtr = name.contains("_rtr")
+    val isDpop = name.contains("_dpop")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"
     val scopeList = scopes.split(" ")
 

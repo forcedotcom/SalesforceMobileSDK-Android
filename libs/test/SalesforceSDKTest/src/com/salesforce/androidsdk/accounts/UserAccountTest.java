@@ -107,6 +107,8 @@ public class UserAccountTest {
     public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
     public static final String TEST_BEACON_CHILD_CONSUMER_SECRET = "test-beacon-child-consumer-secret";
     public static final String TEST_SCOPE = "api web openid refresh_token";
+    public static final String TEST_CREDENTIALS_IDENTIFIER = "test-credentials-identifier-uuid";
+    public static final String TEST_TOKEN_TYPE = "DPoP";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -428,6 +430,8 @@ public class UserAccountTest {
         object.put(UserAccount.SCOPE, TEST_SCOPE);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
+        object.put(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.put(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -476,6 +480,8 @@ public class UserAccountTest {
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object.putString(UserAccount.SCOPE, TEST_SCOPE);
+        object.putString(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.putString(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -522,6 +528,8 @@ public class UserAccountTest {
                 .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)
                 .beaconChildConsumerSecret(TEST_BEACON_CHILD_CONSUMER_SECRET)
                 .scope(TEST_SCOPE)
+                .credentialsIdentifier(TEST_CREDENTIALS_IDENTIFIER)
+                .tokenType(TEST_TOKEN_TYPE)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }
@@ -787,6 +795,71 @@ public class UserAccountTest {
 
         Assert.assertNotNull("featureFlags should never be null after setFeatureFlags(null)", account.getFeatureFlags());
         Assert.assertTrue("featureFlags should be empty after setFeatureFlags(null)", account.getFeatureFlags().isEmpty());
+    }
+
+    /**
+     * The last token rotation timestamp survives a toJson round-trip so it can
+     * be surfaced in the developer info screen after an app restart.
+     */
+    @Test
+    public void test_givenUserAccountWithRotationTime_whenJsonRoundTrip_thenTimestampPreserved() throws JSONException {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .lastTokenRotationTime(rotationTime)
+                .build();
+
+        final JSONObject json = account.toJson(createAdditionalOauthKeys());
+        Assert.assertEquals("JSON should carry the rotation timestamp", rotationTime,
+                json.getString(UserAccount.LAST_TOKEN_ROTATION_TIME));
+
+        final UserAccount restored = new UserAccount(json, "SalesforceSDKTest", createAdditionalOauthKeys());
+        Assert.assertEquals("Rotation timestamp should survive JSON round-trip", rotationTime,
+                restored.getLastTokenRotationTime());
+    }
+
+    /**
+     * The last token rotation timestamp survives a toBundle round-trip.
+     */
+    @Test
+    public void test_givenUserAccountWithRotationTime_whenBundleRoundTrip_thenTimestampPreserved() {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .lastTokenRotationTime(rotationTime)
+                .build();
+
+        final UserAccount restored = new UserAccount(account.toBundle(createAdditionalOauthKeys()), createAdditionalOauthKeys());
+        Assert.assertEquals("Rotation timestamp should survive Bundle round-trip", rotationTime,
+                restored.getLastTokenRotationTime());
+    }
+
+    /**
+     * An account with no rotation yet reports a null timestamp, and the
+     * JSON/Bundle omit the key (so existing serialization stays byte-for-byte
+     * compatible).
+     */
+    @Test
+    public void test_givenUserAccountWithoutRotationTime_whenSerialized_thenKeyAbsentAndGetterNull() throws JSONException {
+        final UserAccount account = createTestAccount();
+
+        Assert.assertNull("Rotation timestamp should default to null", account.getLastTokenRotationTime());
+        Assert.assertFalse("JSON should not contain the rotation key when unset",
+                account.toJson(createAdditionalOauthKeys()).has(UserAccount.LAST_TOKEN_ROTATION_TIME));
+        Assert.assertFalse("Bundle should not contain the rotation key when unset",
+                account.toBundle(createAdditionalOauthKeys()).containsKey(UserAccount.LAST_TOKEN_ROTATION_TIME));
+    }
+
+    /**
+     * setLastTokenRotationTime/getLastTokenRotationTime are symmetric.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetRotationTime_thenGetterReturnsSameValue() {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = createTestAccount();
+        account.setLastTokenRotationTime(rotationTime);
+
+        Assert.assertEquals(rotationTime, account.getLastTokenRotationTime());
     }
 
     /**

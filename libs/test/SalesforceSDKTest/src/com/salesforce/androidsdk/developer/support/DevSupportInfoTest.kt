@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.developer.support
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
 import io.mockk.every
@@ -655,6 +656,7 @@ class DevSupportInfoTest {
             "Token Format", "oauth2",
             "Access Token Expiration", "Unknown",
             "Beacon Child Consumer Key", user.beaconChildConsumerKey ?: "None",
+            "OAuth Token Type", "Bearer",
         ))
         
         // Add runtime config
@@ -670,6 +672,109 @@ class DevSupportInfoTest {
 
         // Assert the two objects are identical
         assertEquals(fromSecondaryConstructor, fromLegacy)
+    }
+
+    @Test
+    fun currentUserSection_BearerSession_ShowsTokenTypeNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = "Bearer")
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
+    }
+
+    @Test
+    fun currentUserSection_NullTokenType_ShowsBearerNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
+    }
+
+    @Test
+    fun currentUserSection_DPoPSession_ShowsDPoPRows() {
+        // credentialsIdentifier is null here so thumbprint/nonce fall back to "Unavailable"/"None"
+        val user = createMockUserAccount(tokenType = "DPoP", credentialsIdentifier = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("DPoP", section.find { it.first == "OAuth Token Type" }?.second)
+        assertTrue(section.any { it.first == "DPoP Nonce" })
+        assertTrue(section.any { it.first == "DPoP Key Thumbprint" })
+        assertEquals("None", section.find { it.first == "DPoP Nonce" }?.second)
+        assertEquals("Unavailable", section.find { it.first == "DPoP Key Thumbprint" }?.second)
+    }
+
+    @Test
+    fun jwkThumbprint_ProducesValidBase64UrlString() {
+        // Generate a key pair using the standard Java security API (no Android Keystore needed in unit tests)
+        val keyPairGenerator = java.security.KeyPairGenerator.getInstance("EC")
+        keyPairGenerator.initialize(java.security.spec.ECGenParameterSpec("secp256r1"))
+        val keyPair = keyPairGenerator.generateKeyPair()
+        val publicKey = keyPair.public as java.security.interfaces.ECPublicKey
+
+        val thumbprint = DPoPProofBuilder.jwkThumbprint(publicKey)
+
+        // base64url of a 32-byte SHA-256 digest = 43 characters (no padding)
+        assertEquals(43, thumbprint.length)
+        assertTrue(thumbprint.matches(Regex("[A-Za-z0-9_-]+")))
+    }
+
+    // RTR section
+
+    /** Per-user fields show "N/A" when no user is logged in. */
+    @Test
+    fun rtrSection_NoCurrentUser_ShowsNA() {
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = null, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("N/A", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Before any rotation, shows "RTR Active: false" and
+     * "Last Rotation: Never".
+     */
+    @Test
+    fun rtrSection_UserBeforeRotation_ShowsFalseAndNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = null)
+
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("false", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Blank-timestamp guard: a blank persisted timestamp still reads as
+     * "Never".
+     */
+    @Test
+    fun rtrSection_BlankRotationTime_ShowsNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = "")
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false).second
+
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * After a confirmed rotation, "RTR Active" is true and
+     * "Last Rotation" is the timestamp.
+     */
+    @Test
+    fun rtrSection_UserAfterRotation_ShowsTrueAndTimestamp() {
+        val timestamp = "2026-07-30T12:00:00Z"
+        val user = createMockUserAccount(lastTokenRotationTime = timestamp)
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = true).second
+
+        assertEquals("true", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals(timestamp, rows.find { it.first == "Last Rotation" }?.second)
     }
 
     // Helper methods
@@ -697,7 +802,10 @@ class DevSupportInfoTest {
         scope: String = "api web",
         instanceServer: String = "https://test.salesforce.com",
         tokenFormat: String = "oauth2",
-        authToken: String = "test_token"
+        authToken: String = "test_token",
+        tokenType: String? = null,
+        credentialsIdentifier: String? = null,
+        lastTokenRotationTime: String? = null,
     ): UserAccount {
         return UserAccount(
             Bundle().apply {
@@ -729,6 +837,9 @@ class DevSupportInfoTest {
                 putString(UserAccount.LOCALE, "en_US")
                 putString(UserAccount.SCOPE, scope)
                 putString(UserAccount.TOKEN_FORMAT, tokenFormat)
+                tokenType?.let { putString(UserAccount.TOKEN_TYPE, it) }
+                credentialsIdentifier?.let { putString(UserAccount.CREDENTIALS_IDENTIFIER, it) }
+                lastTokenRotationTime?.let { putString(UserAccount.LAST_TOKEN_ROTATION_TIME, it) }
             }
         )
     }

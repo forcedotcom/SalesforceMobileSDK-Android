@@ -53,7 +53,9 @@ import android.text.TextUtils.join
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import android.widget.Toast
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
@@ -95,6 +97,8 @@ import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
@@ -102,8 +106,6 @@ import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
@@ -147,6 +149,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.lang.String.CASE_INSENSITIVE_ORDER
@@ -427,6 +430,15 @@ open class SalesforceSDKManager protected constructor(
      * false.
      */
     var clearCookiesAfterLogin = true
+
+    /**
+     * Opt-in flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449).
+     * When true, the SDK will attach a DPoP proof JWT to token endpoint
+     * requests and use the `DPoP` Authorization scheme for resource requests
+     * when the token endpoint advertises `token_type: DPoP`.
+     */
+    @get:JvmName("isUseDPoP")
+    var useDPoP: Boolean = false
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.
@@ -1241,6 +1253,14 @@ open class SalesforceSDKManager protected constructor(
             userAccount,
             showLoginPage
         )
+        userAccount?.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
+            runCatching {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                DPoPNonceCache.clear(id)
+            }.onFailure { e ->
+                w(TAG, "Failed to delete DPoP key pair on logout", e)
+            }
+        }
         clientMgr.removeAccount(account)
         isLoggingOut = false
 
@@ -1367,6 +1387,21 @@ open class SalesforceSDKManager protected constructor(
      * @param appFeatureCode The app feature code
      */
     fun isGlobalFeatureRegistered(appFeatureCode: String) = features.contains(appFeatureCode)
+
+    /**
+     * Returns true if the feature code is registered for the given user
+     * (falling back to the current user when [user] is null). Reads the
+     * per-user feature set that backs the user agent's ftr_ token, so this
+     * reflects features such as RTR that are registered per account.
+     *
+     * @param appFeatureCode The app feature code
+     * @param user The user account, or null to use the current user
+     */
+    internal fun isUserFeatureRegistered(appFeatureCode: String, user: UserAccount? = null): Boolean {
+        val resolvedUser = user ?: userAccountManager.currentUser ?: return false
+        val key = "${resolvedUser.orgId}/${resolvedUser.userId}"
+        return perUserFeatures[key]?.contains(appFeatureCode) == true
+    }
 
     /**
      * Adds a per-user app feature code for reporting in the user agent header.
@@ -1551,9 +1586,59 @@ open class SalesforceSDKManager protected constructor(
                     })
                 }
             }
+
+            /*
+             * Debug-only helper: proactively drive the SDK's standard
+             * token-refresh path so developers can observe Refresh Token
+             * Rotation (RTR) state update in the dev info screen without
+             * waiting for the access token to expire naturally. This whole
+             * menu is only shown when isDevSupportEnabled() is true (debug
+             * builds by default).
+             */
+            actions["Force Token Refresh"] = object : DevActionHandler {
+                override fun onSelected() {
+                    val user = userAccountManager.currentUser ?: return
+                    CoroutineScope(Default).launch {
+                        val message = forceTokenRefresh(user)
+                        withContext(Main) {
+                            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
         }
 
         return actions
+    }
+
+    /**
+     * Drives the SDK's standard token-refresh path for [user] so developers
+     * can observe Refresh Token Rotation (RTR) state update in the dev info
+     * screen without waiting for the access token to expire naturally. Backs
+     * the debug-only "Force Token Refresh" dev action.
+     *
+     * @param user The user whose access token should be refreshed.
+     * @param restClient The REST client to refresh, or null to resolve the
+     * user's client via [ClientManager.peekRestClient]. Tests can supply a
+     * mock to avoid a network call.
+     * @return A human-readable result message suitable for a Toast. Never
+     * throws — resolving the client and refreshing the token both happen
+     * inside the catch, so any failure (including the
+     * AccountInfoNotFoundException that [ClientManager.peekRestClient] raises
+     * when the account is missing or logging out) is caught, logged, and
+     * returned as a message (with a null-message fallback to the exception's
+     * simple class name).
+     */
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun forceTokenRefresh(
+        user: UserAccount,
+        restClient: RestClient? = null
+    ): String = try {
+        (restClient ?: clientManager.peekRestClient(user)).refreshAccessToken()
+        "Token refresh complete — check RTR section in dev info"
+    } catch (ex: Exception) {
+        e(TAG, "Force Token Refresh failed", ex)
+        "Token refresh failed: ${ex.message ?: ex.javaClass.simpleName}"
     }
 
     /** Information to display in the developer support dialog */
@@ -1609,6 +1694,8 @@ open class SalesforceSDKManager protected constructor(
 //                "Identity Provider" to "$isIdentityProvider",
 //            )
 //
+//            // NOTE: carry over the RTR additionalSections.add(...) from the
+//            // live getter below, or RTR drops off the dev info screen.
 //            return DevSupportInfo(
 //                basicInfo,
 //                authConfig,
@@ -1618,9 +1705,29 @@ open class SalesforceSDKManager protected constructor(
 //            )
 //        }
 //
-//  TODO: Replace devSupportInfo with the above implementation when devSupportInfos is removed in 14.0.
+    /*
+     * TODO: Replace devSupportInfo with the above implementation when
+     * devSupportInfos is removed in 14.0. When doing so, preserve the RTR
+     * section appended in the live getter below — the commented-out
+     * implementation above builds DevSupportInfo via its structured
+     * constructor and does not add it, so RTR would otherwise silently drop
+     * from the dev info screen.
+     */
     open val devSupportInfo: DevSupportInfo
-        get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos)
+        get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos).apply {
+            /*
+             * Surface Refresh Token Rotation (RTR) state so developers can
+             * verify whether RTR is active for the current user's session and
+             * when the token last rotated.
+             */
+            val currentUser = userAccountManager.cachedCurrentUser
+            additionalSections.add(
+                DevSupportInfo.parseRtrSection(
+                    currentUser = currentUser,
+                    rtrActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_RTR, currentUser),
+                )
+            )
+        }
 
     /** Sends the logout completed intent */
     private fun sendLogoutCompleteIntent(logoutReason: LogoutReason, userAccount: UserAccount?) =
@@ -2156,7 +2263,6 @@ open class SalesforceSDKManager protected constructor(
         // If this takes more than five seconds it can cause Android's application not responding report.
         withTimeoutOrNull(5000L.milliseconds) {
             val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
-            val isStandardLoginServer = loginServer == PRODUCTION_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL
             val isInvalidServer = !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
 
             when {
@@ -2170,7 +2276,7 @@ open class SalesforceSDKManager protected constructor(
                     // Disable Salesforce App Attestation for login servers that are not My Domain servers.
                     appAttestationClient?.apiHostName = null
                 }
-                isStandardLoginServer -> {
+                LoginServerManager.isPoolServer(loginServer) -> {
                     // Standard login servers have no auth-config to source a shared-session value from, so
                     // browser login is gated solely on the force flag and shared session stays false.
                     setBrowserLoginEnabled(

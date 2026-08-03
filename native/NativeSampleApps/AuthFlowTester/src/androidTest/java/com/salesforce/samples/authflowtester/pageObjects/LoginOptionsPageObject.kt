@@ -81,6 +81,14 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         getString(R.string.sf__login_options_hybrid_toggle_content_description)
     )
 
+    fun enableDPoP() = toggleIfOff(
+        getString(R.string.sf__login_options_dpop_toggle_content_description)
+    )
+
+    fun disableDPoP() = toggleIfOn(
+        getString(R.string.sf__login_options_dpop_toggle_content_description)
+    )
+
     fun setOverrideBootConfig(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection = ALL) {
         enableOverrideBootConfig()
 
