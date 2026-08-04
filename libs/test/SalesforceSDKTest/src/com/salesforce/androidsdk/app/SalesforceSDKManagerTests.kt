@@ -10,14 +10,24 @@ import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CONTENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_CLIENT_SRC
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_SID_CLIENT
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CSRF_TOKEN
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_LIGHTNING_SID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_PARENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_SID_COOKIE_NAME
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_USER_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_VF_SID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
-import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.push.PushMessaging
@@ -777,9 +787,28 @@ class SalesforceSDKManagerTests {
             fixture.accountManager.removeAccountExplicitly(fixture.account)
         }
         assertTrue("Logout state should cover synchronous local cleanup", observedLoggingOut.get())
+        verify(exactly = 0) {
+            fixture.userAccountManager.clearStoredCurrentUserInfo()
+        }
         assertFalse(fixture.sdkManager.isLoggingOut)
         assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
         assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+    }
+
+    @Test
+    fun logout_SuccessfulRemovalSelectsTheLiveRemainingUser() {
+        val fixture = createLogoutFixture()
+
+        fixture.sdkManager.logout(fixture.account, null, true, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            fixture.userAccountManager.switchToUser(
+                fixture.otherUser,
+                UserAccountManager.USER_SWITCH_TYPE_LOGOUT,
+                null,
+            )
+        }
     }
 
     @Test
@@ -807,9 +836,116 @@ class SalesforceSDKManagerTests {
         }
         verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
         verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        verify(exactly = 1) {
+            fixture.userAccountManager.clearStoredCurrentUserInfo()
+        }
         assertEquals(1, fixture.sdkManager.cleanedUsers.size)
         assertEquals(fixture.user.userId, fixture.sdkManager.cleanedUsers.single()?.userId)
         assertEquals(fixture.user.orgId, fixture.sdkManager.cleanedUsers.single()?.orgId)
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_RemainingMalformedAccountPreventsLastPersistedAccountCleanup() {
+        val fixture = createLogoutFixture(otherUserMalformed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        fixture.sdkManager.logout(fixture.account, activity, true, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 0) { activity.finish() }
+        assertTrue(fixture.sdkManager.loginPageStarted)
+    }
+
+    @Test
+    fun logout_MalformedAccountRemovalFailureStillCompletesLocalLogout() {
+        val fixture = createLogoutFixture(
+            malformed = true,
+            removeAccountSucceeds = false,
+        )
+        val logoutReported = AtomicBoolean(false)
+        val observer = EventsObserver { event ->
+            if (event.type == LogoutComplete) {
+                logoutReported.set(true)
+            }
+        }
+        EventsObservable.get().registerObserver(observer)
+
+        try {
+            fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+        } finally {
+            EventsObservable.get().unregisterObserver(observer)
+        }
+
+        verify(exactly = 1) {
+            fixture.accountManager.removeAccountExplicitly(fixture.account)
+        }
+        verifyPersistedCredentialsCleared(fixture)
+        verify(exactly = 0) { PushMessaging.unregisterForLogout(any(), any(), any()) }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        assertEquals(1, fixture.sdkManager.cleanedUsers.size)
+        assertTrue(logoutReported.get())
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_MalformedAccountWithoutCleanupIdentityStillCompletesLocalLogout() {
+        val fixture = createLogoutFixture(
+            malformed = true,
+            cleanupIdentityAvailable = false,
+            removeAccountSucceeds = false,
+        )
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        verifyPersistedCredentialsCleared(fixture)
+        verify(exactly = 0) {
+            fixture.userAccountManager.clearStoredCurrentUserInfo()
+        }
+        assertEquals(listOf(null), fixture.sdkManager.cleanedUsers)
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
+    fun logout_UnusableAccountRemovalFailureClearsCredentialsAndCompletesLocalLogout() {
+        val fixture = createLogoutFixture(
+            loginServer = null,
+            removeAccountSucceeds = false,
+        )
+        fixture.sdkManager.additionalOauthKeys = listOf("test-session-extra")
+        val logoutReported = AtomicBoolean(false)
+        val observer = EventsObserver { event ->
+            if (event.type == LogoutComplete) {
+                logoutReported.set(true)
+            }
+        }
+        EventsObservable.get().registerObserver(observer)
+
+        try {
+            fixture.sdkManager.logout(fixture.account, null, true, USER_LOGOUT)
+        } finally {
+            EventsObservable.get().unregisterObserver(observer)
+        }
+
+        verifyPersistedCredentialsCleared(fixture)
+        verify(exactly = 1) {
+            fixture.accountManager.setUserData(
+                fixture.account,
+                "test-session-extra",
+                null,
+            )
+        }
+        verify(exactly = 1) {
+            fixture.userAccountManager.clearStoredCurrentUserInfo()
+            fixture.userAccountManager.switchToUser(
+                fixture.otherUser,
+                UserAccountManager.USER_SWITCH_TYPE_LOGOUT,
+                null,
+            )
+        }
+        verify(exactly = 0) { OAuth2.revokeRefreshToken(any(), any(), any(), any()) }
+        assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+        assertTrue(logoutReported.get())
         assertFalse(fixture.sdkManager.isLoggingOut)
     }
 
@@ -870,7 +1006,7 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
-    fun logout_FailedAccountRemovalDoesNotReportCompletionOrRevokeToken() {
+    fun logout_FailedAccountRemovalStillCleansUpAndRevokesToken() {
         val fixture = createLogoutFixture(removeAccountSucceeds = false)
         val logoutReported = AtomicBoolean(false)
         val observer = EventsObserver { event ->
@@ -886,14 +1022,21 @@ class SalesforceSDKManagerTests {
             EventsObservable.get().unregisterObserver(observer)
         }
 
+        assertTrue(fixture.revocationCompleted.await(5, SECONDS))
         verify(exactly = 1) {
             fixture.accountManager.removeAccountExplicitly(fixture.account)
         }
-        verify(exactly = 0) {
-            OAuth2.revokeRefreshToken(any(), any(), any(), any())
+        verifyPersistedCredentialsCleared(fixture)
+        verify(exactly = 1) {
+            OAuth2.revokeRefreshToken(
+                any(),
+                URI("https://login.example.com"),
+                "refresh-token-user",
+                USER_LOGOUT,
+            )
         }
-        assertTrue(fixture.sdkManager.cleanedUsers.isEmpty())
-        assertFalse(logoutReported.get())
+        assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+        assertTrue(logoutReported.get())
         assertFalse(fixture.sdkManager.isLoggingOut)
         assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
     }
@@ -1344,11 +1487,43 @@ class SalesforceSDKManagerTests {
         )
     }
 
+    private fun verifyPersistedCredentialsCleared(fixture: LogoutFixture) {
+        verify(exactly = 1) {
+            fixture.accountManager.clearPassword(fixture.account)
+            fixture.accountManager.setAuthToken(
+                fixture.account,
+                AccountManager.KEY_AUTHTOKEN,
+                null,
+            )
+        }
+        listOf(
+            AccountManager.KEY_AUTHTOKEN,
+            KEY_LIGHTNING_SID,
+            KEY_VF_SID,
+            KEY_CONTENT_SID,
+            KEY_CSRF_TOKEN,
+            KEY_COOKIE_SID_CLIENT,
+            KEY_COOKIE_CLIENT_SRC,
+            KEY_SID_COOKIE_NAME,
+            KEY_PARENT_SID,
+            KEY_BEACON_CHILD_CONSUMER_KEY,
+            KEY_BEACON_CHILD_CONSUMER_SECRET,
+            KEY_CREDENTIALS_IDENTIFIER,
+        ).forEach { key ->
+            verify(exactly = 1) {
+                fixture.accountManager.setUserData(fixture.account, key, null)
+            }
+        }
+    }
+
     private fun createLogoutFixture(
         pushRegistered: Boolean = false,
         malformed: Boolean = false,
         accountPresent: Boolean = true,
+        otherUserMalformed: Boolean = false,
+        cleanupIdentityAvailable: Boolean = true,
         refreshToken: String? = "refresh-token-user",
+        loginServer: String? = "https://login.example.com",
         removeAccountSucceeds: Boolean = true,
     ): LogoutFixture {
         val account = Account("logout-account", "logout-account-type")
@@ -1358,6 +1533,7 @@ class SalesforceSDKManagerTests {
             userId = "user",
             orgId = "org",
             refreshToken = refreshToken,
+            loginServer = loginServer,
         )
         val otherUser = buildLogoutIdentity(
             accountName = otherAccount.name,
@@ -1367,23 +1543,30 @@ class SalesforceSDKManagerTests {
         val removalCompleted = CountDownLatch(1)
         val revocationCompleted = CountDownLatch(1)
         val accountStillPresent = AtomicBoolean(accountPresent)
+        val credentialsPresent = AtomicBoolean(true)
         val userAccountManager = mockk<UserAccountManager>(relaxed = true).apply {
             every { buildUserAccount(account) } returns if (malformed) null else user
             every { buildUserAccount(otherAccount) } returns otherUser
+            every { storedUserId } returns if (cleanupIdentityAvailable) user.userId else null
+            every { storedOrgId } returns if (cleanupIdentityAvailable) user.orgId else null
             every { authenticatedUsers } answers {
                 buildList {
-                    if (accountStillPresent.get() && !malformed) {
+                    if (accountStillPresent.get() && credentialsPresent.get() && !malformed) {
                         add(user)
                     }
-                    add(otherUser)
+                    if (!otherUserMalformed) {
+                        add(otherUser)
+                    }
                 }
             }
         }
         val accountManager = mockk<AccountManager>(relaxed = true).apply {
             every { getPassword(account) } returns "encrypted-refresh-value"
             every { getUserData(account, any()) } returns "encrypted-login-value"
-            every { getUserData(account, KEY_USER_ID) } returns "encrypted-persisted-user-id"
-            every { getUserData(account, KEY_ORG_ID) } returns "encrypted-persisted-org-id"
+            every { getUserData(account, KEY_USER_ID) } returns
+                    if (cleanupIdentityAvailable) "encrypted-persisted-user-id" else null
+            every { getUserData(account, KEY_ORG_ID) } returns
+                    if (cleanupIdentityAvailable) "encrypted-persisted-org-id" else null
             every { getAccountsByType(any()) } answers {
                 if (accountStillPresent.get()) {
                     arrayOf(account, otherAccount)
@@ -1397,6 +1580,12 @@ class SalesforceSDKManagerTests {
                     removalCompleted.countDown()
                 }
                 removeAccountSucceeds
+            }
+            every {
+                setUserData(account, AccountManager.KEY_AUTHTOKEN, null)
+            } answers {
+                credentialsPresent.set(false)
+                Unit
             }
         }
 
@@ -1439,7 +1628,9 @@ class SalesforceSDKManagerTests {
             sdkManager = sdkManager,
             account = account,
             accountManager = accountManager,
+            userAccountManager = userAccountManager,
             user = user,
+            otherUser = otherUser,
             removalCompleted = removalCompleted,
             revocationCompleted = revocationCompleted,
         )
@@ -1450,7 +1641,7 @@ class SalesforceSDKManagerTests {
         userId: String,
         orgId: String,
         refreshToken: String? = "refresh-token-$userId",
-        loginServer: String = "https://login.example.com",
+        loginServer: String? = "https://login.example.com",
     ): UserAccount = UserAccountBuilder.getInstance()
         .accountName(accountName)
         .userId(userId)
@@ -1466,7 +1657,9 @@ class SalesforceSDKManagerTests {
         val sdkManager: LogoutTestSalesforceSDKManager,
         val account: Account,
         val accountManager: AccountManager,
+        val userAccountManager: UserAccountManager,
         val user: UserAccount,
+        val otherUser: UserAccount,
         val removalCompleted: CountDownLatch,
         val revocationCompleted: CountDownLatch,
     )
@@ -1478,12 +1671,17 @@ class SalesforceSDKManagerTests {
 
         val cleanedUsers = CopyOnWriteArrayList<UserAccount?>()
         var onCleanUp: (() -> Unit)? = null
+        var loginPageStarted = false
 
         override val userAccountManager: UserAccountManager by lazy { testUserAccountManager }
 
         override fun cleanUp(userAccount: UserAccount?) {
             onCleanUp?.invoke()
             cleanedUsers += userAccount
+        }
+
+        override fun startLoginPage() {
+            loginPageStarted = true
         }
     }
 

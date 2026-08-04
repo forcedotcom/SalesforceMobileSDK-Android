@@ -101,8 +101,7 @@ public class ClientManager {
 
     @VisibleForTesting
     ClientManager(@NonNull AccountManager accountManager,
-                  @NonNull Account account,
-                  @NonNull UserAccount user) {
+                  @NonNull Account account) {
         this.accountManager = accountManager;
         this.account = account;
     }

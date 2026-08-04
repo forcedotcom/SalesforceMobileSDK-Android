@@ -91,13 +91,25 @@ import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
 import com.salesforce.androidsdk.auth.AppAttestationClient
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CONTENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_CLIENT_SRC
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_SID_CLIENT
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CSRF_TOKEN
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_LIGHTNING_SID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_PARENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_SID_COOKIE_NAME
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_USER_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_VF_SID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.CORRUPT_STATE_MSDK
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
@@ -990,7 +1002,7 @@ open class SalesforceSDKManager protected constructor(
          */
         val userAccMgr = userAccountManager
         val accounts = userAccMgr.authenticatedUsers
-        if (accounts == null || accounts.isEmpty()) {
+        if (accounts.isNullOrEmpty()) {
             startLoginPage()
         } else if (accounts.size == 1) {
             userAccMgr.switchToUser(
@@ -1117,8 +1129,9 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Removes a valid persisted account and completes local logout. Push unregistration and token
-     * revocation are best-effort operations and never delay removal of local credentials.
+     * Attempts to remove a valid persisted account and always completes the remaining logout work.
+     * Push unregistration, platform account removal, and token revocation are best-effort and do
+     * not prevent local SDK cleanup.
      */
     private fun removeAccount(
         showLoginPage: Boolean,
@@ -1136,11 +1149,11 @@ open class SalesforceSDKManager protected constructor(
             e(TAG, "Removing the persisted account failed", error)
         }.getOrDefault(false)
         if (!removed) {
-            e(TAG, "The persisted account could not be removed")
-            return
+            e(TAG, "The persisted account could not be removed; continuing logout cleanup")
+            clearPersistedCredentials(account, accountManager)
+            clearStoredCurrentUserIfMatches(userAccount)
         }
-        val isLastPersistedAccount =
-            accountManager.getAccountsByType(account.type).isEmpty()
+        val isLastPersistedAccount = hasNoOtherPersistedAccounts(account, accountManager)
         cleanUp(
             frontActivity,
             userAccount,
@@ -1193,16 +1206,25 @@ open class SalesforceSDKManager protected constructor(
         }.onFailure { error ->
             w(TAG, "Removing a malformed persisted account failed", error)
         }.getOrDefault(false)
-        val isLastPersistedAccount =
-            removed && accountManager.getAccountsByType(account.type).isEmpty()
-        val storedUserId = userAccountManager.storedUserId
-        val storedOrgId = userAccountManager.storedOrgId
-        val removedIdentityWasSelected =
-            cleanupUser?.userId == storedUserId && cleanupUser.orgId == storedOrgId
-        val selectedIdentityStillExists = removed &&
-            userAccountManager.authenticatedUsers?.any {
-                it.userId == storedUserId && it.orgId == storedOrgId
+        if (!removed) {
+            clearPersistedCredentials(account, accountManager)
+            clearStoredCurrentUserIfMatches(cleanupUser)
+            w(TAG, "Malformed persisted account could not be removed; continuing logout cleanup")
+        } else {
+            val storedUserId = userAccountManager.storedUserId
+            val storedOrgId = userAccountManager.storedOrgId
+            val removedIdentityWasSelected = cleanupUser?.let { user ->
+                user.userId == storedUserId && user.orgId == storedOrgId
             } == true
+            val selectedIdentityStillExists = removedIdentityWasSelected &&
+                userAccountManager.authenticatedUsers?.any { user ->
+                    user.userId == storedUserId && user.orgId == storedOrgId
+                } == true
+            if (removedIdentityWasSelected && !selectedIdentityStillExists) {
+                userAccountManager.clearStoredCurrentUserInfo()
+            }
+        }
+        val isLastPersistedAccount = hasNoOtherPersistedAccounts(account, accountManager)
 
         runCatching {
             cleanUp(
@@ -1219,17 +1241,64 @@ open class SalesforceSDKManager protected constructor(
         }.onFailure { error ->
             w(TAG, "Clearing cookies for a malformed account failed", error)
         }
-        if (removed) {
-            if (removedIdentityWasSelected && !selectedIdentityStillExists) {
-                userAccountManager.clearStoredCurrentUserInfo()
-            }
+        runCatching {
+            notifyLogoutComplete(showLoginPage, logoutReason, cleanupUser)
+        }.onFailure { error ->
+            w(TAG, "Completing malformed account logout notification failed", error)
+        }
+    }
+
+    /** Removes usable credentials from an exact account that Android refused to delete. */
+    private fun clearPersistedCredentials(
+        account: Account,
+        accountManager: AccountManager,
+    ) {
+        runCatching {
+            accountManager.clearPassword(account)
+        }.onFailure { error ->
+            w(TAG, "Clearing the persisted refresh token failed", error)
+        }
+        val credentialKeys = listOf(
+            AccountManager.KEY_AUTHTOKEN,
+            KEY_LIGHTNING_SID,
+            KEY_VF_SID,
+            KEY_CONTENT_SID,
+            KEY_CSRF_TOKEN,
+            KEY_COOKIE_SID_CLIENT,
+            KEY_COOKIE_CLIENT_SRC,
+            KEY_SID_COOKIE_NAME,
+            KEY_PARENT_SID,
+            KEY_BEACON_CHILD_CONSUMER_KEY,
+            KEY_BEACON_CHILD_CONSUMER_SECRET,
+            KEY_CREDENTIALS_IDENTIFIER,
+        ) + additionalOauthKeys.orEmpty()
+        credentialKeys.forEach { key ->
             runCatching {
-                notifyLogoutComplete(showLoginPage, logoutReason, cleanupUser)
+                accountManager.setUserData(account, key, null)
             }.onFailure { error ->
-                w(TAG, "Completing malformed account logout notification failed", error)
+                w(TAG, "Clearing persisted session data failed", error)
             }
-        } else {
-            w(TAG, "Malformed persisted account could not be removed")
+        }
+        runCatching {
+            accountManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, null)
+        }.onFailure { error ->
+            w(TAG, "Clearing the platform access-token cache failed", error)
+        }
+    }
+
+    private fun hasNoOtherPersistedAccounts(
+        account: Account,
+        accountManager: AccountManager,
+    ): Boolean = accountManager.getAccountsByType(account.type).none { candidate ->
+        candidate != account
+    }
+
+    private fun clearStoredCurrentUserIfMatches(user: UserAccount?) {
+        user ?: return
+        if (user.userId == userAccountManager.storedUserId &&
+            user.orgId == userAccountManager.storedOrgId
+        ) {
+            userAccountManager.clearStoredCurrentUserInfo()
         }
     }
 
@@ -1473,17 +1542,30 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * Returns an authenticated client for the current user or starts login when
-     * no persisted user is current.
+     * no persisted account is current. If the current account cannot produce a
+     * valid user and client, removes that exact corrupt account and completes
+     * the normal logout, account-switching, or login flow without invoking
+     * [restClientCallback].
      */
     fun getRestClient(
         activityContext: Activity,
         restClientCallback: RestClientCallback,
     ) {
-        val user = userAccountManager.currentUser
-        if (user != null) {
-            ClientManager(appContext, user).peekRestClient()?.let { client ->
-                restClientCallback.authenticatedRestClient(client)
-            } ?: w(TAG, "Unable to create a REST client for the current user")
+        val account = userAccountManager.currentAccount
+        if (account != null) {
+            val user = userAccountManager.buildUserAccount(account)
+            val client = user?.let { ClientManager(appContext, it).peekRestClient() }
+            if (client == null) {
+                w(TAG, "Removing a corrupt current account that cannot create a REST client")
+                logout(
+                    account = account,
+                    frontActivity = activityContext,
+                    showLoginPage = true,
+                    reason = CORRUPT_STATE_MSDK,
+                )
+                return
+            }
+            restClientCallback.authenticatedRestClient(client)
             return
         }
 

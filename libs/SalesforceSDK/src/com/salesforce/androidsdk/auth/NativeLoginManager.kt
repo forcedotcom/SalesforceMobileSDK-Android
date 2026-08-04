@@ -982,6 +982,7 @@ internal class NativeLoginManager(
         val client = clientManager?.peekRestClient()
         if (client == null) {
             SalesforceSDKLogger.e(TAG, "Unable to obtain the authenticated client while unlocking.")
+            activity.finish()
             return
         }
         runCatching {

@@ -84,12 +84,6 @@ public class SalesforceActivityDelegate {
             SalesforceSDKManager.getInstance().getRestClient(
                     activity,
                     client -> {
-                        if (client == null) {
-                            SalesforceSDKManager.getInstance()
-                                    .logout(null, activity, true,
-                                            OAuth2.LogoutReason.CORRUPT_STATE_MSDK);
-                            return;
-                        }
                         ((SalesforceActivityInterface) activity).onResume(client);
 
                         // Lets observers know that rendition is complete.

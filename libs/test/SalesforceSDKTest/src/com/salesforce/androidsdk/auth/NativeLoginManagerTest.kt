@@ -298,7 +298,7 @@ class NativeLoginManagerTest {
     }
 
     @Test
-    fun testOnBiometricAuthenticationSucceededKeepsLockWhenClientCannotBeBuilt() {
+    fun testOnBiometricAuthenticationSucceededKeepsLockAndFinishesWhenClientCannotBeBuilt() {
         bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
                 as BiometricAuthenticationManager
         addUserAccount()
@@ -313,7 +313,7 @@ class NativeLoginManagerTest {
         mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
 
         Assert.assertTrue("The biometric lock must remain when no client can be built.", bioAuthManager.locked)
-        verify(exactly = 0) { activity.finish() }
+        verify(exactly = 1) { activity.finish() }
     }
 
     @Test

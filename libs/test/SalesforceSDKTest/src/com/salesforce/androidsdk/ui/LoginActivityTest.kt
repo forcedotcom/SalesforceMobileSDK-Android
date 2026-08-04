@@ -66,7 +66,7 @@ import org.junit.runner.RunWith
 class LoginActivityTest {
 
     @Test
-    fun doTokenRefresh_whenClientCannotBeBuilt_doesNotFinishActivity() {
+    fun doTokenRefresh_whenClientCannotBeBuilt_finishesActivity() {
         mockkObject(SalesforceSDKManager)
         val clientManager = mockk<ClientManager>()
         every { clientManager.peekRestClient() } returns null
@@ -87,7 +87,7 @@ class LoginActivityTest {
                 invokeDoTokenRefresh(activity)
             }
 
-            assertTrue(finishCalls == 0)
+            assertTrue(finishCalls == 1)
         } finally {
             unmockkObject(SalesforceSDKManager)
         }

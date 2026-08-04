@@ -34,6 +34,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
+import com.salesforce.androidsdk.auth.AuthenticatorService
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.LoginActivity
@@ -43,6 +44,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -103,6 +105,40 @@ class SalesforceSDKManagerClientManagerTest {
 
         assertEquals(1, clients.size)
         assertClientFor(clients.single(), user)
+        verify(exactly = 0) {
+            activity.startActivityForResult(any<Intent>(), any())
+        }
+    }
+
+    @Test
+    fun getRestClient_withUnusableCurrentUser_removesExactAccountWithoutCallback() {
+        val user = persistUser("unusable")
+        val account = requireNotNull(userAccountManager.buildAccount(user))
+        accountManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, null)
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        sdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(0, callbackCount)
+        assertFalse(accountManager.getAccountsByType(account.type).contains(account))
+        verify(exactly = 0) {
+            activity.startActivityForResult(any<Intent>(), any())
+        }
+    }
+
+    @Test
+    fun getRestClient_withMalformedCurrentAccount_removesItWithoutCallback() {
+        val user = persistUser("malformed")
+        val account = requireNotNull(userAccountManager.buildAccount(user))
+        accountManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, null)
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        sdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(0, callbackCount)
+        assertFalse(accountManager.getAccountsByType(account.type).contains(account))
         verify(exactly = 0) {
             activity.startActivityForResult(any<Intent>(), any())
         }

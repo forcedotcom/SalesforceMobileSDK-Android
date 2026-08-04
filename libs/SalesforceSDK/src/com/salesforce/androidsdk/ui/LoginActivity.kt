@@ -755,6 +755,7 @@ open class LoginActivity : FragmentActivity() {
         val client = SalesforceSDKManager.getInstance().clientManager?.peekRestClient()
         if (client == null) {
             e(TAG, "Unable to obtain the authenticated client while unlocking.")
+            activity.finish()
             return
         }
         runCatching {

@@ -1313,7 +1313,7 @@ class ClientManagerMockTest {
             liveUserA.set(secondArg())
             Bundle()
         }
-        val managerA = ClientManager(accountManager, accountA, userA)
+        val managerA = ClientManager(accountManager, accountA)
 
         val providerWithBSnapshots = ClientManager.AccMgrAuthTokenProvider(
             managerA,
