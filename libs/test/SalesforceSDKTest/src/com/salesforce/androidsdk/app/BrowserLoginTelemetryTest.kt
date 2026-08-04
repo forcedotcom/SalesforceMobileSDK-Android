@@ -38,10 +38,6 @@ import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.ui.LoginActivity
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.unmockkAll
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -52,9 +48,8 @@ import org.junit.runner.RunWith
  * telemetry selection logic in [LoginActivity].
  *
  * The logic under test lives in [LoginActivity.selectBMarker] and [LoginActivity.selectLMarker],
- * which are `internal` helpers extracted for testability and annotated `@VisibleForTesting`.
- * We call them via a relaxed mockk and `callOriginal()` so the real logic executes without
- * needing a running Android Activity context.
+ * which are companion object helpers annotated `@VisibleForTesting`. They are pure functions
+ * that require no Activity context, so they are called directly without mocking.
  *
  * L-marker mapping:
  *   L1 = Production server
@@ -73,21 +68,11 @@ import org.junit.runner.RunWith
 @SmallTest
 class BrowserLoginTelemetryTest {
 
-    /** A relaxed mock of LoginActivity; individual tests call `callOriginal()` on the method under test. */
-    private val activity: LoginActivity = mockk(relaxed = true)
-
-    @After
-    fun tearDown() {
-        unmockkAll()
-    }
-
     // region B-marker tests
 
     @Test
     fun test_givenNonBrowserLogin_whenSelectBMarker_thenReturnsNull() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = false,
             completedViaAdminCustomTab = false,
             isMdmForced = false,
@@ -98,10 +83,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenBrowserLoginViaServerAuthConfig_whenSelectBMarker_thenB1Returned() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // B1: browser tab, not admin, not force-flag (MDM ignored on Android)
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = false,
@@ -113,12 +96,10 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenBrowserLoginViaMDM_whenSelectBMarker_thenB1ReturnedNotB2() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // On Android, MDM forces cert auth (different code path — completedViaBrowserTab never
         // becomes true in that flow). When isMdmForced=true is passed, it is ignored and B1
         // is returned as the fallthrough because no real Android MDM-browser-login signal exists.
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = true,
@@ -130,10 +111,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenAdminCustomTab_whenSelectBMarker_thenB3Returned() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // B3: browser tab via admin launcher
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = true,
             isMdmForced = false,
@@ -145,10 +124,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenBrowserLoginViaForceFlag_whenSelectBMarker_thenB4Returned() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // B4: browser tab, not admin, force flag ON
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = false,
@@ -160,10 +137,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenAdminTabAndForceFlag_whenSelectBMarker_thenB3Wins() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // Priority on Android: B3 > B4 > B1
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = true,
             isMdmForced = false,
@@ -175,10 +150,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenForceFlagAndMdm_whenSelectBMarker_thenB4Wins() {
-        every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
-
         // On Android MDM is ignored; force flag wins over B1 fallthrough
-        val result = activity.selectBMarker(
+        val result = LoginActivity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = true,
@@ -193,9 +166,7 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenProductionServer_whenSelectLMarker_thenL1Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.PRODUCTION_LOGIN_URL,
         )
@@ -205,9 +176,7 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenSandboxServer_whenSelectLMarker_thenL2Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.SANDBOX_LOGIN_URL,
         )
@@ -217,10 +186,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenWelcomeDiscovery_whenSelectLMarker_thenL3Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // L3: Welcome Discovery flow — WD flag takes precedence regardless of the resolved URL
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = true,
             loginServerUrl = "https://myorg.my.salesforce.com",
         )
@@ -230,10 +197,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenWelcomeDiscoveryWithProductionUrl_whenSelectLMarker_thenL3Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // WD flag wins even when the resolved URL is production
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = true,
             loginServerUrl = LoginServerManager.PRODUCTION_LOGIN_URL,
         )
@@ -243,10 +208,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenMyDomainServer_whenSelectLMarker_thenL4Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // L4: host ends with .my.salesforce.com
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://myorg.my.salesforce.com",
         )
@@ -256,10 +219,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenMyDomainSandboxServer_whenSelectLMarker_thenL4Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // Sandbox My Domain also ends with .my.salesforce.com (L4, not L2, because URL != sandbox constant)
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://myorg.sandbox.my.salesforce.com",
         )
@@ -269,10 +230,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenWelcomeLoginUrl_whenSelectLMarker_thenL5Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // The WD URL itself: when usedWelcomeDiscovery=false it falls to L5 (other)
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.WELCOME_LOGIN_URL,
         )
@@ -282,9 +241,7 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenOtherServer_whenSelectLMarker_thenL5Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://custom.example.com",
         )
@@ -294,10 +251,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenInternalProductionPoolServer_whenSelectLMarker_thenL1Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // Internal env: login.test1.pc-rnd.salesforce.com — should map to L1
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://login.test1.pc-rnd.salesforce.com",
         )
@@ -307,10 +262,8 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenInternalMyDomainServer_whenSelectLMarker_thenL4Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         // Internal env: mobilesdksdb32.test1.my.pc-rnd.salesforce.com — should map to L4
-        val result = activity.selectLMarker(
+        val result = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://mobilesdksdb32.test1.my.pc-rnd.salesforce.com",
         )
@@ -320,8 +273,6 @@ class BrowserLoginTelemetryTest {
 
     @Test
     fun test_givenExactlyOneL_whenProductionServer_thenOnlyL1Selected() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
         val allLMarkers = listOf(
             FEATURE_LOGIN_SERVER_PRODUCTION,
             FEATURE_LOGIN_SERVER_SANDBOX,
@@ -329,7 +280,7 @@ class BrowserLoginTelemetryTest {
             FEATURE_LOGIN_SERVER_MY_DOMAIN,
             FEATURE_LOGIN_SERVER_OTHER,
         )
-        val selected = activity.selectLMarker(
+        val selected = LoginActivity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.PRODUCTION_LOGIN_URL,
         )

@@ -634,50 +634,6 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * Selects the L-marker (login server type) for telemetry.
-     * Exactly one of L1–L5 is selected.
-     *
-     * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
-     * @param loginServerUrl The selected login server URL at auth completion time
-     * @return The L-marker feature code to register
-     */
-    @VisibleForTesting
-    internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
-        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
-        LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
-        LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX  // L2
-        LoginServerManager.isMyDomainServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_MY_DOMAIN   // L4
-        else -> FEATURE_LOGIN_SERVER_OTHER                                                      // L5
-    }
-
-    /**
-     * Selects the B-marker (browser login reason) for telemetry.
-     * Returns exactly one of B1, B3, or B4 if browser login was used, or null if it was not.
-     * Priority: B3 (admin) > B4 (force flag) > B1 (server auth config)
-     *
-     * Note: B2 (MDM) is defined in [Features] but is never selected on Android. On Android,
-     * MDM forces cert auth via a different code path that never sets [completedViaBrowserTab].
-     *
-     * @param completedViaBrowserTab Whether login completed via browser Custom Tab
-     * @param completedViaAdminCustomTab Whether login completed via the "Login for Admin" Custom Tab
-     * @param isMdmForced Unused on Android — reserved for future use (always pass false)
-     * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
-     * @return The B-marker feature code to register, or null if browser login was not used
-     */
-    @VisibleForTesting
-    internal fun selectBMarker(
-        completedViaBrowserTab: Boolean,
-        completedViaAdminCustomTab: Boolean,
-        @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
-        forceAdvancedAuth: Boolean,
-    ): String? = when {
-        !completedViaBrowserTab -> null
-        completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
-        forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
-        else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
-    }
-
-    /**
      * Reserved for future use — currently unused on Android.
      *
      * On Android, MDM forces cert-auth (a different code path that never sets
@@ -1488,6 +1444,53 @@ open class LoginActivity : FragmentActivity() {
             val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
 
             return Color(red, green, blue)
+        }
+
+        // endregion
+        // region Telemetry marker selection
+
+        /**
+         * Selects the L-marker (login server type) for telemetry.
+         * Exactly one of L1–L5 is selected.
+         *
+         * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
+         * @param loginServerUrl The selected login server URL at auth completion time
+         * @return The L-marker feature code to register
+         */
+        @VisibleForTesting
+        internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
+            usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
+            LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
+            LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX  // L2
+            LoginServerManager.isMyDomainServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_MY_DOMAIN   // L4
+            else -> FEATURE_LOGIN_SERVER_OTHER                                                      // L5
+        }
+
+        /**
+         * Selects the B-marker (browser login reason) for telemetry.
+         * Returns exactly one of B1, B3, or B4 if browser login was used, or null if it was not.
+         * Priority: B3 (admin) > B4 (force flag) > B1 (server auth config)
+         *
+         * Note: B2 (MDM) is defined in [Features] but is never selected on Android. On Android,
+         * MDM forces cert auth via a different code path that never sets [completedViaBrowserTab].
+         *
+         * @param completedViaBrowserTab Whether login completed via browser Custom Tab
+         * @param completedViaAdminCustomTab Whether login completed via the "Login for Admin" Custom Tab
+         * @param isMdmForced Unused on Android — reserved for future use (always pass false)
+         * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
+         * @return The B-marker feature code to register, or null if browser login was not used
+         */
+        @VisibleForTesting
+        internal fun selectBMarker(
+            completedViaBrowserTab: Boolean,
+            completedViaAdminCustomTab: Boolean,
+            @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
+            forceAdvancedAuth: Boolean,
+        ): String? = when {
+            !completedViaBrowserTab -> null
+            completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
+            forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
+            else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
         }
 
         // endregion
