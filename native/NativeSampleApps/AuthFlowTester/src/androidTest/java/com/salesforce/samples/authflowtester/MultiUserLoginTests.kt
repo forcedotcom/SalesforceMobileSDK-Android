@@ -28,6 +28,7 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
@@ -434,7 +435,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
 
         // Back on User A — MU gone, no BW
-        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
+        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
     }
 
     companion object {
