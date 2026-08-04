@@ -59,6 +59,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -711,6 +712,19 @@ public class ClientManager {
                     return null;
                 }
 
+                /*
+                 * Detect server-side Refresh Token Rotation: the response
+                 * carried a refresh token that differs from this provider's
+                 * cached copy. Stamp the ISO-8601 rotation time on the account
+                 * BEFORE the primary persist below so the timestamp is written
+                 * by the authoritative updateAccount call, not as a side
+                 * effect of feature-flag registration.
+                 */
+                boolean refreshTokenRotated = tr.refreshToken != null && !tr.refreshToken.equals(refreshToken);
+                if (refreshTokenRotated) {
+                    updatedUserAccount.setLastTokenRotationTime(Instant.now().toString());
+                }
+
                 UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
                 if (clientManager.getValidatedUser(
                         /* requireRefreshFields = */ false) == null) {
@@ -719,11 +733,14 @@ public class ClientManager {
                 updatedUserAccount.downloadProfilePhoto();
                 UserAccountManager.getInstance().clearCachedCurrentUser();
 
-                // Handle server-side Refresh Token Rotation: if the response contained a new refresh token,
-                // update this provider's cached copy.
-                if (tr.refreshToken != null && !tr.refreshToken.equals(refreshToken)) {
+                if (refreshTokenRotated) {
+                    /*
+                     * Update this provider's cached copy and surface RTR as a
+                     * per-user feature flag. The rotation timestamp is already
+                     * persisted (above), so RTR-Active state here is
+                     * independent of the timestamp's durability.
+                     */
                     refreshToken = tr.refreshToken;
-                    // Surface RTR as a per-user feature flag
                     SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_RTR, updatedUserAccount);
                 }
 
