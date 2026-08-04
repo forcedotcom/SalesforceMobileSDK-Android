@@ -47,4 +47,17 @@ public class Features {
     public static final String FEATURE_WELCOME_DISCOVERY_LOGIN = "WD";
     public static final String FEATURE_RTR = "RT";
     public static final String FEATURE_DPOP = "DP";
+
+    // "Why browser login was used" — registered per-user alongside FEATURE_BROWSER_LOGIN (BW)
+    public static final String FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG = "B1";
+    public static final String FEATURE_BROWSER_LOGIN_MDM               = "B2";
+    public static final String FEATURE_BROWSER_LOGIN_FOR_ADMIN         = "B3";
+    public static final String FEATURE_BROWSER_LOGIN_FORCE_FLAG        = "B4";
+
+    // "Which login server type" — registered per-user on every auth-flow completion
+    public static final String FEATURE_LOGIN_SERVER_PRODUCTION         = "L1";
+    public static final String FEATURE_LOGIN_SERVER_SANDBOX            = "L2";
+    public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L3";
+    public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L4";
+    public static final String FEATURE_LOGIN_SERVER_CUSTOM             = "L5";
 }

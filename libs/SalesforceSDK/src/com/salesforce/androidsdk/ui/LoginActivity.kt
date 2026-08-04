@@ -122,10 +122,20 @@ import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_MDM
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_CUSTOM
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuthErrorCode
@@ -234,6 +244,7 @@ open class LoginActivity : FragmentActivity() {
     private var baseUserAgentString = ""
     private var wasBackgrounded = false
     private var completedViaBrowserTab = false
+    private var completedViaAdminCustomTab = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
@@ -542,6 +553,26 @@ open class LoginActivity : FragmentActivity() {
 
         // WD: write per-user and clear transient global
         val usedWelcomeDiscovery = sdkManager.isGlobalFeatureRegistered(FEATURE_WELCOME_DISCOVERY_LOGIN)
+
+        // L-markers: register exactly one "which login server" marker per-user.
+        // Must be computed before WD global is cleared below.
+        val allLMarkers = listOf(
+            FEATURE_LOGIN_SERVER_PRODUCTION,
+            FEATURE_LOGIN_SERVER_SANDBOX,
+            FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+            FEATURE_LOGIN_SERVER_CUSTOM,
+        )
+        val loginServerUrl = sdkManager.loginServerManager.selectedLoginServer.url.trim()
+        val lMarker = selectLMarker(usedWelcomeDiscovery, loginServerUrl)
+        for (marker in allLMarkers) {
+            if (marker == lMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+
         sdkManager.unregisterUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN)
         if (usedWelcomeDiscovery) {
             sdkManager.registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN, userAccount)
@@ -556,6 +587,31 @@ open class LoginActivity : FragmentActivity() {
         } else {
             sdkManager.unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
         }
+
+        // B-markers: register exactly one "why browser was used" marker per-user alongside BW.
+        val allBMarkers = listOf(
+            FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG,
+            FEATURE_BROWSER_LOGIN_MDM,
+            FEATURE_BROWSER_LOGIN_FOR_ADMIN,
+            FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+        )
+        @Suppress("DEPRECATION")
+        val bMarker = selectBMarker(
+            completedViaBrowserTab,
+            completedViaAdminCustomTab,
+            isMdmForcedBrowserLogin(),
+            sdkManager.forceAdvancedAuthentication,
+        )
+        for (marker in allBMarkers) {
+            if (marker == bMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+        // Reset the admin tab flag alongside completedViaBrowserTab
+        completedViaAdminCustomTab = false
+        completedViaBrowserTab = false
 
         // QR: write per-user and clear transient global
         val usedQrLogin = sdkManager.isGlobalFeatureRegistered(FEATURE_QR_CODE_LOGIN)
@@ -576,6 +632,58 @@ open class LoginActivity : FragmentActivity() {
         setResult(RESULT_OK)
         finish()
     }
+
+    /**
+     * Selects the L-marker (login server type) for telemetry.
+     * Exactly one of L1–L5 is selected.
+     *
+     * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
+     * @param loginServerUrl The selected login server URL at auth completion time
+     * @return The L-marker feature code to register
+     */
+    @VisibleForTesting
+    internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
+        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+        LoginServerManager.PRODUCTION_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_PRODUCTION
+        LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX
+        !LoginServerManager.isPoolServer(loginServerUrl) &&
+            loginServerUrl != LoginServerManager.WELCOME_LOGIN_URL -> FEATURE_LOGIN_SERVER_MY_DOMAIN
+        else -> FEATURE_LOGIN_SERVER_CUSTOM
+    }
+
+    /**
+     * Selects the B-marker (browser login reason) for telemetry.
+     * Returns exactly one of B1–B4 if browser login was used, or null if it was not.
+     * Priority: B3 (admin) > B2 (MDM) > B4 (force flag) > B1 (server auth config)
+     *
+     * @param completedViaBrowserTab Whether login completed via browser Custom Tab
+     * @param completedViaAdminCustomTab Whether login completed via the "Login for Admin" Custom Tab
+     * @param isMdmForced Whether MDM policy forced browser login
+     * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
+     * @return The B-marker feature code to register, or null if browser login was not used
+     */
+    @VisibleForTesting
+    internal fun selectBMarker(
+        completedViaBrowserTab: Boolean,
+        completedViaAdminCustomTab: Boolean,
+        isMdmForced: Boolean,
+        forceAdvancedAuth: Boolean,
+    ): String? = when {
+        !completedViaBrowserTab -> null
+        completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
+        isMdmForced -> FEATURE_BROWSER_LOGIN_MDM                        // B2
+        forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
+        else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
+    }
+
+    /**
+     * Returns true when MDM policy has forced browser login.
+     * MDM registers the global [Features.FEATURE_MDM] flag via [RuntimeConfig].
+     */
+    private fun isMdmForcedBrowserLogin(): Boolean =
+        SalesforceSDKManager.getInstance().isGlobalFeatureRegistered(
+            com.salesforce.androidsdk.app.Features.FEATURE_MDM
+        )
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -827,6 +935,7 @@ open class LoginActivity : FragmentActivity() {
             return
         }
         val loginUrl = viewModel.browserCustomTabUrl.value ?: return
+        completedViaAdminCustomTab = true
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }
 
