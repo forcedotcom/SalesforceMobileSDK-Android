@@ -643,22 +643,24 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
-        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        LoginServerManager.PRODUCTION_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_PRODUCTION
-        LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX
-        !LoginServerManager.isPoolServer(loginServerUrl) &&
-            loginServerUrl != LoginServerManager.WELCOME_LOGIN_URL -> FEATURE_LOGIN_SERVER_MY_DOMAIN
-        else -> FEATURE_LOGIN_SERVER_CUSTOM
+        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                          // L3
+        LoginServerManager.PRODUCTION_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
+        LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX  // L2
+        loginServerUrl.toUri().host?.endsWith(".my.salesforce.com") == true -> FEATURE_LOGIN_SERVER_MY_DOMAIN  // L4
+        else -> FEATURE_LOGIN_SERVER_CUSTOM                                                     // L5
     }
 
     /**
      * Selects the B-marker (browser login reason) for telemetry.
-     * Returns exactly one of B1–B4 if browser login was used, or null if it was not.
-     * Priority: B3 (admin) > B2 (MDM) > B4 (force flag) > B1 (server auth config)
+     * Returns exactly one of B1, B3, or B4 if browser login was used, or null if it was not.
+     * Priority: B3 (admin) > B4 (force flag) > B1 (server auth config)
+     *
+     * Note: B2 (MDM) is defined in [Features] but is never selected on Android. On Android,
+     * MDM forces cert auth via a different code path that never sets [completedViaBrowserTab].
      *
      * @param completedViaBrowserTab Whether login completed via browser Custom Tab
      * @param completedViaAdminCustomTab Whether login completed via the "Login for Admin" Custom Tab
-     * @param isMdmForced Whether MDM policy forced browser login
+     * @param isMdmForced Unused on Android — reserved for future use (always pass false)
      * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
      * @return The B-marker feature code to register, or null if browser login was not used
      */
@@ -666,19 +668,22 @@ open class LoginActivity : FragmentActivity() {
     internal fun selectBMarker(
         completedViaBrowserTab: Boolean,
         completedViaAdminCustomTab: Boolean,
-        isMdmForced: Boolean,
+        @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
         forceAdvancedAuth: Boolean,
     ): String? = when {
         !completedViaBrowserTab -> null
         completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
-        isMdmForced -> FEATURE_BROWSER_LOGIN_MDM                        // B2
         forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
         else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
     }
 
     /**
-     * Returns true when MDM policy has forced browser login.
-     * MDM registers the global [Features.FEATURE_MDM] flag via [RuntimeConfig].
+     * Reserved for future use — currently unused on Android.
+     *
+     * On Android, MDM forces cert-auth (a different code path that never sets
+     * [completedViaBrowserTab]), so [Features.FEATURE_BROWSER_LOGIN_MDM] (B2) is never
+     * selected. This helper is retained so the call site in [onAuthFlowSuccess] remains
+     * forward-compatible once a real Android MDM-browser-login signal is identified.
      */
     private fun isMdmForcedBrowserLogin(): Boolean =
         SalesforceSDKManager.getInstance().isGlobalFeatureRegistered(

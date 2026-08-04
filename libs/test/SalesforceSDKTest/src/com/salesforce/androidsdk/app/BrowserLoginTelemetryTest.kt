@@ -30,7 +30,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
-import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_MDM
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_CUSTOM
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
@@ -56,6 +55,19 @@ import org.junit.runner.RunWith
  * which are `internal` helpers extracted for testability and annotated `@VisibleForTesting`.
  * We call them via a relaxed mockk and `callOriginal()` so the real logic executes without
  * needing a running Android Activity context.
+ *
+ * L-marker mapping:
+ *   L1 = Production server
+ *   L2 = Sandbox server
+ *   L3 = welcome.salesforce.com (Welcome Discovery flow)
+ *   L4 = My Domain (host ending in .my.salesforce.com)
+ *   L5 = Everything else (custom)
+ *
+ * B-marker mapping (Android):
+ *   B1 = Server auth config (fallthrough)
+ *   B2 = MDM — defined but never selected on Android (MDM forces cert auth, a different path)
+ *   B3 = Admin Custom Tab
+ *   B4 = Force-advanced-auth flag
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -88,7 +100,7 @@ class BrowserLoginTelemetryTest {
     fun test_givenBrowserLoginViaServerAuthConfig_whenSelectBMarker_thenB1Returned() {
         every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
 
-        // B1: browser tab, not admin, not MDM, not force-flag
+        // B1: browser tab, not admin, not force-flag (MDM ignored on Android)
         val result = activity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
@@ -100,18 +112,20 @@ class BrowserLoginTelemetryTest {
     }
 
     @Test
-    fun test_givenBrowserLoginViaMDM_whenSelectBMarker_thenB2Returned() {
+    fun test_givenBrowserLoginViaMDM_whenSelectBMarker_thenB1ReturnedNotB2() {
         every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
 
-        // B2: browser tab, not admin, MDM forced
+        // On Android, MDM forces cert auth (different code path — completedViaBrowserTab never
+        // becomes true in that flow). When isMdmForced=true is passed, it is ignored and B1
+        // is returned as the fallthrough because no real Android MDM-browser-login signal exists.
         val result = activity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = true,
             forceAdvancedAuth = false,
         )
-        assertEquals("MDM-forced browser login should yield B2",
-            FEATURE_BROWSER_LOGIN_MDM, result)
+        assertEquals("MDM flag is ignored on Android; should fall through to B1",
+            FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG, result)
     }
 
     @Test
@@ -133,7 +147,7 @@ class BrowserLoginTelemetryTest {
     fun test_givenBrowserLoginViaForceFlag_whenSelectBMarker_thenB4Returned() {
         every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
 
-        // B4: browser tab, not admin, not MDM, force flag ON
+        // B4: browser tab, not admin, force flag ON
         val result = activity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
@@ -145,14 +159,14 @@ class BrowserLoginTelemetryTest {
     }
 
     @Test
-    fun test_givenAdminTabAndMdmAndForceFlag_whenSelectBMarker_thenB3Wins() {
+    fun test_givenAdminTabAndForceFlag_whenSelectBMarker_thenB3Wins() {
         every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
 
-        // Priority: B3 > B2 > B4 > B1
+        // Priority on Android: B3 > B4 > B1
         val result = activity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = true,
-            isMdmForced = true,
+            isMdmForced = false,
             forceAdvancedAuth = true,
         )
         assertEquals("Admin tab should take highest priority (B3)",
@@ -160,18 +174,18 @@ class BrowserLoginTelemetryTest {
     }
 
     @Test
-    fun test_givenMdmAndForceFlag_whenSelectBMarker_thenB2Wins() {
+    fun test_givenForceFlagAndMdm_whenSelectBMarker_thenB4Wins() {
         every { activity.selectBMarker(any(), any(), any(), any()) } answers { callOriginal() }
 
-        // Priority: B2 > B4
+        // On Android MDM is ignored; force flag wins over B1 fallthrough
         val result = activity.selectBMarker(
             completedViaBrowserTab = true,
             completedViaAdminCustomTab = false,
             isMdmForced = true,
             forceAdvancedAuth = true,
         )
-        assertEquals("MDM should take priority over force flag (B2 > B4)",
-            FEATURE_BROWSER_LOGIN_MDM, result)
+        assertEquals("Force flag should win over ignored MDM signal (B4)",
+            FEATURE_BROWSER_LOGIN_FORCE_FLAG, result)
     }
 
     // endregion
@@ -202,33 +216,20 @@ class BrowserLoginTelemetryTest {
     }
 
     @Test
-    fun test_givenMyDomainServer_whenSelectLMarker_thenL3Returned() {
+    fun test_givenWelcomeDiscovery_whenSelectLMarker_thenL3Returned() {
         every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
 
-        // My Domain is a non-pool, non-WD URL
-        val result = activity.selectLMarker(
-            usedWelcomeDiscovery = false,
-            loginServerUrl = "https://myorg.my.salesforce.com",
-        )
-        assertEquals("My Domain login server should yield L3",
-            FEATURE_LOGIN_SERVER_MY_DOMAIN, result)
-    }
-
-    @Test
-    fun test_givenWelcomeDiscovery_whenSelectLMarker_thenL4Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
-        // WD flag takes precedence regardless of the resolved server URL
+        // L3: Welcome Discovery flow — WD flag takes precedence regardless of the resolved URL
         val result = activity.selectLMarker(
             usedWelcomeDiscovery = true,
             loginServerUrl = "https://myorg.my.salesforce.com",
         )
-        assertEquals("Welcome Discovery should yield L4",
+        assertEquals("Welcome Discovery should yield L3",
             FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY, result)
     }
 
     @Test
-    fun test_givenWelcomeDiscoveryWithProductionUrl_whenSelectLMarker_thenL4Returned() {
+    fun test_givenWelcomeDiscoveryWithProductionUrl_whenSelectLMarker_thenL3Returned() {
         every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
 
         // WD flag wins even when the resolved URL is production
@@ -236,20 +237,58 @@ class BrowserLoginTelemetryTest {
             usedWelcomeDiscovery = true,
             loginServerUrl = LoginServerManager.PRODUCTION_LOGIN_URL,
         )
-        assertEquals("WD flag should override production URL and yield L4",
+        assertEquals("WD flag should override production URL and yield L3",
             FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY, result)
+    }
+
+    @Test
+    fun test_givenMyDomainServer_whenSelectLMarker_thenL4Returned() {
+        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
+
+        // L4: host ends with .my.salesforce.com
+        val result = activity.selectLMarker(
+            usedWelcomeDiscovery = false,
+            loginServerUrl = "https://myorg.my.salesforce.com",
+        )
+        assertEquals("My Domain login server should yield L4",
+            FEATURE_LOGIN_SERVER_MY_DOMAIN, result)
+    }
+
+    @Test
+    fun test_givenMyDomainSandboxServer_whenSelectLMarker_thenL4Returned() {
+        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
+
+        // Sandbox My Domain also ends with .my.salesforce.com (L4, not L2, because URL != sandbox constant)
+        val result = activity.selectLMarker(
+            usedWelcomeDiscovery = false,
+            loginServerUrl = "https://myorg.sandbox.my.salesforce.com",
+        )
+        assertEquals("My Domain sandbox server should yield L4",
+            FEATURE_LOGIN_SERVER_MY_DOMAIN, result)
     }
 
     @Test
     fun test_givenWelcomeLoginUrl_whenSelectLMarker_thenL5Returned() {
         every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
 
-        // The WD URL itself is a pool server, so when usedWelcomeDiscovery=false it falls to L5.
+        // The WD URL itself: when usedWelcomeDiscovery=false it falls to L5 (custom)
         val result = activity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.WELCOME_LOGIN_URL,
         )
         assertEquals("WD URL without WD flag set should yield L5 (custom)",
+            FEATURE_LOGIN_SERVER_CUSTOM, result)
+    }
+
+    @Test
+    fun test_givenCustomServer_whenSelectLMarker_thenL5Returned() {
+        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
+
+        val result = activity.selectLMarker(
+            usedWelcomeDiscovery = false,
+            loginServerUrl = "https://custom.example.com",
+        )
+        assertEquals("Custom server should yield L5",
             FEATURE_LOGIN_SERVER_CUSTOM, result)
     }
 
@@ -260,8 +299,8 @@ class BrowserLoginTelemetryTest {
         val allLMarkers = listOf(
             FEATURE_LOGIN_SERVER_PRODUCTION,
             FEATURE_LOGIN_SERVER_SANDBOX,
-            FEATURE_LOGIN_SERVER_MY_DOMAIN,
             FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+            FEATURE_LOGIN_SERVER_MY_DOMAIN,
             FEATURE_LOGIN_SERVER_CUSTOM,
         )
         val selected = activity.selectLMarker(
@@ -271,21 +310,6 @@ class BrowserLoginTelemetryTest {
         val selectedCount = allLMarkers.count { it == selected }
         assertEquals("Exactly one L marker should be selected", 1, selectedCount)
         assertEquals("The selected marker should be L1", FEATURE_LOGIN_SERVER_PRODUCTION, selected)
-    }
-
-    @Test
-    fun test_givenMyDomainWithTrailingSpace_whenSelectLMarker_thenL3Returned() {
-        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
-
-        // selectLMarker trims the URL, so trailing spaces should not affect the result.
-        // Note: the trimming is done in onAuthFlowSuccess before calling selectLMarker,
-        // but selectLMarker still receives pre-trimmed input here.
-        val result = activity.selectLMarker(
-            usedWelcomeDiscovery = false,
-            loginServerUrl = "https://myorg.my.salesforce.com",
-        )
-        assertEquals("My Domain URL should yield L3",
-            FEATURE_LOGIN_SERVER_MY_DOMAIN, result)
     }
 
     // endregion

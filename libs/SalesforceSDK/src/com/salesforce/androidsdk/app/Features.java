@@ -57,7 +57,7 @@ public class Features {
     // "Which login server type" — registered per-user on every auth-flow completion
     public static final String FEATURE_LOGIN_SERVER_PRODUCTION         = "L1";
     public static final String FEATURE_LOGIN_SERVER_SANDBOX            = "L2";
-    public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L3";
-    public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L4";
+    public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L3";
+    public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L4";
     public static final String FEATURE_LOGIN_SERVER_CUSTOM             = "L5";
 }
