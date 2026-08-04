@@ -73,9 +73,39 @@ public class LoginServerManager {
 	public static final String WELCOME_LOGIN_URL = "https://welcome.salesforce.com/discovery";
 	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
 
+	/**
+	 * Returns true when {@code serverUrl} is the production login pool:
+	 * https://login.salesforce.com or internal variants like https://login.test1.pc-rnd.salesforce.com.
+	 * My-domain URLs (containing ".my.") are never production-pool servers.
+	 */
+	public static boolean isProductionLoginServer(@NonNull String serverUrl) {
+		try {
+			String host = new java.net.URI(serverUrl).getHost();
+			if (host == null) return false;
+			return host.startsWith("login.") && host.endsWith(".salesforce.com") && !host.contains(".my.");
+		} catch (java.net.URISyntaxException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Returns true when {@code serverUrl} is a My Domain server:
+	 * host ends with .my.salesforce.com or contains .my. before .salesforce.com
+	 * (covers internal envs like https://mobilesdksdb32.test1.my.pc-rnd.salesforce.com).
+	 */
+	public static boolean isMyDomainServer(@NonNull String serverUrl) {
+		try {
+			String host = new java.net.URI(serverUrl).getHost();
+			if (host == null) return false;
+			return host.endsWith(".salesforce.com") && host.contains(".my.");
+		} catch (java.net.URISyntaxException e) {
+			return false;
+		}
+	}
+
 	/** Returns true when {@code serverUrl} is one of the three Salesforce pool (non-my-domain) servers. */
 	public static boolean isPoolServer(@NonNull String serverUrl) {
-		return PRODUCTION_LOGIN_URL.equals(serverUrl)
+		return isProductionLoginServer(serverUrl)
 			|| SANDBOX_LOGIN_URL.equals(serverUrl)
 			|| WELCOME_LOGIN_URL.equals(serverUrl);
 	}

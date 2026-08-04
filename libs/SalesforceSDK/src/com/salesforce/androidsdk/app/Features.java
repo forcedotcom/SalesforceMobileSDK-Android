@@ -59,5 +59,5 @@ public class Features {
     public static final String FEATURE_LOGIN_SERVER_SANDBOX            = "L2";
     public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L3";
     public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L4";
-    public static final String FEATURE_LOGIN_SERVER_CUSTOM             = "L5";
+    public static final String FEATURE_LOGIN_SERVER_OTHER              = "L5";
 }

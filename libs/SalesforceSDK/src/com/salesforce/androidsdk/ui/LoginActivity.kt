@@ -127,7 +127,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_MDM
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
-import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_CUSTOM
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
@@ -561,7 +561,7 @@ open class LoginActivity : FragmentActivity() {
             FEATURE_LOGIN_SERVER_SANDBOX,
             FEATURE_LOGIN_SERVER_MY_DOMAIN,
             FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
-            FEATURE_LOGIN_SERVER_CUSTOM,
+            FEATURE_LOGIN_SERVER_OTHER,
         )
         val loginServerUrl = sdkManager.loginServerManager.selectedLoginServer.url.trim()
         val lMarker = selectLMarker(usedWelcomeDiscovery, loginServerUrl)
@@ -643,11 +643,11 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
-        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                          // L3
-        LoginServerManager.PRODUCTION_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
+        usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
+        LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
         LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX  // L2
-        loginServerUrl.toUri().host?.endsWith(".my.salesforce.com") == true -> FEATURE_LOGIN_SERVER_MY_DOMAIN  // L4
-        else -> FEATURE_LOGIN_SERVER_CUSTOM                                                     // L5
+        LoginServerManager.isMyDomainServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_MY_DOMAIN   // L4
+        else -> FEATURE_LOGIN_SERVER_OTHER                                                      // L5
     }
 
     /**

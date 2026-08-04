@@ -31,7 +31,7 @@ import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
-import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_CUSTOM
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
@@ -61,7 +61,7 @@ import org.junit.runner.RunWith
  *   L2 = Sandbox server
  *   L3 = welcome.salesforce.com (Welcome Discovery flow)
  *   L4 = My Domain (host ending in .my.salesforce.com)
- *   L5 = Everything else (custom)
+ *   L5 = Everything else (other)
  *
  * B-marker mapping (Android):
  *   B1 = Server auth config (fallthrough)
@@ -271,25 +271,51 @@ class BrowserLoginTelemetryTest {
     fun test_givenWelcomeLoginUrl_whenSelectLMarker_thenL5Returned() {
         every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
 
-        // The WD URL itself: when usedWelcomeDiscovery=false it falls to L5 (custom)
+        // The WD URL itself: when usedWelcomeDiscovery=false it falls to L5 (other)
         val result = activity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = LoginServerManager.WELCOME_LOGIN_URL,
         )
-        assertEquals("WD URL without WD flag set should yield L5 (custom)",
-            FEATURE_LOGIN_SERVER_CUSTOM, result)
+        assertEquals("WD URL without WD flag set should yield L5 (other)",
+            FEATURE_LOGIN_SERVER_OTHER, result)
     }
 
     @Test
-    fun test_givenCustomServer_whenSelectLMarker_thenL5Returned() {
+    fun test_givenOtherServer_whenSelectLMarker_thenL5Returned() {
         every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
 
         val result = activity.selectLMarker(
             usedWelcomeDiscovery = false,
             loginServerUrl = "https://custom.example.com",
         )
-        assertEquals("Custom server should yield L5",
-            FEATURE_LOGIN_SERVER_CUSTOM, result)
+        assertEquals("Other server should yield L5",
+            FEATURE_LOGIN_SERVER_OTHER, result)
+    }
+
+    @Test
+    fun test_givenInternalProductionPoolServer_whenSelectLMarker_thenL1Returned() {
+        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
+
+        // Internal env: login.test1.pc-rnd.salesforce.com — should map to L1
+        val result = activity.selectLMarker(
+            usedWelcomeDiscovery = false,
+            loginServerUrl = "https://login.test1.pc-rnd.salesforce.com",
+        )
+        assertEquals("Internal production pool server should yield L1",
+            FEATURE_LOGIN_SERVER_PRODUCTION, result)
+    }
+
+    @Test
+    fun test_givenInternalMyDomainServer_whenSelectLMarker_thenL4Returned() {
+        every { activity.selectLMarker(any(), any()) } answers { callOriginal() }
+
+        // Internal env: mobilesdksdb32.test1.my.pc-rnd.salesforce.com — should map to L4
+        val result = activity.selectLMarker(
+            usedWelcomeDiscovery = false,
+            loginServerUrl = "https://mobilesdksdb32.test1.my.pc-rnd.salesforce.com",
+        )
+        assertEquals("Internal My Domain server should yield L4",
+            FEATURE_LOGIN_SERVER_MY_DOMAIN, result)
     }
 
     @Test
@@ -301,7 +327,7 @@ class BrowserLoginTelemetryTest {
             FEATURE_LOGIN_SERVER_SANDBOX,
             FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
             FEATURE_LOGIN_SERVER_MY_DOMAIN,
-            FEATURE_LOGIN_SERVER_CUSTOM,
+            FEATURE_LOGIN_SERVER_OTHER,
         )
         val selected = activity.selectLMarker(
             usedWelcomeDiscovery = false,
