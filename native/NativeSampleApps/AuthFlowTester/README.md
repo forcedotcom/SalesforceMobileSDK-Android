@@ -85,7 +85,7 @@ Beacon app login tests for lightweight authentication use cases, covering both o
 | `testBeaconJwt_AllScopes` | Beacon JWT | All |
 
 #### AdvancedAuthBeaconLoginTests
-Tests for Beacon app login flows using advanced authentication with Chrome Custom Tabs. This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host. Requires intent filters in AndroidManifest.xml matching the beacon redirect URIs (`beaconadvancedopaque://success/done` and `beaconadvancedjwt://success/done`).
+Tests for Beacon app login flows using advanced authentication with Chrome Custom Tabs. This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host. Requires intent filters in AndroidManifest.xml matching the beacon redirect URIs (`beaconadvancedopaque://success/done` and `beaconadvancedjwt://success/done`). Each test validates that the B4 marker (`forceAdvancedAuthentication`) is present in the `ftr_` user-agent segment.
 
 | Test | App Config | Scopes | Login Host |
 |------|-----------|--------|------------|
@@ -177,6 +177,8 @@ Each `loginAndValidate` call performs the following checks:
 3. **Token format** — opaque tokens are exactly 112 characters; JWT tokens exceed that length; refresh tokens are 87 characters
 4. **API request** — a REST API call succeeds with the issued tokens
 5. **DPoP (DPoP apps only)** — `OAuth Token Type` is `"DPoP"` and the DPoP nonce is non-empty after login
+6. **Browser-login B-marker** — the `ftr_` segment of the user-agent string contains exactly one B-marker (B1–B4) when browser-based login was used, and none when it was not. See [B-marker semantics](#b-and-l-markers-in-ftr_) below.
+7. **Login-server L-marker** — the `ftr_` segment contains exactly one L-marker (L1–L5) on every non-refresh login. See [L-marker semantics](#b-and-l-markers-in-ftr_) below.
 
 `assertRevokeAndRefreshWorks` additionally verifies for DPoP apps:
 - **Token type preserved** — `OAuth Token Type` remains `"DPoP"` after refresh
@@ -193,8 +195,40 @@ Multi-user tests additionally verify:
 
 Restart tests additionally verify:
 - Session credentials are **reloaded from disk** after a cold process restart
-- Per-user feature flags (BW, WD) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
+- Per-user feature flags (BW, WD, B-markers, L-markers) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
 - DPoP EC key pairs stored in **AndroidKeyStore** survive a process kill and restart
+
+### B- and L-markers in `ftr_`
+
+The `ftr_` user-agent segment encodes per-user telemetry codes. Two code families are validated by `validateUserAgent`:
+
+#### B-markers — why browser login was used
+
+Registered once per user alongside the BW (browser-windows) flag. Exactly one is set when browser-based login occurred; none are set for in-app WebView login.
+
+| Code | Constant | Meaning | Priority |
+|------|----------|---------|----------|
+| B1 | `FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG` | Server auth-config required browser login | Lowest |
+| B3 | `FEATURE_BROWSER_LOGIN_FOR_ADMIN` | "Login for Admin" flow used | Highest |
+| B4 | `FEATURE_BROWSER_LOGIN_FORCE_FLAG` | `SalesforceSDKManager.forceAdvancedAuthentication` was set | — |
+
+> **Note:** B2 (MDM-required browser auth) is iOS-only and is never registered on Android.
+
+Priority order when multiple reasons apply: **B3 > B4 > B1**.
+
+#### L-markers — which login server type was used
+
+Registered on every non-refresh login. Exactly one is set per login.
+
+| Code | Constant | Meaning |
+|------|----------|---------|
+| L1 | `FEATURE_LOGIN_SERVER_PRODUCTION` | Production pool server (`login.salesforce.com` and internal pool equivalents) |
+| L2 | `FEATURE_LOGIN_SERVER_SANDBOX` | Sandbox (`test.salesforce.com`) |
+| L3 | `FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY` | Welcome Discovery flow was used |
+| L4 | `FEATURE_LOGIN_SERVER_MY_DOMAIN` | My Domain org (`.my.` in the host) |
+| L5 | `FEATURE_LOGIN_SERVER_OTHER` | Any other login server |
+
+L3 takes priority over the resolved domain: even if Welcome Discovery resolves to a My Domain org, the final L-marker is L3 (captured before the WD global flag is cleared).
 
 ## Architecture
 
