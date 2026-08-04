@@ -428,7 +428,9 @@ abstract class AuthFlowTest {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
     }
 
     companion object {
@@ -595,7 +597,9 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
