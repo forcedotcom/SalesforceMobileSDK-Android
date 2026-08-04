@@ -383,7 +383,11 @@ abstract class AuthFlowTest {
         isDpop: Boolean = false,
     ) {
         restartApp()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val expectedLMarker = if (usesWelcomeDiscovery) Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+                              else Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker)
     }
 
     /**
