@@ -588,6 +588,7 @@ abstract class AuthFlowTest {
         knownUserConfig: KnownUserConfig = user,
         expectAdvancedAuth: Boolean = true,
         isDpop: Boolean = false,
+        isMultiUser: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -599,7 +600,7 @@ abstract class AuthFlowTest {
 
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
-        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = isMultiUser, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
