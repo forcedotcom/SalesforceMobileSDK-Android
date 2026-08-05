@@ -281,6 +281,7 @@ public class ClientManager {
         private final ClientManager clientManager;
         @Nullable
         private final String clientInstanceUrlOverride;
+        private final long loserWaitTimeoutMillis;
         private String lastNewAuthToken;
         // Mutable to support server-side Refresh Token Rotation (RTR).
         private String refreshToken;
@@ -292,7 +293,7 @@ public class ClientManager {
          * Constructs a provider whose account identity comes exclusively from its bound manager.
          */
         public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager) {
-            this(clientManager, null);
+            this(clientManager, null, LOSER_WAIT_TIMEOUT_MILLIS);
         }
 
         /**
@@ -301,8 +302,22 @@ public class ClientManager {
          */
         public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
                                        @Nullable String clientInstanceUrlOverride) {
+            this(clientManager, clientInstanceUrlOverride, LOSER_WAIT_TIMEOUT_MILLIS);
+        }
+
+        /** Test-only constructor that shortens the bounded loser wait. */
+        @androidx.annotation.VisibleForTesting
+        AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                long loserWaitTimeoutMillis) {
+            this(clientManager, null, loserWaitTimeoutMillis);
+        }
+
+        private AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                        @Nullable String clientInstanceUrlOverride,
+                                        long loserWaitTimeoutMillis) {
             this.clientManager = clientManager;
             this.clientInstanceUrlOverride = clientInstanceUrlOverride;
+            this.loserWaitTimeoutMillis = loserWaitTimeoutMillis;
             final UserAccount user =
                     clientManager.getValidatedUser(/* requireRefreshFields = */ false);
             if (user != null) {
@@ -370,7 +385,7 @@ public class ClientManager {
                     // winner has already set refreshing back to true when this thread reacquires
                     // the lock, the edge still proves that the prior winner published a result.
                     final long startGeneration = state.publishGeneration;
-                    final long deadline = System.currentTimeMillis() + LOSER_WAIT_TIMEOUT_MILLIS;
+                    final long deadline = System.currentTimeMillis() + loserWaitTimeoutMillis;
                     boolean published;
                     try {
                         // Loop until a result is published or the in-flight refresh ends without

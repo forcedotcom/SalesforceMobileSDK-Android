@@ -42,6 +42,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -896,6 +897,170 @@ class ClientManagerMockTest {
         }
     }
 
+    @Test
+    fun testGetNewAuthToken_DifferentAccountsRefreshIndependently() {
+        val requestsStarted = CountDownLatch(2)
+        val releaseRequests = CountDownLatch(1)
+        val tokenEndpointCalls = mutableMapOf<String, AtomicInteger>()
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } answers {
+                val request = firstArg<Request>()
+                val submittedRefreshToken = postedRefreshToken(request)
+                mockk<Call> {
+                    every { execute() } answers {
+                        val calls = synchronized(tokenEndpointCalls) {
+                            tokenEndpointCalls.getOrPut(requireNotNull(submittedRefreshToken)) {
+                                AtomicInteger(0)
+                            }
+                        }
+                        calls.incrementAndGet()
+                        requestsStarted.countDown()
+                        releaseRequests.await(5, TimeUnit.SECONDS)
+                        when (submittedRefreshToken) {
+                            "refresh-token-a" -> successResponse(
+                                refreshToken = "rotated-refresh-token-a",
+                                accessToken = "refreshed-access-token-a",
+                                userId = "user-a",
+                                orgId = "org-a",
+                            )
+                            "refresh-token-b" -> successResponse(
+                                refreshToken = "rotated-refresh-token-b",
+                                accessToken = "refreshed-access-token-b",
+                                userId = "user-b",
+                                orgId = "org-b",
+                            )
+                            else -> throw AssertionError(
+                                "Unexpected refresh token: $submittedRefreshToken"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        val fixtureA = boundFixture(
+            refreshToken = "refresh-token-a",
+            userId = "user-a",
+            orgId = "org-a",
+        )
+        val fixtureB = boundFixture(
+            refreshToken = "refresh-token-b",
+            userId = "user-b",
+            orgId = "org-b",
+        )
+        val providerA = ClientManager.AccMgrAuthTokenProvider(fixtureA.manager)
+        val providerB = ClientManager.AccMgrAuthTokenProvider(fixtureB.manager)
+        val results = arrayOfNulls<String>(2)
+        val threadA = Thread { results[0] = providerA.getNewAuthToken() }
+        val threadB = Thread { results[1] = providerB.getNewAuthToken() }
+
+        threadA.start()
+        threadB.start()
+        val bothRequestsRanConcurrently = requestsStarted.await(5, TimeUnit.SECONDS)
+        releaseRequests.countDown()
+        listOf(threadA, threadB).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        assertFalse("User A refresh thread did not finish", threadA.isAlive)
+        assertFalse("User B refresh thread did not finish", threadB.isAlive)
+        assertTrue(
+            "Different accounts must not share a refresh winner",
+            bothRequestsRanConcurrently,
+        )
+        assertEquals("refreshed-access-token-a", results[0])
+        assertEquals("refreshed-access-token-b", results[1])
+        assertEquals(1, tokenEndpointCalls["refresh-token-a"]?.get())
+        assertEquals(1, tokenEndpointCalls["refresh-token-b"]?.get())
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(fixtureA.account, any()) }
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(fixtureB.account, any()) }
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun testGetNewAuthToken_AccountRemovedDuringSuccessfulRefresh_DiscardsResponse() {
+        assertInFlightRemovalSuppressesSideEffects(successResponse(ROTATED_REFRESH_TOKEN))
+    }
+
+    @Test
+    fun testGetNewAuthToken_AccountRemovedDuringInvalidGrant_SuppressesLogoutAndBroadcast() {
+        assertInFlightRemovalSuppressesSideEffects(invalidGrantResponse())
+    }
+
+    @Test
+    fun testGetNewAuthToken_MissingPersistedRefreshToken_FailsBeforeNetwork() {
+        listOf<String?>(null, "   ").forEachIndexed { index, refreshToken ->
+            val fixture = boundFixture(
+                refreshToken = "previous-refresh-token-$index",
+                userId = "missing-refresh-user-$index",
+                orgId = "missing-refresh-org-$index",
+            )
+            val provider = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+            fixture.liveUser.set(testUser(
+                refreshToken = refreshToken,
+                userId = "missing-refresh-user-$index",
+                orgId = "missing-refresh-org-$index",
+            ))
+
+            assertNull(provider.getNewAuthToken())
+        }
+
+        verify(exactly = 0) {
+            mockOkHttpClient.newCall(any())
+            mockUserAccountManager.updateAccount(any(), any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
+    }
+
+    @Test
+    fun testGetNewAuthToken_LoserTimesOutWithoutStartingSecondRefresh() {
+        val tokenEndpointCalls = AtomicInteger(0)
+        val winnerInExecute = CountDownLatch(1)
+        val releaseWinner = CountDownLatch(1)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    winnerInExecute.countDown()
+                    releaseWinner.await(5, TimeUnit.SECONDS)
+                    successResponse(ROTATED_REFRESH_TOKEN)
+                }
+            }
+        }
+
+        val fixture = boundFixture()
+        val winner = ClientManager.AccMgrAuthTokenProvider(fixture.manager)
+        val loser = ClientManager.AccMgrAuthTokenProvider(
+            fixture.manager,
+            250L,
+        )
+        val winnerResult = AtomicReference<String?>()
+        val winnerThread = Thread { winnerResult.set(winner.getNewAuthToken()) }
+        val loserResult = AtomicReference<String?>()
+        val loserCompleted = CountDownLatch(1)
+        val loserThread = Thread {
+            loserResult.set(loser.getNewAuthToken())
+            loserCompleted.countDown()
+        }
+
+        winnerThread.start()
+        assertTrue(winnerInExecute.await(5, TimeUnit.SECONDS))
+        loserThread.start()
+
+        val completedBeforeWinner = loserCompleted.await(2, TimeUnit.SECONDS)
+        releaseWinner.countDown()
+        listOf(loserThread, winnerThread).forEach { it.join(TimeUnit.SECONDS.toMillis(5)) }
+
+        assertTrue("Loser must return after the bounded wait", completedBeforeWinner)
+        assertFalse("Loser refresh thread did not finish", loserThread.isAlive)
+        assertFalse("Winner refresh thread did not finish", winnerThread.isAlive)
+        assertNull(loserResult.get())
+        assertEquals(REFRESHED_ACCESS_TOKEN, winnerResult.get())
+        assertEquals(1, tokenEndpointCalls.get())
+        verify(exactly = 0) { mockSDKManager.logout(any(), any(), any(), any()) }
+    }
+
     /*
         Recheck-under-lock guardrail (the idle-provider scenario). A provider that did not take
         part in the resume burst still carries an OLD access + refresh token. It later makes a
@@ -1375,9 +1540,19 @@ class ClientManagerMockTest {
 
     private fun boundFixture(
         instanceUrl: String = "https://login.salesforce.com",
+        authToken: String? = OLD_ACCESS_TOKEN,
+        refreshToken: String? = REFRESH_TOKEN,
+        userId: String = "userId",
+        orgId: String = "orgId",
     ): BoundFixture {
         val account = mockk<Account>(relaxed = true)
-        val liveUser = AtomicReference<UserAccount?>(testUser(instanceUrl = instanceUrl))
+        val liveUser = AtomicReference<UserAccount?>(testUser(
+            authToken = authToken,
+            refreshToken = refreshToken,
+            userId = userId,
+            orgId = orgId,
+            instanceUrl = instanceUrl,
+        ))
         every { mockUserAccountManager.buildUserAccount(account) } answers { liveUser.get() }
         every {
             mockUserAccountManager.updateAccount(account, any())
@@ -1430,7 +1605,7 @@ class ClientManagerMockTest {
             } else {
                 storedUser
             }
-            if (firstArg<Boolean>() && (user?.refreshTokenForPersistence == null
+            if (firstArg<Boolean>() && (user?.refreshTokenForPersistence.isNullOrBlank()
                         || user.loginServer == null
                         || user.clientIdForRefresh == null)) {
                 null
@@ -1468,15 +1643,21 @@ class ClientManagerMockTest {
         throw AssertionError("Timed out waiting for $count threads to park; states=${threads.map { it.state }}")
     }
 
-    private fun successResponse(refreshToken: String?, instanceUrl: String? = "https://login.salesforce.com"): Response {
+    private fun successResponse(
+        refreshToken: String?,
+        instanceUrl: String? = "https://login.salesforce.com",
+        accessToken: String = REFRESHED_ACCESS_TOKEN,
+        userId: String = "userId",
+        orgId: String = "orgId",
+    ): Response {
         val instanceLine = if (instanceUrl != null) "\"instance_url\": \"$instanceUrl\"," else ""
         val refreshLine = if (refreshToken != null) "\"refresh_token\": \"$refreshToken\"," else ""
         val responseBody = """
                 {
-                    "access_token": "$REFRESHED_ACCESS_TOKEN",
+                    "access_token": "$accessToken",
                     $refreshLine
                     $instanceLine
-                    "id": "https://login.salesforce.com/id/orgId/userId",
+                    "id": "https://login.salesforce.com/id/$orgId/$userId",
                     "token_type": "Bearer",
                     "issued_at": "1234567890",
                     "signature": "mock-signature"
@@ -1486,6 +1667,53 @@ class ClientManagerMockTest {
             every { isSuccessful } returns true
             every { close() } just runs
             every { body } returns responseBody
+        }
+    }
+
+    private fun assertInFlightRemovalSuppressesSideEffects(response: Response) {
+        val fixture = boundFixture()
+        val requestStarted = CountDownLatch(1)
+        val releaseResponse = CountDownLatch(1)
+        val tokenEndpointCalls = AtomicInteger(0)
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    tokenEndpointCalls.incrementAndGet()
+                    requestStarted.countDown()
+                    releaseResponse.await(5, TimeUnit.SECONDS)
+                    response
+                }
+            }
+        }
+        val result = AtomicReference<String?>()
+        val failure = AtomicReference<Throwable?>()
+        val refreshThread = Thread {
+            try {
+                result.set(
+                    ClientManager.AccMgrAuthTokenProvider(fixture.manager).getNewAuthToken()
+                )
+            } catch (throwable: Throwable) {
+                failure.set(throwable)
+            }
+        }
+
+        refreshThread.start()
+        try {
+            assertTrue(requestStarted.await(5, TimeUnit.SECONDS))
+            fixture.liveUser.set(null)
+        } finally {
+            releaseResponse.countDown()
+        }
+        refreshThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Refresh thread did not finish", refreshThread.isAlive)
+        assertNull(failure.get())
+        assertNull(result.get())
+        assertEquals(1, tokenEndpointCalls.get())
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(any(), any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
         }
     }
 

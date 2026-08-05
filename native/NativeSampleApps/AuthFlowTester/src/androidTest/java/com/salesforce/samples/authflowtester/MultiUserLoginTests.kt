@@ -28,9 +28,13 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
@@ -47,8 +51,10 @@ import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
 import com.salesforce.samples.authflowtester.testUtility.testConfig
+import okhttp3.FormBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URI
@@ -109,6 +115,75 @@ class MultiUserLoginTests: AuthFlowTest() {
         val (otherUserRevokeAccessToken, otherUserRevokeRefreshToken) = app.getTokens()
         assert(otherUserAccessToken != otherUserRevokeAccessToken)
         assert(otherUserRefreshToken == otherUserRevokeRefreshToken)
+    }
+
+    /**
+     * Retains User A's real SDK client, makes User B current, then forces A through the complete
+     * 401 -> token refresh -> request retry path without switching the application back to A.
+     */
+    @Test
+    fun testRetainedUserClient_refreshesWhileOtherUserCurrent() {
+        loginAndValidate(knownAppConfig = CA_OPAQUE)
+
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val userAccountManager = sdkManager.userAccountManager
+        val userA = requireNotNull(userAccountManager.currentUser)
+        val managerA = ClientManager(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            userA,
+        )
+        val clientA = requireNotNull(managerA.peekRestClient())
+        assertTrue(
+            "Retained client should belong to User A",
+            userA.userId == clientA.clientInfo.userId && userA.orgId == clientA.clientInfo.orgId,
+        )
+        val originalAAccessToken = requireNotNull(userA.authToken)
+
+        loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
+        val userB = requireNotNull(userAccountManager.currentUser)
+        val accountB = requireNotNull(userAccountManager.buildAccount(userB))
+        val originalBAccessToken = requireNotNull(userB.authToken)
+        val originalBRefreshToken = requireNotNull(userB.refreshTokenForPersistence)
+
+        revokeAccessToken(clientA, originalAAccessToken)
+        val response = clientA.sendSync(RestRequest.getRequestForUserInfo())
+        try {
+            assertTrue("Retained User A request should succeed after refresh", response.isSuccess)
+            val responseUser = response.asJSONObject()
+            assertTrue(
+                "The retained client request should authenticate as User A",
+                userA.userId == responseUser.optString("user_id") &&
+                        userA.orgId == responseUser.optString("organization_id"),
+            )
+        } finally {
+            response.consumeQuietly()
+        }
+
+        val refreshedA = requireNotNull(
+            userAccountManager.buildUserAccount(requireNotNull(managerA.account))
+        )
+        val unchangedB = requireNotNull(userAccountManager.buildUserAccount(accountB))
+        assertTrue(
+            "User A's access token should change after refresh",
+            originalAAccessToken != refreshedA.authToken,
+        )
+        assertTrue(
+            "User B's access token should not change during User A's refresh",
+            originalBAccessToken == unchangedB.authToken,
+        )
+        assertTrue(
+            "User B's refresh token should not change during User A's refresh",
+            originalBRefreshToken == unchangedB.refreshTokenForPersistence,
+        )
+        assertTrue("User B should remain current", userB == userAccountManager.currentUser)
+
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+            expectAdvancedAuth = true,
+        )
+        app.validateApiRequest()
     }
 
     // Both users use the same ECA JWT app type and different scopes.
@@ -386,6 +461,27 @@ class MultiUserLoginTests: AuthFlowTest() {
             isMultiUser = true,
             expectAdvancedAuth = expectAdvancedAuth,
         )
+    }
+
+    /** Revokes [accessToken] through [client] without consulting the application current user. */
+    private fun revokeAccessToken(client: RestClient, accessToken: String) {
+        val body = FormBody.Builder()
+            .add("token", accessToken)
+            .build()
+        val request = RestRequest(
+            RestRequest.RestMethod.POST,
+            RestRequest.RestEndpoint.INSTANCE,
+            "/services/oauth2/revoke",
+            body,
+            emptyMap(),
+        )
+
+        val response = client.sendSync(request)
+        try {
+            assertTrue("Access-token revocation should succeed", response.isSuccess)
+        } finally {
+            response.consumeQuietly()
+        }
     }
 
     /**
