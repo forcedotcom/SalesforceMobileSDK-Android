@@ -603,8 +603,8 @@ class ClientManagerMockTest {
     }
 
     @Test
-    fun testGetNewAuthToken_ClientBlocked_LogsOutWithClientBlockedReason() {
-        val result = setupTokenErrorScenario("client_blocked", "Device failed integrity check")
+    fun testGetNewAuthToken_AppAttestFailed_LogsOutWithClientBlockedReason() {
+        val result = setupTokenErrorScenario("app_attest_failed", "Device failed integrity check")
 
         assertNull(result.authTokenProvider.getNewAuthToken())
         verify(exactly = 1) {
@@ -612,13 +612,13 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
         }
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
-        assertEquals("client_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        assertEquals("app_attest_failed", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
         assertEquals("Device failed integrity check", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
     @Test
-    fun testGetNewAuthToken_ClientBlockedRetry_DoesNotLogout() {
-        val result = setupTokenErrorScenario("client_blocked_retry", "Attestation verification pending")
+    fun testGetNewAuthToken_AppAttestFailedRetry_DoesNotLogout() {
+        val result = setupTokenErrorScenario("app_attest_failed_retry", "Attestation verification pending")
 
         assertNull(result.authTokenProvider.getNewAuthToken())
         verify(exactly = 0) {
@@ -628,7 +628,7 @@ class ClientManagerMockTest {
             mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot))
         }
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
-        assertEquals("client_blocked_retry", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        assertEquals("app_attest_failed_retry", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
         assertEquals("Attestation verification pending", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR_DESCRIPTION))
     }
 
@@ -683,8 +683,8 @@ class ClientManagerMockTest {
     }
 
     @Test
-    fun testGetNewAuthToken_ClientBlockedRetry_SubsequentCallRemainsRetryable() {
-        val result = setupTokenErrorScenario("client_blocked_retry", "Attestation verification pending")
+    fun testGetNewAuthToken_AppAttestFailedRetry_SubsequentCallRemainsRetryable() {
+        val result = setupTokenErrorScenario("app_attest_failed_retry", "Attestation verification pending")
         val clientManagerSpy = boundClientManager(result.mockAccount, arrayOf(result.mockAccount))
         val authTokenProvider = ClientManager.AccMgrAuthTokenProvider(clientManagerSpy)
         val firstHttpClient = HttpAccess.DEFAULT.okHttpClient
@@ -695,7 +695,7 @@ class ClientManagerMockTest {
 
         // Set up a second error response for the second call.
         val errorBody2 = """
-            {"error": "client_blocked_retry", "error_description": "Still pending"}
+            {"error": "app_attest_failed_retry", "error_description": "Still pending"}
         """.trimIndent().toResponseBody("application/json; charset=utf-8".toMediaType())
         val secondHttpClient = mockk<OkHttpClient> {
             every { newCall(any()) } returns mockk<Call> {
@@ -718,7 +718,7 @@ class ClientManagerMockTest {
     @Test
     fun testGetNewAuthToken_TerminalError_AlwaysLogsOutBoundAccount() {
         val result = setupTokenErrorScenario(
-            "client_blocked", "Device failed integrity check",
+            "app_attest_failed", "Device failed integrity check",
         )
 
         assertNull(result.authTokenProvider.getNewAuthToken())
@@ -727,13 +727,13 @@ class ClientManagerMockTest {
         }
         verify(exactly = 1) { mockAppContext.sendBroadcast(capture(result.broadcastIntentSlot)) }
         assertEquals(ACCESS_TOKEN_REVOKE_INTENT, result.broadcastIntentSlot.captured.action)
-        assertEquals("client_blocked", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
+        assertEquals("app_attest_failed", result.broadcastIntentSlot.captured.getStringExtra(EXTRA_TOKEN_ERROR))
     }
 
     @Test
     fun testGetNewAuthToken_OAuthErrorRemainsTerminalRegardlessOfHttpStatus() {
         val result = setupTokenErrorScenario(
-            "client_blocked",
+            "app_attest_failed",
             "Device failed integrity check",
             httpStatus = 500,
         )

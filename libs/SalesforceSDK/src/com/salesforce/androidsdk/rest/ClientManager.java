@@ -73,7 +73,7 @@ public class ClientManager {
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
-    /** Intent extra: the {@code error} value from the token endpoint response (e.g. "client_blocked", "invalid_grant"). */
+    /** Intent extra: the {@code error} value from the token endpoint response (e.g. "app_attest_failed", "invalid_grant"). */
     public static final String EXTRA_TOKEN_ERROR = "token_error";
 
     /** Intent extra: the {@code error_description} value from the token endpoint response. */
@@ -257,7 +257,7 @@ public class ClientManager {
          * Clears the app-global per-account refresh coordination state. Test-only: {@code REFRESH_STATES}
          * is static and survives across tests, so it must be reset between them.
          */
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         static void resetRefreshStateForTest() {
             REFRESH_STATES.clear();
         }
@@ -306,7 +306,7 @@ public class ClientManager {
         }
 
         /** Test-only constructor that shortens the bounded loser wait. */
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
                                 long loserWaitTimeoutMillis) {
             this(clientManager, null, loserWaitTimeoutMillis);
@@ -531,8 +531,8 @@ public class ClientManager {
             } catch (OAuthFailedException | MalformedTokenException e) {
                 /*
                  * OAuthFailedException: token endpoint returned
-                 * an error (e.g. client_blocked,
-                 * client_blocked_retry, invalid_grant).
+                 * an error (e.g. app_attest_failed,
+                 * app_attest_failed_retry, invalid_grant).
                  *
                  * MalformedTokenException: token endpoint returned
                  * success but the response lacked an access token.
@@ -564,7 +564,7 @@ public class ClientManager {
                         || errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY;
 
                 if (terminal) {
-                    // Terminal error (client_blocked, invalid_grant, malformed token, etc.) — logout.
+                    // Terminal error (app_attest_failed, invalid_grant, malformed token, etc.) — logout.
                     if (Looper.myLooper() == null) {
                         Looper.prepare();
                     }

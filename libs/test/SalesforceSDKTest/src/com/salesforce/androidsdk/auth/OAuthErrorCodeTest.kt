@@ -37,14 +37,14 @@ import org.junit.Test
 class OAuthErrorCodeTest {
 
     @Test
-    fun test_givenKnownClientBlockedValue_when_from_then_returnsAppAttestationFailed() {
-        val result = OAuthErrorCode.from("client_blocked")
+    fun test_givenKnownAppAttestFailedValue_when_from_then_returnsAppAttestationFailed() {
+        val result = OAuthErrorCode.from("app_attest_failed")
         assertEquals(OAuthErrorCode.APP_ATTESTATION_FAILED, result)
     }
 
     @Test
-    fun test_givenKnownClientBlockedRetryValue_when_from_then_returnsAppAttestationFailedRetry() {
-        val result = OAuthErrorCode.from("client_blocked_retry")
+    fun test_givenKnownAppAttestFailedRetryValue_when_from_then_returnsAppAttestationFailedRetry() {
+        val result = OAuthErrorCode.from("app_attest_failed_retry")
         assertEquals(OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY, result)
     }
 
