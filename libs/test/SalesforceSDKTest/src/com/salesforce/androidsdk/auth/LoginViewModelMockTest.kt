@@ -816,13 +816,13 @@ class LoginViewModelMockTest {
     }
 
     @Test
-    fun doCodeExchange_whenExchangeCodeThrowsClientBlocked_callsOnAuthFlowError() = runBlocking {
+    fun doCodeExchange_whenExchangeCodeThrowsAppAttestFailed_callsOnAuthFlowError() = runBlocking {
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         val spyViewModel = spyk(viewModel)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
-        tokenErrorResponse.error = "client_blocked"
+        tokenErrorResponse.error = "app_attest_failed"
         tokenErrorResponse.errorDescription = "App is blocked"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
         setupExchangeCodeMock(oauthException)
@@ -835,13 +835,13 @@ class LoginViewModelMockTest {
     }
 
     @Test
-    fun doCodeExchange_whenExchangeCodeThrowsClientBlockedRetry_callsOnAuthFlowError() = runBlocking {
+    fun doCodeExchange_whenExchangeCodeThrowsAppAttestFailedRetry_callsOnAuthFlowError() = runBlocking {
         val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
         val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
         val spyViewModel = spyk(viewModel)
 
         val tokenErrorResponse = mockk<TokenErrorResponse>(relaxed = true)
-        tokenErrorResponse.error = "client_blocked_retry"
+        tokenErrorResponse.error = "app_attest_failed_retry"
         tokenErrorResponse.errorDescription = "App is blocked (retry)"
         val oauthException = OAuthFailedException(tokenErrorResponse, 403)
         setupExchangeCodeMock(oauthException)
