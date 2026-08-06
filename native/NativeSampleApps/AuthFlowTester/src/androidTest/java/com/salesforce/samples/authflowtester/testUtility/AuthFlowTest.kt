@@ -468,7 +468,7 @@ abstract class AuthFlowTest {
             else LoginPageObject(composeTestRule)
         val chromePage = ChromeCustomTabPageObject(composeTestRule)
 
-        ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
+        ensureRegularAuthServer(expectCustomTab = useWebServerFlow, forceAdvancedAuthentication = useWebServerFlow)
 
         // Reach Login Options via the top bar (back-out is a no-op on the WebView path).
         topBarPage.backOutToLoginActivity()
