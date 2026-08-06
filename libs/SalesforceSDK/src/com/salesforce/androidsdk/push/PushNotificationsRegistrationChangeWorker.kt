@@ -100,9 +100,11 @@ internal class PushNotificationsRegistrationChangeWorker(
      * - Present identifiers that no longer resolve to a stored account (for
      *   example, the user logged out before this work ran) are a bad required
      *   input: [TargetAccounts.Fail] rather than silently widening the scope to
-     *   all users. This is safe because the SDK re-enqueues registration work
-     *   with REPLACE on the next app foreground or login, so a discarded worker
-     *   is automatically replaced.
+     *   all users. WorkManager does not retry this failure. Registration work is
+     *   re-enqueued with REPLACE on the next app foreground or login.
+     *   Deregistration is best-effort and is abandoned when its exact account
+     *   cannot be resolved; the server record may remain until its TTL expires
+     *   or a later explicit deregistration succeeds.
      * - A legacy pre-14.0 payload (see below) is migrated to discrete
      *   identifiers before resolution.
      *
@@ -158,7 +160,7 @@ internal class PushNotificationsRegistrationChangeWorker(
     @VisibleForTesting
     internal sealed interface TargetAccounts {
 
-        /** A bad required input — the work must fail without widening scope. */
+        /** A bad required input — the work must fail without widening scope or retrying. */
         object Fail : TargetAccounts
 
         /** The exact set of authenticated accounts to process (may be empty). */

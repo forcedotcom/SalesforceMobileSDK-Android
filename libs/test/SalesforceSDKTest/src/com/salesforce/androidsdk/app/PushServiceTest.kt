@@ -36,8 +36,13 @@ import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.f
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.serialization.json.Json.Default.encodeToJsonElement
 import kotlinx.serialization.json.Json.Default.encodeToString
@@ -621,6 +626,29 @@ class PushServiceTest {
             register = false,
             userAccount = user
         )
+    }
+
+    @Test
+    fun testPerformRegistrationChange_DeregisterWithoutRestClientLogsWarning() {
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+
+        try {
+            PushService().performRegistrationChange(
+                register = false,
+                userAccount = user,
+                restClient = null,
+            )
+
+            verify(exactly = 1) {
+                SalesforceSDKLogger.w(
+                    any(),
+                    "Skipping push notification deregistration because no REST client is available",
+                )
+            }
+        } finally {
+            unmockkStatic(SalesforceSDKLogger::class)
+        }
     }
 
     @Test

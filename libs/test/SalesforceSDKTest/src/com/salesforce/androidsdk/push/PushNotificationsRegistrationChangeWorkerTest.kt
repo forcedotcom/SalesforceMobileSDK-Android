@@ -62,7 +62,7 @@ import org.junit.runner.RunWith
  * work request targets — failing (rather than silently widening the scope to
  * all users) when specified identifiers no longer resolve to a stored account
  * or a legacy payload is unparseable, while still treating absent identifiers
- * as the "all authenticated users" signal.
+ * as the "all authenticated users" signal for registration.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -96,10 +96,29 @@ class PushNotificationsRegistrationChangeWorkerTest {
      * replaced.)
      */
     @Test
-    fun testDoWork_unresolvableUserAccount_returnsFailure() {
+    fun testDoWork_registerUnresolvableUserAccount_returnsFailure() {
         val worker = buildWorker(
             workDataOf(
                 "ACTION" to Register.name,
+                "ORG_ID" to "org-that-does-not-exist",
+                "USER_ID" to "user-that-does-not-exist"
+            )
+        )
+
+        val result = worker.doWork()
+
+        assertEquals(failure(), result)
+    }
+
+    /**
+     * Deregistration for an account removed before execution is a permanent,
+     * best-effort failure rather than an unsafe fallback to another account.
+     */
+    @Test
+    fun testDoWork_deregisterUnresolvableUserAccount_returnsFailure() {
+        val worker = buildWorker(
+            workDataOf(
+                "ACTION" to Deregister.name,
                 "ORG_ID" to "org-that-does-not-exist",
                 "USER_ID" to "user-that-does-not-exist"
             )

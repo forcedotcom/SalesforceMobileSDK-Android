@@ -96,7 +96,14 @@ open class PushService {
         userAccount: UserAccount,
         restClient: RestClient? = getRestClient(userAccount)
     ) {
-        val restClientUnwrapped = restClient ?: return
+        val restClientUnwrapped = restClient ?: run {
+            val action = if (register) "registration" else "deregistration"
+            SalesforceSDKLogger.w(
+                TAG,
+                "Skipping push notification $action because no REST client is available",
+            )
+            return
+        }
         when {
             register ->
                 onRegistered(
