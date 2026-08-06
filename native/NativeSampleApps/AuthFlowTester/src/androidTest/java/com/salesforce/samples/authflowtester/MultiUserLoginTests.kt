@@ -28,6 +28,7 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
@@ -224,10 +225,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         // Other user
         loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
 
-        // Migrate current user
+        // Migrate current user (both users logged in → isMultiUser = true)
         migrateAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
 
         // Switch back to initial user and assert unaltered.
@@ -293,7 +295,8 @@ class MultiUserLoginTests: AuthFlowTest() {
         assertEquals(userAUsername, remainingUsers.first().username)
 
         // With User A, validate the original tokens are intact and a refresh still succeeds.
-        app.validateUser(REGULAR_AUTH, user)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG)
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, userPostAccessToken)
@@ -322,7 +325,9 @@ class MultiUserLoginTests: AuthFlowTest() {
 
         // Validate nothing changed for "otherUser" before user switch
         val (otherUserPostAccessToken, otherUserPostRefreshToken) = app.getTokens()
-        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser)
+        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser,
+            isMultiUser = true, expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG)
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
         assertEquals(otherUserRefreshToken, otherUserPostRefreshToken)
@@ -370,10 +375,14 @@ class MultiUserLoginTests: AuthFlowTest() {
     private fun switchToUserAndValidate(
         knownUserConfig: KnownUserConfig,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth, expectedBMarker = expectedBMarker)
     }
 
     /**
@@ -432,9 +441,12 @@ class MultiUserLoginTests: AuthFlowTest() {
             showLoginPage = false,
         )
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
 
-        // Back on User A — MU gone, no BW
-        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false)
+        // Back on User A — MU gone; BW+B4 present because forceAdvancedAuthentication=true was used at login
+        app.validateUserAgent(REGULAR_AUTH, isMultiUser = false, expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
     }
 
     companion object {
