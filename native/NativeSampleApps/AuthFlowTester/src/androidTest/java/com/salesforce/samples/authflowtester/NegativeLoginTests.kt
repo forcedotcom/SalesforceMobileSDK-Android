@@ -30,6 +30,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
@@ -122,7 +123,12 @@ class NegativeLoginTests : AuthFlowTest() {
         // Verify the original user's tokens and config are still intact and
         // a refresh succeeds. navigateBackToApp() above already waited for
         // the AuthFlowTester main screen to reload.
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true)
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+        )
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (postAccessToken, postRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, postAccessToken)
