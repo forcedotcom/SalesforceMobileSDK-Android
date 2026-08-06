@@ -1727,6 +1727,13 @@ open class SalesforceSDKManager protected constructor(
                     rtrActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_RTR, currentUser),
                 )
             )
+            additionalSections.add(
+                DevSupportInfo.parseAppAttestationSection(
+                    appAttestationClient = appAttestationClient,
+                    currentUser = currentUser,
+                    aaFeatureActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_APP_ATTESTATION, currentUser),
+                )
+            )
         }
 
     /** Sends the logout completed intent */
