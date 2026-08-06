@@ -22,18 +22,21 @@ Legacy login tests using the default Connected App (CA) opaque configuration fro
 | `testCAOpaque_DefaultScopes_UserAgentFlow_NotHybrid` | CA Opaque | Default | User Agent | No |
 
 #### CAScopeSelectionLoginTests
-Connected App login tests with explicit scope selection across web server and user agent flows, both hybrid and non-hybrid.
+Connected App login tests with explicit scope selection across web server and user agent flows, both hybrid and non-hybrid. Includes in-app WebView variants (`forceAdvancedAuthentication = false`) that exercise the legacy WKWebView path.
 
-| Test | Scopes | Flow | Hybrid |
-|------|--------|------|--------|
-| `testCAOpaque_SubsetScopes_WebServerFlow` | Subset | Web Server | No |
-| `testCAOpaque_AllScopes_WebServerFlow` | All | Web Server | Yes |
-| `testCAOpaque_SubsetScopes_WebServerFlow_NotHybrid` | Subset | Web Server | No |
-| `testCAOpaque_AllScopes_WebServerFlow_NotHybrid` | All | Web Server | No |
-| `testCAOpaque_SubsetScopes_UserAgentFlow` | Subset | User Agent | Yes |
-| `testCAOpaque_AllScopes_UserAgentFlow` | All | User Agent | Yes |
-| `testCAOpaque_SubsetScopes_UserAgentFlow_NotHybrid` | Subset | User Agent | No |
-| `testCAOpaque_AllScopes_UserAgentFlow_NotHybrid` | All | User Agent | No |
+| Test | Scopes | Flow | Auth Surface |
+|------|--------|------|--------------|
+| `testCAOpaque_SubsetScopes_WebServerFlow` | Subset | Web Server | Browser (default) |
+| `testCAOpaque_AllScopes_WebServerFlow` | All | Web Server | Browser (default) |
+| `testCAOpaque_DefaultScopes_WebServerFlow_InAppWebView` | Default | Web Server | In-App WebView |
+| `testCAOpaque_SubsetScopes_WebServerFlow_InAppWebView` | Subset | Web Server | In-App WebView |
+| `testCAOpaque_AllScopes_WebServerFlow_InAppWebView` | All | Web Server | In-App WebView |
+| `testCAOpaque_SubsetScopes_WebServerFlow_NotHybrid` | Subset | Web Server | Browser (default) |
+| `testCAOpaque_AllScopes_WebServerFlow_NotHybrid` | All | Web Server | Browser (default) |
+| `testCAOpaque_SubsetScopes_UserAgentFlow` | Subset | User Agent | In-App WebView |
+| `testCAOpaque_AllScopes_UserAgentFlow` | All | User Agent | In-App WebView |
+| `testCAOpaque_SubsetScopes_UserAgentFlow_NotHybrid` | Subset | User Agent | In-App WebView |
+| `testCAOpaque_AllScopes_UserAgentFlow_NotHybrid` | All | User Agent | In-App WebView |
 
 #### ECALoginTests
 External Client App (ECA) login tests for both opaque and JWT token formats with scope variations.
