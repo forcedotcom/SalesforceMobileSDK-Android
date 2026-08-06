@@ -35,6 +35,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -323,7 +324,11 @@ abstract class AuthFlowTest {
         app.waitForAppLoad()
 
         val isDpop = useDPoP
-        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, expectAdvancedAuth = forceAdvancedAuthentication, isDpop = isDpop)
+        val shouldHaveBW = forceAdvancedAuthentication || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val expectedLMarker = if (useWelcomeDiscovery) Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+                              else Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, expectAdvancedAuth = forceAdvancedAuthentication, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
     }
@@ -378,7 +383,11 @@ abstract class AuthFlowTest {
         isDpop: Boolean = false,
     ) {
         restartApp()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val expectedLMarker = if (usesWelcomeDiscovery) Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+                              else Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker)
     }
 
     /**
@@ -419,7 +428,9 @@ abstract class AuthFlowTest {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
     }
 
     companion object {
@@ -457,7 +468,7 @@ abstract class AuthFlowTest {
             else LoginPageObject(composeTestRule)
         val chromePage = ChromeCustomTabPageObject(composeTestRule)
 
-        ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
+        ensureRegularAuthServer(expectCustomTab = useWebServerFlow, forceAdvancedAuthentication = useWebServerFlow)
 
         // Reach Login Options via the top bar (back-out is a no-op on the WebView path).
         topBarPage.backOutToLoginActivity()
@@ -490,7 +501,7 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -577,6 +588,7 @@ abstract class AuthFlowTest {
         knownUserConfig: KnownUserConfig = user,
         expectAdvancedAuth: Boolean = true,
         isDpop: Boolean = false,
+        isMultiUser: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -586,7 +598,9 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = isMultiUser, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker)
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
@@ -619,6 +633,7 @@ abstract class AuthFlowTest {
             assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
         }
 
-        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, expectAdvancedAuth = expectAdvancedAuth, isMultiUser = isMultiUser, isRtr = isRtr, isDpop = isDpop)
+        val expectedBMarker = if (expectAdvancedAuth) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, expectAdvancedAuth = expectAdvancedAuth, isMultiUser = isMultiUser, isRtr = isRtr, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
     }
 }
