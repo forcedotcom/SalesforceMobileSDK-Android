@@ -49,6 +49,7 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
@@ -168,6 +169,9 @@ internal class NativeLoginManager(
         val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
             val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
             createAppAttestation(challenge) ?: return@run null
+        }
+        if (attestationValue != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION)
         }
         val authRequestBody = createRequestBody(
             ATTESTATION to attestationValue,

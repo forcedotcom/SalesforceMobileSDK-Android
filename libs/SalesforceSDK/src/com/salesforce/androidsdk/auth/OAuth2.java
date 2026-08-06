@@ -35,6 +35,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
@@ -697,6 +698,7 @@ public class OAuth2 {
             // as-is by the Salesforce token endpoint's server-side contract.
             // This has been verified end-to-end; do not wrap in Uri.encode.
             sb.append(AND).append(ATTESTATION).append(EQUAL).append(attestationValue);
+            salesforceSdkManager.registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION);
         }
 
         final String refreshPath = sb.toString();

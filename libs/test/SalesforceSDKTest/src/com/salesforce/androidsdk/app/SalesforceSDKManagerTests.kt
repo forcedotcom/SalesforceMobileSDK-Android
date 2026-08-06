@@ -1045,6 +1045,71 @@ class SalesforceSDKManagerTests {
     }
 
     // -------------------------------------------------------------------------
+    // App Attestation (AA) feature flag tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun test_givenAppAttestationGlobalFlagSet_whenOnAuthFlowSuccessPromotes_thenAAFlagPerUserAndGlobalCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Arrange: transient global AA set by OAuth2.java / NativeLoginManager.kt during token exchange
+        sdkManager.registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION)
+        assertTrue(
+            "Precondition: global AA should be set before promotion",
+            sdkManager.isGlobalFeatureRegistered(Features.FEATURE_APP_ATTESTATION)
+        )
+
+        // Act: simulate onAuthFlowSuccess promotion block (non-refresh path)
+        val usedAppAttestation = sdkManager.isGlobalFeatureRegistered(Features.FEATURE_APP_ATTESTATION)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_APP_ATTESTATION) // always clear global
+        if (usedAppAttestation) {
+            sdkManager.registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION, userA)
+        } else {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_APP_ATTESTATION, userA)
+        }
+
+        try {
+            // Assert: AA in per-user user agent
+            val agent = sdkManager.getUserAgent("", userA)
+            assertTrue("User agent should contain AA flag after promotion", agent.contains(Features.FEATURE_APP_ATTESTATION))
+
+            // Assert: global AA cleared
+            assertFalse(
+                "Global AA should be cleared after promotion",
+                sdkManager.isGlobalFeatureRegistered(Features.FEATURE_APP_ATTESTATION)
+            )
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_APP_ATTESTATION, userA)
+        }
+    }
+
+    @Test
+    fun test_givenNoAppAttestation_whenOnAuthFlowSuccessRuns_thenAAFlagAbsentFromUserAgent() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Arrange: no global AA (attestation not available or not used)
+        assertFalse(
+            "Precondition: global AA should not be set",
+            sdkManager.isGlobalFeatureRegistered(Features.FEATURE_APP_ATTESTATION)
+        )
+
+        // Act: simulate onAuthFlowSuccess promotion block when no attestation
+        val usedAppAttestation = sdkManager.isGlobalFeatureRegistered(Features.FEATURE_APP_ATTESTATION)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_APP_ATTESTATION) // always clear global (no-op)
+        if (usedAppAttestation) {
+            sdkManager.registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION, userA)
+        } else {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_APP_ATTESTATION, userA)
+        }
+
+        // Assert: AA absent from user agent
+        val agent = sdkManager.getUserAgent("", userA)
+        assertFalse("User agent should NOT contain AA when attestation was not used", agent.contains(Features.FEATURE_APP_ATTESTATION))
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers for per-user feature flag tests
     // -------------------------------------------------------------------------
 
