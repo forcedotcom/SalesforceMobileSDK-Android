@@ -345,6 +345,11 @@ open class LoginActivity : FragmentActivity() {
         // we can safely ignore that scenario.
         with(SalesforceSDKManager.getInstance()) {
             if (isDebugBuild && loginDevMenuReload) {
+                // Login Options may have changed the auth surface (e.g. disabled Web Server Flow).
+                // Reset completedViaBrowserTab so a subsequent in-app WebView login does not
+                // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
+                // loadLoginPageInCustomTab() will set it back to true before login completes.
+                completedViaBrowserTab = false
                 viewModel.reloadWebView()
                 loginDevMenuReload = false
             }
@@ -1794,9 +1799,6 @@ open class LoginActivity : FragmentActivity() {
         override fun onActivityResult(result: ActivityResult) {
             // Check if the user backed out of the custom tab.
             if (result.resultCode == RESULT_CANCELED) {
-                // The tab was dismissed without completing login — clear the flag so that
-                // a subsequent in-app WebView login does not inherit the browser-tab path.
-                activity.completedViaBrowserTab = false
                 if (activity.viewModel.singleServerCustomTabActivity) {
                     // Show blank page and spinner until PKCE is done.
                     activity.viewModel.loginUrl.value = ABOUT_BLANK
