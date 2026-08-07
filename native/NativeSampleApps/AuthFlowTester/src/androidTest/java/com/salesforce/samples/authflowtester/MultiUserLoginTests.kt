@@ -758,6 +758,137 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
     }
 
+    /**
+     * A1 (web-server non-hybrid) + OT vs A2 (web-server hybrid) + JT.
+     * Both A-marker and token-format differ, maximising leakage detectability:
+     * any per-user flag bleed manifests on at least one axis on each user switch.
+     *
+     * After User B logs out the test re-validates User A alone (no MU) to confirm
+     * that multi-user removal does not corrupt the remaining user's flags.
+     */
+    @Test
+    fun testFlagDiversity_A1OtVsA2Jt() {
+        // User A: web-server non-hybrid, CA opaque → A1, OT, no BN
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            useHybridAuthToken = false,
+        )
+
+        // User B: web-server hybrid, ECA JWT → A2, JT, no BN
+        loginOtherUserAndValidate(knownAppConfig = ECA_JWT)
+
+        // Switch to User A — must still have A1, OT
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A2, JT
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
+
+        // Logout User B — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+
+        // User A alone — A1, OT, no MU
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+    }
+
+    /**
+     * A1 (web-server non-hybrid) + JT + BN vs A2 (web-server hybrid) + OT, no BN.
+     * Three flags differ simultaneously: A-marker, token format, and beacon child key.
+     * Any single per-user flag leak is detectable on at least two axes.
+     *
+     * Note: BN (beacon child consumer key) is returned only in the token-endpoint
+     * code-exchange response (web server flow). User A uses web-server non-hybrid +
+     * BEACON_JWT to obtain both JT and BN under A1.
+     */
+    @Test
+    fun testFlagDiversity_A1JtBnVsA2OtNoBn() {
+        // User A: web-server non-hybrid, beacon JWT → A1, JT, BN
+        loginAndValidate(
+            knownAppConfig = BEACON_JWT,
+            useHybridAuthToken = false,
+        )
+
+        // User B: web-server hybrid, ECA opaque → A2, OT, no BN
+        // ECA_OPAQUE (not CA_OPAQUE) is used so that needsLoginOptions=true, which re-enables
+        // the HybridAuthToken toggle that User A's login left disabled.
+        loginOtherUserAndValidate(knownAppConfig = ECA_OPAQUE)
+
+        // Switch to User A — must still have A1, JT, BN
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = true,
+            isBeacon = true,
+        )
+        app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A2, OT, no BN
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+
+        // Logout User B — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+
+        // User A alone — A1, JT, BN, no MU
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = true,
+            isBeacon = true,
+        )
+    }
+
     companion object {
         private const val USER_COUNT_TIMEOUT_MS = 15_000L
         private const val POLL_INTERVAL_MS = 250L
