@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.security;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
@@ -45,6 +46,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import javax.crypto.Cipher;
 
 /**
  * Tests for {@link SalesforceKeyGenerator}.
@@ -95,21 +97,6 @@ public class SalesforceKeyGeneratorTest {
     }
 
     @Test
-    public void testGetUniqueIdStoredUsingLegacyKeyPairAndOldCipherMode() {
-        encryptAndStoreInPrefs("test_name", "test_value", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1);
-        Assert.assertEquals("test_value", decryptFromPrefs("test_name", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
-
-        // Now calling getUniqueId
-        Assert.assertEquals("test_value", SalesforceKeyGenerator.getUniqueId("test_name"));
-
-        // The value should have been re-encrypted
-        // - it should not be decryptable with the legacy key pair
-        // - it should be decryptable with the msdk key pair
-        Assert.assertNull(decryptFromPrefs("test_name", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
-        Assert.assertEquals("test_value", decryptFromPrefs("test_name", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
-    }
-
-    @Test
     public void testGetUniqueIdStoredUsingLegacyKeyPairAndNewCipherMode() {
         encryptAndStoreInPrefs("test_name", "test_value", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256);
         Assert.assertEquals("test_value", decryptFromPrefs("test_name", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
@@ -126,12 +113,12 @@ public class SalesforceKeyGeneratorTest {
 
     @Test
     public void testMultipleGetUniqueIdStoredUsingLegacyKeyPair() {
-        encryptAndStoreInPrefs("test_name_1", "test_value_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1);
-        encryptAndStoreInPrefs("test_name_2", "test_value_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1);
-        encryptAndStoreInPrefs("test_name_3", "test_value_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1);
-        Assert.assertEquals("test_value_1", decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
-        Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
-        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        encryptAndStoreInPrefs("test_name_1", "test_value_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256);
+        encryptAndStoreInPrefs("test_name_2", "test_value_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256);
+        encryptAndStoreInPrefs("test_name_3", "test_value_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256);
+        Assert.assertEquals("test_value_1", decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
+        Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
+        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // Now calling getUniqueId for the first one
         Assert.assertEquals("test_value_1", SalesforceKeyGenerator.getUniqueId("test_name_1"));
@@ -139,12 +126,12 @@ public class SalesforceKeyGeneratorTest {
         // The value should have been re-encrypted
         // - it should not be decryptable with the legacy key pair
         // - it should be decryptable with the msdk key pair
-        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_1", decryptFromPrefs("test_name_1", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // Other values should not have been re-encrypted
-        Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
-        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
+        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // Now calling getUniqueId for the second one
         Assert.assertEquals("test_value_2", SalesforceKeyGenerator.getUniqueId("test_name_2"));
@@ -152,15 +139,15 @@ public class SalesforceKeyGeneratorTest {
         // The value should have been re-encrypted
         // - it should not be decryptable with the legacy key pair
         // - it should be decryptable with the msdk key pair
-        Assert.assertNull(decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // The already re-encrypted value should have been left alone
-        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_1", decryptFromPrefs("test_name_1", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // The third one should not have been re-encrypted
-        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // Now calling getUniqueId for the third one
         Assert.assertEquals("test_value_3", SalesforceKeyGenerator.getUniqueId("test_name_3"));
@@ -168,25 +155,50 @@ public class SalesforceKeyGeneratorTest {
         // The value should have been re-encrypted
         // - it should not be decryptable with the legacy key pair
         // - it should be decryptable with the msdk key pair
-        Assert.assertNull(decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_3", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_3", decryptFromPrefs("test_name_3", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
 
         // The already re-encrypted values should have been left alone
-        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_1", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_1", decryptFromPrefs("test_name_1", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
-        Assert.assertNull(decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1));
+        Assert.assertNull(decryptFromPrefs("test_name_2", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
         Assert.assertEquals("test_value_2", decryptFromPrefs("test_name_2", SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256));
     }
 
 
     @Test
     public void testMakeSureLegacyKeyPairNotRecreated() {
-        encryptAndStoreInPrefs("test_name", "test_value", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_PKCS1);
+        encryptAndStoreInPrefs("test_name", "test_value", SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS, Encryptor.CipherMode.RSA_OAEP_SHA256);
         PublicKey legacyPublicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS);
         // Now calling getUniqueId
         Assert.assertEquals("test_value", SalesforceKeyGenerator.getUniqueId("test_name"));
         // The legacy key pair should NOT have been deleted or recreated
         Assert.assertEquals(legacyPublicKey.toString(), KeyStoreWrapper.getInstance().getRSAPublicKey(SalesforceKeyGenerator.LEGACY_KEYPAIR_ALIAS).toString());
+    }
+
+    @Test
+    public void testPKCS1EncryptedDataGeneratesNewId() throws Exception {
+        final String testKeyName = "testPkcs1Key";
+        // Encrypt a known string using RSA/ECB/PKCS1Padding directly (not via CipherMode enum)
+        PublicKey publicKey = KeyStoreWrapper.getInstance().getRSAPublicKey(SalesforceKeyGenerator.MSDK_KEYPAIR_ALIAS);
+        Cipher pkcs1Cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        pkcs1Cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        byte[] encryptedBytes = pkcs1Cipher.doFinal("test-unique-id-12345".getBytes("UTF-8"));
+        String pkcs1Encrypted = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP | Base64.NO_PADDING);
+
+        // Store the PKCS1-encrypted value in SharedPreferences where getUniqueId would read it
+        SalesforceKeyGenerator.storeInSharedPrefs("id_" + testKeyName, pkcs1Encrypted);
+
+        // Call getUniqueId — PKCS1 decryption path no longer exists, so it should generate a new ID
+        String result = SalesforceKeyGenerator.getUniqueId(testKeyName);
+
+        // Result must be non-null and non-empty (no crash)
+        Assert.assertNotNull("Result should not be null", result);
+        Assert.assertFalse("Result should not be empty", result.isEmpty());
+
+        // Result must NOT be the original value (a new ID was generated because decryption failed)
+        Assert.assertNotEquals("PKCS1-encrypted data should not be recoverable; a new ID should be generated",
+                "test-unique-id-12345", result);
     }
 
     private void encryptAndStoreInPrefs(String name, String value, String keyPairAlias, Encryptor.CipherMode cipherMode) {

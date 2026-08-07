@@ -58,7 +58,6 @@ public class Encryptor {
     public enum CipherMode {
         AES_CBC_CIPHER("AES/CBC/PKCS5Padding"),
         AES_GCM_CIPHER("AES/GCM/NoPadding"),
-        RSA_PKCS1("RSA/ECB/PKCS1Padding"),
         RSA_OAEP_SHA256("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 
         final String fullName;
@@ -444,25 +443,6 @@ public class Encryptor {
     }
 
     /**
-     * Attempt to decrypt with a RSA private key using different cipher modes:
-     * - RSA_OAEP_SHA256
-     * - then RSA_PKCS1 (legacy)
-     *
-     * TODO retire this method when the server only supports RSA_OAEP_SHA256
-     *
-     * @param privateKey RSA private key.
-     * @param data       Data to be decrypted.
-     * @return Decrypted data.
-     */
-    public static byte[] decryptWithRSAMultiCipherNodes(PrivateKey privateKey, String data) {
-        byte[] result =  decryptWithPrivateKey(privateKey, data, CipherMode.RSA_OAEP_SHA256, /* logErrorOnFailure */ false);
-        if (result == null) {
-            result = decryptWithPrivateKey(privateKey, data, CipherMode.RSA_PKCS1, /* logErrorOnFailure */ true);
-        }
-        return result;
-    }
-
-    /**
      * Decrypts the given bytes using key and IV.
      *
      * @param data Data bytes.
@@ -621,7 +601,7 @@ public class Encryptor {
     private static Cipher getBestCipher(CipherMode cipherMode) {
         Cipher cipher = null;
         try {
-            if ((CipherMode.AES_GCM_CIPHER == cipherMode) || (CipherMode.RSA_PKCS1 == cipherMode)) {
+            if (CipherMode.AES_GCM_CIPHER == cipherMode) {
                 cipher = Cipher.getInstance(cipherMode.fullName);
             } else if (CipherMode.RSA_OAEP_SHA256 == cipherMode) {
                 cipher = Cipher.getInstance(cipherMode.fullName, BOUNCY_CASTLE_WORKAROUND);

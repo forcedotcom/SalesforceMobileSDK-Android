@@ -167,11 +167,7 @@ public class SalesforceKeyGenerator {
             if (uniqueId == null) {
                 final PrivateKey privateKey = KeyStoreWrapper.getInstance().getRSAPrivateKey(LEGACY_KEYPAIR_ALIAS);
                 uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
-                // Decryption failed - must have been encrypted with legacy key with old cipher mode
-                if (uniqueId == null) {
-                    uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_PKCS1);
-                }
-                // We need to store it with thew new key (MSDK_KEYPAIR_ALIAS)
+                // We need to store it with the new key (MSDK_KEYPAIR_ALIAS)
                 storeUniqueId = true;
             }
         }
