@@ -53,16 +53,16 @@ class RTRLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_RTR)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isJwt = true)
     }
 
     // Login with ECA JWT RTR without hybrid auth token.
     @Test
     fun testECAJwtRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_RTR, useHybridAuthToken = false)
-        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
-        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion

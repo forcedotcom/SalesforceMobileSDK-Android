@@ -60,6 +60,7 @@ class BootConfigLoginTests: AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -70,6 +71,7 @@ class BootConfigLoginTests: AuthFlowTest() {
             knownAppConfig = CA_OPAQUE,
             useWebServerFlow = false,
             useHybridAuthToken = false,
+            forceAdvancedAuthentication = false,
         )
     }
 }

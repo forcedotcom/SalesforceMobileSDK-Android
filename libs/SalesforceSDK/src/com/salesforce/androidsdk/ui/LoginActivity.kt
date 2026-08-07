@@ -962,7 +962,7 @@ open class LoginActivity : FragmentActivity() {
         allAMarkers.forEach { sdkManager.unregisterUsedAppFeature(it) }
 
         val hybrid = sdkManager.useHybridAuthentication
-        val webServer = viewModel.useWebServerFlow()
+        val webServer = viewModel.useWebServerFlow() || completedViaAdminCustomTab
         when {
             webServer && !hybrid -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
             webServer && hybrid  -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID)

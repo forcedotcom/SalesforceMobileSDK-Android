@@ -57,16 +57,16 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoP_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
     }
 
     // Login with ECA JWT DPoP without hybrid auth token.
     @Test
     fun testECAJwtDPoP_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion
@@ -79,16 +79,16 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true)
     }
 
     // Login with ECA JWT DPoP RTR without hybrid auth token.
     @Test
     fun testECAJwtDPoPRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion
@@ -111,14 +111,14 @@ class DPoPLoginTests : AuthFlowTest() {
         assertNotEquals(userRefreshToken, otherUserRefreshToken)
 
         // Switch back to initial user; revoke + refresh must work with DPoP nonce rotation
-        switchToUserAndValidateUser(user, isDpop = true)
+        switchToUserAndValidateUser(user, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
 
         // Switch to other user; revoke + refresh must work independently with its own nonce
-        switchToUserAndValidateUser(otherUser, isDpop = true)
+        switchToUserAndValidateUser(otherUser, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
     }
 
     // endregion
@@ -184,7 +184,7 @@ class DPoPLoginTests : AuthFlowTest() {
         // After restart the key pair must still be valid — revoke+refresh proves it.
         // The nonce-change assertion also confirms the server accepted the DPoP proof
         // built with the key pair loaded from AndroidKeyStore after restart.
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
     }
 
     // endregion

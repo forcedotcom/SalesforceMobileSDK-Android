@@ -207,12 +207,12 @@ class LoginWithRestartTests : AuthFlowTest() {
         // Force-stop and relaunch — credentials must reload from disk
         restartApp()
 
-        // Verify and switch to user A
-        switchToUserAndValidateUser(user)
+        // Verify and switch to user A (ECA_OPAQUE — no JWT)
+        switchToUserAndValidateUser(user, isJwt = false)
         app.validateApiRequest()
 
-        // Verify and switch to user B
-        switchToUserAndValidateUser(otherUser)
+        // Verify and switch to user B (ECA_JWT — issues JWT)
+        switchToUserAndValidateUser(otherUser, isJwt = true)
         app.validateApiRequest()
     }
 

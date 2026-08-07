@@ -465,31 +465,6 @@ abstract class AuthFlowTest {
         )
     }
 
-    /**
-     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
-     */
-    fun switchToUserAndValidateUser(
-        knownUserConfig: KnownUserConfig,
-        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
-        expectAdvancedAuth: Boolean = true,
-        isDpop: Boolean = false,
-        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
-    ) {
-        app.switchToUser(knownUserConfig)
-        composeTestRule.waitForIdle()
-        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
-        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
-        app.validateUser(
-            knownLoginHostConfig,
-            knownUserConfig,
-            isMultiUser = true,
-            expectAdvancedAuth = expectAdvancedAuth,
-            isDpop = isDpop,
-            expectedBMarker = expectedBMarker,
-            expectedAMarker = expectedAMarker,
-        )
-    }
-
     companion object {
         @VisibleForTesting
         const val WELCOME_DISCOVERY_URL = "https://welcome.salesforce.com/discovery"
@@ -558,7 +533,8 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID)
+        val appConfig = testConfig.getApp(knownAppConfig)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon)
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -685,6 +661,7 @@ abstract class AuthFlowTest {
         expectAdvancedAuth: Boolean = true,
         isMultiUser: Boolean = false,
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -717,6 +694,34 @@ abstract class AuthFlowTest {
             expectedBMarker = expectedBMarker,
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
             expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
+        )
+    }
+
+    /**
+     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
+     */
+    fun switchToUserAndValidateUser(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
+        isDpop: Boolean = false,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
+    ) {
+        app.switchToUser(knownUserConfig)
+        composeTestRule.waitForIdle()
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
         )
     }
 }
