@@ -73,7 +73,7 @@ delegates to `AccMgrAuthTokenProvider.getNewAuthToken()`. That method:
    the instance URL changed), publishes the new tokens to the per-account `RefreshState`,
    and wakes waiting losers.
 
-6. On terminal failure (`invalid_grant`, `client_blocked`): broadcasts
+6. On terminal failure (`invalid_grant`, `app_attest_failed`): broadcasts
    `ACCESS_TOKEN_REVOKE_INTENT` and calls `SalesforceSDKManager.logout()`.
 
 ---

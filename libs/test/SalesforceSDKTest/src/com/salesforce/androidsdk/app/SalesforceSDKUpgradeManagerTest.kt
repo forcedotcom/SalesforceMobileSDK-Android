@@ -271,6 +271,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { buildUserAccount(legacyAccount2) } returns userAccount2
             every { createAccount(any()) } returns mockk<Bundle>()
         }
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns mockAccountManager
 
         mockkObject(SalesforceSDKManager)
         every { SalesforceSDKManager.getInstance() } returns mockk {
@@ -283,7 +285,6 @@ class SalesforceSDKUpgradeManagerTest {
             }
             every { additionalOauthKeys } returns null
             every { accountType } returns "com.new.account_type"
-            every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
 
@@ -305,6 +306,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { getAccountsByType(LEGACY_ACCOUNT_TYPE) } returns emptyArray()
         }
         val mockUserAccountManager = mockk<UserAccountManager>()
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns mockAccountManager
 
         mockkObject(SalesforceSDKManager)
         every { SalesforceSDKManager.getInstance() } returns mockk {
@@ -317,7 +320,6 @@ class SalesforceSDKUpgradeManagerTest {
             }
             every { additionalOauthKeys } returns null
             every { accountType } returns "com.new.account_type"
-            every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
 
@@ -347,6 +349,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { buildUserAccount(legacyAccount2) } returns userAccount2
             every { createAccount(any()) } returns mockk<Bundle>()
         }
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns mockAccountManager
 
         mockkObject(SalesforceSDKManager)
         every { SalesforceSDKManager.getInstance() } returns mockk {
@@ -359,7 +363,6 @@ class SalesforceSDKUpgradeManagerTest {
             }
             every { additionalOauthKeys } returns null
             every { accountType } returns "com.new.account_type"
-            every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
         mockkStatic(SalesforceSDKLogger::class)
@@ -401,6 +404,8 @@ class SalesforceSDKUpgradeManagerTest {
             every { buildUserAccount(legacyAccount2) } returns userAccount2
             every { createAccount(any()) } returns mockk<Bundle>()
         }
+        mockkStatic(AccountManager::class)
+        every { AccountManager.get(any()) } returns mockAccountManager
 
         mockkObject(SalesforceSDKManager)
         every { SalesforceSDKManager.getInstance() } returns mockk {
@@ -413,7 +418,6 @@ class SalesforceSDKUpgradeManagerTest {
             }
             every { additionalOauthKeys } returns null
             every { accountType } returns "com.new.account_type"
-            every { clientManager.accountManager } returns mockAccountManager
             every { userAccountManager } returns mockUserAccountManager
         }
         mockkStatic(SalesforceSDKLogger::class)

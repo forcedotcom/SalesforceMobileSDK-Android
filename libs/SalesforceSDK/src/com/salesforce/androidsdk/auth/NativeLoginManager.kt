@@ -129,7 +129,7 @@ internal class NativeLoginManager(
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
     private val isReCaptchaEnterprise: Boolean = false,
-    private val restClient: RestClient = SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -974,20 +974,24 @@ internal class NativeLoginManager(
     @VisibleForTesting
     internal fun onBiometricAuthenticationSucceeded(
         activity: FragmentActivity,
-        clientManager: ClientManager = SalesforceSDKManager.getInstance().clientManager,
+        clientManager: ClientManager? = SalesforceSDKManager.getInstance().clientManager,
     ) {
         val bioAuthManager = SalesforceSDKManager.getInstance()
             .biometricAuthenticationManager as? BiometricAuthenticationManager
 
-        clientManager.getRestClient(activity) { client ->
-            runCatching {
-                client.oAuthRefreshInterceptor.refreshAccessToken()
-            }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
-            }
-            bioAuthManager?.onUnlock()
+        val client = clientManager?.peekRestClient()
+        if (client == null) {
+            SalesforceSDKLogger.e(TAG, "Unable to obtain the authenticated client while unlocking.")
             activity.finish()
+            return
         }
+        runCatching {
+            client.oAuthRefreshInterceptor.refreshAccessToken()
+        }.onFailure { e ->
+            e(TAG, "Error encountered while unlocking.", e)
+        }
+        bioAuthManager?.onUnlock()
+        activity.finish()
     }
 
     // endregion
