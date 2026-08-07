@@ -351,6 +351,10 @@ open class LoginActivity : FragmentActivity() {
                 // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
                 // loadLoginPageInCustomTab() will set it back to true before login completes.
                 completedViaBrowserTab = false
+                // Re-register the A-marker global so it reflects the updated flow type (e.g.
+                // user agent vs web server) chosen in Login Options. loadLoginPageInCustomTab()
+                // will call this again if a Custom Tab is ultimately launched.
+                registerAuthTypeFeatureGlobal()
                 viewModel.reloadWebView()
                 loginDevMenuReload = false
             }
