@@ -26,10 +26,12 @@
  */
 package com.salesforce.androidsdk.security
 
+import android.app.Instrumentation
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -52,9 +54,18 @@ class BiometricAuthenticationManagerTest {
     private lateinit var bioAuthManager: BiometricAuthenticationManager
     private lateinit var userAccount: UserAccount
     private lateinit var accountPrefs: SharedPreferences
+    private lateinit var activityMonitors: List<Instrumentation.ActivityMonitor>
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
     @Before
     fun setUp() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        activityMonitors = listOf(
+            sdkManager.webViewLoginActivityClass,
+            sdkManager.loginActivityClass,
+        )
+            .distinctBy { it.name }
+            .map { instrumentation.addMonitor(it.name, null, true) }
         bioAuthManager = BiometricAuthenticationManager()
         userAccount = ScreenLockManagerTest.buildTestUserAccount()
         accountPrefs = ctx.getSharedPreferences(
@@ -67,6 +78,7 @@ class BiometricAuthenticationManagerTest {
     @After
     fun tearDown() {
         bioAuthManager.cleanUp(userAccount)
+        activityMonitors.forEach(instrumentation::removeMonitor)
     }
 
     @Test
@@ -229,7 +241,7 @@ class BiometricAuthenticationManagerTest {
     fun testLockWithNoCurrentUser() {
         bioAuthManager.cleanUp(userAccount)
         SalesforceSDKManager.getInstance().userAccountManager
-            .signoutCurrentUser(/* frontActivity = */ null, /* showLoginPage = */ true, OAuth2.LogoutReason.USER_LOGOUT)
+            .signoutCurrentUser(/* frontActivity = */ null, /* showLoginPage = */ false, OAuth2.LogoutReason.USER_LOGOUT)
 
         Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
         bioAuthManager.lock()

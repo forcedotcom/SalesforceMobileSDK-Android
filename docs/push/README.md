@@ -217,7 +217,11 @@ Registration status constants (passed to `onPushNotificationRegistrationStatus`)
 
 Internal `Worker` subclass that executes push registration changes on a background thread via `WorkManager`. Not instantiated directly — use `PushService.enqueuePushNotificationsRegistrationWork(...)`.
 
-When `userAccount` is `null`, the worker iterates all authenticated users and calls `performRegistrationChange` for each.
+For registration, absent account identifiers target all authenticated users. Deregistration always
+requires an exact org and user ID. If that account no longer resolves, WorkManager records a
+non-retryable failure; best-effort server deregistration may remain incomplete until the record's
+TTL expires or a later explicit deregistration succeeds. If a resolved account cannot produce a
+REST client, the worker completes without a remote change and logs a warning.
 
 ---
 

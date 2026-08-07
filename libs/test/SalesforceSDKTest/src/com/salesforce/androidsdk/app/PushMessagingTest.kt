@@ -9,9 +9,11 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
+import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.clearNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.getNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.setNotificationTypes
+import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBody
@@ -33,6 +35,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -101,6 +104,32 @@ class PushMessagingTest {
         clearNotificationsTypes(user)
 
         assertNull(getNotificationsTypes(user))
+    }
+
+    @Test
+    fun unregisterForLogout_ServiceStartupFailureStillClearsLocalRegistration() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPushServiceType = sdkManager.pushServiceType
+        PushMessaging.setRegistrationInfo(
+            context = context,
+            registrationId = "test-registration-id",
+            deviceId = "test-device-id",
+            account = user,
+        )
+        sdkManager.pushServiceType = FailingLogoutPushService::class.java
+
+        try {
+            assertThrows(IllegalStateException::class.java) {
+                PushMessaging.unregisterForLogout(context, user, false)
+            }
+
+            assertNull(PushMessaging.getRegistrationId(context, user))
+            assertNull(PushMessaging.getDeviceId(context, user))
+        } finally {
+            sdkManager.pushServiceType = originalPushServiceType
+            PushMessaging.clearRegistrationInfo(context, user)
+        }
     }
 
     @Test
@@ -232,12 +261,12 @@ class PushMessagingTest {
     fun testInvokeServerNotificationActionViaSdkManager_WithoutAccount() {
         val salesforceSdkManager = SalesforceSDKManager.getInstance()
 
-        assertThrows(NullPointerException::class.java) {
+        assertNull(
             salesforceSdkManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
             )
-        }
+        )
     }
 
     @Test
@@ -498,5 +527,11 @@ class PushMessagingTest {
             putString("orgId", "org-1")
             putString("userId", "user-1-1")
         })
+    }
+}
+
+class FailingLogoutPushService : PushService() {
+    init {
+        throw IllegalStateException("Push service startup failed")
     }
 }

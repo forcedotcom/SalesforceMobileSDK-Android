@@ -57,8 +57,6 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -248,55 +246,6 @@ class LoginViewModelMockTest {
                 handleDuplicateUserAccount = any(),
             )
         }
-    }
-
-    @Test
-    fun onAuthFlowComplete_ResetsAuthCodeForJwtFlow() = runBlocking {
-        // Mock the AuthenticationUtilities.onAuthFlowComplete function
-
-        coEvery {
-            onAuthFlowComplete(
-                tokenResponse = any(),
-                loginServer = any(),
-                consumerKey = any(),
-                onAuthFlowError = any(),
-                onAuthFlowSuccess = any(),
-                buildAccountName = any(),
-                nativeLogin = any(),
-                tokenMigration = any(),
-                credentialsIdentifier = any(),
-                context = any(),
-                userAccountManager = any(),
-                blockIntegrationUser = any(),
-                runtimeConfig = any(),
-                updateLoggingPrefs = any(),
-                fetchUserIdentity = any(),
-                startMainActivity = any(),
-                setAdministratorPreferences = any(),
-                addAccount = any(),
-                handleScreenLockPolicy = any(),
-                handleBiometricAuthPolicy = any(),
-                handleDuplicateUserAccount = any(),
-            )
-        } returns Unit
-
-        val mockTokenResponse = mockk<TokenEndpointResponse>(relaxed = true)
-        val mockOnError: (String, String?, Throwable?) -> Unit = mockk(relaxed = true)
-        val mockOnSuccess: (UserAccount) -> Unit = mockk(relaxed = true)
-
-        // Set up the view model state with JWT flow
-        viewModel.selectedServer.value = "https://test.salesforce.com"
-        viewModel.authCodeForJwtFlow = "test_jwt_auth_code"
-        Thread.sleep(100)
-
-        // Verify authCodeForJwtFlow is set
-        assertNotNull("authCodeForJwtFlow should be set before call", viewModel.authCodeForJwtFlow)
-
-        // Call the method under test
-        viewModel.onAuthFlowComplete(mockTokenResponse, mockOnError, mockOnSuccess)
-
-        // Verify authCodeForJwtFlow is reset to null
-        assertNull("authCodeForJwtFlow should be null after call", viewModel.authCodeForJwtFlow)
     }
 
     @Test

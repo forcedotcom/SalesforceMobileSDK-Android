@@ -171,6 +171,43 @@ object PushMessaging {
     }
 
     /**
+     * Starts push unregistration for logout without delaying local credential
+     * removal. Unlike [unregister], this captures the account-bound client
+     * immediately instead of relying on persisted WorkManager execution.
+     */
+    internal fun unregisterForLogout(
+        context: Context,
+        account: UserAccount,
+        isLastAccount: Boolean,
+    ) {
+        if (!isRegistered(context, account)) {
+            return
+        }
+
+        setInProgress(context, account)
+        try {
+            // Capture the account-bound client and device registration before local logout removes
+            // the account. The service launches remote deregistration asynchronously.
+            SalesforceSDKManager.getInstance()
+                .pushServiceType
+                .newInstance()
+                .unregisterForLogout(account)
+
+            if (isLastAccount) {
+                val firebaseApp = getFirebaseApp(context)
+                val firebaseMessaging = SalesforceSDKManager.getInstance()
+                    .pushNotificationReceiver?.supplyFirebaseMessaging() ?: FirebaseMessaging.getInstance()
+                firebaseMessaging.isAutoInitEnabled = false
+                FirebaseInstallations.getInstance(firebaseApp).delete()
+                firebaseApp.delete()
+            }
+        } finally {
+            // Local logout must never retain registration metadata just because push startup failed.
+            clearRegistrationInfo(context, account)
+        }
+    }
+
+    /**
      * Get the app unique name for firebase
      *
      * @param context Context

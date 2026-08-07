@@ -33,13 +33,13 @@ import static com.salesforce.androidsdk.auth.OAuth2.refreshAuthToken;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.NetworkErrorException;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountBuilder;
@@ -47,7 +47,6 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuthErrorCode;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -62,12 +61,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
- * If no account is found, it kicks off the login flow which creates a new account if successful.
- *
+ * Factory for authenticated {@link RestClient} instances belonging to one persisted user.
+ * A manager never changes identity when the application switches its current user.
  */
 public class ClientManager {
 
@@ -82,291 +81,147 @@ public class ClientManager {
     private static final String TAG = "ClientManager";
 
     private final AccountManager accountManager;
-    private final String accountType;
-    private final boolean revokedTokenShouldLogout;
+    @Nullable
+    private final Account account;
 
     /**
-     * Construct a ClientManager using a custom account type.
+     * Constructs a manager permanently bound to an existing persisted user.
      *
      * @param ctx Context.
-     * @param accountType Account type.
-     * @param revokedTokenShouldLogout True - if the SDK should logout when the access token is revoked, False - otherwise.
+     * @param user Persisted user this manager represents.
      */
-    public ClientManager(Context ctx, String accountType, boolean revokedTokenShouldLogout) {
-    	this.accountManager = AccountManager.get(ctx);
-        this.accountType = accountType;
-        this.revokedTokenShouldLogout = revokedTokenShouldLogout;
-    }
-
-    /**
-     * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
-     *
-     * If no accounts are found, it will kick off the login flow which will create a new account if successful.
-     * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
-     *
-     * Note: The work is actually being done by the service registered to handle authentication for this application account type.
-     * @see AuthenticatorService
-     *
-     * @param activityContext        current activity
-     * @param restClientCallback     callback invoked once the RestClient is ready
-     */
-    public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
-        Account acc = getAccount();
-
-        // No account found - let's add one - the AuthenticatorService add account method will start the login activity using either the default login URL or the Salesforce SDK manager's front door URL for Salesforce Identity API UI Bridge
-        if (acc == null) {
-            SalesforceSDKLogger.i(TAG, "No account of type " + accountType + " found");
-            final Intent i = new Intent(activityContext,
-                    SalesforceSDKManager.getInstance().getLoginActivityClass());
-            i.setPackage(activityContext.getPackageName());
-            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-            /*
-             * Special Note: `LoginActivity` does not actually return a result.
-             * However, it does start broadcast intents that need to be received
-             * by the starting activity.  Since login activity is started in a
-             * new task, the starting activity would become available to be
-             * destroyed which unregisters its broadcast intent receivers.
-             *
-             * Using `startActivityForResult` starts a new task with the
-             * starting activity as the "base" intent with login activity as its
-             * "visible" sub-activity.  This keeps the starting activity from
-             * being eagerly destroyed and sets it as the activity to be started
-             * if the user returns the this task after it may have been fully
-             * destroyed due to memory pressure.
-             *
-             * TODO: This short term solution will be replaced in a future release.
-             */
-            activityContext.startActivityForResult(i, 0);
-        }
-
-        // Account found
-        else {
-            SalesforceSDKLogger.i(TAG, "Found account of type " + accountType);
-            final RestClient cachedRestClient = peekRestClient();
-            restClientCallback.authenticatedRestClient(cachedRestClient);
+    public ClientManager(@NonNull Context ctx, @NonNull UserAccount user) {
+        accountManager = AccountManager.get(ctx);
+        account = UserAccountManager.getInstance().buildAccount(user);
+        if (account == null) {
+            SalesforceSDKLogger.w(TAG,
+                    "No persisted account matches the supplied user; manager will remain inactive");
         }
     }
 
-    /**
-     * Method to created an unauthenticated RestClient asynchronously
-     * @param activityContext
-     * @param restClientCallback
-     */
-    public void getUnauthenticatedRestClient(Activity activityContext, RestClientCallback restClientCallback) {
-        restClientCallback.authenticatedRestClient(peekUnauthenticatedRestClient());
+    @VisibleForTesting
+    ClientManager(@NonNull AccountManager accountManager,
+                  @NonNull Account account) {
+        this.accountManager = accountManager;
+        this.account = account;
     }
 
-    /**
-     * Method to create an unauthenticated RestClient.
-     * @return
-     */
-    public RestClient peekUnauthenticatedRestClient() {
-        return new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-    }
-
+    /** Creates a client for this manager's bound user, or null if it is unavailable. */
+    @Nullable
     public RestClient peekRestClient() {
-        return peekRestClient(getAccount());
+        final UserAccount user = getValidatedUser(/* requireRefreshFields = */ false);
+        if (user == null) {
+            SalesforceSDKLogger.w(TAG, "Bound user account is no longer available");
+            return null;
+        }
+        return createRestClient(user);
     }
 
-    /**
-     * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider).
-     *
-     * If there is no account, it will throw an exception.
-     *
-     * @return
-     */
-    public RestClient peekRestClient(UserAccount user) {
-    	return peekRestClient(getAccountByName(user.getAccountName()));
-    }
-
-    public RestClient peekRestClient(Account acc) {
-        if (acc == null) {
-            AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
-            SalesforceSDKLogger.i(TAG, "No user account found", e);
-            throw e;
+    @Nullable
+    private RestClient createRestClient(UserAccount userAccount) {
+        if (account == null) {
+            return null;
         }
-        if (SalesforceSDKManager.getInstance().isLoggingOut()) {
-        	AccountInfoNotFoundException e = new AccountInfoNotFoundException("User is logging out");
-            SalesforceSDKLogger.i(TAG, "User is logging out", e);
-            throw e;
+        if (SalesforceSDKManager.getInstance().isLoggingOut(account)) {
+            SalesforceSDKLogger.i(TAG, "User is logging out");
+            return null;
         }
-        UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(acc);
 
         if (userAccount.getAuthToken() == null) {
-            throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without an auth token");
+            return null;
         }
         if (userAccount.getInstanceServer() == null) {
-            throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_URL);
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without an instance URL");
+            return null;
+        }
+        if (userAccount.getLoginServer() == null) {
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without a login URL");
+            return null;
+        }
+        if (userAccount.getIdUrl() == null) {
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without an identity URL");
+            return null;
         }
         if (userAccount.getUserId() == null) {
-            throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without a user ID");
+            return null;
         }
         if (userAccount.getOrgId() == null) {
-            throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
+            SalesforceSDKLogger.w(TAG, "Cannot create a client without an org ID");
+            return null;
         }
 
         try {
-            final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this,
-                    userAccount.getInstanceServer(), userAccount.getAuthToken(), userAccount.getRefreshToken());
+            final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this);
             final ClientInfo clientInfo = new ClientInfo(new URI(userAccount.getInstanceServer()),
-            		new URI(userAccount.getLoginServer()), new URI(userAccount.getIdUrl()), userAccount.getAccountName(), userAccount.getUsername(),
-            		userAccount.getUserId(), userAccount.getOrgId(), userAccount.getCommunityId(), userAccount.getCommunityUrl(),
+                    new URI(userAccount.getLoginServer()), new URI(userAccount.getIdUrl()), userAccount.getAccountName(), userAccount.getUsername(),
+                    userAccount.getUserId(), userAccount.getOrgId(), userAccount.getCommunityId(), userAccount.getCommunityUrl(),
                     userAccount.getFirstName(), userAccount.getLastName(), userAccount.getDisplayName(), userAccount.getEmail(), userAccount.getPhotoUrl(), userAccount.getThumbnailUrl(), userAccount.getAdditionalOauthValues(),
                     userAccount.getLightningDomain(), userAccount.getLightningSid(), userAccount.getVFDomain(), userAccount.getVFSid(), userAccount.getContentDomain(), userAccount.getContentSid(), userAccount.getCSRFToken());
             return new RestClient(clientInfo, userAccount.getAuthToken(), userAccount.getTokenType(), userAccount.getCredentialsIdentifier(), HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
             SalesforceSDKLogger.w(TAG, "Invalid server URL", e);
-            throw new AccountInfoNotFoundException("invalid server url", e);
+            return null;
         }
     }
 
     /**
-     * Invalidate current auth token. The next call to {@link #getRestClient(Activity, RestClientCallback) getRestClient} will do a refresh.
-     */
-    public void invalidateToken(String lastNewAuthToken) {
-        accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
-    }
-
-    /**
-     * Returns the user account that is currently active.
+     * Returns the exact account this manager was constructed for.
      *
-     * @return The current user account.
+     * @return Bound Android account, or null if the supplied user does not resolve to a valid
+     * persisted record.
      */
+    @Nullable
     public Account getAccount() {
-    	return SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
+        return account;
     }
 
-    /**
-     * @param name The name associated with the account.
-     * @return The account with the application account type and the given name.
-     */
-    public Account getAccountByName(String name) {
-        final Account[] accounts = accountManager.getAccountsByType(getAccountType());
-        for (final Account account : accounts) {
-            if (account.name.equals(name)) {
-                return account;
+    @VisibleForTesting
+    int getBoundAccountCount() {
+        if (account == null) {
+            return 0;
+        }
+        return accountManager.getAccountsByType(account.type).length;
+    }
+
+    @Nullable
+    @VisibleForTesting
+    UserAccount getValidatedUser(boolean requireRefreshFields) {
+        if (account == null || !accountExists()) {
+            return null;
+        }
+        final UserAccount user = UserAccountManager.getInstance().buildUserAccount(account);
+        if (user == null
+                || isMissing(user.getUserId())
+                || isMissing(user.getOrgId())) {
+            return null;
+        }
+        if (requireRefreshFields && (isMissing(user.getRefreshTokenForPersistence())
+                || isMissing(user.getLoginServer())
+                || isMissing(user.getClientIdForRefresh()))) {
+            return null;
+        }
+        return user;
+    }
+
+    private boolean accountExists() {
+        if (account == null) {
+            return false;
+        }
+        for (Account candidate : accountManager.getAccountsByType(account.type)) {
+            if (account.equals(candidate)) {
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
-    /**
-     * @return All of the accounts found for this application account type.
-     */
-    public Account[] getAccounts() {
-        return accountManager.getAccountsByType(getAccountType());
+    private static boolean isMissing(@Nullable String value) {
+        return value == null || value.trim().isEmpty();
     }
 
-    /**
-     * Remove all of the accounts passed in.
-     *
-     * @param accounts The array of accounts to remove.
-     */
-    public void removeAccounts(Account[] accounts) {
-        if (accounts != null && accounts.length > 0) {
-            for (final Account account : accounts) {
-                removeAccount(account);
-            }
-        }
-    }
-
-    /**
-     * Creates a new account and returns the parameters as a Bundle.
-     */
-    public Bundle createNewAccount(UserAccount userAccount) {
-        return SalesforceSDKManager.getInstance().getUserAccountManager().createAccount(userAccount);
-    }
-
-    /**
-     * Creates a new account and returns the parameters as a Bundle.
-     *
-     * @param accountName Account name
-     * @param username Username.
-     * @param refreshToken Refresh token.
-     * @param authToken Access token.
-     * @param instanceUrl Instance URL.
-     * @param loginUrl Login URL.
-     * @param idUrl Identity URL.
-     * @param clientId Client ID.
-     * @param orgId Org ID.
-     * @param userId User ID.
-     * @param communityId Community ID.
-     * @param communityUrl Community URL.
-     * @param firstName First name.
-     * @param lastName Last name.
-     * @param displayName Display name.
-     * @param email Email.
-     * @param photoUrl Photo URL.
-     * @param thumbnailUrl Thumbnail URL.
-     * @param additionalOauthValues Additional OAuth values.
-     * @return Account info.
-     *
-     * @Deprecated will be removed in Mobile SDK 14.0 - please use createNewAccount(UserAccount userAccount)
-     */
-    @Deprecated
-    public Bundle createNewAccount(String accountName, String username, String refreshToken,
-    		String authToken, String instanceUrl, String loginUrl, String idUrl,
-    		String clientId, String orgId, String userId, String communityId, String communityUrl,
-            String firstName, String lastName, String displayName, String email, String photoUrl,
-            String thumbnailUrl, Map<String, String> additionalOauthValues,
-            String lightningDomain, String lightningSid, String vfDomain, String vfSid,
-            String contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
-            String language, String locale) {
-        UserAccount userAccount = UserAccountBuilder.getInstance()
-                .accountName(accountName).username(username).refreshToken(refreshToken)
-                .authToken(authToken).instanceServer(instanceUrl).loginServer(loginUrl).idUrl(idUrl)
-                .clientId(clientId).orgId(orgId).userId(userId).communityId(communityId).communityUrl(communityUrl)
-                .firstName(firstName).lastName(lastName).displayName(displayName).email(email).photoUrl(photoUrl)
-                .thumbnailUrl(thumbnailUrl).additionalOauthValues(additionalOauthValues)
-                .lightningDomain(lightningDomain).lightningSid(lightningSid).vfDomain(vfDomain).vfSid(vfSid)
-                .contentDomain(contentDomain).contentSid(contentSid).csrfToken(csrfToken).nativeLogin(nativeLogin)
-                .language(language).locale(locale)
-                .build();
-
-        return createNewAccount(userAccount);
-    }
-
-    /**
-     * Should match the value in authenticator.xml.12
-     * @return The account type for this application.
-     */
-    public String getAccountType() {
-        return accountType;
-    }
-
-    /**
-     * @return The AccountManager for the application.
-     */
-    public AccountManager getAccountManager() {
-        return accountManager;
-    }
-
-    /**
-     * Removes the user account from the account manager. This is safe to call from main thread.
-     *
-     * @param acc Account to be removed.
-     */
-    public void removeAccount(Account acc) {
-        if (acc != null) {
-            accountManager.removeAccountExplicitly(acc);
-        }
-    }
-
-    /**
-     * RestClientCallback interface.
-     * You must provide an implementation of this interface when calling
-     * {@link ClientManager#getRestClient(Activity, RestClientCallback) getRestClient}.
-     */
-    public interface RestClientCallback {
-        void authenticatedRestClient(RestClient client);
-    }
-
-    /**
-     * AuthTokenProvider implementation that calls out to the AccountManager to get a new access token.
-     * The AccountManager calls AuthenticatorService to do the actual refresh.
-     * @see AuthenticatorService
-     */
+    /** Account-bound auth-token provider. */
     public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
 
         /**
@@ -386,13 +241,10 @@ public class ClientManager {
             // intent explicit and avoids the "synchronization on local variable" inspection.
             final Object lock = new Object();
             boolean refreshing;
-            // Incremented once per SUCCESSFUL publish (never on a failed refresh). A waiting loser
-            // snapshots this value before sleeping and treats any change on wakeup as "a fresh
-            // result was published while I waited." This is robust to a *subsequent* winner that
-            // has already re-set refreshing=true (the consecutive-cycle race) and to spurious
-            // wakeups — neither of which the refreshing flag alone can distinguish.
-            long publishGeneration = 0;
-            String newAuthToken;        // last winner's fresh access token (null on failure)
+            // Incremented once per successful publish. Waiting losers adopt only when this edge
+            // advances, so a failed refresh cannot be mistaken for a usable result.
+            long publishGeneration;
+            String newAuthToken;        // last successful winner's fresh access token
             String newInstanceUrl;      // last winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
             String newTokenType;        // last winner's token type (e.g. "Bearer" or "DPoP")
@@ -405,7 +257,7 @@ public class ClientManager {
          * Clears the app-global per-account refresh coordination state. Test-only: {@code REFRESH_STATES}
          * is static and survives across tests, so it must be reset between them.
          */
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         static void resetRefreshStateForTest() {
             REFRESH_STATES.clear();
         }
@@ -427,6 +279,9 @@ public class ClientManager {
         private static final long RECENT_REFRESH_THRESHOLD_MILLIS = 3_000L;
 
         private final ClientManager clientManager;
+        @Nullable
+        private final String clientInstanceUrlOverride;
+        private final long loserWaitTimeoutMillis;
         private String lastNewAuthToken;
         // Mutable to support server-side Refresh Token Rotation (RTR).
         private String refreshToken;
@@ -435,16 +290,62 @@ public class ClientManager {
         private String lastTokenType;
 
         /**
-         * Constructor
-         * @param clientManager
-         * @param refreshToken
+         * Constructs a provider whose account identity comes exclusively from its bound manager.
          */
-        public AccMgrAuthTokenProvider(ClientManager clientManager, String instanceUrl,
-                                       String authToken, String refreshToken) {
+        public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager) {
+            this(clientManager, null, LOSER_WAIT_TIMEOUT_MILLIS);
+        }
+
+        /**
+         * Constructs a provider with a routing-only instance URL override. The override never
+         * participates in account selection, persistence, refresh coordination, or logout.
+         */
+        public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                       @Nullable String clientInstanceUrlOverride) {
+            this(clientManager, clientInstanceUrlOverride, LOSER_WAIT_TIMEOUT_MILLIS);
+        }
+
+        /** Test-only constructor that shortens the bounded loser wait. */
+        @VisibleForTesting
+        AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                long loserWaitTimeoutMillis) {
+            this(clientManager, null, loserWaitTimeoutMillis);
+        }
+
+        private AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                        @Nullable String clientInstanceUrlOverride,
+                                        long loserWaitTimeoutMillis) {
             this.clientManager = clientManager;
-            this.refreshToken = refreshToken;
-            lastNewAuthToken = authToken;
-            lastNewInstanceUrl = instanceUrl;
+            this.clientInstanceUrlOverride = clientInstanceUrlOverride;
+            this.loserWaitTimeoutMillis = loserWaitTimeoutMillis;
+            final UserAccount user =
+                    clientManager.getValidatedUser(/* requireRefreshFields = */ false);
+            if (user != null) {
+                refreshToken = user.getRefreshTokenForPersistence();
+                lastNewAuthToken = user.getAuthToken();
+                lastNewInstanceUrl = user.getInstanceServer();
+            }
+        }
+
+        /**
+         * Constructs a provider for the user bound to {@code clientManager}.
+         *
+         * @param clientManager Manager that supplies the provider's persisted account identity and
+         *                      live credentials.
+         * @param instanceUrl Ignored. Routing comes from the manager's bound user.
+         * @param authToken Ignored. Access-token state comes from the manager's bound user.
+         * @param refreshToken Ignored. Refresh-token state comes from the manager's bound user.
+         * @deprecated Use {@link #AccMgrAuthTokenProvider(ClientManager)}. If {@code instanceUrl}
+         * represented a custom client route, use
+         * {@link #AccMgrAuthTokenProvider(ClientManager, String)}. This compatibility constructor
+         * will be removed in Mobile SDK 15.0.
+         */
+        @Deprecated
+        public AccMgrAuthTokenProvider(@NonNull ClientManager clientManager,
+                                       @Nullable String instanceUrl,
+                                       @Nullable String authToken,
+                                       @Nullable String refreshToken) {
+            this(clientManager);
         }
 
         /**
@@ -456,60 +357,40 @@ public class ClientManager {
         public String getNewAuthToken() {
             SalesforceSDKLogger.i(TAG, "Need new access token");
 
-            // The matching loop and the no-match early-out MUST run before any shared-state
-            // election so that a no-match path (e.g. account removed during refresh) never
-            // marks a RefreshState as refreshing — preserving the no deadlock fix and
-            // logout-during-refresh semantics.
-            final UserAccountManager userAccountManager = SalesforceSDKManager.getInstance().getUserAccountManager();
-            final Account[] accounts = clientManager.getAccounts();
-            Account matchingAccount = null;
-            String stateKey = null;
-
-            if (refreshToken != null && accounts != null) {
-                for (Account account : accounts) {
-                    final UserAccount user = userAccountManager.buildUserAccount(account);
-                    if (user != null && refreshToken.equals(user.getRefreshToken())) {
-                        matchingAccount = account;
-                        final String userId = user.getUserId();
-                        final String orgId = user.getOrgId();
-                        if (userId == null || orgId == null) {
-                            SalesforceSDKLogger.w(TAG, "Cannot serialize token refresh: " +
-                                    "account is missing userId or orgId");
-                            return null;
-                        }
-                        stateKey = userId + ":" + orgId;
-                        break;
-                    }
-                }
+            // Validation and the no-match early-out MUST run before any shared-state election.
+            // Otherwise an account removed or malformed during refresh could leave a RefreshState
+            // marked active, reintroducing both the lost-winner deadlock and logout-during-refresh
+            // races this coordination protects against.
+            final UserAccount initialUser =
+                    clientManager.getValidatedUser(/* requireRefreshFields = */ true);
+            if (initialUser == null) {
+                return null;
             }
-
-            // Fail early to ensure we don't logout the current user below by sending null.
+            final Account matchingAccount = clientManager.getAccount();
             if (matchingAccount == null) {
                 return null;
             }
+            final String refreshStateKey = refreshStateKeyFor(initialUser);
 
             // Elect winner/loser on the SINGLE coordination primitive (the per-account state).
             // Losers wait (looping on the condition to absorb spurious/lost wakeups) for the
             // winner's published result and adopt it without re-attempting, logging out, or
             // broadcasting.
-            final RefreshState state = REFRESH_STATES.computeIfAbsent(stateKey, k -> new RefreshState());
+            final RefreshState state = REFRESH_STATES.computeIfAbsent(
+                    refreshStateKey, k -> new RefreshState());
             synchronized (state.lock) {
                 if (state.refreshing) {
-                    // Snapshot the publish generation BEFORE waiting. We adopt on a *generation
-                    // change* (an edge), not on observing refreshing==false (a level). This rescues
-                    // the consecutive-cycle race: if a subsequent winner has already flipped
-                    // refreshing back to true by the time we re-acquire the lock, we still detect
-                    // that the prior winner published a result while we waited and adopt it, rather
-                    // than re-parking against a deadline that began ticking during an unrelated
-                    // earlier cycle.
+                    // Snapshot the publish generation BEFORE waiting. We adopt on a generation
+                    // change (an edge), not on refreshing becoming false (a level). If a later
+                    // winner has already set refreshing back to true when this thread reacquires
+                    // the lock, the edge still proves that the prior winner published a result.
                     final long startGeneration = state.publishGeneration;
-                    final long deadline = System.currentTimeMillis() + LOSER_WAIT_TIMEOUT_MILLIS;
+                    final long deadline = System.currentTimeMillis() + loserWaitTimeoutMillis;
                     boolean published;
                     try {
-                        // Loop until a new result is published (generation advanced) or the
-                        // in-flight refresh ends without one. Bounded so a lost winner can't
-                        // strand us forever. The generation guard also absorbs spurious/lost
-                        // wakeups.
+                        // Loop until a result is published or the in-flight refresh ends without
+                        // one. The generation guard absorbs spurious and lost wakeups; the deadline
+                        // prevents a lost winner from parking this caller forever.
                         while (state.refreshing && state.publishGeneration == startGeneration) {
                             final long timeRemaining = deadline - System.currentTimeMillis();
                             if (timeRemaining <= 0) {
@@ -519,52 +400,44 @@ public class ClientManager {
                         }
                         published = state.publishGeneration != startGeneration;
                     } catch (InterruptedException e) {
-                        SalesforceSDKLogger.w(TAG, "Interrupted while waiting for in-flight token refresh", e);
+                        SalesforceSDKLogger.w(TAG,
+                                "Interrupted while waiting for in-flight token refresh", e);
                         Thread.currentThread().interrupt();
-                        // Adopt a result only if one was actually published while we waited.
-                        if (state.publishGeneration != startGeneration && state.newAuthToken != null) {
-                            adoptWinnerResult(state);
+                        if (state.publishGeneration != startGeneration
+                                && tryAdoptWinnerResult(state)) {
                             return state.newAuthToken;
                         }
                         return null;
                     }
 
                     if (published) {
-                        adoptWinnerResult(state);
-                        return state.newAuthToken;
+                        return tryAdoptWinnerResult(state) ? state.newAuthToken : null;
                     }
-                    // Timed out waiting for an in-flight refresh on this account. Becoming a
-                    // second concurrent refresher would risk a parallel stale refresh-token POST
-                    // and a spurious logout, so fail safe: return null rather than refresh
-                    // uncoordinated. The caller's request fails and can retry; the in-flight
-                    // winner (if merely slow) still completes and serves the next caller.
+
+                    // Timed out waiting for this account's in-flight refresh. Starting a second,
+                    // uncoordinated refresh could POST a stale rotated token and spuriously log the
+                    // user out. Fail safely; the request can retry after the winner completes.
                     return null;
                 }
 
-                // Fresh arriver (found refreshing==false). If a winner published very recently,
-                // adopt that result instead of starting a redundant refresh — closing the
-                // consecutive-cycle race for threads that arrive just after a cycle completes.
-                //
-                // The freshness window alone is not sufficient: we must also confirm the published
-                // token actually differs from the one THIS provider just failed a request with
-                // (lastNewAuthToken). Without that difference check we could hand our caller back
-                // the very token it just got a 401/403 on (e.g. when this provider was itself the
-                // recent winner), causing an immediate repeat 401. This mirrors the recheck-under-
-                // lock storage guardrail below, which likewise POSTs a real refresh when storage
-                // has NOT advanced past this provider's tokens.
+                // A fresh provider arriving just after a completed cycle may adopt that result
+                // instead of starting a redundant refresh. The freshness window alone is not
+                // sufficient: the published access token must also differ from the token this
+                // provider just failed a request with. Otherwise we could immediately replay the
+                // same rejected token. tryAdoptWinnerResult additionally verifies that the shared
+                // result is still the one persisted for this manager's bound identity.
                 if (state.newAuthToken != null
-                        && !java.util.Objects.equals(state.newAuthToken, lastNewAuthToken)
-                        && System.currentTimeMillis() - state.lastRefreshTime < RECENT_REFRESH_THRESHOLD_MILLIS) {
-                    adoptWinnerResult(state);
+                        && !Objects.equals(state.newAuthToken, lastNewAuthToken)
+                        && System.currentTimeMillis() - state.lastRefreshTime
+                        < RECENT_REFRESH_THRESHOLD_MILLIS
+                        && tryAdoptWinnerResult(state)) {
                     return state.newAuthToken;
                 }
 
-                // Become the winner. Note: the previously-published newAuthToken/newInstanceUrl/
-                // rotatedRefreshToken are intentionally NOT cleared here. A loser of the prior
-                // cycle that is woken after we re-set refreshing=true must still be able to read
-                // that last-good result via the publishGeneration edge above; clearing it would
-                // re-introduce the consecutive-cycle null-return. The success branch of the finally
-                // publish overwrites these fields with our own result anyway.
+                // Become the winner. Intentionally retain the previous published values here. A
+                // loser from the prior cycle may observe its publish-generation edge only after
+                // this winner sets refreshing=true; clearing the values would make that loser
+                // return null even though its winner succeeded.
                 state.refreshing = true;
             }
 
@@ -580,9 +453,9 @@ public class ClientManager {
                  * Recheck-under-lock guardrail. We hold the per-account refresh slot, but the
                  * 401/403 that sent us here may have been provoked by a token this provider was
                  * still using from BEFORE a concurrent (or earlier) refresh already rotated it.
-                 * Re-read the account's current tokens from storage: if EITHER the access token
-                 * or the refresh token in storage has advanced past what this provider last used,
-                 * someone already refreshed — adopt their tokens and skip a redundant network POST.
+                 * Re-read the account's current tokens from storage. If either token has advanced,
+                 * another refresh already completed and this provider adopts the persisted result
+                 * instead of issuing a redundant request.
                  *
                  * Under Refresh Token Rotation every needless POST rotates the refresh token again
                  * and widens the window for a stale-token logout, so avoiding it is a correctness
@@ -592,37 +465,55 @@ public class ClientManager {
                  */
                 if (lastNewAuthToken != null) {
                     final UserAccount currentAccount =
-                            UserAccountManager.getInstance().buildUserAccount(matchingAccount);
-                    if (currentAccount != null) {
-                        final String storedAuthToken = currentAccount.getAuthToken();
-                        final String storedRefreshToken = currentAccount.getRefreshToken();
-                        final boolean haveLatestTokens =
-                                java.util.Objects.equals(storedAuthToken, lastNewAuthToken)
-                                        && java.util.Objects.equals(storedRefreshToken, this.refreshToken);
-                        if (!haveLatestTokens && storedAuthToken != null) {
-                            // Storage advanced past us — adopt without refreshing or broadcasting.
-                            SalesforceSDKLogger.i(TAG,
-                                    "Access/refresh token already advanced in storage; adopting without refresh");
-                            newAuthToken = storedAuthToken;
-                            newInstanceUrl = currentAccount.getInstanceServer();
-                            newTokenType = currentAccount.getTokenType();
-                            this.refreshToken = storedRefreshToken;
-                            return newAuthToken;
-                        }
+                            clientManager.getValidatedUser(/* requireRefreshFields = */ true);
+                    if (currentAccount == null) {
+                        return null;
                     }
-
-                    clientManager.invalidateToken(lastNewAuthToken);
+                    final String storedAuthToken = currentAccount.getAuthToken();
+                    final String storedRefreshToken = currentAccount.getRefreshTokenForPersistence();
+                    final boolean haveLatestTokens = Objects.equals(
+                            storedAuthToken, lastNewAuthToken)
+                            && Objects.equals(storedRefreshToken, refreshToken);
+                    if (!haveLatestTokens && storedAuthToken != null) {
+                        SalesforceSDKLogger.i(TAG,
+                                "Access or refresh token already advanced in storage; "
+                                        + "adopting without refresh");
+                        newAuthToken = storedAuthToken;
+                        newInstanceUrl = currentAccount.getInstanceServer();
+                        newTokenType = currentAccount.getTokenType();
+                        refreshToken = storedRefreshToken;
+                        return newAuthToken;
+                    }
                 }
 
-                final UserAccount userAccount = refreshStaleToken(matchingAccount);
-                //noinspection ConstantValue
+                final UserAccount requestUser =
+                        clientManager.getValidatedUser(/* requireRefreshFields = */ true);
+                if (requestUser == null) {
+                    return null;
+                }
+                // Refresh with the live persisted token, not this provider's construction-time
+                // snapshot. Another provider may already have rotated it; posting that stale
+                // snapshot would produce invalid_grant and could spuriously log the user out.
+                final UserAccount userAccount = refreshStaleToken(
+                        matchingAccount,
+                        requestUser,
+                        requestUser.getRefreshTokenForPersistence()
+                );
                 if (userAccount == null) {
-                    throw new MalformedTokenException("refreshStaleToken returned null");
+                    return null;
                 }
 
                 newAuthToken = userAccount.getAuthToken();
                 newInstanceUrl = userAccount.getInstanceServer();
                 newTokenType = userAccount.getTokenType();
+
+                if (clientManager.getValidatedUser(
+                        /* requireRefreshFields = */ false) == null) {
+                    newAuthToken = null;
+                    newInstanceUrl = null;
+                    newTokenType = null;
+                    return null;
+                }
 
                 Intent broadcastIntent;
                 if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
@@ -663,22 +554,28 @@ public class ClientManager {
                     errorCode = OAuthErrorCode.UNKNOWN;
                 }
 
-                if (errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY) {
+                // Account removal or malformed persisted data suppresses every local side effect.
+                if (clientManager.getValidatedUser(
+                        /* requireRefreshFields = */ false) == null) {
+                    return null;
+                }
+
+                final boolean terminal = !(e instanceof OAuthFailedException)
+                        || errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY;
+
+                if (terminal) {
                     // Terminal error (app_attest_failed, invalid_grant, malformed token, etc.) — logout.
-                    if (clientManager.revokedTokenShouldLogout) {
-                        if (Looper.myLooper() == null) {
-                            Looper.prepare();
-                        }
-                        final boolean showLoginPage = accounts.length == 1;
-                        final LogoutReason reason = errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
-                                ? CLIENT_BLOCKED
-                                : REFRESH_TOKEN_EXPIRED;
-                        // Note: As of writing (2024) this call will never succeed because revoke API is an
-                        // authenticated endpoint.  However, there is no harm in attempting and the debug logs
-                        // produced may help developers better understand the state of their app.
-                        SalesforceSDKManager.getInstance()
-                                .logout(matchingAccount, null, showLoginPage, reason);
+                    if (Looper.myLooper() == null) {
+                        Looper.prepare();
                     }
+                    final boolean showLoginPage = clientManager.getBoundAccountCount() == 1;
+                    final LogoutReason reason = errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
+                            ? CLIENT_BLOCKED
+                            : REFRESH_TOKEN_EXPIRED;
+                    // The refresh token may already be unusable, but logout still performs
+                    // best-effort remote cleanup before removing the exact local account.
+                    SalesforceSDKManager.getInstance()
+                            .logout(matchingAccount, null, showLoginPage, reason);
                 }
 
                 // Broadcast revoke intent with error details when available.
@@ -694,11 +591,14 @@ public class ClientManager {
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
             } finally {
-                // Update this instance's own cache so its getters stay correct.
+                // Keep the attempted result in this provider, but only successful refresh or
+                // storage-adoption paths count as a completed refresh.
                 lastNewAuthToken = newAuthToken;
                 lastNewInstanceUrl = newInstanceUrl;
                 lastTokenType = newTokenType;
-                lastRefreshTime = System.currentTimeMillis();
+                if (newAuthToken != null) {
+                    lastRefreshTime = System.currentTimeMillis();
+                }
                 // Publish the result to the per-account state and wake any waiting losers.
                 // This is the SINGLE publish path and ALWAYS runs on every winner exit path so
                 // losers never wait forever and never wake without a definitive result.
@@ -710,21 +610,17 @@ public class ClientManager {
                         state.rotatedRefreshToken = this.refreshToken;
                         state.newTokenType = newTokenType;
                         state.lastRefreshTime = System.currentTimeMillis();
-                        // Mark a fresh result as available. Bumped ONLY on success so a loser woken
-                        // by a failed cycle sees an unchanged generation and correctly returns null
-                        // (rather than adopting a non-result), while a loser that started waiting
-                        // before an earlier success still adopts that success via the edge.
+                        // Bump the generation ONLY on success. A loser woken by a failed cycle sees
+                        // no edge and cannot mistake the retained prior result for a new result
+                        // from its winner.
                         state.publishGeneration++;
                     }
-                    // On failure we deliberately leave newAuthToken/newInstanceUrl/rotatedRefreshToken
-                    // and lastRefreshTime UNCHANGED rather than nulling them. publishGeneration is
-                    // the sole adopt signal: a loser of THIS failed cycle sees an unchanged
-                    // generation and returns null, while a loser that began waiting before an
-                    // EARLIER success must still be able to adopt that success — nulling here would
-                    // wipe the last-good result out from under it and re-introduce a spurious-null
-                    // (the consecutive-cycle race, success-then-failure variant). Fresh arrivers
-                    // cannot wrongly adopt a stale token because the recency window keys off
-                    // lastRefreshTime, which only a success advances.
+                    // On failure, deliberately retain the prior published token, instance URL,
+                    // rotated refresh token, and timestamp. A loser that began waiting before an
+                    // earlier success must still be able to adopt it even if a later cycle fails.
+                    // publishGeneration is the sole signal that this loser's cycle produced a new
+                    // result, while lastRefreshTime prevents fresh arrivals from adopting an
+                    // indefinitely stale retained value.
                     state.lock.notifyAll();
                 }
             }
@@ -732,15 +628,30 @@ public class ClientManager {
         }
 
         /**
-         * Copies the winner's refresh result from the shared per-account state into this loser
-         * instance's cache so that this instance's getters return consistent values.
+         * Attempts to copy the winner's refresh result from shared per-account state into this
+         * loser instance's cache so that this instance's getters return consistent values.
          *
          * <p>Instance URL and refresh token are only overwritten when the winner actually
          * published a non-null value; otherwise this loser keeps its own constructor values so
          * {@link #getInstanceUrl()} stays non-null even when the refresh response carried no
          * instance_url (a valid case — see {@code RestClient.refreshAccessToken}).
+         *
+         * @return {@code true} only when the account remains available and the published result
+         * still matches its persisted credential generation.
          */
-        private void adoptWinnerResult(RefreshState state) {
+        private boolean tryAdoptWinnerResult(RefreshState state) {
+            final UserAccount liveUser =
+                    clientManager.getValidatedUser(/* requireRefreshFields = */ false);
+            if (liveUser == null
+                    || state.newAuthToken == null
+                    || !Objects.equals(liveUser.getAuthToken(), state.newAuthToken)
+                    || !Objects.equals(liveUser.getRefreshTokenForPersistence(),
+                    state.rotatedRefreshToken)
+                    || !Objects.equals(liveUser.getTokenType(), state.newTokenType)
+                    || (state.newInstanceUrl != null
+                    && !Objects.equals(liveUser.getInstanceServer(), state.newInstanceUrl))) {
+                return false;
+            }
             this.lastNewAuthToken = state.newAuthToken;
             this.lastRefreshTime = state.lastRefreshTime;
             this.lastTokenType = state.newTokenType;
@@ -750,6 +661,15 @@ public class ClientManager {
             if (state.rotatedRefreshToken != null) {
                 this.refreshToken = state.rotatedRefreshToken;
             }
+            return true;
+        }
+
+        /**
+         * Keys refresh coordination by Salesforce user identity so different users refresh
+         * independently while all clients for one org/user pair share a single winner.
+         */
+        private static String refreshStateKeyFor(UserAccount user) {
+            return user.getUserId() + ":" + user.getOrgId();
         }
 
         @Override
@@ -763,20 +683,24 @@ public class ClientManager {
         }
 
         @Override
-        public String getInstanceUrl() { return lastNewInstanceUrl; }
+        public String getInstanceUrl() {
+            return clientInstanceUrlOverride != null
+                    ? clientInstanceUrlOverride
+                    : lastNewInstanceUrl;
+        }
 
         @Override
-        public String getTokenType() { return lastTokenType; }
+        public String getTokenType() {
+            return lastTokenType;
+        }
 
-        @NonNull
-        private UserAccount refreshStaleToken(Account account) throws NetworkErrorException, OAuthFailedException, MalformedTokenException {
-            UserAccount originalUserAccount = UserAccountManager.getInstance().buildUserAccount(account);
-            final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
-            // Refresh with the LIVE persisted refresh token, not this provider's
-            // construction-time snapshot. With server-side Refresh Token Rotation (RTR), a prior
-            // refresh on another provider may have already rotated the token; reading the current
-            // value avoids POSTing a stale token that would fail with invalid_grant.
-            final String currentRefreshToken = originalUserAccount.getRefreshToken();
+        @Nullable
+        private UserAccount refreshStaleToken(
+                Account account,
+                UserAccount originalUserAccount,
+                String currentRefreshToken
+        ) throws NetworkErrorException, OAuthFailedException, MalformedTokenException {
+            final Map<String, String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
             try {
                 final URI tokenServer = OAuth2.overrideLoginServerIfNeeded(originalUserAccount);
                 SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
@@ -790,9 +714,17 @@ public class ClientManager {
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)
+                        .refreshToken(originalUserAccount.getRefreshTokenForPersistence())
                         .allowUnset(false)
                         .populateFromTokenEndpointResponse(tr)
                         .build();
+
+                // Confirm that the account still exists and can be rebuilt immediately before and
+                // after persistence. Token-generation comparisons are handled separately.
+                if (clientManager.getValidatedUser(
+                        /* requireRefreshFields = */ false) == null) {
+                    return null;
+                }
 
                 /*
                  * Detect server-side Refresh Token Rotation: the response
@@ -808,6 +740,10 @@ public class ClientManager {
                 }
 
                 UserAccountManager.getInstance().updateAccount(account, updatedUserAccount);
+                if (clientManager.getValidatedUser(
+                        /* requireRefreshFields = */ false) == null) {
+                    return null;
+                }
                 updatedUserAccount.downloadProfilePhoto();
                 UserAccountManager.getInstance().clearCachedCurrentUser();
 
@@ -845,8 +781,8 @@ public class ClientManager {
     }
 
     /**
-     * Exception thrown when no account could be found (during a
-     * {@link ClientManager#peekRestClient() peekRestClient} call)
+     * Legacy exception type retained for binary compatibility. ClientManager now reports an
+     * unavailable account or client with a null result instead of throwing this exception.
      */
     public static class AccountInfoNotFoundException extends RuntimeException {
 

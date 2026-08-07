@@ -35,6 +35,11 @@ import androidx.activity.result.ActivityResult
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
@@ -45,11 +50,12 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,6 +64,66 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
+
+    @Test
+    fun doTokenRefresh_whenClientCannotBeBuilt_finishesActivity() {
+        mockkObject(SalesforceSDKManager)
+        val clientManager = mockk<ClientManager>()
+        every { clientManager.peekRestClient() } returns null
+        val sdkManager = mockk<SalesforceSDKManager>()
+        every { sdkManager.clientManager } returns clientManager
+        every { sdkManager.appContext } returns
+                InstrumentationRegistry.getInstrumentation().targetContext
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        var finishCalls = 0
+
+        try {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                invokeDoTokenRefresh(activity)
+            }
+
+            assertTrue(finishCalls == 1)
+        } finally {
+            unmockkObject(SalesforceSDKManager)
+        }
+    }
+
+    @Test
+    fun doTokenRefresh_whenRefreshFails_stillFinishesActivity() {
+        mockkObject(SalesforceSDKManager)
+        val interceptor = mockk<OAuthRefreshInterceptor>()
+        every { interceptor.refreshAccessToken() } throws RuntimeException("Refresh failed")
+        val client = mockk<RestClient>()
+        every { client.oAuthRefreshInterceptor } returns interceptor
+        val clientManager = mockk<ClientManager>()
+        every { clientManager.peekRestClient() } returns client
+        val sdkManager = mockk<SalesforceSDKManager>()
+        every { sdkManager.clientManager } returns clientManager
+        every { sdkManager.appContext } returns
+                InstrumentationRegistry.getInstrumentation().targetContext
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        var finishCalls = 0
+
+        try {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                invokeDoTokenRefresh(activity)
+            }
+
+            assertTrue(finishCalls == 1)
+        } finally {
+            unmockkObject(SalesforceSDKManager)
+        }
+    }
 
     @Test
     fun loginActivityCustomTabLauncher_withSingleServerCustomTabActivity_setsAboutBlank() {
@@ -75,6 +141,12 @@ class LoginActivityTest {
 
         verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
     }
+
+    private fun invokeDoTokenRefresh(activity: LoginActivity) =
+        LoginActivity::class.java
+            .getDeclaredMethod("doTokenRefresh", LoginActivity::class.java)
+            .apply { isAccessible = true }
+            .invoke(activity, activity)
 
     @Test
     fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebView() {
