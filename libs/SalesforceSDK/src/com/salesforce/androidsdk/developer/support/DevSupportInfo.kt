@@ -235,7 +235,7 @@ data class DevSupportInfo(
                 "API Host" to apiHost,
                 "Google Cloud Project ID" to gcpProjectId,
                 "Integrity Provider Ready" to providerReady,
-                "Feature Flag (AA)" to featureFlag,
+                "Used in Last Auth" to featureFlag,
             )
         }
 

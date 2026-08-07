@@ -793,7 +793,7 @@ class DevSupportInfoTest {
         assertEquals("N/A", rows.find { it.first == "API Host" }?.second)
         assertEquals("N/A", rows.find { it.first == "Google Cloud Project ID" }?.second)
         assertEquals("N/A", rows.find { it.first == "Integrity Provider Ready" }?.second)
-        assertEquals("N/A", rows.find { it.first == "Feature Flag (AA)" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
     }
 
     @Test
@@ -854,7 +854,7 @@ class DevSupportInfoTest {
             aaFeatureActive = false,
         )
 
-        assertEquals("N/A", rows.find { it.first == "Feature Flag (AA)" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
     }
 
     @Test
@@ -867,7 +867,7 @@ class DevSupportInfoTest {
             aaFeatureActive = false,
         )
 
-        assertEquals("false", rows.find { it.first == "Feature Flag (AA)" }?.second)
+        assertEquals("false", rows.find { it.first == "Used in Last Auth" }?.second)
     }
 
     @Test
@@ -880,7 +880,7 @@ class DevSupportInfoTest {
             aaFeatureActive = true,
         )
 
-        assertEquals("true", rows.find { it.first == "Feature Flag (AA)" }?.second)
+        assertEquals("true", rows.find { it.first == "Used in Last Auth" }?.second)
     }
 
     // Helper methods
