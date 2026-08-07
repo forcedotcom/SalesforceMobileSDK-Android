@@ -915,9 +915,7 @@ public class RestClient {
         }
 
         private void attachDPoPProofIfNeeded(Request.Builder builder, String method, String url) {
-            if (!DPOP.equals(tokenType)) return;
-            if (!SalesforceSDKManager.getInstance().isUseDPoP()) return;
-            if (credentialsIdentifier == null || credentialsIdentifier.isEmpty()) return;
+            if (!DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType)) return;
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(url);
                 final String host = HttpUrl.get(url).host();

@@ -29,11 +29,13 @@ package com.salesforce.androidsdk.auth.dpop
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.security.interfaces.ECPublicKey
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class DPoPKeyManagerTest {
@@ -98,5 +100,66 @@ class DPoPKeyManagerTest {
     @Test
     fun test_givenCredentialsIdentifier_whenComputingAlias_thenPrefixedWithDpop() {
         assertEquals("dpop_user-123", DPoPKeyManager.aliasForCredentialsIdentifier("user-123"))
+    }
+
+    @Test
+    fun test_hasKeyPair_falseBeforeCreation_trueAfter_falseAfterDeletion() {
+        val alias = trackedAlias("has_keypair_${UUID.randomUUID()}")
+        assertFalse(DPoPKeyManager.hasKeyPair(alias))
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertTrue(DPoPKeyManager.hasKeyPair(alias))
+        DPoPKeyManager.deleteKeyPair(alias)
+        assertFalse(DPoPKeyManager.hasKeyPair(alias))
+    }
+
+    @Test
+    fun test_hasKeyPair_emptyAlias_returnsFalse() {
+        assertFalse(DPoPKeyManager.hasKeyPair(""))
+    }
+
+    @Test
+    fun test_hasKeyPairForCredentialsIdentifier_nullOrEmpty_returnsFalse() {
+        assertFalse(DPoPKeyManager.hasKeyPairForCredentialsIdentifier(null))
+        assertFalse(DPoPKeyManager.hasKeyPairForCredentialsIdentifier(""))
+    }
+
+    @Test
+    fun test_hasKeyPairForCredentialsIdentifier_matchesHasKeyPairForComputedAlias() {
+        val id = "pred_${UUID.randomUUID()}"
+        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(id)
+        aliasesToCleanUp.add(alias)
+        assertFalse(DPoPKeyManager.hasKeyPairForCredentialsIdentifier(id))
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertTrue(DPoPKeyManager.hasKeyPairForCredentialsIdentifier(id))
+    }
+
+    @Test
+    fun test_shouldAttachDPoP_predicate_covers_all_cases() {
+        val id = "predicate_${UUID.randomUUID()}"
+        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(id)
+        aliasesToCleanUp.add(alias)
+
+        // Null or empty id short-circuits to false regardless of tokenType.
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(null, "DPoP"))
+        assertFalse(DPoPKeyManager.shouldAttachDPoP("", "DPoP"))
+
+        // Valid id, tokenType="DPoP", no key material yet → true (tokenType alone is sufficient).
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
+
+        // Valid id, no tokenType, no key material → false.
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(id, null))
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
+
+        // Once a key pair exists, hasKeyPair leg kicks in for null / Bearer tokenType.
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, null))
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
+
+        // After deletion the predicate falls back to tokenType-only.
+        DPoPKeyManager.deleteKeyPair(alias)
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(id, null))
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
     }
 }

@@ -38,6 +38,7 @@ import java.security.spec.ECGenParameterSpec
 object DPoPKeyManager {
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val DPOP_TOKEN_TYPE = "DPoP"
 
     fun generateOrLoadKeyPair(alias: String): KeyPair {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -69,4 +70,38 @@ object DPoPKeyManager {
     }
 
     fun aliasForCredentialsIdentifier(id: String): String = "dpop_$id"
+
+    /**
+     * Returns true iff a key pair is already present in the AndroidKeyStore for the given alias.
+     * Side-effect-free — does NOT mint a key pair on miss.
+     */
+    fun hasKeyPair(alias: String): Boolean {
+        if (alias.isEmpty()) return false
+        return try {
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            keyStore.containsAlias(alias)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Convenience overload — computes the alias for `credentialsIdentifier` and calls `hasKeyPair`. */
+    fun hasKeyPairForCredentialsIdentifier(credentialsIdentifier: String?): Boolean {
+        if (credentialsIdentifier.isNullOrEmpty()) return false
+        return hasKeyPair(aliasForCredentialsIdentifier(credentialsIdentifier))
+    }
+
+    /**
+     * Decides whether a DPoP proof should be attached to a request for a credential identified
+     * by `credentialsIdentifier`. Returns true when either the credential's tokenType is "DPoP"
+     * or a DPoP key pair has already been minted for the credential. Either signal alone is
+     * sufficient — they cover the transient window between `/authorize` (which mints the key
+     * pair before tokenType is written) and `/token` (which writes tokenType after the key pair
+     * has been used to sign the proof).
+     */
+    fun shouldAttachDPoP(credentialsIdentifier: String?, tokenType: String?): Boolean {
+        if (credentialsIdentifier.isNullOrEmpty()) return false
+        if (DPOP_TOKEN_TYPE == tokenType) return true
+        return hasKeyPairForCredentialsIdentifier(credentialsIdentifier)
+    }
 }
