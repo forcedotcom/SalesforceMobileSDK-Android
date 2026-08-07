@@ -263,17 +263,14 @@ abstract class AuthFlowTest {
             loginPage.backOutToLoginActivity()
             loginPage.openLoginOptions()
 
-            if (!useWebServerFlow) {
-                loginOptions.disableWebServerFlow()
-            }
+            if (useWebServerFlow) loginOptions.enableWebServerFlow()
+            else loginOptions.disableWebServerFlow()
 
-            if (!useHybridAuthToken) {
-                loginOptions.disableHybridAuthToken()
-            }
+            if (useHybridAuthToken) loginOptions.enableHybridAuthToken()
+            else loginOptions.disableHybridAuthToken()
 
-            if (useDPoP) {
-                loginOptions.enableDPoP()
-            }
+            if (useDPoP) loginOptions.enableDPoP()
+            else loginOptions.disableDPoP()
 
             // Set simulated discovery result first - its Save does NOT dismiss the activity,
             // unlike the boot-config Save below which calls activity.finish().
