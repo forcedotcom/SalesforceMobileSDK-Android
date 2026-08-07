@@ -44,6 +44,11 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FI
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
@@ -203,6 +208,40 @@ internal suspend fun onAuthFlowComplete(
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BEACON, account)
         }
     } else {
+        if (nativeLogin) {
+            // Native login bypasses LoginActivity.onAuthFlowSuccess, so A-marker per-user
+            // promotion and JT/OT/BN/TM writes must happen here.
+            val sdkManager = SalesforceSDKManager.getInstance()
+            val allAMarkers = listOf(
+                FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+                FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+                FEATURE_AUTH_TYPE_NATIVE,
+            )
+            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+            for (marker in allAMarkers) {
+                sdkManager.unregisterUsedAppFeature(marker)
+                if (marker == activeAMarker) {
+                    sdkManager.registerUsedAppFeature(marker, account)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(marker, account)
+                }
+            }
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+            if (account.tokenFormat == "jwt") {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            } else {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            }
+            if (account.beaconChildConsumerKey != null) {
+                sdkManager.registerUsedAppFeature(FEATURE_BEACON, account)
+            } else {
+                sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, account)
+            }
+        }
         userAccountManager.createAccount(account)
         userAccountManager.switchToUser(account)
 
