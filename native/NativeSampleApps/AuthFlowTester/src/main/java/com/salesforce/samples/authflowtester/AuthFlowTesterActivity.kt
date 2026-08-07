@@ -216,6 +216,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
             val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
+                    if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) showLogoutDialog = false
                     with(UserAccountManager.getInstance()) {
                         this.currentUser?.let {
                             currentUser.value = it
