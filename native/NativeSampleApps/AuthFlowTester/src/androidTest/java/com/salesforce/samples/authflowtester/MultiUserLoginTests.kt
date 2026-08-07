@@ -30,6 +30,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
@@ -184,6 +187,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isMultiUser = true,
             expectAdvancedAuth = true,
             expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         app.validateApiRequest()
     }
@@ -376,6 +380,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             user,
             expectAdvancedAuth = true,
             expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
@@ -411,6 +416,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isMultiUser = true,
             expectAdvancedAuth = true,
             expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
@@ -467,6 +473,7 @@ class MultiUserLoginTests: AuthFlowTest() {
         } else {
             null
         },
+        expectedAMarker: String? = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
     ) {
         app.switchToUser(knownUserConfig, knownLoginHostConfig)
         composeTestRule.waitForIdle()
@@ -476,6 +483,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isMultiUser = true,
             expectAdvancedAuth = expectAdvancedAuth,
             expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
         )
     }
 
@@ -543,13 +551,14 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
 
         // Switch to User A — no BW, MU still present
-        switchToUserAndValidate(user, expectAdvancedAuth = false)
+        switchToUserAndValidate(user, expectAdvancedAuth = false, expectedAMarker = Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID)
 
         // Switch back to User B — BW back, MU still present
         switchToUserAndValidate(
             otherUser,
             ADVANCED_AUTH,
             expectedBMarker = Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
 
         // Log out User B via SDK — auto-switches to User A; MU must be gone
@@ -571,6 +580,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isMultiUser = false,
             expectAdvancedAuth = false,
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
         )
     }
 

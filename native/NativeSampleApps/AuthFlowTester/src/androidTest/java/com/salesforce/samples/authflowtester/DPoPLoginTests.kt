@@ -28,6 +28,7 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
@@ -64,8 +65,8 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoP_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // endregion
@@ -86,8 +87,8 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoPRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // endregion
@@ -152,6 +153,7 @@ class DPoPLoginTests : AuthFlowTest() {
         migrateAndValidate(
             ECA_JWT_DPOP_RTR,
             isDpop = true,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 

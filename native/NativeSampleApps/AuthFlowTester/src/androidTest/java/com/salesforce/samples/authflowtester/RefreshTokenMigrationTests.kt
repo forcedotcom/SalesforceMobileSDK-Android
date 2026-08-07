@@ -28,6 +28,8 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
@@ -55,6 +57,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.CA_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -69,6 +72,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.ECA_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -83,6 +87,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.BEACON_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -97,6 +102,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -107,7 +113,8 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -122,9 +129,11 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.ECA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -135,10 +144,12 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.CA_OPAQUE
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_OPAQUE
+            KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -149,10 +160,12 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_JWT
+            KnownAppConfig.BEACON_JWT,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_OPAQUE
+            KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -176,6 +189,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.ECA_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
             expectAdvancedAuth = false,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
         )
     }
 
@@ -194,6 +208,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
             expectAdvancedAuth = false,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
         )
     }
 

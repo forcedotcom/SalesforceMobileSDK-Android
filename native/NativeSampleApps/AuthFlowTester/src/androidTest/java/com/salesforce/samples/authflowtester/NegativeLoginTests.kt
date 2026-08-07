@@ -31,6 +31,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
@@ -128,6 +129,7 @@ class NegativeLoginTests : AuthFlowTest() {
             user,
             expectAdvancedAuth = true,
             expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
         val (postAccessToken, postRefreshToken) = app.getTokens()
