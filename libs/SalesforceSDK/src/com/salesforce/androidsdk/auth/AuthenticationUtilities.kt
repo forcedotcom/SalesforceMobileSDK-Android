@@ -44,8 +44,12 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FI
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -179,6 +183,25 @@ internal suspend fun onAuthFlowComplete(
 
     if (tokenMigration) {
         userAccountManager.persistAccount(account)
+
+        // TM: mark that this user was migrated
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+
+        // JT/OT: token format may change with new credentials
+        if (account.tokenFormat == "jwt") {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+        } else {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+        }
+
+        // BN: beacon child app
+        if (account.beaconChildConsumerKey != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BEACON, account)
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BEACON, account)
+        }
     } else {
         userAccountManager.createAccount(account)
         userAccountManager.switchToUser(account)

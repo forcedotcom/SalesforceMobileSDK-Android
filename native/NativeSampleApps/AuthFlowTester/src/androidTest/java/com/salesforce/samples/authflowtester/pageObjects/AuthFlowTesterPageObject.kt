@@ -46,6 +46,15 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
@@ -294,6 +303,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -330,7 +343,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -532,9 +545,13 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
     }
 
     private fun validateUserAgent(
@@ -547,6 +564,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
     ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
@@ -647,6 +668,60 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 assert(marker !in flags) {
                     "Unexpected L-marker '$marker' in ftr_ flags of: $ua"
                 }
+            }
+        }
+
+        val allAMarkers = listOf(
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        if (expectedAMarker != null) {
+            assert(expectedAMarker in flags) {
+                "Expected A-marker '$expectedAMarker' in ftr_ flags of: $ua"
+            }
+            allAMarkers.filter { it != expectedAMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected A-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        }
+
+        if (wasMigrated) {
+            assert(Features.FEATURE_TOKEN_MIGRATION in flags) {
+                "Expected 'TM' flag for token migration in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_TOKEN_MIGRATION !in flags) {
+                "Expected no 'TM' flag when not migrated in: $ua"
+            }
+        }
+
+        if (isJwt) {
+            assert(Features.FEATURE_TOKEN_FORMAT_JWT in flags) {
+                "Expected 'JT' flag for JWT token format in: $ua"
+            }
+            assert(Features.FEATURE_TOKEN_FORMAT_OPAQUE !in flags) {
+                "Expected no 'OT' flag for JWT token format in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_TOKEN_FORMAT_OPAQUE in flags) {
+                "Expected 'OT' flag for opaque token format in: $ua"
+            }
+            assert(Features.FEATURE_TOKEN_FORMAT_JWT !in flags) {
+                "Expected no 'JT' flag for opaque token format in: $ua"
+            }
+        }
+
+        if (isBeacon) {
+            assert(Features.FEATURE_BEACON in flags) {
+                "Expected 'BN' flag for beacon child app in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_BEACON !in flags) {
+                "Expected no 'BN' flag when not a beacon child app in: $ua"
             }
         }
     }
