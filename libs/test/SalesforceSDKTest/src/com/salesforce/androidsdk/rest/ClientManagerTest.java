@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.rest;
 
 import static com.salesforce.androidsdk.accounts.UserAccountManagerTest.TEST_ACCOUNT_TYPE;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME;
-import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_ACCOUNT_NAME_2;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_AUTH_TOKEN;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_KEY;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CUSTOM_VALUE;
@@ -46,14 +45,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.accounts.UserAccountTest;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
-import com.salesforce.androidsdk.util.test.TestCredentials;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -64,20 +62,16 @@ import org.junit.runner.RunWith;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class ClientManagerTest {
 
     private ClientManager clientManager;
+    private Context targetContext;
     private AccountManager accountManager;
     private UserAccountManager userAccountManager;
     private EventsListenerQueue eq;
@@ -86,12 +80,10 @@ public class ClientManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        final Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app);
-        TestCredentials.init(InstrumentationRegistry.getInstrumentation().getContext());
-        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, true);
-        accountManager = clientManager.getAccountManager();
+        accountManager = AccountManager.get(targetContext);
         eq = new EventsListenerQueue();
         if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
@@ -110,38 +102,21 @@ public class ClientManagerTest {
             eq.tearDown();
             eq = null;
         }
-        cleanupAccounts();
-        assertNoAccounts();
+        if (accountManager != null) {
+            cleanupAccounts();
+            assertNoAccounts();
+        }
         testOauthKeys = null;
         testOauthValues = null;
         SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
-    /**
-     * Test getAccountType
-     */
+    /** Test that a bound manager retains the exact persisted account type. */
     @Test
-    public void testGetAccountType() {
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, clientManager.getAccountType());
-    }
-
-    /**
-     * Test createNewAccount
-     */
-    @Test
-    public void testCreateAccount() {
-
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Call createNewAccount
+    public void testBoundManagerRetainsAccountType() {
         createTestAccountInAccountManager();
-
-        // Check that the account did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("One account should have been returned", 1, accounts.length);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
+        Assert.assertNotNull(clientManager.getAccount());
+        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, clientManager.getAccount().type);
     }
 
     /**
@@ -152,11 +127,13 @@ public class ClientManagerTest {
 
         UserAccount userAccount = UserAccountTest.createTestAccount();
 
-        // Save to account manager (encrypt fields)
-        clientManager.createNewAccount(userAccount);
+        // Save to account manager (encrypt fields) and bind a manager to it.
+        userAccountManager.createAccount(userAccount);
+        clientManager = new ClientManager(targetContext, userAccount);
 
         // Get account from account manager
         Account account = clientManager.getAccount();
+        Assert.assertNotNull(account);
 
         // Build user account from account (decrypts fields)
         UserAccount restoredUserAccount = userAccountManager.buildUserAccount(account);
@@ -165,175 +142,135 @@ public class ClientManagerTest {
         UserAccountTest.checkSameUserAccount(userAccount, restoredUserAccount);
     }
 
-    /**
-     * Test getAccounts - when there is only one
-     */
+    /** An unpersisted user leaves the manager unbound without throwing. */
     @Test
-    public void testGetAccountsWithSingleAccount() {
-
-        // Make sure we have no accounts initially
+    public void testConstructorWithUnpersistedUserIsUnbound() {
         assertNoAccounts();
-
-        // Call createNewAccount
-        createTestAccountInAccountManager();
-
-        // Call getAccounts
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("One account should have been returned", 1, accounts.length);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
+        assertManagerIsUnbound(new ClientManager(targetContext, UserAccountTest.createTestAccount()));
     }
 
-    /**
-     * Test getAccounts - when there are several accounts
-     */
+    /** A supplied identity that does not match its persisted record leaves the manager unbound. */
     @Test
-    public void testGetAccountsWithSeveralAccounts() {
+    public void testConstructorWithMismatchedIdentityIsUnbound() {
+        final UserAccount persistedUser = createTestAccountInAccountManager();
+        final UserAccount mismatchedUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(persistedUser)
+                .userId("different-user-id")
+                .build();
 
-        // Make sure we have no accounts initially
-        assertNoAccounts();
+        assertManagerIsUnbound(new ClientManager(targetContext, mismatchedUser));
+    }
 
-        // Call two accounts
-        createTestAccountInAccountManager();
+    /** A retained manager remains bound when application-wide current-user selection changes. */
+    @Test
+    public void testRetainedManagerRemainsBoundAfterCurrentUserSwitch() {
+        final UserAccount userA = createTestAccountInAccountManager();
+        final UserAccount userB = createOtherTestAccountInAccountManager();
+        userAccountManager.storeCurrentUserInfo(userB.getUserId(), userB.getOrgId());
+
+        Assert.assertEquals(userB.getUserId(), userAccountManager.getCurrentUser().getUserId());
+        Assert.assertNotNull(clientManager.getAccount());
+        Assert.assertEquals(userA.getAccountName(), clientManager.getAccount().name);
+    }
+
+    /** Adding another account does not change the manager's exact Account target. */
+    @Test
+    public void testGetAccountRemainsExactBoundAccountAmongSeveral() {
+        final UserAccount userA = createTestAccountInAccountManager();
         createOtherTestAccountInAccountManager();
 
-        // Call getAccounts
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
-
-        // Sorting
-        Arrays.sort(accounts, new Comparator<Account>() {
-            @Override
-            public int compare(Account account1, Account account2) {
-                return account1.name.compareTo(account2.name);
-            }
-        });
-
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME_2, accounts[1].name);
+        Assert.assertNotNull(clientManager.getAccount());
+        Assert.assertEquals(userA.getAccountName(), clientManager.getAccount().name);
     }
 
-    /**
-     * Test getAccountByName
-     */
+    /** Client creation uses the bound identity rather than whichever user is current. */
     @Test
-    public void testGetAccountByName() {
+    public void testPeekRestClientUsesBoundUserWhenOtherUserIsCurrent() {
+        final UserAccount userA = createTestAccountInAccountManager();
+        final UserAccount userB = createOtherTestAccountInAccountManager();
+        userAccountManager.storeCurrentUserInfo(userB.getUserId(), userB.getOrgId());
 
-        // Make sure we have no accounts initially
-        assertNoAccounts();
+        final RestClient client = clientManager.peekRestClient();
 
-        // Create two accounts
+        Assert.assertNotNull(client);
+        Assert.assertEquals(userA.getUserId(), client.getClientInfo().userId);
+        Assert.assertEquals(userA.getOrgId(), client.getClientInfo().orgId);
+    }
+
+    /** Provider credentials come only from the manager's bound user. */
+    @Test
+    public void testProviderInheritsManagerIdentity() {
+        final UserAccount userA = createTestAccountInAccountManager();
+        final UserAccount userB = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createOtherTestAccount())
+                .refreshToken("other_refresh_token")
+                .build();
+        userAccountManager.createAccount(userB);
+        userAccountManager.storeCurrentUserInfo(userB.getUserId(), userB.getOrgId());
+
+        final ClientManager.AccMgrAuthTokenProvider provider =
+                new ClientManager.AccMgrAuthTokenProvider(clientManager);
+
+        Assert.assertEquals(userA.getRefreshToken(), provider.getRefreshToken());
+    }
+
+    /** Missing required identifiers leave the manager unbound without throwing. */
+    @Test
+    public void testConstructorWithIncompleteIdentityIsUnbound() {
+        final UserAccount missingIdentity = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .userId(null)
+                .build();
+
+        assertManagerIsUnbound(new ClientManager(targetContext, missingIdentity));
+    }
+
+    /** Missing client credentials fail closed at client creation without throwing. */
+    @Test
+    public void testPeekRestClientWithoutAuthTokenReturnsNull() {
         createTestAccountInAccountManager();
-        createOtherTestAccountInAccountManager();
+        final Account account = clientManager.getAccount();
+        Assert.assertNotNull(account);
+        accountManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, null);
 
-        // Check that the accounts did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
-
-        // Get the first one by name
-        Account account = clientManager.getAccountByName(TEST_ACCOUNT_NAME);
-        Assert.assertNotNull("An account should have been returned", account);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
-
-        // Get the second one by name
-        account = clientManager.getAccountByName(TEST_ACCOUNT_NAME_2);
-        Assert.assertNotNull("An account should have been returned", account);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME_2, account.name);
-        Assert.assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
+        Assert.assertNull(clientManager.peekRestClient());
     }
 
-
-    /**
-     * Test removeAccounts when there is only one
-     */
+    /** Missing persisted login routing fails closed at client creation without throwing. */
     @Test
-    public void testRemoveOnlyAccount() {
-
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Create an account
+    public void testPeekRestClientWithoutLoginUrlReturnsNull() {
         createTestAccountInAccountManager();
+        final Account account = clientManager.getAccount();
+        Assert.assertNotNull(account);
+        accountManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, null);
 
-        // Check that the account did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("One account should have been returned", 1, accounts.length);
-        Assert.assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
-
-        // Remove the account
-        clientManager.removeAccounts(accounts);
-
-        // Make sure there are no accounts left
-        assertNoAccounts();
+        Assert.assertNull(clientManager.peekRestClient());
     }
 
-    /**
-     * Test removeAccounts - removing one account where there are several
-     */
+    /** Missing persisted identity routing fails closed at client creation without throwing. */
     @Test
-    public void testRemoveOneOfSeveralAccounts() {
-
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Create two accounts
+    public void testPeekRestClientWithoutIdentityUrlReturnsNull() {
         createTestAccountInAccountManager();
-        createOtherTestAccountInAccountManager();
+        final Account account = clientManager.getAccount();
+        Assert.assertNotNull(account);
+        accountManager.setUserData(account, AuthenticatorService.KEY_ID_URL, null);
 
-        // Check that the accounts did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
-
-        // Remove one of them
-        clientManager.removeAccounts(new Account[]{accounts[0]});
-
-        // Make sure the other account is still there
-        Account[] accountsLeft = clientManager.getAccounts();
-        Assert.assertEquals("One account should have been returned", 1, accountsLeft.length);
-        Assert.assertEquals("Wrong account name", accounts[1].name, accountsLeft[0].name);
+        Assert.assertNull(clientManager.peekRestClient());
     }
 
-    /**
-     * Test removeAccounts - removing two accounts
-     */
+    /** Malformed persisted URLs fail closed at client creation without throwing. */
     @Test
-    public void testRemoveSeveralAccounts() {
+    public void testPeekRestClientWithMalformedInstanceUrlReturnsNull() {
+        final UserAccount user = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .instanceServer("https://invalid host.example")
+                .build();
+        userAccountManager.createAccount(user);
 
-        // Make sure we have no accounts initially
-        assertNoAccounts();
+        final ClientManager manager = new ClientManager(targetContext, user);
 
-        // Create two accounts
-        createTestAccountInAccountManager();
-        createOtherTestAccountInAccountManager();
-
-        // Check that the accounts did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("Two accounts should have been returned", 2, accounts.length);
-
-        // Remove one of them
-        clientManager.removeAccounts(accounts);
-
-        // Make sure there are no accounts left
-        assertNoAccounts();
-    }
-
-    /**
-     * Test peekRestClient - when there is no account
-     */
-    @Test
-    public void testPeekRestClientWhenNoAccounts() {
-
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Call peekRestClient - expect exception
-        try {
-            clientManager.peekRestClient();
-            Assert.fail("Expected AccountInfoNotFoundException");
-        } catch (AccountInfoNotFoundException e) {
-            // as expected
-        }
+        Assert.assertNotNull(manager.getAccount());
+        Assert.assertNull(manager.peekRestClient());
     }
 
     /**
@@ -350,70 +287,35 @@ public class ClientManagerTest {
         createTestAccountInAccountManager();
 
         // Call peekRestClient - expect restClient
-        try {
-            RestClient restClient = clientManager.peekRestClient();
-            Assert.assertNotNull("RestClient expected", restClient);
-            Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-            Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
-        } catch (AccountInfoNotFoundException e) {
-            Assert.fail("Did not expect AccountInfoNotFoundException");
-        }
+        RestClient restClient = clientManager.peekRestClient();
+        Assert.assertNotNull("RestClient expected", restClient);
+        Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
+        Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
     }
 
-    /**
-     * Test getRestClient - when there is an account
-     * @throws URISyntaxException
-     */
+    /** A specialized client route does not replace the account's identity or persisted route. */
     @Test
-    public void testGetRestClientWithAccountSetup() throws URISyntaxException {
+    public void testProviderRoutingOverride() {
+        final UserAccount user = createTestAccountInAccountManager();
+        final ClientManager.AccMgrAuthTokenProvider provider =
+                new ClientManager.AccMgrAuthTokenProvider(
+                        clientManager,
+                        "https://special.route.example"
+                );
 
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Create account
-        createTestAccountInAccountManager();
-
-        // Call getRestClient - expect restClient
-        final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
-        clientManager.getRestClient(null, new RestClientCallback() {
-            @Override
-            public void authenticatedRestClient(RestClient client) {
-                q.add(client);
-            }
-        });
-
-        // Wait for getRestClient to complete
-        try {
-            RestClient restClient = q.poll(10L, TimeUnit.SECONDS);
-            Assert.assertNotNull("RestClient expected", restClient);
-            Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-            Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
-        } catch (InterruptedException e) {
-            Assert.fail("getRestClient did not return after 5s");
-        }
+        Assert.assertEquals("https://special.route.example", provider.getInstanceUrl());
+        Assert.assertEquals(user.getRefreshToken(), provider.getRefreshToken());
     }
 
-    /**
-     * Test removeAccount
-     */
+    /** Removing the bound account invalidates the retained manager. */
     @Test
-    public void testRemoveAccount() throws Exception {
-
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        // Create account
+    public void testRemovedBoundAccountCannotCreateClient() {
         createTestAccountInAccountManager();
+        final Account boundAccount = clientManager.getAccount();
+        Assert.assertNotNull(boundAccount);
+        accountManager.removeAccountExplicitly(boundAccount);
 
-        // Check that the accounts did get created
-        Account[] accounts = clientManager.getAccounts();
-        Assert.assertEquals("Two accounts should have been returned", 1, accounts.length);
-
-        // Call removeAccount
-        clientManager.removeAccount(clientManager.getAccount());
-
-        // Make sure there are no accounts left
-        assertNoAccounts();
+        Assert.assertNull(clientManager.peekRestClient());
     }
 
     /**
@@ -427,7 +329,7 @@ public class ClientManagerTest {
      * Remove any existing accounts
      */
     private void cleanupAccounts() throws Exception {
-        clientManager.removeAccounts(accountManager.getAccountsByType(TEST_ACCOUNT_TYPE));
+        removeAccounts(accountManager.getAccountsByType(TEST_ACCOUNT_TYPE));
     }
 
     /**
@@ -436,7 +338,8 @@ public class ClientManagerTest {
      */
     private UserAccount createTestAccountInAccountManager() {
         UserAccount userAccount = UserAccountTest.createTestAccount();
-        clientManager.createNewAccount(userAccount);
+        userAccountManager.createAccount(userAccount);
+        clientManager = new ClientManager(targetContext, userAccount);
         return userAccount;
     }
 
@@ -446,7 +349,18 @@ public class ClientManagerTest {
      */
     private UserAccount createOtherTestAccountInAccountManager() {
         UserAccount userAccount = UserAccountTest.createOtherTestAccount();
-        clientManager.createNewAccount(userAccount);
+        userAccountManager.createAccount(userAccount);
         return userAccount;
+    }
+
+    private void assertManagerIsUnbound(ClientManager manager) {
+        Assert.assertNull(manager.getAccount());
+        Assert.assertNull(manager.peekRestClient());
+    }
+
+    private void removeAccounts(Account[] accounts) {
+        for (Account account : accounts) {
+            accountManager.removeAccountExplicitly(account);
+        }
     }
 }

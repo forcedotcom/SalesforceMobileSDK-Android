@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DE
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.util.test.TestCredentials.ACCOUNT_NAME
 import com.salesforce.androidsdk.util.test.TestCredentials.CLIENT_ID
@@ -90,17 +91,9 @@ class TestAuthenticationActivity : AppCompatActivity() {
             .username(USERNAME)
             .build()
 
-        val authTokenProvider = AccMgrAuthTokenProvider(
-            SalesforceSDKManager.getInstance().clientManager,
-            INSTANCE_URL,
-            null,
-            REFRESH_TOKEN
-        )
-        authTokenProvider.newAuthToken
-        account.downloadProfilePhoto()
-
         val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-        // Send user switch intent, create and switch to user.
+        // Persist the account before constructing its bound manager. Token refresh can then
+        // validate and update this exact AccountManager record.
         val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
         val userSwitchType = when {
             // We've already authenticated the first user, so there should be one.
@@ -112,8 +105,22 @@ class TestAuthenticationActivity : AppCompatActivity() {
             // This should never happen but if it does, pass in the "unknown" value.
             else -> USER_SWITCH_TYPE_DEFAULT
         }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
         userAccountManager.createAccount(account)
+
+        val clientManager = ClientManager(this, account)
+        if (clientManager.account == null) {
+            finish()
+            return
+        }
+        val authTokenProvider = AccMgrAuthTokenProvider(clientManager)
+        if (authTokenProvider.newAuthToken == null) {
+            finish()
+            return
+        }
+        userAccountManager.getUserFromOrgAndUserId(ORG_ID, USER_ID)?.downloadProfilePhoto()
+
+        // Notify observers and select the newly authenticated user.
+        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
         userAccountManager.switchToUser(account)
 
         startActivity(Intent(this, SalesforceSDKManager.getInstance().mainActivityClass).apply {

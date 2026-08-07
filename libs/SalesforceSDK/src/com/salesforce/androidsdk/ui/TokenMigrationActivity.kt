@@ -44,11 +44,14 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.BACKGROUND_COLOR_JAVASCRIPT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.validateAndExtractBackgroundColor
@@ -120,9 +123,12 @@ internal class TokenMigrationActivity : ComponentActivity() {
             return
         }
         val client = runCatching {
-            SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+            restClientFactory(applicationContext, user)
         }.getOrElse { e ->
             logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, e as? Exception)
+            return
+        } ?: run {
+            logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, null)
             return
         }
 
@@ -297,6 +303,19 @@ internal class TokenMigrationActivity : ComponentActivity() {
         const val EXTRA_CALLBACK_ID = "MIGRATION_CALLBACK"
 
         const val TAG = "TokenMigrationActivity"
+
+        private val defaultRestClientFactory = { context: Context, user: UserAccount ->
+            ClientManager(context, user).peekRestClient()
+        }
+
+        @VisibleForTesting
+        internal var restClientFactory: (Context, UserAccount) -> RestClient? =
+            defaultRestClientFactory
+
+        @VisibleForTesting
+        internal fun resetRestClientFactory() {
+            restClientFactory = defaultRestClientFactory
+        }
 
         // Used for mocking the webview in tests.
         var webViewFactory = { context: Context -> WebView(context) }

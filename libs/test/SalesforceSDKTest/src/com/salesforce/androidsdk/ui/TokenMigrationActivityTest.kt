@@ -96,7 +96,6 @@ class TokenMigrationActivityTest {
         mockRestClient = mockk(relaxed = true)
         mockUser = mockk(relaxed = true)
 
-        // Mock user properties needed for getAuthorizationUrl
         every { mockUser.instanceServer } returns "https://test.salesforce.com"
 
         mockkStatic(UserAccountManager::class)
@@ -112,7 +111,7 @@ class TokenMigrationActivityTest {
         mockkObject(SalesforceSDKManager.Companion)
         every { SalesforceSDKManager.getInstance() } returns mockSdkManager
         every { mockSdkManager.appContext } returns getApplicationContext()
-        every { mockSdkManager.clientManager.peekRestClient(any<UserAccount>()) } returns mockRestClient
+        TokenMigrationActivity.restClientFactory = { _, _ -> mockRestClient }
         every { mockSdkManager.useHybridAuthentication } returns false
         every { mockSdkManager.userAgent } returns "MockUserAgent"
 
@@ -129,6 +128,7 @@ class TokenMigrationActivityTest {
 
     @After
     fun tearDown() {
+        TokenMigrationActivity.resetRestClientFactory()
         unmockkAll()
     }
 
@@ -324,10 +324,9 @@ class TokenMigrationActivityTest {
             putExtra(TokenMigrationActivity.EXTRA_USER_ID, VALID_USER)
         }
 
-        // Throw exception when getting client
-        every {
-            mockSdkManager.clientManager.peekRestClient(any<UserAccount>())
-        } throws RuntimeException("Account not found")
+        TokenMigrationActivity.restClientFactory = { _, _ ->
+            throw RuntimeException("Account not found")
+        }
 
         // When
         launch<TokenMigrationActivity>(intent).use { scenario ->

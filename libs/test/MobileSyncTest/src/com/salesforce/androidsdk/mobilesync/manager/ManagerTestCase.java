@@ -42,10 +42,9 @@ import android.content.Context;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.analytics.logger.SalesforceLogger;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.mobilesync.TestForceApp;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.util.Constants;
@@ -53,7 +52,6 @@ import com.salesforce.androidsdk.mobilesync.util.MobileSyncLogger;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -66,7 +64,6 @@ import org.json.JSONObject;
 import org.junit.Assert;
 
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -93,7 +90,6 @@ abstract public class ManagerTestCase {
     protected SyncManager syncManager;
     protected SyncManager globalSyncManager;
     protected RestClient restClient;
-    protected HttpAccess httpAccess;
     protected SmartStore smartStore;
     protected SmartStore globalSmartStore;
     protected String apiVersion;
@@ -109,28 +105,30 @@ abstract public class ManagerTestCase {
         if (MobileSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        final ClientManager clientManager = new ClientManager(
-                targetContext,
-                TestCredentials.ACCOUNT_TYPE,
-                true
-        );
-        clientManager.createNewAccount(ACCOUNT_NAME,
-        		USERNAME, TestCredentials.REFRESH_TOKEN,
-        		TEST_AUTH_TOKEN, INSTANCE_URL,
-        		LOGIN_URL, IDENTITY_URL,
-        		CLIENT_ID, ORG_ID,
-        		TestCredentials.USER_ID, null, null, null,
-                null, null, null, TestCredentials.PHOTO_URL, null,
-                null, null, null, null, null,
-                null, null, null, false,
-                LANGUAGE, LOCALE);
+        final UserAccount user = UserAccountBuilder.getInstance()
+                .accountName(ACCOUNT_NAME)
+                .username(USERNAME)
+                .refreshToken(TestCredentials.REFRESH_TOKEN)
+                .authToken(TEST_AUTH_TOKEN)
+                .instanceServer(INSTANCE_URL)
+                .loginServer(LOGIN_URL)
+                .idUrl(IDENTITY_URL)
+                .clientId(CLIENT_ID)
+                .orgId(ORG_ID)
+                .userId(TestCredentials.USER_ID)
+                .photoUrl(TestCredentials.PHOTO_URL)
+                .nativeLogin(false)
+                .language(LANGUAGE)
+                .locale(LOCALE)
+                .build();
+        MobileSyncSDKManager.getInstance().getUserAccountManager().createAccount(user);
     	SyncManager.reset();
     	sdkManager = MobileSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore();
         globalSmartStore = sdkManager.getGlobalSmartStore();
+        restClient = initRestClient(user);
         syncManager = SyncManager.getInstance();
         globalSyncManager = SyncManager.getInstance(null, null, globalSmartStore);
-        restClient = initRestClient();
         syncManager.setRestClient(restClient);
         MobileSyncLogger.setLogLevel(SalesforceLogger.Level.DEBUG);
     }
@@ -142,21 +140,12 @@ abstract public class ManagerTestCase {
         }
     }
 
-    private RestClient initRestClient() throws Exception {
-        httpAccess = new HttpAccess(null, "dummy-agent");
-        final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
-        		new URI(LOGIN_URL), CLIENT_ID,
-        		TestCredentials.REFRESH_TOKEN, null);
-        final String authToken = refreshResponse.authToken;
-        final ClientInfo clientInfo = new ClientInfo(new URI(INSTANCE_URL),
-        		new URI(LOGIN_URL),
-        		new URI(IDENTITY_URL),
-        		ACCOUNT_NAME, USERNAME,
-        		TestCredentials.USER_ID, ORG_ID, null, null,
-                null, null, null, null, TestCredentials.PHOTO_URL,
-                null, null, null, null,
-                null, null, null, null, null);
-        return new RestClient(clientInfo, authToken, httpAccess, null);
+    private RestClient initRestClient(UserAccount persistedUser) {
+        sdkManager.getUserAccountManager().refreshToken(persistedUser);
+        final UserAccount refreshedUser = sdkManager.getUserAccountManager().buildUserAccount(
+                sdkManager.getUserAccountManager().buildAccount(persistedUser));
+        Assert.assertNotNull("Token refresh should succeed", refreshedUser);
+        return new ClientManager(targetContext, refreshedUser).peekRestClient();
     }
 
     /**

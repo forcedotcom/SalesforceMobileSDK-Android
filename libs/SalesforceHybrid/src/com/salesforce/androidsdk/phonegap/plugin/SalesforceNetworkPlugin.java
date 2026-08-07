@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -270,7 +271,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             return null;
         }
         if (doesNotRequireAuth) {
-            return currentActivity.buildClientManager().peekUnauthenticatedRestClient();
+            return SalesforceSDKManager.getInstance().getUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }
