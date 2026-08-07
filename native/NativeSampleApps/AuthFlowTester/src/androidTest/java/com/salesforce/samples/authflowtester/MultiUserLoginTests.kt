@@ -767,7 +767,7 @@ class MultiUserLoginTests: AuthFlowTest() {
      * that multi-user removal does not corrupt the remaining user's flags.
      */
     @Test
-    fun testFlagDiversity_A1OtVsA2Jt() {
+    fun testFlagDiversity_NonHybridOpaqueVsHybridJwt() {
         // User A: web-server non-hybrid, CA opaque → A1, OT, no BN
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
@@ -832,7 +832,7 @@ class MultiUserLoginTests: AuthFlowTest() {
      * BEACON_JWT to obtain both JT and BN under A1.
      */
     @Test
-    fun testFlagDiversity_A1JtBnVsA2OtNoBn() {
+    fun testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque() {
         // User A: web-server non-hybrid, beacon JWT → A1, JT, BN
         loginAndValidate(
             knownAppConfig = BEACON_JWT,

@@ -147,8 +147,8 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testMultiUser_tokenMigration_backgroundUser` | Migrate a background user's tokens; validate foreground user is unaffected and refresh works correctly post-switch |
 | `testMultiUser_revokeOtherUserRefreshToken` | Revoke secondary user's refresh token server-side; SDK logs that user out on next refresh, primary user unaffected |
 | `testAdvancedAuthUser_HasBWFlag_RegularAuthUser_DoesNot` | One user on advanced auth (BW flag set), one on regular auth; validates per-user BW flag isolation after switching |
-| `testFlagDiversity_A1OtVsA2Jt` | User A: A1+OT; User B: A2+JT. Validates A-marker and token-format isolation across user switches and after User B logout. |
-| `testFlagDiversity_A1JtBnVsA2OtNoBn` | User A: A1+JT+BN; User B: A2+OT, no BN. Three flags differ; any single per-user flag leak is detectable on at least two axes. |
+| `testFlagDiversity_NonHybridOpaqueVsHybridJwt` | User A: non-hybrid+OT; User B: hybrid+JT. Validates A-marker and token-format isolation across user switches and after User B logout. |
+| `testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque` | User A: beacon+non-hybrid+JT; User B: hybrid+OT, no beacon. Three flags differ; any single per-user flag leak is detectable on at least two axes. |
 
 ### Multi-user flag leakage detection tests
 
@@ -164,7 +164,7 @@ The SDK stores feature flags keyed by `orgId/userId` in `SalesforceSDKManager.pe
 
 #### Test details
 
-##### `testFlagDiversity_A1OtVsA2Jt`
+##### `testFlagDiversity_NonHybridOpaqueVsHybridJwt`
 
 | | User A | User B |
 |---|---|---|
@@ -176,7 +176,7 @@ The SDK stores feature flags keyed by `orgId/userId` in `SalesforceSDKManager.pe
 
 After User B logs out, User A is re-validated alone (no MU flag) to confirm multi-user removal does not corrupt the remaining user's flags.
 
-##### `testFlagDiversity_A1JtBnVsA2OtNoBn`
+##### `testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque`
 
 | | User A | User B |
 |---|---|---|
