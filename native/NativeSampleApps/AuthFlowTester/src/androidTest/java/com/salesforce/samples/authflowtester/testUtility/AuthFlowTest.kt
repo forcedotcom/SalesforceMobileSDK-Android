@@ -172,7 +172,8 @@ abstract class AuthFlowTest {
         val alreadyOnRegularAuth =
             loginServerManager.selectedLoginServer?.url?.trim() == regularAuthUrl.trim()
 
-        if (expectCustomTab && forceAdvancedAuthentication && alreadyOnRegularAuth) {
+        val sdkForcedAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        if (expectCustomTab && forceAdvancedAuthentication && alreadyOnRegularAuth && sdkForcedAdvancedAuth) {
             // Majority path: forced advanced authentication auto-launched the Custom Tab on the
             // already-selected REGULAR_AUTH server, so it is exactly the surface we want.  Leave it
             // in front and let the caller complete login in it; only make sure it has finished
@@ -185,14 +186,11 @@ abstract class AuthFlowTest {
         // backing out of the auto-launched Custom Tab first.
         chromePage.backOutToLoginActivity()
 
-        if (!forceAdvancedAuthentication) {
-            // Turn off forced advanced authentication so the re-selection below recomputes browser
-            // login as disabled, and clear the cached flag directly so a same-server re-selection
-            // (which only reloads the WebView without re-running the auth-config fetch) also sees it
-            // disabled.  Safe here because the back-out above proves the launch-time fetch has
-            // settled.  See LoginViewModel.useWebServerFlow / the browserCustomTab launch gate.
-            setForcedAdvancedAuthEnabled(false)
-        }
+        // Explicitly sync the SDK's forceAdvancedAuthentication to the caller's intent.
+        // A prior loginAndValidate call with a different forceAdvancedAuthentication value
+        // may have left it in the wrong state, causing the login surface to differ from
+        // what the caller expects.
+        setForcedAdvancedAuthEnabled(forceAdvancedAuthentication)
 
         // Switch to REGULAR_AUTH using LoginServerManager. With the activity resumed this fires the
         // pending-server observers.  A real server change re-runs the auth-config fetch; a
