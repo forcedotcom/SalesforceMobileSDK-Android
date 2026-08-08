@@ -174,8 +174,9 @@ public class SalesforceKeyGenerator {
                     // AES keys stored in SharedPreferences encrypted with PKCS1. Removing this
                     // fallback would force a logout on that path. Since DPoP rolls out in 14.0 and
                     // customers are being asked to upgrade, stacking an unexpected logout on top of
-                    // that transition is a poor experience. Safe to remove once the 12.x install
-                    // base has had a full release cycle to migrate through 13.x.
+                    // that transition is a poor experience. Safe to remove in 15.0 once the 12.x
+                    // install base has had a full release cycle to migrate through 13.x or 14.x
+                    // (both retain this fallback and re-encrypt to OAEP on first run).
                     uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_PKCS1);
                 }
                 // We need to store it with the new key (MSDK_KEYPAIR_ALIAS)
