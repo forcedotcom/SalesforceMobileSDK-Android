@@ -59,6 +59,7 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -123,6 +124,7 @@ import com.salesforce.androidsdk.R.string.sf__connection_name_field_content_desc
 import com.salesforce.androidsdk.R.string.sf__connection_url_field_content_description
 import com.salesforce.androidsdk.R.string.sf__custom_url_button
 import com.salesforce.androidsdk.R.string.sf__custom_url_button_content_description
+import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
 import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
@@ -146,6 +148,7 @@ import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class PickerStyle {
     LoginServerPicker,
@@ -181,16 +184,15 @@ internal fun TestablePickerBottomSheet(
             if (newSelectedServer != SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer) {
                 viewModel.loading.value = true
                 SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
-            } else if (LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(newSelectedServer.url.toUri())) {
-                // Re-selecting Welcome Discovery while it is already the selected server should
-                // return the WebView to Phase 1 (welcome.salesforce.com/discovery), even though
-                // LoginServerManager's selection didn't change.  This mirrors the reload-button
-                // behavior the user expects when stuck on a discovered My Domain in Phase 2.
+            } else {
+                // Re-select of the already-selected server: regenerate directly via reloadWebView.
+                // Re-assigning selectedLoginServer or re-posting the server would be swallowed by the
+                // same-value / same-host guards; reloadWebView bypasses them, owns the spinner, mints
+                // a fresh single-use PKCE challenge, and handles the Welcome Discovery Phase 1 reset.
                 viewModel.reloadWebView()
             }
         }
     }
-    val onLoginServerCancel = { viewModel.showServerPicker.value = false }
     val onUserAccountSelected = { userAccount: Any?, _: Boolean ->
         if (userAccount != null && userAccount is UserAccount) {
             activity?.finish()
@@ -208,7 +210,8 @@ internal fun TestablePickerBottomSheet(
         confirmValueChange = { sheetValue ->
             if (sheetValue == SheetValue.Hidden) {
                 when (pickerStyle) {
-                    PickerStyle.LoginServerPicker -> onLoginServerCancel()
+                    // The login picker must never be dismissable.
+                    PickerStyle.LoginServerPicker -> return@rememberModalBottomSheetState false
                     PickerStyle.UserAccountPicker -> onUserSwitchCancel()
                 }
             }
@@ -222,6 +225,19 @@ internal fun TestablePickerBottomSheet(
         viewModel.loading.value = true
     }
 
+    // The picker's own header is the only reachable UI while the sheet is shown (the top app
+    // bar sits behind the modal scrim), so the login-exit back button and the debug Login
+    // Options entry are surfaced here, reusing the existing WebView-login logic unmodified.
+    val showLoginBackButton = pickerStyle == PickerStyle.LoginServerPicker && viewModel.shouldShowBackButton
+    val onLoginBackButtonClick: () -> Unit = { (activity as? LoginActivity)?.handleBackBehavior() }
+    val showDevSupport = with(SalesforceSDKManager.getInstance()) {
+        return@with if (pickerStyle == PickerStyle.LoginServerPicker && isDebugBuild && isDevSupportEnabled()) {
+            { showDevSupportDialog(activity) }
+        } else {
+            null
+        }
+    }
+
     when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
             PickerBottomSheet(
@@ -233,7 +249,10 @@ internal fun TestablePickerBottomSheet(
                 onItemSelected = onNewLoginServerSelected,
                 getValidServer = { serverUrl: String -> viewModel.getValidServerUrl(serverUrl) },
                 addNewLoginServer = addNewLoginServer,
-                removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) }
+                removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) },
+                showLoginBackButton = showLoginBackButton,
+                onLoginBackButtonClick = onLoginBackButtonClick,
+                showDevSupport = showDevSupport,
             )
 
         PickerStyle.UserAccountPicker ->
@@ -266,6 +285,9 @@ internal fun PickerBottomSheet(
     addNewLoginServer: ((String, String) -> Unit)? = null,
     removeLoginServer: ((LoginServer) -> Unit)? = null,
     addNewAccount: (() -> Unit)? = null,
+    showLoginBackButton: Boolean = false,
+    onLoginBackButtonClick: (() -> Unit)? = null,
+    showDevSupport: (() -> Unit)? = null,
 ) {
     val pickerFocus = remember { FocusRequester() }
     val containerContentDescription = when (pickerStyle) {
@@ -291,7 +313,7 @@ internal fun PickerBottomSheet(
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            delay(SLOW_ANIMATION_MS.toLong())
+            delay(SLOW_ANIMATION_MS.toLong().milliseconds)
             pickerFocus.requestFocus()
         }
     }
@@ -354,6 +376,34 @@ internal fun PickerBottomSheet(
                             }
                         }
                     }
+                    // Login-exit Back Button — distinct from the add-connection back arrow above;
+                    // only ever shown for the login picker, never while adding a connection, and
+                    // only when the existing WebView-login logic (shouldShowBackButton) allows it.
+                    AnimatedVisibility(
+                        visible = !addingNewServer && showLoginBackButton,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
+                        ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
+                            IconButton(
+                                onClick = { onLoginBackButtonClick?.invoke() },
+                                colors = IconButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = colorScheme.secondary,
+                                    disabledContainerColor = Color.Transparent,
+                                    disabledContentColor = Color.Transparent,
+                                ),
+                                modifier = Modifier
+                                    .size(ICON_SIZE.dp)
+                                    .testTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON),
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = backButtonDescription,
+                                )
+                            }
+                        }
+                    }
                     // Picker Title Text
                     Text(
                         text = when (pickerStyle) {
@@ -371,24 +421,53 @@ internal fun PickerBottomSheet(
                         fontSize = HEADER_TEXT_SIZE.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    // Close Button
-                    ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
-                        IconButton(
-                            onClick = { coroutineScope.launch { sheetState.hide() } },
-                            colors = IconButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = colorScheme.secondary,
-                                disabledContainerColor = Color.Transparent,
-                                disabledContentColor = Color.Transparent,
-                            ),
-                            modifier = Modifier
-                                .size(ICON_SIZE.dp)
-                                .testTag(LoginViewTestTags.PICKER_CLOSE_BUTTON),
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = closeButtonDescription,
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Debug Login Options entry — reachable from inside the picker because the
+                        // top app bar's own "Developer Support" entry is behind the modal scrim
+                        // while the picker is shown. Debug builds only, same gating as the app bar.
+                        showDevSupport?.let { onShowDevSupport ->
+                            ToolTipWrapper(sf__dev_support_title_menu_item) { devSupportDescription ->
+                                IconButton(
+                                    onClick = onShowDevSupport,
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Build,
+                                        contentDescription = devSupportDescription,
+                                    )
+                                }
+                            }
+                        }
+                        // Close Button — the login picker must never be dismissable (W-19729582),
+                        // so this is only rendered for the user-account picker.
+                        if (pickerStyle == PickerStyle.UserAccountPicker) {
+                            ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
+                                IconButton(
+                                    onClick = { coroutineScope.launch { sheetState.hide() } },
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_CLOSE_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = closeButtonDescription,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
