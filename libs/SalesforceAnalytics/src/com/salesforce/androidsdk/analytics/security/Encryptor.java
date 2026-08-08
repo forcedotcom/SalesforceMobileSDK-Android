@@ -58,6 +58,7 @@ public class Encryptor {
     public enum CipherMode {
         AES_CBC_CIPHER("AES/CBC/PKCS5Padding"),
         AES_GCM_CIPHER("AES/GCM/NoPadding"),
+        RSA_PKCS1("RSA/ECB/PKCS1Padding"),
         RSA_OAEP_SHA256("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 
         final String fullName;
@@ -601,7 +602,7 @@ public class Encryptor {
     private static Cipher getBestCipher(CipherMode cipherMode) {
         Cipher cipher = null;
         try {
-            if (CipherMode.AES_GCM_CIPHER == cipherMode) {
+            if ((CipherMode.AES_GCM_CIPHER == cipherMode) || (CipherMode.RSA_PKCS1 == cipherMode)) {
                 cipher = Cipher.getInstance(cipherMode.fullName);
             } else if (CipherMode.RSA_OAEP_SHA256 == cipherMode) {
                 cipher = Cipher.getInstance(cipherMode.fullName, BOUNCY_CASTLE_WORKAROUND);
