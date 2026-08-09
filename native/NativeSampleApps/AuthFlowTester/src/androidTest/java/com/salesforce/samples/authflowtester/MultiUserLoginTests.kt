@@ -262,14 +262,14 @@ class MultiUserLoginTests: AuthFlowTest() {
     // First user dynamic config, second user boot config, different apps, same scopes (default).
     @Test
     fun testFirstDynamic_SecondStatic_DifferentApps() {
-        // Initial user
+        // Initial user: ECA JWT → A2, JT
         loginAndValidate(knownAppConfig = ECA_JWT)
 
-        // Other user
+        // Other user: CA Opaque → A2, OT
         loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still have JT (not OT)
+        switchToUserAndValidate(user, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
 
         // Switch back to other user
@@ -277,21 +277,21 @@ class MultiUserLoginTests: AuthFlowTest() {
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
     }
 
-    // Both users use different app types and differetn scopes.
+    // Both users use different app types and different scopes.
     @Test
     fun testDifferentApps_differentScopes() {
-        // Initial user
+        // Initial user: Beacon Opaque → A2, OT, BN
         loginAndValidate(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
 
-        // Other user
+        // Other user: ECA JWT → A2, JT, no BN
         loginOtherUserAndValidate(knownAppConfig = ECA_JWT)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still have OT, BN (not JT, no BN leak)
+        switchToUserAndValidate(user, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
 
-        // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        // Switch back to other user — must still have JT, no BN
+        switchToUserAndValidate(otherUser, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
     }
 
@@ -299,22 +299,23 @@ class MultiUserLoginTests: AuthFlowTest() {
     // since tokens are read from disk, not memory, on user switch.
     @Test
     fun testMultiUser_tokenMigration() {
-        // Initial user
+        // Initial user: Beacon JWT → A2, JT, BN
         loginAndValidate(knownAppConfig = BEACON_JWT, scopeSelection = SUBSET)
         val (userAccessToken, userRefreshToken) = app.getTokens()
 
-        // Other user
+        // Other user: CA Opaque → A2, OT
         loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
 
         // Migrate current user (both users logged in → isMultiUser = true)
+        // After migration: other user gains TM + (stays OT, loses BN since CA→BEACON_OPAQUE means gains BN)
         migrateAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownUserConfig = otherUser,
             isMultiUser = true,
         )
 
-        // Switch back to initial user and assert unaltered.
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still be unaltered: JT, BN, no TM
+        switchToUserAndValidate(user, isJwt = true, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = SUBSET)
         val (userSwitchAccessToken, userSwitchRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, userSwitchAccessToken)
@@ -539,12 +540,12 @@ class MultiUserLoginTests: AuthFlowTest() {
     }
 
     /**
-     * A1 (web-server non-hybrid) vs A2 (web-server hybrid) across two live users.
-     * Detects A-marker leakage: if User B's A2 bleeds into User A's session on switch, the
-     * expectedAMarker = A1 assertion fires.
+     * WebServer-NonHybrid+Opaque (A1, OT) vs WebServer-Hybrid+Jwt (A2, JT) across two live users.
+     * Detects A-marker and token-format leakage: if User B's A2 or JT bleeds into User A's
+     * session on switch, the expectedAMarker = A1 or isJwt = false assertion fires.
      */
     @Test
-    fun testMultiUser_A1OT_vs_A2JT() {
+    fun testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt() {
         // User A: web-server non-hybrid → A1, OT
         loginAndValidate(
             knownAppConfig = ECA_OPAQUE,
@@ -572,12 +573,12 @@ class MultiUserLoginTests: AuthFlowTest() {
     }
 
     /**
-     * Maximum orthogonality: A-marker (A2 vs A1), token format (JT vs OT), and beacon (BN vs
-     * no BN) all differ simultaneously. A single per-user flag leakage manifests on at least
-     * two of the three axes.
+     * Maximum orthogonality: WebServer-Hybrid+Beacon+Jwt (A2, JT, BN) vs WebServer-NonHybrid+Opaque
+     * (A1, OT, no BN). A-marker, token format, and beacon all differ simultaneously. A single
+     * per-user flag leakage manifests on at least two of the three axes.
      */
     @Test
-    fun testMultiUser_A2JT_BN_vs_A1OT() {
+    fun testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque() {
         // User A: web-server hybrid, beacon JWT → A2, JT, BN
         loginAndValidate(knownAppConfig = BEACON_JWT)
 
@@ -607,7 +608,7 @@ class MultiUserLoginTests: AuthFlowTest() {
     }
 
     /**
-     * Web-server hybrid beacon (A2, OT, BN) vs web-server non-hybrid (A1, OT, no BN).
+     * WebServer-Hybrid+Beacon+Opaque (A2, OT, BN) vs WebServer-NonHybrid+Opaque (A1, OT, no BN).
      * Tests A-marker and BN leakage in both switch directions.
      *
      * Note: BN (beacon child consumer key) is only returned in the token-endpoint
@@ -616,7 +617,7 @@ class MultiUserLoginTests: AuthFlowTest() {
      * is what generates the detectable difference on this axis.
      */
     @Test
-    fun testMultiUser_A4OT_BN_vs_A2JT() {
+    fun testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque() {
         // User A: web-server hybrid, beacon opaque → A2, OT, BN
         loginAndValidate(
             knownAppConfig = BEACON_OPAQUE,

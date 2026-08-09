@@ -124,12 +124,15 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
     // region CA User Agent Flow Tests
 
     // Login with CA opaque using subset of scopes and user agent flow.
+    // forceAdvancedAuthentication=false required: Custom Tab always uses web-server grant,
+    // so user-agent flow tests must use the in-app WebView path.
     @Test
     fun testCAOpaque_SubsetScopes_UserAgentFlow() {
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
             scopeSelection = SUBSET,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -140,6 +143,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             knownAppConfig = CA_OPAQUE,
             scopeSelection = ALL,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -154,6 +158,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             scopeSelection = SUBSET,
             useWebServerFlow = false,
             useHybridAuthToken = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -165,6 +170,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             scopeSelection = ALL,
             useWebServerFlow = false,
             useHybridAuthToken = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
