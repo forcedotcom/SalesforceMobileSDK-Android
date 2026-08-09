@@ -209,11 +209,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
 
         // Switch back to initial user
-        switchToUserAndValidate(user)
+        switchToUserAndValidate(user, isJwt = true)
         app.validateOAuthValues(knownAppConfig = KnownAppConfig.ECA_JWT, scopeSelection = SUBSET)
 
         // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        switchToUserAndValidate(otherUser, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
 
@@ -233,11 +233,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
 
         // Switch back to initial user
-        switchToUserAndValidate(user)
+        switchToUserAndValidate(user, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = EMPTY)
 
         // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        switchToUserAndValidate(otherUser, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
     }
 
@@ -254,8 +254,8 @@ class MultiUserLoginTests: AuthFlowTest() {
         switchToUserAndValidate(user)
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
 
-        // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        // Switch back to other user (BEACON_JWT → JT, BN)
+        switchToUserAndValidate(otherUser, isJwt = true, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
     }
 
@@ -424,14 +424,14 @@ class MultiUserLoginTests: AuthFlowTest() {
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
         assertEquals(otherUserRefreshToken, otherUserPostRefreshToken)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user (migrated to ECA_JWT → JT, TM)
+        switchToUserAndValidate(user, isJwt = true, wasMigrated = true)
         val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
         assertNotEquals(userAccessToken, userPostAccessToken)
         assertNotEquals(userRefreshToken, userPostRefreshToken)
 
-        // Switch back to other user
+        // Switch back to other user (ECA_OPAQUE → OT, no TM)
         switchToUserAndValidate(otherUser)
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
 

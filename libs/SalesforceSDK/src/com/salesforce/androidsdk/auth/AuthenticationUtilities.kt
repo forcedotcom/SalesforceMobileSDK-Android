@@ -189,8 +189,9 @@ internal suspend fun onAuthFlowComplete(
     if (tokenMigration) {
         userAccountManager.persistAccount(account)
 
-        // TM: mark that this user was migrated
+        // TM: mark that this user was migrated; clear global residue so it does not bleed.
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
 
         // JT/OT: token format may change with new credentials
         if (account.tokenFormat == "jwt") {

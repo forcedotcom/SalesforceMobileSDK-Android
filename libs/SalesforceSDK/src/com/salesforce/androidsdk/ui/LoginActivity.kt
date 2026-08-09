@@ -655,8 +655,10 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
-        // TM: clear on full login (migration path sets it via AuthenticationUtilities)
+        // TM: clear on full login (migration path sets it via AuthenticationUtilities).
+        // Also clear global residue — TM is per-user only and must never bleed into other users.
         sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, userAccount)
+        sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
 
         // JT/OT: token format
         if (userAccount.tokenFormat == "jwt") {
