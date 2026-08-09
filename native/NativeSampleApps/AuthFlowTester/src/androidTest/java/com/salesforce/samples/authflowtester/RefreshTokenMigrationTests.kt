@@ -184,6 +184,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = KnownAppConfig.CA_OPAQUE,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
         migrateAndValidate(
             knownAppConfig = KnownAppConfig.ECA_OPAQUE,
@@ -203,6 +204,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         loginAndValidate(
             knownAppConfig = KnownAppConfig.CA_OPAQUE,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
         migrateAndValidate(
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
