@@ -231,7 +231,7 @@ internal fun TestablePickerBottomSheet(
     val showLoginBackButton = pickerStyle == PickerStyle.LoginServerPicker && viewModel.shouldShowBackButton
     val onLoginBackButtonClick: () -> Unit = { (activity as? LoginActivity)?.handleBackBehavior() }
     val showDevSupport = with(SalesforceSDKManager.getInstance()) {
-        return@with if (pickerStyle == PickerStyle.LoginServerPicker && isDebugBuild && isDevSupportEnabled()) {
+        if (pickerStyle == PickerStyle.LoginServerPicker && isDebugBuild && isDevSupportEnabled()) {
             { showDevSupportDialog(activity) }
         } else {
             null
@@ -313,7 +313,7 @@ internal fun PickerBottomSheet(
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            delay(SLOW_ANIMATION_MS.toLong().milliseconds)
+            delay(SLOW_ANIMATION_MS.milliseconds)
             pickerFocus.requestFocus()
         }
     }

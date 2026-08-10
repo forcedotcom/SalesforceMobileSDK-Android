@@ -633,10 +633,7 @@ class LoginActivityTest {
         every { sdkManager.userAccountManager } returns userAccountManager
         every { userAccountManager.authenticatedUsers } returns null
 
-        val viewModel = mockk<LoginViewModel>(relaxed = true)
-        every { viewModel.shouldShowBackButton } returns false
         val activity = mockk<LoginActivity>(relaxed = true)
-        every { activity.viewModel } returns viewModel
         every { activity.handleBackBehavior() } answers { callOriginal() }
 
         activity.handleBackBehavior()
@@ -659,10 +656,7 @@ class LoginActivityTest {
         every { sdkManager.userAccountManager } returns userAccountManager
         every { userAccountManager.authenticatedUsers } returns listOf(mockk(relaxed = true))
 
-        val viewModel = mockk<LoginViewModel>(relaxed = true)
-        every { viewModel.shouldShowBackButton } returns true
         val activity = mockk<LoginActivity>(relaxed = true)
-        every { activity.viewModel } returns viewModel
         every { activity.handleBackBehavior() } answers { callOriginal() }
 
         activity.handleBackBehavior()
