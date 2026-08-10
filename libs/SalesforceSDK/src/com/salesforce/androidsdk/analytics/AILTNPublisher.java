@@ -110,7 +110,15 @@ public class AILTNPublisher implements AnalyticsPublisher {
         try {
             final String apiPath = String.format(API_PATH,
                     ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
-            final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
+            final ClientManager clientManager =
+                    SalesforceSDKManager.getInstance().getClientManager();
+            if (clientManager == null) {
+                return false;
+            }
+            final RestClient restClient = clientManager.peekRestClient();
+            if (restClient == null) {
+                return false;
+            }
 
             /*
              * Since the publisher is invoked from a Service, it could use an instance
@@ -133,8 +141,6 @@ public class AILTNPublisher implements AnalyticsPublisher {
             final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath,
                     requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
-        } catch (ClientManager.AccountInfoNotFoundException e) {
-            SalesforceSDKLogger.e(TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while making network request", e);
         }

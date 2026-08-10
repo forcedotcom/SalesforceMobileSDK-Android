@@ -49,6 +49,7 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
 import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
@@ -129,7 +130,7 @@ internal class NativeLoginManager(
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
     private val isReCaptchaEnterprise: Boolean = false,
-    private val restClient: RestClient = SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -168,6 +169,9 @@ internal class NativeLoginManager(
         val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
             val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
             createAppAttestation(challenge) ?: return@run null
+        }
+        if (attestationValue != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION)
         }
         val authRequestBody = createRequestBody(
             ATTESTATION to attestationValue,
@@ -974,20 +978,24 @@ internal class NativeLoginManager(
     @VisibleForTesting
     internal fun onBiometricAuthenticationSucceeded(
         activity: FragmentActivity,
-        clientManager: ClientManager = SalesforceSDKManager.getInstance().clientManager,
+        clientManager: ClientManager? = SalesforceSDKManager.getInstance().clientManager,
     ) {
         val bioAuthManager = SalesforceSDKManager.getInstance()
             .biometricAuthenticationManager as? BiometricAuthenticationManager
 
-        clientManager.getRestClient(activity) { client ->
-            runCatching {
-                client.oAuthRefreshInterceptor.refreshAccessToken()
-            }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
-            }
-            bioAuthManager?.onUnlock()
+        val client = clientManager?.peekRestClient()
+        if (client == null) {
+            SalesforceSDKLogger.e(TAG, "Unable to obtain the authenticated client while unlocking.")
             activity.finish()
+            return
         }
+        runCatching {
+            client.oAuthRefreshInterceptor.refreshAccessToken()
+        }.onFailure { e ->
+            e(TAG, "Error encountered while unlocking.", e)
+        }
+        bioAuthManager?.onUnlock()
+        activity.finish()
     }
 
     // endregion

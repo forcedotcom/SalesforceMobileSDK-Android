@@ -737,9 +737,8 @@ class ScreenLockActivityScenarioTest {
                 every { sharedPreferences.getBoolean(any(), any()) } returns true
                 val context = mockk<Context>(relaxed = true)
                 every { context.getSharedPreferences(any(), any()) } returns sharedPreferences
-                val authenticatedUsers = null
                 val userAccountManager = mockk<UserAccountManager>(relaxed = true)
-                every { userAccountManager.authenticatedUsers } returns authenticatedUsers
+                every { userAccountManager.authenticatedUsers } returns null
                 activity.logoutScreenLockUsers(
                     context = context,
                     userAccountManager = userAccountManager,

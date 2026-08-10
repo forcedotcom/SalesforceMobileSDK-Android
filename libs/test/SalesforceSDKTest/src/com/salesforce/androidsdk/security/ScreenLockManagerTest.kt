@@ -26,9 +26,11 @@
  */
 package com.salesforce.androidsdk.security
 
+import android.app.Instrumentation
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -55,6 +57,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.MOBILE_POLICY_PREF
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.SCREEN_LOCK
 import com.salesforce.androidsdk.security.ScreenLockManager.Companion.SCREEN_LOCK_TIMEOUT
+import com.salesforce.androidsdk.ui.ScreenLockActivity
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -65,8 +68,10 @@ import org.junit.runner.RunWith
 @SmallTest
 class ScreenLockManagerTest {
     private lateinit var screenLockManager: ScreenLockManager
+    private lateinit var screenLockActivityMonitor: Instrumentation.ActivityMonitor
     private val userAccount = buildTestUserAccount()
     private val ctx = SalesforceSDKManager.getInstance().appContext
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val globalPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE)
     private val accountPrefs = ctx.getSharedPreferences(MOBILE_POLICY_PREF
                 + userAccount.userLevelFilenameSuffix, Context.MODE_PRIVATE
@@ -74,13 +79,19 @@ class ScreenLockManagerTest {
 
     @Before
     fun setUp() {
+        screenLockActivityMonitor = instrumentation.addMonitor(
+            ScreenLockActivity::class.java.name,
+            null,
+            true,
+        )
         screenLockManager = ScreenLockManager()
     }
 
     @After
     fun tearDown() {
-        globalPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply()
+        screenLockManager.reset()
         accountPrefs.edit().remove(SCREEN_LOCK).remove(SCREEN_LOCK_TIMEOUT).apply()
+        instrumentation.removeMonitor(screenLockActivityMonitor)
     }
 
     @Test

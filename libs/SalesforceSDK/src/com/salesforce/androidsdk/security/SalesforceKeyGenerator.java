@@ -169,9 +169,17 @@ public class SalesforceKeyGenerator {
                 uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_OAEP_SHA256);
                 // Decryption failed - must have been encrypted with legacy key with old cipher mode
                 if (uniqueId == null) {
+                    // TODO (W-23774852): Remove this PKCS1 fallback in 15.0.
+                    // Kept for 14.0 because apps upgrading directly from SDK <=12.x to 14.0 have
+                    // AES keys stored in SharedPreferences encrypted with PKCS1. Removing this
+                    // fallback would force a logout on that path. Since DPoP rolls out in 14.0 and
+                    // customers are being asked to upgrade, stacking an unexpected logout on top of
+                    // that transition is a poor experience. Safe to remove in 15.0 once the 12.x
+                    // install base has had a full release cycle to migrate through 13.x or 14.x
+                    // (both retain this fallback and re-encrypt to OAEP on first run).
                     uniqueId = Encryptor.decryptWithRSA(privateKey, encryptedUniqueId, Encryptor.CipherMode.RSA_PKCS1);
                 }
-                // We need to store it with thew new key (MSDK_KEYPAIR_ALIAS)
+                // We need to store it with the new key (MSDK_KEYPAIR_ALIAS)
                 storeUniqueId = true;
             }
         }

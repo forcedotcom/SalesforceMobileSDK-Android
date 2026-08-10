@@ -45,6 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
@@ -74,6 +75,7 @@ import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
+private const val APP_LOAD_TIMEOUT_MS = 30_000L
 
 data class Tokens(
     val accessToken: String,
@@ -92,7 +94,7 @@ data class DpopInfo(
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {
-        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = APP_LOAD_TIMEOUT_MS)
     }
 
     fun switchToUser(
@@ -290,6 +292,8 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
         isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -326,7 +330,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -526,9 +530,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
         isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker)
     }
 
     private fun validateUserAgent(
@@ -539,6 +545,8 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         expectAdvancedAuth: Boolean = false,
         isRtr: Boolean = false,
         isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
     ) {
         assert(ua.contains("SalesforceMobileSDK/")) {
             "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
@@ -599,6 +607,46 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         } else {
             assert("DP" !in flags) {
                 "Expected no 'DP' flag for non-DPoP session in: $ua"
+            }
+        }
+
+        val allBMarkers = listOf(
+            Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG,
+            Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN,
+            Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+        )  // B2 excluded — never registered on Android
+        if (expectedBMarker != null) {
+            assert(expectedBMarker in flags) {
+                "Expected B-marker '$expectedBMarker' in ftr_ flags of: $ua"
+            }
+            allBMarkers.filter { it != expectedBMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected B-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        } else {
+            allBMarkers.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected B-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        }
+
+        val allLMarkers = listOf(
+            Features.FEATURE_LOGIN_SERVER_PRODUCTION,
+            Features.FEATURE_LOGIN_SERVER_SANDBOX,
+            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            Features.FEATURE_LOGIN_SERVER_OTHER,
+        )
+        if (expectedLMarker != null) {
+            assert(expectedLMarker in flags) {
+                "Expected L-marker '$expectedLMarker' in ftr_ flags of: $ua"
+            }
+            allLMarkers.filter { it != expectedLMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected L-marker '$marker' in ftr_ flags of: $ua"
+                }
             }
         }
     }

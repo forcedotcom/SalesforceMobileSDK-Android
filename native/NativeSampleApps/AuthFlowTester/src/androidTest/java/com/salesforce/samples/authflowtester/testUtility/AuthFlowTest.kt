@@ -35,6 +35,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
@@ -232,16 +233,21 @@ abstract class AuthFlowTest {
         // (openLoginOptions/changeServer) drive the LoginActivity top bar after backing out of the
         // tab, and its overridden credential actions drive the tab itself.
         //
-        // When forceAdvancedAuthentication is false the in-app WebView is used instead (see
-        // [ensureRegularAuthServer]).  This is required when the OAuth callback URI is an HTTPS URL
-        // that cannot be verified as an App Link (e.g. sandbox/test org URLs): the WebView
-        // intercepts the redirect internally, so no App Link verification is needed.  It is also
-        // required for the User Agent Flow (useWebServerFlow = false), which cannot run through a
-        // Custom Tab.  The base LoginPageObject's backOutToLoginActivity() is a no-op, so the
-        // shared flow below is safe either way.
+        // When forceAdvancedAuthentication is false, a regular host uses the in-app WebView (see
+        // [ensureRegularAuthServer]), while an ADVANCED_AUTH host still opens a Custom Tab because
+        // its server configuration requires browser login. The WebView path supports User Agent
+        // Flow and HTTPS callbacks that cannot be verified as App Links. The base
+        // LoginPageObject's backOutToLoginActivity() is a no-op, so the shared flow is safe either
+        // way.
         val loginPage: LoginPageObject =
             if (forceAdvancedAuthentication) ChromeCustomTabPageObject(composeTestRule)
             else LoginPageObject(composeTestRule)
+        val authenticationPage: LoginPageObject =
+            if (forceAdvancedAuthentication || knownLoginHostConfig == ADVANCED_AUTH) {
+                ChromeCustomTabPageObject(composeTestRule)
+            } else {
+                loginPage
+            }
 
         ensureRegularAuthServer(expectCustomTab = forceAdvancedAuthentication, forceAdvancedAuthentication = forceAdvancedAuthentication)
 
@@ -306,24 +312,43 @@ abstract class AuthFlowTest {
             // the Custom Tab for both hosts, where only the password step remains.
             loginPage.backOutToLoginActivity()
             loginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
-            loginPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
+            authenticationPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
         } else {
             if (knownLoginHostConfig != REGULAR_AUTH) {
-                // A non-regular host only occurs on the forced-advanced-auth (Custom Tab) path;
-                // switching servers is a top-bar action, so back out of the tab first.  Selecting
-                // the new server re-launches the Custom Tab on that host.
+                // Switching servers is a top-bar action, so surface LoginActivity first. Selecting
+                // ADVANCED_AUTH launches a Custom Tab whether browser login was client-forced or
+                // required by that server's authentication configuration.
                 loginPage.backOutToLoginActivity()
                 loginPage.changeServer(knownLoginHostConfig)
             }
 
-            // Credentials are entered on the surface now in front: the Custom Tab for the
-            // forced-advanced-auth flow, or the in-app WebView for the User Agent Flow.
-            loginPage.login(knownLoginHostConfig, knownUserConfig)
+            // Enter credentials in the Custom Tab for client-forced or server-required browser
+            // login, and in the WebView otherwise.
+            authenticationPage.login(knownLoginHostConfig, knownUserConfig)
         }
         app.waitForAppLoad()
 
-        val isDpop = useDPoP
-        app.validateUser(knownLoginHostConfig, knownUserConfig, useWelcomeDiscovery, isMultiUser, expectAdvancedAuth = forceAdvancedAuthentication, isDpop = isDpop)
+        val expectedBMarker = when {
+            forceAdvancedAuthentication -> Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+            knownLoginHostConfig == ADVANCED_AUTH ->
+                Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
+            else -> null
+        }
+        val expectedLMarker = if (useWelcomeDiscovery) {
+            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+        } else {
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        }
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            useWelcomeDiscovery,
+            isMultiUser,
+            expectAdvancedAuth = forceAdvancedAuthentication,
+            isDpop = useDPoP,
+            expectedBMarker = expectedBMarker,
+            expectedLMarker = expectedLMarker,
+        )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
     }
@@ -378,7 +403,22 @@ abstract class AuthFlowTest {
         isDpop: Boolean = false,
     ) {
         restartApp()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, usesWelcomeDiscovery, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val expectedLMarker = if (usesWelcomeDiscovery) {
+            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+        } else {
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        }
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            usesWelcomeDiscovery,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+            expectedLMarker = expectedLMarker,
+        )
     }
 
     /**
@@ -419,7 +459,16 @@ abstract class AuthFlowTest {
     ) {
         app.switchToUser(knownUserConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig, isMultiUser = true, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+        )
     }
 
     companion object {
@@ -457,7 +506,7 @@ abstract class AuthFlowTest {
             else LoginPageObject(composeTestRule)
         val chromePage = ChromeCustomTabPageObject(composeTestRule)
 
-        ensureRegularAuthServer(expectCustomTab = useWebServerFlow)
+        ensureRegularAuthServer(expectCustomTab = useWebServerFlow, forceAdvancedAuthentication = useWebServerFlow)
 
         // Reach Login Options via the top bar (back-out is a no-op on the WebView path).
         topBarPage.backOutToLoginActivity()
@@ -490,7 +539,7 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -576,6 +625,7 @@ abstract class AuthFlowTest {
         scopeSelection: ScopeSelection = EMPTY,
         knownUserConfig: KnownUserConfig = user,
         expectAdvancedAuth: Boolean = true,
+        isMultiUser: Boolean = false,
         isDpop: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
@@ -586,7 +636,16 @@ abstract class AuthFlowTest {
         assert(preAccessToken != postAccessToken)
         assert(preRefreshToken != postRefreshToken)
 
-        app.validateUser(knownLoginHostConfig, knownUserConfig, expectAdvancedAuth = expectAdvancedAuth, isDpop = isDpop)
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = isMultiUser,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+        )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work
@@ -618,7 +677,19 @@ abstract class AuthFlowTest {
             val postNonce = app.getDpopInfo().nonce
             assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
         }
-
-        app.validateUserAgent(knownLoginHostConfig = knownLoginHostConfig, expectAdvancedAuth = expectAdvancedAuth, isMultiUser = isMultiUser, isRtr = isRtr, isDpop = isDpop)
+        val expectedBMarker = if (expectAdvancedAuth) {
+            Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+        } else {
+            null
+        }
+        app.validateUserAgent(
+            knownLoginHostConfig = knownLoginHostConfig,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isMultiUser = isMultiUser,
+            isRtr = isRtr,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+        )
     }
 }
