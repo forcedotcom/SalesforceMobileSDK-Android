@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.developer.support
 
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.AppAttestationClient
 import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
@@ -200,6 +201,44 @@ data class DevSupportInfo(
          * Per-user fields show "N/A" when there is no current user; "Last
          * Rotation" shows "Never" until the first confirmed rotation.
          */
+        /**
+         * Builds the "App Attestation" section for the developer info screen.
+         *
+         * @param appAttestationClient The app attestation client, or null if not configured.
+         * @param currentUser The current user account, or null if no user is logged in.
+         * @param aaFeatureActive True if the AA feature flag is registered for the current user.
+         * @return An "App Attestation" section with rows for enabled state, API host,
+         * Google Cloud Project ID, integrity provider readiness, and feature flag.
+         */
+        internal fun parseAppAttestationSection(
+            appAttestationClient: AppAttestationClient?,
+            currentUser: UserAccount?,
+            aaFeatureActive: Boolean,
+        ): DevInfoSection {
+            val attestationEnabled = appAttestationClient != null && appAttestationClient.apiHostName != null
+            val apiHost = appAttestationClient?.apiHostName ?: "N/A"
+            val gcpProjectId = if (appAttestationClient != null) {
+                appAttestationClient.googleCloudProjectId.toString()
+            } else "N/A"
+            val providerReady = when {
+                appAttestationClient == null -> "N/A"
+                appAttestationClient.integrityTokenProvider != null -> "true"
+                else -> "false"
+            }
+            val featureFlag = when {
+                currentUser == null -> "N/A"
+                aaFeatureActive -> "true"
+                else -> "false"
+            }
+            return "App Attestation" to listOf(
+                "Attestation Enabled" to attestationEnabled.toString(),
+                "API Host" to apiHost,
+                "Google Cloud Project ID" to gcpProjectId,
+                "Integrity Provider Ready" to providerReady,
+                "Used in Last Auth" to featureFlag,
+            )
+        }
+
         internal fun parseRtrSection(currentUser: UserAccount?, rtrActive: Boolean) =
             if (currentUser == null) {
                 "RTR" to listOf(

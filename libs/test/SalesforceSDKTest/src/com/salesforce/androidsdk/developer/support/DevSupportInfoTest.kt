@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.developer.support
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.AppAttestationClient
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
@@ -777,6 +778,111 @@ class DevSupportInfoTest {
         assertEquals(timestamp, rows.find { it.first == "Last Rotation" }?.second)
     }
 
+    // App Attestation section
+
+    @Test
+    fun appAttestationSection_NoClient_AttestationDisabledAllNA() {
+        val (title, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("App Attestation", title)
+        assertEquals("false", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("N/A", rows.find { it.first == "API Host" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Google Cloud Project ID" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Integrity Provider Ready" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_ClientWithoutHost_AttestationDisabled() {
+        val client = createMockAppAttestationClient(apiHostName = null, integrityProviderReady = false)
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("false", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("N/A", rows.find { it.first == "API Host" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_ClientConfigured_ProviderNotReady() {
+        val client = createMockAppAttestationClient(apiHostName = "myorg.my.salesforce.com", integrityProviderReady = false)
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("true", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("myorg.my.salesforce.com", rows.find { it.first == "API Host" }?.second)
+        assertEquals("false", rows.find { it.first == "Integrity Provider Ready" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FullyConfigured_AllFieldsPopulated() {
+        val client = createMockAppAttestationClient(
+            apiHostName = "myorg.my.salesforce.com",
+            googleCloudProjectId = 123456789L,
+            integrityProviderReady = true,
+        )
+
+        val (title, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("App Attestation", title)
+        assertEquals("true", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("myorg.my.salesforce.com", rows.find { it.first == "API Host" }?.second)
+        assertEquals("123456789", rows.find { it.first == "Google Cloud Project ID" }?.second)
+        assertEquals("true", rows.find { it.first == "Integrity Provider Ready" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FeatureFlag_NoUser_ShowsNA() {
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FeatureFlag_UserWithoutFlag_ShowsFalse() {
+        val user = createMockUserAccount()
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = user,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("false", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FeatureFlag_UserWithFlag_ShowsTrue() {
+        val user = createMockUserAccount()
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = user,
+            aaFeatureActive = true,
+        )
+
+        assertEquals("true", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
     // Helper methods
 
     private fun createMockRuntimeConfig(
@@ -842,6 +948,18 @@ class DevSupportInfoTest {
                 lastTokenRotationTime?.let { putString(UserAccount.LAST_TOKEN_ROTATION_TIME, it) }
             }
         )
+    }
+
+    private fun createMockAppAttestationClient(
+        apiHostName: String? = null,
+        googleCloudProjectId: Long = 0L,
+        integrityProviderReady: Boolean = false,
+    ): AppAttestationClient {
+        return mockk<AppAttestationClient>(relaxed = true) {
+            every { this@mockk.apiHostName } returns apiHostName
+            every { this@mockk.googleCloudProjectId } returns googleCloudProjectId
+            every { integrityTokenProvider } returns if (integrityProviderReady) mockk(relaxed = true) else null
+        }
     }
 
     private fun createMockJwtToken(expirationTime: Long): String {

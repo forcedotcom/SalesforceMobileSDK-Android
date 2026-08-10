@@ -444,25 +444,6 @@ public class Encryptor {
     }
 
     /**
-     * Attempt to decrypt with a RSA private key using different cipher modes:
-     * - RSA_OAEP_SHA256
-     * - then RSA_PKCS1 (legacy)
-     *
-     * TODO retire this method when the server only supports RSA_OAEP_SHA256
-     *
-     * @param privateKey RSA private key.
-     * @param data       Data to be decrypted.
-     * @return Decrypted data.
-     */
-    public static byte[] decryptWithRSAMultiCipherNodes(PrivateKey privateKey, String data) {
-        byte[] result =  decryptWithPrivateKey(privateKey, data, CipherMode.RSA_OAEP_SHA256, /* logErrorOnFailure */ false);
-        if (result == null) {
-            result = decryptWithPrivateKey(privateKey, data, CipherMode.RSA_PKCS1, /* logErrorOnFailure */ true);
-        }
-        return result;
-    }
-
-    /**
      * Decrypts the given bytes using key and IV.
      *
      * @param data Data bytes.

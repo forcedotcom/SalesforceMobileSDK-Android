@@ -120,6 +120,7 @@ import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
 import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.Features.FEATURE_APP_ATTESTATION
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
@@ -629,6 +630,15 @@ open class LoginActivity : FragmentActivity() {
         sdkManager.unregisterUsedAppFeature(FEATURE_QR_CODE_LOGIN)
         if (usedQrLogin) {
             sdkManager.registerUsedAppFeature(FEATURE_QR_CODE_LOGIN, userAccount)
+        }
+
+        // AA: promote transient global to per-user, then clear global
+        val usedAppAttestation = sdkManager.isGlobalFeatureRegistered(FEATURE_APP_ATTESTATION)
+        sdkManager.unregisterUsedAppFeature(FEATURE_APP_ATTESTATION)
+        if (usedAppAttestation) {
+            sdkManager.registerUsedAppFeature(FEATURE_APP_ATTESTATION, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_APP_ATTESTATION, userAccount)
         }
 
         if ("DPoP" == userAccount.tokenType) {
