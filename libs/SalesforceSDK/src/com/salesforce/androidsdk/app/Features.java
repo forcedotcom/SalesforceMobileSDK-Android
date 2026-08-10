@@ -47,6 +47,7 @@ public class Features {
     public static final String FEATURE_WELCOME_DISCOVERY_LOGIN = "WD";
     public static final String FEATURE_RTR = "RT";
     public static final String FEATURE_DPOP = "DP";
+    public static final String FEATURE_APP_ATTESTATION = "AA";
 
     // "Why browser login was used" — registered per-user alongside FEATURE_BROWSER_LOGIN (BW)
     public static final String FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG = "B1";
