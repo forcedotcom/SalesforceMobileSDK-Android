@@ -1186,7 +1186,6 @@ public class OAuth2 {
         public TokenEndpointResponse(Response response, List<String> additionalOauthKeys) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
-                SalesforceSDKLogger.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 if (parsedResponse.has(API_INSTANCE_URL)) {
