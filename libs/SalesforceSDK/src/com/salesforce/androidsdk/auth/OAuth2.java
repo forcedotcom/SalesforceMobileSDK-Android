@@ -690,7 +690,7 @@ public class OAuth2 {
      * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
      */
     public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken, @Nullable String tokenType) {
-        final String scheme = DPOP.equals(tokenType) ? DPOP + " " : BEARER;
+        final String scheme = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
         return builder.header(AUTHORIZATION, scheme + authToken);
     }
 
@@ -715,7 +715,12 @@ public class OAuth2 {
         return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, credentialsIdentifier, null);
     }
 
-    @VisibleForTesting
+    /**
+     * Canonical implementation of the token-endpoint request. This is the primary production
+     * entry point — {@link #refreshAuthToken} calls it directly. Prefer the shorter overloads
+     * unless a caller genuinely needs to supply {@code credentialsIdentifier} and
+     * {@code tokenType}.
+     */
     @WorkerThread
     public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
                                                                  URI loginServer,

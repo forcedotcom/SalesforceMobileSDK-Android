@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.auth.dpop
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -38,7 +39,14 @@ import java.security.spec.ECGenParameterSpec
 object DPoPKeyManager {
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-    private const val DPOP_TOKEN_TYPE = "DPoP"
+
+    /**
+     * RFC 9449 token type string. Case-sensitive per the spec. Single source of truth —
+     * `OAuth2.java` references this constant rather than redefining the literal.
+     */
+    const val DPOP_TOKEN_TYPE = "DPoP"
+
+    private const val TAG = "DPoPKeyManager"
 
     fun generateOrLoadKeyPair(alias: String): KeyPair {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -81,6 +89,10 @@ object DPoPKeyManager {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
             keyStore.containsAlias(alias)
         } catch (e: Exception) {
+            // A failure here (device lock, entitlement error, KeyStoreException) is NOT the
+            // same as "key not present." Returning false means "proceed without a proof," so
+            // surface the failure for diagnostics rather than swallowing it silently.
+            SalesforceSDKLogger.w(TAG, "DPoPKeyManager: KeyStore lookup failed for $alias", e)
             false
         }
     }
@@ -93,15 +105,24 @@ object DPoPKeyManager {
 
     /**
      * Decides whether a DPoP proof should be attached to a request for a credential identified
-     * by `credentialsIdentifier`. Returns true when either the credential's tokenType is "DPoP"
-     * or a DPoP key pair has already been minted for the credential. Either signal alone is
-     * sufficient — they cover the transient window between `/authorize` (which mints the key
-     * pair before tokenType is written) and `/token` (which writes tokenType after the key pair
-     * has been used to sign the proof).
+     * by `credentialsIdentifier`.
+     *
+     * An explicit `tokenType` is authoritative:
+     * - `tokenType == "DPoP"` → attach.
+     * - any other non-null type (e.g. "Bearer") → do NOT attach, and fast-exit before any
+     *   KeyStore I/O. This protects the DPoP→Bearer migration / Bearer re-auth path: a Bearer
+     *   credential that reuses a `credentialsIdentifier` still holding a stale DPoP key pair
+     *   must never get an unexpected proof.
+     *
+     * A null `tokenType` is the transient window between `/authorize` (which mints the key pair
+     * before tokenType is written) and `/token` (which writes tokenType after the key pair has
+     * been used to sign the proof); only then do we fall back to the key-material signal.
      */
     fun shouldAttachDPoP(credentialsIdentifier: String?, tokenType: String?): Boolean {
         if (credentialsIdentifier.isNullOrEmpty()) return false
         if (DPOP_TOKEN_TYPE == tokenType) return true
+        if (tokenType != null) return false // explicit non-DPoP type — fast exit, no KeyStore I/O
+        // tokenType is null — transition window between /authorize and /token.
         return hasKeyPairForCredentialsIdentifier(credentialsIdentifier)
     }
 }
