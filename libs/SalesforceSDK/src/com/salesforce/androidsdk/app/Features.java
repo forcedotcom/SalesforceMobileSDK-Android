@@ -61,4 +61,17 @@ public class Features {
     public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L3";
     public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L4";
     public static final String FEATURE_LOGIN_SERVER_OTHER              = "L5";
+
+    // "Which auth flow type" — registered as transient global, promoted per-user on auth completion
+    public static final String FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID = "A1";
+    public static final String FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID     = "A2";
+    public static final String FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID = "A3";
+    public static final String FEATURE_AUTH_TYPE_USER_AGENT_HYBRID     = "A4";
+    public static final String FEATURE_AUTH_TYPE_NATIVE                = "A5";
+
+    // Token lifecycle markers — registered per-user on auth completion
+    public static final String FEATURE_TOKEN_MIGRATION                 = "TM";
+    public static final String FEATURE_TOKEN_FORMAT_JWT                = "JT";
+    public static final String FEATURE_TOKEN_FORMAT_OPAQUE             = "OT";
+    public static final String FEATURE_BEACON                          = "BN";
 }

@@ -28,6 +28,7 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE_RTR
@@ -52,16 +53,16 @@ class RTRLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_RTR)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, isJwt = true)
     }
 
     // Login with ECA JWT RTR without hybrid auth token.
     @Test
     fun testECAJwtRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_RTR, useHybridAuthToken = false)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion
@@ -80,8 +81,8 @@ class RTRLoginTests : AuthFlowTest() {
     @Test
     fun testECAOpaqueRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_OPAQUE_RTR, useHybridAuthToken = false)
-        assertRevokeAndRefreshWorks(isRtr = true)
-        assertRevokeAndRefreshWorks(isRtr = true)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(isRtr = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // endregion

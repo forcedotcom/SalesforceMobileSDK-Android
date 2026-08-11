@@ -172,7 +172,8 @@ abstract class AuthFlowTest {
         val alreadyOnRegularAuth =
             loginServerManager.selectedLoginServer?.url?.trim() == regularAuthUrl.trim()
 
-        if (expectCustomTab && forceAdvancedAuthentication && alreadyOnRegularAuth) {
+        val sdkForcedAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        if (expectCustomTab && forceAdvancedAuthentication && alreadyOnRegularAuth && sdkForcedAdvancedAuth) {
             // Majority path: forced advanced authentication auto-launched the Custom Tab on the
             // already-selected REGULAR_AUTH server, so it is exactly the surface we want.  Leave it
             // in front and let the caller complete login in it; only make sure it has finished
@@ -185,14 +186,11 @@ abstract class AuthFlowTest {
         // backing out of the auto-launched Custom Tab first.
         chromePage.backOutToLoginActivity()
 
-        if (!forceAdvancedAuthentication) {
-            // Turn off forced advanced authentication so the re-selection below recomputes browser
-            // login as disabled, and clear the cached flag directly so a same-server re-selection
-            // (which only reloads the WebView without re-running the auth-config fetch) also sees it
-            // disabled.  Safe here because the back-out above proves the launch-time fetch has
-            // settled.  See LoginViewModel.useWebServerFlow / the browserCustomTab launch gate.
-            setForcedAdvancedAuthEnabled(false)
-        }
+        // Explicitly sync the SDK's forceAdvancedAuthentication to the caller's intent.
+        // A prior loginAndValidate call with a different forceAdvancedAuthentication value
+        // may have left it in the wrong state, causing the login surface to differ from
+        // what the caller expects.
+        setForcedAdvancedAuthEnabled(forceAdvancedAuthentication)
 
         // Switch to REGULAR_AUTH using LoginServerManager. With the activity resumed this fires the
         // pending-server observers.  A real server change re-runs the auth-config fetch; a
@@ -263,17 +261,14 @@ abstract class AuthFlowTest {
             loginPage.backOutToLoginActivity()
             loginPage.openLoginOptions()
 
-            if (!useWebServerFlow) {
-                loginOptions.disableWebServerFlow()
-            }
+            if (useWebServerFlow) loginOptions.enableWebServerFlow()
+            else loginOptions.disableWebServerFlow()
 
-            if (!useHybridAuthToken) {
-                loginOptions.disableHybridAuthToken()
-            }
+            if (useHybridAuthToken) loginOptions.enableHybridAuthToken()
+            else loginOptions.disableHybridAuthToken()
 
-            if (useDPoP) {
-                loginOptions.enableDPoP()
-            }
+            if (useDPoP) loginOptions.enableDPoP()
+            else loginOptions.disableDPoP()
 
             // Set simulated discovery result first - its Save does NOT dismiss the activity,
             // unlike the boot-config Save below which calls activity.finish().
@@ -339,6 +334,13 @@ abstract class AuthFlowTest {
         } else {
             Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
+        val expectedAMarker = when {
+            useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+            useWebServerFlow && !useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+            !useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+            else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+        }
+        val appConfig = testConfig.getApp(knownAppConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -348,6 +350,9 @@ abstract class AuthFlowTest {
             isDpop = useDPoP,
             expectedBMarker = expectedBMarker,
             expectedLMarker = expectedLMarker,
+            expectedAMarker = expectedAMarker,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
@@ -401,6 +406,8 @@ abstract class AuthFlowTest {
         usesWelcomeDiscovery: Boolean = false,
         expectAdvancedAuth: Boolean = true,
         isDpop: Boolean = false,
+        useWebServerFlow: Boolean = true,
+        useHybridAuthToken: Boolean = true,
     ) {
         restartApp()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
@@ -410,6 +417,13 @@ abstract class AuthFlowTest {
         } else {
             Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
+        val expectedAMarker = when {
+            useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+            useWebServerFlow && !useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+            !useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+            else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+        }
+        val appConfig = testConfig.getApp(knownAppConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -418,6 +432,9 @@ abstract class AuthFlowTest {
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
             expectedLMarker = expectedLMarker,
+            expectedAMarker = expectedAMarker,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
         )
     }
 
@@ -445,29 +462,6 @@ abstract class AuthFlowTest {
             knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = otherUser,
             isMultiUser = true,
-        )
-    }
-
-    /**
-     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
-     */
-    fun switchToUserAndValidateUser(
-        knownUserConfig: KnownUserConfig,
-        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
-        expectAdvancedAuth: Boolean = true,
-        isDpop: Boolean = false,
-    ) {
-        app.switchToUser(knownUserConfig)
-        composeTestRule.waitForIdle()
-        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
-        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
-        app.validateUser(
-            knownLoginHostConfig,
-            knownUserConfig,
-            isMultiUser = true,
-            expectAdvancedAuth = expectAdvancedAuth,
-            isDpop = isDpop,
-            expectedBMarker = expectedBMarker,
         )
     }
 
@@ -539,7 +533,8 @@ abstract class AuthFlowTest {
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
 
         app.waitForAppLoad()
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN)
+        val appConfig = testConfig.getApp(knownAppConfig)
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon)
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -627,6 +622,7 @@ abstract class AuthFlowTest {
         expectAdvancedAuth: Boolean = true,
         isMultiUser: Boolean = false,
         isDpop: Boolean = false,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.migrateToNewApp(knownAppConfig, scopeSelection)
@@ -638,6 +634,7 @@ abstract class AuthFlowTest {
 
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val appConfig = testConfig.getApp(knownAppConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -645,6 +642,10 @@ abstract class AuthFlowTest {
             expectAdvancedAuth = expectAdvancedAuth,
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            wasMigrated = true,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
@@ -659,6 +660,8 @@ abstract class AuthFlowTest {
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         expectAdvancedAuth: Boolean = true,
         isMultiUser: Boolean = false,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -690,6 +693,35 @@ abstract class AuthFlowTest {
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
+        )
+    }
+
+    /**
+     * Switches to a user already logged in and validates. Mirrors iOS `switchToUserAndValidateUser`.
+     */
+    fun switchToUserAndValidateUser(
+        knownUserConfig: KnownUserConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
+        isDpop: Boolean = false,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
+    ) {
+        app.switchToUser(knownUserConfig)
+        composeTestRule.waitForIdle()
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = isDpop,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
         )
     }
 }

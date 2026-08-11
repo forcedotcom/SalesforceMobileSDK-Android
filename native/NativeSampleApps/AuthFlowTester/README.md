@@ -147,6 +147,85 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testMultiUser_tokenMigration_backgroundUser` | Migrate a background user's tokens; validate foreground user is unaffected and refresh works correctly post-switch |
 | `testMultiUser_revokeOtherUserRefreshToken` | Revoke secondary user's refresh token server-side; SDK logs that user out on next refresh, primary user unaffected |
 | `testAdvancedAuthUser_HasBWFlag_RegularAuthUser_DoesNot` | One user on advanced auth (BW flag set), one on regular auth; validates per-user BW flag isolation after switching |
+| `testFlagDiversity_NonHybridOpaqueVsHybridJwt` | User A: non-hybrid+OT; User B: hybrid+JT. Validates A-marker and token-format isolation across user switches and after User B logout. |
+| `testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque` | User A: beacon+non-hybrid+JT; User B: hybrid+OT, no beacon. Three flags differ; any single per-user flag leak is detectable on at least two axes. |
+| `testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt` | User A: A1+OT; User B: A2+JT. Detects A-marker and token-format leakage across user switches. |
+| `testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque` | User A: A2+JT+BN (beacon); User B: A1+OT. Maximum orthogonality — all three axes (A-marker, token format, beacon) differ. |
+| `testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque` | User A: A2+OT+BN (beacon); User B: A1+OT. Tests A-marker and BN leakage; both users use web server flow. |
+
+### Multi-user flag leakage detection tests
+
+These tests exist to catch bugs where a feature flag registered for one user bleeds into another user's `ftr_` segment. They are designed so that any single leaked flag produces a detectable mismatch on at least one assertion axis (A-marker, token format, or beacon child key).
+
+#### How per-user flag storage works
+
+The SDK stores feature flags keyed by `orgId/userId` in `SalesforceSDKManager.perUserFeatures`. On each user switch the user-agent string is recomputed as `global features + perUserFeatures[orgId/userId]` for the now-current user. A leak can occur if:
+
+- A flag is registered without a user argument (goes to global `features` instead of per-user).
+- The `perUserFeatures` key for two test accounts resolves to the same string (same Salesforce user reached via different auth domains).
+- A Login Options toggle (web server flow, hybrid auth token) is not explicitly reset between sequential `loginAndValidate` calls.
+
+#### Test details
+
+##### `testFlagDiversity_NonHybridOpaqueVsHybridJwt`
+
+| | User A | User B |
+|---|---|---|
+| **App config** | CA Opaque | ECA JWT |
+| **Flow** | Web server, non-hybrid | Web server, hybrid (default) |
+| **Expected A-marker** | A1 (`WEB_SERVER_NON_HYBRID`) | A2 (`WEB_SERVER_HYBRID`) |
+| **Token format** | OT (opaque) | JT (JWT) |
+| **Beacon child** | No | No |
+
+After User B logs out, User A is re-validated alone (no MU flag) to confirm multi-user removal does not corrupt the remaining user's flags.
+
+##### `testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque`
+
+| | User A | User B |
+|---|---|---|
+| **App config** | Beacon JWT | ECA Opaque |
+| **Flow** | Web server, non-hybrid | Web server, hybrid (default) |
+| **Expected A-marker** | A1 (`WEB_SERVER_NON_HYBRID`) | A2 (`WEB_SERVER_HYBRID`) |
+| **Token format** | JT (JWT) | OT (opaque) |
+| **Beacon child** | Yes (BN) | No |
+
+> **Why ECA Opaque and not CA Opaque for User B?** `CA_OPAQUE` is the boot-config app; `needsLoginOptions` is `false` for it, so Login Options are skipped and the HybridAuthToken toggle (left off by User A's non-hybrid login) is never re-enabled. Using `ECA_OPAQUE` forces `needsLoginOptions = true`, which explicitly re-enables the toggle before User B logs in.
+
+After User B logs out, User A is re-validated alone to confirm A1+JT+BN and no MU flag.
+
+##### `testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt`
+
+| | User A | User B |
+|---|---|---|
+| **App config** | ECA Opaque | ECA JWT |
+| **Flow** | Web server, non-hybrid | Web server, hybrid (default) |
+| **Expected A-marker** | A1 (`WEB_SERVER_NON_HYBRID`) | A2 (`WEB_SERVER_HYBRID`) |
+| **Token format** | OT (opaque) | JT (JWT) |
+| **Beacon child** | No | No |
+
+##### `testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque`
+
+| | User A | User B |
+|---|---|---|
+| **App config** | Beacon JWT | ECA Opaque |
+| **Flow** | Web server, hybrid (default) | Web server, non-hybrid |
+| **Expected A-marker** | A2 (`WEB_SERVER_HYBRID`) | A1 (`WEB_SERVER_NON_HYBRID`) |
+| **Token format** | JT (JWT) | OT (opaque) |
+| **Beacon child** | Yes (BN) | No |
+
+Maximum orthogonality — A-marker, token format, and beacon all differ simultaneously.
+
+##### `testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque`
+
+| | User A | User B |
+|---|---|---|
+| **App config** | Beacon Opaque | ECA Opaque |
+| **Flow** | Web server, hybrid (default) | Web server, non-hybrid |
+| **Expected A-marker** | A2 (`WEB_SERVER_HYBRID`) | A1 (`WEB_SERVER_NON_HYBRID`) |
+| **Token format** | OT (opaque) | OT (opaque) |
+| **Beacon child** | Yes (BN) | No |
+
+Both users use web server flow; the beacon vs non-beacon dimension is what generates the detectable BN/A-marker difference.
 
 #### WelcomeLoginTests
 Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discovery Result Editor" to inject a simulated discovery result (login hint + My Domain), then drives the same code path the real callback URL would have produced.

@@ -195,6 +195,8 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val dismissByIdOrText = listOf(
             "com.android.chrome:id/signin_fre_dismiss_button",
             "com.android.chrome:id/negative_button",
+            // Newer Chrome FRE "Set Chrome as default" page uses skip_button.
+            "com.android.chrome:id/skip_button",
         )
         for (resourceId in dismissByIdOrText) {
             val button = device.findObject(UiSelector().resourceId(resourceId))
@@ -203,7 +205,7 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
                 return true
             }
         }
-        for (label in listOf("Use without an account", "No thanks", "No Thanks")) {
+        for (label in listOf("Use without an account", "No thanks", "No Thanks", "Skip", "Not now")) {
             val button = device.findObject(UiSelector().textContains(label))
             if (button.exists()) {
                 button.click()

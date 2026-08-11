@@ -124,6 +124,12 @@ import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_ATTESTATION
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
@@ -136,6 +142,9 @@ import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager
@@ -346,6 +355,10 @@ open class LoginActivity : FragmentActivity() {
                 // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
                 // loadLoginPageInCustomTab() will set it back to true before login completes.
                 completedViaBrowserTab = false
+                // Re-register the A-marker global so it reflects the updated flow type (e.g.
+                // user agent vs web server) chosen in Login Options. loadLoginPageInCustomTab()
+                // will call this again if a Custom Tab is ultimately launched.
+                registerAuthTypeFeatureGlobal()
                 viewModel.reloadWebView()
                 loginDevMenuReload = false
             }
@@ -513,6 +526,7 @@ open class LoginActivity : FragmentActivity() {
 
             else -> {
                 d(TAG, "Web server or user agent login flow triggered")
+                registerAuthTypeFeatureGlobal()
             }
         }
     }
@@ -634,6 +648,45 @@ open class LoginActivity : FragmentActivity() {
             sdkManager.registerUsedAppFeature(FEATURE_DPOP, userAccount)
         } else {
             sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, userAccount)
+        }
+
+        // A-markers: promote per-user and clear globals
+        val allAMarkers = listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+        for (marker in allAMarkers) {
+            sdkManager.unregisterUsedAppFeature(marker)
+            if (marker == activeAMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+
+        // TM: clear on full login (migration path sets it via AuthenticationUtilities).
+        // Also clear global residue — TM is per-user only and must never bleed into other users.
+        sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, userAccount)
+        sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
+
+        // JT/OT: token format
+        if (userAccount.tokenFormat == "jwt") {
+            sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, userAccount)
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, userAccount)
+        } else {
+            sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, userAccount)
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, userAccount)
+        }
+
+        // BN: beacon child app
+        if (userAccount.beaconChildConsumerKey != null) {
+            sdkManager.registerUsedAppFeature(FEATURE_BEACON, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, userAccount)
         }
 
         // Create account and save result before switching to new user
@@ -912,10 +965,32 @@ open class LoginActivity : FragmentActivity() {
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }
 
+    internal fun registerAuthTypeFeatureGlobal() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val allAMarkers = listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            FEATURE_AUTH_TYPE_NATIVE,
+        )
+        allAMarkers.forEach { sdkManager.unregisterUsedAppFeature(it) }
+
+        val hybrid = sdkManager.useHybridAuthentication
+        val webServer = viewModel.useWebServerFlow() || completedViaAdminCustomTab
+        when {
+            webServer && !hybrid -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+            webServer && hybrid  -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID)
+            !webServer && !hybrid -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID)
+            else                  -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_USER_AGENT_HYBRID)
+        }
+    }
+
     @OptIn(ExperimentalInitialNavigationCanLeaveBrowser::class)
     @VisibleForTesting
     internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
         completedViaBrowserTab = true
+        registerAuthTypeFeatureGlobal()
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN)
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*

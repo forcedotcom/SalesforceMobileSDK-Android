@@ -113,6 +113,7 @@ data class AppConfig(
     val scopes: String,
 ) {
     val issuesJwt = name.contains("_jwt")
+    val isBeacon = name.startsWith("beacon_")
     val isRtr = name.contains("_rtr")
     val isDpop = name.contains("_dpop")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"

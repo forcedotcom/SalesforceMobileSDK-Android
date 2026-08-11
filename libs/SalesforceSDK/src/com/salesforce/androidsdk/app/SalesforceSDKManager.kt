@@ -86,6 +86,11 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.Salesforce
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
@@ -782,6 +787,15 @@ open class SalesforceSDKManager protected constructor(
         isReCaptchaEnterprise: Boolean = false,
     ): NativeLoginManagerInterface {
         registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
+        // Register A5 global — native login does not go through LoginActivity so it sets this here.
+        // Clear all other A-markers to keep exactly one active.
+        listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+        ).forEach { unregisterUsedAppFeature(it) }
+        registerUsedAppFeature(FEATURE_AUTH_TYPE_NATIVE)
         nativeLoginManager = NativeLoginManager(
             consumerKey,
             callbackUrl,

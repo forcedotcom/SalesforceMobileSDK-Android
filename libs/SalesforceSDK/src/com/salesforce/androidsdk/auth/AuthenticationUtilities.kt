@@ -44,8 +44,17 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FI
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -179,7 +188,61 @@ internal suspend fun onAuthFlowComplete(
 
     if (tokenMigration) {
         userAccountManager.persistAccount(account)
+
+        // TM: mark that this user was migrated; clear global residue so it does not bleed.
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
+
+        // JT/OT: token format may change with new credentials
+        if (account.tokenFormat == "jwt") {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+        } else {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+        }
+
+        // BN: beacon child app
+        if (account.beaconChildConsumerKey != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BEACON, account)
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BEACON, account)
+        }
     } else {
+        if (nativeLogin) {
+            // Native login bypasses LoginActivity.onAuthFlowSuccess, so A-marker per-user
+            // promotion and JT/OT/BN/TM writes must happen here.
+            val sdkManager = SalesforceSDKManager.getInstance()
+            val allAMarkers = listOf(
+                FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+                FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+                FEATURE_AUTH_TYPE_NATIVE,
+            )
+            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+            for (marker in allAMarkers) {
+                sdkManager.unregisterUsedAppFeature(marker)
+                if (marker == activeAMarker) {
+                    sdkManager.registerUsedAppFeature(marker, account)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(marker, account)
+                }
+            }
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+            if (account.tokenFormat == "jwt") {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            } else {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            }
+            if (account.beaconChildConsumerKey != null) {
+                sdkManager.registerUsedAppFeature(FEATURE_BEACON, account)
+            } else {
+                sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, account)
+            }
+        }
         userAccountManager.createAccount(account)
         userAccountManager.switchToUser(account)
 

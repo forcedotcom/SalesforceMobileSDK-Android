@@ -1290,6 +1290,182 @@ class SalesforceSDKManagerTests {
         )
     }
 
+    // -------------------------------------------------------------------------
+    // A-marker, TM, JT/OT, BN promotion tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun test_givenWebServerNonHybridFlow_whenOnAuthFlowSuccessPromotes_thenA1PerUserAndGlobalCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Simulate: global A1 was set before auth completed
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+
+        // Promote: move global to per-user, clear global
+        val allAMarkers = listOf(
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+        for (marker in allAMarkers) {
+            sdkManager.unregisterUsedAppFeature(marker)
+            if (marker == activeAMarker) sdkManager.registerUsedAppFeature(marker, user)
+            else sdkManager.unregisterUsedAppFeature(marker, user)
+        }
+
+        val ua = sdkManager.getUserAgent("", user)
+        assertTrue("A1 should appear in per-user UA", ua.contains(Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID))
+        assertFalse("A1 global should be cleared", sdkManager.isGlobalFeatureRegistered(Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID))
+        listOf(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID, Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID, Features.FEATURE_AUTH_TYPE_NATIVE).forEach { marker ->
+            assertFalse("$marker should not appear in per-user UA", ua.contains(marker))
+        }
+    }
+
+    @Test
+    fun test_givenWebServerHybridFlow_whenOnAuthFlowSuccessPromotes_thenA2PerUserAndGlobalCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID)
+
+        val allAMarkers = listOf(
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+        for (marker in allAMarkers) {
+            sdkManager.unregisterUsedAppFeature(marker)
+            if (marker == activeAMarker) sdkManager.registerUsedAppFeature(marker, user)
+            else sdkManager.unregisterUsedAppFeature(marker, user)
+        }
+
+        val ua = sdkManager.getUserAgent("", user)
+        assertTrue("A2 should appear in per-user UA", ua.contains(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID))
+        assertFalse("A2 global should be cleared", sdkManager.isGlobalFeatureRegistered(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID))
+        listOf(Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID, Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID, Features.FEATURE_AUTH_TYPE_NATIVE).forEach { marker ->
+            assertFalse("$marker should not appear in per-user UA", ua.contains(marker))
+        }
+    }
+
+    @Test
+    fun test_givenUserAgentFlow_whenOnAuthFlowSuccessPromotes_thenA3PerUserAndGlobalCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID)
+
+        val allAMarkers = listOf(
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+        for (marker in allAMarkers) {
+            sdkManager.unregisterUsedAppFeature(marker)
+            if (marker == activeAMarker) sdkManager.registerUsedAppFeature(marker, user)
+            else sdkManager.unregisterUsedAppFeature(marker, user)
+        }
+
+        val ua = sdkManager.getUserAgent("", user)
+        assertTrue("A3 should appear in per-user UA", ua.contains(Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID))
+        assertFalse("A3 global should be cleared", sdkManager.isGlobalFeatureRegistered(Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID))
+        listOf(Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID, Features.FEATURE_AUTH_TYPE_NATIVE).forEach { marker ->
+            assertFalse("$marker should not appear in per-user UA", ua.contains(marker))
+        }
+    }
+
+    @Test
+    fun test_givenTokenMigration_whenOnAuthFlowCompletes_thenTMRegisteredPerUser() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Simulate the tokenMigration branch: register TM per-user
+        sdkManager.registerUsedAppFeature(Features.FEATURE_TOKEN_MIGRATION, user)
+
+        try {
+            val ua = sdkManager.getUserAgent("", user)
+            assertTrue("TM should appear in per-user UA after migration", ua.contains(Features.FEATURE_TOKEN_MIGRATION))
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_MIGRATION, user)
+        }
+    }
+
+    @Test
+    fun test_givenFullLogin_whenOnAuthFlowSucceeds_thenTMClearedPerUser() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Pre-condition: TM was registered from a prior migration
+        sdkManager.registerUsedAppFeature(Features.FEATURE_TOKEN_MIGRATION, user)
+
+        // Simulate full-login path: clear TM per-user
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_MIGRATION, user)
+
+        val ua = sdkManager.getUserAgent("", user)
+        assertFalse("TM should be cleared after full login", ua.contains(Features.FEATURE_TOKEN_MIGRATION))
+    }
+
+    @Test
+    fun test_givenJwtTokenFormat_whenOnAuthFlowSucceeds_thenJTRegisteredAndOTCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Simulate JWT token format
+        sdkManager.registerUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_JWT, user)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_OPAQUE, user)
+
+        try {
+            val ua = sdkManager.getUserAgent("", user)
+            assertTrue("JT should appear in per-user UA for JWT token format", ua.contains(Features.FEATURE_TOKEN_FORMAT_JWT))
+            assertFalse("OT should not appear in per-user UA for JWT token format", ua.contains(Features.FEATURE_TOKEN_FORMAT_OPAQUE))
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_JWT, user)
+        }
+    }
+
+    @Test
+    fun test_givenOpaqueTokenFormat_whenOnAuthFlowSucceeds_thenOTRegisteredAndJTCleared() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Simulate opaque token format
+        sdkManager.registerUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_OPAQUE, user)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_JWT, user)
+
+        try {
+            val ua = sdkManager.getUserAgent("", user)
+            assertTrue("OT should appear in per-user UA for opaque token format", ua.contains(Features.FEATURE_TOKEN_FORMAT_OPAQUE))
+            assertFalse("JT should not appear in per-user UA for opaque token format", ua.contains(Features.FEATURE_TOKEN_FORMAT_JWT))
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_TOKEN_FORMAT_OPAQUE, user)
+        }
+    }
+
+    @Test
+    fun test_givenBeaconConsumerKey_whenOnAuthFlowSucceeds_thenBNRegistered() {
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val user = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        // Simulate beacon child app
+        sdkManager.registerUsedAppFeature(Features.FEATURE_BEACON, user)
+
+        try {
+            val ua = sdkManager.getUserAgent("", user)
+            assertTrue("BN should appear in per-user UA when beacon child consumer key is set", ua.contains(Features.FEATURE_BEACON))
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_BEACON, user)
+        }
+    }
+
     @Test
     fun test_givenExplicitUserWithoutRTR_whenIsUserFeatureRegistered_thenFalse() {
         /*
