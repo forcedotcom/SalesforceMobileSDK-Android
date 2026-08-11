@@ -150,10 +150,11 @@ class DPoPKeyManagerTest {
         assertFalse(DPoPKeyManager.shouldAttachDPoP(id, null))
         assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
 
-        // Once a key pair exists, hasKeyPair leg kicks in for null / Bearer tokenType.
+        // Once a key pair exists, the hasKeyPair leg kicks in only for a null tokenType.
         DPoPKeyManager.generateOrLoadKeyPair(alias)
         assertTrue(DPoPKeyManager.shouldAttachDPoP(id, null))
-        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
+        // Key material present, but an explicit "Bearer" tokenType takes priority — no proof.
+        assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
         assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
 
         // After deletion the predicate falls back to tokenType-only.
