@@ -32,6 +32,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import androidx.activity.result.ActivityResult
+import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -50,13 +51,18 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_D
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryMobileUrl
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWithHintAndHost
+import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -64,6 +70,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun doTokenRefresh_whenClientCannotBeBuilt_finishesActivity() {
@@ -303,6 +314,27 @@ class LoginActivityTest {
         activity.launchLoginForAdminsAction()
 
         verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    // endregion
+
+    // region Custom Tab toolbar color
+
+    @Test
+    fun customTabToolbarColor_withoutTopBarColor_usesLoginBackgroundColor() {
+        // The toolbar color is the fixed login.salesforce.com background, NOT the WebView-sampled
+        // dynamicBackgroundColor (which is stale at Custom Tab launch time and caused the
+        // black/white inconsistency).
+        assertEquals(
+            LoginActivity.LOGIN_BACKGROUND_COLOR,
+            LoginActivity.customTabToolbarColor(topBarColor = null),
+        )
+    }
+
+    @Test
+    fun customTabToolbarColor_withTopBarColor_usesAppProvidedColor() {
+        val appColor = Color(red = 10, green = 20, blue = 30)
+        assertEquals(appColor, LoginActivity.customTabToolbarColor(topBarColor = appColor))
     }
 
     // endregion
@@ -581,6 +613,140 @@ class LoginActivityTest {
 
         verify(exactly = 1) { viewModel.loginHint = loginHint }
         verify(exactly = 0) { pendingServer.value = any() }
+    }
+
+    // endregion
+
+    // region handleBackBehavior (W-23731759 — non-dismissable login picker)
+
+    @Test
+    fun test_handleBackBehavior_fromPicker_noAccounts_movesTaskToBack() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        mockkObject(SalesforceSDKManager)
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        every { sdkManager.nativeLoginActivity } returns null
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns false
+        every { sdkManager.biometricAuthenticationManager } returns bioAuthManager
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        every { sdkManager.userAccountManager } returns userAccountManager
+        every { userAccountManager.authenticatedUsers } returns null
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.handleBackBehavior() } answers { callOriginal() }
+
+        activity.handleBackBehavior()
+
+        verify(exactly = 1) { activity.moveTaskToBack(true) }
+        verify(exactly = 0) { activity.finish() }
+    }
+
+    @Test
+    fun test_handleBackBehavior_fromPicker_hasAccount_finishes() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        mockkObject(SalesforceSDKManager)
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        every { sdkManager.nativeLoginActivity } returns null
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns false
+        every { sdkManager.biometricAuthenticationManager } returns bioAuthManager
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        every { sdkManager.userAccountManager } returns userAccountManager
+        every { userAccountManager.authenticatedUsers } returns listOf(mockk(relaxed = true))
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.handleBackBehavior() } answers { callOriginal() }
+
+        activity.handleBackBehavior()
+
+        verify(exactly = 1) { activity.setResult(RESULT_CANCELED) }
+        verify(exactly = 1) { activity.finish() }
+        verify(exactly = 0) { activity.moveTaskToBack(any()) }
+    }
+
+    @Test
+    fun test_handleBackBehavior_fromPicker_biometricLocked_doesNothing() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        mockkObject(SalesforceSDKManager)
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        every { sdkManager.nativeLoginActivity } returns null
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns true
+        every { sdkManager.biometricAuthenticationManager } returns bioAuthManager
+
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.handleBackBehavior() } answers { callOriginal() }
+
+        activity.handleBackBehavior()
+
+        verify(exactly = 0) { activity.finish() }
+        verify(exactly = 0) { activity.moveTaskToBack(any()) }
+    }
+
+    @Test
+    fun test_handleBackBehavior_fromPicker_nativeLogin_earlyReturns() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        mockkObject(SalesforceSDKManager)
+        mockkObject(SalesforceSDKManager.Companion)
+        every { SalesforceSDKManager.getInstance() } returns sdkManager
+        every { sdkManager.nativeLoginActivity } returns LoginActivity::class.java
+
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.handleBackBehavior() } answers { callOriginal() }
+
+        activity.handleBackBehavior()
+
+        verify(exactly = 1) { activity.setResult(RESULT_CANCELED) }
+        verify(exactly = 1) { activity.finish() }
+        // The early return must prevent moveTaskToBack from also running.
+        verify(exactly = 0) { activity.moveTaskToBack(any()) }
+    }
+
+    // endregion
+
+    // region clearWebView (W-23731759 — non-dismissable login picker)
+
+    @Test
+    fun test_clearWebView_showServerPickerTrue_showsPicker() {
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val showServerPicker = mockk<androidx.compose.runtime.MutableState<Boolean>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.showServerPicker } returns showServerPicker
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.runOnUiThread(any()) } answers { firstArg<Runnable>().run() }
+        every { activity.clearWebView(any()) } answers { callOriginal() }
+
+        activity.clearWebView(showServerPicker = true)
+
+        verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
+        verify(exactly = 1) { showServerPicker.value = true }
+    }
+
+    @Test
+    fun test_clearWebView_showServerPickerFalse_doesNotShowPicker() {
+        val loginUrl = mockk<MediatorLiveData<String>>(relaxed = true)
+        val showServerPicker = mockk<androidx.compose.runtime.MutableState<Boolean>>(relaxed = true)
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.loginUrl } returns loginUrl
+        every { viewModel.showServerPicker } returns showServerPicker
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.runOnUiThread(any()) } answers { firstArg<Runnable>().run() }
+        every { activity.clearWebView(any()) } answers { callOriginal() }
+
+        activity.clearWebView(showServerPicker = false)
+
+        verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
+        verify(exactly = 0) { showServerPicker.value = any() }
     }
 
     // endregion

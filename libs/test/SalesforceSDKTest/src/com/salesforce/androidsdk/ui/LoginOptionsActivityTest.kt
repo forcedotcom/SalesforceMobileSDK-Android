@@ -285,22 +285,16 @@ class LoginOptionsActivityTest {
     }
 
     @Test
-    @Suppress("DEPRECATION") // Deliberately exercises the deprecated forceAdvancedAuthentication flag and devSupportInfos.
-    fun devSupportInfos_IncludesForceAdvancedAuthentication_WithCurrentValue() {
+    @Suppress("DEPRECATION") // Deliberately exercises the deprecated forceAdvancedAuthentication flag.
+    fun devSupportInfo_IncludesForceAdvancedAuthentication_WithCurrentValue() {
         // The dev-support info surfaces the force-advanced-authentication flag and its value.
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
-        val devSupportInfosOn = SalesforceSDKManager.getInstance().devSupportInfos
-        val labelIndexOn = devSupportInfosOn.indexOf("Force Advanced Authentication")
-        assertTrue(
-            "devSupportInfos should include the Force Advanced Authentication label",
-            labelIndexOn >= 0
-        )
-        assertEquals("true", devSupportInfosOn[labelIndexOn + 1])
+        val authConfigOn = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("true", authConfigOn?.find { it.first == "Force Advanced Authentication" }?.second)
 
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
-        val devSupportInfosOff = SalesforceSDKManager.getInstance().devSupportInfos
-        val labelIndexOff = devSupportInfosOff.indexOf("Force Advanced Authentication")
-        assertEquals("false", devSupportInfosOff[labelIndexOff + 1])
+        val authConfigOff = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("false", authConfigOff?.find { it.first == "Force Advanced Authentication" }?.second)
     }
 
     @Test

@@ -32,7 +32,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberStandardBottomSheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -49,6 +49,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.test.espresso.Espresso.pressBack
 import androidx.test.rule.GrantPermissionRule
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
@@ -60,6 +63,7 @@ import com.salesforce.androidsdk.ui.components.TestablePickerBottomSheet
 import com.salesforce.androidsdk.ui.components.UserAccountMock
 import io.mockk.mockk
 import org.junit.Assert
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -428,6 +432,196 @@ class PickerBottomSheetTest {
     }
 
     // endregion
+    // region Non-Dismissable Picker Tests (W-23731759)
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_closeButton_absentOrDisabled() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(pickerStyle = PickerStyle.LoginServerPicker)
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CLOSE_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_swipeDown_doesNotDismiss() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(pickerStyle = PickerStyle.LoginServerPicker)
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.SERVER_PICKER).performTouchInput { swipeDown() }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.SERVER_PICKER).assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_systemBack_doesNotDismiss() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(pickerStyle = PickerStyle.LoginServerPicker)
+        }
+
+        // ModalBottomSheetDialog's PredictiveBackOnBackPressedCallback routes the system back
+        // press through the same onDismissRequest -> confirmValueChange(Hidden) path as a swipe,
+        // so this exercises the locked picker's back/scrim no-op (PickerBottomSheet.kt :330).
+        pressBack()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.SERVER_PICKER).assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun accountPicker_closeButton_present_andDismisses() {
+        // The stateless PickerBottomSheet always keeps its content composed regardless of
+        // sheetState's value (production removal-from-screen happens via activity?.finish() in
+        // TestablePickerBottomSheet's onUserSwitchCancel, not by the sheet reaching Hidden), so
+        // the meaningful regression guard here is that confirmValueChange actually allows the
+        // transition to Hidden -- capture the sheetState to assert on it directly.
+        lateinit var sheetState: SheetState
+        composeTestRule.setContent {
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            PickerBottomSheetTestWrapper(pickerStyle = PickerStyle.UserAccountPicker, sheetState = sheetState)
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_CLOSE_BUTTON).apply {
+            assertIsDisplayed()
+            performClick()
+        }
+        // sheetState.hide() launches an animation coroutine; let it settle to Hidden.
+        composeTestRule.waitForIdle()
+
+        assertTrue(
+            "Unlike the login picker, the account picker's close button should hide the sheet.",
+            sheetState.currentValue == SheetValue.Hidden,
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun accountPicker_swipeDown_stillDismisses() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(pickerStyle = PickerStyle.UserAccountPicker)
+        }
+
+        // Regression guard: the account picker's confirmValueChange must still allow Hidden.
+        composeTestRule.onNodeWithTag(LoginViewTestTags.ACCOUNT_PICKER).performTouchInput { swipeDown() }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_backButton_shownWhenShouldShowBackButtonTrue() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showLoginBackButton = true,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON).assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_backButton_hiddenWhenShouldShowBackButtonFalse() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showLoginBackButton = false,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_backButton_invokesHandleBackBehavior() {
+        var backInvoked = false
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showLoginBackButton = true,
+                onLoginBackButtonClick = { backInvoked = true },
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON).performClick()
+
+        assertTrue("Tapping the login-exit back button should invoke the supplied callback.", backInvoked)
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_devLoginOptions_reachableDebugOnly() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showDevSupport = { },
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON).assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_devLoginOptions_absentWhenShowDevSupportNull() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showDevSupport = null,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun accountPicker_backAndDevOptions_absent() {
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        composeTestRule.setContent {
+            // TestablePickerBottomSheet's UserAccountPicker dispatch (:265-276) never passes
+            // showLoginBackButton/showDevSupport, so go through it directly rather than the
+            // low-level stateless PickerBottomSheet + wrapper, which would render whatever is
+            // handed to it regardless of pickerStyle for these two controls.
+            TestablePickerBottomSheet(
+                pickerStyle = PickerStyle.UserAccountPicker,
+                userAccountManager = userAccountManager,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_reselectCurrentServer_closesAndReloads() {
+        var reselectedServer: Any? = null
+        var closePicker = false
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                selectedListItem = serverList.first(),
+                onItemSelected = { item, close ->
+                    reselectedServer = item
+                    closePicker = close
+                },
+            )
+        }
+
+        // Tapping the already-selected server's row re-invokes onItemSelected with the same item.
+        composeTestRule.onNode(prodRowCd).onChild().performClick()
+
+        Assert.assertEquals(prodServer, reselectedServer)
+        assertTrue("Selecting a server (even re-selecting) should request the picker close.", closePicker)
+    }
+
+    // endregion
 }
 
 /**
@@ -437,9 +631,14 @@ class PickerBottomSheetTest {
 @Composable
 internal fun PickerBottomSheetTestWrapper(
     pickerStyle: PickerStyle,
-    sheetState: SheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.Expanded,
-        skipHiddenState = false,
+    // Mirrors TestablePickerBottomSheet's production sheetState wiring (:214-228) so this test
+    // harness actually exercises the pickerStyle-aware confirmValueChange lock under test, rather
+    // than defaulting to a sheetState that never vetoes Hidden.
+    sheetState: SheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { sheetValue ->
+            !(sheetValue == SheetValue.Hidden && pickerStyle == PickerStyle.LoginServerPicker)
+        },
     ),
     list: List<Any> = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> serverList
@@ -452,6 +651,9 @@ internal fun PickerBottomSheetTestWrapper(
     addNewLoginServer: ((String, String) -> Unit)? = { _, _ -> },
     removeLoginServer: ((LoginServer) -> Unit)? = { },
     addNewAccount: (() -> Unit)? = { },
+    showLoginBackButton: Boolean = false,
+    onLoginBackButtonClick: (() -> Unit)? = null,
+    showDevSupport: (() -> Unit)? = null,
 ) {
     PickerBottomSheet(
         pickerStyle = pickerStyle,
@@ -464,5 +666,8 @@ internal fun PickerBottomSheetTestWrapper(
         addNewLoginServer = addNewLoginServer,
         removeLoginServer = removeLoginServer,
         addNewAccount = addNewAccount,
+        showLoginBackButton = showLoginBackButton,
+        onLoginBackButtonClick = onLoginBackButtonClick,
+        showDevSupport = showDevSupport,
     )
 }

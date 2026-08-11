@@ -345,6 +345,11 @@ open class LoginViewModel(
                     // onPageFinished, which runs after the new page loads — the gap leaves the
                     // Phase-2 color visible on the bar even though the WebView URL has changed.
                     dynamicBackgroundColor.value = White
+                    // The discovery URL is deterministic, so re-generating it yields an identical
+                    // string and Compose skips the recomposition that reloads the WebView.  Blank it
+                    // first (as the User Agent Flow branch below does) so the reassignment is always a
+                    // change and the WebView reloads.
+                    loginUrl.value = ABOUT_BLANK
                     // Must precede selectedServer reset — LoginUrlSource same-host short-circuit.
                     loginUrl.value =
                         generateSalesforceWelcomeDiscoveryMobileUrl(selectedLoginServerUri).toString()
@@ -623,11 +628,14 @@ open class LoginViewModel(
 
         // Set LiveData values on the main thread.
         browserCustomTabUrl.value = browserTabUrl
-        loginUrl.value = webViewUrl
+
+        val launchingCustomTab = (sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity)
+                && !isUsingFrontDoorBridge
+        // When a Custom Tab is the login surface the WebView is never used for login, so keep it blank.
+        loginUrl.value = if (launchingCustomTab) ABOUT_BLANK else webViewUrl
 
         // Launch the browser custom tab when applicable.
-        if ((sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity)
-            && !isUsingFrontDoorBridge) {
+        if (launchingCustomTab) {
             onBrowserCustomTabReady?.invoke(browserTabUrl)
         }
     }

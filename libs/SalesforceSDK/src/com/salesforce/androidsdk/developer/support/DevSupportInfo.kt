@@ -68,61 +68,6 @@ data class DevSupportInfo(
 
     companion object {
 
-        // TODO: Remove this in 14.0 when the older devSupportInfos is removed.
-        internal fun createFromLegacyDevInfos(devSupportInfos: List<String>): DevSupportInfo {
-            val legacyDevInfo: MutableList<Pair<String, String>> = devSupportInfos.chunked(2) { it[0] to it[1] }.toMutableList()
-            val authConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Authentication Configuration",
-                "Use Web Server Authentication",
-                "Use Hybrid Authentication Token",
-                "Support Welcome Discovery",
-                "Browser Login Enabled",
-                "IDP Enabled",
-                "Identity Provider",
-            )
-            val bootConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Boot Configuration",
-                /* ...keys = */ "Consumer Key",
-                "Redirect URI",
-                "Scopes",
-                "Local",
-                "Start Page",
-                "Unauthenticated Start Page",
-                "Error Page",
-                "Should Authenticate",
-                "Attempt Offline Load",
-            )
-            val currentUserSection = legacyDevInfo.createSection(
-                sectionTitle = "Current User",
-                /* ...keys = */ "Username",
-                "Consumer Key",
-                "Scopes",
-                "Instance URL",
-                "Token Format",
-                "Access Token Expiration",
-                "Beacon Child Consumer Key",
-                "OAuth Token Type",
-                "DPoP Nonce",
-                "DPoP Key Thumbprint",
-            )
-            val runtimeConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Runtime Configuration",
-                /* ...keys = */ "Managed App",
-                "OAuth ID",
-                "Callback URL",
-                "Require Cert Auth",
-                "Only Show Authorized Hosts",
-            )
-
-            return DevSupportInfo(
-                basicInfo = legacyDevInfo,
-                authConfigSection,
-                bootConfigSection,
-                currentUserSection,
-                runtimeConfigSection,
-            )
-        }
-
         fun parseBootConfigInfo(bootConfig: BootConfig): DevInfoList {
             with(bootConfig) {
                 val values = mutableListOf(
@@ -201,6 +146,19 @@ data class DevSupportInfo(
          * Per-user fields show "N/A" when there is no current user; "Last
          * Rotation" shows "Never" until the first confirmed rotation.
          */
+        internal fun parseRtrSection(currentUser: UserAccount?, rtrActive: Boolean) =
+            if (currentUser == null) {
+                "RTR" to listOf(
+                    "RTR Active" to "N/A",
+                    "Last Rotation" to "N/A",
+                )
+            } else {
+                "RTR" to listOf(
+                    "RTR Active" to rtrActive.toString(),
+                    "Last Rotation" to (currentUser.lastTokenRotationTime?.ifBlank { "Never" } ?: "Never"),
+                )
+            }
+
         /**
          * Builds the "App Attestation" section for the developer info screen.
          *
@@ -239,19 +197,6 @@ data class DevSupportInfo(
             )
         }
 
-        internal fun parseRtrSection(currentUser: UserAccount?, rtrActive: Boolean) =
-            if (currentUser == null) {
-                "RTR" to listOf(
-                    "RTR Active" to "N/A",
-                    "Last Rotation" to "N/A",
-                )
-            } else {
-                "RTR" to listOf(
-                    "RTR Active" to rtrActive.toString(),
-                    "Last Rotation" to (currentUser.lastTokenRotationTime?.ifBlank { "Never" } ?: "Never"),
-                )
-            }
-
         fun parseRuntimeConfig(config: RuntimeConfig): DevInfoList {
             val values = mutableListOf(
                 "Managed App" to config.isManagedApp.toString()
@@ -268,23 +213,5 @@ data class DevSupportInfo(
 
             return values
         }
-    }
-}
-
-/**
- * Finds data pairs given a list of keys.  Pairs are removed from the original list.
- */
-private fun MutableList<Pair<String, String>>.createSection(sectionTitle: String, vararg keys: String): DevInfoSection? {
-    val values = keys.mapNotNull { key ->
-        find { it.first == key }?.let { pair ->
-            remove(pair)
-            pair
-        }
-    }
-
-    return if (values.isNotEmpty()) {
-        sectionTitle to values
-    } else {
-        null
     }
 }

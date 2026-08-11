@@ -280,7 +280,7 @@ internal fun LoginView(
                 },
             )
 
-            if (loading) {
+            if (loading && !showServerPicker.value) {
                 loadingIndicator()
             }
         }
@@ -322,66 +322,74 @@ internal fun DefaultTopAppBar(
             )
         },
         actions = @Composable {
-            ToolTipWrapper(sf__more_options) { moreOptionsDescription ->
-                IconButton(
-                    onClick = { showMenu = !showMenu },
-                    colors = IconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = titleTextColor,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = Color.Transparent,
-                    ),
-                    modifier = Modifier.testTag(LoginViewTestTags.MORE_OPTIONS_BUTTON),
-                ) {
-                    Icon(Icons.Default.MoreVert, contentDescription = moreOptionsDescription)
+            // The picker renders in its own full-screen ModalBottomSheet window above this bar,
+            // so the overflow menu is already covered — hide it too rather than leaving it an
+            // invisible, screen-reader-reachable control behind the scrim.
+            if (!showServerPicker.value) {
+                ToolTipWrapper(sf__more_options) { moreOptionsDescription ->
+                    IconButton(
+                        onClick = { showMenu = !showMenu },
+                        colors = IconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = titleTextColor,
+                            disabledContainerColor = Color.Transparent,
+                            disabledContentColor = Color.Transparent,
+                        ),
+                        modifier = Modifier.testTag(LoginViewTestTags.MORE_OPTIONS_BUTTON),
+                    ) {
+                        Icon(Icons.Default.MoreVert, contentDescription = moreOptionsDescription)
+                    }
                 }
-            }
 
-            CompositionLocalProvider(
-                LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
-            ) {
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    // The menu renders in its own popup window, so opt in here as well to expose
-                    // the menu items' testTags as Android resource-ids for UI automation.
-                    modifier = Modifier.semantics { testTagsAsResourceId = true },
+                CompositionLocalProvider(
+                    LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
                 ) {
-                    MenuItem(stringResource(sf__pick_server), testTag = LoginViewTestTags.MENU_ITEM_PICK_SERVER) {
-                        showServerPicker.value = true
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__clear_cookies), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_COOKIES) {
-                        clearCookies()
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__clear_cache), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_CACHE) {
-                        clearWebViewCache()
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__reload), testTag = LoginViewTestTags.MENU_ITEM_RELOAD) {
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    onLoginForAdmins?.let {
-                        MenuItem(stringResource(sf__login_for_admins), testTag = LoginViewTestTags.MENU_ITEM_LOGIN_FOR_ADMINS) {
-                            it.invoke()
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        // The menu renders in its own popup window, so opt in here as well to expose
+                        // the menu items' testTags as Android resource-ids for UI automation.
+                        modifier = Modifier.semantics { testTagsAsResourceId = true },
+                    ) {
+                        MenuItem(stringResource(sf__pick_server), testTag = LoginViewTestTags.MENU_ITEM_PICK_SERVER) {
+                            showServerPicker.value = true
                             showMenu = false
                         }
-                    }
-                    showDevSupport?.let {
-                        MenuItem(stringResource(sf__dev_support_title_menu_item), testTag = LoginViewTestTags.MENU_ITEM_DEV_SUPPORT) {
-                            it.invoke()
+                        MenuItem(stringResource(sf__clear_cookies), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_COOKIES) {
+                            clearCookies()
+                            reloadWebView()
                             showMenu = false
+                        }
+                        MenuItem(stringResource(sf__clear_cache), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_CACHE) {
+                            clearWebViewCache()
+                            reloadWebView()
+                            showMenu = false
+                        }
+                        MenuItem(stringResource(sf__reload), testTag = LoginViewTestTags.MENU_ITEM_RELOAD) {
+                            reloadWebView()
+                            showMenu = false
+                        }
+                        onLoginForAdmins?.let {
+                            MenuItem(stringResource(sf__login_for_admins), testTag = LoginViewTestTags.MENU_ITEM_LOGIN_FOR_ADMINS) {
+                                it.invoke()
+                                showMenu = false
+                            }
+                        }
+                        showDevSupport?.let {
+                            MenuItem(stringResource(sf__dev_support_title_menu_item), testTag = LoginViewTestTags.MENU_ITEM_DEV_SUPPORT) {
+                                it.invoke()
+                                showMenu = false
+                            }
                         }
                     }
                 }
             }
         },
         navigationIcon = {
-            if (shouldShowBackButton) {
+            // Hide the back button while the picker is shown, matching the overflow menu: the
+            // picker's own ModalBottomSheet window covers this bar, so leaving the back button
+            // would keep it an invisible, screen-reader-reachable control behind the scrim.
+            if (shouldShowBackButton && !showServerPicker.value) {
                 ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
                     IconButton(
                         onClick = { finish() },

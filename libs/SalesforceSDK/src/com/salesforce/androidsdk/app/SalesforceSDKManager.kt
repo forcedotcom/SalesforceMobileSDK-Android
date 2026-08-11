@@ -1752,98 +1752,53 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Information to display in the developer support dialog */
-    @Deprecated(
-        "Will be removed in Mobile SDK 14.0, please use the new data class representation.",
-        ReplaceWith("devSupportInfo")
-    )
-    open val devSupportInfos: List<String>
-        get() = mutableListOf(
-            "SDK Version", SDK_VERSION,
-            "App Type", appType,
-            "User Agent", userAgent,
-            "Use Web Server Authentication", "$useWebServerAuthentication",
-            "Use Hybrid Authentication Token", "$useHybridAuthentication",
-            "Force Advanced Authentication", "$_forceAdvancedAuthentication",
-            "Browser Login Enabled", "$isBrowserLoginEnabled",
-            "IDP Enabled", "$isIDPLoginFlowEnabled",
-            "Identity Provider", "$isIdentityProvider",
-            "Authenticated Users", userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
-                "${it.displayName} (${it.username})"
-            } ?: "none",
-        ).apply {
-            val bootConfigValues = DevSupportInfo.parseBootConfigInfo(getBootConfig(appContext))
-            addAll(bootConfigValues.flatMap { listOf(it.first, it.second) })
-
-            val currentUserValues = DevSupportInfo.parseUserInfoSection(userAccountManager.cachedCurrentUser)
-            currentUserValues?.let { (_, values) ->
-                addAll(values.flatMap { listOf(it.first, it.second) })
-            }
-
-            val runtimeConfigValues = DevSupportInfo.parseRuntimeConfig(getRuntimeConfig(appContext))
-            addAll(runtimeConfigValues.flatMap { listOf(it.first, it.second) })
-        }
-
-//    val devSupportInfo: DevSupportInfo
-//        get() {
-//            val userList: String? = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
-//                "${it.displayName} (${it.username})"
-//            }
-//            val basicInfo = listOf(
-//                "SDK Version" to SDK_VERSION,
-//                "App Type" to appType,
-//                "User Agent" to userAgent,
-//                "Authenticated Users" to (userList ?: "None"),
-//            )
-//            val authConfig = listOf(
-//                "Use Web Server Authentication" to "$useWebServerAuthentication",
-//                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
-//                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
-//                "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
-//                "Browser Login Enabled" to "$isBrowserLoginEnabled",
-//                "IDP Enabled" to "$isIDPLoginFlowEnabled",
-//                "Identity Provider" to "$isIdentityProvider",
-//            )
-//
-//            // NOTE: carry over the RTR additionalSections.add(...) from the
-//            // live getter below, or RTR drops off the dev info screen.
-//            return DevSupportInfo(
-//                basicInfo,
-//                authConfig,
-//                getBootConfig(appContext),
-//                userAccountManager.cachedCurrentUser,
-//                getRuntimeConfig(appContext),
-//            )
-//        }
-//
-    /*
-     * TODO: Replace devSupportInfo with the above implementation when
-     * devSupportInfos is removed in 14.0. When doing so, preserve the RTR
-     * section appended in the live getter below — the commented-out
-     * implementation above builds DevSupportInfo via its structured
-     * constructor and does not add it, so RTR would otherwise silently drop
-     * from the dev info screen.
-     */
     open val devSupportInfo: DevSupportInfo
-        get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos).apply {
-            /*
-             * Surface Refresh Token Rotation (RTR) state so developers can
-             * verify whether RTR is active for the current user's session and
-             * when the token last rotated.
-             */
+        get() {
+            val userList = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
+                "${it.displayName} (${it.username})"
+            }
+            val basicInfo = listOf(
+                "SDK Version" to SDK_VERSION,
+                "App Type" to appType,
+                "User Agent" to userAgent,
+                "Authenticated Users" to (userList ?: "None"),
+            )
+            val authConfig = listOf(
+                "Use Web Server Authentication" to "$useWebServerAuthentication",
+                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+                "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
+                "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
+                "IDP Enabled" to "$isIDPLoginFlowEnabled",
+                "Identity Provider" to "$isIdentityProvider",
+            )
+
             val currentUser = userAccountManager.cachedCurrentUser
-            additionalSections.add(
-                DevSupportInfo.parseRtrSection(
-                    currentUser = currentUser,
-                    rtrActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_RTR, currentUser),
+            return DevSupportInfo(
+                basicInfo,
+                authConfig,
+                getBootConfig(appContext),
+                currentUser,
+                getRuntimeConfig(appContext),
+            ).apply {
+                /*
+                 * Surface Refresh Token Rotation (RTR) state so developers can
+                 * verify whether RTR is active for the current user's session and
+                 * when the token last rotated.
+                 */
+                additionalSections.add(
+                    DevSupportInfo.parseRtrSection(
+                        currentUser = currentUser,
+                        rtrActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_RTR, currentUser),
+                    )
                 )
-            )
-            additionalSections.add(
-                DevSupportInfo.parseAppAttestationSection(
-                    appAttestationClient = appAttestationClient,
-                    currentUser = currentUser,
-                    aaFeatureActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_APP_ATTESTATION, currentUser),
+                additionalSections.add(
+                    DevSupportInfo.parseAppAttestationSection(
+                        appAttestationClient = appAttestationClient,
+                        currentUser = currentUser,
+                        aaFeatureActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_APP_ATTESTATION, currentUser),
+                    )
                 )
-            )
+            }
         }
 
     /** Sends the logout completed intent */
