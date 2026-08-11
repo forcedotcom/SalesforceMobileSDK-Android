@@ -74,6 +74,7 @@ import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.biometric.BiometricManager
@@ -92,6 +93,8 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsIntent.OPEN_IN_BROWSER_STATE_OFF
+import androidx.browser.customtabs.ExperimentalInitialNavigationCanLeaveBrowser
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -909,6 +912,7 @@ open class LoginActivity : FragmentActivity() {
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }
 
+    @OptIn(ExperimentalInitialNavigationCanLeaveBrowser::class)
     @VisibleForTesting
     internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
         completedViaBrowserTab = true
@@ -925,11 +929,20 @@ open class LoginActivity : FragmentActivity() {
             setCloseButtonIcon(decodeResource(resources, sf__action_back))
             setShareState(CustomTabsIntent.SHARE_STATE_OFF)
 
-            // Use app provided color if set.  Fallback to dynamic color.
-            val background: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
+            // Use app provided color if set.  Fallback to the default login background color.
             setDefaultColorSchemeParams(
-                CustomTabColorSchemeParams.Builder().setToolbarColor(background.toArgb()).build()
+                CustomTabColorSchemeParams.Builder()
+                    .setToolbarColor(customTabToolbarColor(viewModel.topBarColor).toArgb())
+                    .build()
             )
+
+            // Remove all unnecessary features
+            setBookmarksButtonEnabled(false)
+            setInitialNavigationAllowedToLeaveBrowser(false)
+            setDownloadButtonEnabled(false)
+            setOpenInBrowserButtonState(OPEN_IN_BROWSER_STATE_OFF)
+            setInstantAppsEnabled(false)
+            setBackgroundInteractionEnabled(false)
         }.build()
 
         /*
@@ -1194,9 +1207,7 @@ open class LoginActivity : FragmentActivity() {
      * @return Boolean true if default login was started with the provided
      * Salesforce Welcome Discovery URL, otherwise false.
      */
-    private fun useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(
-        uri: Uri
-    ): Boolean {
+    private fun useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(uri: Uri): Boolean {
         return if (isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri)) {
             startDefaultLoginWithHintAndHost(
                 context = this,
@@ -1410,6 +1421,21 @@ open class LoginActivity : FragmentActivity() {
         // region LoginWebviewClient Constants
 
         internal const val ABOUT_BLANK = "about:blank"
+
+        /**
+         * The background color of login.salesforce.com, used as the Custom Tab toolbar color
+         * (unless the app overrides it via [LoginViewModel.topBarColor]).
+         */
+        internal val LOGIN_BACKGROUND_COLOR = Color(red = 244, green = 246, blue = 249)
+
+        /**
+         * The Custom Tab toolbar color: the app-provided [LoginViewModel.topBarColor] when set,
+         * otherwise the fixed [LOGIN_BACKGROUND_COLOR].
+         */
+        @VisibleForTesting
+        internal fun customTabToolbarColor(topBarColor: Color?): Color =
+            topBarColor ?: LOGIN_BACKGROUND_COLOR
+
         internal const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
 
@@ -1767,7 +1793,7 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal inner class CustomTabActivityResult(
-        private val activity: LoginActivity = this@LoginActivity
+        private val activity: LoginActivity = this@LoginActivity,
     ) : ActivityResultCallback<ActivityResult> {
 
         override fun onActivityResult(result: ActivityResult) {
@@ -1808,7 +1834,7 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal inner class PendingServerObserver(
-        private val activity: LoginActivity = this@LoginActivity
+        private val activity: LoginActivity = this@LoginActivity,
     ) : Observer<String> {
         override fun onChanged(value: String) {
             val pendingServerUri = value.toUri()

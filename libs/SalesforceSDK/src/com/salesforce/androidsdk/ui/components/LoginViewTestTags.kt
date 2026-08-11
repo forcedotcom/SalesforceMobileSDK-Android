@@ -92,8 +92,23 @@ object LoginViewTestTags {
     /** Back arrow shown in the picker header while adding a new connection. */
     const val PICKER_BACK_BUTTON = "sf__picker_back_button"
 
+    /**
+     * Login-exit back button shown in the login-server picker header, distinct from
+     * [PICKER_BACK_BUTTON] (which only returns from the add-connection sub-screen to the
+     * server list). Shown only for [PickerStyle.LoginServerPicker] when
+     * `LoginViewModel.shouldShowBackButton` is true; invokes `LoginActivity.handleBackBehavior()`.
+     */
+    const val PICKER_LOGIN_BACK_BUTTON = "sf__picker_login_back_button"
+
     /** Close (X) button in the picker header. */
     const val PICKER_CLOSE_BUTTON = "sf__picker_close_button"
+
+    /**
+     * Debug-only Developer Support entry reachable from inside the login-server picker
+     * (the top app bar's own "Developer Support" entry is behind the modal scrim while the
+     * picker is shown). Gated on `showDevSupport != null`, matching the app bar's gating.
+     */
+    const val PICKER_DEV_SUPPORT_BUTTON = "sf__picker_dev_support_button"
 
     /** "Add New Connection" button in the login-server picker. */
     const val CUSTOM_URL_BUTTON = "sf__custom_url_button"
