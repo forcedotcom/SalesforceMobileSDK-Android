@@ -38,18 +38,22 @@ import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.ui.LoginActivity
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_FORCE_ADVANCED_AUTH
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_LOGIN_FOR_ADMIN
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_ORG_CONFIG
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Unit tests for the B-marker (browser login reason) and L-marker (login server type)
- * telemetry selection logic in [LoginActivity].
+ * Unit tests for the B-marker (browser login reason), L-marker (login server type), and
+ * auth_trigger telemetry selection logic in [LoginActivity].
  *
- * The logic under test lives in [LoginActivity.selectBMarker] and [LoginActivity.selectLMarker],
- * which are companion object helpers annotated `@VisibleForTesting`. They are pure functions
- * that require no Activity context, so they are called directly without mocking.
+ * The logic under test lives in [LoginActivity.selectBMarker], [LoginActivity.selectLMarker], and
+ * [LoginActivity.selectAuthTrigger], which are companion object helpers annotated
+ * `@VisibleForTesting`. They are pure functions that require no Activity context, so they are
+ * called directly without mocking.
  *
  * L-marker mapping:
  *   L1 = Production server
@@ -159,6 +163,81 @@ class BrowserLoginTelemetryTest {
         )
         assertEquals("Force flag should win over ignored MDM signal (B4)",
             FEATURE_BROWSER_LOGIN_FORCE_FLAG, result)
+    }
+
+    // endregion
+    // region auth_trigger tests
+
+    @Test
+    fun test_givenAdminLogin_whenSelectAuthTrigger_thenLoginForAdminReturned() {
+        // Highest priority, mirrors B3
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = true,
+            isMdmForced = false,
+            forceAdvancedAuth = false,
+        )
+        assertEquals("Admin login should yield login_for_admin",
+            AUTH_TRIGGER_LOGIN_FOR_ADMIN, result)
+    }
+
+    @Test
+    fun test_givenForceAdvancedAuth_whenSelectAuthTrigger_thenForceAdvancedAuthReturned() {
+        // Mirrors B4
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = false,
+            isMdmForced = false,
+            forceAdvancedAuth = true,
+        )
+        assertEquals("Force-advanced-auth should yield force_advanced_auth",
+            AUTH_TRIGGER_FORCE_ADVANCED_AUTH, result)
+    }
+
+    @Test
+    fun test_givenNeitherAdminNorForceFlag_whenSelectAuthTrigger_thenOrgConfigReturned() {
+        // Fallthrough, mirrors B1
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = false,
+            isMdmForced = false,
+            forceAdvancedAuth = false,
+        )
+        assertEquals("Neither admin nor force flag should yield org_config fallback",
+            AUTH_TRIGGER_ORG_CONFIG, result)
+    }
+
+    @Test
+    fun test_givenAdminLoginAndForceAdvancedAuth_whenSelectAuthTrigger_thenLoginForAdminWins() {
+        // Priority: login_for_admin > force_advanced_auth
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = true,
+            isMdmForced = false,
+            forceAdvancedAuth = true,
+        )
+        assertEquals("Admin login should take priority over force-advanced-auth",
+            AUTH_TRIGGER_LOGIN_FOR_ADMIN, result)
+    }
+
+    @Test
+    fun test_givenMdmForcedIgnored_whenSelectAuthTrigger_thenFallsThroughToOrgConfig() {
+        // Mirrors selectBMarker's documented MDM no-op: isMdmForced is ignored on Android.
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = false,
+            isMdmForced = true,
+            forceAdvancedAuth = false,
+        )
+        assertEquals("MDM flag is ignored on Android; should fall through to org_config",
+            AUTH_TRIGGER_ORG_CONFIG, result)
+    }
+
+    @Test
+    fun test_givenMdmForcedAndForceAdvancedAuth_whenSelectAuthTrigger_thenForceAdvancedAuthWins() {
+        // MDM ignored; force flag should still win over the org_config fallthrough
+        val result = LoginActivity.selectAuthTrigger(
+            isAdminLogin = false,
+            isMdmForced = true,
+            forceAdvancedAuth = true,
+        )
+        assertEquals("Force flag should win over ignored MDM signal",
+            AUTH_TRIGGER_FORCE_ADVANCED_AUTH, result)
     }
 
     // endregion
