@@ -498,7 +498,8 @@ public class OAuth2 {
 
     /**
      * Gets a new auth token using the refresh token. Overload that accepts a
-     * credentials identifier so DPoP proof can be attached when enabled.
+     * credentials identifier so DPoP proof can be attached when enabled. Delegates
+     * to the fully-parameterized overload with a null token type.
      *
      * @param httpAccessor HttpAccess instance.
      * @param loginServer Login server.
@@ -516,6 +517,34 @@ public class OAuth2 {
                                                          Map<String,String> addlParams,
                                                          @Nullable String credentialsIdentifier)
             throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
+                credentialsIdentifier, null);
+    }
+
+    /**
+     * Gets a new auth token using the refresh token. Fully-parameterized overload
+     * that accepts the credential's persisted token type. When the credential is
+     * DPoP-bound the refresh request carries a DPoP proof — independent of the
+     * global {@code isUseDPoP} switch, which only gates new logins.
+     *
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param refreshToken Refresh token.
+     * @param addlParams Additional parameters.
+     * @param credentialsIdentifier Identifier used to look up the DPoP keypair, or null.
+     * @param tokenType Token type persisted on the credential (e.g. "DPoP" or null / "Bearer").
+     * @return Token response.
+     *
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
+     */
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams,
+                                                         @Nullable String credentialsIdentifier,
+                                                         @Nullable String tokenType)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_REFRESH : REFRESH_TOKEN;
@@ -531,7 +560,7 @@ public class OAuth2 {
                 }
             }
         }
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance(), credentialsIdentifier);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType);
     }
 
     /**
@@ -620,7 +649,7 @@ public class OAuth2 {
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken, tokenType);
-        if (DPOP.equals(tokenType) && credentialsIdentifier != null && SalesforceSDKManager.getInstance().isUseDPoP()) {
+        if (DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType)) {
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
@@ -661,7 +690,7 @@ public class OAuth2 {
      * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
      */
     public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken, @Nullable String tokenType) {
-        final String scheme = DPOP.equals(tokenType) ? DPOP + " " : BEARER;
+        final String scheme = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
         return builder.header(AUTHORIZATION, scheme + authToken);
     }
 
@@ -672,7 +701,7 @@ public class OAuth2 {
                                                                  FormBody.Builder formBodyBuilder,
                                                                  SalesforceSDKManager salesforceSdkManager)
             throws OAuthFailedException, IOException {
-        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, null);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, null, null);
     }
 
     @VisibleForTesting
@@ -682,6 +711,23 @@ public class OAuth2 {
                                                                  FormBody.Builder formBodyBuilder,
                                                                  SalesforceSDKManager salesforceSdkManager,
                                                                  @Nullable String credentialsIdentifier)
+            throws OAuthFailedException, IOException {
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, credentialsIdentifier, null);
+    }
+
+    /**
+     * Canonical implementation of the token-endpoint request. This is the primary production
+     * entry point — {@link #refreshAuthToken} calls it directly. Prefer the shorter overloads
+     * unless a caller genuinely needs to supply {@code credentialsIdentifier} and
+     * {@code tokenType}.
+     */
+    @WorkerThread
+    public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                 URI loginServer,
+                                                                 FormBody.Builder formBodyBuilder,
+                                                                 SalesforceSDKManager salesforceSdkManager,
+                                                                 @Nullable String credentialsIdentifier,
+                                                                 @Nullable String tokenType)
             throws OAuthFailedException, IOException {
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
@@ -705,8 +751,9 @@ public class OAuth2 {
         final String tokenHost = HttpUrl.get(refreshPath).host();
         final RequestBody body = formBodyBuilder.build();
         final Request.Builder requestBuilder = new Request.Builder().url(refreshPath).post(body);
+        final boolean attachDPoP = DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType);
 
-        if (credentialsIdentifier != null && salesforceSdkManager.isUseDPoP()) {
+        if (attachDPoP) {
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
@@ -723,7 +770,7 @@ public class OAuth2 {
         Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
 
         // Harvest nonce from every response (proactive caching for next call).
-        if (credentialsIdentifier != null && salesforceSdkManager.isUseDPoP()) {
+        if (attachDPoP) {
             final String responseNonce = response.header("DPoP-Nonce");
             if (!TextUtils.isEmpty(responseNonce)) {
                 DPoPNonceCache.INSTANCE.store(credentialsIdentifier, tokenHost, responseNonce);
@@ -731,8 +778,7 @@ public class OAuth2 {
         }
 
         // Nonce challenge: server requires a nonce. Retry once with the harvested nonce.
-        if (credentialsIdentifier != null && salesforceSdkManager.isUseDPoP()
-                && isNonceChallenge(response)) {
+        if (attachDPoP && isNonceChallenge(response)) {
             response.close();
             try {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);

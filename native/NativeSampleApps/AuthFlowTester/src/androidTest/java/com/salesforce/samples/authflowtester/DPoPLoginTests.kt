@@ -30,6 +30,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -119,6 +120,36 @@ class DPoPLoginTests : AuthFlowTest() {
         switchToUserAndValidateUser(otherUser, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
+    }
+
+    // Mixed DPoP + non-DPoP users with the process-wide DPoP flag flipped off after both are
+    // logged in. Each user's post-flip refresh + revoke must use its own auth scheme
+    // independently — DPoP for the DPoP-bound credential, Bearer for the non-DPoP one — gated by
+    // per-credential state (tokenType or persisted key material), not the global flag.
+    @Test
+    fun testECAJwtDPoP_And_NonDPoP_MultiUser_FlagOff_IndependentProofs() {
+        // User A: DPoP ECA. useDPoP=true at login-time so /authorize gets dpop_jkt and the
+        // credential is persisted with tokenType="DPoP" plus a key pair in AndroidKeyStore.
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+
+        // User B: non-DPoP ECA (Bearer). useDPoP=false at login-time so the credential is
+        // persisted with tokenType absent/"Bearer" and no key material.
+        addOtherUserAndValidate(knownAppConfig = ECA_JWT, useDPoP = false)
+
+        // Simulate an app upgrade or config change that flips the process-wide flag OFF.
+        // Existing DPoP-bound credentials must survive; new logins from now on would be Bearer.
+        SalesforceSDKManager.getInstance().useDPoP = false
+
+        // Switch to user A (DPoP-bound). Refresh + REST GET must attach a DPoP proof —
+        // gated by credential state, not the global flag.
+        switchToUserAndValidateUser(user, isDpop = true)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
+
+        // Switch to user B (Bearer). Refresh + REST GET must NOT attach DPoP anywhere.
+        switchToUserAndValidateUser(otherUser, isDpop = false)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ScopeSelection.EMPTY)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true)
     }
 
     // endregion

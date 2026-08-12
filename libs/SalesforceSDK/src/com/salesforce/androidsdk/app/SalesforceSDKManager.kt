@@ -457,9 +457,17 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * Opt-in flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449).
-     * When true, the SDK will attach a DPoP proof JWT to token endpoint
-     * requests and use the `DPoP` Authorization scheme for resource requests
-     * when the token endpoint advertises `token_type: DPoP`.
+     * Controls whether *new logins* initiate DPoP key generation and DPoP-bound
+     * token requests: when true, the SDK attaches a DPoP proof JWT to token
+     * endpoint requests and uses the `DPoP` Authorization scheme for resource
+     * requests when the token endpoint advertises `token_type: DPoP`.
+     *
+     * NOTE: This flag does NOT affect credentials that are already DPoP-bound.
+     * An existing DPoP credential continues to send DPoP proofs on every request
+     * regardless of this flag's value, because the server holds a DPoP-bound token
+     * and requires a proof on every request. Flipping this off is therefore not a
+     * global kill switch for in-flight sessions — to fully disable DPoP for a user,
+     * the credential must be re-authenticated as Bearer.
      */
     @get:JvmName("isUseDPoP")
     var useDPoP: Boolean = false

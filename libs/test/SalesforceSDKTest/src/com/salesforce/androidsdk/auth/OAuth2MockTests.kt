@@ -222,11 +222,10 @@ class OAuth2MockTests {
     // region DPoP tests
 
     @Test
-    fun test_givenUseDPoPTrueAndCredentialsIdentifier_whenMakeTokenEndpointRequest_thenDPoPHeaderPresent() {
+    fun test_givenDPoPTokenTypeAndCredentialsIdentifier_whenMakeTokenEndpointRequest_thenDPoPHeaderPresent() {
         val salesforceSdkManager = mockk<SalesforceSDKManager>(relaxed = true) {
             every { appAttestationClient } returns null
             every { deviceId } returns "__DEVICE_ID__"
-            every { useDPoP } returns true
         }
 
         val responseBody = """{"access_token":"t","instance_url":"https://i","id":"https://i/id/o/u"}"""
@@ -250,6 +249,7 @@ class OAuth2MockTests {
             FormBody.Builder(),
             salesforceSdkManager,
             "test-scope-id",
+            "DPoP",
         )
 
         val dpopHeader = requestSlot.captured.header("DPoP")
