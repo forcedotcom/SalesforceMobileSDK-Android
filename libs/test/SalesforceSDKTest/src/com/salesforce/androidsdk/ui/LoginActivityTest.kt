@@ -31,6 +31,7 @@ import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import android.net.Uri
 import androidx.activity.result.ActivityResult
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
@@ -42,6 +43,9 @@ import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_FORCE_ADVANCED_AUTH
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_LOGIN_FOR_ADMIN
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_ORG_CONFIG
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL
@@ -335,6 +339,91 @@ class LoginActivityTest {
     fun customTabToolbarColor_withTopBarColor_usesAppProvidedColor() {
         val appColor = Color(red = 10, green = 20, blue = 30)
         assertEquals(appColor, LoginActivity.customTabToolbarColor(topBarColor = appColor))
+    }
+
+    // endregion
+
+    // region buildCustomTabAuthorizeUrl
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun buildCustomTabAuthorizeUrl_forRegularLogin_appendsSdkInfoAndOrgConfigTrigger() {
+        val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.forceAdvancedAuthentication } returns false
+        every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.sharedBrowserSession } returns false
+        every {
+            activity.buildCustomTabAuthorizeUrl(any(), any(), any())
+        } answers { callOriginal() }
+
+        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+
+        assertTrue("Should append sdkInfo",
+            result.contains("&sdkInfo=${Uri.encode("SalesforceMobileSDK/test")}"))
+        assertTrue("Should append org_config trigger (no admin/force flag)",
+            result.contains("&auth_trigger=$AUTH_TRIGGER_ORG_CONFIG"))
+        assertTrue("Should append prompt=login when not sharing browser session",
+            result.endsWith("&prompt=login"))
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun buildCustomTabAuthorizeUrl_withForceAdvancedAuth_appendsForceAdvancedAuthTrigger() {
+        val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.forceAdvancedAuthentication } returns true
+        every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.sharedBrowserSession } returns false
+        every {
+            activity.buildCustomTabAuthorizeUrl(any(), any(), any())
+        } answers { callOriginal() }
+
+        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+
+        assertTrue("Should append force_advanced_auth trigger",
+            result.contains("&auth_trigger=$AUTH_TRIGGER_FORCE_ADVANCED_AUTH"))
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun buildCustomTabAuthorizeUrl_forAdminLogin_appendsLoginForAdminTriggerEvenWithForceFlag() {
+        val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        // Force flag is also set, but admin login should still take priority.
+        every { sdkManager.forceAdvancedAuthentication } returns true
+        every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.sharedBrowserSession } returns false
+        every {
+            activity.buildCustomTabAuthorizeUrl(any(), any(), any())
+        } answers { callOriginal() }
+
+        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, true, sdkManager)
+
+        assertTrue("Admin login should take priority and append login_for_admin trigger",
+            result.contains("&auth_trigger=$AUTH_TRIGGER_LOGIN_FOR_ADMIN"))
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun buildCustomTabAuthorizeUrl_withSharedBrowserSession_omitsPromptLogin() {
+        val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.forceAdvancedAuthentication } returns false
+        every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.sharedBrowserSession } returns true
+        every {
+            activity.buildCustomTabAuthorizeUrl(any(), any(), any())
+        } answers { callOriginal() }
+
+        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+
+        assertFalse("prompt=login should be omitted for a shared browser session",
+            result.contains("prompt=login"))
     }
 
     // endregion

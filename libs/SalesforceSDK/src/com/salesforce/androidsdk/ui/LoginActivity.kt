@@ -1032,8 +1032,7 @@ open class LoginActivity : FragmentActivity() {
             customTabsIntent.intent.setPackage(customTabBrowser)
         }
 
-        // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
-        val urlString = if (sharedBrowserSession) loginUrl else loginUrl + PROMPT_LOGIN
+        val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
@@ -1045,6 +1044,30 @@ open class LoginActivity : FragmentActivity() {
             }
             clearWebView()
         }
+    }
+
+    /**
+     * Appends `sdkInfo` and `auth_trigger` to the authorize URL for the native browser (Custom
+     * Tab) path only — the WebView path's real `User-Agent` header already carries this
+     * information, so [LoginViewModel.generateAuthorizationUrl]'s WebView URL is left untouched.
+     * Also appends `prompt=login` (unless a shared browser session is in use) to prevent the
+     * browser cookie from bypassing login if it exists.
+     */
+    @VisibleForTesting
+    internal fun buildCustomTabAuthorizeUrl(
+        loginUrl: String,
+        isAdminLogin: Boolean,
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+    ): String {
+        @Suppress("DEPRECATION")
+        val authTrigger = selectAuthTrigger(
+            isAdminLogin,
+            isMdmForcedBrowserLogin(),
+            sdkManager.forceAdvancedAuthentication,
+        )
+        val sdkInfo = Uri.encode(sdkManager.getUserAgent(""))
+        val urlWithSdkInfo = "$loginUrl&sdkInfo=$sdkInfo&auth_trigger=$authTrigger"
+        return if (sharedBrowserSession) urlWithSdkInfo else urlWithSdkInfo + PROMPT_LOGIN
     }
 
     private fun doesBrowserExist(customTabBrowser: String?) =
@@ -1484,6 +1507,18 @@ open class LoginActivity : FragmentActivity() {
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
+
+        // `auth_trigger` values sent to /services/oauth2/authorize on the native browser (Custom
+        // Tab) path. Same string literals as iOS's kSFOAuthAuthTrigger* constants.
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_ORG_CONFIG = "org_config"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_MDM = "mdm"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_FORCE_ADVANCED_AUTH = "force_advanced_auth"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_LOGIN_FOR_ADMIN = "login_for_admin"
+
         private const val AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.intent.AUTHENTICATION_ERROR"
         private const val HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE"
         private const val RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR"
@@ -1571,6 +1606,31 @@ open class LoginActivity : FragmentActivity() {
             completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
             forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
             else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
+        }
+
+        /**
+         * Selects the `auth_trigger` value sent to `/services/oauth2/authorize` on the native
+         * browser (Custom Tab) path, telling the server why browser login was chosen.
+         * Priority: login_for_admin > mdm > force_advanced_auth > org_config, mirroring
+         * [selectBMarker]'s B3 > B2 > B4 > B1 priority.
+         *
+         * @param isAdminLogin Whether this Custom Tab launch is the "Login for Admin" flow
+         * @param isMdmForced Unused on Android — reserved for future use (always pass false).
+         * See [selectBMarker]'s identically-named parameter: MDM forces cert auth via a
+         * different code path that never reaches the Custom Tab launch.
+         * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
+         * @return The `auth_trigger` value to send with the authorize request
+         */
+        @VisibleForTesting
+        internal fun selectAuthTrigger(
+            isAdminLogin: Boolean,
+            @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
+            forceAdvancedAuth: Boolean,
+        ): String = when {
+            isAdminLogin -> AUTH_TRIGGER_LOGIN_FOR_ADMIN         // B3 — highest priority
+            forceAdvancedAuth -> AUTH_TRIGGER_FORCE_ADVANCED_AUTH // B4
+            else -> AUTH_TRIGGER_ORG_CONFIG                       // B1 — fallback
+            // B2/mdm unreachable here — MDM forces cert auth on Android, see selectBMarker
         }
 
         // endregion
