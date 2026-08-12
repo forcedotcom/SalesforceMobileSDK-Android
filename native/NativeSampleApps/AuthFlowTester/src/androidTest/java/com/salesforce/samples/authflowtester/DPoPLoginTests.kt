@@ -44,7 +44,7 @@ import org.junit.runner.RunWith
 /**
  * Tests for all DPoP-enabled login flows: basic login, RTR, multi-user, migration, and restart.
  *
- * DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after
+ * DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `true` after
  * each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property,
  * not an org property.
  *
