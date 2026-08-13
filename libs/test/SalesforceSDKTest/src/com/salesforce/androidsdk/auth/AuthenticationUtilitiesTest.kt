@@ -50,6 +50,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
@@ -182,6 +183,107 @@ class AuthenticationUtilitiesTest {
         verify { startMainActivity.invoke() }
         verify { handleScreenLockPolicy.invoke(userIdentity, expectedAccount) }
         verify { handleBiometricAuthPolicy.invoke(userIdentity, expectedAccount) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_defaultOnAuthFlowFinished_isNoOp() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        // When - onAuthFlowFinished is not supplied, so the default no-op is used
+        callOnAuthFlowComplete()
+
+        // Then - flow completes successfully with no exception thrown by the default hook
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verify { onAuthFlowSuccess.invoke(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_onAuthFlowFinished_calledAfterBiometricAuthPolicy() = runTest {
+        // Given
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        val expectedAccount = UserAccountBuilder.getInstance()
+            .populateFromTokenEndpointResponse(tokenResponse)
+            .populateFromIdServiceResponse(userIdentity)
+            .accountName(buildAccountName(userIdentity.username, tokenResponse.instanceUrl))
+            .loginServer("https://login.salesforce.com")
+            .clientId("test_consumer_key")
+            .nativeLogin(false)
+            .build()
+
+        val onAuthFlowFinished: (() -> Unit) -> Unit = mockk(relaxed = true)
+
+        // When
+        onAuthFlowComplete(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            onAuthFlowError = onAuthFlowError,
+            onAuthFlowSuccess = onAuthFlowSuccess,
+            buildAccountName = buildAccountName,
+            context = testContext,
+            userAccountManager = mockUserAccountManager,
+            runtimeConfig = mockRuntimeConfig,
+            updateLoggingPrefs = updateLoggingPrefs,
+            fetchUserIdentity = fetchUserIdentity,
+            startMainActivity = startMainActivity,
+            setAdministratorPreferences = setAdministratorPreferences,
+            addAccount = addAccount,
+            handleScreenLockPolicy = handleScreenLockPolicy,
+            handleBiometricAuthPolicy = handleBiometricAuthPolicy,
+            handleDuplicateUserAccount = handleDuplicateUserAccount,
+            onAuthFlowFinished = onAuthFlowFinished,
+        )
+
+        // Then - called after handleBiometricAuthPolicy, and before proceed
+        // (startMainActivity/handleScreenLockPolicy) since onAuthFlowFinished is relaxed and
+        // does not invoke the proceed callback it's given
+        verifyOrder {
+            handleBiometricAuthPolicy.invoke(userIdentity, expectedAccount)
+            onAuthFlowFinished.invoke(any())
+        }
+        verify(exactly = 0) { startMainActivity.invoke() }
+        verify(exactly = 0) { handleScreenLockPolicy.invoke(any(), any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_onAuthFlowFinished_proceedInvokesStartMainActivityAndScreenLockPolicy() = runTest {
+        // Given
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        val onAuthFlowFinished: (() -> Unit) -> Unit = { proceed -> proceed() }
+
+        // When - the proceed callback passed to onAuthFlowFinished is invoked
+        onAuthFlowComplete(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            onAuthFlowError = onAuthFlowError,
+            onAuthFlowSuccess = onAuthFlowSuccess,
+            buildAccountName = buildAccountName,
+            context = testContext,
+            userAccountManager = mockUserAccountManager,
+            runtimeConfig = mockRuntimeConfig,
+            updateLoggingPrefs = updateLoggingPrefs,
+            fetchUserIdentity = fetchUserIdentity,
+            startMainActivity = startMainActivity,
+            setAdministratorPreferences = setAdministratorPreferences,
+            addAccount = addAccount,
+            handleScreenLockPolicy = handleScreenLockPolicy,
+            handleBiometricAuthPolicy = handleBiometricAuthPolicy,
+            handleDuplicateUserAccount = handleDuplicateUserAccount,
+            onAuthFlowFinished = onAuthFlowFinished,
+        )
+
+        // Then - proceed() starts the main activity and applies screen lock policy
+        verify { startMainActivity.invoke() }
+        verify { handleScreenLockPolicy.invoke(userIdentity, any()) }
     }
 
     @Test

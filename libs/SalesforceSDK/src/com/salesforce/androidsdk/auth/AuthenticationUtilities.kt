@@ -71,6 +71,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -126,6 +127,7 @@ internal suspend fun onAuthFlowComplete(
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
+    onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
 ) {
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
@@ -262,10 +264,6 @@ internal suspend fun onAuthFlowComplete(
             else -> USER_SWITCH_TYPE_DEFAULT
         }
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-
-        // Kickoff the end of the flow before storing mobile policy to prevent launching
-        // the main activity over/after the screen lock.
-        startMainActivity()
     }
 
     /*
@@ -281,11 +279,24 @@ internal suspend fun onAuthFlowComplete(
     // Let the calling process resume
     onAuthFlowSuccess(account)
 
-    // Screen lock required by mobile policy
-    handleScreenLockPolicy(userIdentity, account)
-
-    // Biometric authorization required by mobile policy
+    // Biometric authorization required by mobile policy.  This must run before
+    // onAuthFlowFinished so the biometric opt-in dialog's presentation decision
+    // (which depends on the freshly-stored policy) can be made while the caller
+    // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
+
+    withContext(Dispatchers.Main) {
+        onAuthFlowFinished {
+            // Kickoff the end of the flow before storing mobile policy to prevent launching
+            // the main activity over/after the screen lock.
+            if (!tokenMigration) {
+                startMainActivity()
+            }
+
+            // Screen lock required by mobile policy
+            handleScreenLockPolicy(userIdentity, account)
+        }
+    }
 }
 
 internal fun defaultBuildAccountName(

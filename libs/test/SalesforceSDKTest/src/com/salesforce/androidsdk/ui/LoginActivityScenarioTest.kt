@@ -38,8 +38,11 @@ import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -286,6 +289,47 @@ class LoginActivityScenarioTest {
                 }
             }
         } finally {
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun onAuthFlowFinished_enabledAutomaticNotOptedIn_showsDialogAndDefersFinish() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        // Pin advanced auth off so LoginActivity stays on the in-app WebView and doesn't
+        // launch a Custom Tab, which would move it past onSaveInstanceState (see the similar
+        // note on loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges).
+        sdkManager.forceAdvancedAuthentication = false
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var proceedCalls = 0
+
+            launch<LoginActivity>(
+                Intent(getApplicationContext(), LoginActivity::class.java)
+            ).use { activityScenario ->
+                activityScenario.onActivity { activity ->
+                    activity.onAuthFlowFinished { proceedCalls += 1 }
+
+                    assertTrue(
+                        "Opt-in dialog should be shown when not yet opted in.",
+                        activity.viewModel.showBiometricOptInDialog.value
+                    )
+                    assertTrue(
+                        "proceed() should be deferred until the opt-in dialog is dismissed.",
+                        proceedCalls == 0
+                    )
+                }
+            }
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
             sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
