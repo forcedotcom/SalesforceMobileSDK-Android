@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
+import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -38,7 +39,10 @@ import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
 
-internal class BiometricAuthOptInPrompt(private val bioAuthManager: BiometricAuthenticationManager): DialogFragment() {
+internal class BiometricAuthOptInPrompt(
+    private val bioAuthManager: BiometricAuthenticationManager,
+    private val onDismissed: () -> Unit = {},
+): DialogFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val isDarkTheme = SalesforceSDKManager.getInstance().isDarkTheme
         val rootView = inflater.inflate(R.layout.sf__biometric_enrollment_prompt, container)
@@ -59,5 +63,10 @@ internal class BiometricAuthOptInPrompt(private val bioAuthManager: BiometricAut
         }
 
         return rootView
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissed()
     }
 }

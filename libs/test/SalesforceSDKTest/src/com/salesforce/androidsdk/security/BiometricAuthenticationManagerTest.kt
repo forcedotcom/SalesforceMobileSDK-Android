@@ -150,6 +150,44 @@ class BiometricAuthenticationManagerTest {
     }
 
     @Test
+    fun testHasBiometricOptInDecision_falseUntilUserResponds() {
+        Assert.assertFalse(
+            "Should have no decision recorded before the user responds to the opt-in dialog.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+
+        bioAuthManager.biometricOptIn(false)
+        Assert.assertTrue(
+            "Declining (Use Password) should still be recorded as a decision so the user is not re-prompted.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertFalse("Declining should not opt the user in.", bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
+    fun testHasBiometricOptInDecision_trueAfterOptingIn() {
+        bioAuthManager.biometricOptIn(true)
+        Assert.assertTrue(
+            "Enabling should be recorded as a decision.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertTrue("Enabling should opt the user in.", bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
+    fun testHasBiometricOptInDecision_clearedByCleanUp() {
+        bioAuthManager.biometricOptIn(false)
+        Assert.assertTrue(bioAuthManager.hasBiometricOptInDecision())
+
+        bioAuthManager.cleanUp(userAccount)
+        Assert.assertFalse(
+            "Logout (cleanUp) should clear the opt-in decision so a re-added account is re-prompted.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertFalse(bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
     fun testNativeBiometricLoginButton() {
         Assert.assertTrue("Should default to true.", bioAuthManager.isNativeBiometricLoginButtonEnabled())
         bioAuthManager.storeMobilePolicy(userAccount, true, 0)
@@ -235,6 +273,29 @@ class BiometricAuthenticationManagerTest {
         Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
         bioAuthManager.lock()
         Assert.assertTrue("Should be locked by lock() API for non-native login user.", bioAuthManager.locked)
+    }
+
+    @Test
+    fun testAutomaticPresentationDefaultsToTrue() {
+        Assert.assertTrue("Should default to true.", bioAuthManager.automaticPresentation)
+    }
+
+    @Test
+    fun testAutomaticPresentationIsSettable() {
+        bioAuthManager.automaticPresentation = false
+        Assert.assertFalse("Should be settable to false.", bioAuthManager.automaticPresentation)
+
+        bioAuthManager.automaticPresentation = true
+        Assert.assertTrue("Should be settable back to true.", bioAuthManager.automaticPresentation)
+    }
+
+    @Test
+    fun testAutomaticPresentationIsNotPersisted() {
+        bioAuthManager.automaticPresentation = false
+        Assert.assertFalse("Should be false on the existing instance.", bioAuthManager.automaticPresentation)
+
+        val freshBioAuthManager = BiometricAuthenticationManager()
+        Assert.assertTrue("A fresh instance should default to true regardless of prior instances.", freshBioAuthManager.automaticPresentation)
     }
 
     @Test

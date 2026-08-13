@@ -36,6 +36,14 @@ import androidx.fragment.app.FragmentManager
 interface BiometricAuthenticationManager {
 
     /**
+     * If enabled, the SDK automatically presents the biometric opt-in dialog after a fresh
+     * login (if the user has not yet opted in) and automatically triggers the biometric
+     * prompt when the app locks (if the user has opted in).  Defaults to true.  Not persisted;
+     * resets to true on process restart.
+     */
+    var automaticPresentation: Boolean
+
+    /**
      * If the feature is enabled for the current user.
      */
     @get:JvmName("isEnabled")

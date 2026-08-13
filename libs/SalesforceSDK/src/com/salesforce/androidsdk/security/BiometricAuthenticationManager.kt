@@ -39,6 +39,7 @@ import androidx.core.content.edit
 internal class BiometricAuthenticationManager: AppLockManager(
     BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
 ), BiometricAuthenticationManager {
+    override var automaticPresentation: Boolean = true
     // @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("isEnabled")
@@ -88,6 +89,20 @@ internal class BiometricAuthenticationManager: AppLockManager(
     override fun hasBiometricOptedIn(): Boolean {
         currentUser?.let { user ->
             return getAccountPrefs(user).getBoolean(USER_BIO_OPT_IN, false)
+        }
+
+        return false
+    }
+
+    /**
+     * Whether the current user has already responded to the biometric opt-in dialog, either by
+     * enabling or declining it.  Unlike [hasBiometricOptedIn], which only reflects whether the
+     * user chose to enable biometric unlock, this distinguishes "declined" from "never asked" so
+     * a user who declined is not re-prompted on every subsequent login.
+     */
+    internal fun hasBiometricOptInDecision(): Boolean {
+        currentUser?.let { user ->
+            return getAccountPrefs(user).contains(USER_BIO_OPT_IN)
         }
 
         return false

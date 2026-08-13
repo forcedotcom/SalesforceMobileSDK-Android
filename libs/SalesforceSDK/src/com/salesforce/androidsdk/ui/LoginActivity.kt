@@ -294,10 +294,7 @@ open class LoginActivity : FragmentActivity() {
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
-        if (biometricAuthenticationManager?.locked == true
-            && biometricAuthenticationManager.hasBiometricOptedIn()
-            && intent.extras?.getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC) != false
-        ) {
+        if (shouldAutoPresentBiometricOnCreate(biometricAuthenticationManager)) {
             presentBiometric()
         }
 
@@ -638,10 +635,55 @@ open class LoginActivity : FragmentActivity() {
 
         // Create account and save result before switching to new user
         accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
+    }
 
+    /**
+     * Called once mobile policy has been stored for a fresh (non-Advanced-Auth) login, but
+     * before [proceed] starts the main activity and applies screen lock policy.  If biometric
+     * authentication is enabled for the user, the user hasn't yet responded to the opt-in
+     * dialog (by either enabling or declining it), and
+     * [BiometricAuthenticationManager.automaticPresentation] is true, presents the opt-in
+     * dialog here (while this activity is still in front) and defers [proceed] until it is
+     * dismissed.  Otherwise calls [proceed] immediately.
+     */
+    @VisibleForTesting
+    internal fun onAuthFlowFinished(proceed: () -> Unit) {
+        val biometricAuthenticationManager =
+            SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
+        val proceedAndFinish = { proceed(); finishLoginFlow() }
+        if (biometricAuthenticationManager?.enabled == true
+            && biometricAuthenticationManager.automaticPresentation
+            && !biometricAuthenticationManager.hasBiometricOptInDecision()
+        ) {
+            viewModel.onBiometricOptInResultAction = { optedIn ->
+                biometricAuthenticationManager.biometricOptIn(optedIn)
+                proceedAndFinish()
+            }
+            viewModel.showBiometricOptInDialog.value = true
+        } else {
+            proceedAndFinish()
+        }
+    }
+
+    private fun finishLoginFlow() {
         setResult(RESULT_OK)
         finish()
     }
+
+    /**
+     * Whether [presentBiometric] should be automatically triggered from [onCreate] because the
+     * app is locked and the user has previously opted into biometric authentication.  Gated on
+     * [BiometricAuthenticationManager.automaticPresentation] and the [BiometricAuthenticationManager.SHOW_BIOMETRIC]
+     * intent extra (set to false by callers, e.g. [doTokenRefresh]'s failure path, that
+     * explicitly don't want the prompt re-shown).
+     */
+    @VisibleForTesting
+    internal fun shouldAutoPresentBiometricOnCreate(
+        biometricAuthenticationManager: BiometricAuthenticationManager?,
+    ) = biometricAuthenticationManager?.locked == true
+            && biometricAuthenticationManager.hasBiometricOptedIn()
+            && biometricAuthenticationManager.automaticPresentation
+            && intent.extras?.getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC) != false
 
     /**
      * Reserved for future use — currently unused on Android.
@@ -737,7 +779,12 @@ open class LoginActivity : FragmentActivity() {
             else -> {
                 viewModel.showServerPicker.value = false
                 viewModel.loading.value = true
-                viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
+                viewModel.onWebServerFlowComplete(
+                    params["code"],
+                    ::onAuthFlowError,
+                    ::onAuthFlowSuccess,
+                    onAuthFlowFinished = { proceed -> proceed(); finishLoginFlow() },
+                )
             }
         }
     }
@@ -831,6 +878,7 @@ open class LoginActivity : FragmentActivity() {
                         onUnlock()
                     }
 
+                    viewModel.loading.value = true
                     CoroutineScope(IO).launch {
                         doTokenRefresh(this@LoginActivity)
                     }
@@ -1311,6 +1359,7 @@ open class LoginActivity : FragmentActivity() {
                                     params["code"],
                                     ::onAuthFlowError,
                                     ::onAuthFlowSuccess,
+                                    onAuthFlowFinished = ::onAuthFlowFinished,
                                 )
 
                             else ->
@@ -1319,6 +1368,7 @@ open class LoginActivity : FragmentActivity() {
                                         TokenEndpointResponse(params),
                                         ::onAuthFlowError,
                                         ::onAuthFlowSuccess,
+                                        onAuthFlowFinished = ::onAuthFlowFinished,
                                     )
                                 }
                         }

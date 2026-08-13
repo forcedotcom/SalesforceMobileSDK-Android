@@ -134,6 +134,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         } returns Unit
 
@@ -174,6 +175,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -205,6 +207,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         } returns Unit
 
@@ -244,6 +247,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -275,6 +279,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         } returns Unit
 
@@ -313,6 +318,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -329,7 +335,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any(), any())
         } returns Result.success(Unit)
 
         // Set up the view model state
@@ -350,6 +356,7 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = null,
                 tokenMigration = false,
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -367,7 +374,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any(), any())
         } returns Result.success(Unit)
 
         // Set up the view model state
@@ -394,6 +401,7 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = migrationLoginServer,
                 tokenMigration = true,
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -412,7 +420,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any(), any())
         } returns Result.success(Unit)
 
         // Set up front door bridge
@@ -433,6 +441,7 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = null,
                 tokenMigration = false,
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -448,7 +457,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any(), any())
         } returns Result.success(Unit)
 
         // Set up the view model state
@@ -469,6 +478,7 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = null,
                 tokenMigration = false,
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -501,6 +511,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         } returns Unit
 
@@ -539,6 +550,7 @@ class LoginViewModelMockTest {
                 handleScreenLockPolicy = any(),
                 handleBiometricAuthPolicy = any(),
                 handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -555,7 +567,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.doCodeExchange(any(), any(), any(), any(), any())
+            spyViewModel.doCodeExchange(any(), any(), any(), any(), any(), any())
         } returns Result.success(Unit)
 
         // Set up the view model state with different server
@@ -582,6 +594,7 @@ class LoginViewModelMockTest {
                 mockOnSuccess,
                 loginServer = customLoginServer,
                 tokenMigration = true,
+                onAuthFlowFinished = any(),
             )
         }
     }
@@ -605,7 +618,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any())
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any())
         } just runs
 
         // Set up required state
@@ -628,6 +641,7 @@ class LoginViewModelMockTest {
                 mockOnError,
                 mockOnSuccess,
                 tokenMigration = false,
+                onAuthFlowFinished = any(),
                 loginServer = "https://test.salesforce.com",
                 credentialsIdentifier = any(),
             )
@@ -654,7 +668,7 @@ class LoginViewModelMockTest {
 
         // Mock doCodeExchange to prevent actual execution
         coEvery {
-            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any())
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any())
         } just runs
 
         // Set up required state
@@ -679,6 +693,7 @@ class LoginViewModelMockTest {
                 mockOnError,
                 mockOnSuccess,
                 tokenMigration = true,
+                onAuthFlowFinished = any(),
                 loginServer = migrationServer,
                 credentialsIdentifier = any(),
             )
@@ -710,7 +725,7 @@ class LoginViewModelMockTest {
         // Spy so we can short-circuit account creation, leaving exchangeCode as the observable.
         val spyViewModel = spyk(viewModel)
         coEvery {
-            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any())
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any())
         } just runs
 
         // Sanity: distinct from boot config so a missing side effect would surface.
@@ -831,7 +846,7 @@ class LoginViewModelMockTest {
         setupExchangeCodeMock(oauthException)
 
         coEvery {
-            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any())
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any())
         } just runs
 
         spyViewModel.selectedServer.value = "https://test.salesforce.com"
@@ -840,7 +855,7 @@ class LoginViewModelMockTest {
         verify { mockOnError("Token Request Error", any(), oauthException) }
         verify(exactly = 0) { mockOnSuccess(any()) }
         coVerify(exactly = 0) {
-            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any())
+            spyViewModel.onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any())
         }
     }
 

@@ -750,4 +750,215 @@ class LoginActivityTest {
     }
 
     // endregion
+
+    // region shouldAutoPresentBiometricOnCreate / onAuthFlowFinished (W-22831383 — automaticPresentation)
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_lockedOptedInAutomatic_showBiometricExtraAbsent_returnsTrue() {
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent()
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertTrue(activity.shouldAutoPresentBiometricOnCreate(bioAuthManager))
+    }
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_automaticPresentationFalse_returnsFalse() {
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns true
+        every { bioAuthManager.automaticPresentation } returns false
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent()
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertFalse(activity.shouldAutoPresentBiometricOnCreate(bioAuthManager))
+    }
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_notLocked_returnsFalse() {
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns false
+        every { bioAuthManager.hasBiometricOptedIn() } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent()
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertFalse(activity.shouldAutoPresentBiometricOnCreate(bioAuthManager))
+    }
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_notOptedIn_returnsFalse() {
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        every { bioAuthManager.automaticPresentation } returns true
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent()
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertFalse(activity.shouldAutoPresentBiometricOnCreate(bioAuthManager))
+    }
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_showBiometricExtraFalse_returnsFalse() {
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.locked } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent().apply {
+            putExtra(BiometricAuthenticationManager.SHOW_BIOMETRIC, false)
+        }
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertFalse(activity.shouldAutoPresentBiometricOnCreate(bioAuthManager))
+    }
+
+    @Test
+    fun shouldAutoPresentBiometricOnCreate_nullManager_returnsFalse() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.intent } returns Intent()
+        every { activity.shouldAutoPresentBiometricOnCreate(any()) } answers { callOriginal() }
+
+        assertFalse(activity.shouldAutoPresentBiometricOnCreate(null))
+    }
+
+    @Test
+    fun onAuthFlowFinished_automaticPresentationFalse_finishesImmediately() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns true
+        every { bioAuthManager.automaticPresentation } returns false
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var finishCalls = 0
+            var proceedCalls = 0
+
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                activity.onAuthFlowFinished { proceedCalls += 1 }
+            }
+
+            assertTrue("Should proceed immediately when automaticPresentation is false.", proceedCalls == 1)
+            assertTrue("Should finish immediately when automaticPresentation is false.", finishCalls == 1)
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    @Test
+    fun onAuthFlowFinished_alreadyOptedIn_finishesImmediately() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns true
+        every { bioAuthManager.hasBiometricOptInDecision() } returns true
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var finishCalls = 0
+            var proceedCalls = 0
+
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                activity.onAuthFlowFinished { proceedCalls += 1 }
+            }
+
+            assertTrue("Should proceed immediately when already opted in.", proceedCalls == 1)
+            assertTrue("Should finish immediately when already opted in.", finishCalls == 1)
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    @Test
+    fun onAuthFlowFinished_previouslyDeclined_finishesImmediatelyWithoutReprompting() {
+        // Regression test: a user who chose "Use Password" (declined) must not be re-prompted
+        // on every subsequent login. hasBiometricOptedIn() is false in this case (the user did
+        // not opt in), but hasBiometricOptInDecision() is true (the user already responded).
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        every { bioAuthManager.hasBiometricOptInDecision() } returns true
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var finishCalls = 0
+            var proceedCalls = 0
+
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                activity.onAuthFlowFinished { proceedCalls += 1 }
+            }
+
+            assertTrue("Should proceed immediately when the user already declined.", proceedCalls == 1)
+            assertTrue("Should finish immediately when the user already declined.", finishCalls == 1)
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    @Test
+    fun onAuthFlowFinished_notEnabled_finishesImmediately() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns false
+        every { bioAuthManager.automaticPresentation } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        every { bioAuthManager.hasBiometricOptInDecision() } returns false
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var finishCalls = 0
+            var proceedCalls = 0
+
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = object : LoginActivity() {
+                    override fun finish() {
+                        finishCalls += 1
+                    }
+                }
+                activity.onAuthFlowFinished { proceedCalls += 1 }
+            }
+
+            assertTrue("Should proceed immediately when biometric auth is not enabled.", proceedCalls == 1)
+            assertTrue("Should finish immediately when biometric auth is not enabled.", finishCalls == 1)
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    // endregion
 }

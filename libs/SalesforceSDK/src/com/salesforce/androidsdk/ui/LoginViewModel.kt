@@ -192,6 +192,18 @@ open class LoginViewModel(
     }
     internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
     internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
+
+    /** Whether the biometric opt-in dialog should be shown, driven by [LoginActivity.onAuthFlowFinished]. */
+    internal var showBiometricOptInDialog = mutableStateOf(false)
+
+    /** Callback invoked with the user's opt-in choice when the biometric opt-in dialog is dismissed. Set by the Activity. */
+    internal var onBiometricOptInResultAction: ((optedIn: Boolean) -> Unit)? = null
+
+    internal fun onBiometricOptInResult(optedIn: Boolean) {
+        showBiometricOptInDialog.value = false
+        onBiometricOptInResultAction?.invoke(optedIn)
+    }
+
     internal var dynamicBackgroundColor = mutableStateOf(White)
     internal var dynamicBackgroundTheme =
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
@@ -457,8 +469,9 @@ open class LoginViewModel(
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         loginServer: String? = null,
         tokenMigration: Boolean = false,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) = CoroutineScope(IO).launch {
-        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess, loginServer, tokenMigration)
+        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess, loginServer, tokenMigration, onAuthFlowFinished)
     }
 
     /**
@@ -473,6 +486,7 @@ open class LoginViewModel(
         tokenMigration: Boolean = false,
         loginServer: String? = null,
         credentialsIdentifier: String? = null,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) {
         // Clear cookies after successful authentication to prevent automatic re-login if the user tries to add another user right away.
         if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
@@ -487,6 +501,7 @@ open class LoginViewModel(
             buildAccountName = ::buildAccountName,
             tokenMigration = tokenMigration,
             credentialsIdentifier = credentialsIdentifier,
+            onAuthFlowFinished = onAuthFlowFinished,
         )
     }
 
@@ -647,6 +662,7 @@ open class LoginViewModel(
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         loginServer: String? = null,
         tokenMigration: Boolean = false,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) = withContext(IO) {
         runCatching {
             val server = when {
@@ -670,7 +686,7 @@ open class LoginViewModel(
                 credentialsIdentifier,
             )
 
-            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier)
+            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier, onAuthFlowFinished)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
