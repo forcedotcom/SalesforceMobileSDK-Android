@@ -65,8 +65,10 @@ enum class KnownAppConfig {
     ECA_JWT_DPOP_RTR,
 }
 
+private val json = Json { ignoreUnknownKeys = true }
+
 val testConfig: UITestConfig by lazy {
-    Json.decodeFromString(
+    json.decodeFromString(
         string = ResourceReaderHelper.readAssetFile(
             InstrumentationRegistry.getInstrumentation().targetContext,
             /* assetFilePath = */ "ui_test_config.json",
