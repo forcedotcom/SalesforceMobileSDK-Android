@@ -274,9 +274,10 @@ abstract class SyncTarget @JvmOverloads constructor(
         idField: String?
     ) {
         if (ids.isNotEmpty()) {
+            val escapedIds = ids.map { it.replace("'", "''") }
             val smartSql =
                 "SELECT {$soupName:${SmartStore.SOUP_ENTRY_ID}} FROM {$soupName} WHERE {$soupName:$idField} IN ('${
-                    join(/* delimiter = */ "', '", /* tokens = */ ids)
+                    join(/* delimiter = */ "', '", /* tokens = */ escapedIds)
                 }')"
             val querySpec = QuerySpec.buildSmartQuerySpec(smartSql, Int.MAX_VALUE)
             syncManager.smartStore.deleteByQuery(soupName, querySpec)
