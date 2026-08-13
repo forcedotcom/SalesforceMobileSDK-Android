@@ -218,25 +218,35 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      * Selects a server from the server picker bottom sheet by matching its URL substring.
      * Used for servers that aren't represented in `ui_test_config.json` (e.g.
      * `welcome.salesforce.com/discovery`).
+     *
+     * If the picker is already showing (e.g. because [backOutToLoginActivity] left it up after
+     * the tab closed), skip opening it and select directly.
      */
     fun changeServerByUrl(url: String) {
-        // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
-            .performClick()
-        composeTestRule.waitForIdle()
+        val pickerAlreadyShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
-        // Tap "Change Server" dropdown menu item
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_PICK_SERVER)
-            .performClick()
+        if (!pickerAlreadyShowing) {
+            // Tap "More Options" three-dot menu (Compose IconButton)
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                .performClick()
+            composeTestRule.waitForIdle()
 
-        // Wait for server picker bottom sheet to appear
-        try {
-            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
-                    .fetchSemanticsNodes().isNotEmpty()
+            // Tap "Change Server" dropdown menu item
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_PICK_SERVER)
+                .performClick()
+
+            // Wait for server picker bottom sheet to appear
+            try {
+                composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                    composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                        .fetchSemanticsNodes().isNotEmpty()
+                }
+            } catch (e: ComposeTimeoutException) {
+                throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
             }
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
         }
 
         // Select the server matching the URL (filter for clickable node if multiple matches)

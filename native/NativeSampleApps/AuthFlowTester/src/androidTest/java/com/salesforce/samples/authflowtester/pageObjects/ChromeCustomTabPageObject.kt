@@ -84,9 +84,9 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
 
     /**
      * Surfaces the LoginActivity (or the server picker) by closing the Custom Tab that forced
-     * advanced auth auto-launches over it. Since W-23731759 the login picker is non-dismissable,
-     * so callers that need the top bar (e.g. [changeServerByUrl]) must select a server from the
-     * picker first; callers that need Login Options can use the picker's dev-support button via
+     * advanced auth auto-launches over it. The login picker is non-dismissable, so callers that
+     * need the top bar (e.g. [changeServerByUrl]) must select a server from the picker first;
+     * callers that need Login Options can use the picker's dev-support button via
      * [LoginPageObject.openLoginOptions]. This method only closes the tab and waits for Compose
      * to be ready — it does NOT attempt to dismiss the picker.
      */
