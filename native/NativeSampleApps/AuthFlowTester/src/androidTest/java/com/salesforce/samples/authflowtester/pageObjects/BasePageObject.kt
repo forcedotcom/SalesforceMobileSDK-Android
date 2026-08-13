@@ -44,11 +44,21 @@ abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
             ) == "true"
         }
         val TIMEOUT_MS: Long by lazy {
-            if (isFtl) 15_000 else 10_000
+            if (isFtl) 20_000 else 15_000
         }
 
         val SLEEP_TIME_MS: Long by lazy {
             if (isFtl) 5_000 else 2_500
+        }
+
+        /**
+         * Extended timeout for Espresso WebView actions ([retryWebAction]) that wait for
+         * server-rendered login page content. The Salesforce sandbox login page can take
+         * 20–30 s to render interactive form elements after [onPageFinished] fires; this budget
+         * covers that latency with headroom for both local emulators and Firebase Test Lab.
+         */
+        val WEBVIEW_ACTION_TIMEOUT_MS: Long by lazy {
+            if (isFtl) 60_000 else 45_000
         }
     }
 }

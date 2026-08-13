@@ -28,13 +28,11 @@ package com.salesforce.samples.authflowtester.pageObjects
 
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -85,15 +83,14 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
-     * Surfaces the LoginActivity by backing out of the Custom Tab that forced advanced auth
-     * auto-launches over it (the tab hides the Compose top bar the [LoginPageObject] actions need).
-     * Backing out returns `RESULT_CANCELED`, which the SDK handles by raising the server-picker
-     * bottom sheet; that is dismissed here too so a subsequent top-bar action can re-launch the tab.
-     * Waits up to [TIMEOUT_MS] for the async tab launch; no-op if no tab appears (already on the
-     * LoginActivity).
+     * Surfaces the LoginActivity (or the server picker) by closing the Custom Tab that forced
+     * advanced auth auto-launches over it. The login picker is non-dismissable, so callers that
+     * need the top bar (e.g. [changeServerByUrl]) must select a server from the picker first;
+     * callers that need Login Options can use the picker's dev-support button via
+     * [LoginPageObject.openLoginOptions]. This method only closes the tab and waits for Compose
+     * to be ready — it does NOT attempt to dismiss the picker.
      */
     override fun backOutToLoginActivity() {
-        // Clear the FRE first; until it is gone it covers the tab toolbar (the close button).
         skipGoogleSignIn()
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
@@ -102,27 +99,18 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             return
         }
         closeButton.click()
-        dismissServerPickerIfPresent()
-    }
-
-    /** Dismisses the login-server-picker bottom sheet via its Close button, if it is showing. */
-    private fun dismissServerPickerIfPresent() {
-        val closeDescription = getString(R.string.sf__server_close_button_content_description)
-        val appeared = try {
+        // Wait for either the picker or the top bar to be reachable.
+        try {
             composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithContentDescription(closeDescription)
+                composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
                     .fetchSemanticsNodes().isNotEmpty()
             }
-            true
         } catch (_: ComposeTimeoutException) {
-            // The picker never appeared (e.g. shared browser session re-auth); nothing to dismiss.
-            false
+            // Best-effort; caller action will fail with a clear message if neither is reachable.
         }
-
-        if (appeared) {
-            composeTestRule.onNodeWithContentDescription(closeDescription).performClick()
-            composeTestRule.waitForIdle()
-        }
+        composeTestRule.waitForIdle()
     }
 
     override fun setUsername(name: String) {

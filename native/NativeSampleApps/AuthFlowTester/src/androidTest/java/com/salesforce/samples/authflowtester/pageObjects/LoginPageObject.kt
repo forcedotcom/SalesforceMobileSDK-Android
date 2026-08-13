@@ -80,7 +80,12 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     open fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
-        setUsername(username)
+        waitForPageLoad()
+        retryWebAction(timeoutMs = WEBVIEW_ACTION_TIMEOUT_MS) {
+            onWebView().withElement(findElement(Locator.ID, USERNAME_ID))
+                .perform(clearElement())
+                .perform(webKeys(username))
+        }
         tapLogin()
         setPassword(password)
         tapLogin()
@@ -103,6 +108,77 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         }
 
     /**
+     * Waits for the LoginActivity top bar to be visible (MORE_OPTIONS_BUTTON present and Compose
+     * idle). Used after [changeServerByUrl] dismisses the server picker: the picker close and
+     * subsequent WebView reload are asynchronous; waiting here ensures the LoginActivity Compose
+     * hierarchy is fully settled before the caller proceeds.
+     */
+    fun waitForLoginScreen() {
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule
+                    .onAllNodesWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            }
+        } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
+            // Best-effort: if the top bar is not reachable within the timeout the caller's
+            // subsequent actions will fail with descriptive messages.
+            android.util.Log.w("LoginPageObject", "waitForLoginScreen: timed out after ${TIMEOUT_MS}ms waiting for MORE_OPTIONS_BUTTON")
+        }
+    }
+
+    /**
+     * Waits for the in-app WebView page to finish loading by watching the LOADING_INDICATOR:
+     * phase 1 waits for the indicator to appear (confirming a reload has started); phase 2 waits
+     * for it to disappear (confirming [LoginActivity.LoginWebViewClient.onPageFinished] has fired).
+     *
+     * This is called at the top of [login] to handle the case where a reload was triggered by
+     * [LoginOptionsPageObject.setOverrideBootConfig] → [LoginOptionsActivity.finish()] →
+     * [LoginActivity.onResume] → [LoginViewModel.reloadWebView]. The Salesforce sandbox page can
+     * take 20–30 s to render the login form, and [retryWebAction]'s 15 s budget would expire
+     * before the `username` element appears without this explicit wait.
+     *
+     * Best-effort on both phases so slow or already-loaded pages degrade gracefully: if the
+     * indicator never appears the page was already loaded (or loaded faster than we checked) and
+     * we proceed immediately; if phase 2 times out [retryWebAction] keeps retrying as a fallback.
+     */
+    private fun waitForPageLoad() {
+        // Phase 1: Wait for the LOADING_INDICATOR to appear, confirming a reload is in progress.
+        // Short timeout: if the reload was so fast we missed the indicator, proceed immediately.
+        val indicatorAppeared = try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                composeTestRule
+                    .onAllNodesWithTag(LoginViewTestTags.LOADING_INDICATOR)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            }
+            true
+        } catch (_: ComposeTimeoutException) {
+            false
+        }
+
+        if (!indicatorAppeared) {
+            // The indicator never showed: page was already loaded or the reload is still pending.
+            // Proceed — retryWebAction will handle any remaining wait.
+            return
+        }
+
+        // Phase 2: Wait for the LOADING_INDICATOR to disappear, confirming onPageFinished fired.
+        // Use a generous multiple of TIMEOUT_MS to accommodate slow sandbox pages (observed ~26 s).
+        try {
+            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS * 3) {
+                composeTestRule
+                    .onAllNodesWithTag(LoginViewTestTags.LOADING_INDICATOR)
+                    .fetchSemanticsNodes()
+                    .isEmpty()
+            }
+        } catch (_: ComposeTimeoutException) {
+            // Best-effort: page is still loading but retryWebAction will keep trying.
+        }
+    }
+
+    /**
      * Welcome Discovery login: the OAuth `login_hint` already pre-filled the username
      * field on page 1; we still tap Continue to advance to page 2, then enter the password
      * and submit.  Mirrors iOS performWelcomeLogin.
@@ -116,14 +192,27 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     fun openLoginOptions() {
-        // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
-            .performClick()
-        composeTestRule.waitForIdle()
+        // If the login-server picker is showing, the top app bar is behind its modal scrim.
+        // In that case, tap the picker's own dev-support button instead (PICKER_DEV_SUPPORT_BUTTON
+        // is visible in the picker header for debug builds). Otherwise use the normal top-bar path.
+        val pickerShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
-        // Tap "Developer Support" dropdown menu item
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_DEV_SUPPORT)
-            .performClick()
+        if (pickerShowing) {
+            composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON)
+                .performClick()
+        } else {
+            // Tap "More Options" three-dot menu (Compose IconButton)
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                .performClick()
+            composeTestRule.waitForIdle()
+
+            // Tap "Developer Support" dropdown menu item
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_DEV_SUPPORT)
+                .performClick()
+        }
         composeTestRule.waitForIdle()
 
         // Wait for the AlertDialog to be fully rendered and ready
@@ -205,25 +294,35 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      * Selects a server from the server picker bottom sheet by matching its URL substring.
      * Used for servers that aren't represented in `ui_test_config.json` (e.g.
      * `welcome.salesforce.com/discovery`).
+     *
+     * If the picker is already showing (e.g. because [backOutToLoginActivity] left it up after
+     * the tab closed), skip opening it and select directly.
      */
     fun changeServerByUrl(url: String) {
-        // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
-            .performClick()
-        composeTestRule.waitForIdle()
+        val pickerAlreadyShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
-        // Tap "Change Server" dropdown menu item
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_PICK_SERVER)
-            .performClick()
+        if (!pickerAlreadyShowing) {
+            // Tap "More Options" three-dot menu (Compose IconButton)
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                .performClick()
+            composeTestRule.waitForIdle()
 
-        // Wait for server picker bottom sheet to appear
-        try {
-            composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
-                    .fetchSemanticsNodes().isNotEmpty()
+            // Tap "Change Server" dropdown menu item
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_PICK_SERVER)
+                .performClick()
+
+            // Wait for server picker bottom sheet to appear
+            try {
+                composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
+                    composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                        .fetchSemanticsNodes().isNotEmpty()
+                }
+            } catch (e: ComposeTimeoutException) {
+                throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
             }
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for server picker bottom sheet to appear", e)
         }
 
         // Select the server matching the URL (filter for clickable node if multiple matches)
@@ -268,7 +367,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
                 return action()
             } catch (e: Exception) {
                 lastException = e
-                Thread.sleep(TIMEOUT_MS / 4)
+                Thread.sleep(SLEEP_TIME_MS)
             }
         }
         throw AssertionError(

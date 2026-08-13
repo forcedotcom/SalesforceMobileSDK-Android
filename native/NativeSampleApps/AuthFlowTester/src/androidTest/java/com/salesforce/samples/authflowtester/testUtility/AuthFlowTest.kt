@@ -30,7 +30,9 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -198,7 +200,19 @@ abstract class AuthFlowTest {
         // login surface.
         val regularAuthServer = loginServerManager.getLoginServerFromURL(regularAuthUrl)
         if (regularAuthServer != null) {
-            loginServerManager.setSelectedLoginServer(regularAuthServer)
+            // If the picker is showing after backOutToLoginActivity(), dismiss it by tapping the
+            // regular-auth row — this triggers reloadWebView and closes the sheet. When the picker
+            // is not showing, call setSelectedLoginServer directly as before.
+            val loginPage = LoginPageObject(composeTestRule)
+            val pickerShowing = composeTestRule
+                .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+            if (pickerShowing) {
+                loginPage.changeServerByUrl(regularAuthUrl)
+            } else {
+                loginServerManager.setSelectedLoginServer(regularAuthServer)
+            }
 
             if (expectCustomTab) {
                 // Reaching here means the server actually changed (a sticky ADVANCED_AUTH
@@ -208,9 +222,14 @@ abstract class AuthFlowTest {
                 // then generates the OAuth URL and launches the Custom Tab.  Wait for that tab to
                 // actually appear rather than sleeping a fixed interval.
                 chromePage.waitForCustomTab()
+            } else if (pickerShowing) {
+                // When the picker was showing, changeServerByUrl() tapped the server row which
+                // triggers an auth-config fetch and then reloads the WebView. Wait for the
+                // MORE_OPTIONS_BUTTON to confirm the LoginActivity's Compose is idle and the login
+                // screen is fully in front before returning — this ensures the WebView reload has
+                // begun and retryWebAction has the full timeout budget to wait for the login form.
+                loginPage.waitForLoginScreen()
             }
-            // For the WebView path there is nothing to wait for: the WebView page-object actions
-            // retry internally until the reloaded login form is ready.
         }
     }
 
