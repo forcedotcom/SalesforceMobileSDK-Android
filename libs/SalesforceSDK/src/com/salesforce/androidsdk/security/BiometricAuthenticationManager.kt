@@ -28,11 +28,9 @@ package com.salesforce.androidsdk.security
 
 import android.content.Intent
 import androidx.core.os.bundleOf
-import androidx.fragment.app.FragmentManager
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
-import com.salesforce.androidsdk.ui.BiometricAuthOptInPrompt
 import com.salesforce.androidsdk.util.EventsObservable
 import androidx.core.content.edit
 
@@ -124,13 +122,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
         }
 
         return true
-    }
-
-    override fun presentOptInDialog(fragmentManager: FragmentManager) {
-        val biometricPrompt = BiometricAuthOptInPrompt(this)
-        if (!biometricPrompt.isAdded) {
-            biometricPrompt.show(fragmentManager, null)
-        }
     }
 
     companion object {

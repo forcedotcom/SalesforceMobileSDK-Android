@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.security.interfaces
 
-import androidx.fragment.app.FragmentManager
-
 /**
  * Manages if the user should re-authenticate to use the app.
  */
@@ -76,13 +74,6 @@ interface BiometricAuthenticationManager {
      * @return True if the current user has opted in, false if not
      */
     fun hasBiometricOptedIn(): Boolean
-
-    /**
-     * Presents a dialog to the user asking them to opt-in to biometric authentication.
-     *
-     * @param fragmentManager The fragment manager used to display the dialog
-     */
-    fun presentOptInDialog(fragmentManager: FragmentManager)
 
     /**
      * Enables or disables a native button on the login screen that allows the user to bypass
