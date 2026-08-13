@@ -164,6 +164,7 @@ class TokenMigrationWebViewTest {
                     onAuthFlowError = mockResultCallback.onMigrationError,
                     loginServer = "instanceServer",
                     tokenMigration = true,
+                    onAuthFlowFinished = any(),
                 )
             }
 
@@ -220,6 +221,7 @@ class TokenMigrationWebViewTest {
                     onAuthFlowError = mockResultCallback.onMigrationError,
                     loginServer = "instanceServer",
                     tokenMigration = true,
+                    onAuthFlowFinished = any(),
                 )
             }
 

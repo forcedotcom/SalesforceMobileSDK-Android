@@ -53,8 +53,8 @@ abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
 
         /**
          * Extended timeout for Espresso WebView actions ([retryWebAction]) that wait for
-         * server-rendered login page content. The Salesforce sandbox login page can take up to
-         * ~30 s to render interactive form elements after [onPageFinished] fires; this budget
+         * server-rendered login page content. The Salesforce sandbox login page can take
+         * 20–30 s to render interactive form elements after [onPageFinished] fires; this budget
          * covers that latency with headroom for both local emulators and Firebase Test Lab.
          */
         val WEBVIEW_ACTION_TIMEOUT_MS: Long by lazy {

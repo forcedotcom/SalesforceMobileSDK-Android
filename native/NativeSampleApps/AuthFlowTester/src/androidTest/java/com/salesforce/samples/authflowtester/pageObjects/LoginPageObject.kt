@@ -124,6 +124,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
         } catch (_: androidx.compose.ui.test.ComposeTimeoutException) {
             // Best-effort: if the top bar is not reachable within the timeout the caller's
             // subsequent actions will fail with descriptive messages.
+            android.util.Log.w("LoginPageObject", "waitForLoginScreen: timed out after ${TIMEOUT_MS}ms waiting for MORE_OPTIONS_BUTTON")
         }
     }
 
