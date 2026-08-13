@@ -225,6 +225,7 @@ abstract class AuthFlowTest {
         forceAdvancedAuthentication: Boolean = true,
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        useLoginPoolHost: Boolean = false,
     ) {
         // When forceAdvancedAuthentication is true (default) every login completes in a Custom Tab:
         // a ChromeCustomTabPageObject serves both roles — its inherited Compose actions
@@ -308,6 +309,12 @@ abstract class AuthFlowTest {
             loginPage.backOutToLoginActivity()
             loginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
             authenticationPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
+        } else if (useLoginPoolHost) {
+            // Use the pool server URL from ui_test_config.json for the login host.
+            // Credentials are taken from knownLoginHostConfig — same org, different login entry point.
+            loginPage.backOutToLoginActivity()
+            loginPage.changeServerByUrl(testConfig.requireLoginPoolHost())
+            authenticationPage.login(knownLoginHostConfig, knownUserConfig)
         } else {
             if (knownLoginHostConfig != REGULAR_AUTH) {
                 // Switching servers is a top-bar action, so surface LoginActivity first. Selecting

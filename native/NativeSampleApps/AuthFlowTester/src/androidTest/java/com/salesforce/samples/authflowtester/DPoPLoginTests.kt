@@ -221,6 +221,25 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // endregion
 
+    // endregion
+
+    // region DPoP Pool Server Tests
+
+    // Login via the pool server (login.test1.pc-rnd.salesforce.com) with DPoP enabled
+    // and verify dpop_jkt was accepted and DPoP binding holds after a revoke+refresh.
+    @Test
+    fun testECAJwtDPoP_ViaLoginPoolServer() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP,
+            useHybridAuthToken = false,
+            useDPoP = true,
+            useLoginPoolHost = true,
+        )
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+    }
+
+    // endregion
+
     // region DPoP Login for Admins Tests
 
     // Login for Admins with DPoP ECA; verifies the admin Custom Tab hand-off works with DPoP.

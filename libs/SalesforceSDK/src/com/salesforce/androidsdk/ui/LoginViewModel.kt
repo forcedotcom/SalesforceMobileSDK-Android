@@ -697,17 +697,16 @@ open class LoginViewModel(
     // endregion
 
     /**
-     * Adds `dpop_jkt` to [params] when DPoP is enabled and [server] is a my-domain server.
-     * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
-     * support DPoP code binding and reject the parameter.
+     * Adds `dpop_jkt` to [params] when DPoP is enabled.
+     * welcome.salesforce.com/discovery is never passed here — discovery resolves a my-domain
+     * server before /authorize is called.
      */
     private fun addDpopJktIfNeeded(
         server: String,
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
     ) {
-        val isMyDomainServer = !LoginServerManager.isPoolServer(server)
-        if (!sdkManager.useDPoP || !isMyDomainServer) {
+        if (!sdkManager.useDPoP) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {

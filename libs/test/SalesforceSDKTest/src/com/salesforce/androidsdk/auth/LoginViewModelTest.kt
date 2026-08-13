@@ -493,6 +493,28 @@ class LoginViewModelTest {
         }
     }
 
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl() = runBlocking {
+        // dpop_jkt must be sent for pool servers when useDPoP=true.
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL for pool server when useDPoP=true, got: $url"
+        }
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
     // endregion
 
     // region frontDoorBridgeUrl Tests
