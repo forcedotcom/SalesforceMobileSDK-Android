@@ -116,14 +116,27 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     fun openLoginOptions() {
-        // Tap "More Options" three-dot menu (Compose IconButton)
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
-            .performClick()
-        composeTestRule.waitForIdle()
+        // If the login-server picker is showing, the top app bar is behind its modal scrim.
+        // In that case, tap the picker's own dev-support button instead (PICKER_DEV_SUPPORT_BUTTON
+        // is visible in the picker header for debug builds). Otherwise use the normal top-bar path.
+        val pickerShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
 
-        // Tap "Developer Support" dropdown menu item
-        composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_DEV_SUPPORT)
-            .performClick()
+        if (pickerShowing) {
+            composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON)
+                .performClick()
+        } else {
+            // Tap "More Options" three-dot menu (Compose IconButton)
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
+                .performClick()
+            composeTestRule.waitForIdle()
+
+            // Tap "Developer Support" dropdown menu item
+            composeTestRule.onNodeWithTag(LoginViewTestTags.MENU_ITEM_DEV_SUPPORT)
+                .performClick()
+        }
         composeTestRule.waitForIdle()
 
         // Wait for the AlertDialog to be fully rendered and ready
