@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -46,7 +47,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -1471,6 +1475,83 @@ class LoginViewModelTest {
             )
         } finally {
             sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    /**
+     * Builds a [LoginViewModel] whose [SalesforceSDKManager] is a spy that
+     * reports the app is using Native Login, so the WebView LoginActivity is
+     * the dismissible fallback, then runs [block] against it. The spy also
+     * reports no authenticated users, so the fallback scenario is deterministic
+     * regardless of any account state other suite tests leave on the shared
+     * SalesforceSDKManager singleton. [configureSpy] may further stub the spy
+     * (e.g. a locked biometric manager) before the view model is constructed.
+     * The object mock is always torn down.
+     */
+    private fun withNativeLoginFallbackViewModel(
+        configureSpy: (SalesforceSDKManager) -> Unit = {},
+        block: (LoginViewModel) -> Unit,
+    ) {
+        val spySdkManager = spyk(SalesforceSDKManager.getInstance())
+        // Any non-null Activity class works; only nativeLoginActivity's
+        // nullness gates the fallback, and its concrete type is never read.
+        every { spySdkManager.nativeLoginActivity } returns LoginActivity::class.java
+        // Pin the no-authenticated-users precondition on the spy rather than
+        // asserting on the shared singleton, which sibling tests can pollute.
+        every { spySdkManager.userAccountManager.authenticatedUsers } returns emptyList()
+        configureSpy(spySdkManager)
+        mockkObject(SalesforceSDKManager)
+        try {
+            every { SalesforceSDKManager.getInstance() } returns spySdkManager
+            block(
+                LoginViewModel(
+                    bootConfig = bootConfig,
+                    backgroundContext = testDispatcher,
+                )
+            )
+        } finally {
+            unmockkObject(SalesforceSDKManager)
+        }
+    }
+
+    /**
+     * When the app uses Native Login, the WebView LoginActivity is a
+     * dismissible fallback whose hardware-back already finishes and returns to
+     * the native login activity. The visible back affordance must be shown to
+     * match — even with no authenticated users — so the user is never stranded
+     * on the fallback WebView.
+     */
+    @Test
+    fun test_shouldShowBackButton_isTrueForNativeLoginFallbackWithNoUsers() {
+        withNativeLoginFallbackViewModel { nativeLoginViewModel ->
+            assertTrue(
+                "Back button must be shown for the Native Login WebView fallback.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
+        }
+    }
+
+    /**
+     * The Native Login fallback back affordance must still yield to the
+     * biometric lock — a locked user must authenticate rather than navigate
+     * back. The helper pins the no-authenticated-users precondition, so the
+     * only branch that could show the button is the Native Login one, proving
+     * the biometric lock takes precedence over it.
+     */
+    @Test
+    fun test_shouldShowBackButton_isFalseForNativeLoginFallbackWhenBiometricLocked() {
+        val lockedBioAuthManager = mockk<BiometricAuthenticationManager> {
+            every { locked } returns true
+        }
+        withNativeLoginFallbackViewModel(
+            configureSpy = { spy ->
+                every { spy.biometricAuthenticationManager } returns lockedBioAuthManager
+            },
+        ) { nativeLoginViewModel ->
+            assertFalse(
+                "Back button must remain hidden while biometric-locked, even for Native Login.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
         }
     }
 
