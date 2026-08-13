@@ -222,9 +222,14 @@ abstract class AuthFlowTest {
                 // then generates the OAuth URL and launches the Custom Tab.  Wait for that tab to
                 // actually appear rather than sleeping a fixed interval.
                 chromePage.waitForCustomTab()
+            } else if (pickerShowing) {
+                // When the picker was showing, changeServerByUrl() tapped the server row which
+                // triggers an auth-config fetch and then reloads the WebView. Wait for the
+                // MORE_OPTIONS_BUTTON to confirm the LoginActivity's Compose is idle and the login
+                // screen is fully in front before returning — this ensures the WebView reload has
+                // begun and retryWebAction has the full timeout budget to wait for the login form.
+                loginPage.waitForLoginScreen()
             }
-            // For the WebView path there is nothing to wait for: the WebView page-object actions
-            // retry internally until the reloaded login form is ready.
         }
     }
 
