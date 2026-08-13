@@ -336,10 +336,11 @@ abstract class AuthFlowTest {
                 Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
             else -> null
         }
-        val expectedLMarker = if (useWelcomeDiscovery) {
-            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+            // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
+            useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
             useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID

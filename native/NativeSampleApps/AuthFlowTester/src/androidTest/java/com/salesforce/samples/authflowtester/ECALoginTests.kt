@@ -83,4 +83,14 @@ fun testECAJwt_SubsetScopes_NotHybrid() {
 fun testECAJwt_AllScopes() {
         loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
+
+    // region ECA Pool Server Tests
+
+    // Login via the pool server without DPoP and verify the session is valid.
+    @Test
+    fun testECAJwt_ViaLoginPoolServer() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useLoginPoolHost = true)
+    }
+
+    // endregion
 }
