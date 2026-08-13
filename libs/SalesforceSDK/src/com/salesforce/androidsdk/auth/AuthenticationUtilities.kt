@@ -62,6 +62,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -221,15 +222,17 @@ internal suspend fun onAuthFlowComplete(
     // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
 
-    onAuthFlowFinished {
-        // Kickoff the end of the flow before storing mobile policy to prevent launching
-        // the main activity over/after the screen lock.
-        if (!tokenMigration) {
-            startMainActivity()
-        }
+    withContext(Dispatchers.Main) {
+        onAuthFlowFinished {
+            // Kickoff the end of the flow before storing mobile policy to prevent launching
+            // the main activity over/after the screen lock.
+            if (!tokenMigration) {
+                startMainActivity()
+            }
 
-        // Screen lock required by mobile policy
-        handleScreenLockPolicy(userIdentity, account)
+            // Screen lock required by mobile policy
+            handleScreenLockPolicy(userIdentity, account)
+        }
     }
 }
 
