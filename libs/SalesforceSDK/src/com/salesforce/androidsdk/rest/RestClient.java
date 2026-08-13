@@ -30,10 +30,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
-import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
-import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder;
-import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper;
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -73,7 +70,6 @@ public class RestClient {
     private static final String COMMUNITY_ID = "communityId";
     private static final String COMMUNITY_URL = "communityUrl";
     private static final String TAG = "RestClient";
-    private static final String DPOP = "DPoP";
 
     private static final Map<String, OAuthRefreshInterceptor> OAUTH_REFRESH_INTERCEPTORS = new HashMap<>();
     private static final Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS = new HashMap<>();
@@ -915,18 +911,7 @@ public class RestClient {
         }
 
         private void attachDPoPProofIfNeeded(Request.Builder builder, String method, String url) {
-            if (!DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType)) return;
-            try {
-                final String htu = DPoPURLHelper.INSTANCE.canonicalize(url);
-                final String host = HttpUrl.get(url).host();
-                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-                final java.security.KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof(method, htu, keyPair, nonce, authToken);
-                builder.header(DPOP, proof);
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof", e);
-            }
+            DPoPRequestDecorator.INSTANCE.attachProof(builder, credentialsIdentifier, tokenType, authToken);
         }
 
         /**
