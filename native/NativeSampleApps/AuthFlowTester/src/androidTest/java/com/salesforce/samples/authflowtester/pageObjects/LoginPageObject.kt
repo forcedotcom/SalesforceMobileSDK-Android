@@ -217,11 +217,10 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     /**
      * Selects a server from the server picker bottom sheet by matching its URL substring.
      * Used for servers that aren't represented in `ui_test_config.json` (e.g.
-     * `welcome.salesforce.com/discovery`) and for pool-server login.
+     * `welcome.salesforce.com/discovery`).
      *
      * If the picker is already showing (e.g. because [backOutToLoginActivity] left it up after
-     * the tab closed), skip opening it and select directly. This handles the non-dismissable
-     * picker introduced in W-23731759.
+     * the tab closed), skip opening it and select directly.
      */
     fun changeServerByUrl(url: String) {
         val pickerAlreadyShowing = composeTestRule
