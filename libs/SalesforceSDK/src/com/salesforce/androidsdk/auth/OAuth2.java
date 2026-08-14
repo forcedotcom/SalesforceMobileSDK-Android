@@ -776,7 +776,6 @@ public class OAuth2 {
                 DPoPNonceCache.INSTANCE.store(credentialsIdentifier, tokenHost, responseNonce);
             }
         }
-
         // Nonce challenge: server requires a nonce. Retry once with the harvested nonce.
         if (attachDPoP && isNonceChallenge(response)) {
             response.close();

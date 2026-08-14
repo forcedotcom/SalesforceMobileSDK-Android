@@ -716,6 +716,11 @@ open class LoginViewModel(
      * Adds `dpop_jkt` to [params] when DPoP is enabled.
      * welcome.salesforce.com/discovery is never passed here — discovery resolves a my-domain
      * server before /authorize is called.
+     *
+     * If [pendingCredentialsIdentifier] is already set (meaning dpop_jkt was already committed
+     * for this login flow, e.g. via a pool-server redirect), the existing key pair is reused so
+     * that the auth code's dpop_jkt binding and the token-exchange proof use the same key.
+     * Only generates a new key pair when starting a fresh login flow.
      */
     private fun addDpopJktIfNeeded(
         server: String,
@@ -732,16 +737,12 @@ open class LoginViewModel(
             return
         }
         runCatching {
-            // Delete any orphaned key from a prior server-picker navigation before generating a new one.
-            pendingCredentialsIdentifier?.let {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
-            }
-            val credId = java.util.UUID.randomUUID().toString()
+            val credId = pendingCredentialsIdentifier
+                ?: java.util.UUID.randomUUID().toString().also { pendingCredentialsIdentifier = it }
             val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
             val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
             params["dpop_jkt"] = thumbprint
-            pendingCredentialsIdentifier = credId
         }.onFailure { t ->
             android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
         }
