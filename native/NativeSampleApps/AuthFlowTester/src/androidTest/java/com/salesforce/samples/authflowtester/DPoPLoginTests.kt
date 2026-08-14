@@ -227,6 +227,12 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // Login via the pool server (login.test1.pc-rnd.salesforce.com) with DPoP enabled
     // and verify dpop_jkt was accepted and DPoP binding holds after a revoke+refresh.
+    //
+    // Skipped: server-side bug W-23864247 — the pool login server returns
+    // invalid_dpop_proof on the authorization-code token exchange even though the
+    // DPoP proof is cryptographically valid and the JWK thumbprint exactly matches
+    // the dpop_jkt sent in /authorize.  Re-enable when the server fix is confirmed.
+    @Ignore("W-23864247: pool login server rejects valid dpop_jkt token exchange")
     @Test
     fun testECAJwtDPoP_ViaLoginPoolServer() {
         loginAndValidate(

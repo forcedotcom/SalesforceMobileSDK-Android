@@ -60,9 +60,11 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, and restar
 | `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes | DPoP + refresh token rotation |
 | `testECAJwtDPoPRtr_NoHybrid` | ECA JWT DPoP RTR | No | DPoP + refresh token rotation |
 | `testECAJwtDPoP_MultiUser_UniqueTokens` | ECA JWT DPoP | — | Two users; unique tokens; independent revoke+refresh per user |
+| `testECAJwtDPoP_And_NonDPoP_MultiUser_FlagOff_IndependentProofs` | ECA JWT DPoP + ECA JWT | — | DPoP and non-DPoP users coexist; toggling DPoP off for second user does not affect first |
 | `testMigrate_ECAJwtDPoP_AddMoreScopes` | ECA JWT DPoP | — | Scope upgrade; DPoP binding preserved |
 | `testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr` | ECA JWT DPoP → ECA JWT DPoP RTR | — | Migrate from DPoP to DPoP+RTR |
 | `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
+| `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | `@Ignore` (W-23864247 — pool login server rejects valid `dpop_jkt` token exchange) |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 
 #### RTRLoginTests
