@@ -200,7 +200,7 @@ object ParentChildrenSyncTargetHelper {
             childrenInfo.soupName, childrenInfo.parentIdFieldName,
             parentInfo.soupName, parentInfo.idFieldName,
             parentInfo.soupName, parentInfo.idFieldName,
-            "'${join("', '", parentIds)}'"
+            "'${join("', '", parentIds.map { it.replace("'", "''") })}'"
         )
         return QuerySpec.buildSmartQuerySpec(smartSql, Int.MAX_VALUE)
     }
