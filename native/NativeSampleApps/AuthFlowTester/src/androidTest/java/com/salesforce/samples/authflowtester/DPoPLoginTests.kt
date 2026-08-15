@@ -143,14 +143,16 @@ class DPoPLoginTests : AuthFlowTest() {
 
         // Switch to user A (DPoP-bound). Refresh + REST GET must attach a DPoP proof —
         // gated by credential state, not the global flag.
-        switchToUserAndValidateUser(user, isDpop = true)
+        // ECA_JWT_DPOP issues JWT tokens, so isJwt=true is required to expect JT in the UA.
+        switchToUserAndValidateUser(user, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
 
         // Switch to user B (Bearer). Refresh + REST GET must NOT attach DPoP anywhere.
-        switchToUserAndValidateUser(otherUser, isDpop = false)
+        // ECA_JWT issues JWT tokens, so isJwt=true is required to expect JT (not OT) in the UA.
+        switchToUserAndValidateUser(otherUser, isDpop = false, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true, isJwt = true)
     }
 
     // endregion
