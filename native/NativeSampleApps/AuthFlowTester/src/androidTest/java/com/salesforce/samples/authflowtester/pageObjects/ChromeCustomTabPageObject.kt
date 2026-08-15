@@ -27,11 +27,16 @@
 package com.salesforce.samples.authflowtester.pageObjects
 
 import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
@@ -80,6 +85,46 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         setPassword(password)
         tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
+    }
+
+    /**
+     * Opens the top bar overflow menu and taps the "Login for Admins" item.
+     *
+     * Overrides [LoginPageObject.tapLoginForAdminsMenuItem] to handle the case where the login
+     * server picker is showing after [backOutToLoginActivity] closed the forced-advanced-auth tab.
+     * The picker is non-dismissable except by selecting a server.  Selecting the current server
+     * calls [LoginViewModel.reloadWebView], which checks [SalesforceSDKManager.isBrowserLoginEnabled]
+     * to decide whether to launch a Custom Tab or load the in-app WebView.  We ensure the flag is
+     * false before the tap so the reload uses the WebView path and the picker is dismissed without
+     * launching another tab — [waitForLoginScreen] then confirms the top app bar is reachable.
+     */
+    override fun tapLoginForAdminsMenuItem() {
+        val pickerShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+        if (pickerShowing) {
+            val currentUrl = SalesforceSDKManager.getInstance()
+                .loginServerManager.selectedLoginServer?.url
+            if (currentUrl != null) {
+                // Belt-and-suspenders: ensure browser-login is off before the row tap so that the
+                // reloadWebView() call inside onNewLoginServerSelected loads the WebView rather than
+                // relaunching a Custom Tab (which would show the picker again when closed).
+                SalesforceSDKManager.getInstance().run {
+                    forceAdvancedAuthentication = false
+                    isBrowserLoginEnabled = false
+                }
+                composeTestRule
+                    .onAllNodesWithText(currentUrl, substring = true)
+                    .filterToOne(hasClickAction())
+                    .performClick()
+                composeTestRule.waitForIdle()
+                // Picker is now dismissed (showServerPicker.value = false). Wait for the
+                // MORE_OPTIONS_BUTTON to appear in the top app bar before calling super.
+                waitForLoginScreen()
+            }
+        }
+        super.tapLoginForAdminsMenuItem()
     }
 
     /**

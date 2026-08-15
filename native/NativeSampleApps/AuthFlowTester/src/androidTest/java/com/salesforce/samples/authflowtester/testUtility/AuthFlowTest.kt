@@ -540,9 +540,15 @@ abstract class AuthFlowTest {
         }
         loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection = EMPTY)
 
-        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path;
-        // back out again to reach the overflow menu (no-op on the WebView path), then launch the
-        // dedicated admin custom tab.
+        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path.
+        // After backing out of that tab, the non-dismissable login picker is shown (W-23731759).
+        // To reach the overflow menu, disable forced advanced authentication before closing the tab
+        // so that ChromeCustomTabPageObject.tapLoginForAdminsMenuItem can dismiss the picker by
+        // re-selecting the current server (which triggers reloadWebView with isBrowserLoginEnabled=false,
+        // loading the in-app WebView instead of yet another Custom Tab).
+        if (useWebServerFlow) {
+            setForcedAdvancedAuthEnabled(false)
+        }
         topBarPage.backOutToLoginActivity()
         topBarPage.tapLoginForAdminsMenuItem()
 

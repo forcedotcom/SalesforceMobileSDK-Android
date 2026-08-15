@@ -46,7 +46,6 @@ import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
 import androidx.test.espresso.web.webdriver.DriverAtoms.webKeys
 import androidx.test.espresso.web.webdriver.Locator
 import com.salesforce.androidsdk.R
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -274,32 +273,8 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      * Opens the top bar overflow menu and taps the "Login for Admins" item.
      * The SDK then launches the OAuth authorize URL in a Chrome Custom Tab while
      * the in-app WebView remains loaded underneath.
-     *
-     * If the login server picker is showing (e.g. because [ChromeCustomTabPageObject.backOutToLoginActivity]
-     * left it up after the tab closed), dismiss it first by selecting the current server, so the top
-     * app bar becomes reachable.  This matches the real user gesture: you can't tap the overflow menu
-     * while the picker modal is covering it.
      */
-    fun tapLoginForAdminsMenuItem() {
-        // Dismiss the server picker if it is covering the top app bar.
-        val pickerShowing = composeTestRule
-            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
-            .fetchSemanticsNodes()
-            .isNotEmpty()
-        if (pickerShowing) {
-            // Select the currently active login host to dismiss the picker without changing servers.
-            val currentUrl = SalesforceSDKManager.getInstance()
-                .loginServerManager.selectedLoginServer?.url
-            if (currentUrl != null) {
-                composeTestRule.onAllNodesWithText(currentUrl, substring = true)
-                    .filterToOne(hasClickAction())
-                    .performClick()
-                composeTestRule.waitForIdle()
-                // Wait for the picker to close and the top bar to come back.
-                waitForLoginScreen()
-            }
-        }
-
+    open fun tapLoginForAdminsMenuItem() {
         // Tap "More Options" three-dot menu (Compose IconButton)
         composeTestRule.onNodeWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
             .performClick()

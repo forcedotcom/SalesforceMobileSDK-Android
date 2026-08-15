@@ -727,7 +727,11 @@ open class LoginViewModel(
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
     ) {
-        if (!sdkManager.useDPoP) {
+        // Welcome Discovery is a pre-authentication host, not a resource server — never attach
+        // dpop_jkt there. Belt-and-suspenders guard: generateAuthorizationUrl is not called for
+        // the discovery URL today (reloadWebView short-circuits it), but this prevents a stale
+        // thumbprint from leaking if the call graph changes in the future.
+        if (!sdkManager.useDPoP || LoginServerManager.WELCOME_LOGIN_URL == server) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {
