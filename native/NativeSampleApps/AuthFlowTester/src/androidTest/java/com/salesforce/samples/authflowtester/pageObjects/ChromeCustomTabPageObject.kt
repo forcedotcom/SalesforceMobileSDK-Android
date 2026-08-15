@@ -114,43 +114,44 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setUsername(name: String) {
-        var usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
-        if (!usernameField.waitForExists(TIMEOUT_MS)) {
-            usernameField = device.findObject(
-                UiSelector().className("android.widget.EditText").instance(0)
-            )
-            if (!usernameField.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Username field not found in Custom Tab")
-            }
-        }
+        // UiSelector.resourceId("username") matches Android View resource IDs, not HTML element
+        // IDs inside Chrome — the quick check is a low-cost probe before the full wait.
+        val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+                .also {
+                    // Use the extended WebView timeout: the Salesforce login page can take
+                    // 20–30 s to render the first input field after the tab toolbar appears.
+                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
+                        throw AssertionError("Username field not found in Custom Tab")
+                    }
+                }
         usernameField.click()
         usernameField.setText(name)
     }
 
     override fun setPassword(password: String) {
-        var passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
-        if (!passwordField.waitForExists(TIMEOUT_MS)) {
-            passwordField = device.findObject(
-                UiSelector().className("android.widget.EditText").instance(0)
-            )
-            if (!passwordField.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Password field not found in Custom Tab")
-            }
-        }
+        val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+                .also {
+                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
+                        throw AssertionError("Password field not found in Custom Tab")
+                    }
+                }
         passwordField.click()
         passwordField.setText(password)
     }
 
     override fun tapLogin() {
-        var loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
-        if (!loginButton.waitForExists(TIMEOUT_MS)) {
-            loginButton = device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
-            )
-            if (!loginButton.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Log In button not found in Custom Tab")
-            }
-        }
+        val loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.Button").textContains("Log In"))
+                .also {
+                    if (!it.waitForExists(TIMEOUT_MS)) {
+                        throw AssertionError("Log In button not found in Custom Tab")
+                    }
+                }
         loginButton.click()
     }
 
