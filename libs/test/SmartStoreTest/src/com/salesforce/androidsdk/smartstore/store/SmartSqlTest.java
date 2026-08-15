@@ -232,6 +232,14 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	}
 
 	@Test
+	public void testConvertSmartSqlForNonIndexedColumnWithSingleQuoteInPath() {
+		// Single quotes in non-indexed paths must be doubled so they don't break the surrounding json_extract(soup, '$.path') literal.
+		// The path with ' is in the WHERE clause so that the FROM {employees} token is resolved before any single-quote appears in beforeStr.
+		Assert.assertEquals("select TABLE_1_3 from TABLE_1 where json_extract(soup, '$.user''s.address') = 'foo'",
+			store.convertSmartSql("select {employees:employeeId} from {employees} where {employees:user's.address} = 'foo'"));
+	}
+
+	@Test
 	public void testConvertSmartSqlWithQuotedCurlyBraces() {
     	Assert.assertEquals("select json_extract(soup, '$.education') from TABLE_1 where json_extract(soup, '$.education') like 'Account(where: {Name: {eq: \"Jason\"}})'",
 			store.convertSmartSql("select {employees:education} from {employees} where {employees:education} like 'Account(where: {Name: {eq: \"Jason\"}})'"));

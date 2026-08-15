@@ -167,6 +167,15 @@ public class QuerySpecTest {
     }
 
     @Test
+    public void testMatchQuerySmartSqlWithSingleQuoteInMatchKey() {
+        // Single quotes in matchKey must be doubled so they don't break the surrounding MATCH '...' literal.
+        QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "O'Brien", "firstName", QuerySpec.Order.ascending, 1);
+        Assert.assertEquals("Wrong smart sql for match query spec with single quote in matchKey",
+            "SELECT {employees:_soup} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees}_fts MATCH '{employees:lastName}:O''Brien') ORDER BY {employees:firstName} ASC ",
+            querySpec.smartSql);
+    }
+
+    @Test
     public void testQualifyMatchKey() {
         Assert.assertEquals("Wrong qualified match query", "abc", QuerySpec.qualifyMatchKey(null, "abc"));
         Assert.assertEquals("Wrong qualified match query", "{soup:path}:abc", QuerySpec.qualifyMatchKey("{soup:path}", "abc"));
