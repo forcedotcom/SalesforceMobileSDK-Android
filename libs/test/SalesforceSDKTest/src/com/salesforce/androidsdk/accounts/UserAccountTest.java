@@ -102,6 +102,7 @@ public class UserAccountTest {
     public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid-client-value";
     public static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
     public static final String TEST_CLIENT_ID = "test-client-id";
+    public static final String TEST_REDIRECT_URI = "test-redirect-uri://success/done";
     public static final String TEST_PARENT_SID = "test-parent-sid";
     public static final String TEST_TOKEN_FORMAT = "test-token-format";
     public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
@@ -444,6 +445,7 @@ public class UserAccountTest {
         object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object.put(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
         object.put(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
+        object.put(UserAccount.REDIRECT_URI, TEST_REDIRECT_URI);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -494,6 +496,7 @@ public class UserAccountTest {
         object.putString(UserAccount.SCOPE, TEST_SCOPE);
         object.putString(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
         object.putString(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
+        object.putString(UserAccount.REDIRECT_URI, TEST_REDIRECT_URI);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -535,6 +538,7 @@ public class UserAccountTest {
                 .cookieSidClient(TEST_COOKIE_SID_CLIENT)
                 .sidCookieName(TEST_SID_COOKIE_NAME)
                 .clientId(TEST_CLIENT_ID)
+                .redirectUri(TEST_REDIRECT_URI)
                 .parentSid(TEST_PARENT_SID)
                 .tokenFormat(TEST_TOKEN_FORMAT)
                 .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)

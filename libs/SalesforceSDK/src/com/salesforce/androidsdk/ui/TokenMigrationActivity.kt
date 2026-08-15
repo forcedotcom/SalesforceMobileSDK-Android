@@ -122,6 +122,13 @@ internal class TokenMigrationActivity : ComponentActivity() {
             logMigrationError(resultCallback, ERROR_BUILD_USER_ACCOUNT, null, null)
             return
         }
+
+        // Per-call DPoP intent for this migration, independent of the global
+        // SalesforceSDKManager.useDPoP flag (see LoginViewModel.dpopOverride). When the extra is
+        // absent the caller expressed no per-call intent, so leave dpopOverride null and defer to
+        // the global flag (prior behavior).
+        viewModel.dpopOverride =
+            if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
         val client = runCatching {
             restClientFactory(applicationContext, user)
         }.getOrElse { e ->
@@ -301,6 +308,7 @@ internal class TokenMigrationActivity : ComponentActivity() {
         const val EXTRA_ORG_ID = "MIGRATION_ORG_ID"
         const val EXTRA_USER_ID = "MIGRATION_USER_ID"
         const val EXTRA_CALLBACK_ID = "MIGRATION_CALLBACK"
+        const val EXTRA_USE_DPOP = "MIGRATION_USE_DPOP"
 
         const val TAG = "TokenMigrationActivity"
 

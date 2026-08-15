@@ -594,6 +594,7 @@ abstract class AuthFlowTest {
         redirectUri: String,
         scopes: String? = null,
         knownUserConfig: KnownUserConfig = user,
+        useDPoP: Boolean = false,
     ) {
         val loginPage = ChromeCustomTabPageObject(composeTestRule)
         ensureRegularAuthServer(expectCustomTab = true)
@@ -605,6 +606,13 @@ abstract class AuthFlowTest {
         // then let the Custom Tab re-launch with the new dynamic config.
         loginPage.backOutToLoginActivity()
         loginPage.openLoginOptions()
+
+        // Deterministically set the DPoP precondition (mirrors loginAndValidate). Login Options
+        // is always opened above for the dynamic config override, so this is a no-op toggle click
+        // when the DPoP toggle is already in the desired state (e.g. the default off state that
+        // cleanup() restores between tests).
+        if (useDPoP) loginOptions.enableDPoP() else loginOptions.disableDPoP()
+
         loginOptions.setOverrideBootConfigRaw(consumerKey, redirectUri, scopes)
 
         // Submit credentials in the Custom Tab. Some failure modes (e.g. invalid consumer key)
@@ -687,6 +695,53 @@ abstract class AuthFlowTest {
         app.validateApiRequest()
     }
 
+    /**
+     * Drives the "Upgrade to DPoP" affordance for the current user's existing Bearer session and
+     * validates the resulting DPoP-bound credential — same consumer key, new tokens, non-empty
+     * nonce, valid thumbprint. Mirrors [migrateAndValidate] but for the same-config, DPoP-only
+     * [com.salesforce.androidsdk.accounts.upgradeToDPoP] convenience rather than a full app
+     * migration, so it takes no target [KnownAppConfig]/scopes — the config is unchanged.
+     */
+    fun upgradeToDPoPAndValidate(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = user,
+        expectAdvancedAuth: Boolean = true,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+    ) {
+        val (preAccessToken, preRefreshToken) = app.getTokens()
+        app.upgradeToDPoP()
+        val (postAccessToken, postRefreshToken) = app.getTokens()
+
+        // Assert tokens are new.
+        assert(preAccessToken != postAccessToken)
+        assert(preRefreshToken != postRefreshToken)
+
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val appConfig = testConfig.getApp(knownAppConfig)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = true,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            wasMigrated = true,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
+        )
+
+        // The consumer key is unchanged — same app, only the DPoP binding changed.
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
+
+        // Assert the newly DPoP-bound tokens work. upgradeToDPoP delegates to the refresh-token
+        // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
+        // and persists across subsequent refreshes — the marker tracks the migration mechanism, not
+        // whether the connected app changed. Assert its presence.
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
+    }
+
     fun assertRevokeAndRefreshWorks(
         isRtr: Boolean,
         isDpop: Boolean = false,
@@ -694,6 +749,7 @@ abstract class AuthFlowTest {
         expectAdvancedAuth: Boolean = true,
         isMultiUser: Boolean = false,
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        wasMigrated: Boolean = false,
         isJwt: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
@@ -727,6 +783,7 @@ abstract class AuthFlowTest {
             expectedBMarker = expectedBMarker,
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
             expectedAMarker = expectedAMarker,
+            wasMigrated = wasMigrated,
             isJwt = isJwt,
         )
     }

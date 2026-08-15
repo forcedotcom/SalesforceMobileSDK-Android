@@ -569,6 +569,138 @@ class LoginViewModelTest {
 
     // endregion
 
+    // region dpopOverride (migration per-call DPoP intent) Tests
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideTrue_FlagOff_AddsDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride=true, even with the global useDPoP flag off, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideFalse_FlagOn_DoesNotAddDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.dpopOverride = false
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(!path.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in migration authorization path when dpopOverride=false, even with the global useDPoP flag on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideNull_FallsBackToGlobalFlag() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        // dpopOverride left at its default (null) — migration should fall back to the global flag,
+        // matching pre-existing migration behavior when no per-call intent is supplied.
+        assertNull(viewModel.dpopOverride)
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride is null and the global useDPoP flag is on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_ResetsDpopOverride_AfterUrlIsBuilt() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assertNull(
+            "dpopOverride must be reset to null once the migration URL is built, so it never " +
+                "leaks into a later, unrelated login on this shared view model",
+            viewModel.dpopOverride,
+        )
+    }
+
+    @Test
+    fun generateAuthorizationUrl_AfterMigrationResetsDpopOverride_GatesPurelyOnGlobalFlag() = runBlocking {
+        // Proves the real A-3 guarantee: normal login never sets dpopOverride itself, so under
+        // the documented contract (generateMigrationAuthorizationPath always resets it to null
+        // once its URL is built) a subsequent generateAuthorizationUrl call on the same shared
+        // view model sees dpopOverride == null and gates dpop_jkt purely on the global flag. Both
+        // calls target a MY-DOMAIN server (not a pool host), so dpop_jkt would be added here if
+        // any stale override leaked through — a pool-host server would strip it either way and
+        // make the assertion pass for the wrong reason.
+        val migrationSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { migrationSdkManagerMock.useHybridAuthentication } returns false
+        every { migrationSdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = migrationSdkManagerMock,
+        )
+        assertNull(viewModel.dpopOverride)
+
+        val loginSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { loginSdkManagerMock.isDebugBuild } returns false
+        every { loginSdkManagerMock.useHybridAuthentication } returns false
+        every { loginSdkManagerMock.isBrowserLoginEnabled } returns false
+        every { loginSdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { loginSdkManagerMock.debugOverrideAppConfig } returns null
+        every { loginSdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", loginSdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(!url.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in normal-login authorization URL after a prior migration call " +
+                "reset dpopOverride, got: $url"
+        }
+    }
+
+    // endregion
+
     // region frontDoorBridgeUrl Tests
 
     @Test

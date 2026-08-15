@@ -65,6 +65,7 @@ class UserAccountBuilder private constructor() {
     private var cookieSidClient: String? = null
     private var sidCookieName: String? = null
     private var clientId: String? = null
+    private var redirectUri: String? = null
     private var parentSid: String? = null
     private var tokenFormat: String? = null
     private var additionalOauthValues: Map<String, String>? = null
@@ -175,6 +176,7 @@ class UserAccountBuilder private constructor() {
             .cookieSidClient(userAccount.cookieSidClient)
             .sidCookieName(userAccount.sidCookieName)
             .clientId(userAccount.clientId)
+            .redirectUri(userAccount.redirectUri)
             .parentSid(userAccount.parentSid)
             .tokenFormat(userAccount.tokenFormat)
             .beaconChildConsumerKey(userAccount.beaconChildConsumerKey)
@@ -540,6 +542,16 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets oauth redirect uri
+     *
+     * @param redirectUri oauth redirect uri.
+     * @return Instance of this class.
+     */
+    fun redirectUri(redirectUri: String?): UserAccountBuilder {
+        return if (!allowUnset && redirectUri == null) this else apply { this.redirectUri = redirectUri }
+    }
+
+    /**
      * Sets additional OAuth values.
      *
      * @param additionalOauthValues Additional OAuth values.
@@ -663,6 +675,7 @@ class UserAccountBuilder private constructor() {
             cookieSidClient,
             sidCookieName,
             clientId,
+            redirectUri,
             parentSid,
             tokenFormat,
             beaconChildConsumerKey,

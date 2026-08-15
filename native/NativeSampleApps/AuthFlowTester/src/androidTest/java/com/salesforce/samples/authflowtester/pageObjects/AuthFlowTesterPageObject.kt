@@ -60,6 +60,7 @@ import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_TOKEN_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_USER_RADIO_CONTENT_DESC
+import com.salesforce.samples.authflowtester.UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
@@ -448,6 +449,45 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
 
         // Wait for the app UI to refresh with new token data
+        waitForAppLoad()
+    }
+
+    /**
+     * Opens the migration bottom sheet and taps "Upgrade to DPoP" for the current user — an
+     * in-place upgrade of the existing connected app (same consumer key/redirect URI/scopes),
+     * independent of [SalesforceSDKManager.useDPoP]. Because the config is unchanged, no
+     * approve/deny screen is expected (A-2 in the spec), but [AuthorizationPageObject
+     * .tapAllowAfterMigration] is still consulted to tolerate a stray consent screen rather than
+     * asserting its strict absence.
+     */
+    fun upgradeToDPoP() {
+        // Tap "Migrate Access Token" bottom bar icon to open the sheet.
+        val migrateDesc = getString(R.string.migrate_access_token)
+        waitForNode(migrateDesc)
+        composeTestRule.onNodeWithContentDescription(migrateDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeTestRule.waitForIdle()
+
+        // Tap the "Upgrade to DPoP" button.
+        waitForNode(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
+
+        // Wait for migration to complete and the sheet to auto-dismiss (see migrateToNewApp
+        // for the rationale behind the close-button fallback).
+        val closeDesc = getString(R.string.close_content_description)
+        try {
+            waitForNodeGone(closeDesc)
+        } catch (_: Exception) {
+            composeTestRule.onNodeWithContentDescription(closeDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            composeTestRule.waitForIdle()
+            waitForNodeGone(closeDesc)
+        }
+
+        // Wait for the app UI to refresh with new token data.
         waitForAppLoad()
     }
 

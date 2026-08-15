@@ -305,6 +305,14 @@ open class LoginViewModel(
     // The optional web server flow code verifier accompanying the front door bridge server.
     internal var frontdoorBridgeCodeVerifier: String? = null
 
+    /**
+     * Per-call DPoP intent for a pending token-migration re-auth, overriding
+     * [SalesforceSDKManager.useDPoP] for that single migration.  Null means "use the global
+     * flag" (normal login behavior, unchanged).  Set immediately before
+     * [generateMigrationAuthorizationPath] and reset to null once that call returns so the
+     * override never leaks into a later, unrelated login on this shared view model.
+     */
+    internal var dpopOverride: Boolean? = null
 
     // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
     internal var oAuthConfig = OAuthConfig(bootConfig)
@@ -508,6 +516,7 @@ open class LoginViewModel(
             tokenResponse = tr,
             loginServer = loginServer ?: selectedServer.value ?: "",
             consumerKey = consumerKey,
+            redirectUri = oAuthConfig.redirectUri,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
@@ -585,6 +594,10 @@ open class LoginViewModel(
             codeChallenge,
             /* addlParams = */ additionalParameters,
         )
+
+        // The per-call override, if any, only applies to this migration's /authorize call.
+        // Reset it now so it never leaks into a later, unrelated login on this shared view model.
+        dpopOverride = null
 
         return with(authorizationUrl) { "$path?$query" }
     }
@@ -697,7 +710,6 @@ open class LoginViewModel(
                 SalesforceSDKManager.getInstance(),
                 credentialsIdentifier,
             )
-
             onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier, onAuthFlowFinished)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
@@ -733,6 +745,10 @@ open class LoginViewModel(
      * for this login flow, e.g. via a pool-server redirect), the existing key pair is reused so
      * that the auth code's dpop_jkt binding and the token-exchange proof use the same key.
      * Only generates a new key pair when starting a fresh login flow.
+     *
+     * Whether DPoP is enabled is determined by [dpopOverride] when set (a per-call intent for
+     * a pending token migration), falling back to [SalesforceSDKManager.useDPoP] otherwise —
+     * the normal-login path never sets [dpopOverride], so its gating is unchanged.
      */
     private fun addDpopJktIfNeeded(
         server: String,
@@ -743,7 +759,8 @@ open class LoginViewModel(
         // dpop_jkt there. Belt-and-suspenders guard: generateAuthorizationUrl is not called for
         // the discovery URL today (reloadWebView short-circuits it), but this prevents a stale
         // thumbprint from leaking if the call graph changes in the future.
-        if (!sdkManager.useDPoP || LoginServerManager.WELCOME_LOGIN_URL == server) {
+        val dpopEnabled = dpopOverride ?: sdkManager.useDPoP
+        if (!dpopEnabled || LoginServerManager.WELCOME_LOGIN_URL == server) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {
