@@ -93,6 +93,33 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     /**
+     * Exits the login flow when the non-dismissable login-server picker (W-23731759) is in front.
+     *
+     * Since the picker became non-dismissable its [androidx.compose.material3.ModalBottomSheet]
+     * swallows device back presses (the sheet's back handler tries to hide it, which
+     * `confirmValueChange` rejects), so a caller cannot walk back to the app with `pressBack()`
+     * while the picker is up. Instead we tap the picker header's login-exit back button, which
+     * invokes `LoginActivity.handleBackBehavior()` and finishes the activity — the same effect a
+     * back press had before the picker was made modal. That button is only rendered when there is
+     * an authenticated user (`LoginViewModel.shouldShowBackButton`), which is the case for callers
+     * that reached the picker via "Add New Account".
+     *
+     * @return true if the picker was showing and its back button was tapped; false otherwise.
+     */
+    fun exitServerPickerIfShowing(): Boolean {
+        val pickerShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+        if (!pickerShowing) return false
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON)
+            .performClick()
+        composeTestRule.waitForIdle()
+        return true
+    }
+
+    /**
      * Returns true when the LoginActivity top bar is currently in front
      * (detected via the SDK's locale-invariant "More Options" test tag). Used by
      * negative tests to assert the user did not advance past login.
