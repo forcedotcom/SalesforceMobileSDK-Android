@@ -48,16 +48,42 @@ const val TAG = "UserAccountManager"
  * new app. If successful a new set of credentials (refresh token, access token) are obtained
  * and replace the existing credentials for the user.
  *
+ * This overload preserves the original (pre-DPoP) behavior: the migrated session defers to the
+ * global [SalesforceSDKManager.useDPoP] flag for its DPoP posture. To express a per-call DPoP
+ * intent, use the [useDPoP]-carrying overload; for the common same-config, DPoP-upgrade case,
+ * see [upgradeToDPoP].
+ */
+fun UserAccountManager.migrateRefreshToken(
+    userAccount: UserAccount? = getInstance().currentUser,
+    appConfig: OAuthConfig,
+    onMigrationSuccess: (userAccount: UserAccount) -> Unit,
+    onMigrationError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+) = migrateRefreshToken(
+    userAccount = userAccount,
+    appConfig = appConfig,
+    useDPoP = null,
+    onMigrationSuccess = onMigrationSuccess,
+    onMigrationError = onMigrationError,
+)
+
+/**
+ * Attempts to migrate the [userAccount] to the provided Connected App or
+ * External Client Application [appConfig], with an explicit per-call DPoP intent.
+ *
+ * This might cause the approve/deny screen to be presented to the user to authorize the
+ * new app. If successful a new set of credentials (refresh token, access token) are obtained
+ * and replace the existing credentials for the user.
+ *
  * [useDPoP] expresses the DPoP intent for this specific migration call: `true` binds the
- * migrated session to DPoP, `false` migrates it unbound, and `null` (the default, preserving
- * prior behavior) defers to the global [SalesforceSDKManager.useDPoP] flag. See [upgradeToDPoP]
- * for the common same-config, `useDPoP = true` case.
+ * migrated session to DPoP, `false` migrates it unbound, and `null` defers to the global
+ * [SalesforceSDKManager.useDPoP] flag (the behavior of the overload without this parameter).
+ * See [upgradeToDPoP] for the common same-config, `useDPoP = true` case.
  */
 @Suppress("UnusedReceiverParameter")
 fun UserAccountManager.migrateRefreshToken(
     userAccount: UserAccount? = getInstance().currentUser,
     appConfig: OAuthConfig,
-    useDPoP: Boolean? = null,
+    useDPoP: Boolean?,
     onMigrationSuccess: (userAccount: UserAccount) -> Unit,
     onMigrationError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
 ) {

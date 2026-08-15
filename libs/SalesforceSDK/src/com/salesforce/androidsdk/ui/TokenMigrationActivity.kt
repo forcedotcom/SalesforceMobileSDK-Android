@@ -123,12 +123,6 @@ internal class TokenMigrationActivity : ComponentActivity() {
             return
         }
 
-        // Per-call DPoP intent for this migration, independent of the global
-        // SalesforceSDKManager.useDPoP flag (see LoginViewModel.dpopOverride). When the extra is
-        // absent the caller expressed no per-call intent, so leave dpopOverride null and defer to
-        // the global flag (prior behavior).
-        viewModel.dpopOverride =
-            if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
         val client = runCatching {
             restClientFactory(applicationContext, user)
         }.getOrElse { e ->
@@ -138,6 +132,14 @@ internal class TokenMigrationActivity : ComponentActivity() {
             logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, null)
             return
         }
+
+        // Per-call DPoP intent for this migration, independent of the global
+        // SalesforceSDKManager.useDPoP flag (see LoginViewModel.dpopOverride). When the extra is
+        // absent the caller expressed no per-call intent, so leave dpopOverride null and defer to
+        // the global flag (prior behavior). Assigned only after the early-return error paths above
+        // so those paths never trigger ViewModel initialization.
+        viewModel.dpopOverride =
+            if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
 
         lifecycleScope.launch {
             val frontDoorUrl = withContext(IO) {
