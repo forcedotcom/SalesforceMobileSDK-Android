@@ -273,7 +273,19 @@ open class LoginViewModel(
 
     /** Value representing if the back button should be shown on the login view. */
     open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
-        !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
+        when {
+            // Never show back while biometric-locked; user must authenticate.
+            biometricAuthenticationManager?.locked == true -> false
+            /*
+             * Native Login uses this WebView LoginActivity as a dismissible
+             * fallback: handleBackBehavior() finishes and returns to the native
+             * login activity, so show the back affordance to match — even with
+             * no authenticated users yet.
+             */
+            nativeLoginActivity != null -> true
+            // Otherwise show back only when an authenticated user exists.
+            else -> !userAccountManager.authenticatedUsers.isNullOrEmpty()
+        }
     }
 
     // The default, locally generated code verifier
