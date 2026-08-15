@@ -725,17 +725,25 @@ open class LoginViewModel(
     // endregion
 
     /**
-     * Adds `dpop_jkt` to [params] when DPoP is enabled and [server] is a my-domain server.
-     * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
-     * support DPoP code binding and reject the parameter.
+     * Adds `dpop_jkt` to [params] when DPoP is enabled.
+     * welcome.salesforce.com/discovery is never passed here — discovery resolves a my-domain
+     * server before /authorize is called.
+     *
+     * If [pendingCredentialsIdentifier] is already set (meaning dpop_jkt was already committed
+     * for this login flow, e.g. via a pool-server redirect), the existing key pair is reused so
+     * that the auth code's dpop_jkt binding and the token-exchange proof use the same key.
+     * Only generates a new key pair when starting a fresh login flow.
      */
     private fun addDpopJktIfNeeded(
         server: String,
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
     ) {
-        val isMyDomainServer = !LoginServerManager.isPoolServer(server)
-        if (!sdkManager.useDPoP || !isMyDomainServer) {
+        // Welcome Discovery is a pre-authentication host, not a resource server — never attach
+        // dpop_jkt there. Belt-and-suspenders guard: generateAuthorizationUrl is not called for
+        // the discovery URL today (reloadWebView short-circuits it), but this prevents a stale
+        // thumbprint from leaking if the call graph changes in the future.
+        if (!sdkManager.useDPoP || LoginServerManager.WELCOME_LOGIN_URL == server) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {
@@ -745,16 +753,12 @@ open class LoginViewModel(
             return
         }
         runCatching {
-            // Delete any orphaned key from a prior server-picker navigation before generating a new one.
-            pendingCredentialsIdentifier?.let {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
-            }
-            val credId = java.util.UUID.randomUUID().toString()
+            val credId = pendingCredentialsIdentifier
+                ?: java.util.UUID.randomUUID().toString().also { pendingCredentialsIdentifier = it }
             val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
             val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
             params["dpop_jkt"] = thumbprint
-            pendingCredentialsIdentifier = credId
         }.onFailure { t ->
             android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
         }

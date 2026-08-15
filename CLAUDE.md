@@ -67,10 +67,34 @@ See [README.md](README.md) for basic setup. Commands below are for contributors 
 ./gradlew :libs:SmartStore:build
 ./gradlew :libs:MobileSync:build
 
-# Run tests for a specific library (runs on Firebase Test Lab in CI)
+# Run instrumented tests for a specific library on a connected emulator/device
+# Note: SalesforceSDKTest sources live in libs/test/SalesforceSDKTest but are wired into
+# :libs:SalesforceSDK's androidTest source set via build.gradle.kts setRoot().
+# Run them via :libs:SalesforceSDK:connectedAndroidTest, NOT a separate project.
 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
 ./gradlew :libs:SmartStore:connectedAndroidTest
 ./gradlew :libs:MobileSync:connectedAndroidTest
+
+# Run a single test class on the emulator
+./gradlew :libs:SalesforceSDK:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.androidsdk.auth.LoginViewModelTest
+
+# Run a single test method on the emulator
+./gradlew :libs:SalesforceSDK:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.androidsdk.auth.LoginViewModelTest#generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl
+
+# Run AuthFlowTester UI tests on emulator (requires ui_test_config.json in shared/test/ with valid org credentials)
+# The emulator CAN reach internal test environments when the machine has VPN/network access.
+# First verify emulator is running: adb devices
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.samples.authflowtester.DPoPLoginTests
+
+# Run a single AuthFlowTester UI test method
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.samples.authflowtester.DPoPLoginTests#testECAJwtDPoP_ViaLoginPoolServer
+
+# Run all AuthFlowTester UI tests
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest
 
 # Run lint checks
 ./gradlew :libs:SalesforceSDK:lint

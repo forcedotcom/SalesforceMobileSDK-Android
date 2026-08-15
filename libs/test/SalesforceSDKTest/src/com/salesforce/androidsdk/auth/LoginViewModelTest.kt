@@ -497,6 +497,76 @@ class LoginViewModelTest {
         }
     }
 
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl() = runBlocking {
+        // dpop_jkt must be sent for pool servers when useDPoP=true.
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL for pool server when useDPoP=true, got: $url"
+        }
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
+    /**
+     * Regression guard for W-23836447: pool server login calls generateAuthorizationUrl multiple
+     * times (pool → my-domain redirect).  The dpop_jkt must remain stable across all calls so
+     * that the auth code's dpop_jkt binding and the subsequent token-exchange DPoP proof use the
+     * same key.
+     */
+    @Test
+    fun test_givenDPoPEnabled_whenGenerateAuthorizationUrlCalledTwice_thenDpopJktIsStable() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        // First call — simulates pool server issuing the initial /authorize redirect.
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val firstUrl = viewModel.loginUrl.value ?: ""
+        val firstThumbprint = firstUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val firstCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(firstThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after first generateAuthorizationUrl call, got empty"
+        }
+        assertNotNull("pendingCredentialsIdentifier must be set after first call", firstCredId)
+
+        // Second call — simulates the pool server redirecting to my-domain /authorize.
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
+        val secondUrl = viewModel.loginUrl.value ?: ""
+        val secondThumbprint = secondUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val secondCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(secondThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after second generateAuthorizationUrl call, got empty"
+        }
+        assertEquals(
+            "dpop_jkt must be stable across pool-server redirects (same key must be reused)",
+            firstThumbprint,
+            secondThumbprint,
+        )
+        assertEquals(
+            "pendingCredentialsIdentifier must be the same across pool-server redirects",
+            firstCredId,
+            secondCredId,
+        )
+    }
+
     // endregion
 
     // region frontDoorBridgeUrl Tests

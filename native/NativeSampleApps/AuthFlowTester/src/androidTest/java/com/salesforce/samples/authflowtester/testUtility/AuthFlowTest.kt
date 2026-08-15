@@ -244,6 +244,7 @@ abstract class AuthFlowTest {
         forceAdvancedAuthentication: Boolean = true,
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        useLoginPoolHost: Boolean = false,
     ) {
         // When forceAdvancedAuthentication is true (default) every login completes in a Custom Tab:
         // a ChromeCustomTabPageObject serves both roles — its inherited Compose actions
@@ -327,6 +328,12 @@ abstract class AuthFlowTest {
             loginPage.backOutToLoginActivity()
             loginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
             authenticationPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
+        } else if (useLoginPoolHost) {
+            // Use the pool server URL from ui_test_config.json for the login host.
+            // Credentials are taken from knownLoginHostConfig — same org, different login entry point.
+            loginPage.backOutToLoginActivity()
+            loginPage.changeServerByUrl(testConfig.requireLoginPoolHost())
+            authenticationPage.login(knownLoginHostConfig, knownUserConfig)
         } else {
             if (knownLoginHostConfig != REGULAR_AUTH) {
                 // Switching servers is a top-bar action, so surface LoginActivity first. Selecting
@@ -348,10 +355,11 @@ abstract class AuthFlowTest {
                 Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
             else -> null
         }
-        val expectedLMarker = if (useWelcomeDiscovery) {
-            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+            // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
+            useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
             useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
@@ -532,9 +540,15 @@ abstract class AuthFlowTest {
         }
         loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection = EMPTY)
 
-        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path;
-        // back out again to reach the overflow menu (no-op on the WebView path), then launch the
-        // dedicated admin custom tab.
+        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path.
+        // After backing out of that tab, the non-dismissable login picker is shown (W-23731759).
+        // To reach the overflow menu, disable forced advanced authentication before closing the tab
+        // so that ChromeCustomTabPageObject.tapLoginForAdminsMenuItem can dismiss the picker by
+        // re-selecting the current server (which triggers reloadWebView with isBrowserLoginEnabled=false,
+        // loading the in-app WebView instead of yet another Custom Tab).
+        if (useWebServerFlow) {
+            setForcedAdvancedAuthEnabled(false)
+        }
         topBarPage.backOutToLoginActivity()
         topBarPage.tapLoginForAdminsMenuItem()
 

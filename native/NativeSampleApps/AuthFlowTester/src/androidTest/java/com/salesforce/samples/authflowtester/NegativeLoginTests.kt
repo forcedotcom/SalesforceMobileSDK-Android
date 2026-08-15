@@ -102,10 +102,13 @@ class NegativeLoginTests : AuthFlowTest() {
         loginPage.openLoginOptions()
         loginOptions.setOverrideBootConfig(ECA_OPAQUE, EMPTY)
 
-        // Saving Login Options re-launches the Custom Tab. Back out of it (and dismiss the
-        // resulting server picker) so navigateBackToApp only has to walk the remaining
-        // LoginActivity -> AccountSwitcher -> AuthFlowTester stack.
+        // Saving Login Options re-launches the Custom Tab. Back out of it, then exit the flow via
+        // the picker's login-exit back button: since W-23731759 the login-server picker is a
+        // non-dismissable modal sheet that swallows device back presses, so it must be dismissed
+        // through its own back button (which finishes LoginActivity) before navigateBackToApp can
+        // walk the remaining AccountSwitcher -> AuthFlowTester stack.
         loginPage.backOutToLoginActivity()
+        loginPage.exitServerPickerIfShowing()
         navigateBackToApp()
 
         // The existing user must remain the only authenticated account.
@@ -179,11 +182,11 @@ class NegativeLoginTests : AuthFlowTest() {
         private const val INVALID_SCOPE = "invalid_scope_for_negative_tests"
 
         // Maximum number of back-presses to walk from a saved-but-unused
-        // dynamic config back to the AuthFlowTester main screen.
-        // LoginOptions has been dismissed by Save, so worst-case stack is
-        // LoginActivity -> AccountSwitcher -> AuthFlowTester (2 presses);
-        // an extra press accommodates devices that are slow to dismiss
-        // dialogs or transitions.
+        // dynamic config back to the AuthFlowTester main screen. The login
+        // picker has already been exited via its back button (which finishes
+        // LoginActivity), so worst-case stack is AccountSwitcher ->
+        // AuthFlowTester (2 presses); an extra press accommodates devices that
+        // are slow to dismiss dialogs or transitions.
         private const val BACK_PRESS_LIMIT = 4
         private const val PER_BACK_PRESS_TIMEOUT_MS = 3_000L
         private const val POLL_INTERVAL_MS = 250L
