@@ -163,6 +163,21 @@ class LoginActivityTest {
             .apply { isAccessible = true }
             .invoke(activity, activity)
 
+    // Same-class field reads inside handleBrowserCustomTabReady/onBiometricPromptDismissedWithoutSuccess
+    // compile to direct GETFIELD, bypassing mockk's getter stub (see the note on the region below) --
+    // so these set the real backing field on the mock instance directly instead.
+    private fun setSuppressInitialCustomTabLaunch(activity: LoginActivity, value: Boolean) =
+        LoginActivity::class.java
+            .getDeclaredField("suppressInitialCustomTabLaunch")
+            .apply { isAccessible = true }
+            .set(activity, value)
+
+    private fun setSuppressedCustomTabUrl(activity: LoginActivity, value: String?) =
+        LoginActivity::class.java
+            .getDeclaredField("suppressedCustomTabUrl")
+            .apply { isAccessible = true }
+            .set(activity, value)
+
     @Test
     fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebView() {
         val viewModel = mockk<LoginViewModel>(relaxed = true)
@@ -318,6 +333,33 @@ class LoginActivityTest {
         activity.launchLoginForAdminsAction()
 
         verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * Regression guard (W-23837971): being biometrically locked must never prevent
+     * launchLoginForAdminsAction() from launching the Custom Tab. Once the user is at the
+     * picker, selecting any server -- including via Login for Admins -- launches Advanced Auth
+     * normally regardless of lock state.
+     */
+    @Test
+    fun test_launchLoginForAdmins_whenLocked_stillLaunchesCustomTab() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns testUrl
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        every { selectedServer.value } returns "https://example.com"
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
+
+        activity.launchLoginForAdminsAction()
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+        verify(exactly = 0) { activity.onBioAuthClick() }
     }
 
     // endregion
@@ -1047,6 +1089,84 @@ class LoginActivityTest {
         } finally {
             sdkManager.biometricAuthenticationManager = originalBioAuthManager
         }
+    }
+
+    // endregion
+
+    // region handleBrowserCustomTabReady / onBiometricPromptDismissedWithoutSuccess (W-23837971 —
+    // one-shot suppression of the lock-time Custom Tab launch race)
+    //
+    // Note: handleBrowserCustomTabReady and onBiometricPromptDismissedWithoutSuccess read/write
+    // suppressInitialCustomTabLaunch/suppressedCustomTabUrl as same-class field accesses (Kotlin
+    // emits direct GETFIELD/PUTFIELD for these, not accessor calls), which bypasses mockk's
+    // every {...} getter stubbing under callOriginal() the same way it bypasses verify on same-class
+    // setter calls (see the note on adminLoginCustomTabLauncher above). So preconditions here are
+    // set directly on the mock's real backing field via reflection instead of mockk stubs.
+
+    /**
+     * The very first Custom Tab launch attempt after auto-presenting the lock-time biometric
+     * prompt must be deferred rather than launched, so it doesn't race the prompt.
+     */
+    @Test
+    fun handleBrowserCustomTabReady_whenSuppressionArmed_doesNotLaunch() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressInitialCustomTabLaunch(activity, true)
+        every { activity.handleBrowserCustomTabReady(any()) } answers { callOriginal() }
+
+        activity.handleBrowserCustomTabReady(testUrl)
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * Once the one-shot suppression has already been consumed (or was never armed -- e.g. a
+     * server picked from the picker), every later Custom Tab launch must go through immediately.
+     */
+    @Test
+    fun handleBrowserCustomTabReady_whenSuppressionNotArmed_launchesImmediately() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressInitialCustomTabLaunch(activity, false)
+        every { activity.handleBrowserCustomTabReady(any()) } answers { callOriginal() }
+
+        activity.handleBrowserCustomTabReady(testUrl)
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+    }
+
+    /**
+     * Bug A regression guard: if the lock-time biometric prompt is cancelled/fails before the
+     * authorization URL request completes, dismissing the prompt must not spuriously launch a
+     * Custom Tab -- there is nothing to launch yet.
+     */
+    @Test
+    fun onBiometricPromptDismissedWithoutSuccess_beforeUrlReady_doesNotLaunch() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressedCustomTabUrl(activity, null)
+        every { activity.onBiometricPromptDismissedWithoutSuccess() } answers { callOriginal() }
+
+        activity.onBiometricPromptDismissedWithoutSuccess()
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * Bug A regression guard: if the authorization URL was already deferred by
+     * [handleBrowserCustomTabReady] before the prompt was dismissed, dismissing the prompt (e.g.
+     * via cancel) must launch that deferred URL immediately -- this is the auto-fallback to
+     * Advanced Auth on biometric cancel.
+     */
+    @Test
+    fun onBiometricPromptDismissedWithoutSuccess_afterUrlReady_launchesDeferredUrl() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressedCustomTabUrl(activity, testUrl)
+        every { activity.onBiometricPromptDismissedWithoutSuccess() } answers { callOriginal() }
+
+        activity.onBiometricPromptDismissedWithoutSuccess()
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
     }
 
     // endregion

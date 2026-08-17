@@ -50,6 +50,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.LiveData
@@ -60,6 +61,7 @@ import com.salesforce.androidsdk.ui.components.DefaultBottomAppBar
 import com.salesforce.androidsdk.ui.components.DefaultLoadingIndicator
 import com.salesforce.androidsdk.ui.components.DefaultTopAppBar
 import com.salesforce.androidsdk.ui.components.LoginView
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -570,6 +572,39 @@ class LoginViewActivityTest {
         loadingIndicator.assertIsNotDisplayed()
     }
 
+    @Test
+    fun loginView_BiometricPromptShowing_HidesLoadingIndicator() {
+        val dynamicBackgroundColor = mutableStateOf(White)
+        androidComposeTestRule.setContent {
+            LoginViewTestWrapper(
+                dynamicBackgroundColor = dynamicBackgroundColor,
+                loading = true,
+                biometricPromptShowing = true,
+            )
+        }
+
+        val loadingIndicator = androidComposeTestRule.onNodeWithContentDescription(
+            androidComposeTestRule.activity.getString(R.string.sf__loading_indicator)
+        )
+        loadingIndicator.assertIsNotDisplayed()
+    }
+
+    @Test
+    fun loginView_BiometricPromptShowing_HidesServerPicker() {
+        val dynamicBackgroundColor = mutableStateOf(White)
+        val showServerPicker = mutableStateOf(true)
+        androidComposeTestRule.setContent {
+            LoginViewTestWrapper(
+                dynamicBackgroundColor = dynamicBackgroundColor,
+                showServerPicker = showServerPicker,
+                biometricPromptShowing = true,
+            )
+        }
+
+        androidComposeTestRule.onNodeWithTag(LoginViewTestTags.SERVER_PICKER)
+            .assertDoesNotExist()
+    }
+
     // test (not) loading
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -663,6 +698,7 @@ class LoginViewActivityTest {
         loadingIndicator: @Composable () -> Unit = { DefaultLoadingIndicator() },
         bottomAppBar: @Composable () -> Unit = { DefaultBottomAppBarTestWrapper() },
         showServerPicker: MutableState<Boolean> = mutableStateOf(false),
+        biometricPromptShowing: Boolean = false,
     ) {
         LoginView(
             dynamicBackgroundColor = dynamicBackgroundColor,
@@ -673,6 +709,7 @@ class LoginViewActivityTest {
             loadingIndicator = loadingIndicator,
             bottomAppBar = bottomAppBar,
             showServerPicker = showServerPicker,
+            biometricPromptShowing = biometricPromptShowing,
         )
     }
 }

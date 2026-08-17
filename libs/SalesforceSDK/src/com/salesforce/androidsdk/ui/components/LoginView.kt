@@ -226,7 +226,11 @@ fun LoginView() {
         DefaultBottomAppBar(
             backgroundColor = viewModel.dynamicBackgroundColor,
             button = bottomAppBarButton,
-            loading = viewModel.loading.value,
+            // Suppress the loading indicator while the biometric prompt is on screen so it doesn't
+            // show behind the prompt even though generateAuthorizationUrl() concurrently flips
+            // loading to true.  biometricPromptShowing is cleared on success/dismissal, so the
+            // spinner correctly reappears for the subsequent token refresh.
+            loading = viewModel.loading.value && !viewModel.biometricPromptShowing.value,
             showButton = !viewModel.authFinished.value
         )
     }
@@ -241,6 +245,7 @@ fun LoginView() {
         loadingIndicator = viewModel.loadingIndicator ?: { DefaultLoadingIndicator() },
         bottomAppBar = bottomAppBar,
         showServerPicker = viewModel.showServerPicker,
+        biometricPromptShowing = viewModel.biometricPromptShowing.value,
         showBiometricOptInDialog = viewModel.showBiometricOptInDialog,
         onBiometricOptInResult = { optedIn -> viewModel.onBiometricOptInResult(optedIn) },
     )
@@ -258,13 +263,19 @@ internal fun LoginView(
     loadingIndicator: @Composable () -> Unit,
     bottomAppBar: @Composable () -> Unit,
     showServerPicker: MutableState<Boolean>,
+    biometricPromptShowing: Boolean = false,
     showBiometricOptInDialog: MutableState<Boolean> = remember { mutableStateOf(false) },
     onBiometricOptInResult: (optedIn: Boolean) -> Unit = {},
 ) {
     val loginUrl = loginUrlData.observeAsState()
     val frontDoorBridgeUrl = frontDoorBridgeUrlData.observeAsState()
+    // Suppress the loading indicator (and the WebView dim that accompanies it) while the biometric
+    // prompt is on screen, so it doesn't show behind the prompt even though generateAuthorizationUrl()
+    // concurrently flips loading to true. biometricPromptShowing is cleared on success/dismissal, so
+    // the spinner correctly reappears for the subsequent token refresh.
+    val showLoading = loading && !biometricPromptShowing
     val alpha: Float by animateFloatAsState(
-        targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
+        targetValue = if (showLoading) LOADING_ALPHA else VISIBLE_ALPHA,
         animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
     )
 
@@ -291,12 +302,15 @@ internal fun LoginView(
                 },
             )
 
-            if (loading && !showServerPicker.value) {
+            if (showLoading && !showServerPicker.value) {
                 loadingIndicator()
             }
         }
 
-        if (showServerPicker.value) {
+        // Suppress the server picker render behind the biometric prompt. Gate the render only, not
+        // showServerPicker itself, so the picker reappears if the prompt is dismissed and the
+        // fallback flow needs it.
+        if (showServerPicker.value && !biometricPromptShowing) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)
         }
 

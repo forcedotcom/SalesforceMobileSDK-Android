@@ -299,6 +299,30 @@ class BiometricAuthenticationManagerTest {
     }
 
     @Test
+    fun testOnAppForegroundedDoesNotRelockWhenAlreadyLocked() {
+        bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        bioAuthManager.lock()
+        Assert.assertTrue("Should be locked.", bioAuthManager.locked)
+        val hitsAfterInitialLock = activityMonitors.sumOf { it.hits }
+        Assert.assertEquals(
+            "lock() should launch exactly one LoginActivity.",
+            1,
+            hitsAfterInitialLock
+        )
+
+        // Foregrounding while already locked -- e.g. backing out of the Custom Tab that the very
+        // lock() call above launched -- must not trigger a second lock(), which would relaunch
+        // the Custom Tab over the server picker and trap the user in a loop (W-23837971).
+        bioAuthManager.onAppForegrounded()
+
+        Assert.assertEquals(
+            "onAppForegrounded() must not call lock() again while already locked.",
+            hitsAfterInitialLock,
+            activityMonitors.sumOf { it.hits }
+        )
+    }
+
+    @Test
     fun testLockWithNoCurrentUser() {
         bioAuthManager.cleanUp(userAccount)
         SalesforceSDKManager.getInstance().userAccountManager

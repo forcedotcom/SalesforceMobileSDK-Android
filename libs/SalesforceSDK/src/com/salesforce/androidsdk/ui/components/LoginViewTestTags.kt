@@ -110,6 +110,14 @@ object LoginViewTestTags {
      */
     const val PICKER_DEV_SUPPORT_BUTTON = "sf__picker_dev_support_button"
 
+    /**
+     * Retry-biometric entry shown in the login-server picker header while the device is
+     * biometrically locked and biometric unlock is usable (same predicate as
+     * `LoginViewModel.showBiometricAuthenticationButton`). Never shown for
+     * [PickerStyle.UserAccountPicker]. Invokes `LoginActivity.onBioAuthClick()`.
+     */
+    const val PICKER_RETRY_BIOMETRIC_BUTTON = "sf__picker_retry_biometric_button"
+
     /** "Add New Connection" button in the login-server picker. */
     const val CUSTOM_URL_BUTTON = "sf__custom_url_button"
 
