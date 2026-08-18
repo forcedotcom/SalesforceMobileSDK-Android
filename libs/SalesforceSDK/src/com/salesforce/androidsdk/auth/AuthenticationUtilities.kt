@@ -51,6 +51,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRI
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
+import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
@@ -107,6 +108,7 @@ internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
     consumerKey: String,
+    redirectUri: String? = null,
     onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
@@ -175,6 +177,7 @@ internal suspend fun onAuthFlowComplete(
         .accountName(buildAccountName(userIdentity?.username, tokenResponse.instanceUrl))
         .loginServer(loginServer)
         .clientId(consumerKey)
+        .redirectUri(redirectUri)
         .nativeLogin(nativeLogin)
         .credentialsIdentifier(credentialsIdentifier)
         .build()
@@ -209,6 +212,15 @@ internal suspend fun onAuthFlowComplete(
             SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BEACON, account)
         } else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BEACON, account)
+        }
+
+        // DP: DPoP-bound session. Token migration bypasses LoginActivity.onAuthFlowSuccess (the
+        // usual site of this marker), so an in-place upgrade to DPoP would otherwise never advertise
+        // the flag. tokenType is a per-session property, so mirror it onto the migrated account here.
+        if ("DPoP" == account.tokenType) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_DPOP, account)
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_DPOP, account)
         }
     } else {
         if (nativeLogin) {

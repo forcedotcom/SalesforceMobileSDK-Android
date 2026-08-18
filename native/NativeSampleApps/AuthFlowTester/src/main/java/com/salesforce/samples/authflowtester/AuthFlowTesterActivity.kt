@@ -114,8 +114,10 @@ import androidx.core.content.ContextCompat
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.migrateRefreshToken
+import com.salesforce.androidsdk.accounts.upgradeToDPoP
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
@@ -125,6 +127,7 @@ import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import com.salesforce.samples.authflowtester.components.InfoSection
+import com.salesforce.samples.authflowtester.components.SECTION_TITLE_SIZE
 import com.salesforce.samples.authflowtester.components.JwtTokenView
 import com.salesforce.samples.authflowtester.components.OAuthConfigurationView
 import com.salesforce.samples.authflowtester.components.UserCredentialsView
@@ -158,6 +161,7 @@ const val CREDS_SECTION_CONTENT_DESC = "user_creds_section"
 const val JWT_SECTION_CONTENT_DESC = "jwt_section"
 const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
 const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
+const val UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC = "upgrade_to_dpop_button"
 const val MIGRATE_USER_RADIO_CONTENT_DESC = "migrate_user_radio"
 const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
@@ -567,6 +571,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         var showJsonImportDialog by remember { mutableStateOf(false) }
         var migrationInProgress by remember { mutableStateOf(false) }
         var migrationError: String? by remember { mutableStateOf(null) }
+        var migrateToDPoPInProgress by remember { mutableStateOf(false) }
+        var migrateToDPoPError: String? by remember { mutableStateOf(null) }
         val clipboard = LocalClipboard.current
         val context = LocalContext.current
         val isPreview = LocalInspectionMode.current
@@ -648,6 +654,81 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                         }
                     }
                 }
+
+                // "Upgrade to DPoP": in-place upgrade of the selected user's own connected app,
+                // independent of SalesforceSDKManager.useDPoP — see UserAccountManager.upgradeToDPoP.
+                Text(
+                    text = stringResource(R.string.upgrade_to_dpop_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = (INNER_CARD_PADDING/2).dp),
+                )
+                Text(
+                    text = stringResource(R.string.upgrade_to_dpop_description),
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
+
+                val alreadyDPoPBound = selectedUser?.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE
+
+                Button(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = (INNER_CARD_PADDING/2).dp)
+                        .semantics { contentDescription = UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC },
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    enabled = !alreadyDPoPBound && !migrateToDPoPInProgress && selectedUser != null,
+                    onClick = {
+                        val userToUpgrade = selectedUser ?: return@Button
+                        migrateToDPoPInProgress = true
+
+                        userAccountManager?.upgradeToDPoP(
+                            userAccount = userToUpgrade,
+                            onSuccess = {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@AuthFlowTesterActivity,
+                                        resources.getString(R.string.migration_success),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                    migrateToDPoPInProgress = false
+                                    onDismiss.invoke()
+                                }
+                            },
+                            onFailure = { error, errorDesc, e ->
+                                runOnUiThread {
+                                    migrateToDPoPInProgress = false
+                                    migrateToDPoPError = error +
+                                            (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                            (e?.let { "\n\nThrowable: $it" } ?: "")
+                                }
+                            },
+                        )
+                    },
+                ) {
+                    if (migrateToDPoPInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
+                        )
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
+                        Text(
+                            text = stringResource(R.string.migration_in_progress),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    } else {
+                        Text(text = stringResource(R.string.upgrade_to_dpop_button))
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = INNER_CARD_PADDING.dp))
+
+                Text(
+                    text = stringResource(R.string.change_connected_app_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
 
                 OutlinedTextField(
                     value = consumerKey,
@@ -803,6 +884,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 text = { Text(text = errorMessage) },
                 confirmButton = {
                     TextButton(onClick = { migrationError = null }) {
+                        Text("Ok")
+                    }
+                },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
+            )
+        }
+
+        migrateToDPoPError?.let { errorMessage ->
+            @Suppress("AssignedValueIsNeverRead")
+            AlertDialog(
+                onDismissRequest = { migrateToDPoPError = null },
+                title = { Text(stringResource(R.string.migration_failure)) },
+                text = { Text(text = errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { migrateToDPoPError = null }) {
                         Text("Ok")
                     }
                 },

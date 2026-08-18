@@ -35,6 +35,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
+import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertNotEquals
 import org.junit.Ignore
 import org.junit.Test
@@ -189,6 +190,38 @@ class DPoPLoginTests : AuthFlowTest() {
             isDpop = true,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
+    }
+
+    // endregion
+
+    // region DPoP Enforcement Tests
+
+    // A DPoP-enforced ECA must reject an unbound login: the enforced ECA requires a dpop_jkt on
+    // /authorize to bind the auth code, and with the DPoP Login Option off no dpop_jkt is sent,
+    // so no authenticated user is added and the app never loads.
+    @Test
+    fun testLogin_DPoP_ECA_Without_DPoP_Fails() {
+        loginAndExpectFailure(
+            consumerKey = testConfig.getApp(ECA_JWT_DPOP).consumerKey,
+            redirectUri = testConfig.getApp(ECA_JWT_DPOP).redirectUri,
+            useDPoP = false,
+            expectDPoPBindingError = true,
+        )
+    }
+
+    // endregion
+
+    // region DPoP Upgrade Tests
+
+    // In-place upgrade: a Bearer session on an unenforced ECA is bound to DPoP via the
+    // "Upgrade to DPoP" affordance, with the process-wide DPoP flag left OFF the entire time.
+    // Proves the migration re-auth honors the per-call intent (LoginViewModel.dpopOverride)
+    // rather than SalesforceSDKManager.useDPoP, and that no re-consent is needed since the
+    // consumer key/redirect URI/scopes are unchanged.
+    @Test
+    fun testUpgrade_NonDPoP_InPlace_ToDPoP() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useDPoP = false)
+        upgradeToDPoPAndValidate(knownAppConfig = ECA_JWT)
     }
 
     // endregion

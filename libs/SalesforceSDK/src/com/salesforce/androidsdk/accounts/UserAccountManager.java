@@ -565,6 +565,7 @@ public class UserAccountManager {
 		final String cookieSidClient = decryptUserData(account, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
 		final String sidCookieName = decryptUserData(account, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
 		final String clientId = decryptUserData(account, AuthenticatorService.KEY_CLIENT_ID, encryptionKey);
+		final String redirectUri = decryptUserData(account, AuthenticatorService.KEY_REDIRECT_URI, encryptionKey);
 
 		final String parentSid = decryptUserData(account, AuthenticatorService.KEY_PARENT_SID, encryptionKey);
 		final String tokenFormat = decryptUserData(account, AuthenticatorService.KEY_TOKEN_FORMAT, encryptionKey);
@@ -625,6 +626,7 @@ public class UserAccountManager {
 					.cookieSidClient(cookieSidClient)
 					.sidCookieName(sidCookieName)
 					.clientId(clientId)
+					.redirectUri(redirectUri)
 					.parentSid(parentSid)
 					.tokenFormat(tokenFormat)
 					.beaconChildConsumerKey(beaconChildConsumerKey)
@@ -742,6 +744,7 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getInstanceServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_API_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getApiInstanceServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(userAccount.getClientId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_REDIRECT_URI, SalesforceSDKManager.encrypt(userAccount.getRedirectUri(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(userAccount.getOrgId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userAccount.getUserId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(userAccount.getCommunityId(), encryptionKey));
