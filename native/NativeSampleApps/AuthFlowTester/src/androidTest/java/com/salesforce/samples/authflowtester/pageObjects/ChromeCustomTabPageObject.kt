@@ -283,6 +283,22 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
+     * True when the Custom Tab is showing the OAuth error page produced by a DPoP-enforced ECA that
+     * rejected an unbound `/authorize` request. The enforced server responds with
+     * `error=invalid_request&error_description=missing required dpop_jkt for code binding`, which
+     * Chrome renders as page text. We match on the URL-encoded `dpop_jkt` token — the distinctive,
+     * server-stable part of the description — rather than the full phrase, which is URL-encoded in the
+     * rendered text and could be reworded server-side. Uses [WEBVIEW_ACTION_TIMEOUT_MS] because the
+     * error page is server-rendered and subject to the same latency as the login form.
+     */
+    fun isShowingDPoPBindingError(): Boolean {
+        val errorText = device.findObject(
+            UiSelector().packageName("com.android.chrome").textContains("dpop_jkt")
+        )
+        return errorText.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)
+    }
+
+    /**
      * Waits up to [timeoutMs] for the Custom Tab to come to the front, returning whether it did.
      * Uses the full [TIMEOUT_MS] window (vs [isCustomTabDisplayed]) to wait out the async auth-config
      * fetch preceding a tab (re)launch. Best-effort: `false` means no tab launched, so the caller

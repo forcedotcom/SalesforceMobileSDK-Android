@@ -205,6 +205,7 @@ class DPoPLoginTests : AuthFlowTest() {
             consumerKey = testConfig.getApp(ECA_JWT_DPOP).consumerKey,
             redirectUri = testConfig.getApp(ECA_JWT_DPOP).redirectUri,
             useDPoP = false,
+            expectDPoPBindingError = true,
         )
     }
 

@@ -588,6 +588,12 @@ abstract class AuthFlowTest {
      * the test fails immediately (login should not have succeeded). The
      * polling window terminates once the Custom Tab remains in front without a
      * user being created — the steady-state we expect for a rejected login.
+     *
+     * When [expectDPoPBindingError] is true, additionally assert that the Custom Tab shows the
+     * enforced-ECA DPoP rejection error page (`missing required dpop_jkt for code binding`), pinning
+     * the failure to the specific server reason rather than mere absence of a user. Only the
+     * DPoP-enforcement case renders this page; the invalid-consumer-key / invalid-scope negative
+     * tests produce different errors and leave this off.
      */
     fun loginAndExpectFailure(
         consumerKey: String,
@@ -595,6 +601,7 @@ abstract class AuthFlowTest {
         scopes: String? = null,
         knownUserConfig: KnownUserConfig = user,
         useDPoP: Boolean = false,
+        expectDPoPBindingError: Boolean = false,
     ) {
         val loginPage = ChromeCustomTabPageObject(composeTestRule)
         ensureRegularAuthServer(expectCustomTab = true)
@@ -652,6 +659,15 @@ abstract class AuthFlowTest {
         // After the polling window, confirm we are still in the login flow (Custom Tab).
         assert(loginPage.isCustomTabDisplayed()) {
             "Expected to remain in the login flow (Custom Tab) after a failed login"
+        }
+
+        // For DPoP enforcement, pin the failure to the specific server reason: the enforced ECA
+        // rejects the unbound /authorize with an OAuth error page naming the missing dpop_jkt.
+        if (expectDPoPBindingError) {
+            assert(loginPage.isShowingDPoPBindingError()) {
+                "Expected the Custom Tab to show the DPoP binding error (missing required dpop_jkt " +
+                    "for code binding) after a rejected unbound login"
+            }
         }
     }
 
