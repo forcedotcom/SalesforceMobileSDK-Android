@@ -926,16 +926,35 @@ open class LoginActivity : FragmentActivity() {
     // endregion
     // region Biometric Authentication Code
 
-    private fun presentBiometric() {
-        val biometricPrompt = biometricPrompt
-        val biometricManager = BiometricManager.from(this)
-        when (biometricManager.canAuthenticate(authenticators)) {
+    private fun presentBiometric() =
+        handleBiometricCanAuthenticateResult(BiometricManager.from(this).canAuthenticate(authenticators))
+
+    /**
+     * Acts on a [BiometricManager.canAuthenticate] result.  On [BIOMETRIC_SUCCESS] the biometric
+     * prompt is shown; on the error/setup branches the user-facing button is configured as before.
+     *
+     * Every non-success branch also falls back to Advanced Authentication via
+     * [onBiometricPromptDismissedWithoutSuccess].  When this activity is biometrically locked it
+     * suppresses its first Custom Tab launch (see [suppressInitialCustomTabLaunch]) expecting a
+     * biometric prompt to appear; if the prompt can't be shown, that fallback is what launches the
+     * deferred browser login so the user isn't stranded with no way to authenticate.
+     *
+     * Split out from [presentBiometric] so the branch behavior can be exercised without a real
+     * [BiometricManager].
+     *
+     * @param canAuthenticate A [BiometricManager.canAuthenticate] result code
+     */
+    @VisibleForTesting
+    internal fun handleBiometricCanAuthenticateResult(canAuthenticate: Int) {
+        when (canAuthenticate) {
             BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED,
             BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN,
             BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE -> {
                 // This should never happen
                 val error = getString(sf__screen_lock_error)
                 e(TAG, "Biometric manager cannot authenticate. $error")
+                // No prompt will be shown, so fall back to Advanced Authentication immediately.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
             BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED -> {
@@ -952,6 +971,10 @@ open class LoginActivity : FragmentActivity() {
                     )
                 }
                 viewModel.biometricAuthenticationButtonText.intValue = sf__setup_biometric_unlock
+                // No prompt will be shown, so fall back to Advanced Authentication immediately. The
+                // setup button remains available for the user to enroll and return via
+                // onActivityResult.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
             BIOMETRIC_SUCCESS -> {

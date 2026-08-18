@@ -33,6 +33,13 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.net.Uri
 import androidx.activity.result.ActivityResult
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
+import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
@@ -1167,6 +1174,73 @@ class LoginActivityTest {
         activity.onBiometricPromptDismissedWithoutSuccess()
 
         verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+    }
+
+    // endregion
+
+    // region handleBiometricCanAuthenticateResult (every non-success branch falls back to Advanced
+    // Auth so a biometrically-locked device that can't present the prompt isn't stranded behind the
+    // suppressed lock-time Custom Tab launch)
+    //
+    // Note: the BIOMETRIC_SUCCESS branch is not unit tested here -- it reads the private
+    // biometricPrompt/promptInfo getters, which construct real androidx.biometric objects from the
+    // activity (mockk can't stub private members, so callOriginal runs them for real and they crash
+    // on a mock activity). That branch is unchanged by this fix and shows the prompt as before.
+
+    /**
+     * The "this should never happen" error codes can't present a prompt and offer no setup button,
+     * so they must immediately fall back to Advanced Auth.
+     */
+    @Test
+    fun handleBiometricCanAuthenticateResult_whenUnrecoverableError_fallsBackToAdvancedAuth() {
+        val unrecoverableCodes = listOf(
+            BIOMETRIC_ERROR_NO_HARDWARE,
+            BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED,
+            BIOMETRIC_ERROR_UNSUPPORTED,
+            BIOMETRIC_STATUS_UNKNOWN,
+            BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE,
+        )
+
+        unrecoverableCodes.forEach { code ->
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.handleBiometricCanAuthenticateResult(any()) } answers { callOriginal() }
+
+            activity.handleBiometricCanAuthenticateResult(code)
+
+            verify(exactly = 1) { activity.onBiometricPromptDismissedWithoutSuccess() }
+            // The prompt is never shown for these codes.
+            verify(exactly = 0) { viewModel.biometricPromptShowing.value = true }
+        }
+    }
+
+    /**
+     * The hardware-unavailable / none-enrolled codes still configure the OS-enrollment setup button
+     * (so the user can enroll and return), AND immediately fall back to Advanced Auth so login can
+     * proceed even if they never tap that button.
+     */
+    @Test
+    fun handleBiometricCanAuthenticateResult_whenSetupNeeded_configuresButtonAndFallsBackToAdvancedAuth() {
+        val setupCodes = listOf(
+            BIOMETRIC_ERROR_HW_UNAVAILABLE,
+            BIOMETRIC_ERROR_NONE_ENROLLED,
+        )
+
+        setupCodes.forEach { code ->
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.handleBiometricCanAuthenticateResult(any()) } answers { callOriginal() }
+
+            activity.handleBiometricCanAuthenticateResult(code)
+
+            // Setup button is still configured for this branch.
+            verify(exactly = 1) { viewModel.biometricAuthenticationButtonAction.value = any() }
+            verify { viewModel.biometricAuthenticationButtonText.intValue = any() }
+            // And Advanced Auth is shown immediately.
+            verify(exactly = 1) { activity.onBiometricPromptDismissedWithoutSuccess() }
+        }
     }
 
     // endregion

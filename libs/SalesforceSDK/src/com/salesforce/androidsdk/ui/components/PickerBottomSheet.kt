@@ -245,7 +245,12 @@ internal fun TestablePickerBottomSheet(
     // WebView bottom-bar biometric button so all three surfaces never disagree.
     val showRetryBiometric = pickerStyle == PickerStyle.LoginServerPicker &&
             viewModel.showBiometricAuthenticationButton.value
-    val onRetryBiometricClick: () -> Unit = { (activity as? LoginActivity)?.onBioAuthClick() }
+    // Matches the WebView bottom-bar biometric button: invoke the configured action (e.g. the OS
+    // enrollment setup launch) when one is set, otherwise re-present the biometric prompt.
+    val onRetryBiometricClick: () -> Unit = {
+        viewModel.biometricAuthenticationButtonAction.value?.invoke()
+            ?: (activity as? LoginActivity)?.onBioAuthClick()
+    }
 
     when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
