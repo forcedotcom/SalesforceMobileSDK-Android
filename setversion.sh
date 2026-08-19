@@ -133,9 +133,6 @@ SHORT_VERSION=`echo ${OPT_VERSION} | cut -d. -f1,2`
 
 echo -e "${YELLOW}*** SETTING VERSION NAME TO ${OPT_VERSION}, VERSION CODE TO ${OPT_CODE}, IS DEV = ${OPT_IS_DEV} ***${NC}"
 
-echo "*** Updating react package.json ***"
-update_react_package_json "./libs/SalesforceReact/package.json" "${OPT_VERSION}" "${OPT_IS_DEV}"
-
 echo "*** Updating top build.gradle file ***"
 update_top_build_gradle "./build.gradle.kts" "${OPT_VERSION}"
 
@@ -145,7 +142,6 @@ update_build_gradle "./libs/SalesforceSDK/build.gradle.kts" "${OPT_VERSION}"
 update_build_gradle "./libs/SmartStore/build.gradle.kts" "${OPT_VERSION}"
 update_build_gradle "./libs/MobileSync/build.gradle.kts" "${OPT_VERSION}"
 update_build_gradle "./libs/SalesforceHybrid/build.gradle.kts" "${OPT_VERSION}"
-update_build_gradle "./libs/SalesforceReact/build.gradle.kts" "${OPT_VERSION}"
 
 echo "*** Updating manifests ***"
 update_manifest "./libs/SalesforceAnalytics/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
@@ -153,7 +149,6 @@ update_manifest "./libs/SalesforceSDK/AndroidManifest.xml" "${VERSION_SUFFIXED}"
 update_manifest "./libs/SmartStore/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
 update_manifest "./libs/MobileSync/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
 update_manifest "./libs/SalesforceHybrid/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
-update_manifest "./libs/SalesforceReact/AndroidManifest.xml" "${VERSION_SUFFIXED}" "${OPT_CODE}"
 
 echo "*** Updating config.xml files ***"
 update_config_xml "./libs/SalesforceHybrid/res/xml/config.xml" "${OPT_VERSION}"
