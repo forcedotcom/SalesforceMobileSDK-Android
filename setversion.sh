@@ -50,14 +50,14 @@ update_top_build_gradle ()
     local file=$1
     local versionName=$2
     # sed -i.bak works identically on both BSD sed (macOS) and GNU sed (Linux)
-    sed -i.bak "s/version = \"[0-9\.]*\"/version = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
+    sed -i.bak "s/version = \"[0-9][0-9.a-zA-Z-]*\"/version = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_build_gradle ()
 {
     local file=$1
     local versionName=$2
-    sed -i.bak "s/\[\"PUBLISH_VERSION\"\] = \"[0-9\.]*\"/\[\"PUBLISH_VERSION\"\] = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
+    sed -i.bak "s/\[\"PUBLISH_VERSION\"\] = \"[0-9][0-9.a-zA-Z-]*\"/\[\"PUBLISH_VERSION\"\] = \"${versionName}\"/g" "${file}" && rm -f "${file}.bak"
 }
 
 update_manifest ()
