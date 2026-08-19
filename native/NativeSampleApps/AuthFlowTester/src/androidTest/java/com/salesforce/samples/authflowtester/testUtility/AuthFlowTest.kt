@@ -50,6 +50,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.RE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 
 /**
@@ -99,6 +100,24 @@ abstract class AuthFlowTest {
         KnownUserConfig.entries[userNumber]
     }
 
+    /**
+     * Establishes a Bearer baseline before every test.
+     *
+     * SDK 14.0 defaults [SalesforceSDKManager.useDPoP] to true, but the UI tests build a fresh
+     * OAuth authorization URL from this global flag.  On the CA_OPAQUE all-defaults path the login
+     * helper skips the Login Options screen (see [loginAndValidate]'s `needsLoginOptions` gate), so
+     * the flag is never toggled there and would otherwise leave those logins DPoP-bound while the
+     * assertions expect Bearer.  Pinning the flag off here — before the login surface reads it —
+     * keeps that skip path honest.  DPoP tests re-enable it explicitly through the Login Options
+     * toggle (their non-CA_OPAQUE configs always open that screen), which writes this same flag back
+     * to true for the duration of the login.  This mirrors iOS, where the DPoP toggle is always
+     * applied on the login-options surface rather than inferred from a helper parameter.
+     */
+    @Before
+    open fun baselineDPoPOff() {
+        SalesforceSDKManager.getInstance().useDPoP = false
+    }
+
     @After
     open fun cleanup() {
         with(SalesforceSDKManager.getInstance()) {
@@ -110,11 +129,13 @@ abstract class AuthFlowTest {
                 )
             }
 
-            // Restore the mutable SDK auth options to their defaults.
+            // Restore the mutable auth options to the test baseline.  useDPoP is pinned off (the
+            // Bearer baseline established by baselineDPoPOff), not the SDK 14.0 production default of
+            // true, so a DPoP test that enabled the flag mid-run cannot leak it into the next test.
             forceAdvancedAuthentication = true
             useWebServerAuthentication = true
             useHybridAuthentication = true
-            useDPoP = true
+            useDPoP = false
 
             // Reset the selected login server back to REGULAR_AUTH.
             val regularAuthUrl = testConfig.getLoginHost(REGULAR_AUTH).url

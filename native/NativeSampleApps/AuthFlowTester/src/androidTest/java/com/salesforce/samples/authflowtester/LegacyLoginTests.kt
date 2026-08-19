@@ -28,30 +28,24 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Dedicated non-DPoP (Bearer) coverage using the CA opaque configuration.
  *
- * `useDPoP` now defaults to `true`, and `cleanup()` restores that default after every test, so
- * this class explicitly forces DPoP off via [forceBearer] before each test in addition to passing
- * `useDPoP = false` on every login call.
+ * Every test inherits the base-class Bearer baseline (`AuthFlowTest.baselineDPoPOff` pins
+ * `SalesforceSDKManager.useDPoP` off before each test), so no login here requests DPoP.  The
+ * explicit `useDPoP = false` on each call documents the Bearer intent and, for the subset/all-scope
+ * cases that open Login Options, deterministically leaves the DPoP toggle off there.
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class LegacyLoginTests : AuthFlowTest() {
-
-    @Before
-    fun forceBearer() {
-        SalesforceSDKManager.getInstance().useDPoP = false
-    }
 
     // Login with CA opaque using default scopes and web server flow.
     @Test
