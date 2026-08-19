@@ -51,18 +51,20 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAJwt_AllScopes` | ECA JWT | All |
 
 #### DPoPLoginTests
-All DPoP tests live here — basic login, RTR, multi-user, migration, and restart. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
+All DPoP tests live here — basic login, RTR, multi-user, migration, server enforcement, upgrade, restart, pool server, and admin login. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
 
 | Test | App Config | Hybrid | Notes |
 |------|-----------|--------|-------|
 | `testECAJwtDPoP_Hybrid` | ECA JWT DPoP | Yes | |
 | `testECAJwtDPoP_NoHybrid` | ECA JWT DPoP | No | |
-| `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes | DPoP + refresh token rotation |
+| `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes | `@Ignore` (W-22512846 — server does not yet support Named JWTs for Hybrid Flows) |
 | `testECAJwtDPoPRtr_NoHybrid` | ECA JWT DPoP RTR | No | DPoP + refresh token rotation |
 | `testECAJwtDPoP_MultiUser_UniqueTokens` | ECA JWT DPoP | — | Two users; unique tokens; independent revoke+refresh per user |
 | `testECAJwtDPoP_And_NonDPoP_MultiUser_FlagOff_IndependentProofs` | ECA JWT DPoP + ECA JWT | — | DPoP and non-DPoP users coexist; toggling DPoP off for second user does not affect first |
 | `testMigrate_ECAJwtDPoP_AddMoreScopes` | ECA JWT DPoP | — | Scope upgrade; DPoP binding preserved |
 | `testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr` | ECA JWT DPoP → ECA JWT DPoP RTR | — | Migrate from DPoP to DPoP+RTR |
+| `testLogin_DPoP_ECA_Without_DPoP_Fails` | ECA JWT DPoP | — | Server enforcement: DPoP-enforced ECA rejects login without DPoP (`useDPoP=false`); no account created |
+| `testUpgrade_NonDPoP_InPlace_ToDPoP` | ECA JWT → ECA JWT DPoP | — | Bearer → DPoP in-place upgrade; global `useDPoP` flag remains off; per-call `dpopOverride` triggers upgrade |
 | `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
 | `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | `@Ignore` (W-23864247 — pool login server rejects valid `dpop_jkt` token exchange) |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
