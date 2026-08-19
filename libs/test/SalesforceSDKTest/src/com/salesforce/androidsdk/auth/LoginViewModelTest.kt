@@ -89,6 +89,7 @@ class LoginViewModelTest {
     private val bootConfig = BootConfig.getBootConfig(context)
     private lateinit var viewModel: LoginViewModel
     private var originalBrowserLoginEnabled = false
+    private var originalUseDPoP = false
 
     @Before
     fun setup() {
@@ -102,6 +103,13 @@ class LoginViewModelTest {
         val sdkManager = SalesforceSDKManager.getInstance()
         originalBrowserLoginEnabled = sdkManager.isBrowserLoginEnabled
         sdkManager.isBrowserLoginEnabled = false
+
+        // SDK 14.0 also defaults useDPoP to true, which appends a dpop_jkt param to the authorization
+        // URL.  The general URL-shape assertions below build their expected URLs without dpop_jkt, so
+        // pin the flag off for the default VM.  The dedicated dpop_jkt tests use a mock manager with an
+        // explicit useDPoP value and are unaffected by this.
+        originalUseDPoP = sdkManager.useDPoP
+        sdkManager.useDPoP = false
 
         viewModel = LoginViewModel(
             bootConfig = bootConfig,
@@ -126,6 +134,7 @@ class LoginViewModelTest {
         SalesforceSDKManager.getInstance().loginServerManager.reset()
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = originalBrowserLoginEnabled
+        SalesforceSDKManager.getInstance().useDPoP = originalUseDPoP
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
