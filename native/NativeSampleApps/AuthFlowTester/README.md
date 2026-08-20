@@ -39,16 +39,17 @@ Connected App login tests with explicit scope selection across web server and us
 | `testCAOpaque_AllScopes_UserAgentFlow_NotHybrid` | All | User Agent | In-App WebView |
 
 #### ECALoginTests
-External Client App (ECA) login tests for both opaque and JWT token formats with scope variations.
+External Client App (ECA) login tests for both opaque and JWT token formats with scope variations. Also covers pool server login (non-DPoP).
 
-| Test | App Config | Scopes |
-|------|-----------|--------|
-| `testECAOpaque_DefaultScopes` | ECA Opaque | Default |
-| `testECAOpaque_SubsetScopes` | ECA Opaque | Subset |
-| `testECAOpaque_AllScopes` | ECA Opaque | All |
-| `testECAJwt_DefaultScopes` | ECA JWT | Default |
-| `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset |
-| `testECAJwt_AllScopes` | ECA JWT | All |
+| Test | App Config | Scopes | Notes |
+|------|-----------|--------|-------|
+| `testECAOpaque_DefaultScopes` | ECA Opaque | Default | |
+| `testECAOpaque_SubsetScopes` | ECA Opaque | Subset | |
+| `testECAOpaque_AllScopes` | ECA Opaque | All | |
+| `testECAJwt_DefaultScopes` | ECA JWT | Default | |
+| `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset | |
+| `testECAJwt_AllScopes` | ECA JWT | All | |
+| `testECAJwt_ViaLoginPoolServer` | ECA JWT | — | `@Ignore` (loginPoolHost not provisioned in CI config — add the key and re-enable) |
 
 #### DPoPLoginTests
 All DPoP tests live here — basic login, RTR, multi-user, migration, and restart. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
