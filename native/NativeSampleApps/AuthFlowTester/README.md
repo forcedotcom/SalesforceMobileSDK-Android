@@ -49,7 +49,7 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAJwt_DefaultScopes` | ECA JWT | Default | |
 | `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset | |
 | `testECAJwt_AllScopes` | ECA JWT | All | |
-| `testECAJwt_ViaLoginPoolServer` | ECA JWT | — | `@Ignore` (loginPoolHost not provisioned in CI config — add the key and re-enable) |
+| `testECAJwt_ViaLoginPoolServer` | ECA JWT | — | Pool server login without DPoP |
 
 #### DPoPLoginTests
 All DPoP tests live here — basic login, RTR, multi-user, migration, and restart. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
