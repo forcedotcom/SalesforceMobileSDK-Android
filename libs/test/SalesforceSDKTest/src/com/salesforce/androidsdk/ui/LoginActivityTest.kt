@@ -33,6 +33,13 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.net.Uri
 import androidx.activity.result.ActivityResult
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
+import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
@@ -162,6 +169,21 @@ class LoginActivityTest {
             .getDeclaredMethod("doTokenRefresh", LoginActivity::class.java)
             .apply { isAccessible = true }
             .invoke(activity, activity)
+
+    // Same-class field reads inside handleBrowserCustomTabReady/onBiometricPromptDismissedWithoutSuccess
+    // compile to direct GETFIELD, bypassing mockk's getter stub (see the note on the region below) --
+    // so these set the real backing field on the mock instance directly instead.
+    private fun setSuppressInitialCustomTabLaunch(activity: LoginActivity, value: Boolean) =
+        LoginActivity::class.java
+            .getDeclaredField("suppressInitialCustomTabLaunch")
+            .apply { isAccessible = true }
+            .set(activity, value)
+
+    private fun setSuppressedCustomTabUrl(activity: LoginActivity, value: String?) =
+        LoginActivity::class.java
+            .getDeclaredField("suppressedCustomTabUrl")
+            .apply { isAccessible = true }
+            .set(activity, value)
 
     @Test
     fun loginActivityCustomTabLauncher_withoutSingleServerCustomTabActivity_clearsWebView() {
@@ -318,6 +340,32 @@ class LoginActivityTest {
         activity.launchLoginForAdminsAction()
 
         verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * launchLoginForAdminsAction() launches the Custom Tab directly and never consults biometric
+     * lock state, so once the user is at the picker, selecting a server via Login for Admins
+     * launches Advanced Auth normally -- lock state is irrelevant to this path.
+     */
+    @Test
+    fun test_launchLoginForAdmins_launchesCustomTab_regardlessOfLockState() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
+        every { browserCustomTabUrl.value } returns testUrl
+        val selectedServer = mockk<MediatorLiveData<String>>()
+        every { selectedServer.value } returns "https://example.com"
+        val viewModel = mockk<LoginViewModel>(relaxed = true)
+        every { viewModel.browserCustomTabUrl } returns browserCustomTabUrl
+        every { viewModel.selectedServer } returns selectedServer
+
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.viewModel } returns viewModel
+        every { activity.launchLoginForAdminsAction() } answers { callOriginal() }
+
+        activity.launchLoginForAdminsAction()
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+        verify(exactly = 0) { activity.onBioAuthClick() }
     }
 
     // endregion
@@ -1046,6 +1094,151 @@ class LoginActivityTest {
             assertTrue("Should finish immediately when biometric auth is not enabled.", finishCalls == 1)
         } finally {
             sdkManager.biometricAuthenticationManager = originalBioAuthManager
+        }
+    }
+
+    // endregion
+
+    // region handleBrowserCustomTabReady / onBiometricPromptDismissedWithoutSuccess
+    // (one-shot suppression of the lock-time Custom Tab launch race)
+    //
+    // Note: handleBrowserCustomTabReady and onBiometricPromptDismissedWithoutSuccess read/write
+    // suppressInitialCustomTabLaunch/suppressedCustomTabUrl as same-class field accesses (Kotlin
+    // emits direct GETFIELD/PUTFIELD for these, not accessor calls), which bypasses mockk's
+    // every {...} getter stubbing under callOriginal() the same way it bypasses verify on same-class
+    // setter calls (see the note on adminLoginCustomTabLauncher above). So preconditions here are
+    // set directly on the mock's real backing field via reflection instead of mockk stubs.
+
+    /**
+     * The very first Custom Tab launch attempt after auto-presenting the lock-time biometric
+     * prompt must be deferred rather than launched, so it doesn't race the prompt.
+     */
+    @Test
+    fun handleBrowserCustomTabReady_whenSuppressionArmed_doesNotLaunch() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressInitialCustomTabLaunch(activity, true)
+        every { activity.handleBrowserCustomTabReady(any()) } answers { callOriginal() }
+
+        activity.handleBrowserCustomTabReady(testUrl)
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * Once the one-shot suppression has already been consumed (or was never armed -- e.g. a
+     * server picked from the picker), every later Custom Tab launch must go through immediately.
+     */
+    @Test
+    fun handleBrowserCustomTabReady_whenSuppressionNotArmed_launchesImmediately() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressInitialCustomTabLaunch(activity, false)
+        every { activity.handleBrowserCustomTabReady(any()) } answers { callOriginal() }
+
+        activity.handleBrowserCustomTabReady(testUrl)
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+    }
+
+    /**
+     * Regression guard: if the lock-time biometric prompt is cancelled/fails before the
+     * authorization URL request completes, dismissing the prompt must not spuriously launch a
+     * Custom Tab -- there is nothing to launch yet.
+     */
+    @Test
+    fun onBiometricPromptDismissedWithoutSuccess_beforeUrlReady_doesNotLaunch() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressedCustomTabUrl(activity, null)
+        every { activity.onBiometricPromptDismissedWithoutSuccess() } answers { callOriginal() }
+
+        activity.onBiometricPromptDismissedWithoutSuccess()
+
+        verify(exactly = 0) { activity.loadLoginPageInCustomTab(any(), any()) }
+    }
+
+    /**
+     * Regression guard: if the authorization URL was already deferred by
+     * [handleBrowserCustomTabReady] before the prompt was dismissed, dismissing the prompt (e.g.
+     * via cancel) must launch that deferred URL immediately -- this is the auto-fallback to
+     * Advanced Auth on biometric cancel.
+     */
+    @Test
+    fun onBiometricPromptDismissedWithoutSuccess_afterUrlReady_launchesDeferredUrl() {
+        val testUrl = "https://example.com/services/oauth2/authorize"
+        val activity = mockk<LoginActivity>(relaxed = true)
+        setSuppressedCustomTabUrl(activity, testUrl)
+        every { activity.onBiometricPromptDismissedWithoutSuccess() } answers { callOriginal() }
+
+        activity.onBiometricPromptDismissedWithoutSuccess()
+
+        verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
+    }
+
+    // endregion
+
+    // region handleBiometricCanAuthenticateResult (every non-success branch falls back to Advanced
+    // Auth so a biometrically-locked device that can't present the prompt isn't stranded behind the
+    // suppressed lock-time Custom Tab launch)
+    //
+    // Note: the BIOMETRIC_SUCCESS branch is not unit tested here -- it reads the private
+    // biometricPrompt/promptInfo getters, which construct real androidx.biometric objects from the
+    // activity (mockk can't stub private members, so callOriginal runs them for real and they crash
+    // on a mock activity). That branch is unchanged by this fix and shows the prompt as before.
+
+    /**
+     * The "this should never happen" error codes can't present a prompt and offer no setup button,
+     * so they must immediately fall back to Advanced Auth.
+     */
+    @Test
+    fun handleBiometricCanAuthenticateResult_whenUnrecoverableError_fallsBackToAdvancedAuth() {
+        val unrecoverableCodes = listOf(
+            BIOMETRIC_ERROR_NO_HARDWARE,
+            BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED,
+            BIOMETRIC_ERROR_UNSUPPORTED,
+            BIOMETRIC_STATUS_UNKNOWN,
+            BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE,
+        )
+
+        unrecoverableCodes.forEach { code ->
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.handleBiometricCanAuthenticateResult(any()) } answers { callOriginal() }
+
+            activity.handleBiometricCanAuthenticateResult(code)
+
+            verify(exactly = 1) { activity.onBiometricPromptDismissedWithoutSuccess() }
+            // The prompt is never shown for these codes.
+            verify(exactly = 0) { viewModel.biometricPromptShowing.value = true }
+        }
+    }
+
+    /**
+     * The hardware-unavailable / none-enrolled codes still configure the OS-enrollment setup button
+     * (so the user can enroll and return), AND immediately fall back to Advanced Auth so login can
+     * proceed even if they never tap that button.
+     */
+    @Test
+    fun handleBiometricCanAuthenticateResult_whenSetupNeeded_configuresButtonAndFallsBackToAdvancedAuth() {
+        val setupCodes = listOf(
+            BIOMETRIC_ERROR_HW_UNAVAILABLE,
+            BIOMETRIC_ERROR_NONE_ENROLLED,
+        )
+
+        setupCodes.forEach { code ->
+            val viewModel = mockk<LoginViewModel>(relaxed = true)
+            val activity = mockk<LoginActivity>(relaxed = true)
+            every { activity.viewModel } returns viewModel
+            every { activity.handleBiometricCanAuthenticateResult(any()) } answers { callOriginal() }
+
+            activity.handleBiometricCanAuthenticateResult(code)
+
+            // Setup button is still configured for this branch.
+            verify(exactly = 1) { viewModel.biometricAuthenticationButtonAction.value = any() }
+            verify { viewModel.biometricAuthenticationButtonText.intValue = any() }
+            // And Advanced Auth is shown immediately.
+            verify(exactly = 1) { activity.onBiometricPromptDismissedWithoutSuccess() }
         }
     }
 

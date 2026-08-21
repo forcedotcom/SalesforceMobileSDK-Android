@@ -581,6 +581,74 @@ class PickerBottomSheetTest {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
+    fun loginPicker_retryBiometric_shownWhenLockedAndOptedIn() {
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showRetryBiometric = true,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON).assertIsDisplayed()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_retryBiometric_hiddenWhenNotLocked() {
+        // PickerBottomSheet renders the button purely off the showRetryBiometric flag. That flag is
+        // computed upstream from showBiometricAuthenticationButton (locked + hasBiometricOptedIn() +
+        // !nativeLogin), which has no BiometricManager.canAuthenticate() hardware/enrollment check --
+        // so a "biometric hardware unavailable" case collapses to this same showRetryBiometric = false
+        // input and cannot be exercised distinctly at this layer.
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showRetryBiometric = false,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun loginPicker_retryBiometric_invokesOnBioAuthClick() {
+        var invoked = false
+        composeTestRule.setContent {
+            PickerBottomSheetTestWrapper(
+                pickerStyle = PickerStyle.LoginServerPicker,
+                showRetryBiometric = true,
+                onRetryBiometricClick = { invoked = true },
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON).performClick()
+
+        assertTrue("Tapping the retry-biometric button should invoke the supplied callback.", invoked)
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun accountPicker_retryBiometric_absent() {
+        val userAccountManager = mockk<UserAccountManager>(relaxed = true)
+        composeTestRule.setContent {
+            // TestablePickerBottomSheet's UserAccountPicker dispatch never passes
+            // showRetryBiometric/onRetryBiometricClick, so go through it directly rather than the
+            // low-level stateless PickerBottomSheet + wrapper, which would render whatever is
+            // handed to it regardless of pickerStyle for this control. This is the critical
+            // regression guard: the retry-biometric entry must never leak onto the account
+            // switcher's picker.
+            TestablePickerBottomSheet(
+                pickerStyle = PickerStyle.UserAccountPicker,
+                userAccountManager = userAccountManager,
+            )
+        }
+
+        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON).assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
     fun accountPicker_backAndDevOptions_absent() {
         val userAccountManager = mockk<UserAccountManager>(relaxed = true)
         composeTestRule.setContent {
@@ -654,6 +722,8 @@ internal fun PickerBottomSheetTestWrapper(
     showLoginBackButton: Boolean = false,
     onLoginBackButtonClick: (() -> Unit)? = null,
     showDevSupport: (() -> Unit)? = null,
+    showRetryBiometric: Boolean = false,
+    onRetryBiometricClick: (() -> Unit)? = null,
 ) {
     PickerBottomSheet(
         pickerStyle = pickerStyle,
@@ -669,5 +739,7 @@ internal fun PickerBottomSheetTestWrapper(
         showLoginBackButton = showLoginBackButton,
         onLoginBackButtonClick = onLoginBackButtonClick,
         showDevSupport = showDevSupport,
+        showRetryBiometric = showRetryBiometric,
+        onRetryBiometricClick = onRetryBiometricClick,
     )
 }

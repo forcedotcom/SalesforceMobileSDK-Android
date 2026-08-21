@@ -61,6 +61,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -125,6 +126,7 @@ import com.salesforce.androidsdk.R.string.sf__connection_url_field_content_descr
 import com.salesforce.androidsdk.R.string.sf__custom_url_button
 import com.salesforce.androidsdk.R.string.sf__custom_url_button_content_description
 import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
+import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
 import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
@@ -237,6 +239,18 @@ internal fun TestablePickerBottomSheet(
             null
         }
     }
+    // Retry-biometric entry — only ever offered from the login-server picker (never the account
+    // switcher's shared UserAccountPicker composable), and only while biometric unlock is actually
+    // usable; reuses the exact predicate that gates the Custom Tab launch suppression and the
+    // WebView bottom-bar biometric button so all three surfaces never disagree.
+    val showRetryBiometric = pickerStyle == PickerStyle.LoginServerPicker &&
+            viewModel.showBiometricAuthenticationButton.value
+    // Matches the WebView bottom-bar biometric button: invoke the configured action (e.g. the OS
+    // enrollment setup launch) when one is set, otherwise re-present the biometric prompt.
+    val onRetryBiometricClick: () -> Unit = {
+        viewModel.biometricAuthenticationButtonAction.value?.invoke()
+            ?: (activity as? LoginActivity)?.onBioAuthClick()
+    }
 
     when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
@@ -253,6 +267,8 @@ internal fun TestablePickerBottomSheet(
                 showLoginBackButton = showLoginBackButton,
                 onLoginBackButtonClick = onLoginBackButtonClick,
                 showDevSupport = showDevSupport,
+                showRetryBiometric = showRetryBiometric,
+                onRetryBiometricClick = onRetryBiometricClick,
             )
 
         PickerStyle.UserAccountPicker ->
@@ -288,6 +304,8 @@ internal fun PickerBottomSheet(
     showLoginBackButton: Boolean = false,
     onLoginBackButtonClick: (() -> Unit)? = null,
     showDevSupport: (() -> Unit)? = null,
+    showRetryBiometric: Boolean = false,
+    onRetryBiometricClick: (() -> Unit)? = null,
 ) {
     val pickerFocus = remember { FocusRequester() }
     val containerContentDescription = when (pickerStyle) {
@@ -422,6 +440,31 @@ internal fun PickerBottomSheet(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Retry-biometric entry — lets a user who is still biometrically locked (e.g.
+                        // after cancelling or failing the initial biometric prompt) re-trigger it from
+                        // inside the login-server picker without leaving it. Strictly gated to the
+                        // login picker; must never appear on the account switcher's picker.
+                        if (showRetryBiometric) {
+                            ToolTipWrapper(sf__login_with_biometric) { retryBiometricDescription ->
+                                IconButton(
+                                    onClick = { onRetryBiometricClick?.invoke() },
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Fingerprint,
+                                        contentDescription = retryBiometricDescription,
+                                    )
+                                }
+                            }
+                        }
                         // Debug Login Options entry — reachable from inside the picker because the
                         // top app bar's own "Developer Support" entry is behind the modal scrim
                         // while the picker is shown. Debug builds only, same gating as the app bar.

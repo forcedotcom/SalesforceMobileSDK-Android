@@ -81,6 +81,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
@@ -111,7 +112,6 @@ import com.salesforce.androidsdk.R.drawable.sf__action_back
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
-import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
 import com.salesforce.androidsdk.R.string.sf__lightning_url_code_exchange_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
@@ -131,13 +131,13 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRI
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
-import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_MDM
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
-import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
 import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
@@ -147,17 +147,19 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
-import com.salesforce.androidsdk.auth.OAuthErrorCode
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
+import com.salesforce.androidsdk.auth.OAuthErrorCode
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.LOGIN_BACKGROUND_COLOR
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.selectBMarker
 import com.salesforce.androidsdk.ui.components.LoginView
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
@@ -172,7 +174,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.String.format
-import java.net.URI
 import java.net.URLDecoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
@@ -259,6 +260,25 @@ open class LoginActivity : FragmentActivity() {
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
 
+    /**
+     * True only for the very first Custom Tab launch attempt when biometrically locked (see
+     * [shouldAutoPresentBiometricOnCreate]).  Being locked must never block a server selection
+     * from launching Advanced Auth (see [LoginViewModel.generateAuthorizationUrl]), so rather than
+     * gating that call, this flag defers it until bio auth is canceled.  Consumed the first time
+     * [handleBrowserCustomTabReady] fires; any later firing (e.g. a server picked from the picker)
+     * always launches normally.
+     */
+    @VisibleForTesting
+    internal var suppressInitialCustomTabLaunch = false
+
+    /**
+     * The Custom Tab URL deferred by [suppressInitialCustomTabLaunch], if any, so that cancelling
+     * or otherwise failing the lock-time biometric prompt can launch it immediately instead of
+     * leaving the user stranded.
+     */
+    @VisibleForTesting
+    internal var suppressedCustomTabUrl: String? = null
+
     @VisibleForTesting
     internal val sharedBrowserSession: Boolean
         get() = SalesforceSDKManager.getInstance().isShareBrowserSessionEnabled && !newUserIntent
@@ -304,6 +324,9 @@ open class LoginActivity : FragmentActivity() {
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
         if (shouldAutoPresentBiometricOnCreate(biometricAuthenticationManager)) {
+            // Defer this activity's first Custom Tab launch by one attempt so it doesn't race the
+            // biometric prompt shown below. See suppressInitialCustomTabLaunch.
+            suppressInitialCustomTabLaunch = true
             presentBiometric()
         }
 
@@ -329,9 +352,7 @@ open class LoginActivity : FragmentActivity() {
         viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Set callback for when browser custom tab URL is ready to launch.
-        viewModel.onBrowserCustomTabReady = { url ->
-            loadLoginPageInCustomTab(url, customTabLauncher)
-        }
+        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
 
         // Let observers know onCreate is complete.
         EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
@@ -691,8 +712,9 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * Called once mobile policy has been stored for a fresh (non-Advanced-Auth) login, but
-     * before [proceed] starts the main activity and applies screen lock policy.  If biometric
+     * Called once mobile policy has been stored for a fresh login, whether completed via the
+     * in-app WebView or an Advanced Authentication browser Custom Tab, but before [proceed]
+     * starts the main activity and applies screen lock policy.  If biometric
      * authentication is enabled for the user, the user hasn't yet responded to the opt-in
      * dialog (by either enabling or declining it), and
      * [BiometricAuthenticationManager.automaticPresentation] is true, presents the opt-in
@@ -836,7 +858,7 @@ open class LoginActivity : FragmentActivity() {
                     params["code"],
                     ::onAuthFlowError,
                     ::onAuthFlowSuccess,
-                    onAuthFlowFinished = { proceed -> proceed(); finishLoginFlow() },
+                    onAuthFlowFinished = ::onAuthFlowFinished,
                 )
             }
         }
@@ -885,17 +907,54 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Launches the Custom Tab for [url] -- unless this is the very first attempt made by this
+     * [LoginActivity] instance since it auto-presented the lock-time biometric prompt (see
+     * [suppressInitialCustomTabLaunch]), in which case the launch is deferred until the prompt is
+     * dismissed (see [onBiometricPromptDismissedWithoutSuccess]) so the two don't race each other.
+     */
+    @VisibleForTesting
+    internal fun handleBrowserCustomTabReady(url: String) {
+        if (suppressInitialCustomTabLaunch) {
+            suppressInitialCustomTabLaunch = false
+            suppressedCustomTabUrl = url
+        } else {
+            loadLoginPageInCustomTab(url, customTabLauncher)
+        }
+    }
+
     // endregion
     // region Biometric Authentication Code
 
-    private fun presentBiometric() {
-        val biometricPrompt = biometricPrompt
-        val biometricManager = BiometricManager.from(this)
-        when (biometricManager.canAuthenticate(authenticators)) {
-            BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN -> {
+    private fun presentBiometric() =
+        handleBiometricCanAuthenticateResult(BiometricManager.from(this).canAuthenticate(authenticators))
+
+    /**
+     * Acts on a [BiometricManager.canAuthenticate] result.  On [BIOMETRIC_SUCCESS] the biometric
+     * prompt is shown; on the error/setup branches the user-facing button is configured as before.
+     *
+     * Every non-success branch also falls back to Advanced Authentication via
+     * [onBiometricPromptDismissedWithoutSuccess].  When this activity is biometrically locked it
+     * suppresses its first Custom Tab launch (see [suppressInitialCustomTabLaunch]) expecting a
+     * biometric prompt to appear; if the prompt can't be shown, that fallback is what launches the
+     * deferred browser login so the user isn't stranded with no way to authenticate.
+     *
+     * Split out from [presentBiometric] so the branch behavior can be exercised without a real
+     * [BiometricManager].
+     *
+     * @param canAuthenticate A [BiometricManager.canAuthenticate] result code
+     */
+    @VisibleForTesting
+    internal fun handleBiometricCanAuthenticateResult(canAuthenticate: Int) {
+        when (canAuthenticate) {
+            BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED,
+            BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN,
+            BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE -> {
                 // This should never happen
                 val error = getString(sf__screen_lock_error)
                 e(TAG, "Biometric manager cannot authenticate. $error")
+                // No prompt will be shown, so fall back to Advanced Authentication immediately.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
             BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED -> {
@@ -912,9 +971,18 @@ open class LoginActivity : FragmentActivity() {
                     )
                 }
                 viewModel.biometricAuthenticationButtonText.intValue = sf__setup_biometric_unlock
+                // No prompt will be shown, so fall back to Advanced Authentication immediately. The
+                // setup button remains available for the user to enroll and return via
+                // onActivityResult.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
-            BIOMETRIC_SUCCESS -> biometricPrompt.authenticate(promptInfo)
+            BIOMETRIC_SUCCESS -> {
+                // Suppress the login loading indicator while the prompt is on screen. Cleared in the
+                // prompt callbacks below (success and dismissal).
+                viewModel.biometricPromptShowing.value = true
+                biometricPrompt.authenticate(promptInfo)
+            }
         }
     }
 
@@ -931,13 +999,39 @@ open class LoginActivity : FragmentActivity() {
                         onUnlock()
                     }
 
+                    // Prompt is gone; allow the loading indicator to show again for the token refresh.
+                    viewModel.biometricPromptShowing.value = false
+                    viewModel.showServerPicker.value = false
                     viewModel.loading.value = true
                     CoroutineScope(IO).launch {
                         doTokenRefresh(this@LoginActivity)
                     }
                 }
+
+                // User cancellation.
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    onBiometricPromptDismissedWithoutSuccess()
+                }
             }
         )
+
+    /**
+     * Falls back to Advanced Auth when the biometric prompt is dismissed without the user
+     * successfully unlocking. If this was the very first, lock-triggered prompt (see
+     * [suppressInitialCustomTabLaunch]), launches the Custom Tab URL that was deferred for it, if
+     * one is already available; otherwise clears the one-shot suppression so the still in-flight
+     * authorization URL request launches the Custom Tab as soon as it completes.
+     */
+    @VisibleForTesting
+    internal fun onBiometricPromptDismissedWithoutSuccess() {
+        viewModel.biometricPromptShowing.value = false
+        suppressInitialCustomTabLaunch = false
+        suppressedCustomTabUrl?.let { url ->
+            suppressedCustomTabUrl = null
+            loadLoginPageInCustomTab(url, customTabLauncher)
+        }
+    }
 
     private fun doTokenRefresh(activity: LoginActivity) {
         val client = SalesforceSDKManager.getInstance().clientManager?.peekRestClient()

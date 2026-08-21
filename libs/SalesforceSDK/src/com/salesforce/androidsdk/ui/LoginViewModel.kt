@@ -193,6 +193,16 @@ open class LoginViewModel(
     internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
     internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
 
+    /**
+     * Whether the system biometric prompt is currently on screen.  Set by [LoginActivity] around the
+     * prompt's lifecycle (true when presented, false when it succeeds or is dismissed) so the login
+     * loading indicator can be suppressed behind the prompt.  A snapshot-backed flag is required here
+     * rather than deriving from [BiometricAuthenticationManager.locked]: `locked` is a plain var, so a
+     * derivedStateOf reading it never recomposes when it flips on unlock and the spinner would never
+     * reappear for the subsequent token refresh.
+     */
+    internal val biometricPromptShowing = mutableStateOf(false)
+
     /** Whether the biometric opt-in dialog should be shown, driven by [LoginActivity.onAuthFlowFinished]. */
     internal var showBiometricOptInDialog = mutableStateOf(false)
 
