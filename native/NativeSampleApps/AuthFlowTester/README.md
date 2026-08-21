@@ -39,16 +39,17 @@ Connected App login tests with explicit scope selection across web server and us
 | `testCAOpaque_AllScopes_UserAgentFlow_NotHybrid` | All | User Agent | In-App WebView |
 
 #### ECALoginTests
-External Client App (ECA) login tests for both opaque and JWT token formats with scope variations.
+External Client App (ECA) login tests for both opaque and JWT token formats with scope variations. Also covers pool server login (non-DPoP).
 
-| Test | App Config | Scopes |
-|------|-----------|--------|
-| `testECAOpaque_DefaultScopes` | ECA Opaque | Default |
-| `testECAOpaque_SubsetScopes` | ECA Opaque | Subset |
-| `testECAOpaque_AllScopes` | ECA Opaque | All |
-| `testECAJwt_DefaultScopes` | ECA JWT | Default |
-| `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset |
-| `testECAJwt_AllScopes` | ECA JWT | All |
+| Test | App Config | Scopes | Notes |
+|------|-----------|--------|-------|
+| `testECAOpaque_DefaultScopes` | ECA Opaque | Default | |
+| `testECAOpaque_SubsetScopes` | ECA Opaque | Subset | |
+| `testECAOpaque_AllScopes` | ECA Opaque | All | |
+| `testECAJwt_DefaultScopes` | ECA JWT | Default | |
+| `testECAJwt_SubsetScopes_NotHybrid` | ECA JWT | Subset | |
+| `testECAJwt_AllScopes` | ECA JWT | All | |
+| `testECAJwt_ViaLoginPoolServer` | ECA JWT | — | Pool server login without DPoP |
 
 #### DPoPLoginTests
 All DPoP tests live here — basic login, RTR, multi-user, migration, server enforcement, upgrade, restart, pool server, and admin login. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. As of Mobile SDK 14, DPoP defaults **on** for new logins (`SalesforceSDKManager.useDPoP` defaults to `true`), so `cleanup()` resets it to `true` after each test; turning it off is the explicit Bearer compatibility path (see `LegacyLoginTests`). Tests that need a specific posture set it via `LoginOptions` before each login. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
