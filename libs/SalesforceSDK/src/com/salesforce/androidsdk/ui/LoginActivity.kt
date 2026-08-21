@@ -1021,7 +1021,7 @@ open class LoginActivity : FragmentActivity() {
      * successfully unlocking. If this was the very first, lock-triggered prompt (see
      * [suppressInitialCustomTabLaunch]), launches the Custom Tab URL that was deferred for it, if
      * one is already available; otherwise clears the one-shot suppression so the still in-flight
-     * authorization URL request launches the Custom Tab as soon as it completes (W-23837971).
+     * authorization URL request launches the Custom Tab as soon as it completes.
      */
     @VisibleForTesting
     internal fun onBiometricPromptDismissedWithoutSuccess() {

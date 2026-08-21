@@ -343,13 +343,12 @@ class LoginActivityTest {
     }
 
     /**
-     * Regression guard (W-23837971): being biometrically locked must never prevent
-     * launchLoginForAdminsAction() from launching the Custom Tab. Once the user is at the
-     * picker, selecting any server -- including via Login for Admins -- launches Advanced Auth
-     * normally regardless of lock state.
+     * launchLoginForAdminsAction() launches the Custom Tab directly and never consults biometric
+     * lock state, so once the user is at the picker, selecting a server via Login for Admins
+     * launches Advanced Auth normally -- lock state is irrelevant to this path.
      */
     @Test
-    fun test_launchLoginForAdmins_whenLocked_stillLaunchesCustomTab() {
+    fun test_launchLoginForAdmins_launchesCustomTab_regardlessOfLockState() {
         val testUrl = "https://example.com/services/oauth2/authorize"
         val browserCustomTabUrl = mockk<MediatorLiveData<String>>()
         every { browserCustomTabUrl.value } returns testUrl
@@ -1100,8 +1099,8 @@ class LoginActivityTest {
 
     // endregion
 
-    // region handleBrowserCustomTabReady / onBiometricPromptDismissedWithoutSuccess (W-23837971 —
-    // one-shot suppression of the lock-time Custom Tab launch race)
+    // region handleBrowserCustomTabReady / onBiometricPromptDismissedWithoutSuccess
+    // (one-shot suppression of the lock-time Custom Tab launch race)
     //
     // Note: handleBrowserCustomTabReady and onBiometricPromptDismissedWithoutSuccess read/write
     // suppressInitialCustomTabLaunch/suppressedCustomTabUrl as same-class field accesses (Kotlin
@@ -1143,7 +1142,7 @@ class LoginActivityTest {
     }
 
     /**
-     * Bug A regression guard: if the lock-time biometric prompt is cancelled/fails before the
+     * Regression guard: if the lock-time biometric prompt is cancelled/fails before the
      * authorization URL request completes, dismissing the prompt must not spuriously launch a
      * Custom Tab -- there is nothing to launch yet.
      */
@@ -1159,7 +1158,7 @@ class LoginActivityTest {
     }
 
     /**
-     * Bug A regression guard: if the authorization URL was already deferred by
+     * Regression guard: if the authorization URL was already deferred by
      * [handleBrowserCustomTabReady] before the prompt was dismissed, dismissing the prompt (e.g.
      * via cancel) must launch that deferred URL immediately -- this is the auto-fallback to
      * Advanced Auth on biometric cancel.

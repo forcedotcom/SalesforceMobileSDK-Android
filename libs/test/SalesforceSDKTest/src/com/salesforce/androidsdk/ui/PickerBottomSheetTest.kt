@@ -595,28 +595,11 @@ class PickerBottomSheetTest {
     @OptIn(ExperimentalMaterial3Api::class)
     @Test
     fun loginPicker_retryBiometric_hiddenWhenNotLocked() {
-        composeTestRule.setContent {
-            PickerBottomSheetTestWrapper(
-                pickerStyle = PickerStyle.LoginServerPicker,
-                showRetryBiometric = false,
-            )
-        }
-
-        composeTestRule.onNodeWithTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON).assertDoesNotExist()
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Test
-    fun loginPicker_retryBiometric_hiddenWhenBiometricUnavailable() {
-        // NOTE (flagged for review, W-23837971): "unavailable" here collapses to the same
-        // showRetryBiometric = false input as the "not locked" case above, because
-        // showBiometricAuthenticationButton / canPresentBiometricUnlock() only consult
-        // locked + hasBiometricOptedIn() + !nativeLogin -- there is no BiometricManager
-        // .canAuthenticate() hardware/enrollment check feeding into this boolean anywhere in the
-        // call chain (see LoginViewModel.canPresentBiometricUnlock). This test documents the
-        // intended "button must not be shown when biometric can't actually run" behavior at the
-        // PickerBottomSheet level; it cannot independently exercise a hardware-unavailable-but-
-        // opted-in scenario until that gap is addressed upstream.
+        // PickerBottomSheet renders the button purely off the showRetryBiometric flag. That flag is
+        // computed upstream from showBiometricAuthenticationButton (locked + hasBiometricOptedIn() +
+        // !nativeLogin), which has no BiometricManager.canAuthenticate() hardware/enrollment check --
+        // so a "biometric hardware unavailable" case collapses to this same showRetryBiometric = false
+        // input and cannot be exercised distinctly at this layer.
         composeTestRule.setContent {
             PickerBottomSheetTestWrapper(
                 pickerStyle = PickerStyle.LoginServerPicker,

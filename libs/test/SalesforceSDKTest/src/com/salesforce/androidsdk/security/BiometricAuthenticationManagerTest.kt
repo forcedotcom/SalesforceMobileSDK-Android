@@ -312,7 +312,7 @@ class BiometricAuthenticationManagerTest {
 
         // Foregrounding while already locked -- e.g. backing out of the Custom Tab that the very
         // lock() call above launched -- must not trigger a second lock(), which would relaunch
-        // the Custom Tab over the server picker and trap the user in a loop (W-23837971).
+        // the Custom Tab over the server picker and trap the user in a loop.
         bioAuthManager.onAppForegrounded()
 
         Assert.assertEquals(
