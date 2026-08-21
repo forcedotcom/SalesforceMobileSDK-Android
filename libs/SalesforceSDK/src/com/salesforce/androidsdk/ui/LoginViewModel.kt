@@ -283,7 +283,19 @@ open class LoginViewModel(
 
     /** Value representing if the back button should be shown on the login view. */
     open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
-        !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
+        when {
+            // Never show back while biometric-locked; user must authenticate.
+            biometricAuthenticationManager?.locked == true -> false
+            /*
+             * Native Login uses this WebView LoginActivity as a dismissible
+             * fallback: handleBackBehavior() finishes and returns to the native
+             * login activity, so show the back affordance to match — even with
+             * no authenticated users yet.
+             */
+            nativeLoginActivity != null -> true
+            // Otherwise show back only when an authenticated user exists.
+            else -> !userAccountManager.authenticatedUsers.isNullOrEmpty()
+        }
     }
 
     // The default, locally generated code verifier
@@ -303,6 +315,14 @@ open class LoginViewModel(
     // The optional web server flow code verifier accompanying the front door bridge server.
     internal var frontdoorBridgeCodeVerifier: String? = null
 
+    /**
+     * Per-call DPoP intent for a pending token-migration re-auth, overriding
+     * [SalesforceSDKManager.useDPoP] for that single migration.  Null means "use the global
+     * flag" (normal login behavior, unchanged).  Set immediately before
+     * [generateMigrationAuthorizationPath] and reset to null once that call returns so the
+     * override never leaks into a later, unrelated login on this shared view model.
+     */
+    internal var dpopOverride: Boolean? = null
 
     // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
     internal var oAuthConfig = OAuthConfig(bootConfig)
@@ -506,6 +526,7 @@ open class LoginViewModel(
             tokenResponse = tr,
             loginServer = loginServer ?: selectedServer.value ?: "",
             consumerKey = consumerKey,
+            redirectUri = oAuthConfig.redirectUri,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
@@ -583,6 +604,10 @@ open class LoginViewModel(
             codeChallenge,
             /* addlParams = */ additionalParameters,
         )
+
+        // The per-call override, if any, only applies to this migration's /authorize call.
+        // Reset it now so it never leaks into a later, unrelated login on this shared view model.
+        dpopOverride = null
 
         return with(authorizationUrl) { "$path?$query" }
     }
@@ -695,7 +720,6 @@ open class LoginViewModel(
                 SalesforceSDKManager.getInstance(),
                 credentialsIdentifier,
             )
-
             onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier, onAuthFlowFinished)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
@@ -723,17 +747,30 @@ open class LoginViewModel(
     // endregion
 
     /**
-     * Adds `dpop_jkt` to [params] when DPoP is enabled and [server] is a my-domain server.
-     * Pool servers (login.salesforce.com, test.salesforce.com, welcome.salesforce.com) do not
-     * support DPoP code binding and reject the parameter.
+     * Adds `dpop_jkt` to [params] when DPoP is enabled.
+     * welcome.salesforce.com/discovery is never passed here — discovery resolves a my-domain
+     * server before /authorize is called.
+     *
+     * If [pendingCredentialsIdentifier] is already set (meaning dpop_jkt was already committed
+     * for this login flow, e.g. via a pool-server redirect), the existing key pair is reused so
+     * that the auth code's dpop_jkt binding and the token-exchange proof use the same key.
+     * Only generates a new key pair when starting a fresh login flow.
+     *
+     * Whether DPoP is enabled is determined by [dpopOverride] when set (a per-call intent for
+     * a pending token migration), falling back to [SalesforceSDKManager.useDPoP] otherwise —
+     * the normal-login path never sets [dpopOverride], so its gating is unchanged.
      */
     private fun addDpopJktIfNeeded(
         server: String,
         sdkManager: SalesforceSDKManager,
         params: MutableMap<String, String>,
     ) {
-        val isMyDomainServer = !LoginServerManager.isPoolServer(server)
-        if (!sdkManager.useDPoP || !isMyDomainServer) {
+        // Welcome Discovery is a pre-authentication host, not a resource server — never attach
+        // dpop_jkt there. Belt-and-suspenders guard: generateAuthorizationUrl is not called for
+        // the discovery URL today (reloadWebView short-circuits it), but this prevents a stale
+        // thumbprint from leaking if the call graph changes in the future.
+        val dpopEnabled = dpopOverride ?: sdkManager.useDPoP
+        if (!dpopEnabled || LoginServerManager.WELCOME_LOGIN_URL == server) {
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {
@@ -743,16 +780,12 @@ open class LoginViewModel(
             return
         }
         runCatching {
-            // Delete any orphaned key from a prior server-picker navigation before generating a new one.
-            pendingCredentialsIdentifier?.let {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
-            }
-            val credId = java.util.UUID.randomUUID().toString()
+            val credId = pendingCredentialsIdentifier
+                ?: java.util.UUID.randomUUID().toString().also { pendingCredentialsIdentifier = it }
             val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
             val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
             val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
             params["dpop_jkt"] = thumbprint
-            pendingCredentialsIdentifier = credId
         }.onFailure { t ->
             android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
         }

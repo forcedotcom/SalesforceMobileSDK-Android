@@ -304,4 +304,56 @@ class UserAccountManagerMigrateTokenTest {
             capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_USER_ID)
         )
     }
+
+    /**
+     * Regression guard for a cross-user token-migration hazard: migrating a user who is NOT the
+     * current user must operate on the passed-in account, never on the current user. Here user B
+     * is current and non-current user A is passed explicitly; the migration intent must carry A's
+     * identity so the downstream flow builds A's RestClient and revokes A's (not B's) old token.
+     * Prevents regressing into the wrong-user behavior seen on the iOS side of this change.
+     */
+    @Test
+    fun migrateRefreshToken_withNonCurrentUser_targetsPassedUserNotCurrentUser() {
+        // Given - user B is the current user...
+        val currentUserId = "userB-id"
+        val currentOrgId = "orgB-id"
+        val mockCurrentUser: UserAccount = mockk(relaxed = true)
+        every { mockCurrentUser.userId } returns currentUserId
+        every { mockCurrentUser.orgId } returns currentOrgId
+
+        mockkStatic(UserAccountManager::class)
+        every { UserAccountManager.getInstance() } returns mockUserAccountManager
+        every { mockUserAccountManager.currentUser } returns mockCurrentUser
+
+        // ...and user A is a different, non-current account we want to migrate.
+        val targetUserId = "userA-id"
+        val targetOrgId = "orgA-id"
+        val mockTargetUser: UserAccount = mockk(relaxed = true)
+        every { mockTargetUser.userId } returns targetUserId
+        every { mockTargetUser.orgId } returns targetOrgId
+
+        every { MigrationCallbackRegistry.register(any()) } returns "callback-key"
+
+        val intentSlot = slot<Intent>()
+        every { mockContext.startActivity(capture(intentSlot)) } just Runs
+
+        // When - migrate the non-current user A explicitly.
+        mockUserAccountManager.migrateRefreshToken(
+            userAccount = mockTargetUser,
+            appConfig = mockOAuthConfig,
+            onMigrationSuccess = onMigrationSuccess,
+            onMigrationError = onMigrationError
+        )
+
+        // Then - the intent must target A, not the current user B.
+        val capturedIntent = intentSlot.captured
+        assertEquals("Intent must target the passed user's org id, not the current user's",
+            targetOrgId,
+            capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_ORG_ID)
+        )
+        assertEquals("Intent must target the passed user's user id, not the current user's",
+            targetUserId,
+            capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_USER_ID)
+        )
+    }
 }

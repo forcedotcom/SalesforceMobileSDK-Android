@@ -27,14 +27,17 @@
 package com.salesforce.samples.authflowtester.pageObjects
 
 import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
-import com.salesforce.androidsdk.R
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -85,15 +88,54 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     /**
-     * Surfaces the LoginActivity by backing out of the Custom Tab that forced advanced auth
-     * auto-launches over it (the tab hides the Compose top bar the [LoginPageObject] actions need).
-     * Backing out returns `RESULT_CANCELED`, which the SDK handles by raising the server-picker
-     * bottom sheet; that is dismissed here too so a subsequent top-bar action can re-launch the tab.
-     * Waits up to [TIMEOUT_MS] for the async tab launch; no-op if no tab appears (already on the
-     * LoginActivity).
+     * Opens the top bar overflow menu and taps the "Login for Admins" item.
+     *
+     * Overrides [LoginPageObject.tapLoginForAdminsMenuItem] to handle the case where the login
+     * server picker is showing after [backOutToLoginActivity] closed the forced-advanced-auth tab.
+     * The picker is non-dismissable except by selecting a server.  Selecting the current server
+     * calls [LoginViewModel.reloadWebView], which checks [SalesforceSDKManager.isBrowserLoginEnabled]
+     * to decide whether to launch a Custom Tab or load the in-app WebView.  We ensure the flag is
+     * false before the tap so the reload uses the WebView path and the picker is dismissed without
+     * launching another tab — [waitForLoginScreen] then confirms the top app bar is reachable.
+     */
+    override fun tapLoginForAdminsMenuItem() {
+        val pickerShowing = composeTestRule
+            .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+        if (pickerShowing) {
+            val currentUrl = SalesforceSDKManager.getInstance()
+                .loginServerManager.selectedLoginServer?.url
+            if (currentUrl != null) {
+                // Belt-and-suspenders: ensure browser-login is off before the row tap so that the
+                // reloadWebView() call inside onNewLoginServerSelected loads the WebView rather than
+                // relaunching a Custom Tab (which would show the picker again when closed).
+                SalesforceSDKManager.getInstance().run {
+                    forceAdvancedAuthentication = false
+                    isBrowserLoginEnabled = false
+                }
+                composeTestRule
+                    .onAllNodesWithText(currentUrl, substring = true)
+                    .filterToOne(hasClickAction())
+                    .performClick()
+                composeTestRule.waitForIdle()
+                // Picker is now dismissed (showServerPicker.value = false). Wait for the
+                // MORE_OPTIONS_BUTTON to appear in the top app bar before calling super.
+                waitForLoginScreen()
+            }
+        }
+        super.tapLoginForAdminsMenuItem()
+    }
+
+    /**
+     * Surfaces the LoginActivity (or the server picker) by closing the Custom Tab that forced
+     * advanced auth auto-launches over it. The login picker is non-dismissable, so callers that
+     * need the top bar (e.g. [changeServerByUrl]) must select a server from the picker first;
+     * callers that need Login Options can use the picker's dev-support button via
+     * [LoginPageObject.openLoginOptions]. This method only closes the tab and waits for Compose
+     * to be ready — it does NOT attempt to dismiss the picker.
      */
     override fun backOutToLoginActivity() {
-        // Clear the FRE first; until it is gone it covers the tab toolbar (the close button).
         skipGoogleSignIn()
         val closeButton = device.findObject(
             UiSelector().resourceId("com.android.chrome:id/close_button")
@@ -102,67 +144,59 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             return
         }
         closeButton.click()
-        dismissServerPickerIfPresent()
-    }
-
-    /** Dismisses the login-server-picker bottom sheet via its Close button, if it is showing. */
-    private fun dismissServerPickerIfPresent() {
-        val closeDescription = getString(R.string.sf__server_close_button_content_description)
-        val appeared = try {
+        // Wait for either the picker or the top bar to be reachable.
+        try {
             composeTestRule.waitUntil(timeoutMillis = TIMEOUT_MS) {
-                composeTestRule.onAllNodesWithContentDescription(closeDescription)
+                composeTestRule.onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodesWithTag(LoginViewTestTags.MORE_OPTIONS_BUTTON)
                     .fetchSemanticsNodes().isNotEmpty()
             }
-            true
         } catch (_: ComposeTimeoutException) {
-            // The picker never appeared (e.g. shared browser session re-auth); nothing to dismiss.
-            false
+            // Best-effort; caller action will fail with a clear message if neither is reachable.
         }
-
-        if (appeared) {
-            composeTestRule.onNodeWithContentDescription(closeDescription).performClick()
-            composeTestRule.waitForIdle()
-        }
+        composeTestRule.waitForIdle()
     }
 
     override fun setUsername(name: String) {
-        var usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
-        if (!usernameField.waitForExists(TIMEOUT_MS)) {
-            usernameField = device.findObject(
-                UiSelector().className("android.widget.EditText").instance(0)
-            )
-            if (!usernameField.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Username field not found in Custom Tab")
-            }
-        }
+        // UiSelector.resourceId("username") matches Android View resource IDs, not HTML element
+        // IDs inside Chrome — the quick check is a low-cost probe before the full wait.
+        val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+                .also {
+                    // Use the extended WebView timeout: the Salesforce login page can take
+                    // 20–30 s to render the first input field after the tab toolbar appears.
+                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
+                        throw AssertionError("Username field not found in Custom Tab")
+                    }
+                }
         usernameField.click()
         usernameField.setText(name)
     }
 
     override fun setPassword(password: String) {
-        var passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
-        if (!passwordField.waitForExists(TIMEOUT_MS)) {
-            passwordField = device.findObject(
-                UiSelector().className("android.widget.EditText").instance(0)
-            )
-            if (!passwordField.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Password field not found in Custom Tab")
-            }
-        }
+        val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
+                .also {
+                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
+                        throw AssertionError("Password field not found in Custom Tab")
+                    }
+                }
         passwordField.click()
         passwordField.setText(password)
     }
 
     override fun tapLogin() {
-        var loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
-        if (!loginButton.waitForExists(TIMEOUT_MS)) {
-            loginButton = device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
-            )
-            if (!loginButton.waitForExists(TIMEOUT_MS)) {
-                throw AssertionError("Log In button not found in Custom Tab")
-            }
-        }
+        val loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.Button").textContains("Log In"))
+                .also {
+                    if (!it.waitForExists(TIMEOUT_MS)) {
+                        throw AssertionError("Log In button not found in Custom Tab")
+                    }
+                }
         loginButton.click()
     }
 
@@ -246,6 +280,22 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
             UiSelector().resourceId("com.android.chrome:id/close_button")
         )
         return closeButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)
+    }
+
+    /**
+     * True when the Custom Tab is showing the OAuth error page produced by a DPoP-enforced ECA that
+     * rejected an unbound `/authorize` request. The enforced server responds with
+     * `error=invalid_request&error_description=missing required dpop_jkt for code binding`, which
+     * Chrome renders as page text. We match on the URL-encoded `dpop_jkt` token — the distinctive,
+     * server-stable part of the description — rather than the full phrase, which is URL-encoded in the
+     * rendered text and could be reworded server-side. Uses [WEBVIEW_ACTION_TIMEOUT_MS] because the
+     * error page is server-rendered and subject to the same latency as the login form.
+     */
+    fun isShowingDPoPBindingError(): Boolean {
+        val errorText = device.findObject(
+            UiSelector().packageName("com.android.chrome").textContains("dpop_jkt")
+        )
+        return errorText.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)
     }
 
     /**

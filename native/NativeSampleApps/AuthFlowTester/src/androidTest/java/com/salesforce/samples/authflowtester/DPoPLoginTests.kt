@@ -35,6 +35,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
+import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertNotEquals
 import org.junit.Ignore
 import org.junit.Test
@@ -143,14 +144,16 @@ class DPoPLoginTests : AuthFlowTest() {
 
         // Switch to user A (DPoP-bound). Refresh + REST GET must attach a DPoP proof —
         // gated by credential state, not the global flag.
-        switchToUserAndValidateUser(user, isDpop = true)
+        // ECA_JWT_DPOP issues JWT tokens, so isJwt=true is required to expect JT in the UA.
+        switchToUserAndValidateUser(user, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
 
         // Switch to user B (Bearer). Refresh + REST GET must NOT attach DPoP anywhere.
-        switchToUserAndValidateUser(otherUser, isDpop = false)
+        // ECA_JWT issues JWT tokens, so isJwt=true is required to expect JT (not OT) in the UA.
+        switchToUserAndValidateUser(otherUser, isDpop = false, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true, isJwt = true)
     }
 
     // endregion
@@ -191,6 +194,38 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // endregion
 
+    // region DPoP Enforcement Tests
+
+    // A DPoP-enforced ECA must reject an unbound login: the enforced ECA requires a dpop_jkt on
+    // /authorize to bind the auth code, and with the DPoP Login Option off no dpop_jkt is sent,
+    // so no authenticated user is added and the app never loads.
+    @Test
+    fun testLogin_DPoP_ECA_Without_DPoP_Fails() {
+        loginAndExpectFailure(
+            consumerKey = testConfig.getApp(ECA_JWT_DPOP).consumerKey,
+            redirectUri = testConfig.getApp(ECA_JWT_DPOP).redirectUri,
+            useDPoP = false,
+            expectDPoPBindingError = true,
+        )
+    }
+
+    // endregion
+
+    // region DPoP Upgrade Tests
+
+    // In-place upgrade: a Bearer session on an unenforced ECA is bound to DPoP via the
+    // "Upgrade to DPoP" affordance, with the process-wide DPoP flag left OFF the entire time.
+    // Proves the migration re-auth honors the per-call intent (LoginViewModel.dpopOverride)
+    // rather than SalesforceSDKManager.useDPoP, and that no re-consent is needed since the
+    // consumer key/redirect URI/scopes are unchanged.
+    @Test
+    fun testUpgrade_NonDPoP_InPlace_ToDPoP() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useDPoP = false)
+        upgradeToDPoPAndValidate(knownAppConfig = ECA_JWT)
+    }
+
+    // endregion
+
     // region DPoP Restart Tests
 
     /**
@@ -216,6 +251,31 @@ class DPoPLoginTests : AuthFlowTest() {
         // After restart the key pair must still be valid — revoke+refresh proves it.
         // The nonce-change assertion also confirms the server accepted the DPoP proof
         // built with the key pair loaded from AndroidKeyStore after restart.
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+    }
+
+    // endregion
+
+    // endregion
+
+    // region DPoP Pool Server Tests
+
+    // Login via the pool server (login.test1.pc-rnd.salesforce.com) with DPoP enabled
+    // and verify dpop_jkt was accepted and DPoP binding holds after a revoke+refresh.
+    //
+    // Skipped: server-side bug W-23864247 — the pool login server returns
+    // invalid_dpop_proof on the authorization-code token exchange even though the
+    // DPoP proof is cryptographically valid and the JWK thumbprint exactly matches
+    // the dpop_jkt sent in /authorize.  Re-enable when the server fix is confirmed.
+    @Ignore("W-23864247: pool login server rejects valid dpop_jkt token exchange")
+    @Test
+    fun testECAJwtDPoP_ViaLoginPoolServer() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP,
+            useHybridAuthToken = false,
+            useDPoP = true,
+            useLoginPoolHost = true,
+        )
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
     }
 

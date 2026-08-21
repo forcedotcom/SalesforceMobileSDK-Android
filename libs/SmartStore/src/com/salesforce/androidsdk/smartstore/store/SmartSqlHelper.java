@@ -173,7 +173,7 @@ public class SmartSqlHelper  {
 
 		if (!indexed) {
 			// Thanks to the json1 extension we can query the data even if it is not indexed
-			columnName = "json_extract(" + SmartStore.SOUP_COL + ", '$." + path + "')";
+			columnName = "json_extract(" + SmartStore.SOUP_COL + ", '$." + path.replace("'", "''") + "')";
 		} else {
 			try {
 				columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, path);

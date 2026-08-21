@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026-present, salesforce.com, inc.
+ * Copyright (c) 2025-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,41 +24,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.authflowtester.pageObjects
+package com.salesforce.androidsdk.mobilesync.target
 
-import android.content.Context
-import android.provider.Settings
-import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.salesforce.androidsdk.mobilesync.util.ChildrenInfo
+import com.salesforce.androidsdk.mobilesync.util.ParentInfo
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
 
-abstract class BasePageObject(val composeTestRule: ComposeTestRule) {
+/**
+ * Tests for single-quote escaping in ParentChildrenSyncTargetHelper.getQueryForChildren.
+ */
+@RunWith(AndroidJUnit4::class)
+@SmallTest
+class ParentChildrenSyncTargetHelperTest {
 
-    val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
-    fun getString(id: Int) = context.getString(id)
+    @Test
+    fun testGetQueryForChildren_whenParentIdContainsSingleQuote_escapesCorrectly() {
+        val parentInfo = ParentInfo("Account", "accounts")
+        val childrenInfo = ChildrenInfo("Contact", "Contacts", "contacts", "AccountId")
 
-    companion object {
-        val isFtl: Boolean by lazy {
-            Settings.System.getString(
-                InstrumentationRegistry.getInstrumentation().targetContext.contentResolver,
-                /* name = */ "firebase.test.lab"
-            ) == "true"
-        }
-        val TIMEOUT_MS: Long by lazy {
-            if (isFtl) 20_000 else 15_000
-        }
+        val querySpec = ParentChildrenSyncTargetHelper.getQueryForChildren(
+            parentInfo,
+            childrenInfo,
+            "Id",
+            "001'Test",
+            "001Normal"
+        )
 
-        val SLEEP_TIME_MS: Long by lazy {
-            if (isFtl) 5_000 else 2_500
-        }
-
-        /**
-         * Extended timeout for Espresso WebView actions ([retryWebAction]) that wait for
-         * server-rendered login page content. The Salesforce sandbox login page can take
-         * 20–30 s to render interactive form elements after [onPageFinished] fires; this budget
-         * covers that latency with headroom for both local emulators and Firebase Test Lab.
-         */
-        val WEBVIEW_ACTION_TIMEOUT_MS: Long by lazy {
-            if (isFtl) 60_000 else 45_000
-        }
+        assertTrue(
+            "Expected single quote in '001'Test' to be doubled to '001''Test' in smartSql, but got: ${querySpec.smartSql}",
+            querySpec.smartSql.contains("IN ('001''Test', '001Normal')")
+        )
     }
 }

@@ -65,8 +65,10 @@ enum class KnownAppConfig {
     ECA_JWT_DPOP_RTR,
 }
 
+private val json = Json { ignoreUnknownKeys = true }
+
 val testConfig: UITestConfig by lazy {
-    Json.decodeFromString(
+    json.decodeFromString(
         string = ResourceReaderHelper.readAssetFile(
             InstrumentationRegistry.getInstrumentation().targetContext,
             /* assetFilePath = */ "ui_test_config.json",
@@ -75,7 +77,14 @@ val testConfig: UITestConfig by lazy {
 }
 
 @Serializable
-data class UITestConfig(val loginHosts: List<LoginHost>, val apps: List<AppConfig>) {
+data class UITestConfig(
+    val loginPoolHost: String? = null,
+    val loginHosts: List<LoginHost>,
+    val apps: List<AppConfig>,
+) {
+
+    fun requireLoginPoolHost(): String = loginPoolHost
+        ?: throw Exception("loginPoolHost not found in ui_test_config.json.")
 
     fun getLoginHost(knownLoginHostConfig: KnownLoginHostConfig): LoginHost = loginHosts.find {
         (name, _, _) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current)

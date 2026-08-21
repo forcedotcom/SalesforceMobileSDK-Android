@@ -30,7 +30,9 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -198,7 +200,19 @@ abstract class AuthFlowTest {
         // login surface.
         val regularAuthServer = loginServerManager.getLoginServerFromURL(regularAuthUrl)
         if (regularAuthServer != null) {
-            loginServerManager.setSelectedLoginServer(regularAuthServer)
+            // If the picker is showing after backOutToLoginActivity(), dismiss it by tapping the
+            // regular-auth row — this triggers reloadWebView and closes the sheet. When the picker
+            // is not showing, call setSelectedLoginServer directly as before.
+            val loginPage = LoginPageObject(composeTestRule)
+            val pickerShowing = composeTestRule
+                .onAllNodesWithTag(LoginViewTestTags.SERVER_PICKER)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+            if (pickerShowing) {
+                loginPage.changeServerByUrl(regularAuthUrl)
+            } else {
+                loginServerManager.setSelectedLoginServer(regularAuthServer)
+            }
 
             if (expectCustomTab) {
                 // Reaching here means the server actually changed (a sticky ADVANCED_AUTH
@@ -208,9 +222,14 @@ abstract class AuthFlowTest {
                 // then generates the OAuth URL and launches the Custom Tab.  Wait for that tab to
                 // actually appear rather than sleeping a fixed interval.
                 chromePage.waitForCustomTab()
+            } else if (pickerShowing) {
+                // When the picker was showing, changeServerByUrl() tapped the server row which
+                // triggers an auth-config fetch and then reloads the WebView. Wait for the
+                // MORE_OPTIONS_BUTTON to confirm the LoginActivity's Compose is idle and the login
+                // screen is fully in front before returning — this ensures the WebView reload has
+                // begun and retryWebAction has the full timeout budget to wait for the login form.
+                loginPage.waitForLoginScreen()
             }
-            // For the WebView path there is nothing to wait for: the WebView page-object actions
-            // retry internally until the reloaded login form is ready.
         }
     }
 
@@ -225,6 +244,7 @@ abstract class AuthFlowTest {
         forceAdvancedAuthentication: Boolean = true,
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
+        useLoginPoolHost: Boolean = false,
     ) {
         // When forceAdvancedAuthentication is true (default) every login completes in a Custom Tab:
         // a ChromeCustomTabPageObject serves both roles — its inherited Compose actions
@@ -308,6 +328,12 @@ abstract class AuthFlowTest {
             loginPage.backOutToLoginActivity()
             loginPage.changeServerByUrl(WELCOME_DISCOVERY_URL)
             authenticationPage.welcomeLogin(knownLoginHostConfig, knownUserConfig)
+        } else if (useLoginPoolHost) {
+            // Use the pool server URL from ui_test_config.json for the login host.
+            // Credentials are taken from knownLoginHostConfig — same org, different login entry point.
+            loginPage.backOutToLoginActivity()
+            loginPage.changeServerByUrl(testConfig.requireLoginPoolHost())
+            authenticationPage.login(knownLoginHostConfig, knownUserConfig)
         } else {
             if (knownLoginHostConfig != REGULAR_AUTH) {
                 // Switching servers is a top-bar action, so surface LoginActivity first. Selecting
@@ -329,10 +355,11 @@ abstract class AuthFlowTest {
                 Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
             else -> null
         }
-        val expectedLMarker = if (useWelcomeDiscovery) {
-            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+            // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
+            useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
             useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
@@ -513,9 +540,15 @@ abstract class AuthFlowTest {
         }
         loginOptions.setOverrideBootConfig(knownAppConfig, scopeSelection = EMPTY)
 
-        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path;
-        // back out again to reach the overflow menu (no-op on the WebView path), then launch the
-        // dedicated admin custom tab.
+        // Dismissing Login Options re-launches the Custom Tab on the forced-advanced-auth path.
+        // After backing out of that tab, the non-dismissable login picker is shown (W-23731759).
+        // To reach the overflow menu, disable forced advanced authentication before closing the tab
+        // so that ChromeCustomTabPageObject.tapLoginForAdminsMenuItem can dismiss the picker by
+        // re-selecting the current server (which triggers reloadWebView with isBrowserLoginEnabled=false,
+        // loading the in-app WebView instead of yet another Custom Tab).
+        if (useWebServerFlow) {
+            setForcedAdvancedAuthEnabled(false)
+        }
         topBarPage.backOutToLoginActivity()
         topBarPage.tapLoginForAdminsMenuItem()
 
@@ -555,12 +588,20 @@ abstract class AuthFlowTest {
      * the test fails immediately (login should not have succeeded). The
      * polling window terminates once the Custom Tab remains in front without a
      * user being created — the steady-state we expect for a rejected login.
+     *
+     * When [expectDPoPBindingError] is true, additionally assert that the Custom Tab shows the
+     * enforced-ECA DPoP rejection error page (`missing required dpop_jkt for code binding`), pinning
+     * the failure to the specific server reason rather than mere absence of a user. Only the
+     * DPoP-enforcement case renders this page; the invalid-consumer-key / invalid-scope negative
+     * tests produce different errors and leave this off.
      */
     fun loginAndExpectFailure(
         consumerKey: String,
         redirectUri: String,
         scopes: String? = null,
         knownUserConfig: KnownUserConfig = user,
+        useDPoP: Boolean = false,
+        expectDPoPBindingError: Boolean = false,
     ) {
         val loginPage = ChromeCustomTabPageObject(composeTestRule)
         ensureRegularAuthServer(expectCustomTab = true)
@@ -572,6 +613,13 @@ abstract class AuthFlowTest {
         // then let the Custom Tab re-launch with the new dynamic config.
         loginPage.backOutToLoginActivity()
         loginPage.openLoginOptions()
+
+        // Deterministically set the DPoP precondition (mirrors loginAndValidate). Login Options
+        // is always opened above for the dynamic config override, so this is a no-op toggle click
+        // when the DPoP toggle is already in the desired state (e.g. the default off state that
+        // cleanup() restores between tests).
+        if (useDPoP) loginOptions.enableDPoP() else loginOptions.disableDPoP()
+
         loginOptions.setOverrideBootConfigRaw(consumerKey, redirectUri, scopes)
 
         // Submit credentials in the Custom Tab. Some failure modes (e.g. invalid consumer key)
@@ -611,6 +659,15 @@ abstract class AuthFlowTest {
         // After the polling window, confirm we are still in the login flow (Custom Tab).
         assert(loginPage.isCustomTabDisplayed()) {
             "Expected to remain in the login flow (Custom Tab) after a failed login"
+        }
+
+        // For DPoP enforcement, pin the failure to the specific server reason: the enforced ECA
+        // rejects the unbound /authorize with an OAuth error page naming the missing dpop_jkt.
+        if (expectDPoPBindingError) {
+            assert(loginPage.isShowingDPoPBindingError()) {
+                "Expected the Custom Tab to show the DPoP binding error (missing required dpop_jkt " +
+                    "for code binding) after a rejected unbound login"
+            }
         }
     }
 
@@ -654,6 +711,53 @@ abstract class AuthFlowTest {
         app.validateApiRequest()
     }
 
+    /**
+     * Drives the "Upgrade to DPoP" affordance for the current user's existing Bearer session and
+     * validates the resulting DPoP-bound credential — same consumer key, new tokens, non-empty
+     * nonce, valid thumbprint. Mirrors [migrateAndValidate] but for the same-config, DPoP-only
+     * [com.salesforce.androidsdk.accounts.upgradeToDPoP] convenience rather than a full app
+     * migration, so it takes no target [KnownAppConfig]/scopes — the config is unchanged.
+     */
+    fun upgradeToDPoPAndValidate(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = user,
+        expectAdvancedAuth: Boolean = true,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+    ) {
+        val (preAccessToken, preRefreshToken) = app.getTokens()
+        app.upgradeToDPoP()
+        val (postAccessToken, postRefreshToken) = app.getTokens()
+
+        // Assert tokens are new.
+        assert(preAccessToken != postAccessToken)
+        assert(preRefreshToken != postRefreshToken)
+
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val appConfig = testConfig.getApp(knownAppConfig)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = true,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            wasMigrated = true,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
+        )
+
+        // The consumer key is unchanged — same app, only the DPoP binding changed.
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
+
+        // Assert the newly DPoP-bound tokens work. upgradeToDPoP delegates to the refresh-token
+        // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
+        // and persists across subsequent refreshes — the marker tracks the migration mechanism, not
+        // whether the connected app changed. Assert its presence.
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
+    }
+
     fun assertRevokeAndRefreshWorks(
         isRtr: Boolean,
         isDpop: Boolean = false,
@@ -661,6 +765,7 @@ abstract class AuthFlowTest {
         expectAdvancedAuth: Boolean = true,
         isMultiUser: Boolean = false,
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        wasMigrated: Boolean = false,
         isJwt: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
@@ -694,6 +799,7 @@ abstract class AuthFlowTest {
             expectedBMarker = expectedBMarker,
             expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
             expectedAMarker = expectedAMarker,
+            wasMigrated = wasMigrated,
             isJwt = isJwt,
         )
     }

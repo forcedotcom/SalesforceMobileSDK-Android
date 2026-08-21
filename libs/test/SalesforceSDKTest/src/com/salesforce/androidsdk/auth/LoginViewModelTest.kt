@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
@@ -46,7 +47,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -490,6 +494,208 @@ class LoginViewModelTest {
         viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
         assert(viewModel.pendingCredentialsIdentifier == null) {
             "Expected pendingCredentialsIdentifier to be null when useDPoP=false"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl() = runBlocking {
+        // dpop_jkt must be sent for pool servers when useDPoP=true.
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL for pool server when useDPoP=true, got: $url"
+        }
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
+    /**
+     * Regression guard for W-23836447: pool server login calls generateAuthorizationUrl multiple
+     * times (pool → my-domain redirect).  The dpop_jkt must remain stable across all calls so
+     * that the auth code's dpop_jkt binding and the subsequent token-exchange DPoP proof use the
+     * same key.
+     */
+    @Test
+    fun test_givenDPoPEnabled_whenGenerateAuthorizationUrlCalledTwice_thenDpopJktIsStable() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        // First call — simulates pool server issuing the initial /authorize redirect.
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val firstUrl = viewModel.loginUrl.value ?: ""
+        val firstThumbprint = firstUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val firstCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(firstThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after first generateAuthorizationUrl call, got empty"
+        }
+        assertNotNull("pendingCredentialsIdentifier must be set after first call", firstCredId)
+
+        // Second call — simulates the pool server redirecting to my-domain /authorize.
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
+        val secondUrl = viewModel.loginUrl.value ?: ""
+        val secondThumbprint = secondUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val secondCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(secondThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after second generateAuthorizationUrl call, got empty"
+        }
+        assertEquals(
+            "dpop_jkt must be stable across pool-server redirects (same key must be reused)",
+            firstThumbprint,
+            secondThumbprint,
+        )
+        assertEquals(
+            "pendingCredentialsIdentifier must be the same across pool-server redirects",
+            firstCredId,
+            secondCredId,
+        )
+    }
+
+    // endregion
+
+    // region dpopOverride (migration per-call DPoP intent) Tests
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideTrue_FlagOff_AddsDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride=true, even with the global useDPoP flag off, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideFalse_FlagOn_DoesNotAddDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.dpopOverride = false
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(!path.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in migration authorization path when dpopOverride=false, even with the global useDPoP flag on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideNull_FallsBackToGlobalFlag() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        // dpopOverride left at its default (null) — migration should fall back to the global flag,
+        // matching pre-existing migration behavior when no per-call intent is supplied.
+        assertNull(viewModel.dpopOverride)
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride is null and the global useDPoP flag is on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_ResetsDpopOverride_AfterUrlIsBuilt() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assertNull(
+            "dpopOverride must be reset to null once the migration URL is built, so it never " +
+                "leaks into a later, unrelated login on this shared view model",
+            viewModel.dpopOverride,
+        )
+    }
+
+    @Test
+    fun generateAuthorizationUrl_AfterMigrationResetsDpopOverride_GatesPurelyOnGlobalFlag() = runBlocking {
+        // Proves the real A-3 guarantee: normal login never sets dpopOverride itself, so under
+        // the documented contract (generateMigrationAuthorizationPath always resets it to null
+        // once its URL is built) a subsequent generateAuthorizationUrl call on the same shared
+        // view model sees dpopOverride == null and gates dpop_jkt purely on the global flag. Both
+        // calls target a MY-DOMAIN server (not a pool host), so dpop_jkt would be added here if
+        // any stale override leaked through — a pool-host server would strip it either way and
+        // make the assertion pass for the wrong reason.
+        val migrationSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { migrationSdkManagerMock.useHybridAuthentication } returns false
+        every { migrationSdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = migrationSdkManagerMock,
+        )
+        assertNull(viewModel.dpopOverride)
+
+        val loginSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { loginSdkManagerMock.isDebugBuild } returns false
+        every { loginSdkManagerMock.useHybridAuthentication } returns false
+        every { loginSdkManagerMock.isBrowserLoginEnabled } returns false
+        every { loginSdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { loginSdkManagerMock.debugOverrideAppConfig } returns null
+        every { loginSdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", loginSdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(!url.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in normal-login authorization URL after a prior migration call " +
+                "reset dpopOverride, got: $url"
         }
     }
 
@@ -1471,6 +1677,83 @@ class LoginViewModelTest {
             )
         } finally {
             sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    /**
+     * Builds a [LoginViewModel] whose [SalesforceSDKManager] is a spy that
+     * reports the app is using Native Login, so the WebView LoginActivity is
+     * the dismissible fallback, then runs [block] against it. The spy also
+     * reports no authenticated users, so the fallback scenario is deterministic
+     * regardless of any account state other suite tests leave on the shared
+     * SalesforceSDKManager singleton. [configureSpy] may further stub the spy
+     * (e.g. a locked biometric manager) before the view model is constructed.
+     * The object mock is always torn down.
+     */
+    private fun withNativeLoginFallbackViewModel(
+        configureSpy: (SalesforceSDKManager) -> Unit = {},
+        block: (LoginViewModel) -> Unit,
+    ) {
+        val spySdkManager = spyk(SalesforceSDKManager.getInstance())
+        // Any non-null Activity class works; only nativeLoginActivity's
+        // nullness gates the fallback, and its concrete type is never read.
+        every { spySdkManager.nativeLoginActivity } returns LoginActivity::class.java
+        // Pin the no-authenticated-users precondition on the spy rather than
+        // asserting on the shared singleton, which sibling tests can pollute.
+        every { spySdkManager.userAccountManager.authenticatedUsers } returns emptyList()
+        configureSpy(spySdkManager)
+        mockkObject(SalesforceSDKManager)
+        try {
+            every { SalesforceSDKManager.getInstance() } returns spySdkManager
+            block(
+                LoginViewModel(
+                    bootConfig = bootConfig,
+                    backgroundContext = testDispatcher,
+                )
+            )
+        } finally {
+            unmockkObject(SalesforceSDKManager)
+        }
+    }
+
+    /**
+     * When the app uses Native Login, the WebView LoginActivity is a
+     * dismissible fallback whose hardware-back already finishes and returns to
+     * the native login activity. The visible back affordance must be shown to
+     * match — even with no authenticated users — so the user is never stranded
+     * on the fallback WebView.
+     */
+    @Test
+    fun test_shouldShowBackButton_isTrueForNativeLoginFallbackWithNoUsers() {
+        withNativeLoginFallbackViewModel { nativeLoginViewModel ->
+            assertTrue(
+                "Back button must be shown for the Native Login WebView fallback.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
+        }
+    }
+
+    /**
+     * The Native Login fallback back affordance must still yield to the
+     * biometric lock — a locked user must authenticate rather than navigate
+     * back. The helper pins the no-authenticated-users precondition, so the
+     * only branch that could show the button is the Native Login one, proving
+     * the biometric lock takes precedence over it.
+     */
+    @Test
+    fun test_shouldShowBackButton_isFalseForNativeLoginFallbackWhenBiometricLocked() {
+        val lockedBioAuthManager = mockk<BiometricAuthenticationManager> {
+            every { locked } returns true
+        }
+        withNativeLoginFallbackViewModel(
+            configureSpy = { spy ->
+                every { spy.biometricAuthenticationManager } returns lockedBioAuthManager
+            },
+        ) { nativeLoginViewModel ->
+            assertFalse(
+                "Back button must remain hidden while biometric-locked, even for Native Login.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
         }
     }
 

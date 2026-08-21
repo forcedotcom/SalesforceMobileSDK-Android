@@ -99,6 +99,7 @@ public class UserAccount {
 	public static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
 	public static final String SID_COOKIE_NAME = "sidCookieName";
 	public static final String CLIENT_ID = "clientId";
+	public static final String REDIRECT_URI = "redirectUri";
 	public static final String PARENT_SID = "parentSid";
 	public static final String TOKEN_FORMAT = "tokenFormat";
 	public static final String BEACON_CHILD_CONSUMER_KEY = "auto_installed_app_org_consumer_key";
@@ -149,6 +150,7 @@ public class UserAccount {
 	private String cookieSidClient;
 	private String sidCookieName;
 	private String clientId;
+	private String redirectUri;
 	private String parentSid;
 	private String tokenFormat;
 	private Map<String, String> additionalOauthValues;
@@ -194,6 +196,7 @@ public class UserAccount {
 	 * @param cookieSidClient           cookie sid client
 	 * @param sidCookieName             sid cookie name
 	 * @param clientId                  oauth client id
+	 * @param redirectUri               oauth redirect uri
 	 * @param parentSid                 parent sid
 	 * @param tokenFormat               token format
 	 * @param beaconChildConsumerKey    beacon child consumer key
@@ -210,7 +213,7 @@ public class UserAccount {
 				String lightningDomain, String lightningSid, String vfDomain, String vfSid,
 				String  contentDomain, String contentSid, String csrfToken, Boolean nativeLogin,
 				String language, String locale, String cookieClientSrc, String cookieSidClient,
-				String sidCookieName, String clientId, String parentSid, String tokenFormat,
+				String sidCookieName, String clientId, String redirectUri, String parentSid, String tokenFormat,
 				String beaconChildConsumerKey, String beaconChildConsumerSecret, String apiInstanceServer, String scope) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
@@ -245,6 +248,7 @@ public class UserAccount {
 		this.cookieSidClient = cookieSidClient;
 		this.sidCookieName = sidCookieName;
 		this.clientId = clientId;
+		this.redirectUri = redirectUri;
 		this.parentSid = parentSid;
 		this.tokenFormat = tokenFormat;
 		this.beaconChildConsumerKey = beaconChildConsumerKey;
@@ -296,6 +300,7 @@ public class UserAccount {
 			cookieSidClient = object.optString(COOKIE_SID_CLIENT, null);
 			sidCookieName = object.optString(SID_COOKIE_NAME, null);
 			clientId = object.optString(CLIENT_ID, null);
+			redirectUri = object.optString(REDIRECT_URI, null);
 			parentSid = object.optString(PARENT_SID, null);
 			tokenFormat = object.optString(TOKEN_FORMAT, null);
 			beaconChildConsumerKey = object.optString(BEACON_CHILD_CONSUMER_KEY, null);
@@ -356,6 +361,7 @@ public class UserAccount {
 			cookieSidClient = bundle.getString(COOKIE_SID_CLIENT);
 			sidCookieName = bundle.getString(SID_COOKIE_NAME);
 			clientId = bundle.getString(CLIENT_ID);
+			redirectUri = bundle.getString(REDIRECT_URI);
 			parentSid = bundle.getString(PARENT_SID);
 			tokenFormat = bundle.getString(TOKEN_FORMAT);
 			beaconChildConsumerKey = bundle.getString(BEACON_CHILD_CONSUMER_KEY);
@@ -704,6 +710,15 @@ public class UserAccount {
 	 */
 	public String getClientId() {
 		return clientId;
+	}
+
+	/**
+	 * Returns the oauth redirect uri.
+	 *
+	 * @return redirect uri.
+	 */
+	public String getRedirectUri() {
+		return redirectUri;
 	}
 
 	/**
@@ -1116,6 +1131,7 @@ public class UserAccount {
 			object.put(COOKIE_CLIENT_SRC, cookieClientSrc);
 			object.put(COOKIE_SID_CLIENT, cookieSidClient);
 			object.put(SID_COOKIE_NAME, sidCookieName);
+			object.put(REDIRECT_URI, redirectUri);
 			object.put(PARENT_SID, parentSid);
 			object.put(TOKEN_FORMAT, tokenFormat);
 			object.put(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);
@@ -1185,6 +1201,7 @@ public class UserAccount {
 		object.putString(COOKIE_SID_CLIENT, cookieSidClient);
 		object.putString(SID_COOKIE_NAME, sidCookieName);
 		object.putString(CLIENT_ID, clientId);
+		object.putString(REDIRECT_URI, redirectUri);
 		object.putString(PARENT_SID, parentSid);
 		object.putString(TOKEN_FORMAT, tokenFormat);
 		object.putString(BEACON_CHILD_CONSUMER_KEY, beaconChildConsumerKey);

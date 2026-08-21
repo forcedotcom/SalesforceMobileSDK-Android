@@ -33,6 +33,7 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -83,4 +84,18 @@ fun testECAJwt_SubsetScopes_NotHybrid() {
 fun testECAJwt_AllScopes() {
         loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
+
+    // region ECA Pool Server Tests
+
+    // Login via the pool server without DPoP and verify the session is valid.
+    //
+    // Skipped: loginPoolHost not yet provisioned in CI ui_test_config.json.
+    // Re-enable once the key is added and the CI environment can reach the pool server.
+    @Ignore("loginPoolHost not provisioned in CI config — add the key and re-enable")
+    @Test
+    fun testECAJwt_ViaLoginPoolServer() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useLoginPoolHost = true)
+    }
+
+    // endregion
 }
