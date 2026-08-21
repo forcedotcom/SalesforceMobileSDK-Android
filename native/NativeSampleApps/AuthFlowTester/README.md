@@ -51,7 +51,7 @@ External Client App (ECA) login tests for both opaque and JWT token formats with
 | `testECAJwt_AllScopes` | ECA JWT | All |
 
 #### DPoPLoginTests
-All DPoP tests live here — basic login, RTR, multi-user, migration, server enforcement, upgrade, restart, pool server, and admin login. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. DPoP is toggled on via `LoginOptions` before each login; `cleanup()` resets it to `false` after each test. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
+All DPoP tests live here — basic login, RTR, multi-user, migration, server enforcement, upgrade, restart, pool server, and admin login. Verifies that DPoP-bound access tokens are issued (`token_type: "DPoP"`), API calls succeed with `ath`-bound proofs, the access token refreshes correctly, and the DPoP nonce rotates on every `/token` response. As of Mobile SDK 14, DPoP defaults **on** for new logins (`SalesforceSDKManager.useDPoP` defaults to `true`), so `cleanup()` resets it to `true` after each test; turning it off is the explicit Bearer compatibility path (see `LegacyLoginTests`). Tests that need a specific posture set it via `LoginOptions` before each login. All DPoP tests use the `regular_auth` login host (sdb38) — DPoP is an ECA property, not an org property.
 
 | Test | App Config | Hybrid | Notes |
 |------|-----------|--------|-------|
@@ -362,7 +362,7 @@ The Login Options screen allows you to override the default boot config for the 
 - **Web Server Flow toggle** — enable or disable the web server OAuth flow (default: on). When off, the user agent flow is used.
 - **Hybrid Auth Token toggle** — enable or disable hybrid authentication tokens (default: on).
 - **Override Boot Config toggle** — when enabled, exposes fields to enter a custom **Consumer Key**, **Redirect URI**, and **Scopes** (space-separated). Tap **Save** to apply. This lets you test different app configurations (CA, ECA, Beacon) without rebuilding the app.
-- **Use DPoP toggle** — enable or disable DPoP (Demonstrating Proof of Possession) for the current login attempt (default: off). When on, the SDK generates an EC P-256 key pair in AndroidKeyStore and attaches DPoP proof JWTs at token exchange and on every API call. Only meaningful when logging in with a DPoP-enabled ECA.
+- **Use DPoP toggle** — enable or disable DPoP (Demonstrating Proof of Possession) for the current login attempt. As of Mobile SDK 14 this defaults **on** (the toggle initializes from `SalesforceSDKManager.useDPoP`, which now defaults to `true`); turn it off for the Bearer compatibility path. When on, the SDK generates an EC P-256 key pair in AndroidKeyStore and attaches DPoP proof JWTs at token exchange and on every API call. Only meaningful when logging in with a DPoP-enabled ECA.
 - **Discovery Result Editor toggle** — when enabled, exposes fields to simulate a Welcome Discovery result by entering a **Login Host** and **Username**. Tap **Save** to arm the simulated discovery result for the next login attempt. This simulates receiving a discovery callback without requiring email verification.
 
 ### Change Server

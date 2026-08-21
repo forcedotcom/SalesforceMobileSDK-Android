@@ -456,11 +456,14 @@ open class SalesforceSDKManager protected constructor(
     var clearCookiesAfterLogin = true
 
     /**
-     * Opt-in flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449).
-     * Controls whether *new logins* initiate DPoP key generation and DPoP-bound
-     * token requests: when true, the SDK attaches a DPoP proof JWT to token
-     * endpoint requests and uses the `DPoP` Authorization scheme for resource
-     * requests when the token endpoint advertises `token_type: DPoP`.
+     * Flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449). Defaults
+     * to true as of Mobile SDK 14. Controls whether *new logins* initiate DPoP
+     * key generation and DPoP-bound token requests: when true, the SDK attaches
+     * a DPoP proof JWT to token endpoint requests and uses the `DPoP`
+     * Authorization scheme for resource requests when the token endpoint
+     * advertises `token_type: DPoP`. Changing this flag only affects logins
+     * that happen after the change; it does not retroactively affect existing
+     * credentials.
      *
      * NOTE: This flag does NOT affect credentials that are already DPoP-bound.
      * An existing DPoP credential continues to send DPoP proofs on every request
@@ -470,7 +473,7 @@ open class SalesforceSDKManager protected constructor(
      * the credential must be re-authenticated as Bearer.
      */
     @get:JvmName("isUseDPoP")
-    var useDPoP: Boolean = false
+    var useDPoP: Boolean = true
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.
