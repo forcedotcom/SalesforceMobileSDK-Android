@@ -35,7 +35,6 @@ import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.ui.TokenMigrationActivity
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
-import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.launch
@@ -270,19 +269,17 @@ fun UserAccountManager.downgradeFromDPoP(
     // Capture the pre-migration credentials identifier now: migration mints a NEW identifier for
     // the account, so reading userAccount.credentialsIdentifier after the migration completes
     // would return the wrong (or a null) value. This is what obsolete-DPoP-state cleanup below is
-    // keyed on.
+    // keyed on. The account is guaranteed DPoP-bound here (the non-DPoP case returned early above),
+    // so cleanup always applies on success.
     val oldCredId = userAccount.credentialsIdentifier
-    val wasDPoPBound = userAccount.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE
 
     val onSuccessWithCleanup: (userAccount: UserAccount) -> Unit = { migratedUser ->
-        if (wasDPoPBound) {
-            oldCredId?.takeIf { it.isNotEmpty() }?.let { id ->
-                runCatching {
-                    DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
-                    DPoPNonceCache.clear(id)
-                }.onFailure { e ->
-                    w(TAG, "Failed to delete obsolete DPoP state on downgrade", e)
-                }
+        oldCredId?.takeIf { it.isNotEmpty() }?.let { id ->
+            runCatching {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                DPoPNonceCache.clear(id)
+            }.onFailure { e ->
+                SalesforceSDKLogger.w(TAG, "Failed to delete obsolete DPoP state on downgrade", e)
             }
         }
         onSuccess(migratedUser)
