@@ -30,9 +30,12 @@ import android.content.Intent
 import com.salesforce.androidsdk.accounts.UserAccountManager.getInstance
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.ui.TokenMigrationActivity
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.launch
@@ -147,6 +150,9 @@ fun UserAccountManager.migrateRefreshToken(
  * null-check failure below runs on the caller's thread, but the OAuth-config resolution and
  * migration below it run on [Default]. Callers that touch UI from these callbacks must marshal
  * to the main thread themselves.
+ *
+ * No-op: if [userAccount] is already DPoP-bound, there's nothing to upgrade — [onSuccess] is
+ * invoked synchronously with the unchanged account and no migration is attempted.
  */
 @Suppress("UnusedReceiverParameter")
 fun UserAccountManager.upgradeToDPoP(
@@ -154,6 +160,11 @@ fun UserAccountManager.upgradeToDPoP(
     onSuccess: (userAccount: UserAccount) -> Unit,
     onFailure: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
 ) {
+    if (userAccount.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE) {
+        onSuccess(userAccount)
+        return
+    }
+
     val clientId = userAccount.clientId
     val loginServer = userAccount.loginServer
 
@@ -193,6 +204,119 @@ fun UserAccountManager.upgradeToDPoP(
                     appConfig = appConfig,
                     useDPoP = true,
                     onMigrationSuccess = onSuccess,
+                    onMigrationError = onFailure,
+                )
+            },
+            onFailure = { e ->
+                val message = "Failed to resolve OAuth configuration for login server."
+                SalesforceSDKLogger.e(TAG, message, e)
+                onFailure(message, e.message, e)
+            },
+        )
+    }
+}
+
+/**
+ * Downgrades the [userAccount]'s existing DPoP-bound refresh token to a Bearer (non-DPoP) one,
+ * in place — same consumer key, redirect URI, and scopes the account already uses. This is a
+ * same-config convenience over [migrateRefreshToken] with `useDPoP = false`: no re-consent is
+ * expected because nothing about the connected app / External Client App configuration changes.
+ *
+ * This works regardless of the global [SalesforceSDKManager.useDPoP] flag: that flag only sets
+ * the default DPoP posture for brand-new logins, while this call is an explicit action on an
+ * already-authenticated session — an app can leave the global flag on and still roll one user
+ * back to Bearer. The connected app / External Client App must accept Bearer tokens for the
+ * downgrade to succeed; a DPoP-enforcing app will reject the resulting session.
+ *
+ * On success, the pre-downgrade DPoP key pair and DPoP nonce-cache entries (keyed by the
+ * account's pre-migration [UserAccount.credentialsIdentifier], since migration mints a new one)
+ * are deleted — mirroring the teardown [SalesforceSDKManager] performs on logout. On failure or
+ * cancellation, that state is left untouched so the original DPoP-bound session keeps working.
+ *
+ * Callers wanting to migrate to a *different* consumer key, redirect URI, or scopes (or to
+ * explicitly upgrade a Bearer session to DPoP) should call [migrateRefreshToken] directly with
+ * their own [OAuthConfig] and `useDPoP` value, or see [upgradeToDPoP].
+ *
+ * Note: [onFailure] (and [onSuccess]) may be invoked off the main thread — the synchronous
+ * null-check failure below runs on the caller's thread, but the OAuth-config resolution and
+ * migration below it run on [Default]. Callers that touch UI from these callbacks must marshal
+ * to the main thread themselves.
+ *
+ * No-op: if [userAccount] is already Bearer (non-DPoP), there's nothing to downgrade —
+ * [onSuccess] is invoked synchronously with the unchanged account, no migration is attempted,
+ * and no DPoP state cleanup runs (there's none to clean up).
+ */
+@Suppress("UnusedReceiverParameter")
+fun UserAccountManager.downgradeFromDPoP(
+    userAccount: UserAccount,
+    onSuccess: (userAccount: UserAccount) -> Unit,
+    onFailure: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
+) {
+    if (userAccount.tokenType != DPoPKeyManager.DPOP_TOKEN_TYPE) {
+        onSuccess(userAccount)
+        return
+    }
+
+    val clientId = userAccount.clientId
+    val loginServer = userAccount.loginServer
+
+    if (clientId == null || loginServer == null) {
+        val message = "User account clientId or loginServer is null."
+        SalesforceSDKLogger.e(TAG, message)
+        onFailure(message, null, null)
+        return
+    }
+
+    // Capture the pre-migration credentials identifier now: migration mints a NEW identifier for
+    // the account, so reading userAccount.credentialsIdentifier after the migration completes
+    // would return the wrong (or a null) value. This is what obsolete-DPoP-state cleanup below is
+    // keyed on.
+    val oldCredId = userAccount.credentialsIdentifier
+    val wasDPoPBound = userAccount.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE
+
+    val onSuccessWithCleanup: (userAccount: UserAccount) -> Unit = { migratedUser ->
+        if (wasDPoPBound) {
+            oldCredId?.takeIf { it.isNotEmpty() }?.let { id ->
+                runCatching {
+                    DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                    DPoPNonceCache.clear(id)
+                }.onFailure { e ->
+                    w(TAG, "Failed to delete obsolete DPoP state on downgrade", e)
+                }
+            }
+        }
+        onSuccess(migratedUser)
+    }
+
+    // Prefer the redirect URI persisted on the account at login time: it's the exact value the
+    // connected app / External Client App was configured with for this user, and it doesn't
+    // change over time. Only fall back to resolving the OAuth configuration for the user's login
+    // server (debug override, per-host app config, or boot config) for accounts persisted before
+    // redirect URI was captured on UserAccount. Either way, keep the user's own consumer key and
+    // scopes so the downgrade is a true same-config, in-place operation.
+    CoroutineScope(Default).launch {
+        runCatching {
+            val persistedRedirectUri = userAccount.redirectUri
+            val redirectUri = if (!persistedRedirectUri.isNullOrBlank()) {
+                persistedRedirectUri
+            } else {
+                SalesforceSDKManager.getInstance()
+                    .resolveOAuthConfigForLoginServer(loginServer)
+                    .redirectUri
+            }
+
+            OAuthConfig(
+                consumerKey = clientId,
+                redirectUri = redirectUri,
+                scopes = userAccount.scope?.toScopeParser()?.scopes?.toList(),
+            )
+        }.fold(
+            onSuccess = { appConfig ->
+                migrateRefreshToken(
+                    userAccount = userAccount,
+                    appConfig = appConfig,
+                    useDPoP = false,
+                    onMigrationSuccess = onSuccessWithCleanup,
                     onMigrationError = onFailure,
                 )
             },

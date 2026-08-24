@@ -58,6 +58,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
+import com.salesforce.samples.authflowtester.DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_TOKEN_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_USER_RADIO_CONTENT_DESC
 import com.salesforce.samples.authflowtester.UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC
@@ -471,6 +472,46 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         // Tap the "Upgrade to DPoP" button.
         waitForNode(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
         composeTestRule.onNodeWithContentDescription(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
+
+        // Wait for migration to complete and the sheet to auto-dismiss (see migrateToNewApp
+        // for the rationale behind the close-button fallback).
+        val closeDesc = getString(R.string.close_content_description)
+        try {
+            waitForNodeGone(closeDesc)
+        } catch (_: Exception) {
+            composeTestRule.onNodeWithContentDescription(closeDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            composeTestRule.waitForIdle()
+            waitForNodeGone(closeDesc)
+        }
+
+        // Wait for the app UI to refresh with new token data.
+        waitForAppLoad()
+    }
+
+    /**
+     * Opens the migration bottom sheet and taps "Downgrade from DPoP" for the current user — an
+     * in-place downgrade of the existing connected app (same consumer key/redirect URI/scopes)
+     * back to Bearer, independent of [SalesforceSDKManager.useDPoP]. No consent screen is
+     * expected because the consumer key, redirect URI, and scopes are unchanged, but
+     * [AuthorizationPageObject.tapAllowAfterMigration] is still consulted to tolerate a stray
+     * consent screen rather than asserting its strict absence. Mirrors [upgradeToDPoP] with the
+     * inverse button.
+     */
+    fun downgradeFromDPoP() {
+        // Tap "Migrate Access Token" bottom bar icon to open the sheet.
+        val migrateDesc = getString(R.string.migrate_access_token)
+        waitForNode(migrateDesc)
+        composeTestRule.onNodeWithContentDescription(migrateDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeTestRule.waitForIdle()
+
+        // Tap the "Downgrade from DPoP" button.
+        waitForNode(DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC)
             .performSemanticsAction(SemanticsActions.OnClick)
 
         AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()

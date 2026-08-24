@@ -34,6 +34,9 @@
     <string name="upgrade_to_dpop_title">Upgrade to DPoP</string>
     <string name="upgrade_to_dpop_description">Bind this user\'s existing refresh token to DPoP in place, using their current connected app, redirect URI, and scopes. No new consent is required.</string>
     <string name="upgrade_to_dpop_button">Upgrade to DPoP</string>
+    <string name="downgrade_from_dpop_title">Downgrade from DPoP</string>
+    <string name="downgrade_from_dpop_description">Roll this user\'s existing DPoP-bound refresh token back to Bearer in place, using their current connected app, redirect URI, and scopes. No new consent is required.</string>
+    <string name="downgrade_from_dpop_button">Downgrade from DPoP</string>
     <string name="change_connected_app_title">Change Connected App</string>
 
     <!-- BaseComponents -->
