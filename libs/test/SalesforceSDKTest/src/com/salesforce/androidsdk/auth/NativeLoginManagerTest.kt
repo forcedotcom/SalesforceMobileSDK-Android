@@ -470,7 +470,7 @@ class NativeLoginManagerTest {
         verifyLoginRequestAuthorizationHeader(restClient, "Basic $expectedCreds")
     }
 
-    // region Helpers used by attestation tests
+    // region Helpers used by attestation and Authorization-header tests
 
     /**
      * Verifies that the REST client received a login request with the expected
@@ -505,7 +505,8 @@ class NativeLoginManagerTest {
      * `Authorization` header matches the expected value.
      *
      * @param restClient The REST client mock to verify
-     * @param expectedAuthorizationHeader The expected `Authorization` header value
+     * @param expectedAuthorizationHeader The expected `Authorization` header
+     * value
      */
     private fun verifyLoginRequestAuthorizationHeader(
         restClient: RestClient,
@@ -560,7 +561,7 @@ class NativeLoginManagerTest {
             restClient = restClient,
         )
 
-    // endregion Helpers used by attestation tests
+    // endregion Helpers used by attestation and Authorization-header tests
 
     private fun addUserAccount() {
         UserAccountManager.getInstance().createAccount(UserAccountTest.createTestAccount())
