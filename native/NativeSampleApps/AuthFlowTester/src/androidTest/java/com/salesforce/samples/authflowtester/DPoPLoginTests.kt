@@ -226,6 +226,21 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // endregion
 
+    // region DPoP Downgrade Tests
+
+    // In-place downgrade: a DPoP-bound session on an unenforced ECA is rolled back to Bearer via
+    // the "Downgrade from DPoP" affordance, with the process-wide DPoP flag left ON the entire
+    // time. Proves the migration re-auth honors the per-call intent (LoginViewModel.dpopOverride)
+    // rather than SalesforceSDKManager.useDPoP, and that no re-consent is needed since the
+    // consumer key/redirect URI/scopes are unchanged.
+    @Test
+    fun testDowngrade_DPoP_InPlace_ToBearer() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useDPoP = true)
+        downgradeFromDPoPAndValidate(knownAppConfig = ECA_JWT)
+    }
+
+    // endregion
+
     // region DPoP Restart Tests
 
     /**

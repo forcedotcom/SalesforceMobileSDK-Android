@@ -69,8 +69,23 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         skipGoogleSignIn()
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         setUsername(username)
-        tapLogin()
+        // A combined Salesforce My Domain page renders username + password on ONE screen, so the
+        // password field is already present after typing the username. A two-step flow instead
+        // shows a username-only page and needs a Log In tap to advance to the password page.
+        // Only tap to advance in the two-step case: tapping Log In on a combined page submits an
+        // empty password, which triggers the client-side "Please enter your password" error and
+        // re-renders the form (previously this stray tap, combined with setPassword grabbing the
+        // first text field, caused the password to be typed into the username field).
+        val passwordAlreadyVisible = device
+            .findObject(UiSelector().className("android.widget.EditText").instance(1))
+            .waitForExists(QUICK_CHECK_TIMEOUT_MS)
+        if (!passwordAlreadyVisible) tapLogin()
         setPassword(password)
+        // On the combined page the Log In button sits directly below the password field, so the
+        // soft keyboard raised by setPassword covers it — a tap would land on the keyboard instead
+        // of the button and the form would never submit. Dismiss the keyboard first (Back closes
+        // the IME without leaving the Custom Tab) so the button is on-screen and clickable.
+        dismissKeyboard()
         tapLogin()
         // Under forced advanced authentication every login completes in the Custom Tab, so the
         // OAuth approval page is always rendered there regardless of the configured host.
@@ -176,8 +191,16 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     }
 
     override fun setPassword(password: String) {
+        // resourceId("password") never resolves inside Chrome (HTML element IDs are not Android
+        // resource IDs — see setUsername), so the field must be located by position. The password
+        // input is the 2nd text field on a combined username+password page, or the only field on a
+        // two-step page's password screen. Prefer instance(1) (combined page) and fall back to
+        // instance(0) (two-step). Using instance(0) unconditionally would target the USERNAME field
+        // on a combined page, typing the password into it.
         val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(1))
+                .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
                 .also {
                     if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
@@ -198,6 +221,29 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
                     }
                 }
         loginButton.click()
+    }
+
+    /**
+     * Dismisses the soft keyboard if it is showing.
+     *
+     * Uses UiAutomator's [UiDevice.pressBack] (like [LoginOptionsPageObject]) rather than
+     * `Espresso.closeSoftKeyboard()`: the keyboard is raised over the Chrome Custom Tab, which runs
+     * in a separate process Espresso cannot reach. When the IME is visible, Back dismisses it
+     * without leaving the tab. The `dumpsys input_method` guard ensures we only press Back when the
+     * keyboard is actually shown, so this never accidentally navigates the tab when it is hidden.
+     */
+    private fun dismissKeyboard() {
+        // Default to true if the shell probe fails: the only caller invokes this right after typing
+        // into the password field, so the keyboard is reliably up and dismissing it is safe.
+        val keyboardShown = runCatching {
+            device.executeShellCommand("dumpsys input_method")
+                .replace(" ", "")
+                .contains("mInputShown=true")
+        }.getOrDefault(true)
+        if (keyboardShown) {
+            device.pressBack()
+            device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
+        }
     }
 
     /**

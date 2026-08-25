@@ -779,6 +779,53 @@ abstract class AuthFlowTest {
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
+    /**
+     * Drives the "Downgrade from DPoP" affordance for the current user's existing DPoP-bound
+     * session and validates the resulting Bearer credential — same consumer key, new tokens, no
+     * DPoP nonce. Mirrors [upgradeToDPoPAndValidate] but for the inverse, same-config
+     * [com.salesforce.androidsdk.accounts.downgradeFromDPoP] convenience, so it takes no target
+     * [KnownAppConfig]/scopes — the config is unchanged.
+     */
+    fun downgradeFromDPoPAndValidate(
+        knownAppConfig: KnownAppConfig,
+        knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        knownUserConfig: KnownUserConfig = user,
+        expectAdvancedAuth: Boolean = true,
+        expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+    ) {
+        val (preAccessToken, preRefreshToken) = app.getTokens()
+        app.downgradeFromDPoP()
+        val (postAccessToken, postRefreshToken) = app.getTokens()
+
+        // Assert tokens are new.
+        assert(preAccessToken != postAccessToken)
+        assert(preRefreshToken != postRefreshToken)
+
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
+        val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        val appConfig = testConfig.getApp(knownAppConfig)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isDpop = false,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            wasMigrated = true,
+            isJwt = appConfig.issuesJwt,
+            isBeacon = appConfig.isBeacon,
+        )
+
+        // The consumer key is unchanged — same app, only the DPoP binding changed.
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
+
+        // Assert the newly Bearer tokens work with no DPoP proof. downgradeFromDPoP delegates to
+        // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is
+        // legitimately registered and persists across subsequent refreshes — the marker tracks the
+        // migration mechanism, not whether the connected app changed. Assert its presence.
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, wasMigrated = true, isJwt = appConfig.issuesJwt)
+    }
+
     fun assertRevokeAndRefreshWorks(
         isRtr: Boolean,
         isDpop: Boolean = false,

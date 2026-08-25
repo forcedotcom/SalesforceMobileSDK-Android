@@ -113,6 +113,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.downgradeFromDPoP
 import com.salesforce.androidsdk.accounts.migrateRefreshToken
 import com.salesforce.androidsdk.accounts.upgradeToDPoP
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -162,6 +163,7 @@ const val JWT_SECTION_CONTENT_DESC = "jwt_section"
 const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
 const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
 const val UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC = "upgrade_to_dpop_button"
+const val DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC = "downgrade_from_dpop_button"
 const val MIGRATE_USER_RADIO_CONTENT_DESC = "migrate_user_radio"
 const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
@@ -718,6 +720,71 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                         )
                     } else {
                         Text(text = stringResource(R.string.upgrade_to_dpop_button))
+                    }
+                }
+
+                // "Downgrade from DPoP": in-place downgrade of the selected user's own connected
+                // app back to Bearer, independent of SalesforceSDKManager.useDPoP — see
+                // UserAccountManager.downgradeFromDPoP. Inverse gate of the upgrade button above.
+                Text(
+                    text = stringResource(R.string.downgrade_from_dpop_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = (INNER_CARD_PADDING/2).dp),
+                )
+                Text(
+                    text = stringResource(R.string.downgrade_from_dpop_description),
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
+
+                Button(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = (INNER_CARD_PADDING/2).dp)
+                        .semantics { contentDescription = DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC },
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    enabled = alreadyDPoPBound && !migrateToDPoPInProgress && selectedUser != null,
+                    onClick = {
+                        val userToDowngrade = selectedUser ?: return@Button
+                        migrateToDPoPInProgress = true
+
+                        userAccountManager?.downgradeFromDPoP(
+                            userAccount = userToDowngrade,
+                            onSuccess = {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@AuthFlowTesterActivity,
+                                        resources.getString(R.string.migration_success),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                    migrateToDPoPInProgress = false
+                                    onDismiss.invoke()
+                                }
+                            },
+                            onFailure = { error, errorDesc, e ->
+                                runOnUiThread {
+                                    migrateToDPoPInProgress = false
+                                    migrateToDPoPError = error +
+                                            (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                            (e?.let { "\n\nThrowable: $it" } ?: "")
+                                }
+                            },
+                        )
+                    },
+                ) {
+                    if (migrateToDPoPInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
+                        )
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
+                        Text(
+                            text = stringResource(R.string.migration_in_progress),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    } else {
+                        Text(text = stringResource(R.string.downgrade_from_dpop_button))
                     }
                 }
 
