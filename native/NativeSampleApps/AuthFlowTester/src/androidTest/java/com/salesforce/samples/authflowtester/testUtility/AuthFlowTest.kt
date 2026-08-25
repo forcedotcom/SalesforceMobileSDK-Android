@@ -290,7 +290,13 @@ abstract class AuthFlowTest {
 
         ensureRegularAuthServer(expectCustomTab = forceAdvancedAuthentication, forceAdvancedAuthentication = forceAdvancedAuthentication)
 
-        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP ||
+        // SDK 14.0 defaults useDPoP=true. On the CA_OPAQUE all-defaults path the Login Options
+        // screen is otherwise skipped, so the OAuth URL built at app startup (with useDPoP=true)
+        // would contain dpop_jkt even for Bearer tests. Opening and dismissing Login Options
+        // triggers loginDevMenuReload, which causes LoginActivity to regenerate the URL with the
+        // current useDPoP=false value before login proceeds.
+        val needsDPoPUrlReset = !useDPoP && knownAppConfig == CA_OPAQUE && scopeSelection == EMPTY
+        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP || needsDPoPUrlReset ||
                 !forceAdvancedAuthentication || knownAppConfig != CA_OPAQUE ||
                 scopeSelection != EMPTY || useWelcomeDiscovery
 
