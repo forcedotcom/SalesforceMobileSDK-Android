@@ -66,6 +66,7 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr` | ECA JWT DPoP → ECA JWT DPoP RTR | — | Migrate from DPoP to DPoP+RTR |
 | `testLogin_DPoP_ECA_Without_DPoP_Fails` | ECA JWT DPoP | — | Server enforcement: DPoP-enforced ECA rejects login without DPoP (`useDPoP=false`); no account created |
 | `testUpgrade_NonDPoP_InPlace_ToDPoP` | ECA JWT → ECA JWT DPoP | — | Bearer → DPoP in-place upgrade; global `useDPoP` flag remains off; per-call `dpopOverride` triggers upgrade |
+| `testDowngrade_DPoP_InPlace_ToBearer` | ECA JWT | — | DPoP → Bearer in-place downgrade; session is established on the DPoP-optional ECA via per-call `useDPoP=true` (global flag stays on the whole time); downgrade deletes the obsolete DPoP key pair and nonce cache entry on success |
 | `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
 | `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | `@Ignore` (W-23864247 — pool login server rejects valid `dpop_jkt` token exchange) |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
