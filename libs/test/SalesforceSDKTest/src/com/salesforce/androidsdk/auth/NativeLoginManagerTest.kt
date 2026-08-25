@@ -14,6 +14,7 @@ import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
+import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
@@ -419,6 +420,56 @@ class NativeLoginManagerTest {
         verifyLoginRequestAttestation(restClient, expectedAttestationValue = null)
     }
 
+    /**
+     * Tests that [NativeLoginManager.login] builds the Basic-Auth
+     * `Authorization` header using the standard Base64 alphabet with padding
+     * (RFC 4648 §4, as required by RFC 7617), rather than the URL-safe
+     * alphabet.  The password below is chosen so that the colon-concatenated,
+     * UTF-8-encoded username:password bytes Base64-encode differently under
+     * the standard and URL-safe alphabets (contains `/` and requires `=`
+     * padding under the standard alphabet), so a regression back to
+     * URL-safe encoding would be caught.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_usesStandardBase64ForAuthorizationHeader() = runTest {
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_DIVERGING_USERNAME, TEST_DIVERGING_PASSWORD)
+        advanceUntilIdle()
+
+        val expectedCreds = java.util.Base64.getEncoder().encodeToString(
+            "$TEST_DIVERGING_USERNAME:$TEST_DIVERGING_PASSWORD".toByteArray()
+        )
+        verifyLoginRequestAuthorizationHeader(restClient, "Basic $expectedCreds")
+    }
+
+    /**
+     * Tests that [NativeLoginManager.submitPasswordlessAuthorizationRequest],
+     * which shares the same colon-concatenated Base64 encoding helper as
+     * [NativeLoginManager.login], also produces a standard-alphabet,
+     * padded Basic-Auth header rather than URL-safe encoding.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_submitPasswordlessAuthorizationRequest_usesStandardBase64ForAuthorizationHeader() = runTest {
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.submitPasswordlessAuthorizationRequest(
+            otp = TEST_DIVERGING_PASSWORD,
+            otpIdentifier = TEST_DIVERGING_USERNAME,
+            otpVerificationMethod = OtpVerificationMethod.Email
+        )
+        advanceUntilIdle()
+
+        val expectedCreds = java.util.Base64.getEncoder().encodeToString(
+            "$TEST_DIVERGING_USERNAME:$TEST_DIVERGING_PASSWORD".toByteArray()
+        )
+        verifyLoginRequestAuthorizationHeader(restClient, "Basic $expectedCreds")
+    }
+
     // region Helpers used by attestation tests
 
     /**
@@ -445,6 +496,24 @@ class NativeLoginManagerTest {
                     !bodyString.contains("attestation=")
                 }
                 pathMatches && attestationMatches
+            }, any())
+        }
+    }
+
+    /**
+     * Verifies that the REST client received a login request whose
+     * `Authorization` header matches the expected value.
+     *
+     * @param restClient The REST client mock to verify
+     * @param expectedAuthorizationHeader The expected `Authorization` header value
+     */
+    private fun verifyLoginRequestAuthorizationHeader(
+        restClient: RestClient,
+        expectedAuthorizationHeader: String
+    ) {
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                it.additionalHttpHeaders?.get("Authorization") == expectedAuthorizationHeader
             }, any())
         }
     }
@@ -513,5 +582,14 @@ class NativeLoginManagerTest {
         const val TEST_PASSWORD = "test123456"
         const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
         const val TEST_APP_ATTESTATION = "__TEST_APP_ATTESTATION__"
+
+        /**
+         * A username/password pair whose colon-concatenated, UTF-8-encoded
+         * bytes Base64-encode to a value containing `/` and requiring `=`
+         * padding under the standard alphabet, diverging from the URL-safe
+         * alphabet's output for the same bytes.
+         */
+        const val TEST_DIVERGING_USERNAME = "regdemouser501@salesforce.com"
+        const val TEST_DIVERGING_PASSWORD = "Winter2026!?!"
     }
 }
