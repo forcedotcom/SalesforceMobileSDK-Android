@@ -414,21 +414,23 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity, trying idUrlWithInstance first, then falling back to raw idUrl.
+ * Fetches user identity, trying [TokenEndpointResponse.idUrlWithInstance] first, then
+ * falling back to the raw [TokenEndpointResponse.idUrl].
  *
- * Attempt 1 — idUrlWithInstance: the instance / My Domain URL. Works for My Domain logins
- * and for pool-server logins where the org's My Domain is in the same environment as the
- * pool server (the My Domain accepts the token and the pool-server nonce supplied via
- * DPoPNonceCache.getAny).
+ * Two attempts are needed because Salesforce always puts the pool-server host
+ * (e.g. login.test1.pc-rnd.salesforce.com) in the `id` field of the token response,
+ * regardless of which server actually issued the token. [TokenEndpointResponse.idUrlWithInstance]
+ * corrects this by replacing the `id` host with the issuing server's host.
  *
- * Attempt 2 — raw idUrl (only when idUrl differs from idUrlWithInstance): fallback for
- * cross-environment pool-server DPoP logins where idUrlWithInstance points to a
- * production instance that rejects pool-server-issued tokens.
+ * Attempt 1 — [TokenEndpointResponse.idUrlWithInstance]: the instance / My Domain URL.
+ * Works for My Domain logins (token was issued by My Domain; calling the pool server with
+ * a My Domain-issued token returns Wrong_Org). Also works for pool-server logins in
+ * same-environment setups.
  *
- * Note: iOS uses raw idUrl exclusively (no idUrlWithInstance substitution). Android needs
- * idUrlWithInstance first because some pool-server login portals in test environments do
- * not serve the identity endpoint themselves — routing there fails, while the org's My
- * Domain (idUrlWithInstance) accepts both the token and the nonce.
+ * Attempt 2 — raw [TokenEndpointResponse.idUrl] (only when it differs from
+ * [TokenEndpointResponse.idUrlWithInstance]): fallback for pool-server DPoP logins where
+ * [TokenEndpointResponse.idUrlWithInstance] points to a production instance that returns
+ * Wrong_Org for pool-server-issued tokens.
  *
  * No token refresh is attempted: the access token was just issued by the login flow,
  * so it is valid by construction. A refresh would also be unsafe under Refresh Token
@@ -448,11 +450,6 @@ private suspend fun fetchUserIdentityWithRetry(
     return initial
 }
 
-/**
- * Calls the identity service using either [TokenEndpointResponse.idUrlWithInstance]
- * (My Domain / instance host) or the raw [TokenEndpointResponse.idUrl], as selected
- * by [fetchUserIdentityWithRetry].
- */
 private suspend fun fetchUserIdentity(
     tokenResponse: TokenEndpointResponse,
     useRawIdUrl: Boolean = false,
