@@ -51,12 +51,11 @@ object DPoPNonceCache {
     /**
      * Returns any cached nonce for the given credentials identifier, regardless of host.
      *
-     * This mirrors iOS `DPoPNonceCache.latest(forScope:)`. It is used as a fallback when
-     * the per-host lookup misses — for example, when calling the identity endpoint at the
-     * instance URL but the nonce was harvested at the token endpoint on a different host
-     * (e.g. a pool server or a non-My-Domain sandbox login URL).
+     * Used as a fallback when the per-host lookup misses — for example, when calling the
+     * identity endpoint at the instance URL but the nonce was harvested at the token
+     * endpoint on a different host (e.g. a pool server or a non-My-Domain sandbox login URL).
      */
-    fun getLatest(credentialsIdentifier: String): String? =
+    fun getAny(credentialsIdentifier: String): String? =
         cache.entries.firstOrNull { it.key.startsWith("$credentialsIdentifier|") }?.value
 
     fun store(credentialsIdentifier: String, host: String, nonce: String) {

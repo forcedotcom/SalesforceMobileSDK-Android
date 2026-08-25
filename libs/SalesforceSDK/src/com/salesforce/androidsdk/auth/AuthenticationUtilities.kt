@@ -134,14 +134,10 @@ internal suspend fun onAuthFlowComplete(
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
 
-    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity.
-    // When no override is provided, use fetchUserIdentityWithRetry, which matches iOS
-    // SFIdentityCoordinator behavior: on 401/403 from the identity endpoint, iOS refreshes
-    // the session and retries. The pool server sometimes returns "Wrong_Org" on the first
-    // identity call due to session-affinity issues; a refresh yields a new token that succeeds.
+    // Note: Can't use default parameter value for a suspended function parameter.
     val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
         fetchUserIdentity ?: { tr: TokenEndpointResponse ->
-            fetchUserIdentityWithRetry(tr, loginServer, consumerKey)
+            fetchUserIdentityWithRetry(tr)
         }
 
     if (blockIntegrationUser) {
@@ -418,58 +414,32 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity with up to two fallback attempts.
+ * Fetches user identity with a URL fallback for pool-server DPoP logins.
  *
- * Attempt 1 — idUrlWithInstance: works for regular My Domain logins (instance host
- * matches the token-exchange host, so the DPoP nonce is found and the instance accepts
- * the token).
+ * Attempt 1 — idUrlWithInstance: the normal path. Works for regular My Domain logins
+ * where the instance host matches the token-exchange host and the DPoP nonce is found.
  *
- * Attempt 2 — raw idUrl (when different from idUrlWithInstance): handles pool-server
+ * Attempt 2 — raw idUrl (only when different from idUrlWithInstance): pool-server DPoP
  * logins where idUrlWithInstance points to the production instance, which rejects
- * pool-server-issued DPoP tokens with "Bad_OAuth_Token". The raw idUrl uses the pool
- * server host, matching the nonce that was harvested at the token endpoint.
+ * pool-server-issued tokens. The raw idUrl uses the pool-server host, which matches
+ * the nonce harvested at the token endpoint and accepts the token.
  *
- * Attempt 3 — token refresh + retry: handles transient "Wrong_Org" routing failures
- * from the pool server. Mirrors iOS SFIdentityCoordinator, which refreshes on 401/403
- * from the identity endpoint and then retries.
+ * No token refresh is attempted: the access token was just issued by the login flow,
+ * so it is valid by construction. A refresh would also be unsafe under Refresh Token
+ * Rotation — consuming the fresh token and discarding the rotated replacement.
  */
 private suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
-    loginServer: String,
-    consumerKey: String,
 ): OAuth2.IdServiceResponse? {
-    // Attempt 1: idUrlWithInstance (regular My Domain logins).
     val initial = fetchUserIdentity(tokenResponse, useRawIdUrl = false)
     if (initial?.username != null) return initial
 
-    // Attempt 2: raw idUrl fallback (pool-server DPoP logins).
     if (!tokenResponse.idUrl.isNullOrEmpty() && tokenResponse.idUrl != tokenResponse.idUrlWithInstance) {
         val rawResult = fetchUserIdentity(tokenResponse, useRawIdUrl = true)
         if (rawResult?.username != null) return rawResult
     }
 
-    // Attempt 3: token refresh + retry (handles Wrong_Org pool server routing issues).
-    val refreshToken = tokenResponse.refreshToken ?: return initial
-    val refreshed = runCatching {
-        withContext(Default) {
-            OAuth2.refreshAuthToken(
-                HttpAccess.DEFAULT,
-                URI(loginServer),
-                consumerKey,
-                refreshToken,
-                null,
-                tokenResponse.credentialsIdentifier,
-                tokenResponse.tokenType,
-            )
-        }
-    }.onFailure { t ->
-        w(TAG, "Token refresh for identity retry failed.", t)
-    }.getOrNull() ?: return initial
-
-    // After refresh, try idUrl first (pool server) then idUrlWithInstance (regular).
-    val refreshedRaw = fetchUserIdentity(refreshed, useRawIdUrl = true)
-    if (refreshedRaw?.username != null) return refreshedRaw
-    return fetchUserIdentity(refreshed, useRawIdUrl = false)
+    return initial
 }
 
 /**
