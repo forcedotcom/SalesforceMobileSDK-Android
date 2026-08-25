@@ -414,15 +414,21 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity with a URL fallback for pool-server DPoP logins.
+ * Fetches user identity, trying idUrlWithInstance first, then falling back to raw idUrl.
  *
- * Attempt 1 — idUrlWithInstance: the normal path. Works for regular My Domain logins
- * where the instance host matches the token-exchange host and the DPoP nonce is found.
+ * Attempt 1 — idUrlWithInstance: works for My Domain logins where the DPoP nonce was
+ * issued at the My Domain host (which idUrlWithInstance resolves to). Also works for
+ * classic sandbox logins (test.salesforce.com idUrl) because the nonce is keyed to the
+ * My Domain / instance host, not the legacy id URL host.
  *
- * Attempt 2 — raw idUrl (only when different from idUrlWithInstance): pool-server DPoP
- * logins where idUrlWithInstance points to the production instance, which rejects
- * pool-server-issued tokens. The raw idUrl uses the pool-server host, which matches
- * the nonce harvested at the token endpoint and accepts the token.
+ * Attempt 2 — raw idUrl (only when idUrl differs from idUrlWithInstance): handles
+ * pool-server DPoP logins where the token and nonce were issued by the pool server.
+ * idUrlWithInstance substitutes the production instance host, which rejects pool-server
+ * tokens and has no matching nonce, so Attempt 1 fails and we retry with the raw idUrl.
+ *
+ * We cannot skip Attempt 1 and select the URL upfront based on idUrl != idUrlWithInstance
+ * because that condition also fires for classic-domain sandboxes (e.g. test.salesforce.com
+ * idUrl with a My Domain instanceUrl), where idUrlWithInstance is the correct URL.
  *
  * No token refresh is attempted: the access token was just issued by the login flow,
  * so it is valid by construction. A refresh would also be unsafe under Refresh Token
