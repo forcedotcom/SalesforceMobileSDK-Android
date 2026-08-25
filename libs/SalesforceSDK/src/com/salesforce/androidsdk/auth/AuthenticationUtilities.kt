@@ -416,21 +416,19 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 /**
  * Fetches user identity, trying idUrlWithInstance first, then falling back to raw idUrl.
  *
- * Attempt 1 — idUrlWithInstance: the instance / My Domain URL. Works for both My Domain
- * logins (nonce keyed to My Domain host = idUrlWithInstance host) and pool-server logins
- * in the same environment (e.g. login.test1.pc-rnd.salesforce.com tokens are accepted by
- * authflowtesting.test1.my.pc-rnd.salesforce.com; the per-host nonce lookup misses but
- * getAny supplies the pool-server nonce which that environment accepts).
+ * Attempt 1 — idUrlWithInstance: the instance / My Domain URL. Works for My Domain logins
+ * and for pool-server logins where the org's My Domain is in the same environment as the
+ * pool server (the My Domain accepts the token and the pool-server nonce supplied via
+ * DPoPNonceCache.getAny).
  *
  * Attempt 2 — raw idUrl (only when idUrl differs from idUrlWithInstance): fallback for
- * pool-server DPoP logins where idUrlWithInstance points to a different-environment
- * production instance that rejects pool-server-issued tokens. The raw idUrl host matches
- * the pool server and has the correct nonce.
+ * cross-environment pool-server DPoP logins where idUrlWithInstance points to a
+ * production instance that rejects pool-server-issued tokens.
  *
- * Upfront URL selection based on LoginServerManager.isPoolServer was investigated but
- * rejected: pool-server login portals do not serve identity endpoint requests themselves,
- * so routing there would silently break identity fetches for pool-server logins where
- * idUrlWithInstance (the org's My Domain) accepts the token and nonce.
+ * Note: iOS uses raw idUrl exclusively (no idUrlWithInstance substitution). Android needs
+ * idUrlWithInstance first because some pool-server login portals in test environments do
+ * not serve the identity endpoint themselves — routing there fails, while the org's My
+ * Domain (idUrlWithInstance) accepts both the token and the nonce.
  *
  * No token refresh is attempted: the access token was just issued by the login flow,
  * so it is valid by construction. A refresh would also be unsafe under Refresh Token
@@ -452,8 +450,8 @@ private suspend fun fetchUserIdentityWithRetry(
 
 /**
  * Calls the identity service using either [TokenEndpointResponse.idUrlWithInstance]
- * (My Domain / instance host) or the raw [TokenEndpointResponse.idUrl] (pool-server host),
- * as selected by [fetchUserIdentityWithRetry].
+ * (My Domain / instance host) or the raw [TokenEndpointResponse.idUrl], as selected
+ * by [fetchUserIdentityWithRetry].
  */
 private suspend fun fetchUserIdentity(
     tokenResponse: TokenEndpointResponse,
