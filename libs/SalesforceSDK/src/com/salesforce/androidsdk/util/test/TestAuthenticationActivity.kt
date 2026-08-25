@@ -31,6 +31,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
@@ -51,6 +52,9 @@ import com.salesforce.androidsdk.util.test.TestCredentials.PHOTO_URL
 import com.salesforce.androidsdk.util.test.TestCredentials.REFRESH_TOKEN
 import com.salesforce.androidsdk.util.test.TestCredentials.USERNAME
 import com.salesforce.androidsdk.util.test.TestCredentials.USER_ID
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * An activity that authenticates using credentials provided in the intent
@@ -107,25 +111,34 @@ class TestAuthenticationActivity : AppCompatActivity() {
         }
         userAccountManager.createAccount(account)
 
-        val clientManager = ClientManager(this, account)
-        if (clientManager.account == null) {
-            finish()
-            return
-        }
-        val authTokenProvider = AccMgrAuthTokenProvider(clientManager)
-        if (authTokenProvider.newAuthToken == null) {
-            finish()
-            return
-        }
-        userAccountManager.getUserFromOrgAndUserId(ORG_ID, USER_ID)?.downloadProfilePhoto()
+        lifecycleScope.launch {
+            val clientManager = ClientManager(this@TestAuthenticationActivity, account)
+            if (clientManager.account == null) {
+                finish()
+                return@launch
+            }
+            val authToken = withContext(IO) {
+                AccMgrAuthTokenProvider(clientManager).newAuthToken
+            }
+            if (authToken == null) {
+                finish()
+                return@launch
+            }
+            userAccountManager.getUserFromOrgAndUserId(ORG_ID, USER_ID)?.downloadProfilePhoto()
 
-        // Notify observers and select the newly authenticated user.
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-        userAccountManager.switchToUser(account)
+            // Notify observers and select the newly authenticated user.
+            userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+            userAccountManager.switchToUser(account)
 
-        startActivity(Intent(this, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-            setPackage(SalesforceSDKManager.getInstance().appContext.packageName)
-            flags = FLAG_ACTIVITY_NEW_TASK
-        })
+            startActivity(
+                Intent(
+                    this@TestAuthenticationActivity,
+                    SalesforceSDKManager.getInstance().mainActivityClass
+                ).apply {
+                    setPackage(SalesforceSDKManager.getInstance().appContext.packageName)
+                    flags = FLAG_ACTIVITY_NEW_TASK
+                }
+            )
+        }
     }
 }
