@@ -788,6 +788,7 @@ abstract class AuthFlowTest {
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
+        useLoginPoolHost: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -811,6 +812,11 @@ abstract class AuthFlowTest {
         } else {
             null
         }
+        val expectedLMarker = if (useLoginPoolHost) {
+            Features.FEATURE_LOGIN_SERVER_PRODUCTION
+        } else {
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        }
         app.validateUserAgent(
             knownLoginHostConfig = knownLoginHostConfig,
             expectAdvancedAuth = expectAdvancedAuth,
@@ -818,7 +824,7 @@ abstract class AuthFlowTest {
             isRtr = isRtr,
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
-            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedLMarker = expectedLMarker,
             expectedAMarker = expectedAMarker,
             wasMigrated = wasMigrated,
             isJwt = isJwt,

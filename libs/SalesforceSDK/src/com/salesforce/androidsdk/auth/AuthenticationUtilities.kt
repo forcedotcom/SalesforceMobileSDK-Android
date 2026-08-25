@@ -134,8 +134,15 @@ internal suspend fun onAuthFlowComplete(
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
 
-    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
-    val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
+    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity.
+    // When no override is provided, use fetchUserIdentityWithRetry, which matches iOS
+    // SFIdentityCoordinator behavior: on 401/403 from the identity endpoint, iOS refreshes
+    // the session and retries. The pool server sometimes returns "Wrong_Org" on the first
+    // identity call due to session-affinity issues; a refresh yields a new token that succeeds.
+    val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
+        fetchUserIdentity ?: { tr: TokenEndpointResponse ->
+            fetchUserIdentityWithRetry(tr, loginServer, consumerKey)
+        }
 
     if (blockIntegrationUser) {
         /*
@@ -411,16 +418,58 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
+ * Fetches user identity, retrying once with a refreshed token if the first attempt
+ * returns no username. Matches iOS SFIdentityCoordinator: on 401/403 from the identity
+ * endpoint iOS refreshes the session and retries. The pool server sometimes returns
+ * "Wrong_Org" on the first call due to session-affinity issues; a refresh yields a new
+ * token (and DPoP nonce) that succeeds at the identity endpoint.
+ */
+private suspend fun fetchUserIdentityWithRetry(
+    tokenResponse: TokenEndpointResponse,
+    loginServer: String,
+    consumerKey: String,
+): OAuth2.IdServiceResponse? {
+    val initial = fetchUserIdentity(tokenResponse)
+    if (initial?.username != null) return initial
+
+    val refreshToken = tokenResponse.refreshToken ?: return initial
+    val refreshed = runCatching {
+        withContext(Default) {
+            OAuth2.refreshAuthToken(
+                HttpAccess.DEFAULT,
+                URI(loginServer),
+                consumerKey,
+                refreshToken,
+                null,
+                tokenResponse.credentialsIdentifier,
+                tokenResponse.tokenType,
+            )
+        }
+    }.onFailure { t ->
+        w(TAG, "Token refresh for identity retry failed.", t)
+    }.getOrNull() ?: return initial
+
+    return fetchUserIdentity(refreshed)
+}
+
+/**
  * Helper method to fetch user identity from token response.
  */
 private suspend fun fetchUserIdentity(
     tokenResponse: TokenEndpointResponse
 ): OAuth2.IdServiceResponse? {
+    // Use the raw identity URL from the token response, not the instance-substituted URL.
+    // This matches iOS (SFIdentityCoordinator uses credentials.identityUrl directly).
+    // idUrlWithInstance replaces the login/pool-server host with the instance host, which
+    // causes the identity fetch to go to a different server than the one that issued the
+    // token. For DPoP-bound tokens in particular this breaks: the production instance's
+    // identity endpoint rejects DPoP tokens issued by a pool server with "Bad_OAuth_Token"
+    // because the token is only valid at the issuing server's identity endpoint.
     return runCatching {
         withContext(Default) {
             callIdentityService(
                 HttpAccess.DEFAULT,
-                tokenResponse.idUrlWithInstance,
+                tokenResponse.idUrl,
                 tokenResponse.authToken,
                 tokenResponse.tokenType,
                 tokenResponse.credentialsIdentifier,

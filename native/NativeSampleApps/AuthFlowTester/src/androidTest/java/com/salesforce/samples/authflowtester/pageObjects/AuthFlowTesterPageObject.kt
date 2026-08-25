@@ -316,7 +316,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         // Wait for the UI to update asynchronously after login or user switch.
         // The view may be recreated and collapsed when the current user state updates.
         try {
-            composeTestRule.waitUntil(TIMEOUT_MS) {
+            composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
                 try {
                     val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
                     val isVisible = nodes.isNotEmpty()
@@ -338,7 +338,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 }
             }
         } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
+            throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
         }
         assertEquals(expected.username, getText(USERNAME))
 
