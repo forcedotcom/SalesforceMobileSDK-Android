@@ -418,20 +418,37 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity, retrying once with a refreshed token if the first attempt
- * returns no username. Matches iOS SFIdentityCoordinator: on 401/403 from the identity
- * endpoint iOS refreshes the session and retries. The pool server sometimes returns
- * "Wrong_Org" on the first call due to session-affinity issues; a refresh yields a new
- * token (and DPoP nonce) that succeeds at the identity endpoint.
+ * Fetches user identity with up to two fallback attempts.
+ *
+ * Attempt 1 — idUrlWithInstance: works for regular My Domain logins (instance host
+ * matches the token-exchange host, so the DPoP nonce is found and the instance accepts
+ * the token).
+ *
+ * Attempt 2 — raw idUrl (when different from idUrlWithInstance): handles pool-server
+ * logins where idUrlWithInstance points to the production instance, which rejects
+ * pool-server-issued DPoP tokens with "Bad_OAuth_Token". The raw idUrl uses the pool
+ * server host, matching the nonce that was harvested at the token endpoint.
+ *
+ * Attempt 3 — token refresh + retry: handles transient "Wrong_Org" routing failures
+ * from the pool server. Mirrors iOS SFIdentityCoordinator, which refreshes on 401/403
+ * from the identity endpoint and then retries.
  */
 private suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
     consumerKey: String,
 ): OAuth2.IdServiceResponse? {
-    val initial = fetchUserIdentity(tokenResponse)
+    // Attempt 1: idUrlWithInstance (regular My Domain logins).
+    val initial = fetchUserIdentity(tokenResponse, useRawIdUrl = false)
     if (initial?.username != null) return initial
 
+    // Attempt 2: raw idUrl fallback (pool-server DPoP logins).
+    if (!tokenResponse.idUrl.isNullOrEmpty() && tokenResponse.idUrl != tokenResponse.idUrlWithInstance) {
+        val rawResult = fetchUserIdentity(tokenResponse, useRawIdUrl = true)
+        if (rawResult?.username != null) return rawResult
+    }
+
+    // Attempt 3: token refresh + retry (handles Wrong_Org pool server routing issues).
     val refreshToken = tokenResponse.refreshToken ?: return initial
     val refreshed = runCatching {
         withContext(Default) {
@@ -449,27 +466,28 @@ private suspend fun fetchUserIdentityWithRetry(
         w(TAG, "Token refresh for identity retry failed.", t)
     }.getOrNull() ?: return initial
 
-    return fetchUserIdentity(refreshed)
+    // After refresh, try idUrl first (pool server) then idUrlWithInstance (regular).
+    val refreshedRaw = fetchUserIdentity(refreshed, useRawIdUrl = true)
+    if (refreshedRaw?.username != null) return refreshedRaw
+    return fetchUserIdentity(refreshed, useRawIdUrl = false)
 }
 
 /**
- * Helper method to fetch user identity from token response.
+ * Calls the identity service using either the instance-substituted URL or the raw URL
+ * from the token response. The [useRawIdUrl] flag distinguishes pool-server fallback
+ * (raw idUrl = pool server host, nonce found) from the default path (idUrlWithInstance
+ * = instance/My Domain host, nonce found for regular logins).
  */
 private suspend fun fetchUserIdentity(
-    tokenResponse: TokenEndpointResponse
+    tokenResponse: TokenEndpointResponse,
+    useRawIdUrl: Boolean = false,
 ): OAuth2.IdServiceResponse? {
-    // Use the raw identity URL from the token response, not the instance-substituted URL.
-    // This matches iOS (SFIdentityCoordinator uses credentials.identityUrl directly).
-    // idUrlWithInstance replaces the login/pool-server host with the instance host, which
-    // causes the identity fetch to go to a different server than the one that issued the
-    // token. For DPoP-bound tokens in particular this breaks: the production instance's
-    // identity endpoint rejects DPoP tokens issued by a pool server with "Bad_OAuth_Token"
-    // because the token is only valid at the issuing server's identity endpoint.
+    val url = if (useRawIdUrl) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
     return runCatching {
         withContext(Default) {
             callIdentityService(
                 HttpAccess.DEFAULT,
-                tokenResponse.idUrl,
+                url,
                 tokenResponse.authToken,
                 tokenResponse.tokenType,
                 tokenResponse.credentialsIdentifier,

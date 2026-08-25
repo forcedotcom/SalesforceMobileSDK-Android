@@ -654,7 +654,14 @@ public class OAuth2 {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, HttpUrl.get(identityServiceIdUrl).host());
+                final String host = HttpUrl.get(identityServiceIdUrl).host();
+                String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
+                if (nonce == null) {
+                    // Fallback: use any nonce for this credential. Mirrors iOS latest(forScope:).
+                    // Needed when the identity URL host differs from the token-exchange host
+                    // (e.g. non-My-Domain sandbox: token at test.salesforce.com, identity at instance).
+                    nonce = DPoPNonceCache.INSTANCE.getLatest(credentialsIdentifier);
+                }
                 final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
                 builder.header(DPOP, proof);
             } catch (Exception e) {
