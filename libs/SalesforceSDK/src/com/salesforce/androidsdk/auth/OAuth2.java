@@ -655,13 +655,7 @@ public class OAuth2 {
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
                 final String host = HttpUrl.get(identityServiceIdUrl).host();
-                String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
-                if (nonce == null) {
-                    // Fallback: use any nonce for this credential when the identity URL host
-                    // differs from the token-exchange host (e.g. non-My-Domain sandbox: token
-                    // at test.salesforce.com, identity at instance host).
-                    nonce = DPoPNonceCache.INSTANCE.getAny(credentialsIdentifier);
-                }
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
                 final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
                 builder.header(DPOP, proof);
             } catch (Exception e) {
