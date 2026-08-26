@@ -2,7 +2,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:versionCode="94"
-    android:versionName="14.0.0.dev">
+    android:versionName="14.0.0-rc.0">
 
     <application>
         <activity android:name="com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity"
