@@ -93,6 +93,9 @@ import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 
 class LoginOptionsActivity: ComponentActivity() {
+    // This dev-menu toggle is the intended consumer of the deprecated web-server-auth flag, so
+    // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
+    @Suppress("DEPRECATION")
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
     val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
 

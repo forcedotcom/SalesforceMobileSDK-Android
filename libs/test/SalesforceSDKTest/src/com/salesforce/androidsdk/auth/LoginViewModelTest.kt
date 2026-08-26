@@ -213,7 +213,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun browserCustomTabUrl_UsesWebServerFlow_EvenWhenUserAgentFlowIsActive() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
@@ -270,7 +270,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun browserCustomTabUrl_UsesWebServerFlow_WhenForceFlagOnAndWebServerAuthDisabled() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
@@ -953,6 +953,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun generateAuthorizationUrl_ReleaseBuildIgnoresDebugOverrideAppConfig_OverAppConfigForLoginHost() {
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = false)
         val appConfigConsumerKey = "app_config_key_should_not_be_used"
@@ -1310,6 +1311,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun reloadWebView_WithUserAgentFlow_SetsAboutBlankFirst() {
         try {
             // Set to User Agent Flow (not Web Server Flow)
@@ -1344,6 +1346,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun reloadWebView_WithWebServerFlow_DoesNotSetAboutBlank() {
         assert(SalesforceSDKManager.getInstance().useWebServerAuthentication)
         // Ensure we're not using front door bridge
@@ -1423,6 +1426,7 @@ class LoginViewModelTest {
     // region useWebServerFlow Tests
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun useWebServerFlow_ReturnsTrue_WhenAppAttestationClientIsNotNull() {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.appAttestationClient } returns mockk()
@@ -1434,6 +1438,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun useWebServerFlow_ReturnsFalse_WhenNoAttestationAndWebServerAuthDisabled() {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.appAttestationClient } returns null
@@ -1445,6 +1450,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun useWebServerFlow_ReturnsTrue_WhenUseWebServerAuthenticationIsTrue() {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.useWebServerAuthentication } returns true
@@ -1456,6 +1462,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun useWebServerFlow_ReturnsTrue_WhenBrowserLoginIsEnabled() {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.useWebServerAuthentication } returns false
@@ -1467,6 +1474,7 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun useWebServerFlow_ReturnsTrue_WhenSingleServerCustomTabActivity() {
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.useWebServerAuthentication } returns false
