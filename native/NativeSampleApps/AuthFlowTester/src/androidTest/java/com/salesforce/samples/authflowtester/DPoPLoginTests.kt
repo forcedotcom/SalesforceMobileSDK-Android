@@ -289,6 +289,24 @@ class DPoPLoginTests : AuthFlowTest() {
         assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
+    // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
+    // This is a safety net for the RTR-unsafe credential-refresh pattern seen on iOS: if the
+    // identity fetch were to consume the refresh token (e.g. by triggering a credential refresh
+    // to resolve a Wrong_Org routing error), assertRevokeAndRefreshWorks below would fail because
+    // the refresh token would already be spent. Android's two-attempt URL strategy avoids that by
+    // resolving the routing problem with the still-valid access token, never touching the refresh
+    // token. W-23991713 tracks the equivalent iOS investigation.
+    @Test
+    fun testECAJwtDPoP_ViaLoginPoolServer_Rtr() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            useHybridAuthToken = false,
+            useDPoP = true,
+            useLoginPoolHost = true,
+        )
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+    }
+
     // endregion
 
     // region DPoP Login for Admins Tests
