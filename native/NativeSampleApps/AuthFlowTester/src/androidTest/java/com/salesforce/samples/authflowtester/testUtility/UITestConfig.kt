@@ -123,7 +123,8 @@ data class AppConfig(
 ) {
     val issuesJwt = name.contains("_jwt")
     val isBeacon = name.startsWith("beacon_")
-    val isRtr = name.contains("_rtr")
+    // W-23971480: beacon apps behave as RTR due to a server bug; drop the beacon_ clause when fixed
+    val isRtr = name.contains("_rtr") || name.startsWith("beacon_")
     val isDpop = name.contains("_dpop")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"
     val scopeList = scopes.split(" ")
