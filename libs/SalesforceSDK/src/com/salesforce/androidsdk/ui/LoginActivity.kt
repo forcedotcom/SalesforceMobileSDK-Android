@@ -1183,7 +1183,7 @@ open class LoginActivity : FragmentActivity() {
         val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
         if (!isCallbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
-            val scheme = Uri.parse(viewModel.oAuthConfig.redirectUri).scheme
+            val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme
                 ?: viewModel.oAuthConfig.redirectUri
             e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
                     "matching intent-filter in this app's AndroidManifest.xml. " +
@@ -1252,8 +1252,9 @@ open class LoginActivity : FragmentActivity() {
     @VisibleForTesting
     @Suppress("DEPRECATION")
     internal fun isCallbackSchemeRegistered(redirectUri: String): Boolean {
-        val probeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(redirectUri)).apply {
+        val probeIntent = Intent(Intent.ACTION_VIEW, redirectUri.toUri()).apply {
             addCategory(Intent.CATEGORY_BROWSABLE)
+            setPackage(packageName)  // scope to this app; avoids <queries> requirement
         }
         return packageManager
             ?.queryIntentActivities(probeIntent, MATCH_DEFAULT_ONLY)
