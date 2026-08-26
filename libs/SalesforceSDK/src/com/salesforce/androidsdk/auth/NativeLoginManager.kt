@@ -33,9 +33,7 @@ import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.net.Uri
 import android.os.Bundle
-import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
-import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
 import androidx.biometric.BiometricManager
@@ -722,7 +720,7 @@ internal class NativeLoginManager(
         value2: String
     ) = encodeToString(
         "$value1:$value2".toByteArray(),
-        URL_SAFE or NO_WRAP or NO_PADDING
+        NO_WRAP
     )
 
     /**
