@@ -1,0 +1,516 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.salesforce.androidsdk.ui</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.ui////PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../index.html">SalesforceSDK</a><span class="delimiter">/</span><span class="current">com.salesforce.androidsdk.ui</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="364392686%2FClasslikes%2F622323738" anchor-label="AccountSwitcherActivity" id="364392686%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-account-switcher-activity/index.html"><span>Account</span><wbr><span>Switcher</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="364392686%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-account-switcher-activity/index.html">AccountSwitcherActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/appcompat/app/AppCompatActivity.html">AppCompatActivity</a></div><div class="brief "><p class="paragraph">This class provides UI to switch between existing signed in user accounts, or add a new account. This screen is popped off the activity stack once the account switch is made.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="367110816%2FClasslikes%2F622323738" anchor-label="AndroidSdkConfiguration" id="367110816%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-android-sdk-configuration/index.html"><span>Android</span><wbr><span>Sdk</span><wbr><span><span>Configuration</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="367110816%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="-android-sdk-configuration/index.html">AndroidSdkConfiguration</a></div><div class="brief "><p class="paragraph">The Android SDK configuration.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1045959513%2FClasslikes%2F622323738" anchor-label="DevInfoActivity" id="1045959513%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-dev-info-activity/index.html"><span>Dev</span><wbr><span>Info</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1045959513%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-dev-info-activity/index.html">DevInfoActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/activity/ComponentActivity.html">ComponentActivity</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1726627219%2FClasslikes%2F622323738" anchor-label="LoginActivity" id="1726627219%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-activity/index.html"><span>Login</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1726627219%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-login-activity/index.html">LoginActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/fragment/app/FragmentActivity.html">FragmentActivity</a></div><div class="brief "><p class="paragraph">Login activity authenticates a user. Authorization happens inside a web view.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1083496019%2FClasslikes%2F622323738" anchor-label="LoginOptionsActivity" id="1083496019%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-options-activity/index.html"><span>Login</span><wbr><span>Options</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1083496019%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-login-options-activity/index.html">LoginOptionsActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/activity/ComponentActivity.html">ComponentActivity</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-637978180%2FClasslikes%2F622323738" anchor-label="LoginViewModel" id="-637978180%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-view-model/index.html"><span>Login</span><wbr><span>View</span><wbr><span><span>Model</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-637978180%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-login-view-model/index.html">LoginViewModel</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>bootConfig<span class="token operator">: </span><a href="../com.salesforce.androidsdk.config/-boot-config/index.html">BootConfig</a><span class="token punctuation">, </span></span><span class="parameter ">backgroundContext<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.coroutines/-coroutine-context/index.html">CoroutineContext</a><span class="token operator"> = </span>IO</span></span><span class="token punctuation">)</span> : <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/ViewModel.html">ViewModel</a></div><div class="brief "><p class="paragraph">View model for the login activity managing OAuth authorization URL generation, server selection, and authentication flow state.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1552455131%2FClasslikes%2F622323738" anchor-label="ManageSpaceActivity" id="1552455131%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-manage-space-activity/index.html"><span>Manage</span><wbr><span>Space</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1552455131%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-manage-space-activity/index.html">ManageSpaceActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/activity/ComponentActivity.html">ComponentActivity</a></div><div class="brief "><p class="paragraph">An activity which prompts the user to clear storage and informs the user that this will log out all users.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1234406743%2FClasslikes%2F622323738" anchor-label="SalesforceActivity" id="-1234406743%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-activity/index.html"><span>Salesforce</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1234406743%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-salesforce-activity/index.html">SalesforceActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/appcompat/app/AppCompatActivity.html">AppCompatActivity</a>, <a href="-salesforce-activity-interface/index.html">SalesforceActivityInterface</a></div><div class="brief ">Abstract base class for all Salesforce activities.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-517870428%2FClasslikes%2F622323738" anchor-label="SalesforceActivityDelegate" id="-517870428%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-activity-delegate/index.html"><span>Salesforce</span><wbr><span>Activity</span><wbr><span><span>Delegate</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-517870428%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-salesforce-activity-delegate/index.html">SalesforceActivityDelegate</a></div><div class="brief ">Class taking care of common behavior of Salesforce*Activity classes</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2014383680%2FClasslikes%2F622323738" anchor-label="SalesforceActivityInterface" id="-2014383680%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-activity-interface/index.html"><span>Salesforce</span><wbr><span>Activity</span><wbr><span><span>Interface</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2014383680%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-salesforce-activity-interface/index.html">SalesforceActivityInterface</a></div><div class="brief ">Interface common to all Salesforce*Activity classes Used by SalesforceActivityDelegate</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1692442327%2FClasslikes%2F622323738" anchor-label="SalesforceExpandableListActivity" id="1692442327%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-expandable-list-activity/index.html"><span>Salesforce</span><wbr><span>Expandable</span><wbr><span>List</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1692442327%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-salesforce-expandable-list-activity/index.html">SalesforceExpandableListActivity</a> : <a href="https://developer.android.com/reference/kotlin/android/app/ExpandableListActivity.html">ExpandableListActivity</a>, <a href="-salesforce-activity-interface/index.html">SalesforceActivityInterface</a></div><div class="brief ">Abstract base class for all Salesforce expandable list activities.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1631363627%2FClasslikes%2F622323738" anchor-label="SalesforceListActivity" id="1631363627%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-list-activity/index.html"><span>Salesforce</span><wbr><span>List</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1631363627%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-salesforce-list-activity/index.html"><strike>SalesforceListActivity</strike></a> : <a href="https://developer.android.com/reference/kotlin/android/app/ListActivity.html">ListActivity</a>, <a href="-salesforce-activity-interface/index.html">SalesforceActivityInterface</a></div><div class="brief ">Abstract base class for all Salesforce list activities.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="797403360%2FClasslikes%2F622323738" anchor-label="SalesforceServerRadioButton" id="797403360%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-server-radio-button/index.html"><span>Salesforce</span><wbr><span>Server</span><wbr><span>Radio</span><wbr><span><span>Button</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="797403360%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-salesforce-server-radio-button/index.html">SalesforceServerRadioButton</a> : <a href="https://developer.android.com/reference/kotlin/android/widget/RadioButton.html">RadioButton</a></div><div class="brief ">Custom radio button implementation to represent a Salesforce custom server endpoint.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2140029777%2FClasslikes%2F622323738" anchor-label="ScreenLockActivity" id="2140029777%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-screen-lock-activity/index.html"><span>Screen</span><wbr><span>Lock</span><wbr><span><span>Activity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2140029777%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-screen-lock-activity/index.html">ScreenLockActivity</a> : <a href="https://developer.android.com/reference/kotlin/androidx/fragment/app/FragmentActivity.html">FragmentActivity</a></div><div class="brief "><p class="paragraph">An activity that locks the app behind the operating system's provided authentication or guides the user through biometric enrollment.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-98302629%2FFunctions%2F622323738" anchor-label="BootConfigItem" id="-98302629%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-boot-config-item.html"><span>Boot</span><wbr><span>Config</span><wbr><span><span>Item</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-98302629%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-boot-config-item.html"><span class="token function">BootConfigItem</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="248543298%2FFunctions%2F622323738" anchor-label="BootConfigView" id="248543298%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-boot-config-view.html"><span>Boot</span><wbr><span>Config</span><wbr><span><span>View</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="248543298%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-boot-config-view.html"><span class="token function">BootConfigView</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="../com.salesforce.androidsdk.config/-o-auth-config/index.html">OAuthConfig</a><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1813695269%2FFunctions%2F622323738" anchor-label="BootConfigViewFilledPreview" id="1813695269%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-boot-config-view-filled-preview.html"><span>Boot</span><wbr><span>Config</span><wbr><span>View</span><wbr><span>Filled</span><wbr><span><span>Preview</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1813695269%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/ui/tooling/preview/Preview.html"><span class="token annotation builtin">Preview</span></a></div><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-boot-config-view-filled-preview.html"><span class="token function">BootConfigViewFilledPreview</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="646298659%2FFunctions%2F622323738" anchor-label="BootConfigViewPreview" id="646298659%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-boot-config-view-preview.html"><span>Boot</span><wbr><span>Config</span><wbr><span>View</span><wbr><span><span>Preview</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="646298659%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/ui/tooling/preview/Preview.html"><span class="token annotation builtin">Preview</span></a><span class="token punctuation">(</span><span>showBackground<span class="token operator"> = </span><span class="breakable-word"><span class="token boolean">true</span></span></span><wbr><span class="token punctuation">)</span></div><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-boot-config-view-preview.html"><span class="token function">BootConfigViewPreview</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="730558671%2FFunctions%2F622323738" anchor-label="CollapsibleSection" id="730558671%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-collapsible-section.html"><span>Collapsible</span><wbr><span><span>Section</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="730558671%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-collapsible-section.html"><span class="token function">CollapsibleSection</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">title<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">items<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-pair/index.html">Pair</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">defaultExpanded<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1235097802%2FFunctions%2F622323738" anchor-label="DevInfoItem" id="-1235097802%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-dev-info-item.html"><span>Dev</span><wbr><span>Info</span><wbr><span><span>Item</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1235097802%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-dev-info-item.html"><span class="token function">DevInfoItem</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="726899449%2FFunctions%2F622323738" anchor-label="DevInfoScreen" id="726899449%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-dev-info-screen.html"><span>Dev</span><wbr><span>Info</span><wbr><span><span>Screen</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="726899449%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-dev-info-screen.html"><span class="token function">DevInfoScreen</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">paddingValues<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/compose/foundation/layout/PaddingValues.html">PaddingValues</a><span class="token punctuation">, </span></span><span class="parameter ">devSupportInfo<span class="token operator">: </span><a href="../com.salesforce.androidsdk.developer.support/-dev-support-info/index.html">DevSupportInfo</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1472899640%2FFunctions%2F622323738" anchor-label="DiscoveryResultEditor" id="1472899640%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-discovery-result-editor.html"><span>Discovery</span><wbr><span>Result</span><wbr><span><span>Editor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1472899640%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-discovery-result-editor.html"><span class="token function">DiscoveryResultEditor</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sdkManager<span class="token operator">: </span><a href="../com.salesforce.androidsdk.app/-salesforce-s-d-k-manager/index.html">SalesforceSDKManager</a><span class="token operator"> = </span>SalesforceSDKManager.getInstance()</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Editor body for simulating a Welcome Discovery result (login host + username).  Mirrors iOS <code class="lang-kotlin">DiscoveryResultEditor.swift</code>.  Tapping Save arms <a href="../../../libs/SalesforceSDK/com.salesforce.androidsdk.app/-salesforce-s-d-k-manager/simulated-discovery-result.html">SalesforceSDKManager.simulatedDiscoveryResult</a>; the next Welcome Discovery launch will inject these values instead of running the real WebView discovery flow.  Hosted under a Switch in <a href="-login-options-screen.html">LoginOptionsScreen</a> (parallels the Override Boot Config section).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1930199256%2FFunctions%2F622323738" anchor-label="LoginOptionsScreen" id="1930199256%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-options-screen.html"><span>Login</span><wbr><span>Options</span><wbr><span><span>Screen</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1930199256%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-login-options-screen.html"><span class="token function">LoginOptionsScreen</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">innerPadding<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/compose/foundation/layout/PaddingValues.html">PaddingValues</a><span class="token punctuation">, </span></span><span class="parameter ">useWebServer<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">useHybridToken<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">forceAdvancedAuth<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">useDPoP<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">overrideConfig<span class="token operator">: </span><a href="../com.salesforce.androidsdk.config/-o-auth-config/index.html">OAuthConfig</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">bootConfig<span class="token operator">: </span><a href="../com.salesforce.androidsdk.config/-boot-config/index.html">BootConfig</a><span class="token operator"> = </span>BootConfig.getBootConfig(LocalContext.current)<span class="token punctuation">, </span></span><span class="parameter ">sdkManager<span class="token operator">: </span><a href="../com.salesforce.androidsdk.app/-salesforce-s-d-k-manager/index.html">SalesforceSDKManager</a><span class="token operator">?</span><span class="token operator"> = </span>SalesforceSDKManager.getInstance()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1105764299%2FFunctions%2F622323738" anchor-label="LoginOptionsScreenPreview" id="1105764299%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-options-screen-preview.html"><span>Login</span><wbr><span>Options</span><wbr><span>Screen</span><wbr><span><span>Preview</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1105764299%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/ui/tooling/preview/Preview.html"><span class="token annotation builtin">Preview</span></a><span class="token punctuation">(</span><span>showBackground<span class="token operator"> = </span><span class="breakable-word"><span class="token boolean">true</span></span></span><wbr><span class="token punctuation">)</span></div><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-login-options-screen-preview.html"><span class="token function">LoginOptionsScreenPreview</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1842679954%2FFunctions%2F622323738" anchor-label="OptionsTogglePreview" id="1842679954%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-options-toggle-preview.html"><span>Options</span><wbr><span>Toggle</span><wbr><span><span>Preview</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1842679954%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/ui/tooling/preview/Preview.html"><span class="token annotation builtin">Preview</span></a><span class="token punctuation">(</span><span>showBackground<span class="token operator"> = </span><span class="breakable-word"><span class="token boolean">true</span></span></span><wbr><span class="token punctuation">)</span></div><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-options-toggle-preview.html"><span class="token function">OptionsTogglePreview</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="376925467%2FFunctions%2F622323738" anchor-label="OptionToggle" id="376925467%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-option-toggle.html"><span>Option</span><wbr><span><span>Toggle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="376925467%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/compose/runtime/Composable.html"><span class="token annotation builtin">Composable</span></a></div></div><span class="token keyword">fun </span><a href="-option-toggle.html"><span class="token function">OptionToggle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">title<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">contentDescription<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">optionData<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

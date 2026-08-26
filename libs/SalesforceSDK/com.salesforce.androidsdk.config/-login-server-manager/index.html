@@ -1,0 +1,555 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>LoginServerManager</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.config/LoginServerManager///PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceSDK</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.config</a><span class="delimiter">/</span><span class="current">LoginServerManager</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Login</span><wbr><span>Server</span><wbr><span><span>Manager</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">LoginServerManager</a></div><p class="paragraph">Class to manage login hosts (default and user entered).</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-2121771144%2FConstructors%2F622323738" anchor-label="LoginServerManager" id="-2121771144%2FConstructors%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-server-manager.html"><span>Login</span><wbr><span>Server</span><wbr><span><span>Manager</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2121771144%2FConstructors%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ctx<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Constructs a new login server manager.</div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ctx<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">runtimeConfig<span class="token operator">: </span><a href="../-runtime-config/index.html">RuntimeConfig</a><span class="token punctuation">, </span></span><span class="parameter ">serversXmlResourceId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Constructs a new login server manager.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-356892922%2FClasslikes%2F622323738" anchor-label="LoginServer" id="-356892922%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-server/index.html"><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-356892922%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="-login-server/index.html">LoginServer</a></div><div class="brief ">Class to encapsulate a login server name, URL, index and type (custom or not).</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1563757977%2FProperties%2F622323738" anchor-label="IS_CUSTOM" id="1563757977%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-s_-c-u-s-t-o-m.html"><span>IS_</span><wbr><span>CUSTOM</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1563757977%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-i-s_-c-u-s-t-o-m.html">IS_CUSTOM</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"is_custom_%d"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1629983231%2FProperties%2F622323738" anchor-label="NUMBER_OF_ENTRIES" id="-1629983231%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-u-m-b-e-r_-o-f_-e-n-t-r-i-e-s.html"><span>NUMBER_</span><wbr><span>OF_</span><wbr><span>ENTRIES</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1629983231%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-n-u-m-b-e-r_-o-f_-e-n-t-r-i-e-s.html">NUMBER_OF_ENTRIES</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"number_of_entries"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1606209352%2FProperties%2F622323738" anchor-label="PRODUCTION_LOGIN_URL" id="1606209352%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-r-o-d-u-c-t-i-o-n_-l-o-g-i-n_-u-r-l.html"><span>PRODUCTION_</span><wbr><span>LOGIN_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1606209352%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-p-r-o-d-u-c-t-i-o-n_-l-o-g-i-n_-u-r-l.html">PRODUCTION_LOGIN_URL</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"https://login.salesforce.com"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1524935241%2FProperties%2F622323738" anchor-label="RUNTIME_PREFS_FILE" id="1524935241%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-u-n-t-i-m-e_-p-r-e-f-s_-f-i-l-e.html"><span>RUNTIME_</span><wbr><span>PREFS_</span><wbr><span>FILE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1524935241%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-r-u-n-t-i-m-e_-p-r-e-f-s_-f-i-l-e.html">RUNTIME_PREFS_FILE</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"runtime_prefs_file"</span></div><div class="brief ">Shared preferences when non-custom login servers are provided by runtime config Mobile Device Management (MDM)</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="90442846%2FProperties%2F622323738" anchor-label="SANDBOX_LOGIN_URL" id="90442846%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-a-n-d-b-o-x_-l-o-g-i-n_-u-r-l.html"><span>SANDBOX_</span><wbr><span>LOGIN_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="90442846%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-a-n-d-b-o-x_-l-o-g-i-n_-u-r-l.html">SANDBOX_LOGIN_URL</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"https://test.salesforce.com"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2118155709%2FProperties%2F622323738" anchor-label="selectedServer" id="2118155709%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="selected-server.html"><span>selected</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2118155709%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">var </span><a href="selected-server.html">selectedServer</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/MutableLiveData.html">MutableLiveData</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-606238120%2FProperties%2F622323738" anchor-label="SERVER_NAME" id="-606238120%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-n-a-m-e.html"><span>SERVER_</span><wbr><span>NAME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-606238120%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-n-a-m-e.html">SERVER_NAME</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"server_name_%d"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-738378380%2FProperties%2F622323738" anchor-label="SERVER_SELECTION_FILE" id="-738378380%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-s-e-l-e-c-t-i-o-n_-f-i-l-e.html"><span>SERVER_</span><wbr><span>SELECTION_</span><wbr><span>FILE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-738378380%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-s-e-l-e-c-t-i-o-n_-f-i-l-e.html">SERVER_SELECTION_FILE</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"server_selection_file"</span></div><div class="brief ">Shared preferences for the selected login server</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-38258232%2FProperties%2F622323738" anchor-label="SERVER_URL" id="-38258232%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-u-r-l.html"><span>SERVER_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-38258232%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-u-r-l.html">SERVER_URL</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"server_url_%d"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-153763177%2FProperties%2F622323738" anchor-label="SERVER_URL_FILE" id="-153763177%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-u-r-l_-f-i-l-e.html"><span>SERVER_</span><wbr><span>URL_</span><wbr><span>FILE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-153763177%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-u-r-l_-f-i-l-e.html">SERVER_URL_FILE</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"server_url_file"</span></div><div class="brief ">Shared preferences when non-custom login servers are provided by resources servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="124637667%2FProperties%2F622323738" anchor-label="WELCOME_LOGIN_URL" id="124637667%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-w-e-l-c-o-m-e_-l-o-g-i-n_-u-r-l.html"><span>WELCOME_</span><wbr><span>LOGIN_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="124637667%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-w-e-l-c-o-m-e_-l-o-g-i-n_-u-r-l.html">WELCOME_LOGIN_URL</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"https://welcome.salesforce.com/discovery"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="243192510%2FFunctions%2F622323738" anchor-label="addCustomLoginServer" id="243192510%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="add-custom-login-server.html"><span>add</span><wbr><span>Custom</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="243192510%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="add-custom-login-server.html"><span class="token function">addCustomLoginServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>name<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>url<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Adds a custom login server.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="34290475%2FFunctions%2F622323738" anchor-label="getLoginServerFromURL" id="34290475%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-login-server-from-u-r-l.html"><span>get</span><wbr><span>Login</span><wbr><span>Server</span><wbr><span>From</span><wbr><span><span>URL</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="34290475%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-server-from-u-r-l.html"><span class="token function">getLoginServerFromURL</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">url<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a></div><div class="brief ">Returns a LoginServer instance from URL.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-908745790%2FFunctions%2F622323738" anchor-label="getLoginServers" id="-908745790%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-login-servers.html"><span>get</span><wbr><span>Login</span><wbr><span><span>Servers</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-908745790%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers.html"><span class="token function">getLoginServers</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><div class="brief ">Returns the list of login servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2118037015%2FFunctions%2F622323738" anchor-label="getLoginServersFromPreferences" id="2118037015%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-login-servers-from-preferences.html"><span>get</span><wbr><span>Login</span><wbr><span>Servers</span><wbr><span>From</span><wbr><span><span>Preferences</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2118037015%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers-from-preferences.html"><span class="token function">getLoginServersFromPreferences</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><div class="brief ">Returns the list of login servers from resources (servers.xml) and the user's custom servers.</div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a></div></div><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers-from-preferences.html"><span class="token function">getLoginServersFromPreferences</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">prefs<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/SharedPreferences.html">SharedPreferences</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><div class="brief ">Returns the list of all saved servers, including custom servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-597272888%2FFunctions%2F622323738" anchor-label="getLoginServersFromRuntimeConfig" id="-597272888%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-login-servers-from-runtime-config.html"><span>get</span><wbr><span>Login</span><wbr><span>Servers</span><wbr><span>From</span><wbr><span>Runtime</span><wbr><span><span>Config</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-597272888%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-login-servers-from-runtime-config.html"><span class="token function">getLoginServersFromRuntimeConfig</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token operator">&gt;</span></div><div class="brief ">Resets the list of Mobile Device Management (MDM) login servers from the runtime configuration.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-556025632%2FFunctions%2F622323738" anchor-label="getSelectedLoginServer" id="-556025632%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-selected-login-server.html"><span>get</span><wbr><span>Selected</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-556025632%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-selected-login-server.html"><span class="token function">getSelectedLoginServer</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a></div><div class="brief ">Returns the selected login server.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2117694951%2FFunctions%2F622323738" anchor-label="isMyDomainServer" id="-2117694951%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-my-domain-server.html"><span>is</span><wbr><span>My</span><wbr><span>Domain</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2117694951%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="is-my-domain-server.html"><span class="token function">isMyDomainServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>serverUrl<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Returns true when <code class="lang-kotlin">serverUrl</code> is a My Domain server: host ends with .my.salesforce.com or contains .my.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="110833677%2FFunctions%2F622323738" anchor-label="isPoolServer" id="110833677%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-pool-server.html"><span>is</span><wbr><span>Pool</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="110833677%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="is-pool-server.html"><span class="token function">isPoolServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>serverUrl<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Returns true when <code class="lang-kotlin">serverUrl</code> is one of the three Salesforce pool (non-my-domain) servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1090276591%2FFunctions%2F622323738" anchor-label="isProductionLoginServer" id="-1090276591%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-production-login-server.html"><span>is</span><wbr><span>Production</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1090276591%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="is-production-login-server.html"><span class="token function">isProductionLoginServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>serverUrl<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Returns true when <code class="lang-kotlin">serverUrl</code> is the production login pool: https://login.salesforce.com or internal variants like https://login.test1.pc-rnd.salesforce.com.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2121135685%2FFunctions%2F622323738" anchor-label="removeServer" id="-2121135685%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remove-server.html"><span>remove</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2121135685%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="remove-server.html"><span class="token function">removeServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">server<span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Removes a custom login server from the list.</div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">open </span><span class="token keyword">fun </span><a href="remove-server.html"><span class="token function">removeServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">server<span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token punctuation">, </span></span><span class="parameter ">sharedPreferences<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/SharedPreferences.html">SharedPreferences</a><span class="token punctuation">, </span></span><span class="parameter ">allowNonCustomRemoval<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Removes a login server from the list.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1437949684%2FFunctions%2F622323738" anchor-label="reorderCustomLoginServer" id="-1437949684%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reorder-custom-login-server.html"><span>reorder</span><wbr><span>Custom</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1437949684%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="reorder-custom-login-server.html"><span class="token function">reorderCustomLoginServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">originalIndex<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">updatedIndex<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Reorders a custom login server in the list of login servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="343137277%2FFunctions%2F622323738" anchor-label="replaceCustomLoginServer" id="343137277%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="replace-custom-login-server.html"><span>replace</span><wbr><span>Custom</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="343137277%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="replace-custom-login-server.html"><span class="token function">replaceCustomLoginServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">originalCustomLoginServer<span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a><span class="token punctuation">, </span></span><span class="parameter ">updatedCustomLoginServer<span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Replaces one custom login server with another.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1514701200%2FFunctions%2F622323738" anchor-label="reset" id="1514701200%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reset.html"><span><span>reset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1514701200%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="reset.html"><span class="token function">reset</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Clears all saved custom servers.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-358877108%2FFunctions%2F622323738" anchor-label="setSelectedLoginServer" id="-358877108%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-selected-login-server.html"><span>set</span><wbr><span>Selected</span><wbr><span>Login</span><wbr><span><span>Server</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-358877108%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="set-selected-login-server.html"><span class="token function">setSelectedLoginServer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">server<span class="token operator">: </span><a href="-login-server/index.html">LoginServerManager.LoginServer</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Sets the currently selected login server to display.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1783114373%2FFunctions%2F622323738" anchor-label="useSandbox" id="-1783114373%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="use-sandbox.html"><span>use</span><wbr><span><span>Sandbox</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1783114373%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="use-sandbox.html"><span class="token function">useSandbox</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Selects Sandbox as login server (used in tests).</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

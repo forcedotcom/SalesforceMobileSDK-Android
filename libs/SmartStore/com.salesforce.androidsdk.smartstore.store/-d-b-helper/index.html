@@ -1,0 +1,626 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>DBHelper</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SmartStore/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SmartStore/release" data-filter=":libs:SmartStore/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SmartStore::com.salesforce.androidsdk.smartstore.store/DBHelper///PointingToDeclaration//-418526691">
+  <div class="breadcrumbs"><a href="../../index.html">SmartStore</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.smartstore.store</a><span class="delimiter">/</span><span class="current">DBHelper</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>DBHelper</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">DBHelper</a></div><p class="paragraph">SmartStore Database Helper Singleton class that provides helpful methods for accessing the database underneath the SmartStore It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="239343761%2FConstructors%2F-418526691" anchor-label="DBHelper" id="239343761%2FConstructors%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-b-helper.html"><span><span>DBHelper</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="239343761%2FConstructors%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="87425336%2FProperties%2F-418526691" anchor-label="EXPLAIN_ARGS" id="87425336%2FProperties%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-p-l-a-i-n_-a-r-g-s.html"><span>EXPLAIN_</span><wbr><span>ARGS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="87425336%2FProperties%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-x-p-l-a-i-n_-a-r-g-s.html">EXPLAIN_ARGS</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"args"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2044582980%2FProperties%2F-418526691" anchor-label="EXPLAIN_ROWS" id="-2044582980%2FProperties%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-p-l-a-i-n_-r-o-w-s.html"><span>EXPLAIN_</span><wbr><span>ROWS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2044582980%2FProperties%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-x-p-l-a-i-n_-r-o-w-s.html">EXPLAIN_ROWS</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"rows"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-4110569%2FProperties%2F-418526691" anchor-label="EXPLAIN_SQL" id="-4110569%2FProperties%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-p-l-a-i-n_-s-q-l.html"><span>EXPLAIN_</span><wbr><span>SQL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-4110569%2FProperties%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-x-p-l-a-i-n_-s-q-l.html">EXPLAIN_SQL</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"sql"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1380098763%2FProperties%2F-418526691" anchor-label="EXPLAIN_TAG" id="1380098763%2FProperties%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-p-l-a-i-n_-t-a-g.html"><span>EXPLAIN_</span><wbr><span>TAG</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1380098763%2FProperties%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-x-p-l-a-i-n_-t-a-g.html">EXPLAIN_TAG</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"EXPLAIN"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1729954995%2FProperties%2F-418526691" anchor-label="lastExplainQueryPlan" id="-1729954995%2FProperties%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="last-explain-query-plan.html"><span>last</span><wbr><span>Explain</span><wbr><span>Query</span><wbr><span><span>Plan</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1729954995%2FProperties%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="last-explain-query-plan.html">lastExplainQueryPlan</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="589544356%2FFunctions%2F-418526691" anchor-label="cacheHasSoup" id="589544356%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cache-has-soup.html"><span>cache</span><wbr><span>Has</span><wbr><span><span>Soup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="589544356%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="cache-has-soup.html"><span class="token function">cacheHasSoup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">hasSoup<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="806206786%2FFunctions%2F-418526691" anchor-label="cacheIndexSpecs" id="806206786%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cache-index-specs.html"><span>cache</span><wbr><span>Index</span><wbr><span><span>Specs</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="806206786%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="cache-index-specs.html"><span class="token function">cacheIndexSpecs</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">indexSpecs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="../-index-spec/index.html">IndexSpec</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1887967239%2FFunctions%2F-418526691" anchor-label="cacheTableName" id="-1887967239%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cache-table-name.html"><span>cache</span><wbr><span>Table</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1887967239%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="cache-table-name.html"><span class="token function">cacheTableName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">tableName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1341241111%2FFunctions%2F-418526691" anchor-label="clearMemoryCache" id="-1341241111%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clear-memory-cache.html"><span>clear</span><wbr><span>Memory</span><wbr><span><span>Cache</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1341241111%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="clear-memory-cache.html"><span class="token function">clearMemoryCache</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Resets all cached data from memory.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-932102762%2FFunctions%2F-418526691" anchor-label="countQuery" id="-932102762%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="count-query.html"><span>count</span><wbr><span><span>Query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-932102762%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="count-query.html"><span class="token function">countQuery</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereClause<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a></div><div class="brief ">Does a count query</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-490517953%2FFunctions%2F-418526691" anchor-label="countRawCountQuery" id="-490517953%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="count-raw-count-query.html"><span>count</span><wbr><span>Raw</span><wbr><span>Count</span><wbr><span><span>Query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-490517953%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="count-raw-count-query.html"><span class="token function">countRawCountQuery</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">countSql<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div><div class="brief ">Does a count for a raw count query</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1645071010%2FFunctions%2F-418526691" anchor-label="countRawQuery" id="1645071010%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="count-raw-query.html"><span>count</span><wbr><span>Raw</span><wbr><span><span>Query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1645071010%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="count-raw-query.html"><span class="token function">countRawQuery</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">sql<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div><div class="brief ">Does a count for a raw query</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1724584776%2FFunctions%2F-418526691" anchor-label="delete" id="1724584776%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="delete.html"><span><span>delete</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1724584776%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="delete.html"><span class="token function">delete</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereClause<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief ">Does a delete (after first logging the delete statement)</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1570250581%2FFunctions%2F-418526691" anchor-label="getCachedHasFTS" id="1570250581%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-cached-has-f-t-s.html"><span>get</span><wbr><span>Cached</span><wbr><span>Has</span><wbr><span><span>FTS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1570250581%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-cached-has-f-t-s.html"><span class="token function">getCachedHasFTS</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/Boolean.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1509812154%2FFunctions%2F-418526691" anchor-label="getCachedIndexSpecs" id="1509812154%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-cached-index-specs.html"><span>get</span><wbr><span>Cached</span><wbr><span>Index</span><wbr><span><span>Specs</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1509812154%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-cached-index-specs.html"><span class="token function">getCachedIndexSpecs</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="../-index-spec/index.html">IndexSpec</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1998136247%2FFunctions%2F-418526691" anchor-label="getCachedTableName" id="1998136247%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-cached-table-name.html"><span>get</span><wbr><span>Cached</span><wbr><span>Table</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1998136247%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-cached-table-name.html"><span class="token function">getCachedTableName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1718628518%2FFunctions%2F-418526691" anchor-label="getColumnNameForPath" id="-1718628518%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-column-name-for-path.html"><span>get</span><wbr><span>Column</span><wbr><span>Name</span><wbr><span>For</span><wbr><span><span>Path</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1718628518%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-column-name-for-path.html"><span class="token function">getColumnNameForPath</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">path<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Return column name in soup table that holds the soup projection for path</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2103002747%2FFunctions%2F-418526691" anchor-label="getIndexSpecs" id="2103002747%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-index-specs.html"><span>get</span><wbr><span>Index</span><wbr><span><span>Specs</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2103002747%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-index-specs.html"><span class="token function">getIndexSpecs</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="../-index-spec/index.html">IndexSpec</a><span class="token operator">&gt;</span></div><div class="brief ">Read index specs back from the soup index map table</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-283248262%2FFunctions%2F-418526691" anchor-label="getInsertHelper" id="-283248262%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-insert-helper.html"><span>get</span><wbr><span>Insert</span><wbr><span><span>Helper</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-283248262%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-insert-helper.html"><span class="token function">getInsertHelper</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="net.zetetic.database/DatabaseUtils.InsertHelper///PointingToDeclaration/">DatabaseUtils.InsertHelper</span></div><div class="brief ">Get insert helper for a table</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-654039474%2FFunctions%2F-418526691" anchor-label="getInstance" id="-654039474%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-instance.html"><span>get</span><wbr><span><span>Instance</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-654039474%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-instance.html"><span class="token function">getInstance</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">DBHelper</a></div><div class="brief ">Returns the instance of this class associated with the database specified.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1142978931%2FFunctions%2F-418526691" anchor-label="getNextId" id="1142978931%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-next-id.html"><span>get</span><wbr><span>Next</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1142978931%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-next-id.html"><span class="token function">getNextId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">tableName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div><div class="brief ">Get next id for a table</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1794099595%2FFunctions%2F-418526691" anchor-label="getSoupTableName" id="1794099595%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-soup-table-name.html"><span>get</span><wbr><span>Soup</span><wbr><span>Table</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1794099595%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-soup-table-name.html"><span class="token function">getSoupTableName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Return table name for a given soup or null if the soup doesn't exist</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2056872500%2FFunctions%2F-418526691" anchor-label="hasFTS" id="-2056872500%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="has-f-t-s.html"><span>has</span><wbr><span><span>FTS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2056872500%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="has-f-t-s.html"><span class="token function">hasFTS</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1789748199%2FFunctions%2F-418526691" anchor-label="hasIndexForPath" id="-1789748199%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="has-index-for-path.html"><span>has</span><wbr><span>Index</span><wbr><span>For</span><wbr><span><span>Path</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1789748199%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="has-index-for-path.html"><span class="token function">hasIndexForPath</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">path<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Return true if the given path is indexed on the given soup</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1973164422%2FFunctions%2F-418526691" anchor-label="hasSoup" id="1973164422%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="has-soup.html"><span>has</span><wbr><span><span>Soup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1973164422%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="has-soup.html"><span class="token function">hasSoup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Return true if given soup exists</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1763119142%2FFunctions%2F-418526691" anchor-label="insert" id="-1763119142%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="insert.html"><span><span>insert</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1763119142%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="insert.html"><span class="token function">insert</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">contentValues<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div><div class="brief ">Does an insert</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1849345480%2FFunctions%2F-418526691" anchor-label="limitRawQuery" id="-1849345480%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="limit-raw-query.html"><span>limit</span><wbr><span>Raw</span><wbr><span><span>Query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1849345480%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="limit-raw-query.html"><span class="token function">limitRawQuery</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">sql<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">limit<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a></div><div class="brief ">Does a limit for a raw query</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1404607819%2FFunctions%2F-418526691" anchor-label="query" id="1404607819%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="query.html"><span><span>query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1404607819%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="query.html"><span class="token function">query</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">columns<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">orderBy<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">limit<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereClause<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/database/Cursor.html">Cursor</a></div><div class="brief ">Runs a query</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2086540476%2FFunctions%2F-418526691" anchor-label="removeFromCache" id="-2086540476%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remove-from-cache.html"><span>remove</span><wbr><span>From</span><wbr><span><span>Cache</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2086540476%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="remove-from-cache.html"><span class="token function">removeFromCache</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">soupName<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1487908538%2FFunctions%2F-418526691" anchor-label="reset" id="1487908538%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reset.html"><span><span>reset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1487908538%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="reset.html"><span class="token function">reset</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ctx<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Resets all cached data and deletes the database for all users.</div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="reset.html"><span class="token function">reset</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">ctx<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../../../libs/SalesforceSDK/com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Resets all cached data and deletes the database for the specified user.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="369345051%2FFunctions%2F-418526691" anchor-label="setCaptureExplainQueryPlan" id="369345051%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-capture-explain-query-plan.html"><span>set</span><wbr><span>Capture</span><wbr><span>Explain</span><wbr><span>Query</span><wbr><span><span>Plan</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="369345051%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="set-capture-explain-query-plan.html"><span class="token function">setCaptureExplainQueryPlan</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">captureExplainQueryPlan<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="brief ">If turned on, explain query plan is run before executing a query and stored in lastExplainQueryPlan and also get logged</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1096658634%2FFunctions%2F-418526691" anchor-label="update" id="1096658634%2FFunctions%2F-418526691" data-filterable-set=":libs:SmartStore/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SmartStore/release" data-filterable-set=":libs:SmartStore/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update.html"><span><span>update</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1096658634%2FFunctions%2F-418526691"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SmartStore/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="update.html"><span class="token function">update</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">db<span class="token operator">: </span><span data-unresolved-link="net.zetetic.database.sqlcipher/SQLiteDatabase///PointingToDeclaration/">SQLiteDatabase</span><span class="token punctuation">, </span></span><span class="parameter ">table<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">contentValues<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/ContentValues.html">ContentValues</a><span class="token punctuation">, </span></span><span class="parameter ">whereClause<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">whereArgs<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div><div class="brief ">Does an update</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

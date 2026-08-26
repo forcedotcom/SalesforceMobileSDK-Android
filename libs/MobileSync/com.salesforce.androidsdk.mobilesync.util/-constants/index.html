@@ -1,0 +1,577 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Constants</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:MobileSync/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:MobileSync/release" data-filter=":libs:MobileSync/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="MobileSync::com.salesforce.androidsdk.mobilesync.util/Constants///PointingToDeclaration//282007970">
+  <div class="breadcrumbs"><a href="../../index.html">MobileSync</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.mobilesync.util</a><span class="delimiter">/</span><span class="current">Constants</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Constants</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">Constants</a></div><p class="paragraph">This class contains commonly used constants, such as field names, SObject types, attribute names, etc.</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-1335650286%2FClasslikes%2F282007970" anchor-label="Mode" id="-1335650286%2FClasslikes%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mode/index.html"><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1335650286%2FClasslikes%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-mode/index.html">Mode</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-mode/index.html">Constants.Mode</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Enum for available data fetch modes.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="713911693%2FProperties%2F282007970" anchor-label="ACCOUNT" id="713911693%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-c-c-o-u-n-t.html"><span><span>ACCOUNT</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="713911693%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-c-c-o-u-n-t.html">ACCOUNT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Salesforce object types.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="3088092%2FProperties%2F282007970" anchor-label="ACCOUNT_KEY_PREFIX" id="3088092%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-c-c-o-u-n-t_-k-e-y_-p-r-e-f-i-x.html"><span>ACCOUNT_</span><wbr><span>KEY_</span><wbr><span>PREFIX</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="3088092%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-c-c-o-u-n-t_-k-e-y_-p-r-e-f-i-x.html">ACCOUNT_KEY_PREFIX</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1995727337%2FProperties%2F282007970" anchor-label="ATTRIBUTES" id="1995727337%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-t-t-r-i-b-u-t-e-s.html"><span><span>ATTRIBUTES</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1995727337%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-t-t-r-i-b-u-t-e-s.html">ATTRIBUTES</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-188559248%2FProperties%2F282007970" anchor-label="CASE" id="-188559248%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-a-s-e.html"><span><span>CASE</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-188559248%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-c-a-s-e.html">CASE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-989734150%2FProperties%2F282007970" anchor-label="CONTACT" id="-989734150%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-o-n-t-a-c-t.html"><span><span>CONTACT</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-989734150%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-c-o-n-t-a-c-t.html">CONTACT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-43366611%2FProperties%2F282007970" anchor-label="CONTACTS" id="-43366611%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-o-n-t-a-c-t-s.html"><span><span>CONTACTS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-43366611%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-c-o-n-t-a-c-t-s.html">CONTACTS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1887493150%2FProperties%2F282007970" anchor-label="DESCRIPTION" id="1887493150%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-e-s-c-r-i-p-t-i-o-n.html"><span><span>DESCRIPTION</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1887493150%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-d-e-s-c-r-i-p-t-i-o-n.html">DESCRIPTION</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1853733021%2FProperties%2F282007970" anchor-label="EMPTY_STRING" id="1853733021%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-m-p-t-y_-s-t-r-i-n-g.html"><span>EMPTY_</span><wbr><span>STRING</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1853733021%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-m-p-t-y_-s-t-r-i-n-g.html">EMPTY_STRING</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1836979338%2FProperties%2F282007970" anchor-label="FORM_FACTOR_MEDIUM" id="-1836979338%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-f-o-r-m_-f-a-c-t-o-r_-m-e-d-i-u-m.html"><span>FORM_</span><wbr><span>FACTOR_</span><wbr><span>MEDIUM</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1836979338%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-f-o-r-m_-f-a-c-t-o-r_-m-e-d-i-u-m.html">FORM_FACTOR_MEDIUM</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1079657893%2FProperties%2F282007970" anchor-label="ID" id="1079657893%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-i-d.html"><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1079657893%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-i-d.html">ID</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-960356658%2FProperties%2F282007970" anchor-label="KEYPREFIX_FIELD" id="-960356658%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-k-e-y-p-r-e-f-i-x_-f-i-e-l-d.html"><span>KEYPREFIX_</span><wbr><span>FIELD</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-960356658%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-k-e-y-p-r-e-f-i-x_-f-i-e-l-d.html">KEYPREFIX_FIELD</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Salesforce object type field constants.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1347898453%2FProperties%2F282007970" anchor-label="LABEL_FIELD" id="-1347898453%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-a-b-e-l_-f-i-e-l-d.html"><span>LABEL_</span><wbr><span>FIELD</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1347898453%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-a-b-e-l_-f-i-e-l-d.html">LABEL_FIELD</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1567535941%2FProperties%2F282007970" anchor-label="LAST_MODIFIED_DATE" id="1567535941%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-a-s-t_-m-o-d-i-f-i-e-d_-d-a-t-e.html"><span>LAST_</span><wbr><span>MODIFIED_</span><wbr><span>DATE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1567535941%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-a-s-t_-m-o-d-i-f-i-e-d_-d-a-t-e.html">LAST_MODIFIED_DATE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1219538854%2FProperties%2F282007970" anchor-label="LAST_NAME" id="1219538854%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-a-s-t_-n-a-m-e.html"><span>LAST_</span><wbr><span>NAME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1219538854%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-a-s-t_-n-a-m-e.html">LAST_NAME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1377463065%2FProperties%2F282007970" anchor-label="LAYOUT_TYPE_COMPACT" id="-1377463065%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-a-y-o-u-t_-t-y-p-e_-c-o-m-p-a-c-t.html"><span>LAYOUT_</span><wbr><span>TYPE_</span><wbr><span>COMPACT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1377463065%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-a-y-o-u-t_-t-y-p-e_-c-o-m-p-a-c-t.html">LAYOUT_TYPE_COMPACT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Salesforce object layout column field constants.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1033126669%2FProperties%2F282007970" anchor-label="LID" id="-1033126669%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-i-d.html"><span><span>LID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1033126669%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-i-d.html">LID</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-565749900%2FProperties%2F282007970" anchor-label="LTYPE" id="-565749900%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-t-y-p-e.html"><span><span>LTYPE</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-565749900%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-t-y-p-e.html">LTYPE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-935269548%2FProperties%2F282007970" anchor-label="MODE_EDIT" id="-935269548%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-o-d-e_-e-d-i-t.html"><span>MODE_</span><wbr><span>EDIT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-935269548%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-o-d-e_-e-d-i-t.html">MODE_EDIT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1665875317%2FProperties%2F282007970" anchor-label="NAME" id="1665875317%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-a-m-e.html"><span><span>NAME</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1665875317%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-n-a-m-e.html">NAME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-338091654%2FProperties%2F282007970" anchor-label="NEXT_RECORDS_URL" id="-338091654%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-e-x-t_-r-e-c-o-r-d-s_-u-r-l.html"><span>NEXT_</span><wbr><span>RECORDS_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-338091654%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-n-e-x-t_-r-e-c-o-r-d-s_-u-r-l.html">NEXT_RECORDS_URL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1318578897%2FProperties%2F282007970" anchor-label="NULL_STRING" id="1318578897%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-u-l-l_-s-t-r-i-n-g.html"><span>NULL_</span><wbr><span>STRING</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1318578897%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-n-u-l-l_-s-t-r-i-n-g.html">NULL_STRING</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="766675239%2FProperties%2F282007970" anchor-label="OPPORTUNITY" id="766675239%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-o-p-p-o-r-t-u-n-i-t-y.html"><span><span>OPPORTUNITY</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="766675239%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-o-p-p-o-r-t-u-n-i-t-y.html">OPPORTUNITY</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="462170468%2FProperties%2F282007970" anchor-label="RECENT_ITEMS" id="462170468%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-c-e-n-t_-i-t-e-m-s.html"><span>RECENT_</span><wbr><span>ITEMS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="462170468%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-r-e-c-e-n-t_-i-t-e-m-s.html">RECENT_ITEMS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="748228959%2FProperties%2F282007970" anchor-label="RECENTLY_VIEWED" id="748228959%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-c-e-n-t-l-y_-v-i-e-w-e-d.html"><span>RECENTLY_</span><wbr><span>VIEWED</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="748228959%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-r-e-c-e-n-t-l-y_-v-i-e-w-e-d.html">RECENTLY_VIEWED</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1310468888%2FProperties%2F282007970" anchor-label="RECORDS" id="1310468888%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-r-e-c-o-r-d-s.html"><span><span>RECORDS</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1310468888%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-r-e-c-o-r-d-s.html">RECORDS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1746679175%2FProperties%2F282007970" anchor-label="SOBJECT_TYPE" id="-1746679175%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-o-b-j-e-c-t_-t-y-p-e.html"><span>SOBJECT_</span><wbr><span>TYPE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1746679175%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-o-b-j-e-c-t_-t-y-p-e.html">SOBJECT_TYPE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="837209536%2FProperties%2F282007970" anchor-label="TIMESTAMP_FORMAT" id="837209536%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-i-m-e-s-t-a-m-p_-f-o-r-m-a-t.html"><span>TIMESTAMP_</span><wbr><span>FORMAT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="837209536%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-field/index.html"><span class="token annotation builtin">JvmField</span></a></div></div><span class="token keyword">val </span><a href="-t-i-m-e-s-t-a-m-p_-f-o-r-m-a-t.html">TIMESTAMP_FORMAT</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/text/DateFormat.html">DateFormat</a></div><div class="brief "><p class="paragraph">Salesforce timestamp format.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="480906916%2FProperties%2F282007970" anchor-label="TOTAL_SIZE" id="480906916%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-o-t-a-l_-s-i-z-e.html"><span>TOTAL_</span><wbr><span>SIZE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="480906916%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-t-o-t-a-l_-s-i-z-e.html">TOTAL_SIZE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1699316826%2FProperties%2F282007970" anchor-label="TYPE" id="-1699316826%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-y-p-e.html"><span><span>TYPE</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1699316826%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-t-y-p-e.html">TYPE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

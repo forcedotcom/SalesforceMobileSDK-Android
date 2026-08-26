@@ -1,0 +1,412 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>PushMessaging</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.push/PushMessaging///PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceSDK</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.push</a><span class="delimiter">/</span><span class="current">PushMessaging</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Push</span><wbr><span><span>Messaging</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">PushMessaging</a></div><p class="paragraph">This class provides utility functions related to push notifications, such as methods for registration, unregistration, and storage and retrieval of push notification registration information from a private shared preference file.</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="741441812%2FProperties%2F622323738" anchor-label="reRegistrationRequested" id="741441812%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="re-registration-requested.html"><span>re</span><wbr><span>Registration</span><wbr><span><span>Requested</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="741441812%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">var </span><a href="re-registration-requested.html">reRegistrationRequested</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1484032044%2FProperties%2F622323738" anchor-label="UNREGISTERED_ATTEMPT_COMPLETE_EVENT" id="1484032044%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-n-r-e-g-i-s-t-e-r-e-d_-a-t-t-e-m-p-t_-c-o-m-p-l-e-t-e_-e-v-e-n-t.html"><span>UNREGISTERED_</span><wbr><span>ATTEMPT_</span><wbr><span>COMPLETE_</span><wbr><span>EVENT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1484032044%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-u-n-r-e-g-i-s-t-e-r-e-d_-a-t-t-e-m-p-t_-c-o-m-p-l-e-t-e_-e-v-e-n-t.html">UNREGISTERED_ATTEMPT_COMPLETE_EVENT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1034530706%2FProperties%2F622323738" anchor-label="UNREGISTERED_EVENT" id="-1034530706%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-n-r-e-g-i-s-t-e-r-e-d_-e-v-e-n-t.html"><span>UNREGISTERED_</span><wbr><span>EVENT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1034530706%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-u-n-r-e-g-i-s-t-e-r-e-d_-e-v-e-n-t.html">UNREGISTERED_EVENT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="1116298948%2FFunctions%2F622323738" anchor-label="clearRegistrationInfo" id="1116298948%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clear-registration-info.html"><span>clear</span><wbr><span>Registration</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1116298948%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="clear-registration-info.html"><span class="token function">clearRegistrationInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Clears the stored registration information.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1363673814%2FFunctions%2F622323738" anchor-label="clearSFDCRegistrationInfo" id="1363673814%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clear-s-f-d-c-registration-info.html"><span>clear</span><wbr><span>SFDCRegistration</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1363673814%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="clear-s-f-d-c-registration-info.html"><span class="token function">clearSFDCRegistrationInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Clears the stored SFDC device ID.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-973840085%2FFunctions%2F622323738" anchor-label="getAppNameForFirebase" id="-973840085%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-app-name-for-firebase.html"><span>get</span><wbr><span>App</span><wbr><span>Name</span><wbr><span>For</span><wbr><span><span>Firebase</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-973840085%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="get-app-name-for-firebase.html"><span class="token function">getAppNameForFirebase</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Get the app unique name for firebase</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-953302633%2FFunctions%2F622323738" anchor-label="getDeviceId" id="-953302633%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-device-id.html"><span>get</span><wbr><span>Device</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-953302633%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="get-device-id.html"><span class="token function">getDeviceId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Returns the SFDC registration ID for the specified user account.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1259857300%2FFunctions%2F622323738" anchor-label="getNotificationsTypes" id="1259857300%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-notifications-types.html"><span>get</span><wbr><span>Notifications</span><wbr><span><span>Types</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1259857300%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="get-notifications-types.html"><span class="token function">getNotificationsTypes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.salesforce.androidsdk.rest/-notifications-types-response-body/index.html">NotificationsTypesResponseBody</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Returns Salesforce notifications types for the provided user account.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="788367738%2FFunctions%2F622323738" anchor-label="getRegistrationId" id="788367738%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-registration-id.html"><span>get</span><wbr><span>Registration</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="788367738%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="get-registration-id.html"><span class="token function">getRegistrationId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Returns the current registration ID, or null, if registration hasn't taken place yet.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="501754910%2FFunctions%2F622323738" anchor-label="isInProgress" id="501754910%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-in-progress.html"><span>is</span><wbr><span>In</span><wbr><span><span>Progress</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="501754910%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-in-progress.html"><span class="token function">isInProgress</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Returns whether push notification registration/un-registration is in progress.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1471171630%2FFunctions%2F622323738" anchor-label="isRegistered" id="1471171630%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-registered.html"><span>is</span><wbr><span><span>Registered</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1471171630%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="is-registered.html"><span class="token function">isRegistered</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Returns whether the specified user account is currently registered or not.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-100875482%2FFunctions%2F622323738" anchor-label="isRegisteredWithSFDC" id="-100875482%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-registered-with-s-f-d-c.html"><span>is</span><wbr><span>Registered</span><wbr><span>With</span><wbr><span><span>SFDC</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-100875482%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-registered-with-s-f-d-c.html"><span class="token function">isRegisteredWithSFDC</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Returns whether the user account is registered with SFDC or not.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-274535002%2FFunctions%2F622323738" anchor-label="onPushReceiverSetup" id="-274535002%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="on-push-receiver-setup.html"><span>on</span><wbr><span>Push</span><wbr><span>Receiver</span><wbr><span><span>Setup</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-274535002%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="on-push-receiver-setup.html"><span class="token function">onPushReceiverSetup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="643835730%2FFunctions%2F622323738" anchor-label="register" id="643835730%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="register.html"><span><span>register</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="643835730%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="register.html"><span class="token function">register</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="register.html"><span class="token function">register</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">recreateKey<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Initiates push registration, if the application is not already registered. Otherwise, this method initiates registration/re-registration to the SFDC endpoint, in order to keep it alive, or to register a new account that just logged in.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-560715695%2FFunctions%2F622323738" anchor-label="registerSFDCPush" id="-560715695%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="register-s-f-d-c-push.html"><span>register</span><wbr><span><span>SFDCPush</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-560715695%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="register-s-f-d-c-push.html"><span class="token function">registerSFDCPush</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Initiates push registration against the SFDC endpoint.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-172029496%2FFunctions%2F622323738" anchor-label="setLastRegistrationTime" id="-172029496%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-last-registration-time.html"><span>set</span><wbr><span>Last</span><wbr><span>Registration</span><wbr><span><span>Time</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-172029496%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-last-registration-time.html"><span class="token function">setLastRegistrationTime</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">lastRegistrationTime<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sets the last time SFDC registration was successful for the specified user account.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1246589322%2FFunctions%2F622323738" anchor-label="setRegistrationId" id="-1246589322%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-registration-id.html"><span>set</span><wbr><span>Registration</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1246589322%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="set-registration-id.html"><span class="token function">setRegistrationId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">registrationId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Stores the GCM registration ID, and resets back off time.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1030087513%2FFunctions%2F622323738" anchor-label="setRegistrationInfo" id="1030087513%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-registration-info.html"><span>set</span><wbr><span>Registration</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1030087513%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="set-registration-info.html"><span class="token function">setRegistrationInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">registrationId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">deviceId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Stores the current registration information, and resets the backoff time.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="14877798%2FFunctions%2F622323738" anchor-label="unregister" id="14877798%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="unregister.html"><span><span>unregister</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="14877798%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="unregister.html"><span class="token function">unregister</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">account<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">isLastAccount<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Performs SFDC un-registration from push notifications for the specified user account. Performs GCM un-registration only if this is the last account being logged out.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

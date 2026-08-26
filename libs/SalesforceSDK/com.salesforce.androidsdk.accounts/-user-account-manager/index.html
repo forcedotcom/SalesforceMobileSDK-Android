@@ -1,0 +1,592 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>UserAccountManager</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.accounts/UserAccountManager///PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceSDK</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.accounts</a><span class="delimiter">/</span><span class="current">UserAccountManager</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>User</span><wbr><span>Account</span><wbr><span><span>Manager</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">UserAccountManager</a></div><p class="paragraph">This class acts as a manager that provides methods to access user accounts that are currently logged in, and can be used to add new user accounts.</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1575859999%2FProperties%2F622323738" anchor-label="EXTRA_USER_SWITCH_TYPE" id="-1575859999%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-t-r-a_-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e.html"><span>EXTRA_</span><wbr><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>TYPE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1575859999%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-x-t-r-a_-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e.html">EXTRA_USER_SWITCH_TYPE</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"com.salesforce.USER_SWITCH_TYPE"</span></div><div class="brief ">Represents how the current user has been switched to, as found in an intent sent to a <a href="https://developer.android.com/reference/kotlin/android/content/BroadcastReceiver.html">BroadcastReceiver</a> filtering <a href="-u-s-e-r_-s-w-i-t-c-h_-i-n-t-e-n-t_-a-c-t-i-o-n.html">USER_SWITCH_INTENT_ACTION</a>.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1930590103%2FProperties%2F622323738" anchor-label="USER_SWITCH_INTENT_ACTION" id="1930590103%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-s-w-i-t-c-h_-i-n-t-e-n-t_-a-c-t-i-o-n.html"><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>INTENT_</span><wbr><span>ACTION</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1930590103%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-u-s-e-r_-s-w-i-t-c-h_-i-n-t-e-n-t_-a-c-t-i-o-n.html">USER_SWITCH_INTENT_ACTION</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"com.salesforce.USERSWITCHED"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1722190798%2FProperties%2F622323738" anchor-label="USER_SWITCH_TYPE_DEFAULT" id="1722190798%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-d-e-f-a-u-l-t.html"><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>TYPE_</span><wbr><span>DEFAULT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1722190798%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-d-e-f-a-u-l-t.html">USER_SWITCH_TYPE_DEFAULT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">-1</span></div><div class="brief ">A switch has occurred between two authenticated users.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1038950859%2FProperties%2F622323738" anchor-label="USER_SWITCH_TYPE_FIRST_LOGIN" id="-1038950859%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-f-i-r-s-t_-l-o-g-i-n.html"><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>TYPE_</span><wbr><span>FIRST_</span><wbr><span>LOGIN</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1038950859%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-f-i-r-s-t_-l-o-g-i-n.html">USER_SWITCH_TYPE_FIRST_LOGIN</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">0</span></div><div class="brief ">The first user has logged in and is being switched to.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1866059738%2FProperties%2F622323738" anchor-label="USER_SWITCH_TYPE_LOGIN" id="-1866059738%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-l-o-g-i-n.html"><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>TYPE_</span><wbr><span>LOGIN</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1866059738%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-l-o-g-i-n.html">USER_SWITCH_TYPE_LOGIN</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">1</span></div><div class="brief ">An additional user has logged in and is being switched to.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-500724703%2FProperties%2F622323738" anchor-label="USER_SWITCH_TYPE_LOGOUT" id="-500724703%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-l-o-g-o-u-t.html"><span>USER_</span><wbr><span>SWITCH_</span><wbr><span>TYPE_</span><wbr><span>LOGOUT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-500724703%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-u-s-e-r_-s-w-i-t-c-h_-t-y-p-e_-l-o-g-o-u-t.html">USER_SWITCH_TYPE_LOGOUT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator"> = </span><span class="token constant">2</span></div><div class="brief ">A user has a logged out and another authenticated user is being switched to.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="90656711%2FFunctions%2F622323738" anchor-label="buildAccount" id="90656711%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="build-account.html"><span>build</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="90656711%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/Nullable.html"><span class="token annotation builtin">Nullable</span></a></div></div><span class="token keyword">open </span><span class="token keyword">fun </span><a href="build-account.html"><span class="token function">buildAccount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/accounts/Account.html">Account</a></div><div class="brief ">Resolves the persisted Account whose account name and Salesforce identity match the supplied user.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="672175881%2FFunctions%2F622323738" anchor-label="buildUserAccount" id="672175881%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="build-user-account.html"><span>build</span><wbr><span>User</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="672175881%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/Nullable.html"><span class="token annotation builtin">Nullable</span></a></div></div><span class="token keyword">open </span><span class="token keyword">fun </span><a href="build-user-account.html"><span class="token function">buildUserAccount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">account<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/accounts/Account.html">Account</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></div><div class="brief ">Builds a UserAccount object from the saved account.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-34128308%2FFunctions%2F622323738" anchor-label="clearCachedCurrentUser" id="-34128308%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clear-cached-current-user.html"><span>clear</span><wbr><span>Cached</span><wbr><span>Current</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-34128308%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="clear-cached-current-user.html"><span class="token function">clearCachedCurrentUser</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Get rid of cached current user account</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1722087231%2FFunctions%2F622323738" anchor-label="clearStoredCurrentUserInfo" id="1722087231%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clear-stored-current-user-info.html"><span>clear</span><wbr><span>Stored</span><wbr><span>Current</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1722087231%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="clear-stored-current-user-info.html"><span class="token function">clearStoredCurrentUserInfo</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Clears the stored current user info from shared preferences.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="56698189%2FFunctions%2F622323738" anchor-label="createAccount" id="56698189%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-account.html"><span>create</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="56698189%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="create-account.html"><span class="token function">createAccount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a></div><div class="brief ">Create AccountManager Account from the given UserAccount</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-330675208%2FFunctions%2F622323738" anchor-label="doesUserAccountExist" id="-330675208%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="does-user-account-exist.html"><span>does</span><wbr><span>User</span><wbr><span>Account</span><wbr><span><span>Exist</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-330675208%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="does-user-account-exist.html"><span class="token function">doesUserAccountExist</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">account<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Returns whether the specified user account exists or not.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1503917453%2FFunctions%2F622323738" anchor-label="downgradeFromDPoP" id="1503917453%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../downgrade-from-d-po-p.html"><span>downgrade</span><wbr><span>From</span><wbr><span>DPo</span><wbr><span><span>P</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1503917453%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html">UserAccountManager</a><span class="token punctuation">.</span><a href="../downgrade-from-d-po-p.html"><span class="token function">downgradeFromDPoP</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">onSuccess<span class="token operator">: </span><span class="token punctuation">(</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a><span class="token punctuation">, </span></span><span class="parameter ">onFailure<span class="token operator">: </span><span class="token punctuation">(</span>error<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>errorDesc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span>e<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-throwable/index.html">Throwable</a><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Downgrades the <a href="../downgrade-from-d-po-p.html">userAccount</a>'s existing DPoP-bound refresh token to a Bearer (non-DPoP) one, in place — same consumer key, redirect URI, and scopes the account already uses. This is a same-config convenience over <a href="../migrate-refresh-token.html">migrateRefreshToken</a> with <code class="lang-kotlin">useDPoP = false</code>: no re-consent is expected because nothing about the connected app / External Client App configuration changes.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1842861194%2FFunctions%2F622323738" anchor-label="getAuthenticatedUsers" id="1842861194%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-authenticated-users.html"><span>get</span><wbr><span>Authenticated</span><wbr><span><span>Users</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1842861194%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-authenticated-users.html"><span class="token function">getAuthenticatedUsers</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/List.html">List</a><span class="token operator">&lt;</span><a href="../-user-account/index.html">UserAccount</a><span class="token operator">&gt;</span></div><div class="brief ">Returns a list of authenticated users.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1195773205%2FFunctions%2F622323738" anchor-label="getCachedCurrentUser" id="1195773205%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-cached-current-user.html"><span>get</span><wbr><span>Cached</span><wbr><span>Current</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1195773205%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-cached-current-user.html"><span class="token function">getCachedCurrentUser</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></div><div class="brief ">Returns a cached value of the current user.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-343947121%2FFunctions%2F622323738" anchor-label="getCurrentAccount" id="-343947121%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-current-account.html"><span>get</span><wbr><span>Current</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-343947121%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-current-account.html"><span class="token function">getCurrentAccount</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/accounts/Account.html">Account</a></div><div class="brief ">Returns the current user logged in.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="855139411%2FFunctions%2F622323738" anchor-label="getCurrentUser" id="855139411%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-current-user.html"><span>get</span><wbr><span>Current</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="855139411%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-current-user.html"><span class="token function">getCurrentUser</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></div><div class="brief ">Returns the current user logged in.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1214165518%2FFunctions%2F622323738" anchor-label="getInstance" id="1214165518%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-instance.html"><span>get</span><wbr><span><span>Instance</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1214165518%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-instance.html"><span class="token function">getInstance</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">UserAccountManager</a></div><div class="brief ">Returns a singleton instance of this class.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1948739323%2FFunctions%2F622323738" anchor-label="getStoredOrgId" id="1948739323%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-stored-org-id.html"><span>get</span><wbr><span>Stored</span><wbr><span>Org</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1948739323%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-stored-org-id.html"><span class="token function">getStoredOrgId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Returns the stored org ID.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="64208474%2FFunctions%2F622323738" anchor-label="getStoredUserId" id="64208474%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-stored-user-id.html"><span>get</span><wbr><span>Stored</span><wbr><span>User</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="64208474%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-stored-user-id.html"><span class="token function">getStoredUserId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Returns the stored user ID.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="333223914%2FFunctions%2F622323738" anchor-label="getUserFromOrgAndUserId" id="333223914%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-from-org-and-user-id.html"><span>get</span><wbr><span>User</span><wbr><span>From</span><wbr><span>Org</span><wbr><span>And</span><wbr><span>User</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="333223914%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-user-from-org-and-user-id.html"><span class="token function">getUserFromOrgAndUserId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">orgId<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">userId<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></div><div class="brief ">Retrieves a stored user account from org ID and user ID.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-431250867%2FFunctions%2F622323738" anchor-label="migrateRefreshToken" id="-431250867%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../migrate-refresh-token.html"><span>migrate</span><wbr><span>Refresh</span><wbr><span><span>Token</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-431250867%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html">UserAccountManager</a><span class="token punctuation">.</span><a href="../migrate-refresh-token.html"><span class="token function">migrateRefreshToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token operator">?</span><span class="token operator"> = </span>getInstance().currentUser<span class="token punctuation">, </span></span><span class="parameter ">appConfig<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.config/-o-auth-config/index.html">OAuthConfig</a><span class="token punctuation">, </span></span><span class="parameter ">onMigrationSuccess<span class="token operator">: </span><span class="token punctuation">(</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a><span class="token punctuation">, </span></span><span class="parameter ">onMigrationError<span class="token operator">: </span><span class="token punctuation">(</span>error<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>errorDesc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span>e<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-throwable/index.html">Throwable</a><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Attempts to migrate the <a href="../migrate-refresh-token.html">userAccount</a> to the provided Connected App or External Client Application <a href="../migrate-refresh-token.html">appConfig</a>.</p></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html">UserAccountManager</a><span class="token punctuation">.</span><a href="../migrate-refresh-token.html"><span class="token function">migrateRefreshToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token operator">?</span><span class="token operator"> = </span>getInstance().currentUser<span class="token punctuation">, </span></span><span class="parameter ">appConfig<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.config/-o-auth-config/index.html">OAuthConfig</a><span class="token punctuation">, </span></span><span class="parameter ">useDPoP<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">onMigrationSuccess<span class="token operator">: </span><span class="token punctuation">(</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a><span class="token punctuation">, </span></span><span class="parameter ">onMigrationError<span class="token operator">: </span><span class="token punctuation">(</span>error<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>errorDesc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span>e<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-throwable/index.html">Throwable</a><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Attempts to migrate the <a href="../migrate-refresh-token.html">userAccount</a> to the provided Connected App or External Client Application <a href="../migrate-refresh-token.html">appConfig</a>, with an explicit per-call DPoP intent.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="483997416%2FFunctions%2F622323738" anchor-label="refreshToken" id="483997416%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="refresh-token.html"><span>refresh</span><wbr><span><span>Token</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="483997416%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="refresh-token.html"><span class="token function">refreshToken</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/Nullable.html"><span class="token annotation builtin">Nullable</span></a>&nbsp;</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Attempts to refresh the access token for this user by making an API call to the "/token" endpoint.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="118941163%2FFunctions%2F622323738" anchor-label="sendUserSwitchIntent" id="118941163%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="send-user-switch-intent.html"><span>send</span><wbr><span>User</span><wbr><span>Switch</span><wbr><span><span>Intent</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="118941163%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="send-user-switch-intent.html"><span class="token function">sendUserSwitchIntent</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userSwitchType<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">extras<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Broadcasts an intent that a user switch has occurred.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-884097350%2FFunctions%2F622323738" anchor-label="signoutCurrentUser" id="-884097350%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="signout-current-user.html"><span>signout</span><wbr><span>Current</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-884097350%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-current-user.html"><span class="token function">signoutCurrentUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-current-user.html"><span class="token function">signoutCurrentUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a><span class="token punctuation">, </span></span><span class="parameter ">showLoginPage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-current-user.html"><span class="token function">signoutCurrentUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a><span class="token punctuation">, </span></span><span class="parameter ">showLoginPage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter ">reason<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.auth/-o-auth2/-logout-reason/index.html">OAuth2.LogoutReason</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Logs the current user out.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1301647883%2FFunctions%2F622323738" anchor-label="signoutUser" id="1301647883%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="signout-user.html"><span>signout</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1301647883%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-user.html"><span class="token function">signoutUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-user.html"><span class="token function">signoutUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a><span class="token punctuation">, </span></span><span class="parameter ">showLoginPage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="signout-user.html"><span class="token function">signoutUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/NonNull.html"><span class="token annotation builtin">NonNull</span></a>&nbsp;</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">frontActivity<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/app/Activity.html">Activity</a><span class="token punctuation">, </span></span><span class="parameter ">showLoginPage<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter ">reason<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.auth/-o-auth2/-logout-reason/index.html">OAuth2.LogoutReason</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Logs the specified user out.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1721957873%2FFunctions%2F622323738" anchor-label="storeCurrentUserInfo" id="-1721957873%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="store-current-user-info.html"><span>store</span><wbr><span>Current</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1721957873%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="store-current-user-info.html"><span class="token function">storeCurrentUserInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">orgId<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Stores the current active user's user ID and org ID in a shared preference file.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="631449981%2FFunctions%2F622323738" anchor-label="switchToNewUser" id="631449981%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="switch-to-new-user.html"><span>switch</span><wbr><span>To</span><wbr><span>New</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="631449981%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="switch-to-new-user.html"><span class="token function">switchToNewUser</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief ">Kicks off the login flow to switch to a new user.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1127436894%2FFunctions%2F622323738" anchor-label="switchToUser" id="-1127436894%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="switch-to-user.html"><span>switch</span><wbr><span>To</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1127436894%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="switch-to-user.html"><span class="token function">switchToUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">user<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="switch-to-user.html"><span class="token function">switchToUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">user<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">userSwitchType<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">extras<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Switches to the specified user account.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2112264909%2FFunctions%2F622323738" anchor-label="updateAccount" id="-2112264909%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-account.html"><span>update</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2112264909%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="update-account.html"><span class="token function">updateAccount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">account<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/accounts/Account.html">Account</a><span class="token punctuation">, </span></span><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a></div><div class="brief ">Update AccountManager Account for the given UserAccount</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1363318779%2FFunctions%2F622323738" anchor-label="upgradeToDPoP" id="-1363318779%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../upgrade-to-d-po-p.html"><span>upgrade</span><wbr><span>To</span><wbr><span>DPo</span><wbr><span><span>P</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1363318779%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html">UserAccountManager</a><span class="token punctuation">.</span><a href="../upgrade-to-d-po-p.html"><span class="token function">upgradeToDPoP</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">, </span></span><span class="parameter ">onSuccess<span class="token operator">: </span><span class="token punctuation">(</span>userAccount<span class="token operator">: </span><a href="../-user-account/index.html">UserAccount</a><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a><span class="token punctuation">, </span></span><span class="parameter ">onFailure<span class="token operator">: </span><span class="token punctuation">(</span>error<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>errorDesc<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span>e<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-throwable/index.html">Throwable</a><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unit/index.html">Unit</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Upgrades the <a href="../upgrade-to-d-po-p.html">userAccount</a>'s existing Bearer (non-DPoP) refresh token to a DPoP-bound one, in place — same consumer key, redirect URI, and scopes the account already uses. This is a same-config convenience over <a href="../migrate-refresh-token.html">migrateRefreshToken</a> with <code class="lang-kotlin">useDPoP = true</code>: no re-consent is expected because nothing about the connected app / External Client App configuration changes.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

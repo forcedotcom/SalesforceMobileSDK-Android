@@ -1,0 +1,810 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>InstrumentationEvent</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceAnalytics/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceAnalytics/release" data-filter=":libs:SalesforceAnalytics/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceAnalytics::com.salesforce.androidsdk.analytics.model/InstrumentationEvent///PointingToDeclaration//475750886">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceAnalytics</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.analytics.model</a><span class="delimiter">/</span><span class="current">InstrumentationEvent</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Instrumentation</span><wbr><span><span>Event</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">InstrumentationEvent</a></div><p class="paragraph">Represents a typical instrumentation event. Transforms can be used to convert this event into a specific library's event format.</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1311559198%2FConstructors%2F475750886" anchor-label="InstrumentationEvent" id="-1311559198%2FConstructors%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-instrumentation-event.html"><span>Instrumentation</span><wbr><span><span>Event</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1311559198%2FConstructors%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">json<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span></div><div class="brief ">Constructs an event from its JSON representation.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-760137502%2FClasslikes%2F475750886" anchor-label="ErrorType" id="-760137502%2FClasslikes%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-error-type/index.html"><span>Error</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-760137502%2FClasslikes%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-error-type/index.html">ErrorType</a></div><div class="brief ">Represents the type of error being logged.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-871532144%2FClasslikes%2F475750886" anchor-label="EventType" id="-871532144%2FClasslikes%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-event-type/index.html"><span>Event</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-871532144%2FClasslikes%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-event-type/index.html">EventType</a></div><div class="brief ">Represents the type of event being logged.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-923959645%2FClasslikes%2F475750886" anchor-label="SchemaType" id="-923959645%2FClasslikes%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-schema-type/index.html"><span>Schema</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-923959645%2FClasslikes%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-schema-type/index.html">SchemaType</a></div><div class="brief ">Represents the type of schema being logged.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-599243950%2FProperties%2F475750886" anchor-label="attributes" id="-599243950%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="attributes.html"><span><span>attributes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-599243950%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="attributes.html">attributes</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1404279982%2FProperties%2F475750886" anchor-label="ATTRIBUTES_KEY" id="-1404279982%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-t-t-r-i-b-u-t-e-s_-k-e-y.html"><span>ATTRIBUTES_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1404279982%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-a-t-t-r-i-b-u-t-e-s_-k-e-y.html">ATTRIBUTES_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"attributes"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1337146518%2FProperties%2F475750886" anchor-label="CONNECTION_TYPE_KEY" id="1337146518%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-o-n-n-e-c-t-i-o-n_-t-y-p-e_-k-e-y.html"><span>CONNECTION_</span><wbr><span>TYPE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1337146518%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-c-o-n-n-e-c-t-i-o-n_-t-y-p-e_-k-e-y.html">CONNECTION_TYPE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"connectionType"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1739533679%2FProperties%2F475750886" anchor-label="connectionType" id="-1739533679%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="connection-type.html"><span>connection</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1739533679%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="connection-type.html">connectionType</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-871346925%2FProperties%2F475750886" anchor-label="DEVICE_APP_ATTRIBUTES_KEY" id="-871346925%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-d-e-v-i-c-e_-a-p-p_-a-t-t-r-i-b-u-t-e-s_-k-e-y.html"><span>DEVICE_</span><wbr><span>APP_</span><wbr><span>ATTRIBUTES_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-871346925%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-d-e-v-i-c-e_-a-p-p_-a-t-t-r-i-b-u-t-e-s_-k-e-y.html">DEVICE_APP_ATTRIBUTES_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"deviceAppAttributes"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="853052111%2FProperties%2F475750886" anchor-label="deviceAppAttributes" id="853052111%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="device-app-attributes.html"><span>device</span><wbr><span>App</span><wbr><span><span>Attributes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="853052111%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="device-app-attributes.html">deviceAppAttributes</a><span class="token operator">: </span><a href="../-device-app-attributes/index.html">DeviceAppAttributes</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1145381400%2FProperties%2F475750886" anchor-label="END_TIME_KEY" id="1145381400%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-n-d_-t-i-m-e_-k-e-y.html"><span>END_</span><wbr><span>TIME_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1145381400%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-n-d_-t-i-m-e_-k-e-y.html">END_TIME_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"endTime"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1243648791%2FProperties%2F475750886" anchor-label="endTime" id="-1243648791%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="end-time.html"><span>end</span><wbr><span><span>Time</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1243648791%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="end-time.html">endTime</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="461268920%2FProperties%2F475750886" anchor-label="ERROR_TYPE_KEY" id="461268920%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-r-r-o-r_-t-y-p-e_-k-e-y.html"><span>ERROR_</span><wbr><span>TYPE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="461268920%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-r-r-o-r_-t-y-p-e_-k-e-y.html">ERROR_TYPE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"errorType"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="225430031%2FProperties%2F475750886" anchor-label="errorType" id="225430031%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="error-type.html"><span>error</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="225430031%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="error-type.html">errorType</a><span class="token operator">: </span><a href="-error-type/index.html">InstrumentationEvent.ErrorType</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1647227063%2FProperties%2F475750886" anchor-label="EVENT_ID_KEY" id="-1647227063%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-v-e-n-t_-i-d_-k-e-y.html"><span>EVENT_</span><wbr><span>ID_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1647227063%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-v-e-n-t_-i-d_-k-e-y.html">EVENT_ID_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"eventId"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-88775734%2FProperties%2F475750886" anchor-label="EVENT_TYPE_KEY" id="-88775734%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-v-e-n-t_-t-y-p-e_-k-e-y.html"><span>EVENT_</span><wbr><span>TYPE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-88775734%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-e-v-e-n-t_-t-y-p-e_-k-e-y.html">EVENT_TYPE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"eventType"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-676646276%2FProperties%2F475750886" anchor-label="eventId" id="-676646276%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="event-id.html"><span>event</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-676646276%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="event-id.html">eventId</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="114035389%2FProperties%2F475750886" anchor-label="eventType" id="114035389%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="event-type.html"><span>event</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="114035389%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="event-type.html">eventType</a><span class="token operator">: </span><a href="-event-type/index.html">InstrumentationEvent.EventType</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="817138347%2FProperties%2F475750886" anchor-label="marks" id="817138347%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="marks.html"><span><span>marks</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="817138347%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="marks.html">marks</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-91273653%2FProperties%2F475750886" anchor-label="MARKS_KEY" id="-91273653%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-r-k-s_-k-e-y.html"><span>MARKS_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-91273653%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-m-a-r-k-s_-k-e-y.html">MARKS_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"marks"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1554305634%2FProperties%2F475750886" anchor-label="name" id="-1554305634%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="name.html"><span><span>name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1554305634%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="name.html">name</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1181596574%2FProperties%2F475750886" anchor-label="NAME_KEY" id="1181596574%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-n-a-m-e_-k-e-y.html"><span>NAME_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1181596574%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-n-a-m-e_-k-e-y.html">NAME_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"name"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1642819046%2FProperties%2F475750886" anchor-label="page" id="-1642819046%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="page.html"><span><span>page</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1642819046%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="page.html">page</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-995589606%2FProperties%2F475750886" anchor-label="PAGE_KEY" id="-995589606%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-a-g-e_-k-e-y.html"><span>PAGE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-995589606%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-p-a-g-e_-k-e-y.html">PAGE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"page"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-259797958%2FProperties%2F475750886" anchor-label="PREVIOUS_PAGE_KEY" id="-259797958%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-r-e-v-i-o-u-s_-p-a-g-e_-k-e-y.html"><span>PREVIOUS_</span><wbr><span>PAGE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-259797958%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-p-r-e-v-i-o-u-s_-p-a-g-e_-k-e-y.html">PREVIOUS_PAGE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"previousPage"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1868344733%2FProperties%2F475750886" anchor-label="previousPage" id="-1868344733%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="previous-page.html"><span>previous</span><wbr><span><span>Page</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1868344733%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="previous-page.html">previousPage</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-941628263%2FProperties%2F475750886" anchor-label="SCHEMA_TYPE_KEY" id="-941628263%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-c-h-e-m-a_-t-y-p-e_-k-e-y.html"><span>SCHEMA_</span><wbr><span>TYPE_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-941628263%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-c-h-e-m-a_-t-y-p-e_-k-e-y.html">SCHEMA_TYPE_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"schemaType"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1211235502%2FProperties%2F475750886" anchor-label="schemaType" id="1211235502%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="schema-type.html"><span>schema</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1211235502%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="schema-type.html">schemaType</a><span class="token operator">: </span><a href="-schema-type/index.html">InstrumentationEvent.SchemaType</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="947222500%2FProperties%2F475750886" anchor-label="SENDER_CONTEXT_KEY" id="947222500%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-n-d-e-r_-c-o-n-t-e-x-t_-k-e-y.html"><span>SENDER_</span><wbr><span>CONTEXT_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="947222500%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-n-d-e-r_-c-o-n-t-e-x-t_-k-e-y.html">SENDER_CONTEXT_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"senderContext"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-700756884%2FProperties%2F475750886" anchor-label="SENDER_ID_KEY" id="-700756884%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-n-d-e-r_-i-d_-k-e-y.html"><span>SENDER_</span><wbr><span>ID_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-700756884%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-n-d-e-r_-i-d_-k-e-y.html">SENDER_ID_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"senderId"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="114104003%2FProperties%2F475750886" anchor-label="SENDER_PARENT_ID_KEY" id="114104003%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-n-d-e-r_-p-a-r-e-n-t_-i-d_-k-e-y.html"><span>SENDER_</span><wbr><span>PARENT_</span><wbr><span>ID_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="114104003%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-n-d-e-r_-p-a-r-e-n-t_-i-d_-k-e-y.html">SENDER_PARENT_ID_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"senderParentId"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-17967433%2FProperties%2F475750886" anchor-label="senderContext" id="-17967433%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sender-context.html"><span>sender</span><wbr><span><span>Context</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-17967433%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="sender-context.html">senderContext</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="94489497%2FProperties%2F475750886" anchor-label="senderId" id="94489497%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sender-id.html"><span>sender</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="94489497%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="sender-id.html">senderId</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1798275919%2FProperties%2F475750886" anchor-label="senderParentId" id="1798275919%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sender-parent-id.html"><span>sender</span><wbr><span>Parent</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1798275919%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="sender-parent-id.html">senderParentId</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="642279672%2FProperties%2F475750886" anchor-label="SEQUENCE_ID_KEY" id="642279672%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-q-u-e-n-c-e_-i-d_-k-e-y.html"><span>SEQUENCE_</span><wbr><span>ID_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="642279672%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-q-u-e-n-c-e_-i-d_-k-e-y.html">SEQUENCE_ID_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"sequenceId"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-240090227%2FProperties%2F475750886" anchor-label="sequenceId" id="-240090227%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sequence-id.html"><span>sequence</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-240090227%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="sequence-id.html">sequenceId</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1215078469%2FProperties%2F475750886" anchor-label="SESSION_ID_KEY" id="1215078469%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-s-s-i-o-n_-i-d_-k-e-y.html"><span>SESSION_</span><wbr><span>ID_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1215078469%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-s-s-i-o-n_-i-d_-k-e-y.html">SESSION_ID_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"sessionId"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1831166998%2FProperties%2F475750886" anchor-label="SESSION_START_TIME_KEY" id="1831166998%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-s-s-i-o-n_-s-t-a-r-t_-t-i-m-e_-k-e-y.html"><span>SESSION_</span><wbr><span>START_</span><wbr><span>TIME_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1831166998%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-e-s-s-i-o-n_-s-t-a-r-t_-t-i-m-e_-k-e-y.html">SESSION_START_TIME_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"sessionStartTime"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="473446400%2FProperties%2F475750886" anchor-label="sessionId" id="473446400%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="session-id.html"><span>session</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="473446400%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="session-id.html">sessionId</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2005612144%2FProperties%2F475750886" anchor-label="sessionStartTime" id="-2005612144%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="session-start-time.html"><span>session</span><wbr><span>Start</span><wbr><span><span>Time</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2005612144%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="session-start-time.html">sessionStartTime</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-155390753%2FProperties%2F475750886" anchor-label="START_TIME_KEY" id="-155390753%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-t-a-r-t_-t-i-m-e_-k-e-y.html"><span>START_</span><wbr><span>TIME_</span><wbr><span>KEY</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-155390753%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="-s-t-a-r-t_-t-i-m-e_-k-e-y.html">START_TIME_KEY</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator"> = </span><span class="token string">"startTime"</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-591936062%2FProperties%2F475750886" anchor-label="startTime" id="-591936062%2FProperties%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="start-time.html"><span>start</span><wbr><span><span>Time</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-591936062%2FProperties%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="start-time.html">startTime</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1869809929%2FFunctions%2F475750886" anchor-label="equals" id="-1869809929%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="equals.html"><span><span>equals</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1869809929%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="equals.html"><span class="token function">equals</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">object<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1506740210%2FFunctions%2F475750886" anchor-label="hashCode" id="-1506740210%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="hash-code.html"><span>hash</span><wbr><span><span>Code</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1506740210%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="hash-code.html"><span class="token function">hashCode</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="43020838%2FFunctions%2F475750886" anchor-label="toJson" id="43020838%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-json.html"><span>to</span><wbr><span><span>Json</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="43020838%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="to-json.html"><span class="token function">toJson</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div><div class="brief ">Returns a JSON representation of this event.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

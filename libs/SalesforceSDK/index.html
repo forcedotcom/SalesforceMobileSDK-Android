@@ -1,0 +1,475 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>SalesforceSDK</title>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" id="content" pageids="SalesforceSDK::////PointingToDeclaration//622323738">
+  <div class="breadcrumbs"></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Salesforce</span><wbr><span><span>SDK</span></span></h1>
+  </div>
+  <h2 class="">Packages</h2>
+  <div class="table"><a data-name="1175673897%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.accounts" id="1175673897%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.accounts/index.html">com.salesforce.androidsdk.accounts</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1175673897%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1013065177%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.analytics" id="-1013065177%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.analytics/index.html">com.salesforce.androidsdk.analytics</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1013065177%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1598683202%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.app" id="1598683202%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.app/index.html">com.salesforce.androidsdk.app</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1598683202%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1548060651%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.auth" id="1548060651%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.auth/index.html">com.salesforce.androidsdk.auth</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1548060651%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="969485396%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.auth.dpop" id="969485396%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.auth.dpop/index.html">com.salesforce.androidsdk.auth.dpop</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="969485396%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-526475150%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.auth.idp" id="-526475150%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.auth.idp/index.html">com.salesforce.androidsdk.auth.idp</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-526475150%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-891234726%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.auth.idp.interfaces" id="-891234726%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.auth.idp.interfaces/index.html">com.salesforce.androidsdk.auth.idp.interfaces</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-891234726%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1700087487%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.auth.interfaces" id="-1700087487%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.auth.interfaces/index.html">com.salesforce.androidsdk.auth.interfaces</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1700087487%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1683991749%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.config" id="1683991749%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.config/index.html">com.salesforce.androidsdk.config</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1683991749%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-740521716%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.developer.support" id="-740521716%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.developer.support/index.html">com.salesforce.androidsdk.developer.support</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-740521716%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1972539101%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.push" id="1972539101%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.push/index.html">com.salesforce.androidsdk.push</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1972539101%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1850054889%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.rest" id="-1850054889%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.rest/index.html">com.salesforce.androidsdk.rest</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1850054889%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-98129632%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.rest.files" id="-98129632%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.rest.files/index.html">com.salesforce.androidsdk.rest.files</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-98129632%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1832633597%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.security" id="-1832633597%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.security/index.html">com.salesforce.androidsdk.security</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1832633597%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-122312919%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.security.interfaces" id="-122312919%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.security.interfaces/index.html">com.salesforce.androidsdk.security.interfaces</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-122312919%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="134647319%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.ui" id="134647319%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.ui/index.html">com.salesforce.androidsdk.ui</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="134647319%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1769147055%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.ui.components" id="-1769147055%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.ui.components/index.html">com.salesforce.androidsdk.ui.components</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1769147055%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="24242418%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.ui.theme" id="24242418%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.ui.theme/index.html">com.salesforce.androidsdk.ui.theme</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="24242418%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-860095035%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.util" id="-860095035%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.util/index.html">com.salesforce.androidsdk.util</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-860095035%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1426548833%2FPackages%2F622323738" anchor-label="com.salesforce.androidsdk.util.test" id="-1426548833%2FPackages%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+    <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.salesforce.androidsdk.util.test/index.html">com.salesforce.androidsdk.util.test</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1426548833%2FPackages%2F622323738"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">androidJvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>SalesforceNetworkPlugin</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceHybrid/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceHybrid/release" data-filter=":libs:SalesforceHybrid/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceHybrid::com.salesforce.androidsdk.phonegap.plugin/SalesforceNetworkPlugin///PointingToDeclaration//-1946599488">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceHybrid</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.phonegap.plugin</a><span class="delimiter">/</span><span class="current">SalesforceNetworkPlugin</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Salesforce</span><wbr><span>Network</span><wbr><span><span>Plugin</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">SalesforceNetworkPlugin</a> : <a href="../-force-plugin/index.html">ForcePlugin</a></div><p class="paragraph">PhoneGap plugin for native networking.</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="1609206047%2FConstructors%2F-1946599488" anchor-label="SalesforceNetworkPlugin" id="1609206047%2FConstructors%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-salesforce-network-plugin.html"><span>Salesforce</span><wbr><span>Network</span><wbr><span><span>Plugin</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1609206047%2FConstructors%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1358874538%2FProperties%2F-1946599488" anchor-label="cordova" id="1358874538%2FProperties%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1358874538%2FProperties%2F-1946599488"><span><span>cordova</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1358874538%2FProperties%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">var </span><a href="../-s-d-k-info-plugin/index.html#1358874538%2FProperties%2F-1946599488">cordova</a><span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaInterface///PointingToDeclaration/">CordovaInterface</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1266682938%2FProperties%2F-1946599488" anchor-label="serviceName" id="-1266682938%2FProperties%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1266682938%2FProperties%2F-1946599488"><span>service</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1266682938%2FProperties%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="../-s-d-k-info-plugin/index.html#-1266682938%2FProperties%2F-1946599488">serviceName</a><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1947757267%2FProperties%2F-1946599488" anchor-label="webView" id="-1947757267%2FProperties%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1947757267%2FProperties%2F-1946599488"><span>web</span><wbr><span><span>View</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1947757267%2FProperties%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">var </span><a href="../-s-d-k-info-plugin/index.html#-1947757267%2FProperties%2F-1946599488">webView</a><span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaWebView///PointingToDeclaration/">CordovaWebView</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-331423474%2FFunctions%2F-1946599488" anchor-label="execute" id="-331423474%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-force-plugin/execute.html"><span><span>execute</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-331423474%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-force-plugin/execute.html"><span class="token function">execute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">action<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">args<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a><span class="token punctuation">, </span></span><span class="parameter ">callbackContext<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CallbackContext///PointingToDeclaration/">CallbackContext</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Executes the plugin request and returns PluginResult.</div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="execute.html"><span class="token function">execute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">actionStr<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">jsVersion<span class="token operator">: </span><a href="../-java-script-plugin-version/index.html">JavaScriptPluginVersion</a><span class="token punctuation">, </span></span><span class="parameter ">args<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a><span class="token punctuation">, </span></span><span class="parameter ">callbackContext<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CallbackContext///PointingToDeclaration/">CallbackContext</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Abstract method to concrete subclass need to implement</div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1309862641%2FFunctions%2F-1946599488"><span class="token function">execute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CallbackContext///PointingToDeclaration/">CallbackContext</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-864199451%2FFunctions%2F-1946599488" anchor-label="getPathHandler" id="-864199451%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-864199451%2FFunctions%2F-1946599488"><span>get</span><wbr><span>Path</span><wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-864199451%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-864199451%2FFunctions%2F-1946599488"><span class="token function">getPathHandler</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaPluginPathHandler///PointingToDeclaration/">CordovaPluginPathHandler</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1792647379%2FFunctions%2F-1946599488" anchor-label="handleOpenForRead" id="-1792647379%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1792647379%2FFunctions%2F-1946599488"><span>handle</span><wbr><span>Open</span><wbr><span>For</span><wbr><span><span>Read</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1792647379%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1792647379%2FFunctions%2F-1946599488"><span class="token function">handleOpenForRead</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaResourceApi.OpenForReadResult///PointingToDeclaration/">CordovaResourceApi.OpenForReadResult</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1809613792%2FFunctions%2F-1946599488" anchor-label="hasPermisssion" id="1809613792%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1809613792%2FFunctions%2F-1946599488"><span>has</span><wbr><span><span>Permisssion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1809613792%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#1809613792%2FFunctions%2F-1946599488"><span class="token function">hasPermisssion</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1992294121%2FFunctions%2F-1946599488" anchor-label="initialize" id="-1992294121%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1992294121%2FFunctions%2F-1946599488"><span><span>initialize</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1992294121%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1992294121%2FFunctions%2F-1946599488"><span class="token function">initialize</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaInterface///PointingToDeclaration/">CordovaInterface</span><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaWebView///PointingToDeclaration/">CordovaWebView</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="181350577%2FFunctions%2F-1946599488" anchor-label="onActivityResult" id="181350577%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#181350577%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Activity</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="181350577%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#181350577%2FFunctions%2F-1946599488"><span class="token function">onActivityResult</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Intent.html">Intent</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1830364969%2FFunctions%2F-1946599488" anchor-label="onConfigurationChanged" id="-1830364969%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1830364969%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Configuration</span><wbr><span><span>Changed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1830364969%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1830364969%2FFunctions%2F-1946599488"><span class="token function">onConfigurationChanged</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/res/Configuration.html">Configuration</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2021968853%2FFunctions%2F-1946599488" anchor-label="onDestroy" id="-2021968853%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-2021968853%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Destroy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2021968853%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-2021968853%2FFunctions%2F-1946599488"><span class="token function">onDestroy</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="974354931%2FFunctions%2F-1946599488" anchor-label="onMessage" id="974354931%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#974354931%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="974354931%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#974354931%2FFunctions%2F-1946599488"><span class="token function">onMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-any/index.html">Any</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1379833639%2FFunctions%2F-1946599488" anchor-label="onNewIntent" id="-1379833639%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1379833639%2FFunctions%2F-1946599488"><span>on</span><wbr><span>New</span><wbr><span><span>Intent</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1379833639%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1379833639%2FFunctions%2F-1946599488"><span class="token function">onNewIntent</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Intent.html">Intent</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="89106935%2FFunctions%2F-1946599488" anchor-label="onOverrideUrlLoading" id="89106935%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#89106935%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Override</span><wbr><span>Url</span><wbr><span><span>Loading</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="89106935%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#89106935%2FFunctions%2F-1946599488"><span class="token function">onOverrideUrlLoading</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="437443979%2FFunctions%2F-1946599488" anchor-label="onPause" id="437443979%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#437443979%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Pause</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="437443979%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#437443979%2FFunctions%2F-1946599488"><span class="token function">onPause</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1117061411%2FFunctions%2F-1946599488" anchor-label="onReceivedClientCertRequest" id="1117061411%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1117061411%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Received</span><wbr><span>Client</span><wbr><span>Cert</span><wbr><span><span>Request</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1117061411%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#1117061411%2FFunctions%2F-1946599488"><span class="token function">onReceivedClientCertRequest</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaWebView///PointingToDeclaration/">CordovaWebView</span><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/ICordovaClientCertRequest///PointingToDeclaration/">ICordovaClientCertRequest</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1069118410%2FFunctions%2F-1946599488" anchor-label="onReceivedHttpAuthRequest" id="1069118410%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1069118410%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Received</span><wbr><span>Http</span><wbr><span>Auth</span><wbr><span><span>Request</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1069118410%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#1069118410%2FFunctions%2F-1946599488"><span class="token function">onReceivedHttpAuthRequest</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaWebView///PointingToDeclaration/">CordovaWebView</span><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/ICordovaHttpAuthHandler///PointingToDeclaration/">ICordovaHttpAuthHandler</span><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">p3<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-577413214%2FFunctions%2F-1946599488" anchor-label="onRenderProcessGone" id="-577413214%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-577413214%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Render</span><wbr><span>Process</span><wbr><span><span>Gone</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-577413214%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-577413214%2FFunctions%2F-1946599488"><span class="token function">onRenderProcessGone</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/webkit/WebView.html">WebView</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/webkit/RenderProcessGoneDetail.html">RenderProcessGoneDetail</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-240699519%2FFunctions%2F-1946599488" anchor-label="onRequestPermissionResult" id="-240699519%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-240699519%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Request</span><wbr><span>Permission</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-240699519%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-240699519%2FFunctions%2F-1946599488"><span class="token function">onRequestPermissionResult</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-616230118%2FFunctions%2F-1946599488" anchor-label="onRequestPermissionsResult" id="-616230118%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-616230118%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Request</span><wbr><span>Permissions</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-616230118%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-616230118%2FFunctions%2F-1946599488"><span class="token function">onRequestPermissionsResult</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-904488330%2FFunctions%2F-1946599488" anchor-label="onReset" id="-904488330%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-904488330%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Reset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-904488330%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-904488330%2FFunctions%2F-1946599488"><span class="token function">onReset</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2105053957%2FFunctions%2F-1946599488" anchor-label="onRestoreStateForActivityResult" id="-2105053957%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-2105053957%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Restore</span><wbr><span>State</span><wbr><span>For</span><wbr><span>Activity</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2105053957%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-2105053957%2FFunctions%2F-1946599488"><span class="token function">onRestoreStateForActivityResult</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CallbackContext///PointingToDeclaration/">CallbackContext</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-35425518%2FFunctions%2F-1946599488" anchor-label="onResume" id="-35425518%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-35425518%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Resume</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-35425518%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-35425518%2FFunctions%2F-1946599488"><span class="token function">onResume</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1899338566%2FFunctions%2F-1946599488" anchor-label="onSaveInstanceState" id="1899338566%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1899338566%2FFunctions%2F-1946599488"><span>on</span><wbr><span>Save</span><wbr><span>Instance</span><wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1899338566%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#1899338566%2FFunctions%2F-1946599488"><span class="token function">onSaveInstanceState</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/os/Bundle.html">Bundle</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="819789507%2FFunctions%2F-1946599488" anchor-label="onStart" id="819789507%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#819789507%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Start</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="819789507%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#819789507%2FFunctions%2F-1946599488"><span class="token function">onStart</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-340709421%2FFunctions%2F-1946599488" anchor-label="onStop" id="-340709421%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-340709421%2FFunctions%2F-1946599488"><span>on</span><wbr><span><span>Stop</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-340709421%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-340709421%2FFunctions%2F-1946599488"><span class="token function">onStop</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1016532105%2FFunctions%2F-1946599488" anchor-label="privateInitialize" id="1016532105%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#1016532105%2FFunctions%2F-1946599488"><span>private</span><wbr><span><span>Initialize</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1016532105%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#1016532105%2FFunctions%2F-1946599488"><span class="token function">privateInitialize</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">p1<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaInterface///PointingToDeclaration/">CordovaInterface</span><span class="token punctuation">, </span></span><span class="parameter ">p2<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaWebView///PointingToDeclaration/">CordovaWebView</span><span class="token punctuation">, </span></span><span class="parameter ">p3<span class="token operator">: </span><span data-unresolved-link="org.apache.cordova/CordovaPreferences///PointingToDeclaration/">CordovaPreferences</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-70296779%2FFunctions%2F-1946599488" anchor-label="remapUri" id="-70296779%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-70296779%2FFunctions%2F-1946599488"><span>remap</span><wbr><span><span>Uri</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-70296779%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-70296779%2FFunctions%2F-1946599488"><span class="token function">remapUri</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1134913356%2FFunctions%2F-1946599488" anchor-label="requestPermissions" id="-1134913356%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1134913356%2FFunctions%2F-1946599488"><span>request</span><wbr><span><span>Permissions</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1134913356%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1134913356%2FFunctions%2F-1946599488"><span class="token function">requestPermissions</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1244162114%2FFunctions%2F-1946599488" anchor-label="shouldAllowBridgeAccess" id="-1244162114%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-1244162114%2FFunctions%2F-1946599488"><span>should</span><wbr><span>Allow</span><wbr><span>Bridge</span><wbr><span><span>Access</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1244162114%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-1244162114%2FFunctions%2F-1946599488"><span class="token function">shouldAllowBridgeAccess</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/Boolean.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2133640343%2FFunctions%2F-1946599488" anchor-label="shouldAllowNavigation" id="2133640343%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#2133640343%2FFunctions%2F-1946599488"><span>should</span><wbr><span>Allow</span><wbr><span><span>Navigation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2133640343%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#2133640343%2FFunctions%2F-1946599488"><span class="token function">shouldAllowNavigation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/Boolean.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-755530122%2FFunctions%2F-1946599488" anchor-label="shouldAllowRequest" id="-755530122%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-755530122%2FFunctions%2F-1946599488"><span>should</span><wbr><span>Allow</span><wbr><span><span>Request</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-755530122%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-755530122%2FFunctions%2F-1946599488"><span class="token function">shouldAllowRequest</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/Boolean.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-647586182%2FFunctions%2F-1946599488" anchor-label="shouldOpenExternalUrl" id="-647586182%2FFunctions%2F-1946599488" data-filterable-set=":libs:SalesforceHybrid/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceHybrid/release" data-filterable-set=":libs:SalesforceHybrid/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-s-d-k-info-plugin/index.html#-647586182%2FFunctions%2F-1946599488"><span>should</span><wbr><span>Open</span><wbr><span>External</span><wbr><span><span>Url</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-647586182%2FFunctions%2F-1946599488"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceHybrid/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-s-d-k-info-plugin/index.html#-647586182%2FFunctions%2F-1946599488"><span class="token function">shouldOpenExternalUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">p<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/Boolean.html">Boolean</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

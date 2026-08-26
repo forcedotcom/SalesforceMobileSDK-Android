@@ -1,0 +1,431 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Encryptor</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceAnalytics/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceAnalytics/release" data-filter=":libs:SalesforceAnalytics/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceAnalytics::com.salesforce.androidsdk.analytics.security/Encryptor///PointingToDeclaration//475750886">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceAnalytics</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.analytics.security</a><span class="delimiter">/</span><span class="current">Encryptor</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Encryptor</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">Encryptor</a></div><p class="paragraph">Helper class for encryption/decryption/hash computations.</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="895266082%2FConstructors%2F475750886" anchor-label="Encryptor" id="895266082%2FConstructors%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-encryptor.html"><span><span>Encryptor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="895266082%2FConstructors%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="433438071%2FClasslikes%2F475750886" anchor-label="CipherMode" id="433438071%2FClasslikes%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-cipher-mode/index.html"><span>Cipher</span><wbr><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="433438071%2FClasslikes%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-cipher-mode/index.html">CipherMode</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-2027762612%2FFunctions%2F475750886" anchor-label="decrypt" id="-2027762612%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="decrypt.html"><span><span>decrypt</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2027762612%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt.html"><span class="token function">decrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt.html"><span class="token function">decrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt.html"><span class="token function">decrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Decrypts data with key using AES/GCM/NoPadding.</div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt.html"><span class="token function">decrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Decrypts data with key using using AES/GCM/NoPadding.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1483279912%2FFunctions%2F475750886" anchor-label="decryptBytes" id="1483279912%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="decrypt-bytes.html"><span>decrypt</span><wbr><span><span>Bytes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1483279912%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt-bytes.html"><span class="token function">decryptBytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Decrypts the given bytes using key and IV.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="854903281%2FFunctions%2F475750886" anchor-label="decryptWithoutBase64Encoding" id="854903281%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="decrypt-without-base64-encoding.html"><span>decrypt</span><wbr><span>Without</span><wbr><span><span>Base64Encoding</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="854903281%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt-without-base64-encoding.html"><span class="token function">decryptWithoutBase64Encoding</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="brief ">Decrypts data with key using using AES/GCM/NoPadding.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1882638817%2FFunctions%2F475750886" anchor-label="decryptWithRSA" id="-1882638817%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="decrypt-with-r-s-a.html"><span>decrypt</span><wbr><span>With</span><wbr><span><span>RSA</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1882638817%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt-with-r-s-a.html"><span class="token function">decryptWithRSA</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">privateKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/security/PrivateKey.html">PrivateKey</a><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cipherMode<span class="token operator">: </span><a href="-cipher-mode/index.html">Encryptor.CipherMode</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Returns data decrypted with an RSA private key.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1127119094%2FFunctions%2F475750886" anchor-label="decryptWithRSABytes" id="1127119094%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="decrypt-with-r-s-a-bytes.html"><span>decrypt</span><wbr><span>With</span><wbr><span><span>RSABytes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1127119094%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="decrypt-with-r-s-a-bytes.html"><span class="token function">decryptWithRSABytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">privateKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/security/PrivateKey.html">PrivateKey</a><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cipherMode<span class="token operator">: </span><a href="-cipher-mode/index.html">Encryptor.CipherMode</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="brief ">Returns data decrypted with an RSA private key.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1063081673%2FFunctions%2F475750886" anchor-label="encrypt" id="1063081673%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt.html"><span><span>encrypt</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1063081673%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt.html"><span class="token function">encrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt.html"><span class="token function">encrypt</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Encrypts data with key using AES/GCM/NoPadding.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-838169983%2FFunctions%2F475750886" anchor-label="encryptBytes" id="-838169983%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt-bytes.html"><span>encrypt</span><wbr><span><span>Bytes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-838169983%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-bytes.html"><span class="token function">encryptBytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-bytes.html"><span class="token function">encryptBytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="brief ">Encrypts data with key using AES/GCM/NoPadding.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1177253913%2FFunctions%2F475750886" anchor-label="encryptWithoutBase64Encoding" id="1177253913%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt-without-base64-encoding.html"><span>encrypt</span><wbr><span>Without</span><wbr><span><span>Base64Encoding</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1177253913%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-without-base64-encoding.html"><span class="token function">encryptWithoutBase64Encoding</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="brief ">Encrypts data with key using AES/GCM/NoPadding.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1031661627%2FFunctions%2F475750886" anchor-label="encryptWithPublicKey" id="1031661627%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt-with-public-key.html"><span>encrypt</span><wbr><span>With</span><wbr><span>Public</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1031661627%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-with-public-key.html"><span class="token function">encryptWithPublicKey</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">publicKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/security/PublicKey.html">PublicKey</a><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cipherMode<span class="token operator">: </span><a href="-cipher-mode/index.html">Encryptor.CipherMode</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="796242801%2FFunctions%2F475750886" anchor-label="encryptWithRSA" id="796242801%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt-with-r-s-a.html"><span>encrypt</span><wbr><span>With</span><wbr><span><span>RSA</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="796242801%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-with-r-s-a.html"><span class="token function">encryptWithRSA</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">publicKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/security/PublicKey.html">PublicKey</a><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cipherMode<span class="token operator">: </span><a href="-cipher-mode/index.html">Encryptor.CipherMode</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Returns data encrypted with an RSA public key.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1983376138%2FFunctions%2F475750886" anchor-label="encryptWithRSABytes" id="1983376138%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="encrypt-with-r-s-a-bytes.html"><span>encrypt</span><wbr><span>With</span><wbr><span><span>RSABytes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1983376138%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="encrypt-with-r-s-a-bytes.html"><span class="token function">encryptWithRSABytes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">publicKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/security/PublicKey.html">PublicKey</a><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">cipherMode<span class="token operator">: </span><a href="-cipher-mode/index.html">Encryptor.CipherMode</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></div><div class="brief ">Returns data encrypted with an RSA public key.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1595226089%2FFunctions%2F475750886" anchor-label="getByteArrayStreamFromStream" id="1595226089%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-byte-array-stream-from-stream.html"><span>get</span><wbr><span>Byte</span><wbr><span>Array</span><wbr><span>Stream</span><wbr><span>From</span><wbr><span><span>Stream</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1595226089%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-byte-array-stream-from-stream.html"><span class="token function">getByteArrayStreamFromStream</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">stream<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/io/InputStream.html">InputStream</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/io/ByteArrayOutputStream.html">ByteArrayOutputStream</a></div><div class="brief ">Retrieves data from an InputStream.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1440614650%2FFunctions%2F475750886" anchor-label="getDecryptingCipher" id="-1440614650%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-decrypting-cipher.html"><span>get</span><wbr><span>Decrypting</span><wbr><span><span>Cipher</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1440614650%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-decrypting-cipher.html"><span class="token function">getDecryptingCipher</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">encryptionKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">iv<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-array/index.html">Array</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte/index.html">Byte</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/javax/crypto/Cipher.html">Cipher</a></div><div class="brief ">Returns initialized cipher for decryption.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-973046969%2FFunctions%2F475750886" anchor-label="getEncryptingCipher" id="-973046969%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-encrypting-cipher.html"><span>get</span><wbr><span>Encrypting</span><wbr><span><span>Cipher</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-973046969%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-encrypting-cipher.html"><span class="token function">getEncryptingCipher</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">encryptionKey<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/javax/crypto/Cipher.html">Cipher</a></div><div class="brief ">Returns initialized cipher for encryption with an IV automatically generated.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1379216293%2FFunctions%2F475750886" anchor-label="getStringFromFile" id="1379216293%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-string-from-file.html"><span>get</span><wbr><span>String</span><wbr><span>From</span><wbr><span><span>File</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1379216293%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-string-from-file.html"><span class="token function">getStringFromFile</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">file<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/io/File.html">File</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Retrieves data from a File.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1237304997%2FFunctions%2F475750886" anchor-label="getStringFromStream" id="-1237304997%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-string-from-stream.html"><span>get</span><wbr><span>String</span><wbr><span>From</span><wbr><span><span>Stream</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1237304997%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="get-string-from-stream.html"><span class="token function">getStringFromStream</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">stream<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/io/InputStream.html">InputStream</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Retrieves data from an InputStream.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1139258141%2FFunctions%2F475750886" anchor-label="hash" id="1139258141%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="hash.html"><span><span>hash</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1139258141%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="hash.html"><span class="token function">hash</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></div><div class="brief ">Return HMAC SHA-256 hash of data using key.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="876428080%2FFunctions%2F475750886" anchor-label="isBase64Encoded" id="876428080%2FFunctions%2F475750886" data-filterable-set=":libs:SalesforceAnalytics/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceAnalytics/release" data-filterable-set=":libs:SalesforceAnalytics/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-base64-encoded.html"><span>is</span><wbr><span><span>Base64Encoded</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="876428080%2FFunctions%2F475750886"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceAnalytics/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="is-base64-encoded.html"><span class="token function">isBase64Encoded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">key<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/lang/String.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief ">Checks if the string is Base64 encoded.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

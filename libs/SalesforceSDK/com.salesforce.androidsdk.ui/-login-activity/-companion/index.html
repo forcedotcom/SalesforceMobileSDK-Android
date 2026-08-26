@@ -1,0 +1,401 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Companion</title>
+<link href="../../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.ui/LoginActivity.Companion///PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../../../index.html">SalesforceSDK</a><span class="delimiter">/</span><a href="../../index.html">com.salesforce.androidsdk.ui</a><span class="delimiter">/</span><a href="../index.html">LoginActivity</a><span class="delimiter">/</span><span class="current">Companion</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Companion</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">Companion</a></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="1749515666%2FClasslikes%2F622323738" anchor-label="SimulatedDiscoveryResult" id="1749515666%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-simulated-discovery-result/index.html"><span>Simulated</span><wbr><span>Discovery</span><wbr><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1749515666%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-simulated-discovery-result/index.html">SimulatedDiscoveryResult</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>loginHint<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>loginHost<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">The result of a simulated Welcome Discovery flow. Holds the values that the real <code class="lang-kotlin">sfdc://discocallback?login_hint=&amp;my_domain=</code> URL would have provided.  Set on <a href="../../../../../libs/SalesforceSDK/com.salesforce.androidsdk.app/-salesforce-s-d-k-manager/simulated-discovery-result.html">SalesforceSDKManager.simulatedDiscoveryResult</a> from the Login Options screen to bypass the email round-trip during automated tests.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2125148772%2FClasslikes%2F622323738" anchor-label="UiBridgeApiParameters" id="-2125148772%2FClasslikes%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-ui-bridge-api-parameters/index.html"><span>Ui</span><wbr><span>Bridge</span><wbr><span>Api</span><wbr><span><span>Parameters</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2125148772%2FClasslikes%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-ui-bridge-api-parameters/index.html">UiBridgeApiParameters</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>frontdoorBridgeUrl<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>pkceCodeVerifier<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">A data class representing Salesforce Identity API UI Bridge parameters.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="13469946%2FProperties%2F622323738" anchor-label="EXTRA_KEY_FRONTDOOR_BRIDGE_URL" id="13469946%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-t-r-a_-k-e-y_-f-r-o-n-t-d-o-o-r_-b-r-i-d-g-e_-u-r-l.html"><span>EXTRA_</span><wbr><span>KEY_</span><wbr><span>FRONTDOOR_</span><wbr><span>BRIDGE_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="13469946%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-x-t-r-a_-k-e-y_-f-r-o-n-t-d-o-o-r_-b-r-i-d-g-e_-u-r-l.html">EXTRA_KEY_FRONTDOOR_BRIDGE_URL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Extras key for the Salesforce Identity API UI Bridge front door URL</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-597711906%2FProperties%2F622323738" anchor-label="EXTRA_KEY_LOGIN_HINT" id="-597711906%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-t-r-a_-k-e-y_-l-o-g-i-n_-h-i-n-t.html"><span>EXTRA_</span><wbr><span>KEY_</span><wbr><span>LOGIN_</span><wbr><span>HINT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-597711906%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-x-t-r-a_-k-e-y_-l-o-g-i-n_-h-i-n-t.html">EXTRA_KEY_LOGIN_HINT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Intent extra key for Salesforce Welcome login username hint value</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1613028387%2FProperties%2F622323738" anchor-label="EXTRA_KEY_LOGIN_HOST" id="-1613028387%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-t-r-a_-k-e-y_-l-o-g-i-n_-h-o-s-t.html"><span>EXTRA_</span><wbr><span>KEY_</span><wbr><span>LOGIN_</span><wbr><span>HOST</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1613028387%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-x-t-r-a_-k-e-y_-l-o-g-i-n_-h-o-s-t.html">EXTRA_KEY_LOGIN_HOST</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Intent extra key for Salesforce Welcome login host to use with login hint</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1241759755%2FProperties%2F622323738" anchor-label="EXTRA_KEY_PKCE_CODE_VERIFIER" id="-1241759755%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e-x-t-r-a_-k-e-y_-p-k-c-e_-c-o-d-e_-v-e-r-i-f-i-e-r.html"><span>EXTRA_</span><wbr><span>KEY_</span><wbr><span>PKCE_</span><wbr><span>CODE_</span><wbr><span>VERIFIER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1241759755%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-e-x-t-r-a_-k-e-y_-p-k-c-e_-c-o-d-e_-v-e-r-i-f-i-e-r.html">EXTRA_KEY_PKCE_CODE_VERIFIER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Extras key for the Salesforce Identity API UI PKCE code verifier</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1269156092%2FProperties%2F622323738" anchor-label="qrCodeLoginUrlJsonFrontdoorBridgeUrlKey" id="1269156092%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="qr-code-login-url-json-frontdoor-bridge-url-key.html"><span>qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span>Url</span><wbr><span>Json</span><wbr><span>Frontdoor</span><wbr><span>Bridge</span><wbr><span>Url</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1269156092%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">var </span><a href="qr-code-login-url-json-frontdoor-bridge-url-key.html">qrCodeLoginUrlJsonFrontdoorBridgeUrlKey</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">For QR code login URLs, the Salesforce Identity API UI Bridge parameters JSON key for the frontdoor URL.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1840125704%2FProperties%2F622323738" anchor-label="qrCodeLoginUrlJsonParameterName" id="-1840125704%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="qr-code-login-url-json-parameter-name.html"><span>qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span>Url</span><wbr><span>Json</span><wbr><span>Parameter</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1840125704%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">var </span><a href="qr-code-login-url-json-parameter-name.html">qrCodeLoginUrlJsonParameterName</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">For QR code login URLs, the URL query string parameter name for the Salesforce Identity API UI Bridge parameters JSON object.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1383326771%2FProperties%2F622323738" anchor-label="qrCodeLoginUrlJsonPkceCodeVerifierKey" id="-1383326771%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="qr-code-login-url-json-pkce-code-verifier-key.html"><span>qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span>Url</span><wbr><span>Json</span><wbr><span>Pkce</span><wbr><span>Code</span><wbr><span>Verifier</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1383326771%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">var </span><a href="qr-code-login-url-json-pkce-code-verifier-key.html">qrCodeLoginUrlJsonPkceCodeVerifierKey</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">For QR code login URLs, the Salesforce Identity API UI Bridge parameters JSON key for the PKCE code verifier, which is only used when the front door URL was generated for the web server authorization flow.  The user agent flow does not require a value for this parameter.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1557083567%2FProperties%2F622323738" anchor-label="qrCodeLoginUrlPath" id="-1557083567%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="qr-code-login-url-path.html"><span>qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span>Url</span><wbr><span><span>Path</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1557083567%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">var </span><a href="qr-code-login-url-path.html">qrCodeLoginUrlPath</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">For QR code login URLs, the URL path which distinguishes them from other URLs provided by the app's internal QR code reader or deep link intents from external QR code readers.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1430244551%2FProperties%2F622323738" anchor-label="SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL" id="1430244551%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-a-l-l-b-a-c-k_-u-r-l.html"><span>SALESFORCE_</span><wbr><span>WELCOME_</span><wbr><span>DISCOVERY_</span><wbr><span>MOBILE_</span><wbr><span>URL_</span><wbr><span>QUERY_</span><wbr><span>PARAMETER_</span><wbr><span>KEY_</span><wbr><span>CALLBACK_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1430244551%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-a-l-l-b-a-c-k_-u-r-l.html">SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">The Salesforce Welcome Discovery mobile URL's callback URL query string parameter name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-564259025%2FProperties%2F622323738" anchor-label="SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID" id="-564259025%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-l-i-e-n-t_-i-d.html"><span>SALESFORCE_</span><wbr><span>WELCOME_</span><wbr><span>DISCOVERY_</span><wbr><span>MOBILE_</span><wbr><span>URL_</span><wbr><span>QUERY_</span><wbr><span>PARAMETER_</span><wbr><span>KEY_</span><wbr><span>CLIENT_</span><wbr><span>ID</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-564259025%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-l-i-e-n-t_-i-d.html">SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">The Salesforce Welcome Discovery mobile URL's client id (consumer key) query string parameter name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1347565048%2FProperties%2F622323738" anchor-label="SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION" id="1347565048%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-l-i-e-n-t_-v-e-r-s-i-o-n.html"><span>SALESFORCE_</span><wbr><span>WELCOME_</span><wbr><span>DISCOVERY_</span><wbr><span>MOBILE_</span><wbr><span>URL_</span><wbr><span>QUERY_</span><wbr><span>PARAMETER_</span><wbr><span>KEY_</span><wbr><span>CLIENT_</span><wbr><span>VERSION</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1347565048%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-m-o-b-i-l-e_-u-r-l_-q-u-e-r-y_-p-a-r-a-m-e-t-e-r_-k-e-y_-c-l-i-e-n-t_-v-e-r-s-i-o-n.html">SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">The Salesforce Welcome Discovery mobile URL's client version query string parameter name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-993705457%2FProperties%2F622323738" anchor-label="SALESFORCE_WELCOME_DISCOVERY_URL_PATH" id="-993705457%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-u-r-l_-p-a-t-h.html"><span>SALESFORCE_</span><wbr><span>WELCOME_</span><wbr><span>DISCOVERY_</span><wbr><span>URL_</span><wbr><span>PATH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-993705457%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://developer.android.com/reference/kotlin/androidx/annotation/VisibleForTesting.html"><span class="token annotation builtin">VisibleForTesting</span></a></div></div><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-a-l-e-s-f-o-r-c-e_-w-e-l-c-o-m-e_-d-i-s-c-o-v-e-r-y_-u-r-l_-p-a-t-h.html">SALESFORCE_WELCOME_DISCOVERY_URL_PATH</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">The URL path used by Salesforce Welcome Discovery URLs</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1669651776%2FFunctions%2F622323738" anchor-label="isQrCodeLoginUrlIntent" id="-1669651776%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-qr-code-login-url-intent.html"><span>is</span><wbr><span>Qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span>Url</span><wbr><span><span>Intent</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1669651776%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-qr-code-login-url-intent.html"><span class="token function">isQrCodeLoginUrlIntent</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">intent<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Intent.html">Intent</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Determines if the provided intent has QR code login parameters.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1773458892%2FFunctions%2F622323738" anchor-label="isSalesforceWelcomeDiscoveryMobileUrl" id="-1773458892%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-salesforce-welcome-discovery-mobile-url.html"><span>is</span><wbr><span>Salesforce</span><wbr><span>Welcome</span><wbr><span>Discovery</span><wbr><span>Mobile</span><wbr><span><span>Url</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1773458892%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-salesforce-welcome-discovery-mobile-url.html"><span class="token function">isSalesforceWelcomeDiscoveryMobileUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">uri<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-salesforce-welcome-discovery-mobile-url.html"><span class="token function"><strike>isSalesforceWelcomeDiscoveryMobileUrl</strike></span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">context<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/content/Context.html">Context</a><span class="token punctuation">, </span></span><span class="parameter ">uri<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">Determines if the provided URL has the Salesforce Welcome Discovery path and parameters for mobile callback.  The client id (consumer key) of the URL must match the boot config's consumer key.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1832320179%2FFunctions%2F622323738" anchor-label="isSalesforceWelcomeDiscoveryUrlPath" id="1832320179%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-salesforce-welcome-discovery-url-path.html"><span>is</span><wbr><span>Salesforce</span><wbr><span>Welcome</span><wbr><span>Discovery</span><wbr><span>Url</span><wbr><span><span>Path</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1832320179%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="is-salesforce-welcome-discovery-url-path.html"><span class="token function">isSalesforceWelcomeDiscoveryUrlPath</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">uri<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/android/net/Uri.html">Uri</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Determines if the provided URL has the Salesforce Welcome Discovery path.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2005292458%2FFunctions%2F622323738" anchor-label="uiBridgeApiParametersFromQrCodeLoginUrl" id="2005292458%2FFunctions%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="ui-bridge-api-parameters-from-qr-code-login-url.html"><span>ui</span><wbr><span>Bridge</span><wbr><span>Api</span><wbr><span>Parameters</span><wbr><span>From</span><wbr><span>Qr</span><wbr><span>Code</span><wbr><span>Login</span><wbr><span><span>Url</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2005292458%2FFunctions%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="ui-bridge-api-parameters-from-qr-code-login-url.html"><span class="token function">uiBridgeApiParametersFromQrCodeLoginUrl</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qrCodeLoginUrl<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">Parses Salesforce Identity API UI Bridge parameters from the provided login QR code login URL.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

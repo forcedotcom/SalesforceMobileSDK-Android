@@ -1,0 +1,483 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>LoginViewTestTags</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:SalesforceSDK/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:SalesforceSDK/release" data-filter=":libs:SalesforceSDK/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="SalesforceSDK::com.salesforce.androidsdk.ui.components/LoginViewTestTags///PointingToDeclaration//622323738">
+  <div class="breadcrumbs"><a href="../../index.html">SalesforceSDK</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.ui.components</a><span class="delimiter">/</span><span class="current">LoginViewTestTags</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Login</span><wbr><span>View</span><wbr><span>Test</span><wbr><span><span>Tags</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">LoginViewTestTags</a></div><p class="paragraph">Stable, locale-invariant test tags for the Mobile SDK login screen and the server / account picker bottom sheet.</p><p class="paragraph">Each value is applied to its Compose node via <a href="https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/package-summary.html">androidx.compose.ui.platform.testTag</a>. Because the composition roots that host these nodes opt in with <code class="lang-kotlin">Modifier.semantics { testTagsAsResourceId = true }</code>, the tags are surfaced to UI automation (UIAutomator2 / UTAM) as Android <code class="lang-kotlin">resource-id</code>s. Unlike the localized <code class="lang-kotlin">contentDescription</code> strings the UI also exposes, these values never change across device languages, so test and page-object code can anchor on them in any locale — including right-to-left layouts.</p><p class="paragraph">This object is the single source of truth for those values. It is intentionally public so that SDK instrumented tests, sample-app page objects (e.g. AuthFlowTester), and external UTAM page objects can all reference the same constants instead of duplicating the literal strings.</p><p class="paragraph">IMPORTANT: These are test anchors only. Do NOT localize them and do NOT reuse them as user-facing strings.</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1373269831%2FProperties%2F622323738" anchor-label="ACCOUNT_PICKER" id="1373269831%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-c-c-o-u-n-t_-p-i-c-k-e-r.html"><span>ACCOUNT_</span><wbr><span>PICKER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1373269831%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-c-c-o-u-n-t_-p-i-c-k-e-r.html">ACCOUNT_PICKER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Root container of the user-account picker bottom sheet.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2109189978%2FProperties%2F622323738" anchor-label="ADD_NEW_ACCOUNT_BUTTON" id="-2109189978%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-d-d_-n-e-w_-a-c-c-o-u-n-t_-b-u-t-t-o-n.html"><span>ADD_</span><wbr><span>NEW_</span><wbr><span>ACCOUNT_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2109189978%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-d-d_-n-e-w_-a-c-c-o-u-n-t_-b-u-t-t-o-n.html">ADD_NEW_ACCOUNT_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Add New Account" button in the user-account picker.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-458646300%2FProperties%2F622323738" anchor-label="APPLY_BUTTON" id="-458646300%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-a-p-p-l-y_-b-u-t-t-o-n.html"><span>APPLY_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-458646300%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-a-p-p-l-y_-b-u-t-t-o-n.html">APPLY_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Save / apply button in the picker's "Add Connection" form.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1005371607%2FProperties%2F622323738" anchor-label="BACK_BUTTON" id="-1005371607%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-b-a-c-k_-b-u-t-t-o-n.html"><span>BACK_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1005371607%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-b-a-c-k_-b-u-t-t-o-n.html">BACK_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Navigation "back" button in the login top app bar (shown conditionally).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1708167491%2FProperties%2F622323738" anchor-label="CUSTOM_URL_BUTTON" id="1708167491%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-u-s-t-o-m_-u-r-l_-b-u-t-t-o-n.html"><span>CUSTOM_</span><wbr><span>URL_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1708167491%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-c-u-s-t-o-m_-u-r-l_-b-u-t-t-o-n.html">CUSTOM_URL_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Add New Connection" button in the login-server picker.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1948124185%2FProperties%2F622323738" anchor-label="LOADING_INDICATOR" id="-1948124185%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-o-a-d-i-n-g_-i-n-d-i-c-a-t-o-r.html"><span>LOADING_</span><wbr><span>INDICATOR</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1948124185%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-o-a-d-i-n-g_-i-n-d-i-c-a-t-o-r.html">LOADING_INDICATOR</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Indeterminate loading spinner shown over the login WebView.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1956815649%2FProperties%2F622323738" anchor-label="LOGIN_BUTTON" id="-1956815649%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-l-o-g-i-n_-b-u-t-t-o-n.html"><span>LOGIN_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1956815649%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-l-o-g-i-n_-b-u-t-t-o-n.html">LOGIN_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Bottom-bar login action button (biometric / IDP / custom).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1781754863%2FProperties%2F622323738" anchor-label="MENU_ITEM_CLEAR_CACHE" id="1781754863%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-c-l-e-a-r_-c-a-c-h-e.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>CLEAR_</span><wbr><span>CACHE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1781754863%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-c-l-e-a-r_-c-a-c-h-e.html">MENU_ITEM_CLEAR_CACHE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Clear Cache" overflow menu item.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="985163906%2FProperties%2F622323738" anchor-label="MENU_ITEM_CLEAR_COOKIES" id="985163906%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-c-l-e-a-r_-c-o-o-k-i-e-s.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>CLEAR_</span><wbr><span>COOKIES</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="985163906%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-c-l-e-a-r_-c-o-o-k-i-e-s.html">MENU_ITEM_CLEAR_COOKIES</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Clear Cookies" overflow menu item.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1423451398%2FProperties%2F622323738" anchor-label="MENU_ITEM_DEV_SUPPORT" id="-1423451398%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-d-e-v_-s-u-p-p-o-r-t.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>DEV_</span><wbr><span>SUPPORT</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1423451398%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-d-e-v_-s-u-p-p-o-r-t.html">MENU_ITEM_DEV_SUPPORT</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Developer Support" overflow menu item (debug builds only).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1764038635%2FProperties%2F622323738" anchor-label="MENU_ITEM_LOGIN_FOR_ADMINS" id="1764038635%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-l-o-g-i-n_-f-o-r_-a-d-m-i-n-s.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>LOGIN_</span><wbr><span>FOR_</span><wbr><span>ADMINS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1764038635%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-l-o-g-i-n_-f-o-r_-a-d-m-i-n-s.html">MENU_ITEM_LOGIN_FOR_ADMINS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Login for Admins" overflow menu item (shown conditionally).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2015900994%2FProperties%2F622323738" anchor-label="MENU_ITEM_PICK_SERVER" id="-2015900994%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-p-i-c-k_-s-e-r-v-e-r.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>PICK_</span><wbr><span>SERVER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2015900994%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-p-i-c-k_-s-e-r-v-e-r.html">MENU_ITEM_PICK_SERVER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Change Server" overflow menu item.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1587043838%2FProperties%2F622323738" anchor-label="MENU_ITEM_RELOAD" id="-1587043838%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-e-n-u_-i-t-e-m_-r-e-l-o-a-d.html"><span>MENU_</span><wbr><span>ITEM_</span><wbr><span>RELOAD</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1587043838%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-e-n-u_-i-t-e-m_-r-e-l-o-a-d.html">MENU_ITEM_RELOAD</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">"Reload" overflow menu item.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2030305238%2FProperties%2F622323738" anchor-label="MORE_OPTIONS_BUTTON" id="2030305238%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-o-r-e_-o-p-t-i-o-n-s_-b-u-t-t-o-n.html"><span>MORE_</span><wbr><span>OPTIONS_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2030305238%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-o-r-e_-o-p-t-i-o-n-s_-b-u-t-t-o-n.html">MORE_OPTIONS_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Three-dot "More Options" overflow button in the login top app bar.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1233116174%2FProperties%2F622323738" anchor-label="PICKER_BACK_BUTTON" id="1233116174%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-b-a-c-k_-b-u-t-t-o-n.html"><span>PICKER_</span><wbr><span>BACK_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1233116174%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-b-a-c-k_-b-u-t-t-o-n.html">PICKER_BACK_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Back arrow shown in the picker header while adding a new connection.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-749842647%2FProperties%2F622323738" anchor-label="PICKER_CLOSE_BUTTON" id="-749842647%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-c-l-o-s-e_-b-u-t-t-o-n.html"><span>PICKER_</span><wbr><span>CLOSE_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-749842647%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-c-l-o-s-e_-b-u-t-t-o-n.html">PICKER_CLOSE_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Close (X) button in the picker header.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="820102844%2FProperties%2F622323738" anchor-label="PICKER_CUSTOM_LABEL" id="820102844%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-c-u-s-t-o-m_-l-a-b-e-l.html"><span>PICKER_</span><wbr><span>CUSTOM_</span><wbr><span>LABEL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="820102844%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-c-u-s-t-o-m_-l-a-b-e-l.html">PICKER_CUSTOM_LABEL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Name field in the picker's "Add Connection" form.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1116082847%2FProperties%2F622323738" anchor-label="PICKER_CUSTOM_URL" id="-1116082847%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-c-u-s-t-o-m_-u-r-l.html"><span>PICKER_</span><wbr><span>CUSTOM_</span><wbr><span>URL</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1116082847%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-c-u-s-t-o-m_-u-r-l.html">PICKER_CUSTOM_URL</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">URL field in the picker's "Add Connection" form.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1881242890%2FProperties%2F622323738" anchor-label="PICKER_DEV_SUPPORT_BUTTON" id="-1881242890%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-d-e-v_-s-u-p-p-o-r-t_-b-u-t-t-o-n.html"><span>PICKER_</span><wbr><span>DEV_</span><wbr><span>SUPPORT_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1881242890%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-d-e-v_-s-u-p-p-o-r-t_-b-u-t-t-o-n.html">PICKER_DEV_SUPPORT_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Debug-only Developer Support entry reachable from inside the login-server picker (the top app bar's own "Developer Support" entry is behind the modal scrim while the picker is shown). Gated on <code class="lang-kotlin">showDevSupport != null</code>, matching the app bar's gating.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1068184828%2FProperties%2F622323738" anchor-label="PICKER_LOGIN_BACK_BUTTON" id="-1068184828%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-l-o-g-i-n_-b-a-c-k_-b-u-t-t-o-n.html"><span>PICKER_</span><wbr><span>LOGIN_</span><wbr><span>BACK_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1068184828%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-l-o-g-i-n_-b-a-c-k_-b-u-t-t-o-n.html">PICKER_LOGIN_BACK_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Login-exit back button shown in the login-server picker header, distinct from <a href="-p-i-c-k-e-r_-b-a-c-k_-b-u-t-t-o-n.html">PICKER_BACK_BUTTON</a> (which only returns from the add-connection sub-screen to the server list). Shown only for <a href="../-picker-style/-login-server-picker/index.html">PickerStyle.LoginServerPicker</a> when <code class="lang-kotlin">LoginViewModel.shouldShowBackButton</code> is true; invokes <code class="lang-kotlin">LoginActivity.handleBackBehavior()</code>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="425839282%2FProperties%2F622323738" anchor-label="PICKER_RETRY_BIOMETRIC_BUTTON" id="425839282%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-p-i-c-k-e-r_-r-e-t-r-y_-b-i-o-m-e-t-r-i-c_-b-u-t-t-o-n.html"><span>PICKER_</span><wbr><span>RETRY_</span><wbr><span>BIOMETRIC_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="425839282%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-p-i-c-k-e-r_-r-e-t-r-y_-b-i-o-m-e-t-r-i-c_-b-u-t-t-o-n.html">PICKER_RETRY_BIOMETRIC_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Retry-biometric entry shown in the login-server picker header while the device is biometrically locked and biometric unlock is usable (same predicate as <code class="lang-kotlin">LoginViewModel.showBiometricAuthenticationButton</code>). Never shown for <a href="../-picker-style/-user-account-picker/index.html">PickerStyle.UserAccountPicker</a>. Invokes <code class="lang-kotlin">LoginActivity.onBioAuthClick()</code>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1381247548%2FProperties%2F622323738" anchor-label="SERVER_CONFIRM_DELETE_BUTTON" id="1381247548%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-c-o-n-f-i-r-m_-d-e-l-e-t-e_-b-u-t-t-o-n.html"><span>SERVER_</span><wbr><span>CONFIRM_</span><wbr><span>DELETE_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1381247548%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-c-o-n-f-i-r-m_-d-e-l-e-t-e_-b-u-t-t-o-n.html">SERVER_CONFIRM_DELETE_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Revealed confirm-delete target on a custom server row.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1440254531%2FProperties%2F622323738" anchor-label="SERVER_DELETE_BUTTON" id="-1440254531%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-d-e-l-e-t-e_-b-u-t-t-o-n.html"><span>SERVER_</span><wbr><span>DELETE_</span><wbr><span>BUTTON</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1440254531%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-d-e-l-e-t-e_-b-u-t-t-o-n.html">SERVER_DELETE_BUTTON</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Trash icon on a custom server row that arms the slide-to-delete affordance.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="185892393%2FProperties%2F622323738" anchor-label="SERVER_PICKER" id="185892393%2FProperties%2F622323738" data-filterable-set=":libs:SalesforceSDK/release"></a>
+          <div class="table-row" data-filterable-current=":libs:SalesforceSDK/release" data-filterable-set=":libs:SalesforceSDK/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-e-r-v-e-r_-p-i-c-k-e-r.html"><span>SERVER_</span><wbr><span>PICKER</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="185892393%2FProperties%2F622323738"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-e-r-v-e-r_-p-i-c-k-e-r.html">SERVER_PICKER</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Root container of the login-server picker bottom sheet.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>MetadataSyncDownTarget</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:MobileSync/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:MobileSync/release" data-filter=":libs:MobileSync/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="MobileSync::com.salesforce.androidsdk.mobilesync.target/MetadataSyncDownTarget///PointingToDeclaration//282007970">
+  <div class="breadcrumbs"><a href="../../index.html">MobileSync</a><span class="delimiter">/</span><a href="../index.html">com.salesforce.androidsdk.mobilesync.target</a><span class="delimiter">/</span><span class="current">MetadataSyncDownTarget</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Metadata</span><wbr><span>Sync</span><wbr><span>Down</span><wbr><span><span>Target</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">class </span><a href="index.html">MetadataSyncDownTarget</a> : <a href="../-sync-down-target/index.html">SyncDownTarget</a></div><p class="paragraph">Sync down target for object metadata. This uses the 'describe' API to fetch object metadata.</p><span class="kdoc-tag"><h4 class="">Author</h4><p class="paragraph">bhariharan</p></span></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-63462809%2FConstructors%2F282007970" anchor-label="MetadataSyncDownTarget" id="-63462809%2FConstructors%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-metadata-sync-down-target.html"><span>Metadata</span><wbr><span>Sync</span><wbr><span>Down</span><wbr><span><span>Target</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-63462809%2FConstructors%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">target<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Parameterized constructor.</p></div><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">objectType<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Parameterized constructor.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="92212776%2FClasslikes%2F282007970" anchor-label="Companion" id="92212776%2FClasslikes%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="92212776%2FClasslikes%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1752967544%2FProperties%2F282007970" anchor-label="idFieldName" id="-1752967544%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/id-field-name.html"><span>id</span><wbr><span>Field</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1752967544%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="../-sync-target/id-field-name.html">idFieldName</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1285900628%2FProperties%2F282007970" anchor-label="isSyncDownSortedByLatestModification" id="-1285900628%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/is-sync-down-sorted-by-latest-modification.html"><span>is</span><wbr><span>Sync</span><wbr><span>Down</span><wbr><span>Sorted</span><wbr><span>By</span><wbr><span>Latest</span><wbr><span><span>Modification</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1285900628%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">val </span><a href="../-sync-down-target/is-sync-down-sorted-by-latest-modification.html">isSyncDownSortedByLatestModification</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token operator"> = </span><span class="token boolean">false</span></div><div class="brief "><p class="paragraph">When sync down fetches records from older to newer, the maxTimeStamp for the sync can be updated throughout the sync, and as a result running a paused (or killed) sync does not refetch all records.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-787970985%2FProperties%2F282007970" anchor-label="modificationDateFieldName" id="-787970985%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/modification-date-field-name.html"><span>modification</span><wbr><span>Date</span><wbr><span>Field</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-787970985%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="../-sync-target/modification-date-field-name.html">modificationDateFieldName</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="335363616%2FProperties%2F282007970" anchor-label="objectType" id="335363616%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="object-type.html"><span>object</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="335363616%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">var </span><a href="object-type.html">objectType</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div><div class="brief "><p class="paragraph">Returns the object type associated with this target.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1480360850%2FProperties%2F282007970" anchor-label="queryType" id="-1480360850%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/query-type.html"><span>query</span><wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1480360850%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-field/index.html"><span class="token annotation builtin">JvmField</span></a></div></div><span class="token keyword">var </span><a href="../-sync-down-target/query-type.html">queryType</a><span class="token operator">: </span><a href="../-sync-down-target/-query-type/index.html">SyncDownTarget.QueryType</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="24668299%2FProperties%2F282007970" anchor-label="totalSize" id="24668299%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/total-size.html"><span>total</span><wbr><span><span>Size</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="24668299%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-field/index.html"><span class="token annotation builtin">JvmField</span></a></div></div><span class="token keyword">var </span><a href="../-sync-down-target/total-size.html">totalSize</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-540344642%2FFunctions%2F282007970" anchor-label="addSyncId" id="-540344642%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/add-sync-id.html"><span>add</span><wbr><span>Sync</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-540344642%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/add-sync-id.html"><span class="token function">addSyncId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a><span class="token punctuation">, </span></span><span class="parameter ">syncId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="532817471%2FFunctions%2F282007970" anchor-label="asJSON" id="532817471%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="as-j-s-o-n.html"><span>as</span><wbr><span><span>JSON</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="532817471%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="as-j-s-o-n.html"><span class="token function">asJSON</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div><div class="brief "><p class="paragraph">JSON representation of this target.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-297526618%2FFunctions%2F282007970" anchor-label="cleanAndSaveInLocalStore" id="-297526618%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/clean-and-save-in-local-store.html"><span>clean</span><wbr><span>And</span><wbr><span>Save</span><wbr><span>In</span><wbr><span>Local</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-297526618%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/clean-and-save-in-local-store.html"><span class="token function">cleanAndSaveInLocalStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Save cleaned record in local store</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1462378259%2FFunctions%2F282007970" anchor-label="cleanAndSaveInSmartStore" id="1462378259%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/clean-and-save-in-smart-store.html"><span>clean</span><wbr><span>And</span><wbr><span>Save</span><wbr><span>In</span><wbr><span>Smart</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1462378259%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/clean-and-save-in-smart-store.html"><span class="token function">cleanAndSaveInSmartStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">smartStore<span class="token operator">: </span><a href="../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a><span class="token punctuation">, </span></span><span class="parameter ">idFieldName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">handleTx<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2012846098%2FFunctions%2F282007970" anchor-label="cleanGhosts" id="2012846098%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clean-ghosts.html"><span>clean</span><wbr><span><span>Ghosts</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2012846098%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="clean-ghosts.html"><span class="token function">cleanGhosts</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">syncId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-int/index.html">Int</a></div><div class="brief "><p class="paragraph">Delete from local store records that a full sync down would no longer download</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-408291065%2FFunctions%2F282007970" anchor-label="cleanRecord" id="-408291065%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/clean-record.html"><span>clean</span><wbr><span><span>Record</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-408291065%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/clean-record.html"><span class="token function">cleanRecord</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2001367571%2FFunctions%2F282007970" anchor-label="continueFetch" id="-2001367571%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="continue-fetch.html"><span>continue</span><wbr><span><span>Fetch</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2001367571%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="continue-fetch.html"><span class="token function">continueFetch</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Continue fetching records conforming to target if any</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1481842241%2FFunctions%2F282007970" anchor-label="deleteFromLocalStore" id="1481842241%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/delete-from-local-store.html"><span>delete</span><wbr><span>From</span><wbr><span>Local</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1481842241%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/delete-from-local-store.html"><span class="token function">deleteFromLocalStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Delete record from local store</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-246966576%2FFunctions%2F282007970" anchor-label="getDirtyRecordIds" id="-246966576%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/get-dirty-record-ids.html"><span>get</span><wbr><span>Dirty</span><wbr><span>Record</span><wbr><span><span>Ids</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-246966576%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/get-dirty-record-ids.html"><span class="token function">getDirtyRecordIds</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">idField<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/SortedSet.html">SortedSet</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Return ids of "dirty" records (records locally created/upated or deleted)</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-274051998%2FFunctions%2F282007970" anchor-label="getFromLocalStore" id="-274051998%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/get-from-local-store.html"><span>get</span><wbr><span>From</span><wbr><span>Local</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-274051998%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/get-from-local-store.html"><span class="token function">getFromLocalStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">storeId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></div><div class="brief "><p class="paragraph">Get record from local store by storeId</p></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/get-from-local-store.html"><span class="token function">getFromLocalStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">storeIds<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get records from local store by storeId</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1781436622%2FFunctions%2F282007970" anchor-label="getIdsToSkip" id="-1781436622%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/get-ids-to-skip.html"><span>get</span><wbr><span>Ids</span><wbr><span>To</span><wbr><span><span>Skip</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1781436622%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-sync-down-target/get-ids-to-skip.html"><span class="token function">getIdsToSkip</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Return ids of records that should not be written over during a sync down with merge mode leave-if-changed</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-459765320%2FFunctions%2F282007970" anchor-label="getLatestModificationTimeStamp" id="-459765320%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/get-latest-modification-time-stamp.html"><span>get</span><wbr><span>Latest</span><wbr><span>Modification</span><wbr><span>Time</span><wbr><span><span>Stamp</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-459765320%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-sync-down-target/get-latest-modification-time-stamp.html"><span class="token function">getLatestModificationTimeStamp</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">records<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></div><div class="brief "><p class="paragraph">Gets the latest modification timestamp from the array of records.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2030129524%2FFunctions%2F282007970" anchor-label="getNonDirtyRecordIds" id="-2030129524%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-down-target/get-non-dirty-record-ids.html"><span>get</span><wbr><span>Non</span><wbr><span>Dirty</span><wbr><span>Record</span><wbr><span><span>Ids</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2030129524%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-down-target/get-non-dirty-record-ids.html"><span class="token function">getNonDirtyRecordIds</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">idField<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">additionalPredicate<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/util/SortedSet.html">SortedSet</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Return ids of non-dirty records (records NOT locally created/updated or deleted)</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1242868139%2FFunctions%2F282007970" anchor-label="isDirty" id="-1242868139%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/is-dirty.html"><span>is</span><wbr><span><span>Dirty</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1242868139%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/is-dirty.html"><span class="token function">isDirty</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Given a record, return true if it was locally created/updated or deleted</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1477470257%2FFunctions%2F282007970" anchor-label="isLocallyCreated" id="1477470257%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/is-locally-created.html"><span>is</span><wbr><span>Locally</span><wbr><span><span>Created</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1477470257%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/is-locally-created.html"><span class="token function">isLocallyCreated</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Given a record, return true if it was locally created</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="971756514%2FFunctions%2F282007970" anchor-label="isLocallyDeleted" id="971756514%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/is-locally-deleted.html"><span>is</span><wbr><span>Locally</span><wbr><span><span>Deleted</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="971756514%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/is-locally-deleted.html"><span class="token function">isLocallyDeleted</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Given a record, return true if it was locally deleted</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="888904068%2FFunctions%2F282007970" anchor-label="isLocallyUpdated" id="888904068%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/is-locally-updated.html"><span>is</span><wbr><span>Locally</span><wbr><span><span>Updated</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="888904068%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="../-sync-target/is-locally-updated.html"><span class="token function">isLocallyUpdated</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">record<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Given a record, return true if it was locally updated</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1728350108%2FFunctions%2F282007970" anchor-label="saveRecordsToLocalStore" id="-1728350108%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../-sync-target/save-records-to-local-store.html"><span>save</span><wbr><span>Records</span><wbr><span>To</span><wbr><span>Local</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1728350108%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">fun </span><a href="../-sync-target/save-records-to-local-store.html"><span class="token function">saveRecordsToLocalStore</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">records<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a><span class="token punctuation">, </span></span><span class="parameter ">syncId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Save records to local store</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-595633414%2FFunctions%2F282007970" anchor-label="startFetch" id="-595633414%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="start-fetch.html"><span>start</span><wbr><span><span>Fetch</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-595633414%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="start-fetch.html"><span class="token function">startFetch</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.mobilesync.manager/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">maxTimeStamp<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONArray.html">JSONArray</a></div><div class="brief "><p class="paragraph">Start fetching records conforming to target If a value for maxTimeStamp greater than 0 is passed in, only records created/modified after maxTimeStamp should be returned</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,472 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Companion</title>
+<link href="../../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../../index.html">
+                    SalesforceMobileSDK-Android
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">14.0.0-rc.0
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":libs:MobileSync/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":libs:MobileSync/release" data-filter=":libs:MobileSync/release">
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    SalesforceMobileSDK-Android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="MobileSync::com.salesforce.androidsdk.mobilesync.util/SyncState.Companion///PointingToDeclaration//282007970">
+  <div class="breadcrumbs"><a href="../../../index.html">MobileSync</a><span class="delimiter">/</span><a href="../../index.html">com.salesforce.androidsdk.mobilesync.util</a><span class="delimiter">/</span><a href="../index.html">SyncState</a><span class="delimiter">/</span><span class="current">Companion</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Companion</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">object </span><a href="index.html">Companion</a></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1684182624%2FProperties%2F282007970" anchor-label="SYNC_END_TIME" id="-1684182624%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-e-n-d_-t-i-m-e.html"><span>SYNC_</span><wbr><span>END_</span><wbr><span>TIME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1684182624%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-e-n-d_-t-i-m-e.html">SYNC_END_TIME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="225012417%2FProperties%2F282007970" anchor-label="SYNC_ERROR" id="225012417%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-e-r-r-o-r.html"><span>SYNC_</span><wbr><span>ERROR</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="225012417%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-e-r-r-o-r.html">SYNC_ERROR</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-427667131%2FProperties%2F282007970" anchor-label="SYNC_MAX_TIME_STAMP" id="-427667131%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-m-a-x_-t-i-m-e_-s-t-a-m-p.html"><span>SYNC_</span><wbr><span>MAX_</span><wbr><span>TIME_</span><wbr><span>STAMP</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-427667131%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-m-a-x_-t-i-m-e_-s-t-a-m-p.html">SYNC_MAX_TIME_STAMP</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1903085018%2FProperties%2F282007970" anchor-label="SYNC_NAME" id="-1903085018%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-n-a-m-e.html"><span>SYNC_</span><wbr><span>NAME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1903085018%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-n-a-m-e.html">SYNC_NAME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-548103189%2FProperties%2F282007970" anchor-label="SYNC_OPTIONS" id="-548103189%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-o-p-t-i-o-n-s.html"><span>SYNC_</span><wbr><span>OPTIONS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-548103189%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-o-p-t-i-o-n-s.html">SYNC_OPTIONS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1448676036%2FProperties%2F282007970" anchor-label="SYNC_PROGRESS" id="1448676036%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-p-r-o-g-r-e-s-s.html"><span>SYNC_</span><wbr><span>PROGRESS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1448676036%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-p-r-o-g-r-e-s-s.html">SYNC_PROGRESS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-566624970%2FProperties%2F282007970" anchor-label="SYNC_SOUP_NAME" id="-566624970%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-s-o-u-p_-n-a-m-e.html"><span>SYNC_</span><wbr><span>SOUP_</span><wbr><span>NAME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-566624970%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-s-o-u-p_-n-a-m-e.html">SYNC_SOUP_NAME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1675514393%2FProperties%2F282007970" anchor-label="SYNC_START_TIME" id="-1675514393%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-s-t-a-r-t_-t-i-m-e.html"><span>SYNC_</span><wbr><span>START_</span><wbr><span>TIME</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1675514393%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-s-t-a-r-t_-t-i-m-e.html">SYNC_START_TIME</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1983699553%2FProperties%2F282007970" anchor-label="SYNC_STATUS" id="-1983699553%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-s-t-a-t-u-s.html"><span>SYNC_</span><wbr><span>STATUS</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1983699553%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-s-t-a-t-u-s.html">SYNC_STATUS</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2108406560%2FProperties%2F282007970" anchor-label="SYNC_TARGET" id="-2108406560%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-t-a-r-g-e-t.html"><span>SYNC_</span><wbr><span>TARGET</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2108406560%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-t-a-r-g-e-t.html">SYNC_TARGET</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="900858517%2FProperties%2F282007970" anchor-label="SYNC_TOTAL_SIZE" id="900858517%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-t-o-t-a-l_-s-i-z-e.html"><span>SYNC_</span><wbr><span>TOTAL_</span><wbr><span>SIZE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="900858517%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-t-o-t-a-l_-s-i-z-e.html">SYNC_TOTAL_SIZE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-973309865%2FProperties%2F282007970" anchor-label="SYNC_TYPE" id="-973309865%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c_-t-y-p-e.html"><span>SYNC_</span><wbr><span>TYPE</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-973309865%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c_-t-y-p-e.html">SYNC_TYPE</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-820379001%2FProperties%2F282007970" anchor-label="SYNCS_SOUP" id="-820379001%2FProperties%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-s-y-n-c-s_-s-o-u-p.html"><span>SYNCS_</span><wbr><span>SOUP</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-820379001%2FProperties%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">const </span><span class="token keyword">val </span><a href="-s-y-n-c-s_-s-o-u-p.html">SYNCS_SOUP</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1271116433%2FFunctions%2F282007970" anchor-label="byId" id="-1271116433%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="by-id.html"><span>by</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1271116433%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="by-id.html"><span class="token function">byId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">id<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../index.html">SyncState</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Get sync state of sync given by id</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1305579335%2FFunctions%2F282007970" anchor-label="byName" id="-1305579335%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="by-name.html"><span>by</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1305579335%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="by-name.html"><span class="token function">byName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../index.html">SyncState</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Get sync state of sync given by name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-33034272%2FFunctions%2F282007970" anchor-label="cleanupSyncsSoupIfNeeded" id="-33034272%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cleanup-syncs-soup-if-needed.html"><span>cleanup</span><wbr><span>Syncs</span><wbr><span>Soup</span><wbr><span>If</span><wbr><span><span>Needed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-33034272%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="cleanup-syncs-soup-if-needed.html"><span class="token function">cleanupSyncsSoupIfNeeded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Cleanup syncs soup if needed At startup, no sync could be running already If a sync is in the running state, we change it to stopped</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1597218859%2FFunctions%2F282007970" anchor-label="createSyncDown" id="-1597218859%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-sync-down.html"><span>create</span><wbr><span>Sync</span><wbr><span><span>Down</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1597218859%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="create-sync-down.html"><span class="token function">createSyncDown</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">target<span class="token operator">: </span><a href="../../../com.salesforce.androidsdk.mobilesync.target/-sync-down-target/index.html">SyncDownTarget</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../-sync-options/index.html">SyncOptions</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../index.html">SyncState</a></div><div class="brief "><p class="paragraph">Create sync state in database for a sync down and return corresponding SyncState NB: Throws exception if there is already a sync with the same name (when name is not null)</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1576312263%2FFunctions%2F282007970" anchor-label="createSyncUp" id="1576312263%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-sync-up.html"><span>create</span><wbr><span>Sync</span><wbr><span><span>Up</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1576312263%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="create-sync-up.html"><span class="token function">createSyncUp</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">target<span class="token operator">: </span><a href="../../../com.salesforce.androidsdk.mobilesync.target/-sync-up-target/index.html">SyncUpTarget</a><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../-sync-options/index.html">SyncOptions</a><span class="token punctuation">, </span></span><span class="parameter ">soupName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../index.html">SyncState</a></div><div class="brief "><p class="paragraph">Create sync state in database for a sync up and return corresponding SyncState NB: Throws exception if there is already a sync with the same name (when name is not null)</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2121379842%2FFunctions%2F282007970" anchor-label="deleteSync" id="-2121379842%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="delete-sync.html"><span>delete</span><wbr><span><span>Sync</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2121379842%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="delete-sync.html"><span class="token function">deleteSync</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">id<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Delete row for sync given by id</p></div><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="delete-sync.html"><span class="token function">deleteSync</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Delete row for sync given by name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="992440652%2FFunctions%2F282007970" anchor-label="fromJSON" id="992440652%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="from-j-s-o-n.html"><span>from</span><wbr><span><span>JSON</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="992440652%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="from-j-s-o-n.html"><span class="token function">fromJSON</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sync<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/org/json/JSONObject.html">JSONObject</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../index.html">SyncState</a></div><div class="brief "><p class="paragraph">Build SyncState from json</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1031345116%2FFunctions%2F282007970" anchor-label="getSyncsWithStatus" id="1031345116%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-syncs-with-status.html"><span>get</span><wbr><span>Syncs</span><wbr><span>With</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1031345116%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="get-syncs-with-status.html"><span class="token function">getSyncsWithStatus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><a href="../-status/index.html">SyncState.Status</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../index.html">SyncState</a><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Get syncs with given status in the given store</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-185778107%2FFunctions%2F282007970" anchor-label="hasSyncWithName" id="-185778107%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="has-sync-with-name.html"><span>has</span><wbr><span>Sync</span><wbr><span>With</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-185778107%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="has-sync-with-name.html"><span class="token function">hasSyncWithName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">Return true if there is a sync with the given name</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2039216409%2FFunctions%2F282007970" anchor-label="setupSyncsSoupIfNeeded" id="-2039216409%2FFunctions%2F282007970" data-filterable-set=":libs:MobileSync/release"></a>
+          <div class="table-row" data-filterable-current=":libs:MobileSync/release" data-filterable-set=":libs:MobileSync/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="setup-syncs-soup-if-needed.html"><span>setup</span><wbr><span>Syncs</span><wbr><span>Soup</span><wbr><span>If</span><wbr><span><span>Needed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2039216409%2FFunctions%2F282007970"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:MobileSync/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-static/index.html"><span class="token annotation builtin">JvmStatic</span></a></div></div><span class="token keyword">fun </span><a href="setup-syncs-soup-if-needed.html"><span class="token function">setupSyncsSoupIfNeeded</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">store<span class="token operator">: </span><a href="../../../../../libs/SmartStore/com.salesforce.androidsdk.smartstore.store/-smart-store/index.html">SmartStore</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Create syncs soup if needed</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
