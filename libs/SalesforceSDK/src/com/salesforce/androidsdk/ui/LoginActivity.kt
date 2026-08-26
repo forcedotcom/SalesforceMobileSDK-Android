@@ -35,8 +35,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import android.app.AlertDialog
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory.decodeResource
 import android.net.Uri
@@ -109,6 +113,8 @@ import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.drawable.sf__action_back
+import com.salesforce.androidsdk.R.string.sf__advanced_auth_manifest_error_message
+import com.salesforce.androidsdk.R.string.sf__advanced_auth_manifest_error_title
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
 import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
@@ -1176,6 +1182,22 @@ open class LoginActivity : FragmentActivity() {
 
         val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
+        if (!isCallbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
+            val scheme = Uri.parse(viewModel.oAuthConfig.redirectUri).scheme
+                ?: viewModel.oAuthConfig.redirectUri
+            e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
+                    "matching intent-filter in this app's AndroidManifest.xml. " +
+                    "Add an intent-filter with scheme '$scheme' to LoginActivity.")
+            if (applicationInfo.flags and FLAG_DEBUGGABLE != 0) {
+                AlertDialog.Builder(this@LoginActivity)
+                    .setTitle(sf__advanced_auth_manifest_error_title)
+                    .setMessage(getString(sf__advanced_auth_manifest_error_message, scheme))
+                    .setPositiveButton(android.R.string.ok) { _, _ -> }
+                    .show()
+            }
+            return
+        }
+
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
             customTabLauncher.launch(customTabsIntent.intent)
@@ -1221,6 +1243,23 @@ open class LoginActivity : FragmentActivity() {
                 w(TAG, "$customTabBrowser does not exist on this device", throwable)
             }.getOrDefault(false)
         }
+
+    /**
+     * Returns true if the app's manifest contains an intent-filter that handles [redirectUri],
+     * false otherwise.  A missing registration causes the CCT redirect to be silently dropped by
+     * Android, leaving the user on a blank screen at the end of the advanced-auth flow.
+     */
+    @VisibleForTesting
+    @Suppress("DEPRECATION")
+    internal fun isCallbackSchemeRegistered(redirectUri: String): Boolean {
+        val probeIntent = Intent(Intent.ACTION_VIEW, Uri.parse(redirectUri)).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        return packageManager
+            ?.queryIntentActivities(probeIntent, MATCH_DEFAULT_ONLY)
+            .isNullOrEmpty()
+            .not()
+    }
 
     // endregion
     // region Log In Via Salesforce Identity API UI Bridge Front Door URL Private Implementation

@@ -31,6 +31,7 @@ import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.result.ActivityResult
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
@@ -1240,6 +1241,34 @@ class LoginActivityTest {
             // And Advanced Auth is shown immediately.
             verify(exactly = 1) { activity.onBiometricPromptDismissedWithoutSuccess() }
         }
+    }
+
+    // endregion
+
+    // region isCallbackSchemeRegistered
+
+    @Test
+    fun test_givenRegisteredScheme_whenIsCallbackSchemeRegistered_thenReturnsTrue() {
+        val pm = mockk<PackageManager>()
+        @Suppress("DEPRECATION")
+        every { pm.queryIntentActivities(any(), any<Int>()) } returns listOf(mockk())
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.packageManager } returns pm
+        every { activity.isCallbackSchemeRegistered(any()) } answers { callOriginal() }
+
+        assertTrue(activity.isCallbackSchemeRegistered("testsfdc://success/done"))
+    }
+
+    @Test
+    fun test_givenUnregisteredScheme_whenIsCallbackSchemeRegistered_thenReturnsFalse() {
+        val pm = mockk<PackageManager>()
+        @Suppress("DEPRECATION")
+        every { pm.queryIntentActivities(any(), any<Int>()) } returns emptyList()
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every { activity.packageManager } returns pm
+        every { activity.isCallbackSchemeRegistered(any()) } answers { callOriginal() }
+
+        assertFalse(activity.isCallbackSchemeRegistered("unregistered://callback/path"))
     }
 
     // endregion
