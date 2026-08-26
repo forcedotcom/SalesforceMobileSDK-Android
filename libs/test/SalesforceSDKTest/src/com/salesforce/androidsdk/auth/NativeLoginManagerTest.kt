@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.auth
 
+import android.app.Instrumentation
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
@@ -7,22 +8,33 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager
-import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
+import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
+import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import okhttp3.Call
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,15 +44,29 @@ import org.junit.runner.RunWith
 class NativeLoginManagerTest {
     private lateinit var mgr: NativeLoginManager
     private lateinit var bioAuthManager: BiometricAuthenticationManager
+    private lateinit var activityMonitors: List<Instrumentation.ActivityMonitor>
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+
+    /** Retained before any mocking so that tearDown can clean up regardless of mock state. */
+    private lateinit var realUserAccountManager: UserAccountManager
+
     @Before
     fun setUp() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        realUserAccountManager = sdkManager.userAccountManager
+        activityMonitors = listOf(
+            sdkManager.webViewLoginActivityClass,
+            sdkManager.loginActivityClass,
+        )
+            .distinctBy { it.name }
+            .map { instrumentation.addMonitor(it.name, null, true) }
         mgr = NativeLoginManager("clientId", "redirect", "loginUrl")
     }
 
     @After
     fun tearDown() {
-        SalesforceSDKManager.getInstance().userAccountManager
-            .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
+        realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
+        activityMonitors.forEach(instrumentation::removeMonitor)
         unmockkAll()
     }
 
@@ -70,7 +96,7 @@ class NativeLoginManagerTest {
         Assert.assertTrue("Should show back button when there is a logged in user.", mgr.shouldShowBackButton)
 
         SalesforceSDKManager.getInstance().userAccountManager
-            .signoutCurrentUser(null, true, OAuth2.LogoutReason.USER_LOGOUT)
+            .signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
         Assert.assertFalse("Should not show back button with no users logged in.", mgr.shouldShowBackButton)
     }
 
@@ -101,9 +127,18 @@ class NativeLoginManagerTest {
         Assert.assertNull("Should not return username when not locked.", mgr.biometricAuthenticationUsername)
 
         bioAuthManager.lock()
-        Assert.assertEquals("Should return username.", "test_username", mgr.biometricAuthenticationUsername)
+        assertEquals("Should return username.", "test_username", mgr.biometricAuthenticationUsername)
     }
 
+    @Test
+    fun nativeLoginManager_createRequestBody_filtersNullValues() {
+
+        val result = mgr.createRequestBody("key1" to "value1", "key2" to null)
+
+        val buffer = okio.Buffer()
+        result.writeTo(buffer)
+        assertEquals("key1=value1", buffer.readUtf8())
+    }
 
     @Test
     fun testPresentBiometricAuthReturnsFalseWhenNotLocked() {
@@ -228,9 +263,7 @@ class NativeLoginManagerTest {
         every { mockClient.oAuthRefreshInterceptor } returns mockInterceptor
 
         val mockClientManager = mockk<ClientManager>()
-        every { mockClientManager.getRestClient(any(), any<RestClientCallback>()) } answers {
-            secondArg<RestClientCallback>().authenticatedRestClient(mockClient)
-        }
+        every { mockClientManager.peekRestClient() } returns mockClient
 
         val activity = mockk<FragmentActivity>(relaxed = true)
         mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
@@ -255,9 +288,7 @@ class NativeLoginManagerTest {
         every { mockClient.oAuthRefreshInterceptor } returns mockInterceptor
 
         val mockClientManager = mockk<ClientManager>()
-        every { mockClientManager.getRestClient(any(), any<RestClientCallback>()) } answers {
-            secondArg<RestClientCallback>().authenticatedRestClient(mockClient)
-        }
+        every { mockClientManager.peekRestClient() } returns mockClient
 
         val activity = mockk<FragmentActivity>(relaxed = true)
         mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
@@ -268,18 +299,269 @@ class NativeLoginManagerTest {
     }
 
     @Test
+    fun testOnBiometricAuthenticationSucceededKeepsLockAndFinishesWhenClientCannotBeBuilt() {
+        bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager
+                as BiometricAuthenticationManager
+        addUserAccount()
+        val account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
+        bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
+        bioAuthManager.lock()
+
+        val mockClientManager = mockk<ClientManager>()
+        every { mockClientManager.peekRestClient() } returns null
+
+        val activity = mockk<FragmentActivity>(relaxed = true)
+        mgr.onBiometricAuthenticationSucceeded(activity, mockClientManager)
+
+        Assert.assertTrue("The biometric lock must remain when no client can be built.", bioAuthManager.locked)
+        verify(exactly = 1) { activity.finish() }
+    }
+
+    @Test
     fun testBiometricAuthenticationUsernameWithNativeLoginUser() {
         bioAuthManager = SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager
         addNativeLoginUserAccount()
         val account = SalesforceSDKManager.getInstance().userAccountManager.currentUser
         bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
         bioAuthManager.lock()
-        Assert.assertEquals(
+        assertEquals(
             "Should return username for native login user when locked.",
             "test_username",
             mgr.biometricAuthenticationUsername
         )
     }
+
+    /**
+     * Tests that native login uses the app attestation during login.  This test
+     * can be removed when a comprehensive test of native login is created so
+     * long as that test covers the inclusion of the attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_collectsAppAttestation() = runTest {
+
+        installAppAttestationClient(attestation = TEST_APP_ATTESTATION)
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
+        advanceUntilIdle()
+
+        verifyLoginRequestAttestation(restClient, expectedAttestationValue = TEST_APP_ATTESTATION)
+    }
+
+    /**
+     * Tests that native login does not include app attestation during login
+     * when the app attestation client is set but
+     * [AppAttestationClient.createAppAttestation] returns null (for example,
+     * because the Google Play Integrity API could not produce a token).  This
+     * test can be removed when a comprehensive test of native login is created
+     * so long as that test covers the exclusion of the attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_doesNotCollectAppAttestationWhenCreateAppAttestationReturnsNull() = runTest {
+
+        installAppAttestationClient(attestation = null)
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
+        advanceUntilIdle()
+
+        verifyLoginRequestAttestation(restClient, expectedAttestationValue = null)
+    }
+
+    /**
+     * Tests that native login does not include app attestation during login
+     * when it is not applicable.  This test can be removed when a comprehensive
+     * test of native login is created so long as that test covers the exclusion
+     * of the attestation parameter.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_doesNotCollectAppAttestationWhenAppAttestationClientIsNotSet() = runTest {
+
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
+        advanceUntilIdle()
+
+        verifyLoginRequestAttestation(restClient, expectedAttestationValue = null)
+    }
+
+    /**
+     * Tests that native login does not include app attestation during login
+     * when the app attestation client is set but
+     * [AppAttestationClient.fetchMobileAppAttestationChallenge] returns null
+     * (for example, because [AppAttestationClient.apiHostName] is null, meaning
+     * Salesforce App Attestation is disabled for the current login server).
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_doesNotCollectAppAttestationWhenFetchChallengeReturnsNull() = runTest {
+
+        val mockAppAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
+            coEvery { fetchMobileAppAttestationChallenge() } returns null
+        }
+        val realSdkManager = SalesforceSDKManager.getInstance()
+        val spySdkManager = spyk(realSdkManager)
+        every { spySdkManager.appAttestationClient } returns mockAppAttestationClient
+        mockkObject(SalesforceSDKManager)
+        every { SalesforceSDKManager.getInstance() } returns spySdkManager
+
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_USERNAME, TEST_PASSWORD)
+        advanceUntilIdle()
+
+        verifyLoginRequestAttestation(restClient, expectedAttestationValue = null)
+    }
+
+    /**
+     * Tests that [NativeLoginManager.login] builds the Basic-Auth
+     * `Authorization` header using the standard Base64 alphabet with padding
+     * (RFC 4648 §4, as required by RFC 7617), rather than the URL-safe
+     * alphabet.  The password below is chosen so that the colon-concatenated,
+     * UTF-8-encoded username:password bytes Base64-encode differently under
+     * the standard and URL-safe alphabets (contains `/` and requires `=`
+     * padding under the standard alphabet), so a regression back to
+     * URL-safe encoding would be caught.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_usesStandardBase64ForAuthorizationHeader() = runTest {
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.login(TEST_DIVERGING_USERNAME, TEST_DIVERGING_PASSWORD)
+        advanceUntilIdle()
+
+        val expectedCreds = java.util.Base64.getEncoder().encodeToString(
+            "$TEST_DIVERGING_USERNAME:$TEST_DIVERGING_PASSWORD".toByteArray()
+        )
+        verifyLoginRequestAuthorizationHeader(restClient, "Basic $expectedCreds")
+    }
+
+    /**
+     * Tests that [NativeLoginManager.submitPasswordlessAuthorizationRequest],
+     * which shares the same colon-concatenated Base64 encoding helper as
+     * [NativeLoginManager.login], also produces a standard-alphabet,
+     * padded Basic-Auth header rather than URL-safe encoding.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_submitPasswordlessAuthorizationRequest_usesStandardBase64ForAuthorizationHeader() = runTest {
+        val restClient = createRestClientStubbingFailedLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        mgr.submitPasswordlessAuthorizationRequest(
+            otp = TEST_DIVERGING_PASSWORD,
+            otpIdentifier = TEST_DIVERGING_USERNAME,
+            otpVerificationMethod = OtpVerificationMethod.Email
+        )
+        advanceUntilIdle()
+
+        val expectedCreds = java.util.Base64.getEncoder().encodeToString(
+            "$TEST_DIVERGING_USERNAME:$TEST_DIVERGING_PASSWORD".toByteArray()
+        )
+        verifyLoginRequestAuthorizationHeader(restClient, "Basic $expectedCreds")
+    }
+
+    // region Helpers used by attestation and Authorization-header tests
+
+    /**
+     * Verifies that the REST client received a login request with the expected
+     * attestation parameter state.
+     *
+     * @param restClient The REST client mock to verify
+     * @param expectedAttestationValue The expected attestation value if it should be included,
+     *                                  or null if the attestation parameter should be excluded
+     */
+    private fun verifyLoginRequestAttestation(
+        restClient: RestClient,
+        expectedAttestationValue: String?
+    ) {
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                val buffer = okio.Buffer()
+                it.requestBody.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                val pathMatches = it.path == "$TEST_LOGIN_URL$OAUTH_AUTH_PATH"
+                val attestationMatches = if (expectedAttestationValue != null) {
+                    bodyString.contains("attestation=$expectedAttestationValue")
+                } else {
+                    !bodyString.contains("attestation=")
+                }
+                pathMatches && attestationMatches
+            }, any())
+        }
+    }
+
+    /**
+     * Verifies that the REST client received a login request whose
+     * `Authorization` header matches the expected value.
+     *
+     * @param restClient The REST client mock to verify
+     * @param expectedAuthorizationHeader The expected `Authorization` header
+     * value
+     */
+    private fun verifyLoginRequestAuthorizationHeader(
+        restClient: RestClient,
+        expectedAuthorizationHeader: String
+    ) {
+        verify(exactly = 1) {
+            restClient.sendAsync(match {
+                it.additionalHttpHeaders?.get("Authorization") == expectedAuthorizationHeader
+            }, any())
+        }
+    }
+
+    /**
+     * Installs a spy over the real [SalesforceSDKManager] singleton so that
+     * only [SalesforceSDKManager.appAttestationClient] is overridden.  All
+     * other real behaviour (e.g. the real [android.content.Context] and
+     * [com.salesforce.androidsdk.analytics.logger.SalesforceLogger]) is
+     * preserved, preventing logger-related crashes during login.
+     */
+    private fun installAppAttestationClient(attestation: String?) {
+        val mockAppAttestationClient = mockk<AppAttestationClient>(relaxed = true).apply {
+            coEvery { fetchMobileAppAttestationChallenge() } returns TEST_CHALLENGE_VALUE
+            coEvery {
+                createAppAttestation(appAttestationChallenge = TEST_CHALLENGE_VALUE)
+            } returns attestation
+        }
+        val realSdkManager = SalesforceSDKManager.getInstance()
+        val spySdkManager = spyk(realSdkManager)
+        every { spySdkManager.appAttestationClient } returns mockAppAttestationClient
+        mockkObject(SalesforceSDKManager)
+        every { SalesforceSDKManager.getInstance() } returns spySdkManager
+    }
+
+    private fun createRestClientStubbingFailedLoginResponse(): RestClient {
+        val mockResponse = mockk<RestResponse>(relaxed = true).apply {
+            every { isSuccess } returns false
+        }
+        return mockk<RestClient>(relaxed = true).apply {
+            every { sendAsync(any(), any()) } answers {
+                val callback = secondArg<RestClient.AsyncRequestCallback>()
+                callback.onSuccess(firstArg(), mockResponse)
+                mockk<Call>(relaxed = true)
+            }
+        }
+    }
+
+    private fun createNativeLoginManagerForTest(restClient: RestClient): NativeLoginManager =
+        NativeLoginManager(
+            clientId = TEST_CLIENT_ID,
+            redirectUri = TEST_REDIRECT_URI,
+            loginUrl = TEST_LOGIN_URL,
+            restClient = restClient,
+        )
+
+    // endregion Helpers used by attestation and Authorization-header tests
 
     private fun addUserAccount() {
         UserAccountManager.getInstance().createAccount(UserAccountTest.createTestAccount())
@@ -291,5 +573,24 @@ class NativeLoginManagerTest {
             .nativeLogin(true)
             .build()
         UserAccountManager.getInstance().createAccount(account)
+    }
+
+    private companion object {
+        const val TEST_CLIENT_ID = "clientId"
+        const val TEST_REDIRECT_URI = "redirect"
+        const val TEST_LOGIN_URL = "loginUrl"
+        const val TEST_USERNAME = "TestUser@Example.com"
+        const val TEST_PASSWORD = "test123456"
+        const val TEST_CHALLENGE_VALUE = "__TEST_CHALLENGE_VALUE__"
+        const val TEST_APP_ATTESTATION = "__TEST_APP_ATTESTATION__"
+
+        /**
+         * A username/password pair whose colon-concatenated, UTF-8-encoded
+         * bytes Base64-encode to a value containing `/` and requiring `=`
+         * padding under the standard alphabet, diverging from the URL-safe
+         * alphabet's output for the same bytes.
+         */
+        const val TEST_DIVERGING_USERNAME = "regdemouser501@salesforce.com"
+        const val TEST_DIVERGING_PASSWORD = "Winter2026!?!"
     }
 }

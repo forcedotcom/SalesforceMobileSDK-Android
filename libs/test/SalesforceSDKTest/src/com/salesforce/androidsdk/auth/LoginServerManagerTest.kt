@@ -601,8 +601,8 @@ class LoginServerManagerMockTest {
 
         val sharedPreferences = mockk<SharedPreferences>(relaxed = true)
         every { sharedPreferences.getInt(NUMBER_OF_ENTRIES, 0) } returns 1
-        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns null
-        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns null
+        every { sharedPreferences.getString(String.format(SERVER_NAME, 0), null) } returns "Production"
+        every { sharedPreferences.getString(String.format(SERVER_URL, 0), null) } returns "https://login.salesforce.com"
         every { sharedPreferences.getBoolean(String.format(IS_CUSTOM, 0), false) } returns false
 
         val context = mockk<Context>()
@@ -840,4 +840,78 @@ class LoginServerManagerMockTest {
         assertEquals("https://mdm2.example.com/2", servers?.get(1)?.url)
         assertEquals(false, servers?.get(1)?.isCustom)
     }
+
+    // region isProductionLoginServer / isMyDomainServer / isPoolServer
+
+    @Test
+    fun test_givenProductionUrl_whenIsProductionLoginServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isProductionLoginServer("https://login.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenInternalProductionPoolUrl_whenIsProductionLoginServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isProductionLoginServer("https://login.test1.pc-rnd.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenMyDomainUrl_whenIsProductionLoginServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isProductionLoginServer("https://myorg.my.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenInternalMyDomainUrl_whenIsProductionLoginServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isProductionLoginServer("https://mobilesdksdb32.test1.my.pc-rnd.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenSandboxUrl_whenIsProductionLoginServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isProductionLoginServer("https://test.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenMyDomainUrl_whenIsMyDomainServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isMyDomainServer("https://myorg.my.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenInternalMyDomainUrl_whenIsMyDomainServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isMyDomainServer("https://mobilesdksdb32.test1.my.pc-rnd.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenProductionUrl_whenIsMyDomainServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isMyDomainServer("https://login.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenInternalProductionUrl_whenIsMyDomainServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isMyDomainServer("https://login.test1.pc-rnd.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenProductionUrl_whenIsPoolServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isPoolServer(LoginServerManager.PRODUCTION_LOGIN_URL))
+    }
+
+    @Test
+    fun test_givenInternalProductionUrl_whenIsPoolServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isPoolServer("https://login.test1.pc-rnd.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenSandboxUrl_whenIsPoolServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isPoolServer(LoginServerManager.SANDBOX_LOGIN_URL))
+    }
+
+    @Test
+    fun test_givenWelcomeUrl_whenIsPoolServer_thenTrue() {
+        assertEquals(true, LoginServerManager.isPoolServer(LoginServerManager.WELCOME_LOGIN_URL))
+    }
+
+    @Test
+    fun test_givenMyDomainUrl_whenIsPoolServer_thenFalse() {
+        assertEquals(false, LoginServerManager.isPoolServer("https://myorg.my.salesforce.com"))
+    }
+
+    // endregion
 }

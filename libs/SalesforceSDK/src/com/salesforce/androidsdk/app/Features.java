@@ -45,4 +45,33 @@ public class Features {
     public static final String FEATURE_NATIVE_LOGIN = "NL";
     public static final String FEATURE_QR_CODE_LOGIN = "QR";
     public static final String FEATURE_WELCOME_DISCOVERY_LOGIN = "WD";
+    public static final String FEATURE_RTR = "RT";
+    public static final String FEATURE_DPOP = "DP";
+    public static final String FEATURE_APP_ATTESTATION = "AA";
+
+    // "Why browser login was used" — registered per-user alongside FEATURE_BROWSER_LOGIN (BW)
+    public static final String FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG = "B1";
+    public static final String FEATURE_BROWSER_LOGIN_MDM               = "B2";
+    public static final String FEATURE_BROWSER_LOGIN_FOR_ADMIN         = "B3";
+    public static final String FEATURE_BROWSER_LOGIN_FORCE_FLAG        = "B4";
+
+    // "Which login server type" — registered per-user on every auth-flow completion
+    public static final String FEATURE_LOGIN_SERVER_PRODUCTION         = "L1";
+    public static final String FEATURE_LOGIN_SERVER_SANDBOX            = "L2";
+    public static final String FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY  = "L3";
+    public static final String FEATURE_LOGIN_SERVER_MY_DOMAIN          = "L4";
+    public static final String FEATURE_LOGIN_SERVER_OTHER              = "L5";
+
+    // "Which auth flow type" — registered as transient global, promoted per-user on auth completion
+    public static final String FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID = "A1";
+    public static final String FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID     = "A2";
+    public static final String FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID = "A3";
+    public static final String FEATURE_AUTH_TYPE_USER_AGENT_HYBRID     = "A4";
+    public static final String FEATURE_AUTH_TYPE_NATIVE                = "A5";
+
+    // Token lifecycle markers — registered per-user on auth completion
+    public static final String FEATURE_TOKEN_MIGRATION                 = "TM";
+    public static final String FEATURE_TOKEN_FORMAT_JWT                = "JT";
+    public static final String FEATURE_TOKEN_FORMAT_OPAQUE             = "OT";
+    public static final String FEATURE_BEACON                          = "BN";
 }

@@ -66,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -82,10 +83,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R
-import com.salesforce.androidsdk.R.string.sf__server_url_save
+import com.salesforce.androidsdk.R.string.sf__login_options_save_and_login
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.SimulatedDiscoveryResult
 import com.salesforce.androidsdk.ui.components.TEXT_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
@@ -94,7 +96,14 @@ class LoginOptionsActivity: ComponentActivity() {
     val useWebServer = MutableLiveData(SalesforceSDKManager.getInstance().useWebServerAuthentication)
     val useHybridToken = MutableLiveData(SalesforceSDKManager.getInstance().useHybridAuthentication)
 
+    // This dev-menu toggle is the intended consumer of the deprecated force-advanced-auth flag, so
+    // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
+    @Suppress("DEPRECATION")
+    val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
+    val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().useDPoP)
+
     @OptIn(ExperimentalMaterial3Api::class)
+    @Suppress("DEPRECATION")
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,6 +123,20 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().useHybridAuthentication = value
             },
         )
+        forceAdvancedAuth.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                // onChanged lambda
+                value -> SalesforceSDKManager.getInstance().forceAdvancedAuthentication = value
+            },
+        )
+        useDPoP.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                // onChanged lambda
+                value -> SalesforceSDKManager.getInstance().useDPoP = value
+            },
+        )
 
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
@@ -131,6 +154,8 @@ class LoginOptionsActivity: ComponentActivity() {
                         innerPadding,
                         useWebServer,
                         useHybridToken,
+                        forceAdvancedAuth,
+                        useDPoP,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
                 }
@@ -274,7 +299,7 @@ fun BootConfigView(config: OAuthConfig? = null) {
             },
         ) {
             Text(
-                text = stringResource(sf__server_url_save),
+                text = stringResource(sf__login_options_save_and_login),
                 fontWeight = if (validInput) FontWeight.Normal else FontWeight.Medium,
                 color = if (validInput) colorScheme.onPrimary else colorScheme.onErrorContainer,
             )
@@ -308,8 +333,11 @@ fun LoginOptionsScreen(
     innerPadding: PaddingValues,
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
+    forceAdvancedAuth: MutableLiveData<Boolean>,
+    useDPoP: MutableLiveData<Boolean>,
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
+    sdkManager: SalesforceSDKManager? = SalesforceSDKManager.getInstance(),
 ) {
     var useDynamicConfig by remember { mutableStateOf(overrideConfig != null) }
 
@@ -328,6 +356,16 @@ fun LoginOptionsScreen(
             "Use Hybrid Auth Token",
             stringResource(R.string.sf__login_options_hybrid_toggle_content_description),
             useHybridToken,
+        )
+        OptionToggle(
+            "Force Advanced Authentication",
+            stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+            forceAdvancedAuth,
+        )
+        OptionToggle(
+            "Use DPoP",
+            stringResource(R.string.sf__login_options_dpop_toggle_content_description),
+            useDPoP,
         )
 
         HorizontalDivider()
@@ -379,7 +417,130 @@ fun LoginOptionsScreen(
         if (useDynamicConfig) {
             BootConfigView(overrideConfig)
         }
+
+        // Welcome Discovery simulation editor: visible only when the launcher Activity flagged
+        // the process as UI-testing (and only in debug builds, enforced by the setter).
+        // Mirrors iOS' IS_UI_TESTING gate in LoginOptionsViewController.swift.
+        if (sdkManager?.isDebugBuild == true && sdkManager.isUiTesting) {
+            HorizontalDivider()
+
+            var simulateDiscovery by remember {
+                mutableStateOf(sdkManager.simulatedDiscoveryResult != null)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(PADDING_SIZE.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.sf__login_options_discovery_simulate_title),
+                    modifier = Modifier.height(50.dp).wrapContentHeight(align = Alignment.CenterVertically),
+                )
+                val toggleDesc = stringResource(R.string.sf__login_options_discovery_toggle_content_description)
+                Switch(
+                    checked = simulateDiscovery,
+                    onCheckedChange = {
+                        simulateDiscovery = it
+                        if (!simulateDiscovery) {
+                            sdkManager.simulatedDiscoveryResult = null
+                        }
+                    },
+                    modifier = Modifier.clearAndSetSemantics {
+                        contentDescription = toggleDesc
+                        toggleableState = ToggleableState(simulateDiscovery)
+                        role = Role.Switch
+                    }
+                )
+            }
+
+            if (simulateDiscovery) {
+                DiscoveryResultEditor()
+            }
+        }
     }
+}
+
+/**
+ * Editor body for simulating a Welcome Discovery result (login host + username).  Mirrors
+ * iOS `DiscoveryResultEditor.swift`.  Tapping Save arms
+ * [SalesforceSDKManager.simulatedDiscoveryResult]; the next Welcome Discovery launch will
+ * inject these values instead of running the real WebView discovery flow.  Hosted under a
+ * Switch in [LoginOptionsScreen] (parallels the Override Boot Config section).
+ */
+@Composable
+fun DiscoveryResultEditor(
+    sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+) {
+    val initial = sdkManager.simulatedDiscoveryResult
+    var loginHost by remember { mutableStateOf(initial?.loginHost ?: "") }
+    var username by remember { mutableStateOf(initial?.loginHint ?: "") }
+
+    val hostLabel = stringResource(R.string.sf__login_options_discovery_login_host_label)
+    val userLabel = stringResource(R.string.sf__login_options_discovery_username_label)
+    val saveText = stringResource(R.string.sf__login_options_discovery_save_button)
+    val hostFieldDesc = stringResource(R.string.sf__login_options_discovery_login_host_field_content_description)
+    val userFieldDesc = stringResource(R.string.sf__login_options_discovery_username_field_content_description)
+    val saveButtonDesc = stringResource(R.string.sf__login_options_discovery_save_button_content_description)
+
+    Column(modifier = Modifier.padding(PADDING_SIZE.dp)) {
+        OutlinedTextField(
+            value = loginHost,
+            onValueChange = { loginHost = it },
+            label = { Text(hostLabel) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = hostFieldDesc },
+        )
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text(userLabel) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = PADDING_SIZE.dp)
+                .semantics { contentDescription = userFieldDesc },
+        )
+
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = PADDING_SIZE.dp)
+                .semantics { contentDescription = saveButtonDesc },
+            shape = RoundedCornerShape(CORNER_RADIUS.dp),
+            contentPadding = PaddingValues(PADDING_SIZE.dp),
+            colors = ButtonColors(
+                containerColor = colorScheme.tertiary,
+                contentColor = colorScheme.tertiary,
+                disabledContainerColor = colorScheme.surfaceVariant,
+                disabledContentColor = colorScheme.surfaceVariant,
+            ),
+            onClick = {
+                sdkManager.simulatedDiscoveryResult = applySimulatedDiscoveryResult(
+                    loginHost = loginHost,
+                    username = username,
+                )
+            },
+        ) {
+            Text(text = saveText, color = colorScheme.onPrimary)
+        }
+    }
+}
+
+/**
+ * Builds a [SimulatedDiscoveryResult] from the current editor values, or null when the host
+ * is empty.  Mirrors iOS `applySimulatedResult` (empty host returns nil).  Visible for testing.
+ */
+@VisibleForTesting
+internal fun applySimulatedDiscoveryResult(
+    loginHost: String,
+    username: String,
+): SimulatedDiscoveryResult? {
+    val trimmedHost = loginHost.trim()
+    val trimmedUser = username.trim()
+    return if (trimmedHost.isEmpty()) null
+    else SimulatedDiscoveryResult(loginHint = trimmedUser, loginHost = trimmedHost)
 }
 
 @ExcludeFromJacocoGeneratedReport
@@ -422,10 +583,13 @@ fun LoginOptionsScreenPreview() {
         innerPadding = PaddingValues(0.dp),
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
+        forceAdvancedAuth = MutableLiveData(true),
+        useDPoP = MutableLiveData(false),
         overrideConfig = null,
         bootConfig = object : BootConfig() {
             override fun getRemoteAccessConsumerKey() = consumerKey
             override fun getOauthRedirectURI() = redirect
         },
+        sdkManager = null,
     )
 }

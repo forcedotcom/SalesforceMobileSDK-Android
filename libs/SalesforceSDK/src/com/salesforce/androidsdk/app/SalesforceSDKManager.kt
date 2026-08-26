@@ -37,14 +37,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.IntentFilter
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
 import android.os.Build.VERSION.RELEASE
-import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION.SECURITY_PATCH
-import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper.getMainLooper
@@ -52,18 +51,19 @@ import android.provider.Settings.Secure.ANDROID_ID
 import android.provider.Settings.Secure.getString
 import android.text.TextUtils.isEmpty
 import android.text.TextUtils.join
-import android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
+import android.widget.Toast
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -77,6 +77,7 @@ import com.salesforce.androidsdk.R.string.sf__dev_support_title
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog_Dark
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGOUT
 import com.salesforce.androidsdk.analytics.AnalyticsPublishingWorker.Companion.enqueueAnalyticsPublishWorkRequest
@@ -85,17 +86,40 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager.Salesforce
 import com.salesforce.androidsdk.analytics.security.Encryptor
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_IDP
 import com.salesforce.androidsdk.app.Features.FEATURE_APP_IS_SP
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
 import com.salesforce.androidsdk.app.Features.FEATURE_NATIVE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.SYSTEM_DEFAULT
+import com.salesforce.androidsdk.auth.AppAttestationClient
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CONTENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_CLIENT_SRC
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_SID_CLIENT
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CSRF_TOKEN
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_LIGHTNING_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_PARENT_SID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_SID_COOKIE_NAME
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_USER_ID
+import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_VF_SID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.NativeLoginManager
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason
+import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.CORRUPT_STATE_MSDK
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.UNKNOWN
 import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
+import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.idp.SPConfig
 import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
@@ -103,8 +127,6 @@ import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
-import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
-import com.salesforce.androidsdk.config.LoginServerManager.SANDBOX_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.IDPAppPackageName
@@ -114,11 +136,9 @@ import com.salesforce.androidsdk.developer.support.notifications.local.ShowDevel
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.hideDeveloperSupportNotification
 import com.salesforce.androidsdk.developer.support.notifications.local.ShowDeveloperSupportNotifier.Companion.showDeveloperSupportNotification
 import com.salesforce.androidsdk.push.PushMessaging
-import com.salesforce.androidsdk.push.PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT
 import com.salesforce.androidsdk.push.PushMessaging.getNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.isRegistered
 import com.salesforce.androidsdk.push.PushMessaging.register
-import com.salesforce.androidsdk.push.PushMessaging.unregister
 import com.salesforce.androidsdk.push.PushNotificationInterface
 import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
@@ -148,6 +168,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.lang.String.CASE_INSENSITIVE_ORDER
@@ -155,8 +176,10 @@ import java.net.URI
 import java.util.Locale.US
 import java.util.SortedSet
 import java.util.UUID.randomUUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.regex.Pattern
+import kotlin.time.Duration.Companion.milliseconds
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
@@ -175,6 +198,9 @@ import com.salesforce.androidsdk.security.interfaces.ScreenLockManager as Screen
  * @param context The Android context
  * @param mainActivity Activity that should be launched after the login flow
  * @param loginActivity Login activity
+ * @param googleCloudProjectId The Google Cloud Project ID to use with
+ * Google Play Integrity API and Salesforce App Attestation or null to
+ * disable both features
  */
 open class SalesforceSDKManager protected constructor(
     @JvmField
@@ -182,13 +208,22 @@ open class SalesforceSDKManager protected constructor(
     mainActivity: Class<out Activity>,
     private val loginActivity: Class<out Activity>? = null,
     internal val nativeLoginActivity: Class<out Activity>? = null,
+    googleCloudProjectId: Long? = null,
 ) : DefaultLifecycleObserver {
 
+    @JvmOverloads
     constructor(
         context: Context,
         mainActivity: Class<out Activity>,
-        loginActivity: Class<out Activity>? = null
-    ) : this(context, mainActivity, loginActivity, nativeLoginActivity = null)
+        loginActivity: Class<out Activity>? = null,
+        googleCloudProjectId: Long? = null,
+    ) : this(
+        context = context,
+        mainActivity = mainActivity,
+        loginActivity = loginActivity,
+        nativeLoginActivity = null,
+        googleCloudProjectId = googleCloudProjectId
+    )
 
     /** The Android context */
     val appContext: Context = context
@@ -227,6 +262,44 @@ open class SalesforceSDKManager protected constructor(
     val loginActivityClass: Class<out Activity> = nativeLoginActivity ?: webViewLoginActivityClass
 
     /**
+     * The client side implementation of the Salesforce App Attestation External
+     * Client App (ECA) Plugin or null when Salesforce App Attestation is
+     * disabled.
+     *
+     * This property is not intended for public use outside of Salesforce Mobile
+     * SDK
+     *
+     * TODO: Make this Kotlin-internal once it is no longer referenced by Java. ECJ20260420
+     */
+    val appAttestationClient: AppAttestationClient? by lazy {
+        googleCloudProjectId?.let { createAppAttestationClient(it) }
+    }
+
+    /**
+     * Creates the Salesforce App Attestation ECA Plugin Client for the selected
+     * Google Cloud Project ID.  When using Salesforce App Attestation, this
+     * value must match the linked Google Cloud Project ID for the app in Google
+     * Play Console's Play Integrity API and provided to the Salesforce App
+     * Attestation External Client App Plugin.
+     *
+     * @param googleCloudProjectId The Google Cloud Project ID or null to
+     * disable Salesforce App Attestation
+     */
+    fun createAppAttestationClient(
+        googleCloudProjectId: Long? = null
+    ) = googleCloudProjectId?.let { appAttestationGoogleCloudProjectId ->
+        AppAttestationClient(
+            context = appContext,
+            deviceId = deviceId,
+            googleCloudProjectId = appAttestationGoogleCloudProjectId,
+            remoteAccessConsumerKeyProvider = RemoteAccessConsumerKeyProvider { loginServer ->
+                resolveOAuthConfigForLoginServer(loginServer).consumerKey
+            },
+            restClient = getUnauthenticatedRestClient()
+        )
+    }
+
+    /**
      * ViewModel Factory the SDK will use in LoginActivity and composable functions.  Setting this will allow for
      * visual customization without overriding LoginActivity.
      */
@@ -244,6 +317,32 @@ open class SalesforceSDKManager protected constructor(
     }
 
     internal var debugOverrideAppConfig: OAuthConfig? = null
+
+    /**
+     * Resolves the OAuth configuration for the specified login server.
+     *
+     * Resolution order:
+     * 1. Debug override configuration (when [isDebugBuild] is true and override
+     * is set)
+     * 2. Dynamic app configuration for the login host via
+     * [appConfigForLoginHost]
+     * 3. Static boot configuration from bootconfig.xml
+     *
+     * This allows apps to use different OAuth configs per server while
+     * supporting debug overrides for development/testing.
+     *
+     * @param loginServer The login server URL
+     * @return The OAuth configuration for the specified server
+     */
+    internal suspend fun resolveOAuthConfigForLoginServer(
+        loginServer: String
+    ): OAuthConfig {
+        val debugOverride = debugOverrideAppConfig
+        return when {
+            isDebugBuild && debugOverride != null -> debugOverride
+            else -> appConfigForLoginHost(loginServer) ?: OAuthConfig(getBootConfig(appContext))
+        }
+    }
 
     /** The class for the account switcher activity */
     var accountSwitcherActivityClass = AccountSwitcherActivity::class.java
@@ -289,9 +388,14 @@ open class SalesforceSDKManager protected constructor(
             field = value
         }
 
-    /** Indicates if logout is in progress */
+    private val loggingOutAccounts = ConcurrentHashMap.newKeySet<Account>()
+
+    /** Indicates if any logout is in progress. */
     var isLoggingOut = false
         private set
+
+    /** Returns whether this exact Android account is currently being logged out. */
+    fun isLoggingOut(account: Account): Boolean = loggingOutAccounts.contains(account)
 
     /** The Salesforce SDK manager's admin settings manager */
     var adminSettingsManager: AdminSettingsManager? = null
@@ -333,6 +437,9 @@ open class SalesforceSDKManager protected constructor(
     /** App feature codes for reporting in the user agent header */
     private val features: SortedSet<String?>
 
+    /** Per-user feature codes keyed by "orgId/userId" */
+    private val perUserFeatures: ConcurrentHashMap<String, ConcurrentSkipListSet<String>> = ConcurrentHashMap()
+
     /**
      * An additional list of OAuth keys to fetch and store from the token
      * endpoint
@@ -347,6 +454,26 @@ open class SalesforceSDKManager protected constructor(
      * false.
      */
     var clearCookiesAfterLogin = true
+
+    /**
+     * Flag for DPoP (Demonstration of Proof-of-Possession, RFC 9449). Defaults
+     * to true as of Mobile SDK 14. Controls whether *new logins* initiate DPoP
+     * key generation and DPoP-bound token requests: when true, the SDK attaches
+     * a DPoP proof JWT to token endpoint requests and uses the `DPoP`
+     * Authorization scheme for resource requests when the token endpoint
+     * advertises `token_type: DPoP`. Changing this flag only affects logins
+     * that happen after the change; it does not retroactively affect existing
+     * credentials.
+     *
+     * NOTE: This flag does NOT affect credentials that are already DPoP-bound.
+     * An existing DPoP credential continues to send DPoP proofs on every request
+     * regardless of this flag's value, because the server holds a DPoP-bound token
+     * and requires a proof on every request. Flipping this off is therefore not a
+     * global kill switch for in-flight sessions — to fully disable DPoP for a user,
+     * the credential must be re-authenticated as Bearer.
+     */
+    @get:JvmName("isUseDPoP")
+    var useDPoP: Boolean = true
 
     /**
      * The login brand. In the following example, "<brand>" should be set here.
@@ -401,8 +528,58 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var useHybridAuthentication = true
 
+    // Backing field for [forceAdvancedAuthentication].  The SDK reads this directly so its own
+    // internal use of the flag doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _forceAdvancedAuthentication = true
+
+    /**
+     * Forces advanced (browser based) authentication to always be used for login, regardless of
+     * the target server's auth configuration, including standard login servers with no My Domain.
+     * Defaults to true.
+     */
+    @Deprecated("Will be removed in 15.0 when WebView login is removed entirely.")
+    @get:JvmName("shouldForceAdvancedAuthentication")
+    @set:Synchronized
+    var forceAdvancedAuthentication: Boolean
+        get() = _forceAdvancedAuthentication
+        set(value) {
+            _forceAdvancedAuthentication = value
+        }
+
     // Used to ensure the webview is reloaded when Dev Menu Login Options are changed.
     internal var loginDevMenuReload = false
+
+    /**
+     * When set, the next launch of [com.salesforce.androidsdk.ui.LoginActivity] against
+     * [com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL] is short-circuited
+     * to use these values instead of running the real Welcome Discovery WebView flow.  This
+     * mirrors the iOS `simulatedDomainDiscoveryResult` hook and is the seam used by automated
+     * UI tests to inject a login hint and My Domain.
+     *
+     * The setter is a no-op in release builds (only honored when [isDebugBuild] is true) so
+     * release apps cannot be coerced into bypassing the real discovery flow.
+     */
+    internal var simulatedDiscoveryResult: LoginActivity.Companion.SimulatedDiscoveryResult? = null
+        set(value) {
+            if (isDebugBuild) field = value
+        }
+
+    /**
+     * When true (and [isDebugBuild] is also true), debug-only UI test affordances such as the
+     * Welcome Discovery simulation editor in
+     * [com.salesforce.androidsdk.ui.LoginOptionsActivity] are visible.  Mirrors iOS' check for
+     * the `IS_UI_TESTING` launch argument in `LoginOptionsViewController.swift`.
+     *
+     * Set by a sample app's launcher Activity from an Intent extra when the activity is
+     * launched by the UI test runner.  The setter is a no-op in release builds so manual
+     * launches and release-build apps never expose the affordances.
+     */
+    @VisibleForTesting
+    var isUiTesting: Boolean = false
+        set(value) {
+            if (isDebugBuild) field = value
+        }
 
     /**
      * The regular expression pattern used to detect "Use Custom Domain" input
@@ -579,17 +756,6 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
-    /**
-     * Indicates if the Salesforce Mobile SDK should automatically log out when
-     * the access token is revoked. When overriding this method to return false,
-     * the subclass is responsible for handling cleanup when the access token is
-     * revoked.
-     *
-     * @return True if the Salesforce Mobile SDK should automatically logout when
-     * the access token is revoked
-     */
-    open fun shouldLogoutWhenTokenRevoked() = true
-
     /** The Salesforce SDK manager's user account manager */
     open val userAccountManager: UserAccountManager by lazy {
         UserAccountManager.getInstance()
@@ -632,6 +798,15 @@ open class SalesforceSDKManager protected constructor(
         isReCaptchaEnterprise: Boolean = false,
     ): NativeLoginManagerInterface {
         registerUsedAppFeature(FEATURE_NATIVE_LOGIN)
+        // Register A5 global — native login does not go through LoginActivity so it sets this here.
+        // Clear all other A-markers to keep exactly one active.
+        listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+        ).forEach { unregisterUsedAppFeature(it) }
+        registerUsedAppFeature(FEATURE_AUTH_TYPE_NATIVE)
         nativeLoginManager = NativeLoginManager(
             consumerKey,
             callbackUrl,
@@ -673,10 +848,11 @@ open class SalesforceSDKManager protected constructor(
     fun invokeServerNotificationAction(
         notificationId: String,
         actionKey: String,
-        restClient: RestClient = clientManager.peekRestClient(userAccountManager.currentUser)
+        restClient: RestClient? = clientManager?.peekRestClient()
     ): NotificationsActionsResponseBody? {
+        val authenticatedClient = restClient ?: return null
         return NotificationsApiClient(
-            restClient = restClient
+            restClient = authenticatedClient
         ).submitNotificationAction(
             notificationId = notificationId,
             actionKey = actionKey
@@ -761,17 +937,18 @@ open class SalesforceSDKManager protected constructor(
     private fun cleanUp(
         frontActivity: Activity?,
         userAccount: UserAccount?,
-        shouldDismissActivity: Boolean
+        shouldDismissActivity: Boolean,
+        isLastPersistedAccount: Boolean =
+            (userAccountManager.authenticatedUsers?.size ?: 0) <= 1,
     ) {
         // Clean up within this process
         cleanUp(userAccount)
 
         // Clean up Salesforce SDK manager instances in separate processes
         sendCleanupIntent(userAccount)
-        val users = userAccountManager.authenticatedUsers
 
         // If this is the last account, finish the front activity if specified
-        if (shouldDismissActivity && frontActivity != null && (users == null || users.size <= 1)) {
+        if (shouldDismissActivity && frontActivity != null && isLastPersistedAccount) {
             frontActivity.finish()
         }
 
@@ -783,7 +960,7 @@ open class SalesforceSDKManager protected constructor(
          * since there might be other accounts on that same org and these
          * policies are stored at the org level.
          */
-        if (users == null || users.size <= 1) {
+        if (isLastPersistedAccount) {
             adminSettingsManager?.resetAll()
             adminPermsManager?.resetAll()
             adminSettingsManager = null
@@ -850,7 +1027,7 @@ open class SalesforceSDKManager protected constructor(
          */
         val userAccMgr = userAccountManager
         val accounts = userAccMgr.authenticatedUsers
-        if (accounts == null || accounts.size == 0) {
+        if (accounts.isNullOrEmpty()) {
             startLoginPage()
         } else if (accounts.size == 1) {
             userAccMgr.switchToUser(
@@ -893,121 +1070,6 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /**
-     * Unregisters from push notifications.
-     * @param clientMgr The client manager
-     * @param showLoginPage Shows the login page after push notification
-     * unregistration
-     * @param refreshToken The refresh token
-     * @param loginServer The login server
-     * @param account The user account
-     * @param frontActivity The front activity
-     * @param isLastAccount Indicates if the account is the last authenticated
-     * account
-     */
-    @Synchronized
-    private fun unregisterPush(
-        clientMgr: ClientManager,
-        showLoginPage: Boolean,
-        refreshToken: String,
-        loginServer: String?,
-        account: Account?,
-        frontActivity: Activity?,
-        isLastAccount: Boolean,
-        logoutReason: LogoutReason,
-    ) {
-        val intentFilter = IntentFilter(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
-
-        val pushUnregisterReceiver = object : BroadcastReceiver() {
-
-            override fun onReceive(
-                context: Context,
-                intent: Intent
-            ) {
-                if (UNREGISTERED_ATTEMPT_COMPLETE_EVENT == intent.action) {
-                    runCatching {
-                        appContext.unregisterReceiver(this)
-                    }.onFailure { e ->
-                        e(TAG, "Exception occurred while un-registering", e)
-                    }
-                    removeAccount(
-                        clientMgr,
-                        showLoginPage,
-                        refreshToken,
-                        loginServer,
-                        account,
-                        frontActivity,
-                        logoutReason,
-                    )
-                }
-            }
-        }
-
-        registerReceiver(
-            appContext,
-            pushUnregisterReceiver,
-            intentFilter,
-            RECEIVER_NOT_EXPORTED
-        )
-
-        // Unregisters from notifications on logout
-        unregister(
-            appContext,
-            userAccountManager.buildUserAccount(account),
-            isLastAccount
-        )
-    }
-
-    /**
-     * Destroys the stored authentication credentials (removes the account)
-     * and, if requested, restarts the app.
-     *
-     * This overload uses a null user account.
-     *
-     * @param frontActivity The front activity
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     */
-    open fun logout(
-        /* Note: Kotlin's @JvmOverloads annotations does not correctly
-           generate this overload due to a JVM naming conflict.         */
-        frontActivity: Activity?,
-        showLoginPage: Boolean = true,
-    ) {
-        logout(null, frontActivity, showLoginPage)
-    }
-
-    /**
-     * Destroys the stored authentication credentials (removes the account)
-     * and, if requested, restarts the app.
-     *
-     * @param account The user account to logout. Defaults to the current user
-     * account
-     * @param frontActivity The front activity
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     */
-    @JvmOverloads
-    open fun logout(
-        account: Account? = null,
-        frontActivity: Activity?,
-        showLoginPage: Boolean = true,
-    ) {
-        logout(
-            account = account,
-            frontActivity = frontActivity,
-            showLoginPage = showLoginPage,
-            reason = UNKNOWN
-        )
-    }
-
-    // Note the below overload exists because @JvmOverloads generates non-overrideable
-    // signatures for all but the overload with all params. see:
-    // https://youtrack.jetbrains.com/issue/KT-33240/Generated-overloads-for-JvmOverloads-on-open-methods-should-be-final
-    //
-    // I highly doubt any apps are overriding the above function but it is technically breaking and shouldn't be
-    // combined until Mobile SDK 13.0.  TODO: remove above method and move @JvmOverloads to below overload -- or remove open.
-
-    /**
      * Destroys the stored authentication credentials (removes the account)
      * and, if requested, restarts the app.
      *
@@ -1019,108 +1081,123 @@ open class SalesforceSDKManager protected constructor(
      * @param reason The reason for the logout.
      */
     open fun logout(
-        account: Account? = null,
+        account: Account? = userAccountManager.currentAccount,
         frontActivity: Activity?,
         showLoginPage: Boolean = true,
         reason: LogoutReason = UNKNOWN,
     ) {
-        val clientMgr = ClientManager(
-            appContext,
-            accountType,
-            shouldLogoutWhenTokenRevoked()
-        )
-
-        val accountToLogout = account ?: clientMgr.account
-
-        isLoggingOut = true
-        val mgr = AccountManager.get(appContext)
-        var refreshToken: String? = null
-        var loginServer: String? = null
-        if (accountToLogout != null) {
-            val encryptionKey = encryptionKey
-            refreshToken = decrypt(
-                mgr.getPassword(accountToLogout),
-                encryptionKey
-            )
-            loginServer = decrypt(
-                mgr.getUserData(
-                    accountToLogout,
-                    KEY_INSTANCE_URL
-                ),
-                encryptionKey
-            )
+        val accountToLogout = account ?: userAccountManager.currentAccount
+        if (accountToLogout == null) {
+            cleanUp(frontActivity, null, showLoginPage)
+            clearWebViewCookiesAfterLogout()
+            notifyLogoutComplete(showLoginPage, reason, null)
+            return
         }
 
-        /*
-         * Makes a call to un-register from push notifications only if the
-         * refresh token is available.
-         */
-        val userAcc = userAccountManager.buildUserAccount(accountToLogout)
-        val numAccounts = mgr.getAccountsByType(accountType).size
-        if (isRegistered(
-                appContext,
-                userAcc
-            ) && refreshToken != null
-        ) {
-            unregisterPush(
-                clientMgr,
-                showLoginPage,
-                refreshToken,
-                loginServer,
-                accountToLogout,
-                frontActivity,
-                isLastAccount = (numAccounts == 1),
-                reason,
-            )
-        } else {
+        val accountManager = AccountManager.get(appContext)
+        val persistedAccount = accountManager.getAccountsByType(accountToLogout.type)
+            .firstOrNull { it == accountToLogout }
+            ?: return
+        if (!startLogout(persistedAccount)) {
+            w(TAG, "Ignoring a duplicate logout for an account already being logged out")
+            return
+        }
+
+        try {
+            val userAccount = userAccountManager.buildUserAccount(persistedAccount)
+            if (userAccount == null) {
+                purgeMalformedPersistedAccount(
+                    account = persistedAccount,
+                    cleanupUser = buildPersistedIdentityForCleanup(persistedAccount),
+                    frontActivity = frontActivity,
+                    showLoginPage = showLoginPage,
+                    logoutReason = reason,
+                    accountManager = accountManager,
+                )
+                return
+            }
+
+            val refreshToken = userAccount.refreshTokenForPersistence
+            val loginServer = userAccount.loginServer
+            val isLastAccount =
+                accountManager.getAccountsByType(persistedAccount.type).size == 1
+
+            if (isRegistered(appContext, userAccount)) {
+                runCatching {
+                    PushMessaging.unregisterForLogout(
+                        appContext,
+                        userAccount,
+                        isLastAccount,
+                    )
+                }.onFailure { error ->
+                    e(
+                        TAG,
+                        "Starting push notification un-registration failed; continuing logout",
+                        error,
+                    )
+                }
+            }
+
             removeAccount(
-                clientMgr,
-                showLoginPage,
-                refreshToken,
-                loginServer,
-                accountToLogout,
-                frontActivity,
-                reason,
+                showLoginPage = showLoginPage,
+                account = persistedAccount,
+                userAccount = userAccount,
+                refreshToken = refreshToken,
+                loginServer = loginServer,
+                frontActivity = frontActivity,
+                logoutReason = reason,
+                accountManager = accountManager,
             )
+        } finally {
+            finishLogout(persistedAccount)
         }
     }
 
     /**
-     * Removes the account upon logout.
-     *
-     * @param clientMgr The client manager instance
-     * @param showLoginPage If true, displays the login page after removing the
-     * account
-     * @param refreshToken The refresh token
-     * @param loginServer The login server
-     * @param account The user account
-     * @param frontActivity The front activity
+     * Attempts to remove a valid persisted account and always completes the remaining logout work.
+     * Push unregistration, platform account removal, and token revocation are best-effort and do
+     * not prevent local SDK cleanup.
      */
     private fun removeAccount(
-        clientMgr: ClientManager,
         showLoginPage: Boolean,
+        account: Account,
+        userAccount: UserAccount,
         refreshToken: String?,
         loginServer: String?,
-        account: Account?,
         frontActivity: Activity?,
         logoutReason: LogoutReason,
+        accountManager: AccountManager,
     ) {
-        val userAccount = UserAccountManager.getInstance().buildUserAccount(account)
+        val removed = runCatching {
+            accountManager.removeAccountExplicitly(account)
+        }.onFailure { error ->
+            e(TAG, "Removing the persisted account failed", error)
+        }.getOrDefault(false)
+        if (!removed) {
+            e(TAG, "The persisted account could not be removed; continuing logout cleanup")
+            clearPersistedCredentials(account, accountManager)
+            clearStoredCurrentUserIfMatches(userAccount)
+        }
+        val isLastPersistedAccount = hasNoOtherPersistedAccounts(account, accountManager)
         cleanUp(
             frontActivity,
             userAccount,
-            showLoginPage
+            showLoginPage,
+            isLastPersistedAccount,
         )
-        clientMgr.removeAccount(account)
-        isLoggingOut = false
+        userAccount.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
+            runCatching {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+                DPoPNonceCache.clear(id)
+            }.onFailure { e ->
+                w(TAG, "Failed to delete DPoP key pair on logout", e)
+            }
+        }
 
-        // Clear cookies to ensure those used during previous log in will not be re-used to log the user in again.
-        CookieManager.getInstance().removeAllCookies(null)
-
+        clearWebViewCookiesAfterLogout()
         notifyLogoutComplete(showLoginPage, logoutReason, userAccount)
 
-        // Revoke the existing refresh token
-        if (shouldLogoutWhenTokenRevoked() && refreshToken != null) {
+        if (refreshToken != null && loginServer != null) {
             CoroutineScope(Default).launch {
                 runCatching {
                     revokeRefreshToken(
@@ -1129,10 +1206,162 @@ open class SalesforceSDKManager protected constructor(
                         refreshToken,
                         logoutReason,
                     )
-                }.onFailure { e ->
-                    w(TAG, "Revoking token failed", e)
+                }.onFailure { error ->
+                    w(TAG, "Revoking token failed", error)
                 }
             }
+        }
+    }
+
+    /**
+     * Removes an exact persisted account that cannot be rebuilt into a usable authenticated user.
+     * This path deliberately performs only local cleanup: malformed state cannot safely identify a
+     * push registration or a refresh token to revoke.
+     */
+    private fun purgeMalformedPersistedAccount(
+        account: Account,
+        cleanupUser: UserAccount?,
+        frontActivity: Activity?,
+        showLoginPage: Boolean,
+        logoutReason: LogoutReason,
+        accountManager: AccountManager,
+    ) {
+        val removed = runCatching {
+            accountManager.removeAccountExplicitly(account)
+        }.onFailure { error ->
+            w(TAG, "Removing a malformed persisted account failed", error)
+        }.getOrDefault(false)
+        if (!removed) {
+            clearPersistedCredentials(account, accountManager)
+            clearStoredCurrentUserIfMatches(cleanupUser)
+            w(TAG, "Malformed persisted account could not be removed; continuing logout cleanup")
+        } else {
+            val storedUserId = userAccountManager.storedUserId
+            val storedOrgId = userAccountManager.storedOrgId
+            val removedIdentityWasSelected = cleanupUser?.let { user ->
+                user.userId == storedUserId && user.orgId == storedOrgId
+            } == true
+            val selectedIdentityStillExists = removedIdentityWasSelected &&
+                userAccountManager.authenticatedUsers?.any { user ->
+                    user.userId == storedUserId && user.orgId == storedOrgId
+                } == true
+            if (removedIdentityWasSelected && !selectedIdentityStillExists) {
+                userAccountManager.clearStoredCurrentUserInfo()
+            }
+        }
+        val isLastPersistedAccount = hasNoOtherPersistedAccounts(account, accountManager)
+
+        runCatching {
+            cleanUp(
+                frontActivity,
+                cleanupUser,
+                showLoginPage,
+                isLastPersistedAccount,
+            )
+        }.onFailure { error ->
+            w(TAG, "Cleaning local state for a malformed account failed", error)
+        }
+        runCatching {
+            clearWebViewCookiesAfterLogout()
+        }.onFailure { error ->
+            w(TAG, "Clearing cookies for a malformed account failed", error)
+        }
+        runCatching {
+            notifyLogoutComplete(showLoginPage, logoutReason, cleanupUser)
+        }.onFailure { error ->
+            w(TAG, "Completing malformed account logout notification failed", error)
+        }
+    }
+
+    /** Removes usable credentials from an exact account that Android refused to delete. */
+    private fun clearPersistedCredentials(
+        account: Account,
+        accountManager: AccountManager,
+    ) {
+        runCatching {
+            accountManager.clearPassword(account)
+        }.onFailure { error ->
+            w(TAG, "Clearing the persisted refresh token failed", error)
+        }
+        val credentialKeys = listOf(
+            AccountManager.KEY_AUTHTOKEN,
+            KEY_LIGHTNING_SID,
+            KEY_VF_SID,
+            KEY_CONTENT_SID,
+            KEY_CSRF_TOKEN,
+            KEY_COOKIE_SID_CLIENT,
+            KEY_COOKIE_CLIENT_SRC,
+            KEY_SID_COOKIE_NAME,
+            KEY_PARENT_SID,
+            KEY_BEACON_CHILD_CONSUMER_KEY,
+            KEY_BEACON_CHILD_CONSUMER_SECRET,
+            KEY_CREDENTIALS_IDENTIFIER,
+        ) + additionalOauthKeys.orEmpty()
+        credentialKeys.forEach { key ->
+            runCatching {
+                accountManager.setUserData(account, key, null)
+            }.onFailure { error ->
+                w(TAG, "Clearing persisted session data failed", error)
+            }
+        }
+        runCatching {
+            accountManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, null)
+        }.onFailure { error ->
+            w(TAG, "Clearing the platform access-token cache failed", error)
+        }
+    }
+
+    private fun hasNoOtherPersistedAccounts(
+        account: Account,
+        accountManager: AccountManager,
+    ): Boolean = accountManager.getAccountsByType(account.type).none { candidate ->
+        candidate != account
+    }
+
+    private fun clearStoredCurrentUserIfMatches(user: UserAccount?) {
+        user ?: return
+        if (user.userId == userAccountManager.storedUserId &&
+            user.orgId == userAccountManager.storedOrgId
+        ) {
+            userAccountManager.clearStoredCurrentUserInfo()
+        }
+    }
+
+    private fun buildPersistedIdentityForCleanup(account: Account): UserAccount? =
+        runCatching {
+            val accountManager = AccountManager.get(appContext)
+            val userId = decrypt(accountManager.getUserData(account, KEY_USER_ID), encryptionKey)
+            val orgId = decrypt(accountManager.getUserData(account, KEY_ORG_ID), encryptionKey)
+            if (userId.isNullOrBlank() || orgId.isNullOrBlank()) {
+                null
+            } else {
+                UserAccountBuilder.getInstance()
+                    .accountName(account.name)
+                    .userId(userId)
+                    .orgId(orgId)
+                    .build()
+            }
+        }.getOrNull()
+
+    /** Clears the process-wide WebView cookie jar after logout. */
+    @VisibleForTesting
+    internal open fun clearWebViewCookiesAfterLogout() {
+        CookieManager.getInstance().removeAllCookies(null)
+    }
+
+    private fun startLogout(account: Account): Boolean =
+        synchronized(loggingOutAccounts) {
+            loggingOutAccounts.add(account).also { added ->
+                if (added) {
+                    isLoggingOut = true
+                }
+            }
+        }
+
+    private fun finishLogout(account: Account) {
+        synchronized(loggingOutAccounts) {
+            loggingOutAccounts.remove(account)
+            isLoggingOut = loggingOutAccounts.isNotEmpty()
         }
     }
 
@@ -1166,8 +1395,24 @@ open class SalesforceSDKManager protected constructor(
      * @param qualifier The user agent qualifier
      * @return The user agent string to use for all requests
      */
-    open fun getUserAgent(qualifier: String) =
-        String.format(
+    open fun getUserAgent(qualifier: String) = getUserAgent(qualifier, null)
+
+    /**
+     * Returns a per-user agent string. Feature flags include both global and user-specific codes.
+     *
+     * @param qualifier The user agent qualifier
+     * @param user The user account, or null to use the current user
+     * @return The user agent string to use for all requests
+     */
+    open fun getUserAgent(qualifier: String, user: UserAccount?) : String {
+        val resolvedUser = user ?: userAccountManager.currentUser
+        val userKey = resolvedUser?.let { "${it.orgId}/${it.userId}" }
+        val userFeatures = userKey?.let { perUserFeatures[it] } ?: emptySet<String>()
+        val allFeatures = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER).apply {
+            addAll(features.filterNotNull())
+            addAll(userFeatures)
+        }
+        return String.format(
             "SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s SecurityPatch/%s",
             SDK_VERSION,
             RELEASE,
@@ -1176,9 +1421,10 @@ open class SalesforceSDKManager protected constructor(
             appVersion,
             "$appType$qualifier",
             deviceId,
-            join(".", features),
+            join(".", allFeatures),
             SECURITY_PATCH
         )
+    }
 
     /** The app version */
     val appVersion: String
@@ -1215,6 +1461,74 @@ open class SalesforceSDKManager protected constructor(
     fun unregisterUsedAppFeature(appFeatureCode: String?) =
         features.remove(appFeatureCode)
 
+    /**
+     * Returns true if the feature code is in the global (non-user-specific) set.
+     * @param appFeatureCode The app feature code
+     */
+    fun isGlobalFeatureRegistered(appFeatureCode: String) = features.contains(appFeatureCode)
+
+    /**
+     * Returns true if the feature code is registered for the given user
+     * (falling back to the current user when [user] is null). Reads the
+     * per-user feature set that backs the user agent's ftr_ token, so this
+     * reflects features such as RTR that are registered per account.
+     *
+     * @param appFeatureCode The app feature code
+     * @param user The user account, or null to use the current user
+     */
+    internal fun isUserFeatureRegistered(appFeatureCode: String, user: UserAccount? = null): Boolean {
+        val resolvedUser = user ?: userAccountManager.currentUser ?: return false
+        val key = "${resolvedUser.orgId}/${resolvedUser.userId}"
+        return perUserFeatures[key]?.contains(appFeatureCode) == true
+    }
+
+    /**
+     * Adds a per-user app feature code for reporting in the user agent header.
+     * Falls back to the global set when user is null.
+     * @param appFeatureCode The app feature code
+     * @param user The user account to associate the feature with
+     */
+    fun registerUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
+        if (user == null) { registerUsedAppFeature(appFeatureCode); return }
+        val key = "${user.orgId}/${user.userId}"
+        val set = perUserFeatures.getOrPut(key) { ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER) }
+        set.add(appFeatureCode)
+        persistUserFeatureFlags(user, set)
+    }
+
+    /**
+     * Removes a per-user app feature code from reporting in the user agent header.
+     * Falls back to the global set when user is null.
+     * @param appFeatureCode The app feature code
+     * @param user The user account to remove the feature from
+     */
+    fun unregisterUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
+        if (user == null) { unregisterUsedAppFeature(appFeatureCode); return }
+        val key = "${user.orgId}/${user.userId}"
+        perUserFeatures[key]?.remove(appFeatureCode)
+        persistUserFeatureFlags(user, perUserFeatures[key] ?: emptySet())
+    }
+
+    private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
+        user.featureFlags = HashSet(flags)
+        val account = userAccountManager.buildAccount(user) ?: return
+        userAccountManager.updateAccount(account, user)
+    }
+
+    /** Hydrates per-user features from persisted accounts at startup */
+    private fun hydratePerUserFeatures() {
+        val users = userAccountManager.authenticatedUsers ?: return
+        for (u in users) {
+            val flags = u.featureFlags
+            if (flags.isNotEmpty()) {
+                val key = "${u.orgId}/${u.userId}"
+                val set = ConcurrentSkipListSet<String>(CASE_INSENSITIVE_ORDER)
+                set.addAll(flags)
+                perUserFeatures[key] = set
+            }
+        }
+    }
+
     /** The app type */
     open val appType = "Native"
 
@@ -1224,13 +1538,11 @@ open class SalesforceSDKManager protected constructor(
     /** The authentication account type, which should match authenticator.xml */
     val accountType: String by lazy {
         val type = appContext.getString(account_type)
-        if (type == "com.salesforce.androidsdk") {
-            // TODO: Turn this logline into an assert in 14.0
-            e(TAG, "No app specific account type found.  To ensure users " +
-                    "can login override the \"account_type\" value in your strings.xml.")
+        check(type != "com.salesforce.androidsdk") {
+            "No app specific account type found. To ensure users can log in, " +
+                    "override the \"account_type\" value in your strings.xml."
         }
-
-        return@lazy type
+        type
     }
 
     override fun toString() =
@@ -1242,28 +1554,69 @@ open class SalesforceSDKManager protected constructor(
             }
         """.trimIndent()
 
-    /** The client manager */
-    val clientManager by lazy {
-        ClientManager(
-            appContext,
-            accountType,
-            true
-        )
-    }
+    /**
+     * Returns a manager bound to the user who is current at the time of access,
+     * or null when there is no current user. Retaining the returned manager
+     * retains that user's identity even if the application later switches
+     * users.
+     */
+    val clientManager: ClientManager?
+        get() = userAccountManager.currentUser?.let { user ->
+            ClientManager(appContext, user)
+        }?.takeIf { manager -> manager.account != null }
 
     /**
-     * Returns a client manager for the provided parameters.
-     * @return A new client manager for the provided parameters
+     * Returns an authenticated client for the current user or starts login when
+     * no persisted account is current. If the current account cannot produce a
+     * valid user and client, removes that exact corrupt account and completes
+     * the normal logout, account-switching, or login flow without invoking
+     * [restClientCallback].
      */
-    @Suppress("unused")
-    fun getClientManager(
-        jwt: String?,
-        url: String?
-    ): ClientManager = ClientManager(
-        appContext,
-        accountType,
-        true
+    fun getRestClient(
+        activityContext: Activity,
+        restClientCallback: RestClientCallback,
+    ) {
+        val account = userAccountManager.currentAccount
+        if (account != null) {
+            val user = userAccountManager.buildUserAccount(account)
+            val client = user?.let { ClientManager(appContext, it).peekRestClient() }
+            if (client == null) {
+                w(TAG, "Removing a corrupt current account that cannot create a REST client")
+                logout(
+                    account = account,
+                    frontActivity = activityContext,
+                    showLoginPage = true,
+                    reason = CORRUPT_STATE_MSDK,
+                )
+                return
+            }
+            restClientCallback.authenticatedRestClient(client)
+            return
+        }
+
+        val loginIntent = Intent(activityContext, loginActivityClass).apply {
+            setPackage(activityContext.packageName)
+            flags = FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        // LoginActivity completes through SDK broadcasts rather than an
+        // Activity result. Starting for result keeps the caller's task alive
+        // so its receivers remain registered while login is displayed.
+        activityContext.startActivityForResult(loginIntent, 0)
+    }
+
+    /** Returns a client that carries no persisted user credentials. */
+    fun getUnauthenticatedRestClient() = RestClient(
+        RestClient.UnauthenticatedClientInfo(),
+        null,
+        DEFAULT,
+        null,
     )
+
+    /** Callback used by [getRestClient]. */
+    fun interface RestClientCallback {
+        fun authenticatedRestClient(client: RestClient)
+    }
 
     /**
      * Displays developer support for a specified Android activity.
@@ -1353,74 +1706,111 @@ open class SalesforceSDKManager protected constructor(
                     })
                 }
             }
+
+            /*
+             * Debug-only helper: proactively drive the SDK's standard
+             * token-refresh path so developers can observe Refresh Token
+             * Rotation (RTR) state update in the dev info screen without
+             * waiting for the access token to expire naturally. This whole
+             * menu is only shown when isDevSupportEnabled() is true (debug
+             * builds by default).
+             */
+            actions["Force Token Refresh"] = object : DevActionHandler {
+                override fun onSelected() {
+                    val user = userAccountManager.currentUser ?: return
+                    CoroutineScope(Default).launch {
+                        val message = forceTokenRefresh(user)
+                        withContext(Main) {
+                            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
         }
 
         return actions
     }
 
-    /** Information to display in the developer support dialog */
-    @Deprecated(
-        "Will be removed in Mobile SDK 14.0, please use the new data class representation.",
-        ReplaceWith("devSupportInfo")
-    )
-    open val devSupportInfos: List<String>
-        get() = mutableListOf(
-            "SDK Version", SDK_VERSION,
-            "App Type", appType,
-            "User Agent", userAgent,
-            "Use Web Server Authentication", "$useWebServerAuthentication",
-            "Use Hybrid Authentication Token", "$useHybridAuthentication",
-            "Browser Login Enabled", "$isBrowserLoginEnabled",
-            "IDP Enabled", "$isIDPLoginFlowEnabled",
-            "Identity Provider", "$isIdentityProvider",
-            "Authenticated Users", userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
-                "${it.displayName} (${it.username})"
-            } ?: "none",
-        ).apply {
-            val bootConfigValues = DevSupportInfo.parseBootConfigInfo(getBootConfig(appContext))
-            addAll(bootConfigValues.flatMap { listOf(it.first, it.second) })
-
-            val currentUserValues = DevSupportInfo.parseUserInfoSection(userAccountManager.cachedCurrentUser)
-            currentUserValues?.let { (_, values) ->
-                addAll(values.flatMap { listOf(it.first, it.second) })
-            }
-
-            val runtimeConfigValues = DevSupportInfo.parseRuntimeConfig(getRuntimeConfig(appContext))
-            addAll(runtimeConfigValues.flatMap { listOf(it.first, it.second) })
+    /**
+     * Drives the SDK's standard token-refresh path for [user] so developers
+     * can observe Refresh Token Rotation (RTR) state update in the dev info
+     * screen without waiting for the access token to expire naturally. Backs
+     * the debug-only "Force Token Refresh" dev action.
+     *
+     * @param user The user whose access token should be refreshed.
+     * @param restClient The REST client to refresh, or null to construct a
+     * manager bound to [user] and resolve its client. Tests can supply a mock
+     * to avoid a network call.
+     * @return A human-readable result message suitable for a Toast. Never
+     * throws; an unavailable user/client or refresh failure is returned as a
+     * failure message.
+     */
+    @VisibleForTesting(otherwise = PRIVATE)
+    internal fun forceTokenRefresh(
+        user: UserAccount,
+        restClient: RestClient? = null
+    ): String = try {
+        val resolvedClient = restClient ?: ClientManager(appContext, user).peekRestClient()
+        if (resolvedClient == null) {
+            "Token refresh failed: user is unavailable"
+        } else {
+            resolvedClient.refreshAccessToken()
+            "Token refresh complete — check RTR section in dev info"
         }
+    } catch (ex: Exception) {
+        e(TAG, "Force Token Refresh failed", ex)
+        "Token refresh failed: ${ex.message ?: ex.javaClass.simpleName}"
+    }
 
-//    val devSupportInfo: DevSupportInfo
-//        get() {
-//            val userList: String? = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
-//                "${it.displayName} (${it.username})"
-//            }
-//            val basicInfo = listOf(
-//                "SDK Version" to SDK_VERSION,
-//                "App Type" to appType,
-//                "User Agent" to userAgent,
-//                "Authenticated Users" to (userList ?: "None"),
-//            )
-//            val authConfig = listOf(
-//                "Use Web Server Authentication" to "$useWebServerAuthentication",
-//                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
-//                "Support Welcome Discovery" to "$supportsWelcomeDiscovery",
-//                "Browser Login Enabled" to "$isBrowserLoginEnabled",
-//                "IDP Enabled" to "$isIDPLoginFlowEnabled",
-//                "Identity Provider" to "$isIdentityProvider",
-//            )
-//
-//            return DevSupportInfo(
-//                basicInfo,
-//                authConfig,
-//                getBootConfig(appContext),
-//                userAccountManager.cachedCurrentUser,
-//                getRuntimeConfig(appContext),
-//            )
-//        }
-//
-//  TODO: Replace devSupportInfo with the above implementation when devSupportInfos is removed in 14.0.
+    /** Information to display in the developer support dialog */
     open val devSupportInfo: DevSupportInfo
-        get() = DevSupportInfo.createFromLegacyDevInfos(devSupportInfos)
+        get() {
+            val userList = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
+                "${it.displayName} (${it.username})"
+            }
+            val basicInfo = listOf(
+                "SDK Version" to SDK_VERSION,
+                "App Type" to appType,
+                "User Agent" to userAgent,
+                "Authenticated Users" to (userList ?: "None"),
+            )
+            val authConfig = listOf(
+                "Use Web Server Authentication" to "$useWebServerAuthentication",
+                "Use Hybrid Authentication Token" to "$useHybridAuthentication",
+                "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
+                "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
+                "IDP Enabled" to "$isIDPLoginFlowEnabled",
+                "Identity Provider" to "$isIdentityProvider",
+            )
+
+            val currentUser = userAccountManager.cachedCurrentUser
+            return DevSupportInfo(
+                basicInfo,
+                authConfig,
+                getBootConfig(appContext),
+                currentUser,
+                getRuntimeConfig(appContext),
+            ).apply {
+                /*
+                 * Surface Refresh Token Rotation (RTR) state so developers can
+                 * verify whether RTR is active for the current user's session and
+                 * when the token last rotated.
+                 */
+                additionalSections.add(
+                    DevSupportInfo.parseRtrSection(
+                        currentUser = currentUser,
+                        rtrActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_RTR, currentUser),
+                    )
+                )
+                additionalSections.add(
+                    DevSupportInfo.parseAppAttestationSection(
+                        appAttestationClient = appAttestationClient,
+                        currentUser = currentUser,
+                        aaFeatureActive = currentUser != null && isUserFeatureRegistered(Features.FEATURE_APP_ATTESTATION, currentUser),
+                    )
+                )
+            }
+        }
 
     /** Sends the logout completed intent */
     private fun sendLogoutCompleteIntent(logoutReason: LogoutReason, userAccount: UserAccount?) =
@@ -1479,7 +1869,7 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this is a debug build */
-    internal val isDebugBuild
+    internal open val isDebugBuild
         get() = DEBUG
 
 
@@ -1514,16 +1904,11 @@ open class SalesforceSDKManager protected constructor(
              * This covers the case where OS dark theme is true, but app has
              * disabled.
              */
-            if (SDK_INT > R) {
-                runCatching {
-                    activity.window?.insetsController?.setSystemBarsAppearance(
-                        APPEARANCE_LIGHT_STATUS_BARS,
-                        APPEARANCE_LIGHT_STATUS_BARS
-                    )
-                }
-            } else {
-                // TODO: Remove with minimum API >= 30
-                activity.window?.decorView?.systemUiVisibility = SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            runCatching {
+                activity.window?.insetsController?.setSystemBarsAppearance(
+                    APPEARANCE_LIGHT_STATUS_BARS,
+                    APPEARANCE_LIGHT_STATUS_BARS
+                )
             }
         }
     }
@@ -1563,21 +1948,41 @@ open class SalesforceSDKManager protected constructor(
         }
     }
 
+    /**
+     * Determines the target account (or null for all users) for foreground push
+     * re-registration based on [PushService.foregroundRegistrationMode].
+     *
+     * Returns null when re-registration should be skipped entirely (i.e.
+     * [PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER] is set
+     * but there is no current user).
+     */
+    @VisibleForTesting
+    internal fun foregroundPushRegistrationTarget(): ForegroundPushTarget? =
+        when (PushService.foregroundRegistrationMode) {
+            PushService.PushNotificationForegroundRegistrationMode.ALL_USERS ->
+                ForegroundPushTarget(account = null)
+            PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER ->
+                userAccountManager.currentUser?.let { ForegroundPushTarget(account = it) }
+        }
+
+    /** Holds the resolved account argument for foreground push re-registration. */
+    @VisibleForTesting
+    internal data class ForegroundPushTarget(val account: UserAccount?)
+
     override fun onResume(owner: LifecycleOwner) {
         super.onResume(owner)
 
         (screenLockManager as ScreenLockManager?)?.onAppForegrounded()
         (biometricAuthenticationManager as? BiometricAuthenticationManager)?.onAppForegrounded()
 
-        // Review push-notifications registration for the current user, if enabled.
-        userAccountManager.currentUser?.let { userAccount ->
-            if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
-                register(
-                    context = appContext,
-                    account = userAccount,
-                    recreateKey = false
-                )
-            }
+        // Review push-notifications registration on foreground, if enabled.
+        if (pushNotificationsRegistrationType == ReRegistrationOnAppForeground) {
+            val target = foregroundPushRegistrationTarget() ?: return@onResume
+            register(
+                context = appContext,
+                account = target.account,
+                recreateKey = false
+            )
         }
 
         // Display the Salesforce Mobile SDK "Show Developer Support" notification
@@ -1599,7 +2004,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "13.2.1"
+        const val SDK_VERSION = "14.0.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager
@@ -1668,12 +2073,16 @@ open class SalesforceSDKManager protected constructor(
          * @param context The Android context
          * @param mainActivity The app's main activity class
          * @param loginActivity The app login activity class
+         * @param googleCloudProjectId The Google Cloud Project ID to use with
+         * Google Play Integrity API and Salesforce App Attestation or null to
+         * disable both features
          */
         private fun init(
             context: Context,
             mainActivity: Class<out Activity>,
             loginActivity: Class<out Activity>? = null,
             nativeLoginActivity: Class<out Activity>? = null,
+            googleCloudProjectId: Long? = null,
         ) {
             if (INSTANCE == null) {
                 INSTANCE = SalesforceSDKManager(
@@ -1681,7 +2090,11 @@ open class SalesforceSDKManager protected constructor(
                     mainActivity,
                     loginActivity,
                     nativeLoginActivity,
+                    googleCloudProjectId,
                 )
+                // Hydrate after INSTANCE is set — UserAccountManager.getInstance() checks
+                // SalesforceSDKManager.getInstance() internally, which requires INSTANCE != null.
+                INSTANCE?.hydratePerUserFeatures()
             }
             initInternal(context)
             EventsObservable.get().notifyEvent(
@@ -1772,6 +2185,28 @@ open class SalesforceSDKManager protected constructor(
             mainActivity,
             loginActivity,
             nativeLoginActivity,
+        )
+
+        /**
+         * Initializes required components with Salesforce App Attestation
+         * enabled. Native apps must call one overload of this method before
+         * using the Salesforce Mobile SDK.
+         *
+         * @param context The Android context
+         * @param mainActivity The app's main activity class
+         * @param googleCloudProjectId The Google Cloud Project ID to use with
+         * Google Play Integrity API and Salesforce App Attestation
+         */
+        @JvmStatic
+        fun initNative(
+            context: Context,
+            mainActivity: Class<out Activity>,
+            googleCloudProjectId: Long,
+        ) = init(
+            context,
+            mainActivity,
+            LoginActivity::class.java,
+            googleCloudProjectId = googleCloudProjectId,
         )
 
         /**
@@ -1894,29 +2329,56 @@ open class SalesforceSDKManager protected constructor(
      * @param httpAccess The HTTP access to use for API integration.  Defaults
      * to null to use the default HTTP access.  This parameter is intended for
      * testing purposes only and should not be used in release builds.
+     * @param loginServerUrl Optional override for the login server URL whose
+     * authentication configuration should be fetched.  Defaults to null which
+     * uses the [LoginServerManager]'s currently selected server.  Callers
+     * driving a transient server (e.g., a Welcome Discovery My Domain that is
+     * intentionally not persisted to the server list) should pass the
+     * transient URL here so browser login and app attestation are configured
+     * for the right server.
      * @param completion An optional function to invoke at the end of the action
      */
     internal fun fetchAuthenticationConfiguration(
         httpAccess: HttpAccess? = null,
+        loginServerUrl: String? = null,
         completion: (() -> Unit),
     ) = CoroutineScope(Default).launch {
         // If this takes more than five seconds it can cause Android's application not responding report.
-        withTimeoutOrNull(5000L) {
-            val loginServer = loginServerManager.selectedLoginServer.url.trim()
-            if (loginServer == PRODUCTION_LOGIN_URL || loginServer == WELCOME_LOGIN_URL || loginServer == SANDBOX_LOGIN_URL || !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null) {
-                setBrowserLoginEnabled(
-                    browserLoginEnabled = false,
-                    shareBrowserSessionEnabled = false
-                )
+        withTimeoutOrNull(5000L.milliseconds) {
+            val loginServer = (loginServerUrl ?: loginServerManager.selectedLoginServer.url).trim()
+            val isInvalidServer = !isHttpsUrl(loginServer) || loginServer.toHttpUrlOrNull() == null
 
-                return@withTimeoutOrNull
-            }
+            when {
+                loginServer == WELCOME_LOGIN_URL || isInvalidServer -> {
+                    // The Welcome Discovery host and malformed servers are never forced into advanced authentication
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = false,
+                        shareBrowserSessionEnabled = false
+                    )
 
-            getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
-                setBrowserLoginEnabled(
-                    browserLoginEnabled = authConfig?.isBrowserLoginEnabled ?: false,
-                    shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
-                )
+                    // Disable Salesforce App Attestation for login servers that are not My Domain servers.
+                    appAttestationClient?.apiHostName = null
+                }
+                LoginServerManager.isPoolServer(loginServer) -> {
+                    // Standard login servers have no auth-config to source a shared-session value from, so
+                    // browser login is gated solely on the force flag and shared session stays false.
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = _forceAdvancedAuthentication,
+                        shareBrowserSessionEnabled = false
+                    )
+
+                    // Disable Salesforce App Attestation for login servers that are not My Domain servers.
+                    appAttestationClient?.apiHostName = null
+                }
+                else -> getMyDomainAuthConfig(httpAccess, loginServer).let { authConfig ->
+                    setBrowserLoginEnabled(
+                        browserLoginEnabled = _forceAdvancedAuthentication || (authConfig?.isBrowserLoginEnabled ?: false),
+                        shareBrowserSessionEnabled = authConfig?.isShareBrowserSessionEnabled ?: false
+                    )
+
+                    // Consider enabling Salesforce App Attestation for login servers that are My Domain servers.
+                    appAttestationClient?.apiHostName = loginServer.toUri().host
+                }
             }
         }
 

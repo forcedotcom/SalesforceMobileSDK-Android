@@ -11,6 +11,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.ui.LoginActivity
@@ -80,7 +81,6 @@ internal class PublicOverridesTest {
     @Test
     fun overrideSalesforceSDKManager() {
         class OverrideSalesforceSDKManager(context: Context, mainActivity: Class<out Activity>) : SalesforceSDKManager(context, mainActivity) {
-            override fun shouldLogoutWhenTokenRevoked(): Boolean { return false }
             override val appDisplayString: String get() = ""
             override fun cleanUp(userAccount: UserAccount?) { }
             override fun startLoginPage() { }
@@ -91,8 +91,7 @@ internal class PublicOverridesTest {
             override var isBrowserLoginEnabled = false
             override val userAccountManager: UserAccountManager get() = super.userAccountManager
             override fun isDevSupportEnabled(): Boolean { return false }
-            override fun logout(frontActivity: Activity?, showLoginPage: Boolean) { }
-            override fun logout(account: Account?, frontActivity: Activity?, showLoginPage: Boolean) { }
+            override fun logout(account: Account?, frontActivity: Activity?, showLoginPage: Boolean, reason: OAuth2.LogoutReason) { }
             override val loginServerManager: LoginServerManager get() = super.loginServerManager
             override fun setViewNavigationVisibility(activity: Activity) { }
         }

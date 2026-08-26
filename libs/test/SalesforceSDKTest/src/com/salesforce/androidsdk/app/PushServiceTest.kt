@@ -2,7 +2,6 @@ package com.salesforce.androidsdk.app
 
 import android.accounts.AccountManager
 import android.app.NotificationManager
-import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -10,6 +9,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
+import com.salesforce.androidsdk.accounts.UserAccountTest.createOtherTestAccount
 import com.salesforce.androidsdk.accounts.UserAccountTest.createTestAccount
 import com.salesforce.androidsdk.app.PushMessagingTest.Companion.NOTIFICATIONS_TYPES_JSON
 import com.salesforce.androidsdk.push.PushMessaging
@@ -23,6 +23,9 @@ import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_
 import com.salesforce.androidsdk.push.PushService.Companion.REGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.UNREGISTRATION_STATUS_SUCCEEDED
 import com.salesforce.androidsdk.push.PushService.Companion.enqueuePushNotificationsRegistrationWork
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsUnregistrationWorkName
+import com.salesforce.androidsdk.push.PushService.PushNotificationForegroundRegistrationMode.ALL_USERS
+import com.salesforce.androidsdk.push.PushService.PushNotificationForegroundRegistrationMode.CURRENT_USER
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
 import com.salesforce.androidsdk.rest.ApiVersionStrings.VERSION_NUMBER_TEST
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
@@ -33,8 +36,13 @@ import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.f
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.serialization.json.Json.Default.encodeToJsonElement
 import kotlinx.serialization.json.Json.Default.encodeToString
@@ -44,6 +52,7 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -53,6 +62,9 @@ import org.junit.runner.RunWith
 import java.net.HttpURLConnection.HTTP_CREATED
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.net.URI
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Tests for `PushService`.
@@ -89,6 +101,7 @@ class PushServiceTest {
     fun tearDown() {
 
         VERSION_NUMBER_TEST = null
+        PushService.foregroundRegistrationMode = ALL_USERS
         cleanupAccounts(accountManager)
 
         userAccountManager = null
@@ -116,6 +129,25 @@ class PushServiceTest {
             Deregister,
             ReRegistrationDisabled,
             0
+        )
+    }
+
+    @Test
+    fun testDeregisterWorkNamesAreUserSpecific() {
+        val firstUser = createTestAccount()
+        val secondUser = createOtherTestAccount()
+
+        val firstName = pushNotificationsUnregistrationWorkName(firstUser)
+        val secondName = pushNotificationsUnregistrationWorkName(secondUser)
+
+        assertNotEquals(firstName, secondName)
+        assertEquals(
+            "SalesforcePushNotificationsUnregistrationWork:${firstUser.orgId}:${firstUser.userId}",
+            firstName,
+        )
+        assertEquals(
+            "SalesforcePushNotificationsUnregistrationWork:${secondUser.orgId}:${secondUser.userId}",
+            secondName,
         )
     }
 
@@ -495,6 +527,53 @@ class PushServiceTest {
     }
 
     @Test
+    fun testUnregisterForLogoutCapturesRequestWithoutOwningLocalStateCleanup() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val deviceId = "test-device-id"
+        val requestStarted = CountDownLatch(1)
+        val allowRequestToFinish = CountDownLatch(1)
+        val capturedDeviceId = AtomicReference<String?>()
+        val capturedUser = AtomicReference<UserAccount?>()
+        val capturedClient = AtomicReference<RestClient?>()
+        createTestAccountInAccountManager(userAccountManager)
+        PushMessaging.setRegistrationInfo(
+            context = context,
+            registrationId = "test-registration-id",
+            deviceId = deviceId,
+            account = user,
+        )
+        val service = object : PushService() {
+            override fun unregisterSFDCPushNotification(
+                registeredId: String?,
+                account: UserAccount,
+                restClient: RestClient,
+            ) {
+                capturedDeviceId.set(registeredId)
+                capturedUser.set(account)
+                capturedClient.set(restClient)
+                requestStarted.countDown()
+                allowRequestToFinish.await(5, SECONDS)
+            }
+        }
+
+        try {
+            service.unregisterForLogout(user)
+
+            assertEquals(
+                "test-registration-id",
+                PushMessaging.getRegistrationId(context, user),
+            )
+            assertEquals(deviceId, PushMessaging.getDeviceId(context, user))
+            assertTrue(requestStarted.await(5, SECONDS))
+            assertEquals(deviceId, capturedDeviceId.get())
+            assertEquals(user, capturedUser.get())
+            assertNotNull(capturedClient.get())
+        } finally {
+            allowRequestToFinish.countDown()
+        }
+    }
+
+    @Test
     fun testPerformRegistrationChange_RegisterWithoutRegistrationId() {
 
         createTestAccountInAccountManager(userAccountManager)
@@ -547,6 +626,29 @@ class PushServiceTest {
             register = false,
             userAccount = user
         )
+    }
+
+    @Test
+    fun testPerformRegistrationChange_DeregisterWithoutRestClientLogsWarning() {
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+
+        try {
+            PushService().performRegistrationChange(
+                register = false,
+                userAccount = user,
+                restClient = null,
+            )
+
+            verify(exactly = 1) {
+                SalesforceSDKLogger.w(
+                    any(),
+                    "Skipping push notification deregistration because no REST client is available",
+                )
+            }
+        } finally {
+            unmockkStatic(SalesforceSDKLogger::class)
+        }
     }
 
     @Test
@@ -946,6 +1048,66 @@ class PushServiceTest {
         PushService().removeNotificationsCategories()
     }
 
+    // region Foreground Registration Mode Tests
+
+    @Test
+    fun test_givenDefault_thenForegroundRegistrationModeIsAllUsers() {
+        assertEquals(ALL_USERS, PushService.foregroundRegistrationMode)
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenSet_thenForegroundRegistrationModeIsCurrentUser() {
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        assertEquals(CURRENT_USER, PushService.foregroundRegistrationMode)
+    }
+
+    @Test
+    fun test_givenModeAllUsers_whenAppEntersForeground_thenTargetAccountIsNull() {
+        PushService.foregroundRegistrationMode = ALL_USERS
+        createTestAccountInAccountManager(userAccountManager)
+
+        val target = SalesforceSDKManager.getInstance().foregroundPushRegistrationTarget()
+
+        // null account means the worker iterates all authenticated users
+        assertNotNull(target)
+        assertNull(target?.account)
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenAppEntersForeground_thenTargetAccountIsCurrentUser() {
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        createTestAccountInAccountManager(userAccountManager)
+        val currentUser = userAccountManager?.currentUser
+
+        val target = SalesforceSDKManager.getInstance().foregroundPushRegistrationTarget()
+
+        assertNotNull(target)
+        assertEquals(currentUser, target?.account)
+    }
+
+    @Test
+    fun test_givenModeAllUsers_whenNoAuthenticatedUsers_thenTargetAccountIsNull() {
+        PushService.foregroundRegistrationMode = ALL_USERS
+        // No accounts — worker will iterate an empty list and do nothing
+
+        val target = SalesforceSDKManager.getInstance().foregroundPushRegistrationTarget()
+
+        assertNotNull(target)
+        assertNull(target?.account)
+    }
+
+    @Test
+    fun test_givenModeCurrentUser_whenNoCurrentUser_thenTargetIsNull() {
+        PushService.foregroundRegistrationMode = CURRENT_USER
+        // No accounts — currentUser is null, registration must be skipped
+
+        val target = SalesforceSDKManager.getInstance().foregroundPushRegistrationTarget()
+
+        assertNull(target)
+    }
+
+    // endregion
+
     companion object {
 
         private val clientInfo = ClientInfo(
@@ -974,9 +1136,6 @@ class PushServiceTest {
             /* csrfToken = */ null
         )
 
-        private val user = UserAccount(Bundle().apply {
-            putString("orgId", "org-1")
-            putString("userId", "user-1-1")
-        })
+        private val user = createTestAccount()
     }
 }

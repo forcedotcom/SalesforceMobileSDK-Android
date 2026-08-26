@@ -55,6 +55,22 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
     /**
      * Protected constructor.
      *
+     * @param context              Application context.
+     * @param mainActivity         Activity that should be launched after the login flow.
+     * @param loginActivity        Login activity.
+     * @param nativeLoginActivity  Native login activity.
+     * @param googleCloudProjectId Google Cloud project ID for app attestation (nullable).
+     */
+    protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                   Class<? extends Activity> loginActivity,
+                                   Class<? extends Activity> nativeLoginActivity,
+                                   Long googleCloudProjectId) {
+        super(context, mainActivity, loginActivity, nativeLoginActivity, googleCloudProjectId);
+    }
+
+    /**
+     * Protected constructor.
+     *
      * @param context             Application context.
      * @param mainActivity        Activity that should be launched after the login flow.
      * @param loginActivity       Login activity.
@@ -63,7 +79,7 @@ public class MobileSyncSDKManager extends SmartStoreSDKManager {
     protected MobileSyncSDKManager(Context context, Class<? extends Activity> mainActivity,
                                    Class<? extends Activity> loginActivity,
                                    Class<? extends Activity> nativeLoginActivity) {
-        super(context, mainActivity, loginActivity, nativeLoginActivity);
+        this(context, mainActivity, loginActivity, nativeLoginActivity, null);
     }
 
     private static void init(Context context, Class<? extends Activity> mainActivity,

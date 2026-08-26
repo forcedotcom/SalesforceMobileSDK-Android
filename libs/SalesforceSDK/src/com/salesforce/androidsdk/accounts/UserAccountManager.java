@@ -37,6 +37,7 @@ import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.salesforce.androidsdk.app.Features;
@@ -50,9 +51,12 @@ import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -325,10 +329,12 @@ public class UserAccountManager {
 		if (user.equals(curUser)) {
 			return;
 		}
-		final ClientManager cm = new ClientManager(context, accountType, true);
-		final Account account = cm.getAccountByName(user.getAccountName());
+		final ClientManager cm = new ClientManager(context, user);
+		if (cm.peekRestClient() == null) {
+			SalesforceSDKLogger.w(TAG, "Unable to create a REST client for the requested user");
+			return;
+		}
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
-		cm.peekRestClient(account);
 		sendUserSwitchIntent(userSwitchType, extras);
 
 		// Check if User has ScreenLock or Biometric Auth
@@ -367,7 +373,7 @@ public class UserAccountManager {
 	 * @param frontActivity Front activity.
 	 */
 	public void signoutCurrentUser(Activity frontActivity) {
-		SalesforceSDKManager.getInstance().logout(frontActivity);
+		signoutCurrentUser(frontActivity, /* showLoginPage = */ true, OAuth2.LogoutReason.UNKNOWN);
 	}
 
 	/**
@@ -377,7 +383,7 @@ public class UserAccountManager {
 	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
 	 */
 	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage) {
-		SalesforceSDKManager.getInstance().logout(frontActivity, showLoginPage);
+		signoutCurrentUser(frontActivity, showLoginPage, OAuth2.LogoutReason.UNKNOWN);
 	}
 
 	/**
@@ -388,46 +394,59 @@ public class UserAccountManager {
 	 * @param reason The reason for the logout.
 	 */
 	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
-		SalesforceSDKManager.getInstance().logout(null, frontActivity, showLoginPage, reason);
+		SalesforceSDKManager.getInstance().logout(
+				getCurrentAccount(), frontActivity, showLoginPage, reason);
 	}
 
 	/**
-	 * Logs the specified user out. If the user specified is not the current
-	 * user, push notification un-registration will not take place.
+	 * Logs the specified user out. Push unregistration is best-effort and does not delay removal
+	 * of the user's local credentials.
 	 *
 	 * @param userAccount User account.
 	 * @param frontActivity Front activity.
 	 */
-	public void signoutUser(UserAccount userAccount, Activity frontActivity) {
-		final Account account = buildAccount(userAccount);
-		SalesforceSDKManager.getInstance().logout(account, frontActivity);
+	public void signoutUser(@NonNull UserAccount userAccount, Activity frontActivity) {
+		signoutUser(userAccount, frontActivity, /* showLoginPage = */ true, OAuth2.LogoutReason.UNKNOWN);
 	}
 
 	/**
-	 * Logs the specified user out. If the user specified is not the current
-	 * user, push notification un-registration will not take place.
+	 * Logs the specified user out. Push unregistration is best-effort and does not delay removal
+	 * of the user's local credentials.
 	 *
 	 * @param userAccount User account.
 	 * @param frontActivity Front activity.
 	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
 	 */
-	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
-		final Account account = buildAccount(userAccount);
-		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
+	public void signoutUser(@NonNull UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
+		signoutUser(userAccount, frontActivity, showLoginPage, OAuth2.LogoutReason.UNKNOWN);
 	}
 
 	/**
-	 * Logs the specified user out. If the user specified is not the current
-	 * user, push notification un-registration will not take place.
+	 * Logs the specified user out. Push unregistration is best-effort and does not delay removal
+	 * of the user's local credentials.
 	 *
 	 * @param userAccount User account.
 	 * @param frontActivity Front activity.
 	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
 	 * @param reason The reason for the logout.
 	 */
-	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
-		final Account account = buildAccount(userAccount);
-		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage, reason);
+	public void signoutUser(@NonNull UserAccount userAccount, Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
+		Account account = buildAccount(userAccount);
+		if (account == null && !TextUtils.isEmpty(userAccount.getAccountName())) {
+			for (Account candidate : accountManager.getAccountsByType(accountType)) {
+				if (TextUtils.equals(candidate.name, userAccount.getAccountName())
+						&& buildUserAccount(candidate) == null) {
+					// A malformed exact record must still be removed so unusable credentials are
+					// not retained indefinitely.
+					account = candidate;
+					break;
+				}
+			}
+		}
+		if (account != null) {
+			SalesforceSDKManager.getInstance().logout(
+					account, frontActivity, showLoginPage, reason);
+		}
 	}
 
 	/**
@@ -489,9 +508,8 @@ public class UserAccountManager {
 		}
 
 		// The refresh token is stored as the Account's password (see createAccount), not as user data,
-		// so buildAuthBundle does not include it.  Persist it explicitly here so that server-side
-		// Use the in-memory snapshot rather than getRefreshToken(), which now performs a live lookup
-		// against AccountManager and would return the updated value we may be about to write.
+		// so buildAuthBundle does not include it. Persist it explicitly from the in-memory snapshot;
+		// getRefreshToken() performs a live AccountManager lookup and could return the old value.
 		final String refreshToken = userAccount.getRefreshTokenForPersistence();
 		if (refreshToken != null) {
 			final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
@@ -547,12 +565,17 @@ public class UserAccountManager {
 		final String cookieSidClient = decryptUserData(account, AuthenticatorService.KEY_COOKIE_SID_CLIENT, encryptionKey);
 		final String sidCookieName = decryptUserData(account, AuthenticatorService.KEY_SID_COOKIE_NAME, encryptionKey);
 		final String clientId = decryptUserData(account, AuthenticatorService.KEY_CLIENT_ID, encryptionKey);
+		final String redirectUri = decryptUserData(account, AuthenticatorService.KEY_REDIRECT_URI, encryptionKey);
 
 		final String parentSid = decryptUserData(account, AuthenticatorService.KEY_PARENT_SID, encryptionKey);
 		final String tokenFormat = decryptUserData(account, AuthenticatorService.KEY_TOKEN_FORMAT, encryptionKey);
 		final String beaconChildConsumerKey = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, encryptionKey);
 		final String beaconChildConsumerSecret = decryptUserData(account, AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, encryptionKey);
 		final String scope = decryptUserData(account, AuthenticatorService.KEY_SCOPE, encryptionKey);
+		final String credentialsIdentifier = decryptUserData(account, AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, encryptionKey);
+		final String tokenType = decryptUserData(account, AuthenticatorService.KEY_TOKEN_TYPE, encryptionKey);
+		final String lastTokenRotationTime = decryptUserData(account, AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, encryptionKey);
+		final String featureFlagsRaw = decryptUserData(account, AuthenticatorService.KEY_FEATURE_FLAGS, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
 		List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
@@ -571,7 +594,7 @@ public class UserAccountManager {
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		} else {
-			return UserAccountBuilder.getInstance()
+			final UserAccount userAccount = UserAccountBuilder.getInstance()
 					.authToken(authToken)
 					.refreshToken(refreshToken)
 					.loginServer(loginServer)
@@ -603,47 +626,39 @@ public class UserAccountManager {
 					.cookieSidClient(cookieSidClient)
 					.sidCookieName(sidCookieName)
 					.clientId(clientId)
+					.redirectUri(redirectUri)
 					.parentSid(parentSid)
 					.tokenFormat(tokenFormat)
 					.beaconChildConsumerKey(beaconChildConsumerKey)
 					.beaconChildConsumerSecret(beaconChildConsumerSecret)
 					.scope(scope)
+					.credentialsIdentifier(credentialsIdentifier)
+					.tokenType(tokenType)
+					.lastTokenRotationTime(lastTokenRotationTime)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
+			if (!TextUtils.isEmpty(featureFlagsRaw)) {
+				userAccount.setFeatureFlags(new HashSet<>(Arrays.asList(featureFlagsRaw.split(","))));
+			}
+			return userAccount;
 		}
 	}
 
 	/**
-	 * Builds an Account object from the user account passed in.
+	 * Resolves the persisted Account whose account name and Salesforce identity match the
+	 * supplied user.
 	 *
 	 * @param userAccount UserAccount object.
-	 * @return Account object.
+	 * @return Exact Account object, or null when no identity match exists.
 	 */
-	public Account buildAccount(UserAccount userAccount) {
-		final Account[] accounts = accountManager.getAccountsByType(accountType);
-		if (userAccount == null) {
+	public @Nullable Account buildAccount(@NonNull UserAccount userAccount) {
+		if (TextUtils.isEmpty(userAccount.getAccountName())) {
 			return null;
 		}
-		if (accounts.length == 0) {
-			return null;
-		}
-
-		// Reads the user account's user ID and org ID.
-		final String storedUserId = ((userAccount.getUserId() == null) ? "" : userAccount.getUserId());
-		final String storedOrgId = ((userAccount.getOrgId() == null) ? "" : userAccount.getOrgId());
-		for (final Account account : accounts) {
-			if (account != null) {
-
-				// Reads the user ID and org ID from account manager.
-				final String encryptionKey = SalesforceSDKManager.getEncryptionKey();
-				final String orgId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-						AuthenticatorService.KEY_ORG_ID), encryptionKey);
-				final String userId = SalesforceSDKManager.decrypt(accountManager.getUserData(account,
-						AuthenticatorService.KEY_USER_ID), encryptionKey);
-				if (storedUserId.trim().equals(userId != null ? userId.trim() : null)
-						&& storedOrgId.trim().equals(orgId != null ? orgId.trim() : null)) {
-					return account;
-				}
+		for (final Account account : accountManager.getAccountsByType(accountType)) {
+			if (TextUtils.equals(userAccount.getAccountName(), account.name)
+					&& userAccount.equals(buildUserAccount(account))) {
+				return account;
 			}
 		}
 		return null;
@@ -696,15 +711,15 @@ public class UserAccountManager {
 	 *
 	 * @param userAccount User account whose token should be refreshed. Use 'null' for current user.
 	 */
-	public synchronized void refreshToken(UserAccount userAccount) {
-		userAccount = (userAccount == null) ? getCurrentUser() : userAccount;
-		if (userAccount == null) {
+	public synchronized void refreshToken(@Nullable UserAccount userAccount) {
+		final UserAccount resolvedUser = (userAccount == null) ? getCurrentUser() : userAccount;
+		if (resolvedUser == null) {
 			return;
 		}
 		try {
-			final ClientManager clientManager = SalesforceSDKManager.getInstance().getClientManager();
-			final ClientManager.AccMgrAuthTokenProvider authTokenProvider = new ClientManager.AccMgrAuthTokenProvider(clientManager,
-					userAccount.getInstanceServer(), userAccount.getAuthToken(), userAccount.getRefreshToken());
+			final ClientManager clientManager = new ClientManager(context, resolvedUser);
+			final ClientManager.AccMgrAuthTokenProvider authTokenProvider =
+					new ClientManager.AccMgrAuthTokenProvider(clientManager);
 			authTokenProvider.getNewAuthToken();
 		} catch (Exception e) {
 			SalesforceSDKLogger.e(TAG, "Exception thrown while attempting to refresh token", e);
@@ -729,6 +744,7 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getInstanceServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_API_INSTANCE_URL, SalesforceSDKManager.encrypt(userAccount.getApiInstanceServer(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encrypt(userAccount.getClientId(), encryptionKey));
+		extras.putString(AuthenticatorService.KEY_REDIRECT_URI, SalesforceSDKManager.encrypt(userAccount.getRedirectUri(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encrypt(userAccount.getOrgId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encrypt(userAccount.getUserId(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encrypt(userAccount.getCommunityId(), encryptionKey));
@@ -758,6 +774,20 @@ public class UserAccountManager {
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_KEY, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerKey(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_BEACON_CHILD_CONSUMER_SECRET, SalesforceSDKManager.encrypt(userAccount.getBeaconChildConsumerSecret(), encryptionKey));
 		extras.putString(AuthenticatorService.KEY_SCOPE, SalesforceSDKManager.encrypt(userAccount.getScope(), encryptionKey));
+		if (userAccount.getCredentialsIdentifier() != null) {
+			extras.putString(AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, SalesforceSDKManager.encrypt(userAccount.getCredentialsIdentifier(), encryptionKey));
+		}
+		if (userAccount.getTokenType() != null) {
+			extras.putString(AuthenticatorService.KEY_TOKEN_TYPE, SalesforceSDKManager.encrypt(userAccount.getTokenType(), encryptionKey));
+		}
+		if (userAccount.getLastTokenRotationTime() != null) {
+			extras.putString(AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, SalesforceSDKManager.encrypt(userAccount.getLastTokenRotationTime(), encryptionKey));
+		}
+		final Set<String> featureFlags = userAccount.getFeatureFlags();
+		if (!featureFlags.isEmpty()) {
+			extras.putString(AuthenticatorService.KEY_FEATURE_FLAGS,
+				SalesforceSDKManager.encrypt(android.text.TextUtils.join(",", featureFlags), encryptionKey));
+		}
 
 		final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
 		if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {

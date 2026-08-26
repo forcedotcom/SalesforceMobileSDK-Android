@@ -38,6 +38,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.developer.support.DevSupportInfo;
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.config.StoreConfig;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -58,6 +59,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import kotlin.Pair;
+
 /**
  * SDK Manager for all native applications that use SmartStore
  */
@@ -65,6 +68,22 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     private static final String TAG = "SmartStoreSDKManager";
     public static final String GLOBAL_SUFFIX = "_global";
+
+    /**
+     * Protected constructor.
+     *
+     * @param context              Application context.
+     * @param mainActivity         Activity that should be launched after the login flow.
+     * @param loginActivity        Login activity.
+     * @param nativeLoginActivity  Native login activity.
+     * @param googleCloudProjectId Google Cloud project ID for app attestation (nullable).
+     */
+    protected SmartStoreSDKManager(Context context, Class<? extends Activity> mainActivity,
+                                   Class<? extends Activity> loginActivity,
+                                   Class<? extends Activity> nativeLoginActivity,
+                                   Long googleCloudProjectId) {
+        super(context, mainActivity, loginActivity, nativeLoginActivity, googleCloudProjectId);
+    }
 
     /**
      * Protected constructor.
@@ -77,7 +96,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     protected SmartStoreSDKManager(Context context, Class<? extends Activity> mainActivity,
                                    Class<? extends Activity> loginActivity,
                                    Class<? extends Activity> nativeLoginActivity) {
-        super(context, mainActivity, loginActivity, nativeLoginActivity);
+        this(context, mainActivity, loginActivity, nativeLoginActivity, null);
     }
 
     private static void init(Context context, Class<? extends Activity> mainActivity,
@@ -238,7 +257,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         if (TextUtils.isEmpty(dbNamePrefix)) {
             dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
         }
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER);
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_SMART_STORE_USER, account);
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(getEncryptionKey(), context,
                 dbNamePrefix, account, communityId);
 
@@ -470,40 +489,23 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     @NonNull
     @Override
-    public List<String> getDevSupportInfos() {
-        List<String> devSupportInfos = new ArrayList<>(super.getDevSupportInfos());
-        devSupportInfos.addAll(Arrays.asList(
-                "SQLCipher version", getSmartStore().getSQLCipherVersion(),
-                "SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions()),
-                "SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings()),
-                "User SmartStores", TextUtils.join(", ", getUserStoresPrefixList()),
-                "Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList()),
-                "User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList()),
-                "Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList())
-        ));
-        return devSupportInfos;
-    }
+    public DevSupportInfo getDevSupportInfo() {
+        DevSupportInfo devInfo = super.getDevSupportInfo();
+        Pair<String, List<Pair<String, String>>> smartStoreSection = new Pair<>(
+                "Smart Store", Arrays.asList(
+                new Pair<>("SQLCipher version", getSmartStore().getSQLCipherVersion()),
+                new Pair<>("SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions())),
+                new Pair<>("SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings())),
+                new Pair<>("User SmartStores", TextUtils.join(", ", getUserStoresPrefixList())),
+                new Pair<>("Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList())),
+                new Pair<>("User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList())),
+                new Pair<>("Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList()))
+            )
+        );
 
-//   TODO:  Use the below code in 14.0 when getDevSupportInfos is removed.
-//
-//    @Override
-//    public @NotNull DevSupportInfo getDevSupportInfo() {
-//        DevSupportInfo devInfo = super.getDevSupportInfo();
-//        Pair<String, List<Pair<String, String>>> smartStoreSection = new Pair<>(
-//                "Smart Store", Arrays.asList(
-//                new Pair<>("SQLCipher version", getSmartStore().getSQLCipherVersion()),
-//                new Pair<>("SQLCipher Compile Options", TextUtils.join(", ", getSmartStore().getCompileOptions())),
-//                new Pair<>("SQLCipher Runtime Setting", TextUtils.join(", ", getSmartStore().getRuntimeSettings())),
-//                new Pair<>("User SmartStores", TextUtils.join(", ", getUserStoresPrefixList())),
-//                new Pair<>("Global SmartStores", TextUtils.join(", ", getGlobalStoresPrefixList())),
-//                new Pair<>("User Key-Value Stores", TextUtils.join(", ", getKeyValueStoresPrefixList())),
-//                new Pair<>("Global Key-Value Stores", TextUtils.join(", ", getGlobalKeyValueStoresPrefixList()))
-//            )
-//        );
-//
-//        devInfo.getAdditionalSections().add(smartStoreSection);
-//        return devInfo;
-//    }
+        devInfo.getAdditionalSections().add(smartStoreSection);
+        return devInfo;
+    }
 
     /**
      * Get key value store with given name for current user

@@ -170,6 +170,31 @@ class DevInfoActivityTest {
     }
 
     @Test
+    fun devInfoActivity_DisplaysRtrSection() {
+        /*
+         * The RTR section is appended to additionalSections and should render.
+         */
+        composeTestRule.onNodeWithText("RTR")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun devInfoActivity_RtrSection_CanExpand() {
+        // Expand the RTR section and verify its rows are shown.
+        composeTestRule.onNodeWithText("RTR")
+            .performScrollTo()
+            .performClick()
+
+        composeTestRule.onNodeWithText("RTR Active")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Last Rotation")
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
     fun devInfoActivity_DisplaysRuntimeConfigSection() {
         val devSupportInfo = SalesforceSDKManager.getInstance().devSupportInfo
         
@@ -183,7 +208,9 @@ class DevInfoActivityTest {
             assertTrue("Runtime config should not be empty", items.isNotEmpty())
             
             items.forEach { (key, _) ->
-                composeTestRule.onNodeWithText(key).assertIsDisplayed()
+                composeTestRule.onNodeWithText(key)
+                    .performScrollTo()
+                    .assertIsDisplayed()
             }
         }
     }

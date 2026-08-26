@@ -59,10 +59,12 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.exchangeCode
-import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.auth.defaultBuildAccountName
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.auth.onAuthFlowComplete
 import com.salesforce.androidsdk.config.BootConfig
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts
@@ -72,7 +74,6 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -80,8 +81,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URI
+import java.net.URLEncoder
+import java.security.interfaces.ECPublicKey
+import kotlin.coroutines.CoroutineContext
 
-open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
+/**
+ * View model for the login activity managing OAuth authorization URL
+ * generation, server selection, and authentication flow state.
+ * @param bootConfig The boot configuration providing default OAuth
+ * client credentials, redirect URI, and scopes
+ * @param backgroundContext The coroutine context used for background
+ * work such as OAuth configuration resolution and URL generation.
+ * This parameter is intended for testing purposes only. Defaults to
+ * [IO]
+ */
+open class LoginViewModel(
+    val bootConfig: BootConfig,
+    @get:VisibleForTesting internal val backgroundContext: CoroutineContext = IO,
+) : ViewModel() {
 
     // region UI Customization
 
@@ -175,6 +192,28 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
     internal val biometricAuthenticationButtonText = mutableIntStateOf(sf__login_with_biometric)
     internal val biometricAuthenticationButtonAction = mutableStateOf<(() -> Unit)?>(null)
+
+    /**
+     * Whether the system biometric prompt is currently on screen.  Set by [LoginActivity] around the
+     * prompt's lifecycle (true when presented, false when it succeeds or is dismissed) so the login
+     * loading indicator can be suppressed behind the prompt.  A snapshot-backed flag is required here
+     * rather than deriving from [BiometricAuthenticationManager.locked]: `locked` is a plain var, so a
+     * derivedStateOf reading it never recomposes when it flips on unlock and the spinner would never
+     * reappear for the subsequent token refresh.
+     */
+    internal val biometricPromptShowing = mutableStateOf(false)
+
+    /** Whether the biometric opt-in dialog should be shown, driven by [LoginActivity.onAuthFlowFinished]. */
+    internal var showBiometricOptInDialog = mutableStateOf(false)
+
+    /** Callback invoked with the user's opt-in choice when the biometric opt-in dialog is dismissed. Set by the Activity. */
+    internal var onBiometricOptInResultAction: ((optedIn: Boolean) -> Unit)? = null
+
+    internal fun onBiometricOptInResult(optedIn: Boolean) {
+        showBiometricOptInDialog.value = false
+        onBiometricOptInResultAction?.invoke(optedIn)
+    }
+
     internal var dynamicBackgroundColor = mutableStateOf(White)
     internal var dynamicBackgroundTheme =
         derivedStateOf { if (dynamicBackgroundColor.value.luminance() > 0.5) DARK else LIGHT }
@@ -188,8 +227,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     /** Additional Auth Values used for login. */
     open var additionalParameters = hashMapOf<String, String>()
 
-    /** JWT string used for JWT Auth Flow. */
-    var jwt: String? = null
+    /** Credentials identifier pre-generated for a pending DPoP login; reused in doCodeExchange(). */
+    @VisibleForTesting
+    internal var pendingCredentialsIdentifier: String? = null
 
     /** Connected App/External Client App client Id. */
     @Deprecated("Will be removed in Mobile SDK 14.0, please use " +
@@ -211,21 +251,25 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      *
      * When no Front-Door Bridge URL is in use, Web Server Flow is
      * enabled when web server authentication or browser login are enabled.
+     * @param sdkManager The Salesforce SDK manager.  This parameter is intended
+     * for testing purposes only. Defaults to the shared instance
      * @return True if Web Server Flow is enabled, false if User-Agent Flow is
      * enabled.
      */
-    internal val useWebServerFlow: Boolean
-        get() = with(SalesforceSDKManager.getInstance()) {
-            // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
-            if (isUsingFrontDoorBridge) {
-                // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
-                frontdoorBridgeCodeVerifier != null
-            }
-            // Second, when not using a front-door bridge URL, the app's preferences can be used.
-            else {
-                useWebServerAuthentication || isBrowserLoginEnabled || singleServerCustomTabActivity
-            }
+    internal fun useWebServerFlow(
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+    ): Boolean = with(sdkManager) {
+        // First, an in-use Salesforce Identity API UI Bridge front-door bridge URL takes precedence.
+        if (isUsingFrontDoorBridge) {
+            // A front-door bridge URL accompanied by a PKCE code verifier requires Web Server Flow.  Otherwise, User Agent-Flow must be used.
+            frontdoorBridgeCodeVerifier != null
         }
+        // Second, when not using a front-door bridge URL, the app's preferences can be used.
+        // App attestation always requires Web Server Flow because attestation is only supported at the token endpoint.
+        else {
+            useWebServerAuthentication || isBrowserLoginEnabled || singleServerCustomTabActivity || appAttestationClient != null
+        }
+    }
 
     /**
      * Setting this option to true will enable a mode where only a custom tab will be shown.  The first server will be
@@ -239,7 +283,19 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** Value representing if the back button should be shown on the login view. */
     open val shouldShowBackButton = with(SalesforceSDKManager.getInstance()) {
-        !(userAccountManager.authenticatedUsers.isNullOrEmpty() || biometricAuthenticationManager?.locked ?: false)
+        when {
+            // Never show back while biometric-locked; user must authenticate.
+            biometricAuthenticationManager?.locked == true -> false
+            /*
+             * Native Login uses this WebView LoginActivity as a dismissible
+             * fallback: handleBackBehavior() finishes and returns to the native
+             * login activity, so show the back affordance to match — even with
+             * no authenticated users yet.
+             */
+            nativeLoginActivity != null -> true
+            // Otherwise show back only when an authenticated user exists.
+            else -> !userAccountManager.authenticatedUsers.isNullOrEmpty()
+        }
     }
 
     // The default, locally generated code verifier
@@ -248,9 +304,6 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
     /** The Salesforce Welcome Login hint parameter value for the OAuth authorize endpoint */
     internal var loginHint: String? = null
-
-    // Auth code we receive from the JWT swap for magic links.
-    internal var authCodeForJwtFlow: String? = null
 
     // For Salesforce Identity API UI Bridge support, indicates use of an overriding front door bridge URL.
     internal val isUsingFrontDoorBridge: Boolean
@@ -262,6 +315,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     // The optional web server flow code verifier accompanying the front door bridge server.
     internal var frontdoorBridgeCodeVerifier: String? = null
 
+    /**
+     * Per-call DPoP intent for a pending token-migration re-auth, overriding
+     * [SalesforceSDKManager.useDPoP] for that single migration.  Null means "use the global
+     * flag" (normal login behavior, unchanged).  Set immediately before
+     * [generateMigrationAuthorizationPath] and reset to null once that call returns so the
+     * override never leaks into a later, unrelated login on this shared view model.
+     */
+    internal var dpopOverride: Boolean? = null
 
     // Dynamic OAuth Config - initialized with bootConfig, then updated asynchronously
     internal var oAuthConfig = OAuthConfig(bootConfig)
@@ -282,8 +343,67 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         loginUrl.addSource(selectedServer, LoginUrlSource())
     }
 
+    /**
+     * Creates a Salesforce Welcome Discovery mobile URL using the provided
+     * Salesforce Welcome Discovery host and path URL.
+     * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
+     * Discovery host and path URL
+     * @return A Salesforce Welcome Discovery mobile URL with all required
+     * parameters
+     */
+    internal fun generateSalesforceWelcomeDiscoveryMobileUrl(
+        salesforceWelcomeDiscoveryHostAndPathUrl: Uri
+    ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
+            oAuthConfig.consumerKey,
+        )
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
+            URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8")
+        )
+        .appendQueryParameter(
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL,
+            LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL
+        )
+        .build()
+
     /** Reloads the WebView with a newly generated authorization URL. */
     open fun reloadWebView() {
+        // If the user-selected login server (per LoginServerManager) is Salesforce Welcome
+        // Discovery, load the Phase 1 discovery mobile URL directly instead of regenerating a
+        // Phase-2-style auth URL.  We intentionally do NOT key off `selectedServer.value` here:
+        // during Phase 2, the VM's selectedServer is the discovered My Domain, while the
+        // LoginServerManager retains Welcome Discovery as the user's actual server selection.
+        // This branch runs BEFORE the isUsingFrontDoorBridge short-circuit by design — Welcome
+        // Discovery and frontdoor bridge are mutually exclusive in practice, but defense-in-depth
+        // ordering ensures a stray frontdoor URL cannot suppress the discovery reload.
+        SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url
+            ?.toUri()?.let { selectedLoginServerUri ->
+                if (isSalesforceWelcomeDiscoveryUrlPath(selectedLoginServerUri)) {
+                    // Reset the top app bar background to White synchronously so the bar flips
+                    // immediately when the user reloads/re-selects Welcome Discovery from Phase 2.
+                    // dynamicBackgroundColor is otherwise only updated by AuthWebViewClient.
+                    // onPageFinished, which runs after the new page loads — the gap leaves the
+                    // Phase-2 color visible on the bar even though the WebView URL has changed.
+                    dynamicBackgroundColor.value = White
+                    // The discovery URL is deterministic, so re-generating it yields an identical
+                    // string and Compose skips the recomposition that reloads the WebView.  Blank it
+                    // first (as the User Agent Flow branch below does) so the reassignment is always a
+                    // change and the WebView reloads.
+                    loginUrl.value = ABOUT_BLANK
+                    // Must precede selectedServer reset — LoginUrlSource same-host short-circuit.
+                    loginUrl.value =
+                        generateSalesforceWelcomeDiscoveryMobileUrl(selectedLoginServerUri).toString()
+                    // Must follow loginUrl — depends on same-host short-circuit seeing new loginUrl.
+                    val welcomeUrl = selectedLoginServerUri.toString()
+                    if (selectedServer.value != welcomeUrl) {
+                        selectedServer.value = welcomeUrl
+                    }
+                    return
+                }
+            }
+
         if (!isUsingFrontDoorBridge) {
             selectedServer.value?.let { server ->
                 // The Web Server Flow code challenge makes the authorization url unique each time,
@@ -293,7 +413,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 }
 
                 viewModelScope.launch {
-                    generateAuthorizationUrl(server)
+                    generateAuthorizationUrl(
+                        server = server,
+                        coroutineContext = backgroundContext,
+                    )
                 }
             }
         }
@@ -343,7 +466,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      */
     internal fun applyPendingServer(
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
-        pendingLoginServer: String?
+        pendingLoginServer: String?,
     ) {
         val pendingLoginServerUnwrapped: String = pendingLoginServer ?: return
 
@@ -357,7 +480,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         // Fetch the pending login server's authentication configuration to set the selected login server and OAuth authorization URL.
         else {
             authenticationConfigurationFetchJob?.cancel()
-            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration {
+            authenticationConfigurationFetchJob = sdkManager.fetchAuthenticationConfiguration(
+                loginServerUrl = pendingLoginServerUnwrapped,
+            ) {
                 selectedServer.postValue(pendingLoginServerUnwrapped)
                 authenticationConfigurationFetchJob = null
             }
@@ -374,8 +499,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         loginServer: String? = null,
         tokenMigration: Boolean = false,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) = CoroutineScope(IO).launch {
-        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess, loginServer, tokenMigration)
+        doCodeExchange(code, onAuthFlowError, onAuthFlowSuccess, loginServer, tokenMigration, onAuthFlowFinished)
     }
 
     /**
@@ -389,20 +515,24 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         tokenMigration: Boolean = false,
         loginServer: String? = null,
+        credentialsIdentifier: String? = null,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) {
         // Clear cookies after successful authentication to prevent automatic re-login if the user tries to add another user right away.
         if (SalesforceSDKManager.getInstance().clearCookiesAfterLogin) {
             clearCookies()
         }
-        authCodeForJwtFlow = null
         onAuthFlowComplete(
             tokenResponse = tr,
             loginServer = loginServer ?: selectedServer.value ?: "",
             consumerKey = consumerKey,
+            redirectUri = oAuthConfig.redirectUri,
             onAuthFlowError = onAuthFlowError,
             onAuthFlowSuccess = onAuthFlowSuccess,
             buildAccountName = ::buildAccountName,
             tokenMigration = tokenMigration,
+            credentialsIdentifier = credentialsIdentifier,
+            onAuthFlowFinished = onAuthFlowFinished,
         )
     }
 
@@ -411,7 +541,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
      * its default inactive state.
      */
     internal fun resetFrontDoorBridgeUrl() {
-        frontDoorBridgeUrl.value = null
+        frontDoorBridgeUrl.postValue(null)
         frontdoorBridgeServer = null
         frontdoorBridgeCodeVerifier = null
     }
@@ -458,6 +588,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
         val codeChallenge = getSHA256Hash(codeVerifier)
 
+        val additionalParameters = mutableMapOf<String, String>()
+
+        addDpopJktIfNeeded(server, sdkManager, additionalParameters)
+
         val authorizationUrl = OAuth2.getAuthorizationUrl(
             /* useWebServerAuthentication = */ true,
             sdkManager.useHybridAuthentication,
@@ -468,12 +602,16 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             /* loginHint = */ null,
             authorizationDisplayType,
             codeChallenge,
-            /* addlParams = */ emptyMap<String, String>(),
+            /* addlParams = */ additionalParameters,
         )
+
+        // The per-call override, if any, only applies to this migration's /authorize call.
+        // Reset it now so it never leaks into a later, unrelated login on this shared view model.
+        dpopOverride = null
 
         return with(authorizationUrl) { "$path?$query" }
     }
-    
+
     /**
      * Generates an OAuth authorization URL for the provided server.
      * @param server The login server URL
@@ -492,23 +630,12 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Perform heavy work (config fetch, URL generation) on the IO dispatcher.
         val (browserTabUrl, webViewUrl) = withContext(coroutineContext) {
-            with(sdkManager) {
-                oAuthConfig = when {
-                    // Used by LoginOptions
-                    isDebugBuild && debugOverrideAppConfig != null -> debugOverrideAppConfig!!
-                    // Check if app has a config and fallback to bootconfig file.
-                    else -> appConfigForLoginHost(server) ?: OAuthConfig(bootConfig)
-                }
-            }
-
-            val jwtFlow = !jwt.isNullOrBlank() && !authCodeForJwtFlow.isNullOrBlank()
-            val additionalParams = when {
-                jwtFlow -> null
-                else -> additionalParameters
-            }
+            oAuthConfig = sdkManager.resolveOAuthConfigForLoginServer(server)
 
             val codeVerifier = getRandom128ByteKey().also { codeVerifier = it }
             val codeChallenge = getSHA256Hash(codeVerifier)
+
+            addDpopJktIfNeeded(server, sdkManager, additionalParameters)
 
             val webServerAuthorizationUrl = OAuth2.getAuthorizationUrl(
                 /* useWebServerAuthentication = */ true,
@@ -520,21 +647,12 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 loginHint,
                 authorizationDisplayType,
                 codeChallenge,
-                additionalParams
+                additionalParameters
             )
 
-            val browserTabUrlValue = when {
-                jwtFlow -> getFrontdoorUrl(
-                    webServerAuthorizationUrl,
-                    authCodeForJwtFlow,
-                    selectedServer.value,
-                    mapOf<String, String>()
-                )
+            val browserTabUrlValue = webServerAuthorizationUrl.toString()
 
-                else -> webServerAuthorizationUrl.toString()
-            }.toString()
-
-            val webViewUrlValue = if (useWebServerFlow) {
+            val webViewUrlValue = if (useWebServerFlow(sdkManager)) {
                 browserTabUrlValue
             } else {
                 val userAgentAuthorizationUrl = OAuth2.getAuthorizationUrl(
@@ -547,19 +665,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                     loginHint,
                     authorizationDisplayType,
                     codeChallenge,
-                    additionalParams
+                    additionalParameters
                 )
-
-                when {
-                    jwtFlow -> getFrontdoorUrl(
-                        userAgentAuthorizationUrl,
-                        authCodeForJwtFlow,
-                        selectedServer.value,
-                        mapOf<String, String>(),
-                    )
-
-                    else -> userAgentAuthorizationUrl
-                }.toString()
+                userAgentAuthorizationUrl.toString()
             }
 
             // The Salesforce Welcome login hint is only used once.
@@ -570,11 +678,14 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
 
         // Set LiveData values on the main thread.
         browserCustomTabUrl.value = browserTabUrl
-        loginUrl.value = webViewUrl
+
+        val launchingCustomTab = (sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity)
+                && !isUsingFrontDoorBridge
+        // When a Custom Tab is the login surface the WebView is never used for login, so keep it blank.
+        loginUrl.value = if (launchingCustomTab) ABOUT_BLANK else webViewUrl
 
         // Launch the browser custom tab when applicable.
-        if ((sdkManager.isBrowserLoginEnabled || singleServerCustomTabActivity)
-            && !isUsingFrontDoorBridge) {
+        if (launchingCustomTab) {
             onBrowserCustomTabReady?.invoke(browserTabUrl)
         }
     }
@@ -586,6 +697,7 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
         onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
         loginServer: String? = null,
         tokenMigration: Boolean = false,
+        onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
     ) = withContext(IO) {
         runCatching {
             val server = when {
@@ -595,6 +707,9 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             }
             val verifier = if (isUsingFrontDoorBridge) frontdoorBridgeCodeVerifier else codeVerifier
 
+            val credentialsIdentifier = pendingCredentialsIdentifier?.also { pendingCredentialsIdentifier = null }
+                ?: java.util.UUID.randomUUID().toString()
+
             val tokenResponse = exchangeCode(
                 HttpAccess.DEFAULT,
                 URI.create(server),
@@ -602,9 +717,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
                 code,
                 verifier,
                 oAuthConfig.redirectUri,
+                SalesforceSDKManager.getInstance(),
+                credentialsIdentifier,
             )
-
-            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server)
+            onAuthFlowComplete(tokenResponse, onAuthFlowError, onAuthFlowSuccess, tokenMigration, server, credentialsIdentifier, onAuthFlowFinished)
         }.onFailure { throwable ->
             e(TAG, "Exception occurred while making token request", throwable)
             onAuthFlowError("Token Request Error", throwable.message, throwable)
@@ -629,6 +745,51 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
     }
 
     // endregion
+
+    /**
+     * Adds `dpop_jkt` to [params] when DPoP is enabled.
+     * welcome.salesforce.com/discovery is never passed here — discovery resolves a my-domain
+     * server before /authorize is called.
+     *
+     * If [pendingCredentialsIdentifier] is already set (meaning dpop_jkt was already committed
+     * for this login flow, e.g. via a pool-server redirect), the existing key pair is reused so
+     * that the auth code's dpop_jkt binding and the token-exchange proof use the same key.
+     * Only generates a new key pair when starting a fresh login flow.
+     *
+     * Whether DPoP is enabled is determined by [dpopOverride] when set (a per-call intent for
+     * a pending token migration), falling back to [SalesforceSDKManager.useDPoP] otherwise —
+     * the normal-login path never sets [dpopOverride], so its gating is unchanged.
+     */
+    private fun addDpopJktIfNeeded(
+        server: String,
+        sdkManager: SalesforceSDKManager,
+        params: MutableMap<String, String>,
+    ) {
+        // Welcome Discovery is a pre-authentication host, not a resource server — never attach
+        // dpop_jkt there. Belt-and-suspenders guard: generateAuthorizationUrl is not called for
+        // the discovery URL today (reloadWebView short-circuits it), but this prevents a stale
+        // thumbprint from leaking if the call graph changes in the future.
+        val dpopEnabled = dpopOverride ?: sdkManager.useDPoP
+        if (!dpopEnabled || LoginServerManager.WELCOME_LOGIN_URL == server) {
+            // Clear any stale dpop_jkt and its key from a previous server-picker entry.
+            params.remove("dpop_jkt")
+            pendingCredentialsIdentifier?.let {
+                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+            }
+            pendingCredentialsIdentifier = null
+            return
+        }
+        runCatching {
+            val credId = pendingCredentialsIdentifier
+                ?: java.util.UUID.randomUUID().toString().also { pendingCredentialsIdentifier = it }
+            val alias = DPoPKeyManager.aliasForCredentialsIdentifier(credId)
+            val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+            val thumbprint = DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+            params["dpop_jkt"] = thumbprint
+        }.onFailure { t ->
+            android.util.Log.w(TAG, "Failed to compute dpop_jkt for /authorize; proceeding without it", t)
+        }
+    }
 
     companion object {
 
@@ -682,7 +843,10 @@ open class LoginViewModel(val bootConfig: BootConfig) : ViewModel() {
             if (newHost != null && newHost == currentHost) return
 
             scope.launch {
-                viewModel.generateAuthorizationUrl(server = server)
+                viewModel.generateAuthorizationUrl(
+                    server = server,
+                    coroutineContext = viewModel.backgroundContext,
+                )
             }
         }
     }

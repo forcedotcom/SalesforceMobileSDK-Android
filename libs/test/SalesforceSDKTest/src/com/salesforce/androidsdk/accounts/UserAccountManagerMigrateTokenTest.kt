@@ -31,6 +31,8 @@ import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.ui.TokenMigrationActivity
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
@@ -51,6 +53,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Tests for UserAccountManager.migrateRefreshToken extension function.
@@ -303,5 +307,307 @@ class UserAccountManagerMigrateTokenTest {
             testUserId,
             capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_USER_ID)
         )
+    }
+
+    /**
+     * Regression guard for a cross-user token-migration hazard: migrating a user who is NOT the
+     * current user must operate on the passed-in account, never on the current user. Here user B
+     * is current and non-current user A is passed explicitly; the migration intent must carry A's
+     * identity so the downstream flow builds A's RestClient and revokes A's (not B's) old token.
+     * Prevents regressing into the wrong-user behavior seen on the iOS side of this change.
+     */
+    @Test
+    fun migrateRefreshToken_withNonCurrentUser_targetsPassedUserNotCurrentUser() {
+        // Given - user B is the current user...
+        val currentUserId = "userB-id"
+        val currentOrgId = "orgB-id"
+        val mockCurrentUser: UserAccount = mockk(relaxed = true)
+        every { mockCurrentUser.userId } returns currentUserId
+        every { mockCurrentUser.orgId } returns currentOrgId
+
+        mockkStatic(UserAccountManager::class)
+        every { UserAccountManager.getInstance() } returns mockUserAccountManager
+        every { mockUserAccountManager.currentUser } returns mockCurrentUser
+
+        // ...and user A is a different, non-current account we want to migrate.
+        val targetUserId = "userA-id"
+        val targetOrgId = "orgA-id"
+        val mockTargetUser: UserAccount = mockk(relaxed = true)
+        every { mockTargetUser.userId } returns targetUserId
+        every { mockTargetUser.orgId } returns targetOrgId
+
+        every { MigrationCallbackRegistry.register(any()) } returns "callback-key"
+
+        val intentSlot = slot<Intent>()
+        every { mockContext.startActivity(capture(intentSlot)) } just Runs
+
+        // When - migrate the non-current user A explicitly.
+        mockUserAccountManager.migrateRefreshToken(
+            userAccount = mockTargetUser,
+            appConfig = mockOAuthConfig,
+            onMigrationSuccess = onMigrationSuccess,
+            onMigrationError = onMigrationError
+        )
+
+        // Then - the intent must target A, not the current user B.
+        val capturedIntent = intentSlot.captured
+        assertEquals("Intent must target the passed user's org id, not the current user's",
+            targetOrgId,
+            capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_ORG_ID)
+        )
+        assertEquals("Intent must target the passed user's user id, not the current user's",
+            targetUserId,
+            capturedIntent.getStringExtra(TokenMigrationActivity.EXTRA_USER_ID)
+        )
+    }
+
+    /**
+     * Tests for UserAccountManager.downgradeFromDPoP extension function. Config resolution and
+     * the migrateRefreshToken delegation run on Dispatchers.Default (mirroring upgradeToDPoP), so
+     * tests that need to observe the resulting migration Intent synchronize on a CountDownLatch
+     * that mockContext.startActivity trips, rather than sleeping.
+     */
+
+    @Test
+    fun downgradeFromDPoP_withNullClientId_callsOnFailure() {
+        // Given
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.clientId } returns null
+        every { mockUserAccount.loginServer } returns "login.example.com"
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+
+        // Then
+        verify(exactly = 1) {
+            onMigrationError.invoke("User account clientId or loginServer is null.", null, null)
+        }
+        verify(exactly = 0) { onMigrationSuccess.invoke(any()) }
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+    }
+
+    @Test
+    fun downgradeFromDPoP_withNullLoginServer_callsOnFailure() {
+        // Given
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns null
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+
+        // Then
+        verify(exactly = 1) {
+            onMigrationError.invoke("User account clientId or loginServer is null.", null, null)
+        }
+        verify(exactly = 0) { onMigrationSuccess.invoke(any()) }
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+    }
+
+    @Test
+    fun downgradeFromDPoP_withValidAccount_migratesWithUseDPoPFalseAndSameConfig() {
+        // Given
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.userId } returns "testUserId"
+        every { mockUserAccount.orgId } returns "testOrgId"
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+        every { mockUserAccount.redirectUri } returns "testapp://callback"
+        every { mockUserAccount.scope } returns null
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
+
+        every { MigrationCallbackRegistry.register(any()) } returns "callback-key"
+
+        val intentSlot = slot<Intent>()
+        val activityStarted = CountDownLatch(1)
+        every { mockContext.startActivity(capture(intentSlot)) } answers {
+            activityStarted.countDown()
+        }
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+
+        // Then
+        assertTrue("Migration activity should have been started",
+            activityStarted.await(5, TimeUnit.SECONDS))
+
+        val capturedIntent = intentSlot.captured
+        assertEquals("Downgrade must migrate with useDPoP=false, even with the global flag on",
+            false,
+            capturedIntent.getBooleanExtra(TokenMigrationActivity.EXTRA_USE_DPOP, true)
+        )
+        assertTrue("Intent should carry the same-config OAuthConfig",
+            capturedIntent.hasExtra(TokenMigrationActivity.EXTRA_OAUTH_CONFIG)
+        )
+        verify(exactly = 0) { onMigrationError.invoke(any(), any(), any()) }
+    }
+
+    @Test
+    fun downgradeFromDPoP_onSuccess_whenPreMigrationAccountWasDPoPBound_deletesObsoleteKeyAndNonce() {
+        // Given
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
+        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPNonceCache.clear(any()) } just runs
+
+        val oldCredId = "old-dpop-cred-id"
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.userId } returns "testUserId"
+        every { mockUserAccount.orgId } returns "testOrgId"
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+        every { mockUserAccount.redirectUri } returns "testapp://callback"
+        every { mockUserAccount.scope } returns null
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
+        every { mockUserAccount.credentialsIdentifier } returns oldCredId
+
+        val callbacksSlot = slot<MigrationCallbackRegistry.MigrationCallbacks>()
+        every { MigrationCallbackRegistry.register(capture(callbacksSlot)) } returns "callback-key"
+
+        val activityStarted = CountDownLatch(1)
+        every { mockContext.startActivity(any()) } answers { activityStarted.countDown() }
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+        assertTrue("Migration activity should have been started",
+            activityStarted.await(5, TimeUnit.SECONDS))
+
+        val migratedAccount: UserAccount = mockk(relaxed = true)
+        every { migratedAccount.username } returns "user@test.com"
+        every { migratedAccount.instanceServer } returns "https://test.instance"
+        callbacksSlot.captured.onMigrationSuccess(migratedAccount)
+
+        // Then - the OLD (pre-migration) identifier's key/nonce are reclaimed.
+        verify(exactly = 1) {
+            DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(oldCredId))
+        }
+        verify(exactly = 1) { DPoPNonceCache.clear(oldCredId) }
+        verify(exactly = 1) { onMigrationSuccess.invoke(migratedAccount) }
+    }
+
+    @Test
+    fun downgradeFromDPoP_onFailure_retainsDPoPKeyAndNonce() {
+        // Given
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
+        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPNonceCache.clear(any()) } just runs
+
+        val oldCredId = "old-dpop-cred-id"
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.userId } returns "testUserId"
+        every { mockUserAccount.orgId } returns "testOrgId"
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+        every { mockUserAccount.redirectUri } returns "testapp://callback"
+        every { mockUserAccount.scope } returns null
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
+        every { mockUserAccount.credentialsIdentifier } returns oldCredId
+
+        val callbacksSlot = slot<MigrationCallbackRegistry.MigrationCallbacks>()
+        every { MigrationCallbackRegistry.register(capture(callbacksSlot)) } returns "callback-key"
+
+        val activityStarted = CountDownLatch(1)
+        every { mockContext.startActivity(any()) } answers { activityStarted.countDown() }
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+        assertTrue("Migration activity should have been started",
+            activityStarted.await(5, TimeUnit.SECONDS))
+
+        // The migration failed/was cancelled: onMigrationError fires, onMigrationSuccess never does.
+        callbacksSlot.captured.onMigrationError("error", "desc", null)
+
+        // Then - the still-in-use DPoP key/nonce must NOT be torn down.
+        verify(exactly = 0) { DPoPKeyManager.deleteKeyPair(any()) }
+        verify(exactly = 0) { DPoPNonceCache.clear(any()) }
+        verify(exactly = 1) { onMigrationError.invoke("error", "desc", null) }
+    }
+
+    /**
+     * No-op guard for [UserAccountManager.upgradeToDPoP]: an already DPoP-bound account has
+     * nothing to upgrade, so the call must short-circuit before any migration is attempted.
+     */
+    @Test
+    fun testUpgradeToDPoP_alreadyDPoP_isNoOpAndUserUnchanged() {
+        // Given - an account already DPoP-bound.
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+
+        // When
+        mockUserAccountManager.upgradeToDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+
+        // Then - onSuccess fires immediately with the unchanged account; no migration is started.
+        verify(exactly = 1) { onMigrationSuccess.invoke(mockUserAccount) }
+        verify(exactly = 0) { onMigrationError.invoke(any(), any(), any()) }
+        verify(exactly = 0) { MigrationCallbackRegistry.register(any()) }
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+        assertEquals("tokenType must remain unchanged",
+            DPoPKeyManager.DPOP_TOKEN_TYPE, mockUserAccount.tokenType)
+    }
+
+    /**
+     * No-op guard for [UserAccountManager.downgradeFromDPoP]: an already Bearer (non-DPoP)
+     * account has nothing to downgrade, so the call must short-circuit before any migration is
+     * attempted or DPoP state cleanup is considered.
+     */
+    @Test
+    fun testDowngradeFromDPoP_alreadyBearer_isNoOpAndUserUnchanged() {
+        // Given - an account already Bearer (non-DPoP).
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPNonceCache.clear(any()) } just runs
+
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.tokenType } returns "Bearer"
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+        every { mockUserAccount.credentialsIdentifier } returns "bearer-cred-id"
+
+        // When
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+
+        // Then - onSuccess fires immediately with the unchanged account; no migration is started,
+        // and no DPoP key/nonce cleanup is attempted (there's no DPoP state to clean up).
+        verify(exactly = 1) { onMigrationSuccess.invoke(mockUserAccount) }
+        verify(exactly = 0) { onMigrationError.invoke(any(), any(), any()) }
+        verify(exactly = 0) { MigrationCallbackRegistry.register(any()) }
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+        verify(exactly = 0) { DPoPKeyManager.deleteKeyPair(any()) }
+        verify(exactly = 0) { DPoPNonceCache.clear(any()) }
+        assertEquals("tokenType must remain unchanged", "Bearer", mockUserAccount.tokenType)
     }
 }

@@ -29,30 +29,39 @@ package com.salesforce.androidsdk.auth
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.Observer
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.OAuth2.getFrontdoorUrl
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,10 +74,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URI
+import java.net.URLEncoder
 
 private const val FAKE_SERVER_URL = "shouldMatchNothing.salesforce.com"
-private const val FAKE_JWT = "1234"
-private const val FAKE_JWT_FLOW_AUTH = "5678"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -76,12 +84,38 @@ class LoginViewModelTest {
     @get:Rule
     val instantExecutorRule: InstantTaskExecutorRule = InstantTaskExecutorRule()
 
+    private val testDispatcher = StandardTestDispatcher()
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val bootConfig = BootConfig.getBootConfig(context)
-    private val viewModel = LoginViewModel(bootConfig)
+    private lateinit var viewModel: LoginViewModel
+    private var originalBrowserLoginEnabled = false
+    private var originalUseDPoP = false
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
+
+        // These tests assert on loginUrl, the WebView authorization URL.  In SDK 14.0 the shared
+        // singleton defaults forceAdvancedAuthentication (and therefore isBrowserLoginEnabled) to
+        // true, which routes login through a Custom Tab and blanks loginUrl.  Pin browser login off
+        // so the default VM exercises the WebView path these tests expect.  Tests that specifically
+        // exercise the Custom Tab / browser-login path set the flag themselves or use a mock manager.
+        val sdkManager = SalesforceSDKManager.getInstance()
+        originalBrowserLoginEnabled = sdkManager.isBrowserLoginEnabled
+        sdkManager.isBrowserLoginEnabled = false
+
+        // SDK 14.0 also defaults useDPoP to true, which appends a dpop_jkt param to the authorization
+        // URL.  The general URL-shape assertions below build their expected URLs without dpop_jkt, so
+        // pin the flag off for the default VM.  The dedicated dpop_jkt tests use a mock manager with an
+        // explicit useDPoP value and are unaffected by this.
+        originalUseDPoP = sdkManager.useDPoP
+        sdkManager.useDPoP = false
+
+        viewModel = LoginViewModel(
+            bootConfig = bootConfig,
+            backgroundContext = testDispatcher,
+        )
+
         // This is required for the LiveData to actually update during the test
         // because it isn't actually being observed since there is no lifecycle.
         viewModel.pendingServer.observeForever {
@@ -91,14 +125,16 @@ class LoginViewModelTest {
         viewModel.selectedServer.observeForever { }
         viewModel.loginUrl.observeForever { }
 
-        // Give the LiveData sources time to propagate through the MediatorLiveData
-        Thread.sleep(100)
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @After
     fun teardown() {
+        Dispatchers.resetMain()
         SalesforceSDKManager.getInstance().loginServerManager.reset()
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
+        SalesforceSDKManager.getInstance().isBrowserLoginEnabled = originalBrowserLoginEnabled
+        SalesforceSDKManager.getInstance().useDPoP = originalUseDPoP
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
@@ -150,9 +186,8 @@ class LoginViewModelTest {
         assertFalse(viewModel.loginUrl.value!!.contains(FAKE_SERVER_URL))
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        // Wait for loginUrl to update after selectedServer change (async coroutine)
-        Thread.sleep(200)
         assertNotNull(viewModel.loginUrl.value)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
         assertTrue(viewModel.loginUrl.value!!.startsWith("https://$FAKE_SERVER_URL"))
@@ -164,9 +199,6 @@ class LoginViewModelTest {
     fun browserCustomTabUrl_IsPopulated_AfterAuthorizationUrlGeneration() {
         // Observe so the MediatorLiveData actually propagates in the test environment.
         viewModel.browserCustomTabUrl.observeForever { }
-
-        // The setup() already triggers URL generation; wait for async completion.
-        Thread.sleep(200)
 
         val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
         assertNotNull("browserCustomTabUrl should be populated for the admin flow", browserCustomTabUrl)
@@ -181,16 +213,28 @@ class LoginViewModelTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun browserCustomTabUrl_UsesWebServerFlow_EvenWhenUserAgentFlowIsActive() {
         viewModel.browserCustomTabUrl.observeForever { }
         viewModel.loginUrl.observeForever { }
 
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        val originalBrowserLoginEnabled = sdkManager.isBrowserLoginEnabled
         try {
+            // This test validates the User Agent flow WebView modality, which only exists when
+            // advanced authentication is NOT forced.  With the force flag on (the default) browser
+            // login is enabled, so useWebServerFlow() would be true and the WebView itself would use
+            // the Web Server flow — leaving no "User Agent flow active" scenario to validate.  Pin
+            // both the flag and the browser-login gate off so the assertion is deterministic
+            // regardless of state left on the shared singleton by earlier tests.
+            sdkManager.forceAdvancedAuthentication = false
+            sdkManager.isBrowserLoginEnabled = false
             // Force User Agent flow for the WebView.
-            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+            sdkManager.useWebServerAuthentication = false
 
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
             val loginUrl = viewModel.loginUrl.value
@@ -219,7 +263,48 @@ class LoginViewModelTest {
                 loginUrl!!.contains("response_type=code")
             )
         } finally {
+            sdkManager.useWebServerAuthentication = true
+            sdkManager.isBrowserLoginEnabled = originalBrowserLoginEnabled
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun browserCustomTabUrl_UsesWebServerFlow_WhenForceFlagOnAndWebServerAuthDisabled() {
+        viewModel.browserCustomTabUrl.observeForever { }
+        viewModel.loginUrl.observeForever { }
+
+        val originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        try {
+            // Security invariant: even when the force-advanced-authentication flag is on AND the
+            // app has opted out of the Web Server flow for the WebView, the browser custom tab
+            // (advanced authentication) must always use the Web Server flow (response_type=code +
+            // PKCE) and never the User Agent flow (response_type=token).
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+            SalesforceSDKManager.getInstance().useWebServerAuthentication = false
+
+            viewModel.reloadWebView()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
+            assertNotNull("browserCustomTabUrl should always be generated", browserCustomTabUrl)
+
+            assertTrue(
+                "browserCustomTabUrl should use response_type=code. URL: $browserCustomTabUrl",
+                browserCustomTabUrl!!.contains("response_type=code")
+            )
+            assertTrue(
+                "browserCustomTabUrl should include a PKCE code_challenge. URL: $browserCustomTabUrl",
+                browserCustomTabUrl.contains("code_challenge=")
+            )
+            assertFalse(
+                "browserCustomTabUrl must never use the User Agent flow (response_type=token). URL: $browserCustomTabUrl",
+                browserCustomTabUrl.contains("response_type=token")
+            )
+        } finally {
             SalesforceSDKManager.getInstance().useWebServerAuthentication = true
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
 
@@ -227,8 +312,6 @@ class LoginViewModelTest {
     fun browserCustomTabUrl_UpdatesOn_selectedServerChange() {
         viewModel.browserCustomTabUrl.observeForever { }
 
-        // Wait for initial generation.
-        Thread.sleep(200)
         val initialUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(initialUrl)
         assertFalse(
@@ -237,7 +320,7 @@ class LoginViewModelTest {
         )
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         val updatedUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(updatedUrl)
@@ -265,6 +348,45 @@ class LoginViewModelTest {
 
         assertEquals(1, capturedUrls.size)
         assertEquals(viewModel.browserCustomTabUrl.value, capturedUrls.single())
+    }
+
+    @Test
+    fun generateAuthorizationUrl_KeepsWebViewBlank_WhenBrowserLoginEnabled() {
+        // In the Custom Tab (Advanced Authentication) path the WebView is never the login surface,
+        // so loginUrl is left blank — otherwise the authorization URL briefly loads in the WebView
+        // (flashing its host in the action bar) behind the launching Custom Tab and lingers behind
+        // the server picker when the Custom Tab is cancelled.  The real authorization URL is still
+        // delivered to the Custom Tab via browserCustomTabUrl.
+        viewModel.loginUrl.observeForever { }
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns true
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+
+        runBlocking { viewModel.generateAuthorizationUrl("test.salesforce.com", sdkManagerMock) }
+
+        assertEquals(ABOUT_BLANK, viewModel.loginUrl.value)
+        // The Custom Tab receives the real authorization URL.
+        assertTrue(viewModel.browserCustomTabUrl.value!!.contains("/services/oauth2/authorize"))
+    }
+
+    @Test
+    fun generateAuthorizationUrl_LoadsUrlInWebView_WhenBrowserLoginDisabled() {
+        // The WebView login path (no Custom Tab) loads the real authorization URL in the WebView.
+        viewModel.loginUrl.observeForever { }
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+
+        runBlocking { viewModel.generateAuthorizationUrl("test.salesforce.com", sdkManagerMock) }
+
+        assertNotEquals(ABOUT_BLANK, viewModel.loginUrl.value)
+        assertTrue(viewModel.loginUrl.value!!.contains("/services/oauth2/authorize"))
     }
 
     @Test
@@ -307,6 +429,283 @@ class LoginViewModelTest {
             "onBrowserCustomTabReady must NOT fire when neither browser login nor single-server custom tab is active",
             capturedUrls.isEmpty(),
         )
+    }
+
+    // endregion
+
+    // region DPoP dpop_jkt Tests
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AddsDpopJktToUrl() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL when useDPoP=true, got: $url"
+        }
+        // thumbprint must be 43-char base64url
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenNotUseDPoP_DoesNotAddDpopJktToUrl() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(!url.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in authorization URL when useDPoP=false, got: $url"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_SetsPendingCredentialsIdentifier() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
+        assert(viewModel.pendingCredentialsIdentifier != null) {
+            "Expected pendingCredentialsIdentifier to be set after generateAuthorizationUrl with useDPoP=true"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenNotUseDPoP_DoesNotSetPendingCredentialsIdentifier() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://test.salesforce.com", sdkManagerMock)
+        assert(viewModel.pendingCredentialsIdentifier == null) {
+            "Expected pendingCredentialsIdentifier to be null when useDPoP=false"
+        }
+    }
+
+    @Test
+    fun generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl() = runBlocking {
+        // dpop_jkt must be sent for pool servers when useDPoP=true.
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(url.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in authorization URL for pool server when useDPoP=true, got: $url"
+        }
+        val thumbprint = url.toUri().getQueryParameter("dpop_jkt") ?: ""
+        assert(thumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+            "dpop_jkt must be 43-char base64url RFC 7638 thumbprint, got: '$thumbprint'"
+        }
+    }
+
+    /**
+     * Regression guard for W-23836447: pool server login calls generateAuthorizationUrl multiple
+     * times (pool → my-domain redirect).  The dpop_jkt must remain stable across all calls so
+     * that the auth code's dpop_jkt binding and the subsequent token-exchange DPoP proof use the
+     * same key.
+     */
+    @Test
+    fun test_givenDPoPEnabled_whenGenerateAuthorizationUrlCalledTwice_thenDpopJktIsStable() = runBlocking {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns true
+
+        // First call — simulates pool server issuing the initial /authorize redirect.
+        viewModel.generateAuthorizationUrl("https://login.salesforce.com", sdkManagerMock)
+        val firstUrl = viewModel.loginUrl.value ?: ""
+        val firstThumbprint = firstUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val firstCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(firstThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after first generateAuthorizationUrl call, got empty"
+        }
+        assertNotNull("pendingCredentialsIdentifier must be set after first call", firstCredId)
+
+        // Second call — simulates the pool server redirecting to my-domain /authorize.
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", sdkManagerMock)
+        val secondUrl = viewModel.loginUrl.value ?: ""
+        val secondThumbprint = secondUrl.toUri().getQueryParameter("dpop_jkt") ?: ""
+        val secondCredId = viewModel.pendingCredentialsIdentifier
+
+        assert(secondThumbprint.isNotEmpty()) {
+            "Expected dpop_jkt after second generateAuthorizationUrl call, got empty"
+        }
+        assertEquals(
+            "dpop_jkt must be stable across pool-server redirects (same key must be reused)",
+            firstThumbprint,
+            secondThumbprint,
+        )
+        assertEquals(
+            "pendingCredentialsIdentifier must be the same across pool-server redirects",
+            firstCredId,
+            secondCredId,
+        )
+    }
+
+    // endregion
+
+    // region dpopOverride (migration per-call DPoP intent) Tests
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideTrue_FlagOff_AddsDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride=true, even with the global useDPoP flag off, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideFalse_FlagOn_DoesNotAddDpopJktToUrl() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        viewModel.dpopOverride = false
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(!path.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in migration authorization path when dpopOverride=false, even with the global useDPoP flag on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_WhenDpopOverrideNull_FallsBackToGlobalFlag() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns true
+
+        // dpopOverride left at its default (null) — migration should fall back to the global flag,
+        // matching pre-existing migration behavior when no per-call intent is supplied.
+        assertNull(viewModel.dpopOverride)
+        val path = viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assert(path.contains("dpop_jkt=")) {
+            "Expected dpop_jkt in migration authorization path when dpopOverride is null and the global useDPoP flag is on, got: $path"
+        }
+    }
+
+    @Test
+    fun generateMigrationAuthorizationPath_ResetsDpopOverride_AfterUrlIsBuilt() {
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = sdkManagerMock,
+        )
+
+        assertNull(
+            "dpopOverride must be reset to null once the migration URL is built, so it never " +
+                "leaks into a later, unrelated login on this shared view model",
+            viewModel.dpopOverride,
+        )
+    }
+
+    @Test
+    fun generateAuthorizationUrl_AfterMigrationResetsDpopOverride_GatesPurelyOnGlobalFlag() = runBlocking {
+        // Proves the real A-3 guarantee: normal login never sets dpopOverride itself, so under
+        // the documented contract (generateMigrationAuthorizationPath always resets it to null
+        // once its URL is built) a subsequent generateAuthorizationUrl call on the same shared
+        // view model sees dpopOverride == null and gates dpop_jkt purely on the global flag. Both
+        // calls target a MY-DOMAIN server (not a pool host), so dpop_jkt would be added here if
+        // any stale override leaked through — a pool-host server would strip it either way and
+        // make the assertion pass for the wrong reason.
+        val migrationSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { migrationSdkManagerMock.useHybridAuthentication } returns false
+        every { migrationSdkManagerMock.useDPoP } returns false
+
+        viewModel.dpopOverride = true
+        viewModel.generateMigrationAuthorizationPath(
+            server = "https://myorg.my.salesforce.com",
+            migrationOAuthConfig = OAuthConfig(
+                consumerKey = "3MVG9fake_consumer_key",
+                redirectUri = "testsfdc:///axm/detect/oauth/done",
+            ),
+            sdkManager = migrationSdkManagerMock,
+        )
+        assertNull(viewModel.dpopOverride)
+
+        val loginSdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { loginSdkManagerMock.isDebugBuild } returns false
+        every { loginSdkManagerMock.useHybridAuthentication } returns false
+        every { loginSdkManagerMock.isBrowserLoginEnabled } returns false
+        every { loginSdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { loginSdkManagerMock.debugOverrideAppConfig } returns null
+        every { loginSdkManagerMock.useDPoP } returns false
+
+        viewModel.generateAuthorizationUrl("https://myorg.my.salesforce.com", loginSdkManagerMock)
+        val url = viewModel.loginUrl.value ?: ""
+        assert(!url.contains("dpop_jkt")) {
+            "Expected no dpop_jkt in normal-login authorization URL after a prior migration call " +
+                "reset dpopOverride, got: $url"
+        }
     }
 
     // endregion
@@ -360,8 +759,7 @@ class LoginViewModelTest {
         assertEquals(originalAuthUrl, viewModel.loginUrl.value)
 
         viewModel.selectedServer.value = FAKE_SERVER_URL
-        // Wait for async update
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
         // LoginUrlSource prepends https:// to scheme-less servers before URL generation.
@@ -375,32 +773,11 @@ class LoginViewModelTest {
         assertTrue(viewModel.loginUrl.value!!.contains(originalCodeChallenge))
 
         viewModel.reloadWebView()
-        // Wait for async update
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
         val newCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
         assertNotNull(newCodeChallenge)
         assertNotEquals(originalCodeChallenge, newCodeChallenge)
         assertTrue(viewModel.loginUrl.value!!.contains(newCodeChallenge))
-    }
-
-    @Test
-    fun jwtFlow_Changes_loginUrl() {
-        val server = viewModel.selectedServer.value!!
-        var codeChallenge = getSHA256Hash(viewModel.codeVerifier)
-        val expectedUrl = generateExpectedAuthorizationUrl(server, codeChallenge)
-        assertEquals(expectedUrl, viewModel.loginUrl.value)
-
-        viewModel.jwt = FAKE_JWT
-        viewModel.authCodeForJwtFlow = FAKE_JWT_FLOW_AUTH
-        viewModel.reloadWebView()
-        // Wait for async update
-        Thread.sleep(200)
-        assertNotEquals(expectedUrl, viewModel.loginUrl.value)
-
-        codeChallenge = getSHA256Hash(viewModel.codeVerifier)
-        val authUrl = generateExpectedAuthorizationUrl(server, codeChallenge)
-        val expectedJwtFlowUrl = getFrontdoorUrl(URI(authUrl), FAKE_JWT_FLOW_AUTH, server, mapOf<String, String>()).toString()
-        assertEquals(expectedJwtFlowUrl, viewModel.loginUrl.value)
     }
 
     @Test
@@ -415,6 +792,26 @@ class LoginViewModelTest {
         val expectedResult =
             "https://login.salesforce.com/services/oauth2/authorize\\?display=touch&response_type=code&client_id=__CONSUMER_KEY__&scope=api%20openid%20refresh_token%20web&login_hint=ietf_example_domain_reserved_for_test%40example.com&redirect_uri=__REDIRECT_URI__&device_id=[^=]+&code_challenge=[^=]+".toRegex()
         assertTrue(expectedResult.matches(result))
+    }
+
+    @Test
+    fun applyPendingServer_withWelcomeDiscoveryMyDomain_doesNotPolluteLoginServerManager() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        val originalSelectedServer = loginServerManager.selectedLoginServer
+        val originalServersCount = loginServerManager.loginServers.size
+        val myDomainUrl = "https://acme.my.salesforce.com"
+
+        viewModel.pendingServer.value = myDomainUrl
+        viewModel.applyPendingServer(pendingLoginServer = myDomainUrl)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(myDomainUrl, viewModel.selectedServer.value)
+        assertNotNull(viewModel.loginUrl.value)
+        assertTrue(viewModel.loginUrl.value!!.startsWith(myDomainUrl))
+
+        assertEquals(originalSelectedServer, loginServerManager.selectedLoginServer)
+        assertEquals(originalServersCount, loginServerManager.loginServers.size)
+        assertNull(loginServerManager.getLoginServerFromURL(myDomainUrl))
     }
 
     @Test
@@ -445,7 +842,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL contains the custom consumer key and redirect URI
         val loginUrl = viewModel.loginUrl.value!!
@@ -461,7 +858,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL contains the boot config values
         val loginUrl = viewModel.loginUrl.value!!
@@ -494,7 +891,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the custom app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -535,7 +932,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the debug override values, not app config values
             val loginUrl = viewModel.loginUrl.value!!
@@ -562,9 +959,11 @@ class LoginViewModelTest {
         val appConfigRedirectUri = "appconfig://should_not_be_used"
         every { sdkManagerMock.isDebugBuild } returns false
         every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.useWebServerAuthentication } returns true
         // generateAuthorizationUrl reads isBrowserLoginEnabled to decide whether to invoke
         // the onBrowserCustomTabReady callback; not relevant to this assertion but must be stubbed.
         every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.useDPoP } returns false
         every { sdkManagerMock.appConfigForLoginHost } returns { _ ->
             OAuthConfig(
                 consumerKey = appConfigConsumerKey,
@@ -572,6 +971,7 @@ class LoginViewModelTest {
                 scopes = listOf("api"),
             )
         }
+        every { sdkManagerMock.appAttestationClient } returns null
         val debugConsumerKey = "debug_override_key_789"
         val debugRedirectUri = "debug://redirect"
         val debugScopes = listOf("api", "debug_scope")
@@ -579,6 +979,13 @@ class LoginViewModelTest {
             consumerKey = debugConsumerKey,
             redirectUri = debugRedirectUri,
             scopes = debugScopes,
+        )
+        coEvery {
+            sdkManagerMock.resolveOAuthConfigForLoginServer(any())
+        } returns OAuthConfig(
+            consumerKey = appConfigConsumerKey,
+            redirectUri = appConfigRedirectUri,
+            scopes = listOf("api"),
         )
 
         // Verify the URL contains the app config values, not the debug override config values
@@ -606,7 +1013,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun generateMigrationAuthorizationPath_UsesMigrationConfig_OverAppConfigForLoginHost() {
+    fun generateMigrationAuthorizationPath_UsesMigrationConfig_OverAppConfigForLoginHost() = runTest {
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = false)
         val appConfigConsumerKey = "app_config_key_should_not_be_used"
         val appConfigRedirectUri = "appconfig://should_not_be_used"
@@ -618,6 +1025,8 @@ class LoginViewModelTest {
                 scopes = listOf("api"),
             )
         }
+        every { sdkManagerMock.appAttestationClient } returns null
+        every { sdkManagerMock.useDPoP } returns false
         val debugConsumerKey = "debug_override_key_789"
         val debugRedirectUri = "debug://redirect"
         val debugScopes = listOf("api", "debug_scope")
@@ -687,7 +1096,7 @@ class LoginViewModelTest {
 
             // Test with test server
             viewModel.selectedServer.value = "https://test.salesforce.com"
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
             var loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain test consumer key. URL: $loginUrl",
                 loginUrl.contains("test_consumer_key"))
@@ -698,7 +1107,7 @@ class LoginViewModelTest {
 
             // Test with production server
             viewModel.selectedServer.value = "https://login.salesforce.com"
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
             loginUrl = viewModel.loginUrl.value!!
             assertTrue("URL should contain prod consumer key. URL: $loginUrl",
                 loginUrl.contains("prod_consumer_key"))
@@ -724,7 +1133,7 @@ class LoginViewModelTest {
 
         // Trigger URL generation
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify the URL is generated correctly without scopes
         val loginUrl = viewModel.loginUrl.value!!
@@ -746,12 +1155,158 @@ class LoginViewModelTest {
         assertTrue("isUsingFrontDoorBridge should be true", viewModel.isUsingFrontDoorBridge)
         assertEquals("frontDoorBridgeUrl should be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
 
+        // Precondition: invariant ("frontdoor wins over reload") only holds when the
+        // LoginServerManager-selected server is NOT a Welcome Discovery URL.  The Welcome Discovery
+        // branch in reloadWebView intentionally runs before the frontdoor short-circuit.
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(
+            (SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer?.url ?: "").toUri()))
+
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL did not change
         assertEquals("frontDoorBridgeUrl should still be front door URL", frontDoorUrl, viewModel.frontDoorBridgeUrl.value)
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsWelcomeDiscovery_whenReloadWebView_thenLoginUrlIsDiscoveryMobileUrl() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        // Simulate Phase 2: VM's selectedServer is the discovered My Domain even though
+        // LoginServerManager still has Welcome Discovery selected.
+        viewModel.selectedServer.value = "https://acme.my.salesforce.com"
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(resultUri!!))
+        assertEquals(viewModel.oAuthConfig.consumerKey,
+            resultUri.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID))
+        assertFalse(viewModel.loginUrl.value!!.contains("/services/oauth2/authorize"))
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsNotWelcomeDiscovery_whenReloadWebView_thenLoginUrlIsAuthUrl() {
+        // LoginServerManager defaults to Production (login.salesforce.com).
+        viewModel.selectedServer.value = "https://login.salesforce.com"
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val url = viewModel.loginUrl.value
+        assertNotNull(url)
+        assertTrue(url!!.contains("/services/oauth2/authorize"))
+        assertFalse(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(url.toUri()))
+    }
+
+    @Test
+    fun test_givenLoginServerManagerSelectedServerIsWelcomeDiscovery_whenIsUsingFrontDoorBridge_andReloadWebView_thenLoginUrlIsDiscoveryMobileUrl() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        val frontdoorUrl = "https://example.my.salesforce.com/secur/frontdoor.jsp?sid=fake"
+        viewModel.loginWithFrontDoorBridgeUrl(frontdoorUrl, pkceCodeVerifier = null)
+        assertTrue(viewModel.isUsingFrontDoorBridge)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(resultUri!!))
+        assertNotEquals(frontdoorUrl, viewModel.loginUrl.value)
+    }
+
+    /**
+     * Regression guard for the Phase-2 reload bug: when the user is in Phase 2 of the Welcome
+     * Discovery flow, viewModel.selectedServer is the discovered My Domain (NOT the Welcome URL),
+     * but LoginServerManager retains Welcome as the user's actual server selection.  Reload must
+     * return the WebView to Phase 1.
+     */
+    @Test
+    fun test_givenInPhase2OfWelcomeDiscovery_whenReloadWebView_thenLoginUrlReturnsToPhase1() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        // Phase 2 state: VM mirrors the My Domain from applySalesforceWelcomeLoginHintAndHost.
+        val myDomainUrl = "https://acme.my.salesforce.com"
+        viewModel.selectedServer.value = myDomainUrl
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertEquals("welcome.salesforce.com", resultUri!!.host)
+        assertEquals(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_URL_PATH, resultUri.path)
+        assertFalse(viewModel.loginUrl.value!!.contains(myDomainUrl))
+        assertFalse(viewModel.loginUrl.value!!.contains("/services/oauth2/authorize"))
+
+        // Reload must also realign VM-level selectedServer back to the Welcome URL so the top
+        // app bar title (defaultTitleText reads selectedServer.value) and the Compose menu
+        // gating ("Login for Admin" hidden when selectedServer is the discovery URL) follow.
+        assertEquals(WELCOME_LOGIN_URL, viewModel.selectedServer.value)
+    }
+
+    /**
+     * Regression guard: reloading while the WebView already shows Welcome Discovery Phase 1.  The
+     * discovery URL is deterministic, so the regenerated string is identical to the current one.
+     * Because the WebView only reloads when loginUrl changes, reloadWebView must emit an
+     * intermediate ABOUT_BLANK so the reassignment is an actual change and the WebView reloads --
+     * otherwise the reload button appears to do nothing on Welcome Discovery.
+     */
+    @Test
+    fun test_givenWelcomeDiscoveryAlreadyLoaded_whenReloadWebView_thenLoginUrlEmitsBlankThenDiscoveryUrl() {
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        // addCustomLoginServer selects the server, which triggers URL generation via LoginUrlSource.
+        // Flush it so it does not race the reload below.
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // First reload puts the WebView on the Phase 1 discovery URL.
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+        val discoveryUrl = viewModel.loginUrl.value
+        assertNotNull(discoveryUrl)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(discoveryUrl!!.toUri()))
+
+        // Record every subsequent loginUrl emission.
+        val emissions = mutableListOf<String?>()
+        val observer = Observer<String?> { emissions.add(it) }
+        viewModel.loginUrl.observeForever(observer)
+        try {
+            // Reload again with the identical discovery URL already showing.
+            viewModel.reloadWebView()
+            testDispatcher.scheduler.advanceUntilIdle()
+        } finally {
+            viewModel.loginUrl.removeObserver(observer)
+        }
+
+        // The blank emission is what forces the WebView to reload despite the unchanged final URL.
+        assertTrue("reloadWebView should emit ABOUT_BLANK before the discovery URL", emissions.contains(ABOUT_BLANK))
+        assertEquals("loginUrl should settle back on the discovery URL", discoveryUrl, viewModel.loginUrl.value)
+    }
+
+    @Test
+    fun test_givenConsumerKeyAndAppVersion_whenGenerateSalesforceWelcomeDiscoveryMobileUrl_thenReturnsExpectedUrl() {
+        val input = "https://welcome.salesforce.com/discovery".toUri()
+        val result = viewModel.generateSalesforceWelcomeDiscoveryMobileUrl(input)
+
+        assertEquals("welcome.salesforce.com", result.host)
+        assertEquals("/discovery", result.path)
+        assertEquals(viewModel.oAuthConfig.consumerKey,
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID))
+        assertEquals(URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8"),
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION))
+        assertEquals("sfdc://discocallback",
+            result.getQueryParameter(LoginActivity.SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL))
+        // Companion validator round-trip:
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(result))
     }
 
     @Test
@@ -772,12 +1327,11 @@ class LoginViewModelTest {
             viewModel.reloadWebView()
 
             // Verify URL was set to ABOUT_BLANK for User Agent Flow
-            // NOTE:  If this is flaky we should use Turbine to test the actual state changes.
             assertEquals("loginUrl should be set to ABOUT_BLANK for User Agent Flow",
                 ABOUT_BLANK, viewModel.loginUrl.value)
 
-            // Wait for the new authorization URL to be generated
-            Thread.sleep(200)
+            // Advance the coroutine to generate the new URL
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify a new URL was generated
             val newUrl = viewModel.loginUrl.value
@@ -801,16 +1355,11 @@ class LoginViewModelTest {
 
         // Call reloadWebView
         viewModel.reloadWebView()
-
-        // Give a brief moment to check if ABOUT_BLANK would be set
-        Thread.sleep(50)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL was NOT set to ABOUT_BLANK for Web Server Flow
         assertNotEquals("loginUrl should NOT be ABOUT_BLANK for Web Server Flow",
             ABOUT_BLANK, viewModel.loginUrl.value)
-
-        // Wait for the new authorization URL to be generated
-        Thread.sleep(200)
 
         // Verify a new URL was generated with different code challenge
         val newUrl = viewModel.loginUrl.value
@@ -827,11 +1376,11 @@ class LoginViewModelTest {
 
         // Set selectedServer to null
         viewModel.selectedServer.value = null
-        Thread.sleep(100)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Call reloadWebView
         viewModel.reloadWebView()
-        Thread.sleep(200)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Verify URL did not change
         assertEquals("loginUrl should not change when selectedServer is null",
@@ -852,7 +1401,7 @@ class LoginViewModelTest {
 
             // Trigger URL generation
             viewModel.reloadWebView()
-            Thread.sleep(200)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             // Verify the URL contains the boot config values (fallback)
             val loginUrl = viewModel.loginUrl.value!!
@@ -871,6 +1420,97 @@ class LoginViewModelTest {
         }
     }
 
+    // region useWebServerFlow Tests
+
+    @Test
+    fun useWebServerFlow_ReturnsTrue_WhenAppAttestationClientIsNotNull() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.appAttestationClient } returns mockk()
+        every { sdkManager.useWebServerAuthentication } returns false
+        every { sdkManager.isBrowserLoginEnabled } returns false
+
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertTrue(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsFalse_WhenNoAttestationAndWebServerAuthDisabled() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.appAttestationClient } returns null
+        every { sdkManager.useWebServerAuthentication } returns false
+        every { sdkManager.isBrowserLoginEnabled } returns false
+
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertFalse(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsTrue_WhenUseWebServerAuthenticationIsTrue() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.useWebServerAuthentication } returns true
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        every { sdkManager.appAttestationClient } returns null
+
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertTrue(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsTrue_WhenBrowserLoginIsEnabled() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.useWebServerAuthentication } returns false
+        every { sdkManager.isBrowserLoginEnabled } returns true
+        every { sdkManager.appAttestationClient } returns null
+
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertTrue(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsTrue_WhenSingleServerCustomTabActivity() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManager.useWebServerAuthentication } returns false
+        every { sdkManager.isBrowserLoginEnabled } returns false
+        every { sdkManager.appAttestationClient } returns null
+
+        val freshViewModel = object : LoginViewModel(bootConfig) {
+            override val singleServerCustomTabActivity = true
+        }
+        assertTrue(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsTrue_WhenUsingFrontDoorBridgeWithCodeVerifier() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val freshViewModel = LoginViewModel(bootConfig)
+        freshViewModel.loginWithFrontDoorBridgeUrl(
+            "https://test.salesforce.com/frontdoor.jsp?sid=test_session",
+            pkceCodeVerifier = "__VERIFIER__",
+        )
+
+        assertTrue(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_ReturnsFalse_WhenUsingFrontDoorBridgeWithoutCodeVerifier() {
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val freshViewModel = LoginViewModel(bootConfig)
+        freshViewModel.loginWithFrontDoorBridgeUrl(
+            "https://test.salesforce.com/frontdoor.jsp?sid=test_session",
+            pkceCodeVerifier = null,
+        )
+
+        assertFalse(freshViewModel.useWebServerFlow(sdkManager))
+    }
+
+    @Test
+    fun useWebServerFlow_UsesDefaultSdkManager_WhenNoParameterProvided() {
+        val freshViewModel = LoginViewModel(bootConfig)
+        assertTrue(freshViewModel.useWebServerFlow())
+    }
+
+    // endregion
+
     @Test
     fun loginViewModel_applyPendingLoginServer_returns_onNullPendingLoginServer() {
 
@@ -878,7 +1518,7 @@ class LoginViewModelTest {
 
         viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = null)
         assert(viewModel.previousPendingServer == null)
-        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) }
     }
 
     @Test
@@ -895,7 +1535,7 @@ class LoginViewModelTest {
 
         assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
-        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 0) { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) }
     }
 
     @Test
@@ -903,7 +1543,7 @@ class LoginViewModelTest {
 
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         val callbackSlot = slot<() -> Unit>()
-        every { sdkManager.fetchAuthenticationConfiguration(any(), capture(callbackSlot)) } answers {
+        every { sdkManager.fetchAuthenticationConfiguration(any(), any(), capture(callbackSlot)) } answers {
             callbackSlot.captured.invoke()
             mockk<Job>()
         }
@@ -915,9 +1555,218 @@ class LoginViewModelTest {
 
         assert(viewModel.previousPendingServer == exampleUrl)
         assert(viewModel.selectedServer.value == exampleUrl)
-        verify(exactly = 1) { sdkManager.fetchAuthenticationConfiguration(any(), any()) }
+        verify(exactly = 1) {
+            sdkManager.fetchAuthenticationConfiguration(
+                httpAccess = any(),
+                loginServerUrl = exampleUrl,
+                completion = any(),
+            )
+        }
         verify(exactly = 1) { job.cancel() }
     }
+
+    // region Re-select Tests (W-23731759 — fix the re-select no-op)
+
+    @Test
+    fun test_reselectWelcomeDiscoveryUrl_stillReloadsWebView() {
+        // Regression guard: the order-sensitive Welcome Discovery else-if branch in the picker's
+        // onNewLoginServerSelected must remain untouched by the re-select fix.
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        loginServerManager.addCustomLoginServer("Welcome", WELCOME_LOGIN_URL)
+        loginServerManager.selectedLoginServer = LoginServer("Welcome", WELCOME_LOGIN_URL, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(WELCOME_LOGIN_URL.toUri()))
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val resultUri = viewModel.loginUrl.value?.toUri()
+        assertNotNull(resultUri)
+        assertTrue(LoginActivity.isSalesforceWelcomeDiscoveryMobileUrl(resultUri!!))
+    }
+
+    @Test
+    fun test_applyPendingServer_authConfigTimeout_clearsLoading() {
+        // fetchAuthenticationConfiguration always invokes its completion, even when its internal
+        // withTimeoutOrNull(5s) times out (production code calls completion.invoke() outside the
+        // timeout block). Simulate that by having the mocked fetch invoke completion without
+        // resolving anything else, and assert applyPendingServer still resolves (posts
+        // selectedServer) instead of leaving the caller-set loading spinner hanging forever.
+        val exampleUrl = "https://www.example.com"
+        viewModel.loading.value = true
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val callbackSlot = slot<() -> Unit>()
+        every { sdkManager.fetchAuthenticationConfiguration(any(), any(), capture(callbackSlot)) } answers {
+            // Simulate the timeout path: the internal fetch work is skipped, but completion
+            // still fires unconditionally, exactly like the production withTimeoutOrNull wrapper.
+            callbackSlot.captured.invoke()
+            mockk<Job>()
+        }
+
+        viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The fetch's completion resolved and posted the selected server — the flow is not stuck,
+        // so the caller-set loading spinner will be cleared downstream (onPageFinished) rather
+        // than hanging indefinitely.
+        assertEquals(exampleUrl, viewModel.selectedServer.value)
+    }
+
+    @Test
+    fun test_applyPendingServer_rapidDoubleApply_singleLaunch() {
+        // Applying a pending server twice in quick succession must cancel the prior in-flight fetch
+        // job so only a single completion ultimately drives selectedServer/generateAuthorizationUrl.
+        val exampleUrl = "https://www.example.com"
+
+        val firstJob = mockk<Job>(relaxed = true)
+        viewModel.authenticationConfigurationFetchJob = firstJob
+
+        val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
+        val secondJob = mockk<Job>(relaxed = true)
+        every { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) } returns secondJob
+
+        // First tap: starts a fetch, cancelling nothing (no prior job set by this call).
+        viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
+        verify(exactly = 1) { firstJob.cancel() }
+        assertEquals(secondJob, viewModel.authenticationConfigurationFetchJob)
+
+        // Second, rapid re-tap: must cancel the job started by the first tap before starting a
+        // new one.
+        val thirdJob = mockk<Job>(relaxed = true)
+        every { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) } returns thirdJob
+        viewModel.applyPendingServer(sdkManager = sdkManager, pendingLoginServer = exampleUrl)
+
+        verify(exactly = 1) { secondJob.cancel() }
+        assertEquals(thirdJob, viewModel.authenticationConfigurationFetchJob)
+        verify(exactly = 2) { sdkManager.fetchAuthenticationConfiguration(any(), any(), any()) }
+    }
+
+    @Test
+    fun test_reselect_overLivePage_regeneratesDespiteSameHost() {
+        // The primary hang regression: when the picker is opened over an already-loaded login
+        // page, loginUrl already holds the selected server's host.  Re-posting selectedServer
+        // through LoginUrlSource would be swallowed by its same-host guard, so
+        // generateAuthorizationUrl would never run and the loading spinner (only cleared by
+        // onPageFinished) would hang forever.  Routing the re-select through reloadWebView instead
+        // calls generateAuthorizationUrl directly, so the auth URL is regenerated despite the
+        // unchanged host and the spinner is owned start-to-finish by generateAuthorizationUrl.
+        val currentServerUrl = viewModel.selectedServer.value!!
+        // Precondition: loginUrl host matches the selected server (opened over a live page, not
+        // about:blank) — exactly the state where the same-host guard would otherwise swallow a
+        // re-posted selectedServer.
+        assertEquals(currentServerUrl.toUri().host, viewModel.loginUrl.value!!.toUri().host)
+        val originalCodeChallenge = getSHA256Hash(viewModel.codeVerifier)
+
+        viewModel.reloadWebView()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Regeneration happened (fresh code challenge) despite the unchanged host — the reload was
+        // NOT swallowed, so the spinner will clear downstream instead of hanging.
+        assertNotEquals(originalCodeChallenge, getSHA256Hash(viewModel.codeVerifier))
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun test_shouldShowBackButton_isFlagIndependent() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        try {
+            sdkManager.forceAdvancedAuthentication = true
+            val shouldShowWithFlagOn = viewModel.shouldShowBackButton
+
+            sdkManager.forceAdvancedAuthentication = false
+            val shouldShowWithFlagOff = viewModel.shouldShowBackButton
+
+            assertEquals(
+                "shouldShowBackButton must not depend on forceAdvancedAuthentication",
+                shouldShowWithFlagOn,
+                shouldShowWithFlagOff,
+            )
+        } finally {
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    /**
+     * Builds a [LoginViewModel] whose [SalesforceSDKManager] is a spy that
+     * reports the app is using Native Login, so the WebView LoginActivity is
+     * the dismissible fallback, then runs [block] against it. The spy also
+     * reports no authenticated users, so the fallback scenario is deterministic
+     * regardless of any account state other suite tests leave on the shared
+     * SalesforceSDKManager singleton. [configureSpy] may further stub the spy
+     * (e.g. a locked biometric manager) before the view model is constructed.
+     * The object mock is always torn down.
+     */
+    private fun withNativeLoginFallbackViewModel(
+        configureSpy: (SalesforceSDKManager) -> Unit = {},
+        block: (LoginViewModel) -> Unit,
+    ) {
+        val spySdkManager = spyk(SalesforceSDKManager.getInstance())
+        // Any non-null Activity class works; only nativeLoginActivity's
+        // nullness gates the fallback, and its concrete type is never read.
+        every { spySdkManager.nativeLoginActivity } returns LoginActivity::class.java
+        // Pin the no-authenticated-users precondition on the spy rather than
+        // asserting on the shared singleton, which sibling tests can pollute.
+        every { spySdkManager.userAccountManager.authenticatedUsers } returns emptyList()
+        configureSpy(spySdkManager)
+        mockkObject(SalesforceSDKManager)
+        try {
+            every { SalesforceSDKManager.getInstance() } returns spySdkManager
+            block(
+                LoginViewModel(
+                    bootConfig = bootConfig,
+                    backgroundContext = testDispatcher,
+                )
+            )
+        } finally {
+            unmockkObject(SalesforceSDKManager)
+        }
+    }
+
+    /**
+     * When the app uses Native Login, the WebView LoginActivity is a
+     * dismissible fallback whose hardware-back already finishes and returns to
+     * the native login activity. The visible back affordance must be shown to
+     * match — even with no authenticated users — so the user is never stranded
+     * on the fallback WebView.
+     */
+    @Test
+    fun test_shouldShowBackButton_isTrueForNativeLoginFallbackWithNoUsers() {
+        withNativeLoginFallbackViewModel { nativeLoginViewModel ->
+            assertTrue(
+                "Back button must be shown for the Native Login WebView fallback.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
+        }
+    }
+
+    /**
+     * The Native Login fallback back affordance must still yield to the
+     * biometric lock — a locked user must authenticate rather than navigate
+     * back. The helper pins the no-authenticated-users precondition, so the
+     * only branch that could show the button is the Native Login one, proving
+     * the biometric lock takes precedence over it.
+     */
+    @Test
+    fun test_shouldShowBackButton_isFalseForNativeLoginFallbackWhenBiometricLocked() {
+        val lockedBioAuthManager = mockk<BiometricAuthenticationManager> {
+            every { locked } returns true
+        }
+        withNativeLoginFallbackViewModel(
+            configureSpy = { spy ->
+                every { spy.biometricAuthenticationManager } returns lockedBioAuthManager
+            },
+        ) { nativeLoginViewModel ->
+            assertFalse(
+                "Back button must remain hidden while biometric-locked, even for Native Login.",
+                nativeLoginViewModel.shouldShowBackButton,
+            )
+        }
+    }
+
+    // endregion
 
     @Test
     fun loginViewModel_isSwitchFromSalesforceWelcomeDiscoveryToDefaultLogin_returnsFalseOnNullPreviousPendingLoginServer() {

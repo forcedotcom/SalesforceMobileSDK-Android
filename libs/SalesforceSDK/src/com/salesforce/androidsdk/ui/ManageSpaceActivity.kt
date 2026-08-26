@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.R.string.sf__manage_space_confirmation
 import com.salesforce.androidsdk.R.string.sf__manage_space_logout_no
 import com.salesforce.androidsdk.R.string.sf__manage_space_logout_yes
 import com.salesforce.androidsdk.R.string.sf__manage_space_title
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.getInstance
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
 
@@ -97,11 +98,12 @@ open class ManageSpaceActivity : ComponentActivity() {
                 finish()
             },
             onConfirm = {
-                getInstance().logout(
-                    account = null,
-                    frontActivity = this@ManageSpaceActivity,
-                    showLoginPage = false,
-                    reason = USER_LOGOUT
+                val sdkManager = getInstance()
+                logoutAllUsersAndClearData(
+                    authenticatedUsers = sdkManager.userAccountManager.authenticatedUsers,
+                    signoutUser = { user -> sdkManager.userAccountManager.signoutUser(user, this@ManageSpaceActivity, false, USER_LOGOUT) },
+                    fallbackLogout = { sdkManager.logout(account = null, frontActivity = this@ManageSpaceActivity, showLoginPage = false, reason = USER_LOGOUT) },
+                    clearData = { clearApplicationUserData() }
                 )
             },
             titleText = stringResource(sf__manage_space_title),
@@ -173,4 +175,37 @@ open class ManageSpaceActivity : ComponentActivity() {
                 }
             })
     }
+
+    // Extracted to allow overriding in tests — clearApplicationUserData() kills the process.
+    open fun clearApplicationUserData() {
+        (getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
+            .clearApplicationUserData()
+    }
+}
+
+/**
+ * Logs out all authenticated users and then calls [clearData].
+ *
+ * Extracted as a top-level function so it can be unit-tested without launching the full
+ * Activity (Activity constructors require a Looper) or mocking framework singletons.
+ * All side effects are injected as lambdas.
+ *
+ * @param authenticatedUsers the currently logged-in accounts, or null/empty if none
+ * @param signoutUser called once per user to perform SDK-level per-account logout
+ * @param fallbackLogout called when [authenticatedUsers] is null/empty — handles the
+ *   fresh-install or already-logged-out edge case via the standard SDK logout path
+ * @param clearData called last to wipe all app storage (normally [ManageSpaceActivity.clearApplicationUserData])
+ */
+internal fun logoutAllUsersAndClearData(
+    authenticatedUsers: List<UserAccount>?,
+    signoutUser: (UserAccount) -> Unit,
+    fallbackLogout: () -> Unit,
+    clearData: () -> Unit,
+) {
+    if (authenticatedUsers.isNullOrEmpty()) {
+        fallbackLogout()
+    } else {
+        authenticatedUsers.forEach { user -> signoutUser(user) }
+    }
+    clearData()
 }

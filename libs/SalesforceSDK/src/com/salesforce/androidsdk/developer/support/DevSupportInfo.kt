@@ -28,9 +28,15 @@ package com.salesforce.androidsdk.developer.support
 
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.AppAttestationClient
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.security.interfaces.ECPublicKey
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -61,58 +67,6 @@ data class DevSupportInfo(
     )
 
     companion object {
-
-        // TODO: Remove this in 14.0 when the older devSupportInfos is removed.
-        internal fun createFromLegacyDevInfos(devSupportInfos: List<String>): DevSupportInfo {
-            val legacyDevInfo: MutableList<Pair<String, String>> = devSupportInfos.chunked(2) { it[0] to it[1] }.toMutableList()
-            val authConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Authentication Configuration",
-                "Use Web Server Authentication",
-                "Use Hybrid Authentication Token",
-                "Support Welcome Discovery",
-                "Browser Login Enabled",
-                "IDP Enabled",
-                "Identity Provider",
-            )
-            val bootConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Boot Configuration",
-                /* ...keys = */ "Consumer Key",
-                "Redirect URI",
-                "Scopes",
-                "Local",
-                "Start Page",
-                "Unauthenticated Start Page",
-                "Error Page",
-                "Should Authenticate",
-                "Attempt Offline Load",
-            )
-            val currentUserSection = legacyDevInfo.createSection(
-                sectionTitle = "Current User",
-                /* ...keys = */ "Username",
-                "Consumer Key",
-                "Scopes",
-                "Instance URL",
-                "Token Format",
-                "Access Token Expiration",
-                "Beacon Child Consumer Key",
-            )
-            val runtimeConfigSection = legacyDevInfo.createSection(
-                sectionTitle = "Runtime Configuration",
-                /* ...keys = */ "Managed App",
-                "OAuth ID",
-                "Callback URL",
-                "Require Cert Auth",
-                "Only Show Authorized Hosts",
-            )
-
-            return DevSupportInfo(
-                basicInfo = legacyDevInfo,
-                authConfigSection,
-                bootConfigSection,
-                currentUserSection,
-                runtimeConfigSection,
-            )
-        }
 
         fun parseBootConfigInfo(bootConfig: BootConfig): DevInfoList {
             with(bootConfig) {
@@ -152,7 +106,7 @@ data class DevSupportInfo(
                 }
             }
 
-            return "Current User" to listOf(
+            val rows = mutableListOf(
                 "Username" to currentUser.username,
                 "Consumer Key" to currentUser.clientId,
                 "Scopes" to currentUser.scope,
@@ -160,6 +114,86 @@ data class DevSupportInfo(
                 "Token Format" to (currentUser.tokenFormat?.ifBlank { "Opaque" } ?: "Opaque"),
                 "Access Token Expiration" to accessTokenExpiration,
                 "Beacon Child Consumer Key" to (currentUser.beaconChildConsumerKey ?: "None"),
+                "OAuth Token Type" to (currentUser.tokenType?.ifBlank { "Bearer" } ?: "Bearer"),
+            )
+            if (currentUser.tokenType == "DPoP") {
+                val credId = currentUser.credentialsIdentifier
+                val host = currentUser.instanceServer
+                    ?.toHttpUrlOrNull()?.host ?: ""
+                val nonce = credId?.let { DPoPNonceCache.get(it, host) }
+                rows.add("DPoP Nonce" to (nonce?.ifEmpty { "None" } ?: "None"))
+                val thumbprint = credId?.let {
+                    runCatching {
+                        val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
+                        val keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+                        DPoPProofBuilder.jwkThumbprint(keyPair.public as ECPublicKey)
+                    }.getOrElse { "Unavailable" }
+                } ?: "Unavailable"
+                rows.add("DPoP Key Thumbprint" to thumbprint)
+            }
+            return "Current User" to rows
+        }
+
+        /**
+         * Builds the "RTR" (Refresh Token Rotation) section for the developer
+         * info screen.
+         *
+         * @param currentUser The current user account, or null if no user is
+         * logged in.
+         * @param rtrActive True if the RTR feature flag (ftr_RT) is registered
+         * for the current user.
+         * @return An "RTR" section with "RTR Active" and "Last Rotation" rows.
+         * Per-user fields show "N/A" when there is no current user; "Last
+         * Rotation" shows "Never" until the first confirmed rotation.
+         */
+        internal fun parseRtrSection(currentUser: UserAccount?, rtrActive: Boolean) =
+            if (currentUser == null) {
+                "RTR" to listOf(
+                    "RTR Active" to "N/A",
+                    "Last Rotation" to "N/A",
+                )
+            } else {
+                "RTR" to listOf(
+                    "RTR Active" to rtrActive.toString(),
+                    "Last Rotation" to (currentUser.lastTokenRotationTime?.ifBlank { "Never" } ?: "Never"),
+                )
+            }
+
+        /**
+         * Builds the "App Attestation" section for the developer info screen.
+         *
+         * @param appAttestationClient The app attestation client, or null if not configured.
+         * @param currentUser The current user account, or null if no user is logged in.
+         * @param aaFeatureActive True if the AA feature flag is registered for the current user.
+         * @return An "App Attestation" section with rows for enabled state, API host,
+         * Google Cloud Project ID, integrity provider readiness, and feature flag.
+         */
+        internal fun parseAppAttestationSection(
+            appAttestationClient: AppAttestationClient?,
+            currentUser: UserAccount?,
+            aaFeatureActive: Boolean,
+        ): DevInfoSection {
+            val attestationEnabled = appAttestationClient != null && appAttestationClient.apiHostName != null
+            val apiHost = appAttestationClient?.apiHostName ?: "N/A"
+            val gcpProjectId = if (appAttestationClient != null) {
+                appAttestationClient.googleCloudProjectId.toString()
+            } else "N/A"
+            val providerReady = when {
+                appAttestationClient == null -> "N/A"
+                appAttestationClient.integrityTokenProvider != null -> "true"
+                else -> "false"
+            }
+            val featureFlag = when {
+                currentUser == null -> "N/A"
+                aaFeatureActive -> "true"
+                else -> "false"
+            }
+            return "App Attestation" to listOf(
+                "Attestation Enabled" to attestationEnabled.toString(),
+                "API Host" to apiHost,
+                "Google Cloud Project ID" to gcpProjectId,
+                "Integrity Provider Ready" to providerReady,
+                "Used in Last Auth" to featureFlag,
             )
         }
 
@@ -179,23 +213,5 @@ data class DevSupportInfo(
 
             return values
         }
-    }
-}
-
-/**
- * Finds data pairs given a list of keys.  Pairs are removed from the original list.
- */
-private fun MutableList<Pair<String, String>>.createSection(sectionTitle: String, vararg keys: String): DevInfoSection? {
-    val values = keys.mapNotNull { key ->
-        find { it.first == key }?.let { pair ->
-            remove(pair)
-            pair
-        }
-    }
-
-    return if (values.isNotEmpty()) {
-        sectionTitle to values
-    } else {
-        null
     }
 }

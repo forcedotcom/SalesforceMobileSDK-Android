@@ -27,8 +27,11 @@
 package com.salesforce.androidsdk.accounts;
 
 import static androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_CREDENTIALS_IDENTIFIER;
+import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_TOKEN_TYPE;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.TEST_USERNAME;
 import static com.salesforce.androidsdk.accounts.UserAccountTest.checkSameUserAccount;
+import static com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -41,6 +44,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator;
@@ -192,6 +196,85 @@ public class UserAccountManagerTest {
                 staleUser.getRefreshToken());
     }
 
+    /*
+     * Regression test for DPoP fields not persisted in AccountManager.
+     *
+     * credentialsIdentifier and tokenType were omitted from buildAuthBundle /
+     * buildUserAccount, so both came back null after any process restart.
+     * This caused the DPoP proof to be skipped on token refresh, resulting in
+     * the server rejecting the request with "app requires proof of possession".
+     */
+    @Test
+    public void test_givenDPoPAccount_whenCreateAndBuildUserAccount_thenCredentialsIdentifierAndTokenTypeRoundTrip() {
+        UserAccount userAccount = UserAccountTest.createTestAccount();
+        Assert.assertEquals("Precondition: test account must have credentialsIdentifier set",
+                TEST_CREDENTIALS_IDENTIFIER, userAccount.getCredentialsIdentifier());
+        Assert.assertEquals("Precondition: test account must have tokenType set",
+                TEST_TOKEN_TYPE, userAccount.getTokenType());
+
+        userAccMgr.createAccount(userAccount);
+        Account account = userAccMgr.getCurrentAccount();
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+
+        Assert.assertEquals("credentialsIdentifier must survive createAccount → buildUserAccount round-trip",
+                TEST_CREDENTIALS_IDENTIFIER, restored.getCredentialsIdentifier());
+        Assert.assertEquals("tokenType must survive createAccount → buildUserAccount round-trip",
+                TEST_TOKEN_TYPE, restored.getTokenType());
+    }
+
+    /*
+     * Regression test: updateAccount must also persist credentialsIdentifier and tokenType.
+     */
+    @Test
+    public void test_givenDPoPAccount_whenUpdateAccount_thenCredentialsIdentifierAndTokenTypeRoundTrip() {
+        UserAccount original = UserAccountTest.createTestAccount();
+        userAccMgr.createAccount(original);
+        Account account = userAccMgr.getCurrentAccount();
+
+        final String newCredId = "updated-credentials-id";
+        final String newTokenType = "DPoP";
+        UserAccount updated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .credentialsIdentifier(newCredId)
+                .tokenType(newTokenType)
+                .build();
+        userAccMgr.updateAccount(account, updated);
+
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals("credentialsIdentifier must survive updateAccount → buildUserAccount round-trip",
+                newCredId, restored.getCredentialsIdentifier());
+        Assert.assertEquals("tokenType must survive updateAccount → buildUserAccount round-trip",
+                newTokenType, restored.getTokenType());
+    }
+
+    /*
+     * The RTR rotation timestamp must survive the full AccountManager
+     * persistence path (encrypt on updateAccount → decrypt on
+     * buildUserAccount), not just in-memory JSON/Bundle, so the "Last
+     * Rotation" value persists across an app restart. createTestAccount()
+     * leaves lastTokenRotationTime null, so this is the only test that
+     * exercises the new KEY_LAST_TOKEN_ROTATION_TIME encrypt/decrypt branch.
+     */
+    @Test
+    public void test_givenRotatedAccount_whenUpdateAccount_thenLastTokenRotationTimeRoundTrips() {
+        UserAccount original = UserAccountTest.createTestAccount();
+        Assert.assertNull("Precondition: rotation timestamp must start unset",
+                original.getLastTokenRotationTime());
+        userAccMgr.createAccount(original);
+        Account account = userAccMgr.getCurrentAccount();
+
+        final String rotationTime = "2026-07-30T12:34:56Z";
+        UserAccount rotated = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .lastTokenRotationTime(rotationTime)
+                .build();
+        userAccMgr.updateAccount(account, rotated);
+
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+        Assert.assertEquals("lastTokenRotationTime must survive updateAccount → buildUserAccount round-trip",
+                rotationTime, restored.getLastTokenRotationTime());
+    }
+
     /**
      * Test to get all authenticated users.
      */
@@ -205,6 +288,22 @@ public class UserAccountManagerTest {
         users = userAccMgr.getAuthenticatedUsers();
         Assert.assertEquals("There should be 2 authenticated users", 2, users.size());
         checkSameUserAccount(secondUser, users.get(1));
+    }
+
+    /**
+     * AccountManager records that cannot be rebuilt are omitted without changing the nullable
+     * empty-result contract.
+     */
+    @Test
+    public void testGetAuthenticatedUsersOmitsInvalidAccount() {
+        Assert.assertTrue(accMgr.addAccountExplicitly(
+                new Account("incomplete", TEST_ACCOUNT_TYPE),
+                null,
+                null));
+
+        final List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
+
+        Assert.assertNull("Incomplete accounts should not be returned", users);
     }
 
     /**
@@ -284,6 +383,118 @@ public class UserAccountManagerTest {
         Assert.assertEquals(OAuth2.LogoutReason.USER_LOGOUT, logoutCompleteReceiver.getLastReasonReceived());
         Assert.assertNotNull(logoutCompleteReceiver.getLastUserAccountReceived());
         Assert.assertEquals(TEST_USERNAME, logoutCompleteReceiver.getLastUserAccountReceived().getUsername());
+    }
+
+    /**
+     * Alternate-community accounts can share a Salesforce user and org. Account name selects the
+     * exact persisted Android account record, so signing out one must not select the other.
+     */
+    @Test
+    public void testSignoutUserRequiresExactAccountNameForSameUserAndOrg() {
+        final UserAccount primaryUser = createTestAccountInAccountManager(userAccMgr);
+        final UserAccount alternateCommunityUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(primaryUser)
+                .accountName("alternate-community-account")
+                .communityId("alternate-community-id")
+                .communityUrl("https://alternate-community.example.com")
+                .build();
+        userAccMgr.createAccount(alternateCommunityUser);
+
+        Assert.assertEquals(primaryUser.getAccountName(), userAccMgr.buildAccount(primaryUser).name);
+        Assert.assertEquals(alternateCommunityUser.getAccountName(),
+                userAccMgr.buildAccount(alternateCommunityUser).name);
+
+        userAccMgr.signoutUser(alternateCommunityUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        final List<UserAccount> remainingUsers = userAccMgr.getAuthenticatedUsers();
+        Assert.assertEquals("Only the exact alternate-community account should be removed",
+                1, remainingUsers.size());
+        Assert.assertEquals(primaryUser.getAccountName(), remainingUsers.get(0).getAccountName());
+    }
+
+    @Test
+    public void testSignoutUserFailsClosedWhenAccountNameDoesNotMatchSameUserAndOrg() {
+        final UserAccount persistedUser = createTestAccountInAccountManager(userAccMgr);
+        final UserAccount staleUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(persistedUser)
+                .accountName("missing-alternate-community-account")
+                .build();
+
+        Assert.assertNull(userAccMgr.buildAccount(staleUser));
+        userAccMgr.signoutUser(staleUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        final List<UserAccount> remainingUsers = userAccMgr.getAuthenticatedUsers();
+        Assert.assertEquals("A failed exact-identity lookup must not fall back to the current user",
+                1, remainingUsers.size());
+        Assert.assertEquals(persistedUser.getAccountName(), remainingUsers.get(0).getAccountName());
+    }
+
+    @Test
+    public void testSignoutUserPurgesMalformedExactAccountWithoutTouchingCurrentUser() {
+        final UserAccount malformedUser = createTestAccountInAccountManager(userAccMgr);
+        final Account malformedAccount = userAccMgr.buildAccount(malformedUser);
+        final UserAccount currentUser = createOtherTestAccountInAccountManager();
+        Assert.assertNotNull(malformedAccount);
+
+        // Keep the exact Android Account and user/org IDs, but remove a field required to rebuild a
+        // usable authenticated user.
+        accMgr.setUserData(malformedAccount, KEY_INSTANCE_URL, null);
+        Assert.assertNull(userAccMgr.buildUserAccount(malformedAccount));
+
+        userAccMgr.signoutUser(malformedUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        final Account[] remainingAccounts = accMgr.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Assert.assertEquals("The malformed persisted account must be removed locally",
+                1, remainingAccounts.length);
+        Assert.assertEquals(currentUser.getAccountName(), remainingAccounts[0].name);
+        checkSameUserAccount(currentUser, userAccMgr.getCurrentUser());
+    }
+
+    @Test
+    public void testSignoutUserPurgesMalformedCurrentAccountAndClearsCurrentSelection() {
+        final UserAccount malformedUser = createTestAccountInAccountManager(userAccMgr);
+        final Account malformedAccount = userAccMgr.buildAccount(malformedUser);
+        final UserAccount otherUser = createOtherTestAccountInAccountManager();
+        Assert.assertNotNull(malformedAccount);
+        userAccMgr.switchToUser(malformedUser);
+
+        accMgr.setUserData(malformedAccount, KEY_INSTANCE_URL, null);
+        Assert.assertNull(userAccMgr.buildUserAccount(malformedAccount));
+
+        userAccMgr.signoutUser(malformedUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        final Account[] remainingAccounts = accMgr.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Assert.assertEquals(1, remainingAccounts.length);
+        Assert.assertEquals(otherUser.getAccountName(), remainingAccounts[0].name);
+        Assert.assertNull("Removed malformed user must not remain selected",
+                userAccMgr.getStoredUserId());
+        Assert.assertNull("Removed malformed org must not remain selected",
+                userAccMgr.getStoredOrgId());
+    }
+
+    @Test
+    public void testSignoutUserKeepsCurrentSelectionForValidAlternateCommunitySibling() {
+        final UserAccount malformedUser = createTestAccountInAccountManager(userAccMgr);
+        final Account malformedAccount = userAccMgr.buildAccount(malformedUser);
+        final UserAccount siblingUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(malformedUser)
+                .accountName("alternate-community-account")
+                .communityId("alternate-community")
+                .build();
+        userAccMgr.createAccount(siblingUser);
+        Assert.assertNotNull(malformedAccount);
+
+        accMgr.setUserData(malformedAccount, KEY_INSTANCE_URL, null);
+        Assert.assertNull(userAccMgr.buildUserAccount(malformedAccount));
+
+        userAccMgr.signoutUser(malformedUser, null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        final List<UserAccount> remainingUsers = userAccMgr.getAuthenticatedUsers();
+        Assert.assertEquals(1, remainingUsers.size());
+        checkSameUserAccount(siblingUser, remainingUsers.get(0));
+        Assert.assertEquals(siblingUser.getUserId(), userAccMgr.getStoredUserId());
+        Assert.assertEquals(siblingUser.getOrgId(), userAccMgr.getStoredOrgId());
+        checkSameUserAccount(siblingUser, userAccMgr.getCurrentUser());
     }
 
     /**
@@ -384,4 +595,5 @@ public class UserAccountManagerTest {
             return lastUserAccountReceived;
         }
     }
+
 }

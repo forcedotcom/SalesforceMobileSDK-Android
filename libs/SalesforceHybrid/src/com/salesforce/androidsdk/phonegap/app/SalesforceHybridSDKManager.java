@@ -31,6 +31,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.mobilesync.app.MobileSyncSDKManager;
 import com.salesforce.androidsdk.mobilesync.config.SyncsConfig;
@@ -148,13 +149,19 @@ public class SalesforceHybridSDKManager extends MobileSyncSDKManager {
 	@NonNull
     @Override
 	public final String getUserAgent(@NonNull String qualifier) {
+		return getUserAgent(qualifier, null);
+	}
+
+	@NonNull
+	@Override
+	public final String getUserAgent(@NonNull String qualifier, @androidx.annotation.Nullable UserAccount user) {
 		final BootConfig config = BootConfig.getBootConfig(context);
 		if (config.isLocal()) {
 			qualifier = qualifier + "Local";
 		} else {
 			qualifier = qualifier + "Remote";
 		}
-		return super.getUserAgent(qualifier);
+		return super.getUserAgent(qualifier, user);
 	}
 
     @NonNull

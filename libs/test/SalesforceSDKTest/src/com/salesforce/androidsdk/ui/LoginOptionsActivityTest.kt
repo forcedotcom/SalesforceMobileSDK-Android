@@ -77,19 +77,23 @@ class LoginOptionsActivityTest {
 
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
+    private var originalForceAdvancedAuth: Boolean = true
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
     private lateinit var scopesField: SemanticsNodeInteraction
     private lateinit var webserverToggle: SemanticsNodeInteraction
     private lateinit var hybridToggle: SemanticsNodeInteraction
+    private lateinit var forceAdvancedAuthToggle: SemanticsNodeInteraction
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun setup() {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
+        originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -110,16 +114,21 @@ class LoginOptionsActivityTest {
         hybridToggle = composeTestRule.onNodeWithContentDescription(
             composeTestRule.activity.getString(R.string.sf__login_options_hybrid_toggle_content_description),
         )
+        forceAdvancedAuthToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
+        )
         saveButton = composeTestRule.onNodeWithText(
-            composeTestRule.activity.getString(R.string.sf__server_url_save),
+            composeTestRule.activity.getString(R.string.sf__login_options_save_and_login),
         )
     }
 
     @After
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun teardown() {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
     }
@@ -233,6 +242,59 @@ class LoginOptionsActivityTest {
             false,
             composeTestRule.activity.useHybridToken.value
         )
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun loginOptionsActivity_ForceAdvancedAuthToggle_ReflectsAndUpdatesSdkManager() {
+        // Set initial state via the activity's LiveData: force flag off.
+        composeTestRule.activity.runOnUiThread {
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+            composeTestRule.activity.forceAdvancedAuth.value = false
+        }
+        composeTestRule.waitForIdle()
+
+        // The toggle reflects the SDK manager value.
+        forceAdvancedAuthToggle.performScrollTo()
+        forceAdvancedAuthToggle.assertIsDisplayed()
+        forceAdvancedAuthToggle.assertIsOff()
+        assertFalse(
+            "Force Advanced Authentication should be disabled initially",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+
+        // Toggling on writes the value through to the SDK manager.
+        forceAdvancedAuthToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        forceAdvancedAuthToggle.assertIsOn()
+        assertTrue(
+            "Force Advanced Authentication should be enabled after toggling on",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+
+        // Toggling off writes the value back through to the SDK manager.
+        forceAdvancedAuthToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        forceAdvancedAuthToggle.assertIsOff()
+        assertFalse(
+            "Force Advanced Authentication should be disabled after toggling off",
+            SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Deliberately exercises the deprecated forceAdvancedAuthentication flag.
+    fun devSupportInfo_IncludesForceAdvancedAuthentication_WithCurrentValue() {
+        // The dev-support info surfaces the force-advanced-authentication flag and its value.
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = true
+        val authConfigOn = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("true", authConfigOn?.find { it.first == "Force Advanced Authentication" }?.second)
+
+        SalesforceSDKManager.getInstance().forceAdvancedAuthentication = false
+        val authConfigOff = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals("false", authConfigOff?.find { it.first == "Force Advanced Authentication" }?.second)
     }
 
     @Test
@@ -410,4 +472,89 @@ class LoginOptionsActivityTest {
         composeTestRule.activity.finish()
         assertTrue(SalesforceSDKManager.getInstance().loginDevMenuReload)
     }
+
+    // region Welcome Discovery — DiscoveryResultEditor
+
+    @Test
+    fun applySimulatedDiscoveryResult_emptyHost_returnsNull() {
+        assertNull(applySimulatedDiscoveryResult(loginHost = "", username = "user@example.com"))
+        assertNull(applySimulatedDiscoveryResult(loginHost = "   ", username = "user@example.com"))
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_validHost_returnsTrimmedResult() {
+        val result = applySimulatedDiscoveryResult(
+            loginHost = "  test.my.salesforce.com  ",
+            username = "  user@example.com  ",
+        )
+        assertNotNull(result)
+        assertEquals("test.my.salesforce.com", result?.loginHost)
+        assertEquals("user@example.com", result?.loginHint)
+    }
+
+    @Test
+    fun applySimulatedDiscoveryResult_validHostEmptyUser_keepsEmptyUser() {
+        // iOS allows empty user (host-only), so do we.
+        val result = applySimulatedDiscoveryResult(
+            loginHost = "test.my.salesforce.com",
+            username = "",
+        )
+        assertNotNull(result)
+        assertEquals("test.my.salesforce.com", result?.loginHost)
+        assertEquals("", result?.loginHint)
+    }
+
+    @Test
+    fun discoveryResultEditor_saveButton_armsSdkManagerSimulatedResult() {
+        // The editor is gated on isUiTesting; flip it on for this test (debug build)
+        // and recompose so the gated UI is rendered.
+        SalesforceSDKManager.getInstance().isUiTesting = true
+        composeTestRule.activity.runOnUiThread { composeTestRule.activity.recreate() }
+        composeTestRule.waitForIdle()
+
+        val toggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_toggle_content_description
+            ),
+        )
+        val saveButton = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_save_button_content_description
+            ),
+        )
+        val hostField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_login_host_field_content_description
+            ),
+        )
+        val userField = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(
+                R.string.sf__login_options_discovery_username_field_content_description
+            ),
+        )
+
+        assertNull(SalesforceSDKManager.getInstance().simulatedDiscoveryResult)
+
+        toggle.performScrollTo()
+        toggle.performClick()
+        composeTestRule.waitForIdle()
+
+        hostField.performScrollTo()
+        hostField.performTextInput("test.my.salesforce.com")
+        userField.performTextInput("user@example.com")
+        saveButton.performScrollTo()
+        saveButton.performClick()
+        composeTestRule.waitForIdle()
+
+        val armed = SalesforceSDKManager.getInstance().simulatedDiscoveryResult
+        assertNotNull(armed)
+        assertEquals("test.my.salesforce.com", armed?.loginHost)
+        assertEquals("user@example.com", armed?.loginHint)
+
+        // Cleanup: clear simulation + UI testing flag so they don't leak.
+        SalesforceSDKManager.getInstance().simulatedDiscoveryResult = null
+        SalesforceSDKManager.getInstance().isUiTesting = false
+    }
+
+    // endregion
 }

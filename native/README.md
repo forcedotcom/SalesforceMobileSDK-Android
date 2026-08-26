@@ -21,6 +21,7 @@ Inside the $NATIVE_DIR, you will find several projects:
 2. **NativeSampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
 3. **NativeSampleApps/AppConfigurator**: An app to specify runtime configurations for ConfiguredApp (it allows configuration of login server and oauth consumer key and redirect uri) 
 4. **NativeSampleApps/ConfiguredApp**: An app that consumes the runtime configurations specified with AppConfigurator
+5. **NativeSampleApps/AuthFlowTester**: An app for UI automation testing of authentication flows
 
 # Running sample apps from Android Studio
 

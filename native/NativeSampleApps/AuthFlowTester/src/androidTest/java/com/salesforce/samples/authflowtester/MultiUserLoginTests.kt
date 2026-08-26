@@ -28,24 +28,41 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.platform.app.InstrumentationRegistry
+import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
+import com.salesforce.androidsdk.auth.OAuth2
+import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
-import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
-import org.junit.Assert.assertNotEquals
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import com.salesforce.samples.authflowtester.testUtility.testConfig
+import okhttp3.FormBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URI
 
 /**
  * Tests for multi-user login scenarios.
@@ -105,6 +122,77 @@ class MultiUserLoginTests: AuthFlowTest() {
         assert(otherUserRefreshToken == otherUserRevokeRefreshToken)
     }
 
+    /**
+     * Retains User A's real SDK client, makes User B current, then forces A through the complete
+     * 401 -> token refresh -> request retry path without switching the application back to A.
+     */
+    @Test
+    fun testRetainedUserClient_refreshesWhileOtherUserCurrent() {
+        loginAndValidate(knownAppConfig = CA_OPAQUE)
+
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val userAccountManager = sdkManager.userAccountManager
+        val userA = requireNotNull(userAccountManager.currentUser)
+        val managerA = ClientManager(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            userA,
+        )
+        val clientA = requireNotNull(managerA.peekRestClient())
+        assertTrue(
+            "Retained client should belong to User A",
+            userA.userId == clientA.clientInfo.userId && userA.orgId == clientA.clientInfo.orgId,
+        )
+        val originalAAccessToken = requireNotNull(userA.authToken)
+
+        loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
+        val userB = requireNotNull(userAccountManager.currentUser)
+        val accountB = requireNotNull(userAccountManager.buildAccount(userB))
+        val originalBAccessToken = requireNotNull(userB.authToken)
+        val originalBRefreshToken = requireNotNull(userB.refreshTokenForPersistence)
+
+        revokeAccessToken(clientA, originalAAccessToken)
+        val response = clientA.sendSync(RestRequest.getRequestForUserInfo())
+        try {
+            assertTrue("Retained User A request should succeed after refresh", response.isSuccess)
+            val responseUser = response.asJSONObject()
+            assertTrue(
+                "The retained client request should authenticate as User A",
+                userA.userId == responseUser.optString("user_id") &&
+                        userA.orgId == responseUser.optString("organization_id"),
+            )
+        } finally {
+            response.consumeQuietly()
+        }
+
+        val refreshedA = requireNotNull(
+            userAccountManager.buildUserAccount(requireNotNull(managerA.account))
+        )
+        val unchangedB = requireNotNull(userAccountManager.buildUserAccount(accountB))
+        assertTrue(
+            "User A's access token should change after refresh",
+            originalAAccessToken != refreshedA.authToken,
+        )
+        assertTrue(
+            "User B's access token should not change during User A's refresh",
+            originalBAccessToken == unchangedB.authToken,
+        )
+        assertTrue(
+            "User B's refresh token should not change during User A's refresh",
+            originalBRefreshToken == unchangedB.refreshTokenForPersistence,
+        )
+        assertTrue("User B should remain current", userB == userAccountManager.currentUser)
+
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        )
+        app.validateApiRequest()
+    }
+
     // Both users use the same ECA JWT app type and different scopes.
     @Test
     fun testSameApp_ECA_DifferentScopes() {
@@ -121,11 +209,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
 
         // Switch back to initial user
-        switchToUserAndValidate(user)
+        switchToUserAndValidate(user, isJwt = true)
         app.validateOAuthValues(knownAppConfig = KnownAppConfig.ECA_JWT, scopeSelection = SUBSET)
 
         // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        switchToUserAndValidate(otherUser, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
 
@@ -145,11 +233,11 @@ class MultiUserLoginTests: AuthFlowTest() {
         )
 
         // Switch back to initial user
-        switchToUserAndValidate(user)
+        switchToUserAndValidate(user, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = EMPTY)
 
         // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        switchToUserAndValidate(otherUser, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
     }
 
@@ -166,22 +254,22 @@ class MultiUserLoginTests: AuthFlowTest() {
         switchToUserAndValidate(user)
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
 
-        // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        // Switch back to other user (BEACON_JWT → JT, BN)
+        switchToUserAndValidate(otherUser, isJwt = true, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
     }
 
     // First user dynamic config, second user boot config, different apps, same scopes (default).
     @Test
     fun testFirstDynamic_SecondStatic_DifferentApps() {
-        // Initial user
+        // Initial user: ECA JWT → A2, JT
         loginAndValidate(knownAppConfig = ECA_JWT)
 
-        // Other user
+        // Other user: CA Opaque → A2, OT
         loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still have JT (not OT)
+        switchToUserAndValidate(user, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
 
         // Switch back to other user
@@ -189,21 +277,21 @@ class MultiUserLoginTests: AuthFlowTest() {
         app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
     }
 
-    // Both users use different app types and differetn scopes.
+    // Both users use different app types and different scopes.
     @Test
     fun testDifferentApps_differentScopes() {
-        // Initial user
+        // Initial user: Beacon Opaque → A2, OT, BN
         loginAndValidate(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
 
-        // Other user
+        // Other user: ECA JWT → A2, JT, no BN
         loginOtherUserAndValidate(knownAppConfig = ECA_JWT)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still have OT, BN (not JT, no BN leak)
+        switchToUserAndValidate(user, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = SUBSET)
 
-        // Switch back to other user
-        switchToUserAndValidate(otherUser)
+        // Switch back to other user — must still have JT, no BN
+        switchToUserAndValidate(otherUser, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
     }
 
@@ -211,25 +299,98 @@ class MultiUserLoginTests: AuthFlowTest() {
     // since tokens are read from disk, not memory, on user switch.
     @Test
     fun testMultiUser_tokenMigration() {
-        // Initial user
+        // Initial user: Beacon JWT → A2, JT, BN
         loginAndValidate(knownAppConfig = BEACON_JWT, scopeSelection = SUBSET)
         val (userAccessToken, userRefreshToken) = app.getTokens()
 
-        // Other user
+        // Other user: CA Opaque → A2, OT
         loginOtherUserAndValidate(knownAppConfig = CA_OPAQUE)
 
-        // Migrate current user
+        // Migrate current user (both users logged in → isMultiUser = true)
+        // After migration: other user gains TM + (stays OT, loses BN since CA→BEACON_OPAQUE means gains BN)
         migrateAndValidate(
             knownAppConfig = BEACON_OPAQUE,
             knownUserConfig = otherUser,
+            isMultiUser = true,
         )
 
-        // Switch back to initial user and assert unaltered.
-        switchToUserAndValidate(user)
+        // Switch back to initial user — must still be unaltered: JT, BN, no TM
+        switchToUserAndValidate(user, isJwt = true, isBeacon = true)
         app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = SUBSET)
         val (userSwitchAccessToken, userSwitchRefreshToken) = app.getTokens()
         assertEquals(userAccessToken, userSwitchAccessToken)
         assertEquals(userRefreshToken, userSwitchRefreshToken)
+    }
+
+    /**
+     * Revokes the secondary user's refresh token server-side and verifies
+     * that the SDK logs that user out on the next refresh attempt while
+     * leaving the primary user untouched.
+     */
+    @Test
+    fun testMultiUser_revokeOtherUserRefreshToken() {
+        // Initial user (User A) logs in with the static boot config (CA Opaque).
+        loginAndValidate(knownAppConfig = CA_OPAQUE)
+        val (userAccessToken, userRefreshToken) = app.getTokens()
+
+        // Other user (User B) logs in with a dynamic config (ECA Opaque).
+        loginOtherUserAndValidate(knownAppConfig = ECA_OPAQUE)
+
+        // Snapshot User B's account before revocation.
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+        val otherUserAccount = userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        val otherUserRefreshToken = otherUserAccount.refreshToken
+        val otherUserLoginServer = otherUserAccount.loginServer
+
+        // Invalidate User B's access token first, while it is still valid.
+        // The in-app revoke button uses the access token to authenticate
+        // the POST, so it must run before any server-side revocation that
+        // could invalidate the access token as a side effect.
+        app.revokeAccessToken()
+
+        // Server-side revoke User B's refresh token. The next refresh
+        // attempt will fail and the SDK will log User B out.
+        OAuth2.revokeRefreshToken(
+            HttpAccess.DEFAULT,
+            URI(otherUserLoginServer),
+            otherUserRefreshToken,
+            OAuth2.LogoutReason.UNKNOWN,
+        )
+
+        // Trigger an API request. The SDK detects the missing access token,
+        // attempts a refresh, the refresh fails (refresh token revoked
+        // above), getNewAuthToken returns null, and SalesforceSDKManager
+        // logs User B out.
+        app.triggerApiRequestIgnoringResult()
+
+        // Poll until User B is gone, rather than sleeping a fixed duration.
+        waitForUserCount(userAccountManager, expectedCount = 1)
+
+        val remainingUsers = userAccountManager.authenticatedUsers ?: emptyList()
+        assertEquals(
+            "Expected exactly one user (User A) to remain after revoking User B's refresh token",
+            1, remainingUsers.size,
+        )
+        val userAUsername = testConfig.getUser(REGULAR_AUTH, user).username
+        assertEquals(userAUsername, remainingUsers.first().username)
+
+        // With User A, validate the original tokens are intact and a refresh still succeeds.
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        )
+        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
+        val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
+        assertEquals(userAccessToken, userPostAccessToken)
+        assertEquals(userRefreshToken, userPostRefreshToken)
+
+        app.revokeAccessToken()
+        app.validateApiRequest()
     }
 
     @Test
@@ -251,19 +412,26 @@ class MultiUserLoginTests: AuthFlowTest() {
 
         // Validate nothing changed for "otherUser" before user switch
         val (otherUserPostAccessToken, otherUserPostRefreshToken) = app.getTokens()
-        app.validateUser(knownLoginHostConfig = REGULAR_AUTH, knownUserConfig = otherUser)
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        )
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
         assertEquals(otherUserAccessToken, otherUserPostAccessToken)
         assertEquals(otherUserRefreshToken, otherUserPostRefreshToken)
 
-        // Switch back to initial user
-        switchToUserAndValidate(user)
+        // Switch back to initial user (migrated to ECA_JWT → JT, TM)
+        switchToUserAndValidate(user, isJwt = true, wasMigrated = true)
         val (userPostAccessToken, userPostRefreshToken) = app.getTokens()
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
         assertNotEquals(userAccessToken, userPostAccessToken)
         assertNotEquals(userRefreshToken, userPostRefreshToken)
 
-        // Switch back to other user
+        // Switch back to other user (ECA_OPAQUE → OT, no TM)
         switchToUserAndValidate(otherUser)
         app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
 
@@ -280,7 +448,9 @@ class MultiUserLoginTests: AuthFlowTest() {
         scopeSelection: ScopeSelection = EMPTY,
         useWebServerFlow: Boolean = true,
         useHybridAuthToken: Boolean = true,
+        useDPoP: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        forceAdvancedAuthentication: Boolean = true,
     ) {
         app.addNewAccount()
         loginAndValidate(
@@ -288,17 +458,440 @@ class MultiUserLoginTests: AuthFlowTest() {
             scopeSelection,
             useWebServerFlow,
             useHybridAuthToken,
+            useDPoP,
             knownLoginHostConfig,
-            knownUserConfig = otherUser,
+            otherUser,
+            forceAdvancedAuthentication = forceAdvancedAuthentication,
+            isMultiUser = true,
         )
     }
 
     private fun switchToUserAndValidate(
         knownUserConfig: KnownUserConfig,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
+        expectAdvancedAuth: Boolean = true,
+        expectedBMarker: String? = if (expectAdvancedAuth) {
+            Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+        } else {
+            null
+        },
+        expectedAMarker: String? = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
+        wasMigrated: Boolean = false,
     ) {
-        app.switchToUser(knownUserConfig)
+        app.switchToUser(knownUserConfig, knownLoginHostConfig)
         composeTestRule.waitForIdle()
-        app.validateUser(knownLoginHostConfig, knownUserConfig)
+        app.validateUser(
+            knownLoginHostConfig,
+            knownUserConfig,
+            isMultiUser = true,
+            expectAdvancedAuth = expectAdvancedAuth,
+            expectedBMarker = expectedBMarker,
+            expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
+            isBeacon = isBeacon,
+            wasMigrated = wasMigrated,
+        )
+    }
+
+    /** Revokes [accessToken] through [client] without consulting the application current user. */
+    private fun revokeAccessToken(client: RestClient, accessToken: String) {
+        val body = FormBody.Builder()
+            .add("token", accessToken)
+            .build()
+        val request = RestRequest(
+            RestRequest.RestMethod.POST,
+            RestRequest.RestEndpoint.INSTANCE,
+            "/services/oauth2/revoke",
+            body,
+            emptyMap(),
+        )
+
+        val response = client.sendSync(request)
+        try {
+            assertTrue("Access-token revocation should succeed", response.isSuccess)
+        } finally {
+            response.consumeQuietly()
+        }
+    }
+
+    /**
+     * Polls the user account manager until the authenticated user count
+     * reaches [expectedCount]. Used after triggering an automatic logout to
+     * avoid a fixed-duration sleep.
+     */
+    private fun waitForUserCount(
+        userAccountManager: com.salesforce.androidsdk.accounts.UserAccountManager,
+        expectedCount: Int,
+        timeoutMs: Long = USER_COUNT_TIMEOUT_MS,
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            val count = userAccountManager.authenticatedUsers?.size ?: 0
+            if (count == expectedCount) return
+            Thread.sleep(POLL_INTERVAL_MS)
+        }
+        val finalCount = userAccountManager.authenticatedUsers?.size ?: 0
+        throw AssertionError(
+            "Timed out after ${timeoutMs}ms waiting for user count to reach " +
+                "$expectedCount (was $finalCount)"
+        )
+    }
+
+    /**
+     * WebServer-NonHybrid+Opaque (A1, OT) vs WebServer-Hybrid+Jwt (A2, JT) across two live users.
+     * Detects A-marker and token-format leakage: if User B's A2 or JT bleeds into User A's
+     * session on switch, the expectedAMarker = A1 or isJwt = false assertion fires.
+     */
+    @Test
+    fun testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt() {
+        // User A: web-server non-hybrid → A1, OT
+        loginAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            useHybridAuthToken = false,
+        )
+
+        // User B: web-server hybrid, JWT app → A2, JT
+        loginOtherUserAndValidate(knownAppConfig = ECA_JWT)
+
+        // Switch back to User A — must still have A1, OT (not A2 or JT)
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A2, JT
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
+    }
+
+    /**
+     * Maximum orthogonality: WebServer-Hybrid+Beacon+Jwt (A2, JT, BN) vs WebServer-NonHybrid+Opaque
+     * (A1, OT, no BN). A-marker, token format, and beacon all differ simultaneously. A single
+     * per-user flag leakage manifests on at least two of the three axes.
+     */
+    @Test
+    fun testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque() {
+        // User A: web-server hybrid, beacon JWT → A2, JT, BN
+        loginAndValidate(knownAppConfig = BEACON_JWT)
+
+        // User B: web-server non-hybrid, ECA opaque → A1, OT, no BN
+        loginOtherUserAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            useHybridAuthToken = false,
+        )
+
+        // Switch back to User A — must still have A2, JT, BN
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            isBeacon = true,
+        )
+        app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A1, OT, no BN
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+    }
+
+    /**
+     * WebServer-Hybrid+Beacon+Opaque (A2, OT, BN) vs WebServer-NonHybrid+Opaque (A1, OT, no BN).
+     * Tests A-marker and BN leakage in both switch directions.
+     *
+     * Note: BN (beacon child consumer key) is only returned in the token-endpoint
+     * code-exchange response (web server flow), not in the user-agent flow's URL-fragment
+     * redirect. Both users therefore use web server flow; the beacon vs non-beacon dimension
+     * is what generates the detectable difference on this axis.
+     */
+    @Test
+    fun testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque() {
+        // User A: web-server hybrid, beacon opaque → A2, OT, BN
+        loginAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+        )
+
+        // User B: web-server non-hybrid, ECA opaque → A1, OT, no BN
+        loginOtherUserAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            useHybridAuthToken = false,
+        )
+
+        // Switch back to User A — must still have A2, OT, BN
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = false,
+            isBeacon = true,
+        )
+        app.validateOAuthValues(knownAppConfig = BEACON_OPAQUE, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A1, OT, no BN
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+    }
+
+    /**
+     * Verifies TM does not bleed from migrated User A to non-migrated User B, and that JT/OT
+     * and BN flags remain isolated after migration.
+     *
+     * User A: migrated from ECA_OPAQUE → ECA_JWT (gains TM + JT).
+     * User B: beacon opaque (OT, BN, no TM).
+     */
+    @Test
+    fun testMultiUser_TM_isolation() {
+        // User A: ECA opaque login → A2, OT
+        loginAndValidate(knownAppConfig = ECA_OPAQUE)
+
+        // User B: beacon opaque login → A2, OT, BN
+        loginOtherUserAndValidate(knownAppConfig = BEACON_OPAQUE)
+
+        // Migrate User B to ECA JWT — User B gains TM + JT (stays current user)
+        migrateAndValidate(
+            knownAppConfig = ECA_JWT,
+            knownUserConfig = otherUser,
+            isMultiUser = true,
+        )
+
+        // Switch to User A — must have OT, no TM, no BN (migration of User B must not bleed)
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+            wasMigrated = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+
+        // Switch back to User B — must have JT + TM (migration survived round-trip)
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            isBeacon = false,
+            wasMigrated = true,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
+    }
+
+    /**
+     * Verifies BW (browser-login) flag isolation between two users on the same REGULAR_AUTH
+     * server: User A uses user-agent flow (no BW), User B uses forced advanced auth (BW).
+     * Both users are on REGULAR_AUTH so they have distinct Salesforce user identities and
+     * their per-user feature sets are separate key entries in the SDK's perUserFeatures map.
+     * Mixing REGULAR_AUTH and ADVANCED_AUTH users risks them sharing the same orgId/userId
+     * if the advanced-auth domain is a custom My Domain for the same org, which would make
+     * per-user feature isolation untestable.
+     */
+    @Test
+    fun testAdvancedAuthUser_HasBWFlag_RegularAuthUser_DoesNot() {
+        // User A: user-agent flow (no BW, no forced advanced auth)
+        loginAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
+            useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
+            isMultiUser = false,
+        )
+
+        // User B: forced advanced auth via REGULAR_AUTH server — has BW (B4); now 2 users → MU
+        loginOtherUserAndValidate(
+            knownAppConfig = BEACON_OPAQUE,
+            knownLoginHostConfig = REGULAR_AUTH,
+            forceAdvancedAuthentication = true,
+        )
+
+        // Switch to User A — no BW, MU still present
+        switchToUserAndValidate(
+            user,
+            expectAdvancedAuth = false,
+            expectedBMarker = null,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+        )
+
+        // Switch back to User B — BW (B4) back, MU still present
+        switchToUserAndValidate(
+            otherUser,
+            REGULAR_AUTH,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isBeacon = true,
+        )
+
+        // Log out User B via SDK — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+
+        // Back on User A — MU gone, no BW (useWebServerFlow=false, useHybridAuthToken=true → A4)
+        app.validateUserAgent(
+            REGULAR_AUTH,
+            isMultiUser = false,
+            expectAdvancedAuth = false,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+        )
+    }
+
+    /**
+     * A1 (web-server non-hybrid) + OT vs A2 (web-server hybrid) + JT.
+     * Both A-marker and token-format differ, maximising leakage detectability:
+     * any per-user flag bleed manifests on at least one axis on each user switch.
+     *
+     * After User B logs out the test re-validates User A alone (no MU) to confirm
+     * that multi-user removal does not corrupt the remaining user's flags.
+     */
+    @Test
+    fun testFlagDiversity_NonHybridOpaqueVsHybridJwt() {
+        // User A: web-server non-hybrid, CA opaque → A1, OT, no BN
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            useHybridAuthToken = false,
+        )
+
+        // User B: web-server hybrid, ECA JWT → A2, JT, no BN
+        loginOtherUserAndValidate(knownAppConfig = ECA_JWT)
+
+        // Switch to User A — must still have A1, OT
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A2, JT
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = EMPTY)
+
+        // Logout User B — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+
+        // User A alone — A1, OT, no MU
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+    }
+
+    /**
+     * A1 (web-server non-hybrid) + JT + BN vs A2 (web-server hybrid) + OT, no BN.
+     * Three flags differ simultaneously: A-marker, token format, and beacon child key.
+     * Any single per-user flag leak is detectable on at least two axes.
+     *
+     * Note: BN (beacon child consumer key) is returned only in the token-endpoint
+     * code-exchange response (web server flow). User A uses web-server non-hybrid +
+     * BEACON_JWT to obtain both JT and BN under A1.
+     */
+    @Test
+    fun testFlagDiversity_BeaconNonHybridJwtVsHybridOpaque() {
+        // User A: web-server non-hybrid, beacon JWT → A1, JT, BN
+        loginAndValidate(
+            knownAppConfig = BEACON_JWT,
+            useHybridAuthToken = false,
+        )
+
+        // User B: web-server hybrid, ECA opaque → A2, OT, no BN
+        // ECA_OPAQUE (not CA_OPAQUE) is used so that needsLoginOptions=true, which re-enables
+        // the HybridAuthToken toggle that User A's login left disabled.
+        loginOtherUserAndValidate(knownAppConfig = ECA_OPAQUE)
+
+        // Switch to User A — must still have A1, JT, BN
+        switchToUserAndValidate(
+            user,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = true,
+            isBeacon = true,
+        )
+        app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
+
+        // Switch back to User B — must still have A2, OT, no BN
+        switchToUserAndValidate(
+            otherUser,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = false,
+            isBeacon = false,
+        )
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+
+        // Logout User B — auto-switches to User A; MU must be gone
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val otherUserAccount = sdkManager.userAccountManager.authenticatedUsers
+            ?.find { it.username == testConfig.getUser(REGULAR_AUTH, otherUser).username }
+            ?: throw AssertionError("Other user account not found")
+        sdkManager.logout(
+            account = sdkManager.userAccountManager.buildAccount(otherUserAccount),
+            frontActivity = null,
+            showLoginPage = false,
+        )
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+
+        // User A alone — A1, JT, BN, no MU
+        app.validateUser(
+            REGULAR_AUTH,
+            user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = true,
+            isBeacon = true,
+        )
+    }
+
+    companion object {
+        private const val USER_COUNT_TIMEOUT_MS = 15_000L
+        private const val POLL_INTERVAL_MS = 250L
     }
 }

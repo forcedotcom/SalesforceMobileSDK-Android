@@ -98,7 +98,12 @@ public class RestRequest {
     /**
      * application/json media type
      */
-    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
+    public static final MediaType MEDIA_TYPE_JSON = MediaType.get("application/json; charset=utf-8");
+
+    /**
+     * application/x-www-form-urlencoded media type
+     */
+    public static final MediaType MEDIA_TYPE_FORM_URLENCODED = MediaType.get("application/x-www-form-urlencoded");
 
     /**
      * utf_8 charset
@@ -319,7 +324,7 @@ public class RestRequest {
         this.method = method;
         this.endpoint = endpoint;
         this.path = path;
-        this.requestBody = requestBodyAsJson == null ? null : RequestBody.create(MEDIA_TYPE_JSON, requestBodyAsJson.toString());
+        this.requestBody = requestBodyAsJson == null ? null : RequestBody.create(requestBodyAsJson.toString(), MEDIA_TYPE_JSON);
         this.additionalHttpHeaders = additionalHttpHeaders;
         this.requestBodyAsJson = requestBodyAsJson;
     }
@@ -386,7 +391,7 @@ public class RestRequest {
     public static RestRequest getRequestForSingleAccess(String redirectUri) throws UnsupportedEncodingException {
         RequestBody requestBody = RequestBody.create(
                 "redirect_uri=" + URLEncoder.encode(redirectUri, UTF_8),
-                MediaType.parse("application/x-www-form-urlencoded")
+                MEDIA_TYPE_FORM_URLENCODED
         );
         return new RestRequest(RestMethod.POST, RestEndpoint.INSTANCE, RestAction.SINGLEACCESS.getPath(), requestBody, null);
     }
@@ -751,7 +756,7 @@ public class RestRequest {
         for (SObjectTree objectTree : objectTrees) {
             jsonTrees.put(objectTree.asJSON());
         }
-        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
+        RequestBody body = RequestBody.create(JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString(), MEDIA_TYPE_JSON);
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
     }
 

@@ -50,7 +50,9 @@ internal abstract class AppLockManager(
     internal var lastBackgroundTimestamp: Long = 0
 
     fun onAppForegrounded() {
-        if (shouldLock()) {
+        // Skip while already locked: re-locking here would relaunch the biometric prompt
+        // when Custom Tabs are used.
+        if (!locked && shouldLock()) {
             lock()
         }
     }

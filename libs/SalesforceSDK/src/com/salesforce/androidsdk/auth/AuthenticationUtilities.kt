@@ -44,8 +44,18 @@ import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FI
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.analytics.EventBuilderHelper.createAndStoreEventSync
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
+import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
@@ -62,6 +72,7 @@ import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -97,11 +108,13 @@ internal suspend fun onAuthFlowComplete(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
     consumerKey: String,
+    redirectUri: String? = null,
     onAuthFlowError: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
     onAuthFlowSuccess: (userAccount: UserAccount) -> Unit,
     buildAccountName: (username: String?, instanceServer: String?) -> String = ::defaultBuildAccountName,
     nativeLogin: Boolean = false,
     tokenMigration: Boolean = false,
+    credentialsIdentifier: String? = null,
     context: Context = SalesforceSDKManager.getInstance().appContext,
     userAccountManager: UserAccountManager = SalesforceSDKManager.getInstance().userAccountManager,
     blockIntegrationUser: Boolean = (SalesforceSDKManager.getInstance().shouldBlockSalesforceIntegrationUser &&
@@ -116,12 +129,16 @@ internal suspend fun onAuthFlowComplete(
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
+    onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
 ) {
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
 
-    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
-    val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
+    // Note: Can't use default parameter value for a suspended function parameter.
+    val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
+        fetchUserIdentity ?: { tr: TokenEndpointResponse ->
+            fetchUserIdentityWithRetry(tr, loginServer)
+        }
 
     if (blockIntegrationUser) {
         /*
@@ -163,7 +180,9 @@ internal suspend fun onAuthFlowComplete(
         .accountName(buildAccountName(userIdentity?.username, tokenResponse.instanceUrl))
         .loginServer(loginServer)
         .clientId(consumerKey)
+        .redirectUri(redirectUri)
         .nativeLogin(nativeLogin)
+        .credentialsIdentifier(credentialsIdentifier)
         .build()
 
     // Set additional administrator prefs if they exist
@@ -177,7 +196,70 @@ internal suspend fun onAuthFlowComplete(
 
     if (tokenMigration) {
         userAccountManager.persistAccount(account)
+
+        // TM: mark that this user was migrated; clear global residue so it does not bleed.
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
+
+        // JT/OT: token format may change with new credentials
+        if (account.tokenFormat == "jwt") {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+        } else {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+        }
+
+        // BN: beacon child app
+        if (account.beaconChildConsumerKey != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BEACON, account)
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BEACON, account)
+        }
+
+        // DP: DPoP-bound session. Token migration bypasses LoginActivity.onAuthFlowSuccess (the
+        // usual site of this marker), so an in-place upgrade to DPoP would otherwise never advertise
+        // the flag. tokenType is a per-session property, so mirror it onto the migrated account here.
+        if ("DPoP" == account.tokenType) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_DPOP, account)
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_DPOP, account)
+        }
     } else {
+        if (nativeLogin) {
+            // Native login bypasses LoginActivity.onAuthFlowSuccess, so A-marker per-user
+            // promotion and JT/OT/BN/TM writes must happen here.
+            val sdkManager = SalesforceSDKManager.getInstance()
+            val allAMarkers = listOf(
+                FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+                FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+                FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+                FEATURE_AUTH_TYPE_NATIVE,
+            )
+            val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+            for (marker in allAMarkers) {
+                sdkManager.unregisterUsedAppFeature(marker)
+                if (marker == activeAMarker) {
+                    sdkManager.registerUsedAppFeature(marker, account)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(marker, account)
+                }
+            }
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, account)
+            if (account.tokenFormat == "jwt") {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+            } else {
+                sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, account)
+                sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, account)
+            }
+            if (account.beaconChildConsumerKey != null) {
+                sdkManager.registerUsedAppFeature(FEATURE_BEACON, account)
+            } else {
+                sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, account)
+            }
+        }
         userAccountManager.createAccount(account)
         userAccountManager.switchToUser(account)
 
@@ -197,20 +279,39 @@ internal suspend fun onAuthFlowComplete(
             else -> USER_SWITCH_TYPE_DEFAULT
         }
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
-
-        // Kickoff the end of the flow before storing mobile policy to prevent launching
-        // the main activity over/after the screen lock.
-        startMainActivity()
     }
+
+    /*
+     * Register for push notifications if setup by the app. This must happen
+     * after the account has been persisted (createAccount/persistAccount
+     * above), because the push registration worker re-resolves the target
+     * account from AccountManager by org id and user id; enqueuing before the
+     * account is written races the persistence and makes that re-resolution
+     * fail.
+     */
+    register(context, account)
 
     // Let the calling process resume
     onAuthFlowSuccess(account)
 
-    // Screen lock required by mobile policy
-    handleScreenLockPolicy(userIdentity, account)
-
-    // Biometric authorization required by mobile policy
+    // Biometric authorization required by mobile policy.  This must run before
+    // onAuthFlowFinished so the biometric opt-in dialog's presentation decision
+    // (which depends on the freshly-stored policy) can be made while the caller
+    // is still in front, i.e. before startMainActivity() below occludes it.
     handleBiometricAuthPolicy(userIdentity, account)
+
+    withContext(Dispatchers.Main) {
+        onAuthFlowFinished {
+            // Kickoff the end of the flow before storing mobile policy to prevent launching
+            // the main activity over/after the screen lock.
+            if (!tokenMigration) {
+                startMainActivity()
+            }
+
+            // Screen lock required by mobile policy
+            handleScreenLockPolicy(userIdentity, account)
+        }
+    }
 }
 
 internal fun defaultBuildAccountName(
@@ -272,17 +373,10 @@ private fun HttpUrl.isSalesforceUrl(): Boolean {
     return salesforceHosts.map { host.endsWith(it) }.any { it }
 }
 
-private fun addAccount(account: UserAccount?, context: Context, isTestRun: Boolean, loginServerManager: LoginServerManager) {
+private fun addAccount(account: UserAccount?, isTestRun: Boolean, loginServerManager: LoginServerManager) {
 
     // Download profile photo
     account?.downloadProfilePhoto()
-
-    /*
-     * Registers for push notifications if setup by the app. This step needs
-     * to happen after the account has been added by client manager, so that
-     * the push service has all the account info it needs.
-     */
-    register(context, account)
 
     when {
         isTestRun -> logAddAccount(account, loginServerManager)
@@ -320,17 +414,37 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Helper method to fetch user identity from token response.
+ * Fetches user identity using the URL appropriate for the login server.
+ *
+ * Salesforce always puts the pool-server host in the `id` field of the token response
+ * regardless of which server issued the token. [TokenEndpointResponse.idUrlWithInstance]
+ * corrects this by substituting the issuing server's host, which is correct for My Domain
+ * logins and for Bearer tokens on any server.
+ *
+ * For DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
+ * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
+ * does not issue a nonce challenge the way data endpoints do. The raw
+ * [TokenEndpointResponse.idUrl] (pool-server host) must be used instead.
+ *
+ * No token refresh is attempted: the access token was just issued by the login flow,
+ * so it is valid by construction. A refresh would also be unsafe under Refresh Token
+ * Rotation — consuming the fresh token and discarding the rotated replacement.
  */
-private suspend fun fetchUserIdentity(
-    tokenResponse: TokenEndpointResponse
+private suspend fun fetchUserIdentityWithRetry(
+    tokenResponse: TokenEndpointResponse,
+    loginServer: String,
 ): OAuth2.IdServiceResponse? {
+    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true)
+        && LoginServerManager.isPoolServer(loginServer)
+    ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
     return runCatching {
         withContext(Default) {
             callIdentityService(
                 HttpAccess.DEFAULT,
-                tokenResponse.idUrlWithInstance,
+                url,
                 tokenResponse.authToken,
+                tokenResponse.tokenType,
+                tokenResponse.credentialsIdentifier,
             )
         }
     }.onFailure { throwable ->
@@ -391,7 +505,7 @@ internal fun handleScreenLockPolicy(
 
     // compareTo(0) is used to check if screenLockTimeout is non-null and greater than 0.
     if (userIdentity?.screenLockTimeout?.compareTo(0) == 1) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         val timeoutInMills = userIdentity.screenLockTimeout * 1000 * 60
         internalScreenLockManager?.storeMobilePolicy(
             account,
@@ -399,7 +513,7 @@ internal fun handleScreenLockPolicy(
             timeoutInMills,
         )
     } else if (internalScreenLockManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_SCREEN_LOCK, account)
         internalScreenLockManager.cleanUp(account)
     }
 }
@@ -416,7 +530,7 @@ internal fun handleBiometricAuthPolicy(
         SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?
 
     if (userIdentity?.biometricAuth == true) {
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account)
         val timeoutInMills = userIdentity.biometricAuthTimeout * 60 * 1000
         internalBiometricAuthenticationManager?.storeMobilePolicy(
             account,
@@ -424,7 +538,7 @@ internal fun handleBiometricAuthPolicy(
             timeoutInMills
         )
     } else if (internalBiometricAuthenticationManager?.enabled == true) {
-        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH)
+        SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account)
         internalBiometricAuthenticationManager.cleanUp(account)
     }
 }
@@ -437,7 +551,6 @@ private fun addAccountHelper(
 ) {
     addAccount(
         account,
-        SalesforceSDKManager.getInstance().appContext,
         SalesforceSDKManager.getInstance().isTestRun,
         SalesforceSDKManager.getInstance().loginServerManager
     )

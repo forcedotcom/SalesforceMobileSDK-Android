@@ -201,7 +201,7 @@ public class FileRequests extends ApiRequests {
         MultipartBody.Builder builder = new MultipartBody.Builder();
         if (title != null) builder.addFormDataPart("title", title);
         if (description != null) builder.addFormDataPart("desc", description);
-        builder.addFormDataPart("fileData", name, RequestBody.create(mediaType, theFile));
+        builder.addFormDataPart("fileData", name, RequestBody.create(theFile, mediaType));
         return new RestRequest(RestMethod.POST, base("connect/files/users").appendPath("me").toString(), builder.build(), HTTP_HEADERS);
     }
 
@@ -210,6 +210,6 @@ public class FileRequests extends ApiRequests {
         share.put("ContentDocumentId", fileId);
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
-        return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(share).toString());
+        return RequestBody.create(new JSONObject(share).toString(), RestRequest.MEDIA_TYPE_JSON);
     }
 }

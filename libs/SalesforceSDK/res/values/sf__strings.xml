@@ -9,7 +9,8 @@
     <string name="sf__invalid_server_url">Please type in a valid URL</string>
     <string name="sf__access_token_revoked">Your access token has been revoked by the administrator. You will now be logged out.</string>
     <string name="sf__managed_app_error">Authentication only allowed from managed device.</string>
-    <string name="sf__jwt_authentication_error">JWT authentication error. Please try again.</string>
+    <string name="sf__lightning_url_code_exchange_error">Lightning URLs are not supported for OAuth code exchange. Use your My Domain URL instead.</string>
+    <string name="sf__app_blocked_error">The app couldn\'t be verified. Contact your Salesforce admin.</string>
 
     <!-- SSL errors -->
     <string name="sf__ssl_error">SSL error: %s.</string>
@@ -122,9 +123,27 @@
     <string name="sf__dev_support_login_options_title">Login Options</string>
     <string name="sf__login_options_webserver_toggle_content_description">Toggle Web Server</string>
     <string name="sf__login_options_hybrid_toggle_content_description">Toggle Hybrid Token</string>
+    <string name="sf__login_options_force_advanced_auth_toggle_content_description">Toggle Force Advanced Authentication</string>
+    <string name="sf__login_options_dpop_toggle_content_description">Toggle DPoP</string>
     <string name="sf__login_options_dynamic_config_toggle_content_description">Toggle Dynamic Config</string>
     <string name="sf__login_options_consumer_key_field_content_description">Consumer Key Field</string>
     <string name="sf__login_options_redirect_uri_field_content_description">Redirect URI Field</string>
     <string name="sf__login_options_scopes_field_content_description">Scopes Field</string>
     <string name="sf__login_options_save_button_content_description">Save Button</string>
+    <string name="sf__login_options_save_and_login">Save and Login</string>
+
+    <!-- Welcome Discovery Simulation (Login Options).  Mirrors iOS DiscoveryResultEditor strings.
+         translatable="false" because this editor only appears in debug / dev-support builds. -->
+    <string name="sf__login_options_discovery_simulate_title" translatable="false">Simulate Discovery Result</string>
+    <string name="sf__login_options_discovery_toggle_content_description" translatable="false">Toggle Simulate Discovery Result</string>
+    <string name="sf__login_options_discovery_login_host_label" translatable="false">My Domain Login Host</string>
+    <string name="sf__login_options_discovery_username_label" translatable="false">User Name</string>
+    <string name="sf__login_options_discovery_save_button" translatable="false">Save Simulated Result</string>
+    <string name="sf__login_options_discovery_login_host_field_content_description" translatable="false">Discovery Login Host Field</string>
+    <string name="sf__login_options_discovery_username_field_content_description" translatable="false">Discovery Username Field</string>
+    <string name="sf__login_options_discovery_save_button_content_description" translatable="false">Save Simulated Result Button</string>
+
+    <!-- Advanced auth manifest misconfiguration alert (debug builds only) -->
+    <string name="sf__advanced_auth_manifest_error_title">Advanced Auth Setup Error</string>
+    <string name="sf__advanced_auth_manifest_error_message">The redirect URI scheme \'%1$s\' is not registered in this app\'s AndroidManifest.xml.\n\nAdd an intent-filter with scheme \'%1$s\' to LoginActivity to complete the advanced auth flow.</string>
 </resources>

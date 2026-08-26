@@ -34,6 +34,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.R
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -45,6 +47,23 @@ import com.salesforce.samples.authflowtester.testUtility.testConfig
  * Page object for the SDK's Login Options screen.
  */
 class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
+
+    private val device by lazy { UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()) }
+
+    /**
+     * Dismisses the Login Options screen with a system back press when there is nothing to Save
+     * (the Save button is what normally calls `activity.finish()`).
+     *
+     * Uses UiAutomator's [UiDevice.pressBack] rather than `Espresso.pressBack()`: dismissing
+     * LoginOptionsActivity re-arms the dev-menu reload, so LoginActivity immediately re-launches the
+     * Chrome Custom Tab (a separate process) and stops itself.  `Espresso.pressBack()` asserts an
+     * app activity is RESUMED afterward and would throw `NoActivityResumedException` ("Pressed back
+     * and killed the app") once the tab is in front; UiAutomator dispatches the key without that
+     * post-condition.
+     */
+    fun dismiss() {
+        device.pressBack()
+    }
 
     fun enableWebServerFlow() = toggleIfOff(
         getString(R.string.sf__login_options_webserver_toggle_content_description)
@@ -60,6 +79,14 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
 
     fun disableHybridAuthToken() = toggleIfOn(
         getString(R.string.sf__login_options_hybrid_toggle_content_description)
+    )
+
+    fun enableDPoP() = toggleIfOff(
+        getString(R.string.sf__login_options_dpop_toggle_content_description)
+    )
+
+    fun disableDPoP() = toggleIfOn(
+        getString(R.string.sf__login_options_dpop_toggle_content_description)
     )
 
     fun setOverrideBootConfig(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection = ALL) {
@@ -84,11 +111,39 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         saveOverrideBootConfig()
     }
 
+    /**
+     * Sets dynamic config with arbitrary values. Used by negative tests to
+     * inject deliberately invalid consumer keys or scopes.
+     */
+    fun setOverrideBootConfigRaw(
+        consumerKey: String,
+        redirectUri: String,
+        scopes: String? = null,
+    ) {
+        enableOverrideBootConfig()
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_consumer_key_field_content_description)
+        ).performTextReplacement(consumerKey)
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_redirect_uri_field_content_description)
+        ).performTextReplacement(redirectUri)
+
+        if (scopes != null) {
+            composeTestRule.onNodeWithContentDescription(
+                getString(R.string.sf__login_options_scopes_field_content_description)
+            ).performTextReplacement(scopes)
+        }
+
+        saveOverrideBootConfig()
+    }
+
     private fun enableOverrideBootConfig() = toggleIfOff(
         getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
     )
 
-    private fun disableOverrideBootConfig() = toggleIfOn(
+    fun disableOverrideBootConfig() = toggleIfOn(
         getString(R.string.sf__login_options_dynamic_config_toggle_content_description)
     )
 
@@ -96,6 +151,32 @@ class LoginOptionsPageObject(composeTestRule: ComposeTestRule): BasePageObject(c
         closeSoftKeyboard()
         composeTestRule.onNodeWithContentDescription(
             getString(R.string.sf__login_options_save_button_content_description)
+        ).performScrollTo().performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Flips the Simulate Discovery Result toggle on, types host + username, taps Save.
+     * Mirrors iOS `LoginOptionsPageObject.configure(...)`.  Tapping Save is what arms
+     * `SalesforceSDKManager.simulatedDiscoveryResult`; the editor's Save -> manager wiring
+     * is independently covered by the unit test
+     * `LoginOptionsActivityTest.discoveryResultEditor_saveButton_armsSdkManagerSimulatedResult`.
+     */
+    fun setSimulatedDiscoveryResult(loginHost: String, username: String) {
+        toggleIfOff(getString(R.string.sf__login_options_discovery_toggle_content_description))
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_login_host_field_content_description)
+        ).performScrollTo().performTextReplacement(loginHost)
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_username_field_content_description)
+        ).performTextReplacement(username)
+
+        closeSoftKeyboard()
+
+        composeTestRule.onNodeWithContentDescription(
+            getString(R.string.sf__login_options_discovery_save_button_content_description)
         ).performScrollTo().performClick()
         composeTestRule.waitForIdle()
     }

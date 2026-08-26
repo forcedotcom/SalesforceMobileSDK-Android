@@ -59,7 +59,9 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -90,6 +92,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -101,6 +104,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -121,6 +125,8 @@ import com.salesforce.androidsdk.R.string.sf__connection_name_field_content_desc
 import com.salesforce.androidsdk.R.string.sf__connection_url_field_content_description
 import com.salesforce.androidsdk.R.string.sf__custom_url_button
 import com.salesforce.androidsdk.R.string.sf__custom_url_button_content_description
+import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
+import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__pick_server
 import com.salesforce.androidsdk.R.string.sf__server_close_button_content_description
 import com.salesforce.androidsdk.R.string.sf__server_picker_content_description
@@ -131,9 +137,11 @@ import com.salesforce.androidsdk.R.string.sf__server_url_save
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import androidx.core.net.toUri
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.ui.CORNER_RADIUS
+import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginViewModel
 import com.salesforce.androidsdk.ui.PADDING_SIZE
 import com.salesforce.androidsdk.ui.theme.hintTextColor
@@ -142,6 +150,7 @@ import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class PickerStyle {
     LoginServerPicker,
@@ -177,10 +186,15 @@ internal fun TestablePickerBottomSheet(
             if (newSelectedServer != SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer) {
                 viewModel.loading.value = true
                 SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer = newSelectedServer
+            } else {
+                // Re-select of the already-selected server: regenerate directly via reloadWebView.
+                // Re-assigning selectedLoginServer or re-posting the server would be swallowed by the
+                // same-value / same-host guards; reloadWebView bypasses them, owns the spinner, mints
+                // a fresh single-use PKCE challenge, and handles the Welcome Discovery Phase 1 reset.
+                viewModel.reloadWebView()
             }
         }
     }
-    val onLoginServerCancel = { viewModel.showServerPicker.value = false }
     val onUserAccountSelected = { userAccount: Any?, _: Boolean ->
         if (userAccount != null && userAccount is UserAccount) {
             activity?.finish()
@@ -198,7 +212,8 @@ internal fun TestablePickerBottomSheet(
         confirmValueChange = { sheetValue ->
             if (sheetValue == SheetValue.Hidden) {
                 when (pickerStyle) {
-                    PickerStyle.LoginServerPicker -> onLoginServerCancel()
+                    // The login picker must never be dismissable.
+                    PickerStyle.LoginServerPicker -> return@rememberModalBottomSheetState false
                     PickerStyle.UserAccountPicker -> onUserSwitchCancel()
                 }
             }
@@ -212,6 +227,31 @@ internal fun TestablePickerBottomSheet(
         viewModel.loading.value = true
     }
 
+    // The picker's own header is the only reachable UI while the sheet is shown (the top app
+    // bar sits behind the modal scrim), so the login-exit back button and the debug Login
+    // Options entry are surfaced here, reusing the existing WebView-login logic unmodified.
+    val showLoginBackButton = pickerStyle == PickerStyle.LoginServerPicker && viewModel.shouldShowBackButton
+    val onLoginBackButtonClick: () -> Unit = { (activity as? LoginActivity)?.handleBackBehavior() }
+    val showDevSupport = with(SalesforceSDKManager.getInstance()) {
+        if (pickerStyle == PickerStyle.LoginServerPicker && isDebugBuild && isDevSupportEnabled()) {
+            { showDevSupportDialog(activity) }
+        } else {
+            null
+        }
+    }
+    // Retry-biometric entry — only ever offered from the login-server picker (never the account
+    // switcher's shared UserAccountPicker composable), and only while biometric unlock is actually
+    // usable; reuses the exact predicate that gates the Custom Tab launch suppression and the
+    // WebView bottom-bar biometric button so all three surfaces never disagree.
+    val showRetryBiometric = pickerStyle == PickerStyle.LoginServerPicker &&
+            viewModel.showBiometricAuthenticationButton.value
+    // Matches the WebView bottom-bar biometric button: invoke the configured action (e.g. the OS
+    // enrollment setup launch) when one is set, otherwise re-present the biometric prompt.
+    val onRetryBiometricClick: () -> Unit = {
+        viewModel.biometricAuthenticationButtonAction.value?.invoke()
+            ?: (activity as? LoginActivity)?.onBioAuthClick()
+    }
+
     when (pickerStyle) {
         PickerStyle.LoginServerPicker ->
             PickerBottomSheet(
@@ -223,7 +263,12 @@ internal fun TestablePickerBottomSheet(
                 onItemSelected = onNewLoginServerSelected,
                 getValidServer = { serverUrl: String -> viewModel.getValidServerUrl(serverUrl) },
                 addNewLoginServer = addNewLoginServer,
-                removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) }
+                removeLoginServer = { server: LoginServer -> loginServerManager.removeServer(server) },
+                showLoginBackButton = showLoginBackButton,
+                onLoginBackButtonClick = onLoginBackButtonClick,
+                showDevSupport = showDevSupport,
+                showRetryBiometric = showRetryBiometric,
+                onRetryBiometricClick = onRetryBiometricClick,
             )
 
         PickerStyle.UserAccountPicker ->
@@ -242,7 +287,7 @@ internal fun TestablePickerBottomSheet(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 @VisibleForTesting
 internal fun PickerBottomSheet(
@@ -256,11 +301,25 @@ internal fun PickerBottomSheet(
     addNewLoginServer: ((String, String) -> Unit)? = null,
     removeLoginServer: ((LoginServer) -> Unit)? = null,
     addNewAccount: (() -> Unit)? = null,
+    showLoginBackButton: Boolean = false,
+    onLoginBackButtonClick: (() -> Unit)? = null,
+    showDevSupport: (() -> Unit)? = null,
+    showRetryBiometric: Boolean = false,
+    onRetryBiometricClick: (() -> Unit)? = null,
 ) {
     val pickerFocus = remember { FocusRequester() }
     val containerContentDescription = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> stringResource(sf__server_picker_content_description)
         PickerStyle.UserAccountPicker -> stringResource(sf__account_picker_content_description)
+    }
+    // Stable, locale-invariant test anchor for the picker container and its add button.
+    val containerTestTag = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> LoginViewTestTags.SERVER_PICKER
+        PickerStyle.UserAccountPicker -> LoginViewTestTags.ACCOUNT_PICKER
+    }
+    val addButtonTestTag = when (pickerStyle) {
+        PickerStyle.LoginServerPicker -> LoginViewTestTags.CUSTOM_URL_BUTTON
+        PickerStyle.UserAccountPicker -> LoginViewTestTags.ADD_NEW_ACCOUNT_BUTTON
     }
     val addButtonContentDescription = when (pickerStyle) {
         PickerStyle.LoginServerPicker -> stringResource(sf__custom_url_button_content_description)
@@ -272,7 +331,7 @@ internal fun PickerBottomSheet(
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            delay(SLOW_ANIMATION_MS.toLong())
+            delay(SLOW_ANIMATION_MS.milliseconds)
             pickerFocus.requestFocus()
         }
     }
@@ -292,7 +351,13 @@ internal fun PickerBottomSheet(
             Column(
                 modifier = Modifier
                     .animateContentSize()
-                    .semantics { contentDescription = containerContentDescription }
+                    // The bottom sheet is hosted in its own window/composition, so opt in here too
+                    // to expose Compose testTags as Android resource-ids for UI automation.
+                    .semantics {
+                        testTagsAsResourceId = true
+                        contentDescription = containerContentDescription
+                    }
+                    .testTag(containerTestTag)
                     .focusRequester(pickerFocus)
                     .focusable(),
             ) {
@@ -318,7 +383,37 @@ internal fun PickerBottomSheet(
                                     disabledContainerColor = Color.Transparent,
                                     disabledContentColor = Color.Transparent,
                                 ),
-                                modifier = Modifier.size(ICON_SIZE.dp),
+                                modifier = Modifier
+                                    .size(ICON_SIZE.dp)
+                                    .testTag(LoginViewTestTags.PICKER_BACK_BUTTON),
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = backButtonDescription,
+                                )
+                            }
+                        }
+                    }
+                    // Login-exit Back Button — distinct from the add-connection back arrow above;
+                    // only ever shown for the login picker, never while adding a connection, and
+                    // only when the existing WebView-login logic (shouldShowBackButton) allows it.
+                    AnimatedVisibility(
+                        visible = !addingNewServer && showLoginBackButton,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
+                        ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
+                            IconButton(
+                                onClick = { onLoginBackButtonClick?.invoke() },
+                                colors = IconButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = colorScheme.secondary,
+                                    disabledContainerColor = Color.Transparent,
+                                    disabledContentColor = Color.Transparent,
+                                ),
+                                modifier = Modifier
+                                    .size(ICON_SIZE.dp)
+                                    .testTag(LoginViewTestTags.PICKER_LOGIN_BACK_BUTTON),
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
@@ -344,22 +439,78 @@ internal fun PickerBottomSheet(
                         fontSize = HEADER_TEXT_SIZE.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    // Close Button
-                    ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
-                        IconButton(
-                            onClick = { coroutineScope.launch { sheetState.hide() } },
-                            colors = IconButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = colorScheme.secondary,
-                                disabledContainerColor = Color.Transparent,
-                                disabledContentColor = Color.Transparent,
-                            ),
-                            modifier = Modifier.size(ICON_SIZE.dp),
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = closeButtonDescription,
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Retry-biometric entry — lets a user who is still biometrically locked (e.g.
+                        // after cancelling or failing the initial biometric prompt) re-trigger it from
+                        // inside the login-server picker without leaving it. Strictly gated to the
+                        // login picker; must never appear on the account switcher's picker.
+                        if (showRetryBiometric) {
+                            ToolTipWrapper(sf__login_with_biometric) { retryBiometricDescription ->
+                                IconButton(
+                                    onClick = { onRetryBiometricClick?.invoke() },
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_RETRY_BIOMETRIC_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Fingerprint,
+                                        contentDescription = retryBiometricDescription,
+                                    )
+                                }
+                            }
+                        }
+                        // Debug Login Options entry — reachable from inside the picker because the
+                        // top app bar's own "Developer Support" entry is behind the modal scrim
+                        // while the picker is shown. Debug builds only, same gating as the app bar.
+                        showDevSupport?.let { onShowDevSupport ->
+                            ToolTipWrapper(sf__dev_support_title_menu_item) { devSupportDescription ->
+                                IconButton(
+                                    onClick = onShowDevSupport,
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_DEV_SUPPORT_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Build,
+                                        contentDescription = devSupportDescription,
+                                    )
+                                }
+                            }
+                        }
+                        // Close Button — the login picker must never be dismissable (W-19729582),
+                        // so this is only rendered for the user-account picker.
+                        if (pickerStyle == PickerStyle.UserAccountPicker) {
+                            ToolTipWrapper(sf__server_close_button_content_description) { closeButtonDescription ->
+                                IconButton(
+                                    onClick = { coroutineScope.launch { sheetState.hide() } },
+                                    colors = IconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = colorScheme.secondary,
+                                        disabledContainerColor = Color.Transparent,
+                                        disabledContentColor = Color.Transparent,
+                                    ),
+                                    modifier = Modifier
+                                        .size(ICON_SIZE.dp)
+                                        .testTag(LoginViewTestTags.PICKER_CLOSE_BUTTON),
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = closeButtonDescription,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -467,6 +618,7 @@ internal fun PickerBottomSheet(
                                                 modifier = Modifier
                                                     .padding(PADDING_SIZE.dp)
                                                     .fillMaxWidth()
+                                                    .testTag(addButtonTestTag)
                                                     .semantics { contentDescription = addButtonContentDescription },
                                                 shape = RoundedCornerShape(CORNER_RADIUS.dp),
                                                 contentPadding = PaddingValues(PADDING_SIZE.dp),
@@ -530,7 +682,7 @@ internal fun AddConnection(
                     .fillMaxWidth()
                     .padding(PADDING_SIZE.dp)
                     .focusRequester(focusRequester)
-                    .testTag("sf__picker_custom_label")
+                    .testTag(LoginViewTestTags.PICKER_CUSTOM_LABEL)
                     .semantics { contentDescription = nameFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -554,7 +706,7 @@ internal fun AddConnection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp)
-                    .testTag("sf__picker_custom_url")
+                    .testTag(LoginViewTestTags.PICKER_CUSTOM_URL)
                     .semantics { contentDescription = urlFieldDesc },
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = colorScheme.tertiary,
@@ -578,7 +730,7 @@ internal fun AddConnection(
             modifier = Modifier
                 .padding(PADDING_SIZE.dp)
                 .fillMaxWidth()
-                .testTag("sf__apply_button")
+                .testTag(LoginViewTestTags.APPLY_BUTTON)
                 .semantics { contentDescription = applyButtonDesc },
             shape = RoundedCornerShape(CORNER_RADIUS.dp),
             contentPadding = PaddingValues(PADDING_SIZE.dp),

@@ -65,7 +65,7 @@ class TokenMigrationWebViewTest {
             every { authFinished } returns mutableStateOf(false)
             every { loadingIndicator } returns null
             every { oAuthConfig } returns mockOAuthConfig
-            every { useWebServerFlow } returns true
+            every { useWebServerFlow(any()) } returns true
         }
 
         // Wire up the factory so the activity's `by viewModels` delegate returns mockViewModel
@@ -148,7 +148,7 @@ class TokenMigrationWebViewTest {
         val mockResultCallback = createMockResultCallback()
         val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "instanceServer")
 
-        every { mockViewModel.useWebServerFlow } returns true
+        every { mockViewModel.useWebServerFlow(any()) } returns true
 
         val mockRequest = createMockWebResourceRequest("testapp://oauth/callback?code=test_code")
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
@@ -164,40 +164,12 @@ class TokenMigrationWebViewTest {
                     onAuthFlowError = mockResultCallback.onMigrationError,
                     loginServer = "instanceServer",
                     tokenMigration = true,
+                    onAuthFlowFinished = any(),
                 )
             }
 
             coVerify(exactly = 0) {
                 mockViewModel.onAuthFlowComplete(any(), any(), any(), any(), any())
-            }
-        }
-    }
-
-    @Test
-    fun shouldOverrideUrlLoading_returnsTrueForCallbackUrl_userAgentFlow() {
-        val activity = launchActivity()
-        val mockResultCallback = createMockResultCallback()
-        val clientManager = activity.TokenMigrationClientManager(mockResultCallback, "instanceServer")
-
-        every { mockViewModel.useWebServerFlow } returns false
-
-        val mockRequest = createMockWebResourceRequest("testapp://oauth/callback?code=test_code")
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            assertTrue(
-                "Callback URL should be overridden because migration is finished",
-                clientManager.shouldOverrideUrlLoading(mockWebView, mockRequest)
-            )
-            coVerify {
-                mockViewModel.onAuthFlowComplete(
-                    tr = any(),
-                    onAuthFlowSuccess = mockResultCallback.onMigrationSuccess,
-                    onAuthFlowError = mockResultCallback.onMigrationError,
-                    tokenMigration = true,
-                )
-            }
-
-            verify(exactly = 0) {
-                mockViewModel.onWebServerFlowComplete(any(), any(), any(), any(), any())
             }
         }
     }
@@ -249,6 +221,7 @@ class TokenMigrationWebViewTest {
                     onAuthFlowError = mockResultCallback.onMigrationError,
                     loginServer = "instanceServer",
                     tokenMigration = true,
+                    onAuthFlowFinished = any(),
                 )
             }
 

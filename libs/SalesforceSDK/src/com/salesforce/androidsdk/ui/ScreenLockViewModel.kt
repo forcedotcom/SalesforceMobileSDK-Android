@@ -26,10 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.R
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -83,16 +80,8 @@ internal class ScreenLockViewModel() : ViewModel() {
 
     /**
      * Returns the biometric authenticators to use.
-     * @param build The Android SDK build. This parameter is intended for
-     * testing purposes only. Defaults to the current Android SDK build
      */
-    fun biometricAuthenticators(
-        build: Int = SDK_INT,
-    ) = if (build >= R) {
-        BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-    } else {
-        BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-    }
+    fun biometricAuthenticators() = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
     // endregion
 

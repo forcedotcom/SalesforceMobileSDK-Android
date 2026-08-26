@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.mobilesync.util.SyncState.Status.STOPPED
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncDown
 import com.salesforce.androidsdk.mobilesync.util.SyncState.Type.syncUp
 import com.salesforce.androidsdk.rest.ApiVersionStrings
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
@@ -625,9 +626,15 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
             "sendSyncWithMobileSyncUserAgent called with request: ",
             restRequest
         )
+        val clientInfo = restClient?.getClientInfo()
+        val user: UserAccount? = if (clientInfo != null) {
+            SalesforceSDKManager.getInstance()
+                .userAccountManager
+                .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId)
+        } else null
         return restClient?.sendSync(
             restRequest,
-            UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC))
+            UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(MOBILE_SYNC, user))
         ) ?: throw MobileSyncException("No rest client")
     }
 
@@ -820,14 +827,15 @@ class SyncManager private constructor(smartStore: SmartStore, restClient: RestCl
                  * RestClient should be set to the unauthenticated RestClient instance.
                  */
                 val restClient: RestClient? = if (user == null) {
-                    SalesforceSDKManager.getInstance().clientManager.peekUnauthenticatedRestClient()
+                    SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
                 } else {
-                    SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+                    ClientManager(SalesforceSDKManager.getInstance().appContext, user)
+                        .peekRestClient()
                 }
                 instance = SyncManager(store, restClient)
                 instance.also { INSTANCES[uniqueId] = it }
             }
-            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC)
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_MOBILE_SYNC, user)
             return instance
         }
 

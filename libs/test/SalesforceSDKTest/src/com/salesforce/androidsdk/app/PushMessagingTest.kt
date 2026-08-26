@@ -9,9 +9,11 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.cleanupAccounts
 import com.salesforce.androidsdk.accounts.UserAccountManagerTest.createTestAccountInAccountManager
+import com.salesforce.androidsdk.push.PushMessaging
 import com.salesforce.androidsdk.push.PushMessaging.clearNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.getNotificationsTypes
 import com.salesforce.androidsdk.push.PushMessaging.setNotificationTypes
+import com.salesforce.androidsdk.push.PushService
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiErrorResponseBody
@@ -20,8 +22,11 @@ import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody.Companion.f
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo
 import com.salesforce.androidsdk.rest.RestResponse
+import com.salesforce.androidsdk.rest.NotificationsApiClient
+import com.salesforce.androidsdk.rest.RestRequest
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.serialization.json.Json.Default.encodeToJsonElement
 import kotlinx.serialization.json.Json.Default.encodeToString
 import kotlinx.serialization.json.JsonArray
@@ -30,6 +35,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -98,6 +104,32 @@ class PushMessagingTest {
         clearNotificationsTypes(user)
 
         assertNull(getNotificationsTypes(user))
+    }
+
+    @Test
+    fun unregisterForLogout_ServiceStartupFailureStillClearsLocalRegistration() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPushServiceType = sdkManager.pushServiceType
+        PushMessaging.setRegistrationInfo(
+            context = context,
+            registrationId = "test-registration-id",
+            deviceId = "test-device-id",
+            account = user,
+        )
+        sdkManager.pushServiceType = FailingLogoutPushService::class.java
+
+        try {
+            assertThrows(IllegalStateException::class.java) {
+                PushMessaging.unregisterForLogout(context, user, false)
+            }
+
+            assertNull(PushMessaging.getRegistrationId(context, user))
+            assertNull(PushMessaging.getDeviceId(context, user))
+        } finally {
+            sdkManager.pushServiceType = originalPushServiceType
+            PushMessaging.clearRegistrationInfo(context, user)
+        }
     }
 
     @Test
@@ -229,12 +261,12 @@ class PushMessagingTest {
     fun testInvokeServerNotificationActionViaSdkManager_WithoutAccount() {
         val salesforceSdkManager = SalesforceSDKManager.getInstance()
 
-        assertThrows(NullPointerException::class.java) {
+        assertNull(
             salesforceSdkManager.invokeServerNotificationAction(
                 notificationId = "test_notification_id",
                 actionKey = "test_action_key",
             )
-        }
+        )
     }
 
     @Test
@@ -419,6 +451,33 @@ class PushMessagingTest {
     }
 
     @Test
+    fun test_givenEmptyBody_whenSubmitNotificationAction_thenUsesFormUrlencodedContentType() {
+        val restResponse = mockk<RestResponse>()
+        every { restResponse.asString() } returns encodeToString(
+            NotificationsActionsResponseBody.serializer(),
+            NotificationsActionsResponseBody(message = "ok")
+        )
+        every { restResponse.isSuccess } returns true
+
+        val requestSlot = slot<RestRequest>()
+        val restClient = mockk<RestClient>()
+        every { restClient.clientInfo } returns clientInfo
+        every { restClient.sendSync(capture(requestSlot)) } returns restResponse
+
+        val client = NotificationsApiClient(restClient)
+        client.submitNotificationAction(
+            notificationId = "test_notification_id",
+            actionKey = "test_action_key"
+        )
+
+        val capturedRequest = requestSlot.captured
+        val contentType = capturedRequest.requestBody.contentType()
+        assertEquals("application", contentType?.type)
+        assertEquals("x-www-form-urlencoded", contentType?.subtype)
+        assertEquals(0L, capturedRequest.requestBody.contentLength())
+    }
+
+    @Test
     fun testSetNotificationsTypes() {
 
         // Setup.
@@ -468,5 +527,11 @@ class PushMessagingTest {
             putString("orgId", "org-1")
             putString("userId", "user-1-1")
         })
+    }
+}
+
+class FailingLogoutPushService : PushService() {
+    init {
+        throw IllegalStateException("Push service startup failed")
     }
 }

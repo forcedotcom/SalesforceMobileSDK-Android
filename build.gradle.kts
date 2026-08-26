@@ -9,24 +9,48 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.12.0")
+        // TODO: AGP 9.2.0 causes libs:MobileSync:lintAnalyzeDebug to hang.  Review with future versions. ECJ20260423
+        classpath("com.android.tools.build:gradle:9.1.1")
         classpath("io.github.gradle-nexus:publish-plugin:2.0.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
-        classpath("org.jacoco:org.jacoco.core:0.8.13")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20")
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.3.21")
+        classpath("org.jacoco:org.jacoco.core:0.8.14")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:2.0.0")
     }
 }
 
 allprojects {
     group = "com.salesforce.mobilesdk"
-    version = "13.2.1"
+    version = "14.0.0"
 
     // Ensure that we do not use newer language features that would make the SDK incompatible with
     // apps that do not target the latest version of Kotlin.
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-        kotlinOptions {
-            freeCompilerArgs += arrayOf("-Xopt-in=kotlin.RequiresOptIn")
-            apiVersion = "1.6"
-            languageVersion = "1.6"
+        compilerOptions {
+            freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
+            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
         }
     }
+}
+
+apply(plugin = "org.jetbrains.dokka")
+
+extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+    dokkaPublications.named("html") {
+        outputDirectory.set(rootDir.resolve("doc"))
+    }
+}
+
+dependencies {
+    add("dokka", project(":libs:SalesforceAnalytics"))
+    add("dokka", project(":libs:SalesforceSDK"))
+    add("dokka", project(":libs:SmartStore"))
+    add("dokka", project(":libs:MobileSync"))
+    add("dokka", project(":libs:SalesforceHybrid"))
+}
+
+tasks.register<Jar>("javadocJar") {
+    from(tasks.named("dokkaGeneratePublicationHtml"))
+    archiveClassifier.set("javadoc")
 }

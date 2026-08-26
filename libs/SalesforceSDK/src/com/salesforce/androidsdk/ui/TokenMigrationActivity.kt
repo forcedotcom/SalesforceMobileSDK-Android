@@ -44,11 +44,14 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.accounts.MigrationCallbackRegistry
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
 import com.salesforce.androidsdk.config.OAuthConfig
+import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.BACKGROUND_COLOR_JAVASCRIPT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.validateAndExtractBackgroundColor
@@ -119,12 +122,24 @@ internal class TokenMigrationActivity : ComponentActivity() {
             logMigrationError(resultCallback, ERROR_BUILD_USER_ACCOUNT, null, null)
             return
         }
+
         val client = runCatching {
-            SalesforceSDKManager.getInstance().clientManager.peekRestClient(user)
+            restClientFactory(applicationContext, user)
         }.getOrElse { e ->
             logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, e as? Exception)
             return
+        } ?: run {
+            logMigrationError(resultCallback, ERROR_BUILD_REST_CLIENT, null, null)
+            return
         }
+
+        // Per-call DPoP intent for this migration, independent of the global
+        // SalesforceSDKManager.useDPoP flag (see LoginViewModel.dpopOverride). When the extra is
+        // absent the caller expressed no per-call intent, so leave dpopOverride null and defer to
+        // the global flag (prior behavior). Assigned only after the early-return error paths above
+        // so those paths never trigger ViewModel initialization.
+        viewModel.dpopOverride =
+            if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
 
         lifecycleScope.launch {
             val frontDoorUrl = withContext(IO) {
@@ -295,8 +310,22 @@ internal class TokenMigrationActivity : ComponentActivity() {
         const val EXTRA_ORG_ID = "MIGRATION_ORG_ID"
         const val EXTRA_USER_ID = "MIGRATION_USER_ID"
         const val EXTRA_CALLBACK_ID = "MIGRATION_CALLBACK"
+        const val EXTRA_USE_DPOP = "MIGRATION_USE_DPOP"
 
         const val TAG = "TokenMigrationActivity"
+
+        private val defaultRestClientFactory = { context: Context, user: UserAccount ->
+            ClientManager(context, user).peekRestClient()
+        }
+
+        @VisibleForTesting
+        internal var restClientFactory: (Context, UserAccount) -> RestClient? =
+            defaultRestClientFactory
+
+        @VisibleForTesting
+        internal fun resetRestClientFactory() {
+            restClientFactory = defaultRestClientFactory
+        }
 
         // Used for mocking the webview in tests.
         var webViewFactory = { context: Context -> WebView(context) }

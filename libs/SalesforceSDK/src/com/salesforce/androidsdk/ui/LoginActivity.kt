@@ -32,12 +32,15 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager.ERROR_CODE_CANCELED
 import android.accounts.AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE
 import android.annotation.SuppressLint
-import android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+import android.app.AlertDialog
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
+import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
+import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory.decodeResource
 import android.net.Uri
@@ -47,8 +50,6 @@ import android.net.http.SslError.SSL_IDMISMATCH
 import android.net.http.SslError.SSL_NOTYETVALID
 import android.net.http.SslError.SSL_UNTRUSTED
 import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.provider.Settings.ACTION_BIOMETRIC_ENROLL
@@ -77,13 +78,14 @@ import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.annotation.OptIn
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
+import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
@@ -96,6 +98,8 @@ import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsIntent.OPEN_IN_BROWSER_STATE_OFF
+import androidx.browser.customtabs.ExperimentalInitialNavigationCanLeaveBrowser
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -109,10 +113,12 @@ import androidx.lifecycle.Observer
 import com.salesforce.androidsdk.R.color.sf__background
 import com.salesforce.androidsdk.R.color.sf__background_dark
 import com.salesforce.androidsdk.R.drawable.sf__action_back
+import com.salesforce.androidsdk.R.string.sf__advanced_auth_manifest_error_message
+import com.salesforce.androidsdk.R.string.sf__advanced_auth_manifest_error_title
 import com.salesforce.androidsdk.R.string.cannot_use_another_apps_login_qr_code
+import com.salesforce.androidsdk.R.string.sf__app_blocked_error
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
-import com.salesforce.androidsdk.R.string.sf__generic_authentication_error_title
-import com.salesforce.androidsdk.R.string.sf__jwt_authentication_error
+import com.salesforce.androidsdk.R.string.sf__lightning_url_code_exchange_error
 import com.salesforce.androidsdk.R.string.sf__login_with_biometric
 import com.salesforce.androidsdk.R.string.sf__screen_lock_error
 import com.salesforce.androidsdk.R.string.sf__setup_biometric_unlock
@@ -123,20 +129,43 @@ import com.salesforce.androidsdk.R.string.sf__ssl_not_yet_valid
 import com.salesforce.androidsdk.R.string.sf__ssl_unknown_error
 import com.salesforce.androidsdk.R.string.sf__ssl_untrusted
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.Features.FEATURE_APP_ATTESTATION
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_MDM
+import com.salesforce.androidsdk.app.Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG
+import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_OTHER
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_PRODUCTION
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_SANDBOX
+import com.salesforce.androidsdk.app.Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
 import com.salesforce.androidsdk.app.Features.FEATURE_QR_CODE_LOGIN
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.Features.FEATURE_WELCOME_DISCOVERY_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
-import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.auth.OAuth2.swapJWTForTokens
+import com.salesforce.androidsdk.auth.OAuthErrorCode
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
 import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
+import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
 import com.salesforce.androidsdk.config.RuntimeConfig.getRuntimeConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.LOGIN_BACKGROUND_COLOR
+import com.salesforce.androidsdk.ui.LoginActivity.Companion.selectBMarker
 import com.salesforce.androidsdk.ui.components.LoginView
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.AuthWebViewPageFinished
@@ -151,9 +180,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.String.format
-import java.net.URI
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
@@ -231,11 +258,32 @@ open class LoginActivity : FragmentActivity() {
     }
 
     // Private variables
-    private var baseUserAgentString = "";
+    private var baseUserAgentString = ""
     private var wasBackgrounded = false
+    private var completedViaBrowserTab = false
+    private var completedViaAdminCustomTab = false
     private var accountAuthenticatorResponse: AccountAuthenticatorResponse? = null
     private var accountAuthenticatorResult: Bundle? = null
     private var newUserIntent = false
+
+    /**
+     * True only for the very first Custom Tab launch attempt when biometrically locked (see
+     * [shouldAutoPresentBiometricOnCreate]).  Being locked must never block a server selection
+     * from launching Advanced Auth (see [LoginViewModel.generateAuthorizationUrl]), so rather than
+     * gating that call, this flag defers it until bio auth is canceled.  Consumed the first time
+     * [handleBrowserCustomTabReady] fires; any later firing (e.g. a server picked from the picker)
+     * always launches normally.
+     */
+    @VisibleForTesting
+    internal var suppressInitialCustomTabLaunch = false
+
+    /**
+     * The Custom Tab URL deferred by [suppressInitialCustomTabLaunch], if any, so that cancelling
+     * or otherwise failing the lock-time biometric prompt can launch it immediately instead of
+     * leaving the user stranded.
+     */
+    @VisibleForTesting
+    internal var suppressedCustomTabUrl: String? = null
 
     @VisibleForTesting
     internal val sharedBrowserSession: Boolean
@@ -281,10 +329,10 @@ open class LoginActivity : FragmentActivity() {
         // Present Biometric Prompt if necessary.
         val biometricAuthenticationManager =
             SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
-        if (biometricAuthenticationManager?.locked == true
-            && biometricAuthenticationManager.hasBiometricOptedIn()
-            && intent.extras?.getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC) != false
-        ) {
+        if (shouldAutoPresentBiometricOnCreate(biometricAuthenticationManager)) {
+            // Defer this activity's first Custom Tab launch by one attempt so it doesn't race the
+            // biometric prompt shown below. See suppressInitialCustomTabLaunch.
+            suppressInitialCustomTabLaunch = true
             presentBiometric()
         }
 
@@ -310,14 +358,7 @@ open class LoginActivity : FragmentActivity() {
         viewModel.pendingServer.observe(this, PendingServerObserver())
 
         // Set callback for when browser custom tab URL is ready to launch.
-        viewModel.onBrowserCustomTabReady = { url ->
-            loadLoginPageInCustomTab(url, customTabLauncher)
-        }
-
-        // Support magic links
-        if (viewModel.jwt != null) {
-            swapJWTForAccessToken()
-        }
+        viewModel.onBrowserCustomTabReady = ::handleBrowserCustomTabReady
 
         // Let observers know onCreate is complete.
         EventsObservable.get().notifyEvent(LoginActivityCreateComplete, this)
@@ -333,6 +374,15 @@ open class LoginActivity : FragmentActivity() {
         // we can safely ignore that scenario.
         with(SalesforceSDKManager.getInstance()) {
             if (isDebugBuild && loginDevMenuReload) {
+                // Login Options may have changed the auth surface (e.g. disabled Web Server Flow).
+                // Reset completedViaBrowserTab so a subsequent in-app WebView login does not
+                // inherit the browser-tab path.  If reloadWebView() re-launches a Custom Tab,
+                // loadLoginPageInCustomTab() will set it back to true before login completes.
+                completedViaBrowserTab = false
+                // Re-register the A-marker global so it reflects the updated flow type (e.g.
+                // user agent vs web server) chosen in Login Options. loadLoginPageInCustomTab()
+                // will call this again if a Custom Tab is ultimately launched.
+                registerAuthTypeFeatureGlobal()
                 viewModel.reloadWebView()
                 loginDevMenuReload = false
             }
@@ -500,6 +550,7 @@ open class LoginActivity : FragmentActivity() {
 
             else -> {
                 d(TAG, "Web server or user agent login flow triggered")
+                registerAuthTypeFeatureGlobal()
             }
         }
     }
@@ -537,12 +588,196 @@ open class LoginActivity : FragmentActivity() {
      * @param userAccount The newly created user account.
      */
     protected open fun onAuthFlowSuccess(userAccount: UserAccount) {
+        val sdkManager = SalesforceSDKManager.getInstance()
+
+        // WD: write per-user and clear transient global
+        val usedWelcomeDiscovery = sdkManager.isGlobalFeatureRegistered(FEATURE_WELCOME_DISCOVERY_LOGIN)
+
+        // L-markers: register exactly one "which login server" marker per-user.
+        // Must be computed before WD global is cleared below.
+        val allLMarkers = listOf(
+            FEATURE_LOGIN_SERVER_PRODUCTION,
+            FEATURE_LOGIN_SERVER_SANDBOX,
+            FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+            FEATURE_LOGIN_SERVER_OTHER,
+        )
+        val loginServerUrl = sdkManager.loginServerManager.selectedLoginServer.url.trim()
+        val lMarker = selectLMarker(usedWelcomeDiscovery, loginServerUrl)
+        for (marker in allLMarkers) {
+            if (marker == lMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+
+        sdkManager.unregisterUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN)
+        if (usedWelcomeDiscovery) {
+            sdkManager.registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN, userAccount)
+        }
+
+        // BW: promote transient global to per-user, then clear global.
+        // completedViaBrowserTab is true for both regular and Login for Admin Custom Tab paths.
+        // The global was set in loadLoginPageInCustomTab() so it appears in UA during login.
+        sdkManager.unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN)
+        if (completedViaBrowserTab) {
+            sdkManager.registerUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN, userAccount)
+        }
+
+        // B-markers: register exactly one "why browser was used" marker per-user alongside BW.
+        val allBMarkers = listOf(
+            FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG,
+            FEATURE_BROWSER_LOGIN_MDM,
+            FEATURE_BROWSER_LOGIN_FOR_ADMIN,
+            FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+        )
+        @Suppress("DEPRECATION")
+        val bMarker = selectBMarker(
+            completedViaBrowserTab,
+            completedViaAdminCustomTab,
+            isMdmForcedBrowserLogin(),
+            sdkManager.forceAdvancedAuthentication,
+        )
+        for (marker in allBMarkers) {
+            if (marker == bMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+        // Reset the admin tab flag alongside completedViaBrowserTab
+        completedViaAdminCustomTab = false
+        completedViaBrowserTab = false
+
+        // QR: write per-user and clear transient global
+        val usedQrLogin = sdkManager.isGlobalFeatureRegistered(FEATURE_QR_CODE_LOGIN)
+        sdkManager.unregisterUsedAppFeature(FEATURE_QR_CODE_LOGIN)
+        if (usedQrLogin) {
+            sdkManager.registerUsedAppFeature(FEATURE_QR_CODE_LOGIN, userAccount)
+        }
+
+        // AA: promote transient global to per-user, then clear global
+        val usedAppAttestation = sdkManager.isGlobalFeatureRegistered(FEATURE_APP_ATTESTATION)
+        sdkManager.unregisterUsedAppFeature(FEATURE_APP_ATTESTATION)
+        if (usedAppAttestation) {
+            sdkManager.registerUsedAppFeature(FEATURE_APP_ATTESTATION, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_APP_ATTESTATION, userAccount)
+        }
+
+        if ("DPoP" == userAccount.tokenType) {
+            sdkManager.registerUsedAppFeature(FEATURE_DPOP, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_DPOP, userAccount)
+        }
+
+        // A-markers: promote per-user and clear globals
+        val allAMarkers = listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val activeAMarker = allAMarkers.firstOrNull { sdkManager.isGlobalFeatureRegistered(it) }
+        for (marker in allAMarkers) {
+            sdkManager.unregisterUsedAppFeature(marker)
+            if (marker == activeAMarker) {
+                sdkManager.registerUsedAppFeature(marker, userAccount)
+            } else {
+                sdkManager.unregisterUsedAppFeature(marker, userAccount)
+            }
+        }
+
+        // TM: clear on full login (migration path sets it via AuthenticationUtilities).
+        // Also clear global residue — TM is per-user only and must never bleed into other users.
+        sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION, userAccount)
+        sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_MIGRATION)
+
+        // JT/OT: token format
+        if (userAccount.tokenFormat == "jwt") {
+            sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, userAccount)
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, userAccount)
+        } else {
+            sdkManager.registerUsedAppFeature(FEATURE_TOKEN_FORMAT_OPAQUE, userAccount)
+            sdkManager.unregisterUsedAppFeature(FEATURE_TOKEN_FORMAT_JWT, userAccount)
+        }
+
+        // BN: beacon child app
+        if (userAccount.beaconChildConsumerKey != null) {
+            sdkManager.registerUsedAppFeature(FEATURE_BEACON, userAccount)
+        } else {
+            sdkManager.unregisterUsedAppFeature(FEATURE_BEACON, userAccount)
+        }
+
         // Create account and save result before switching to new user
         accountAuthenticatorResult = SalesforceSDKManager.getInstance().userAccountManager.createAccount(userAccount)
+    }
 
+    /**
+     * Called once mobile policy has been stored for a fresh login, whether completed via the
+     * in-app WebView or an Advanced Authentication browser Custom Tab, but before [proceed]
+     * starts the main activity and applies screen lock policy.  If biometric
+     * authentication is enabled for the user, the user hasn't yet responded to the opt-in
+     * dialog (by either enabling or declining it), and
+     * [BiometricAuthenticationManager.automaticPresentation] is true, presents the opt-in
+     * dialog here (while this activity is still in front) and defers [proceed] until it is
+     * dismissed.  Otherwise calls [proceed] immediately.
+     */
+    @VisibleForTesting
+    internal fun onAuthFlowFinished(proceed: () -> Unit) {
+        val biometricAuthenticationManager =
+            SalesforceSDKManager.getInstance().biometricAuthenticationManager as? BiometricAuthenticationManager
+        val proceedAndFinish = { proceed(); finishLoginFlow() }
+        if (biometricAuthenticationManager?.enabled == true
+            && biometricAuthenticationManager.automaticPresentation
+            && !biometricAuthenticationManager.hasBiometricOptInDecision()
+        ) {
+            viewModel.onBiometricOptInResultAction = { optedIn ->
+                biometricAuthenticationManager.biometricOptIn(optedIn)
+                proceedAndFinish()
+            }
+            viewModel.showBiometricOptInDialog.value = true
+        } else {
+            proceedAndFinish()
+        }
+    }
+
+    private fun finishLoginFlow() {
         setResult(RESULT_OK)
         finish()
     }
+
+    /**
+     * Whether [presentBiometric] should be automatically triggered from [onCreate] because the
+     * app is locked and the user has previously opted into biometric authentication.  Gated on
+     * [BiometricAuthenticationManager.automaticPresentation] and the [BiometricAuthenticationManager.SHOW_BIOMETRIC]
+     * intent extra (set to false by callers, e.g. [doTokenRefresh]'s failure path, that
+     * explicitly don't want the prompt re-shown).
+     */
+    @VisibleForTesting
+    internal fun shouldAutoPresentBiometricOnCreate(
+        biometricAuthenticationManager: BiometricAuthenticationManager?,
+    ) = biometricAuthenticationManager?.locked == true
+            && biometricAuthenticationManager.hasBiometricOptedIn()
+            && biometricAuthenticationManager.automaticPresentation
+            && intent.extras?.getBoolean(BiometricAuthenticationManager.SHOW_BIOMETRIC) != false
+
+    /**
+     * Reserved for future use — currently unused on Android.
+     *
+     * On Android, MDM forces cert-auth (a different code path that never sets
+     * [completedViaBrowserTab]), so [Features.FEATURE_BROWSER_LOGIN_MDM] (B2) is never
+     * selected. This helper is retained so the call site in [onAuthFlowSuccess] remains
+     * forward-compatible once a real Android MDM-browser-login signal is identified.
+     */
+    private fun isMdmForcedBrowserLogin(): Boolean =
+        SalesforceSDKManager.getInstance().isGlobalFeatureRegistered(
+            com.salesforce.androidsdk.app.Features.FEATURE_MDM
+        )
 
     /**
      * A callback when the user facing part of the authentication flow completed
@@ -587,9 +822,23 @@ open class LoginActivity : FragmentActivity() {
         )
 
         viewModel.clearCookies()
+        val isClientBlocked = e is OAuthFailedException
+            && (e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED
+                || e.tokenErrorResponse.errorCode == OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY)
+        val isLightningTokenEndpointFailure = e is OAuthFailedException
+            && e.tokenErrorResponse.errorCode == OAuthErrorCode.UNSUPPORTED_GRANT_TYPE
+            && viewModel.selectedServer.value?.contains(".lightning.") == true
+        if (isLightningTokenEndpointFailure) {
+            w(TAG, "Code exchange failed with unsupported_grant_type against Lightning URL: ${viewModel.selectedServer.value}. Lightning URLs do not support authorization_code grant type. Use a My Domain login server URL instead.")
+        }
         // Displays the error in a toast, clears cookies and reloads the login page
         runOnUiThread {
-            makeText(this, "$error : $errorDesc", LENGTH_LONG).show()
+            val message = when {
+                isClientBlocked -> getString(sf__app_blocked_error)
+                isLightningTokenEndpointFailure -> getString(sf__lightning_url_code_exchange_error)
+                else -> "$error : $errorDesc"
+            }
+            makeText(this, message, LENGTH_LONG).show()
             viewModel.reloadWebView()
         }
     }
@@ -611,7 +860,12 @@ open class LoginActivity : FragmentActivity() {
             else -> {
                 viewModel.showServerPicker.value = false
                 viewModel.loading.value = true
-                viewModel.onWebServerFlowComplete(params["code"], ::onAuthFlowError, ::onAuthFlowSuccess)
+                viewModel.onWebServerFlowComplete(
+                    params["code"],
+                    ::onAuthFlowError,
+                    ::onAuthFlowSuccess,
+                    onAuthFlowFinished = ::onAuthFlowFinished,
+                )
             }
         }
     }
@@ -659,50 +913,82 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Launches the Custom Tab for [url] -- unless this is the very first attempt made by this
+     * [LoginActivity] instance since it auto-presented the lock-time biometric prompt (see
+     * [suppressInitialCustomTabLaunch]), in which case the launch is deferred until the prompt is
+     * dismissed (see [onBiometricPromptDismissedWithoutSuccess]) so the two don't race each other.
+     */
+    @VisibleForTesting
+    internal fun handleBrowserCustomTabReady(url: String) {
+        if (suppressInitialCustomTabLaunch) {
+            suppressInitialCustomTabLaunch = false
+            suppressedCustomTabUrl = url
+        } else {
+            loadLoginPageInCustomTab(url, customTabLauncher)
+        }
+    }
+
     // endregion
     // region Biometric Authentication Code
 
-    private fun presentBiometric() {
-        val biometricPrompt = biometricPrompt
-        val biometricManager = BiometricManager.from(this)
-        when (biometricManager.canAuthenticate(authenticators)) {
-            BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN -> {
+    private fun presentBiometric() =
+        handleBiometricCanAuthenticateResult(BiometricManager.from(this).canAuthenticate(authenticators))
+
+    /**
+     * Acts on a [BiometricManager.canAuthenticate] result.  On [BIOMETRIC_SUCCESS] the biometric
+     * prompt is shown; on the error/setup branches the user-facing button is configured as before.
+     *
+     * Every non-success branch also falls back to Advanced Authentication via
+     * [onBiometricPromptDismissedWithoutSuccess].  When this activity is biometrically locked it
+     * suppresses its first Custom Tab launch (see [suppressInitialCustomTabLaunch]) expecting a
+     * biometric prompt to appear; if the prompt can't be shown, that fallback is what launches the
+     * deferred browser login so the user isn't stranded with no way to authenticate.
+     *
+     * Split out from [presentBiometric] so the branch behavior can be exercised without a real
+     * [BiometricManager].
+     *
+     * @param canAuthenticate A [BiometricManager.canAuthenticate] result code
+     */
+    @VisibleForTesting
+    internal fun handleBiometricCanAuthenticateResult(canAuthenticate: Int) {
+        when (canAuthenticate) {
+            BIOMETRIC_ERROR_NO_HARDWARE, BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED,
+            BIOMETRIC_ERROR_UNSUPPORTED, BIOMETRIC_STATUS_UNKNOWN,
+            BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE -> {
                 // This should never happen
                 val error = getString(sf__screen_lock_error)
                 e(TAG, "Biometric manager cannot authenticate. $error")
+                // No prompt will be shown, so fall back to Advanced Authentication immediately.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
             BIOMETRIC_ERROR_HW_UNAVAILABLE, BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                /*
-                 * Prompts the user to setup OS screen lock and biometric
-                 * TODO: Remove when min API > 29
-                 */
-                when {
-                    SDK_INT >= R -> viewModel.biometricAuthenticationButtonAction.value = {
-                        startActivityForResult(
-                            Intent(
-                                ACTION_BIOMETRIC_ENROLL
-                            ).apply {
-                                putExtra(
-                                    EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
-                                    authenticators
-                                )
-                            },
-                            SETUP_REQUEST_CODE
-                        )
-                    }
-
-                    else -> viewModel.biometricAuthenticationButtonAction.value = {
-                        startActivityForResult(
-                            Intent(ACTION_SET_NEW_PASSWORD),
-                            SETUP_REQUEST_CODE
-                        )
-                    }
+                // Prompts the user to setup OS screen lock and biometric
+                viewModel.biometricAuthenticationButtonAction.value = {
+                    startActivityForResult(
+                        Intent(ACTION_BIOMETRIC_ENROLL).apply {
+                            putExtra(
+                                EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                authenticators
+                            )
+                        },
+                        SETUP_REQUEST_CODE
+                    )
                 }
                 viewModel.biometricAuthenticationButtonText.intValue = sf__setup_biometric_unlock
+                // No prompt will be shown, so fall back to Advanced Authentication immediately. The
+                // setup button remains available for the user to enroll and return via
+                // onActivityResult.
+                onBiometricPromptDismissedWithoutSuccess()
             }
 
-            BIOMETRIC_SUCCESS -> biometricPrompt.authenticate(promptInfo)
+            BIOMETRIC_SUCCESS -> {
+                // Suppress the login loading indicator while the prompt is on screen. Cleared in the
+                // prompt callbacks below (success and dismissal).
+                viewModel.biometricPromptShowing.value = true
+                biometricPrompt.authenticate(promptInfo)
+            }
         }
     }
 
@@ -719,43 +1005,65 @@ open class LoginActivity : FragmentActivity() {
                         onUnlock()
                     }
 
+                    // Prompt is gone; allow the loading indicator to show again for the token refresh.
+                    viewModel.biometricPromptShowing.value = false
+                    viewModel.showServerPicker.value = false
+                    viewModel.loading.value = true
                     CoroutineScope(IO).launch {
                         doTokenRefresh(this@LoginActivity)
                     }
                 }
+
+                // User cancellation.
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    onBiometricPromptDismissedWithoutSuccess()
+                }
             }
         )
 
-    private fun doTokenRefresh(activity: LoginActivity) {
-        SalesforceSDKManager.getInstance().clientManager.getRestClient(
-            activity
-        ) { client ->
-            runCatching {
-                client.oAuthRefreshInterceptor.refreshAccessToken()
-            }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
-            }
-            activity.finish()
+    /**
+     * Falls back to Advanced Auth when the biometric prompt is dismissed without the user
+     * successfully unlocking. If this was the very first, lock-triggered prompt (see
+     * [suppressInitialCustomTabLaunch]), launches the Custom Tab URL that was deferred for it, if
+     * one is already available; otherwise clears the one-shot suppression so the still in-flight
+     * authorization URL request launches the Custom Tab as soon as it completes.
+     */
+    @VisibleForTesting
+    internal fun onBiometricPromptDismissedWithoutSuccess() {
+        viewModel.biometricPromptShowing.value = false
+        suppressInitialCustomTabLaunch = false
+        suppressedCustomTabUrl?.let { url ->
+            suppressedCustomTabUrl = null
+            loadLoginPageInCustomTab(url, customTabLauncher)
         }
     }
 
+    private fun doTokenRefresh(activity: LoginActivity) {
+        val client = SalesforceSDKManager.getInstance().clientManager?.peekRestClient()
+        if (client == null) {
+            e(TAG, "Unable to obtain the authenticated client while unlocking.")
+            activity.finish()
+            return
+        }
+        runCatching {
+            client.oAuthRefreshInterceptor.refreshAccessToken()
+        }.onFailure { e ->
+            e(TAG, "Error encountered while unlocking.", e)
+        }
+        activity.finish()
+    }
+
     private val authenticators
-        get() = // TODO: Remove when min API > 29.
-            when {
-                SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-                else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-            }
+        get() = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
     private val promptInfo: PromptInfo
         get() {
-            var hasFaceUnlock = false
-            if (SDK_INT >= Q) {
-                hasFaceUnlock = packageManager.hasSystemFeature(
-                    FEATURE_FACE
-                ) || packageManager.hasSystemFeature(
-                    FEATURE_IRIS
-                )
-            }
+            val hasFaceUnlock = packageManager.hasSystemFeature(
+                FEATURE_FACE
+            ) || packageManager.hasSystemFeature(
+                FEATURE_IRIS
+            )
             val subtitle = SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username ?: ""
 
             return PromptInfo.Builder()
@@ -782,15 +1090,56 @@ open class LoginActivity : FragmentActivity() {
      *  Launches the current login server in a Custom Tab. This allows Admins
      *  to authenticate with a Passkey or by other methods that require
      *  Advanced/Browser Authentication.
+     *
+     *  This function is a no-op for Welcome Discovery.
      */
     @Deprecated(message = "This function will be replaced by a permanent solution in 14.0.")
     fun launchLoginForAdminsAction() {
+        // Guard against launching a Custom Tab on the Welcome Discovery Phase 1 page, whose
+        // callback (sfdc://discocallback) is not app-unique.  This MUST use the same signal as the
+        // menu-item visibility gating in LoginView (viewModel.selectedServer), NOT
+        // LoginServerManager.selectedLoginServer: the latter stays welcome.salesforce.com through
+        // BOTH phases, while selectedServer is the discovered My Domain in Phase 2 — where LFA is
+        // valid and the menu item is shown.  Keying off LoginServerManager here would no-op the
+        // action in Phase 2 even though the menu offers it.
+        val selectedServer = viewModel.selectedServer.value?.toUri()
+        if (selectedServer?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } == true) {
+            w(TAG, "launchLoginForAdminsAction is a no-op for Welcome Discovery; " +
+                    "LFA requires an app-unique OAuth callback")
+            return
+        }
         val loginUrl = viewModel.browserCustomTabUrl.value ?: return
+        completedViaAdminCustomTab = true
         loadLoginPageInCustomTab(loginUrl, adminLoginCustomTabLauncher)
     }
 
+    internal fun registerAuthTypeFeatureGlobal() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val allAMarkers = listOf(
+            FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            FEATURE_AUTH_TYPE_NATIVE,
+        )
+        allAMarkers.forEach { sdkManager.unregisterUsedAppFeature(it) }
+
+        val hybrid = sdkManager.useHybridAuthentication
+        val webServer = viewModel.useWebServerFlow() || completedViaAdminCustomTab
+        when {
+            webServer && !hybrid -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+            webServer && hybrid  -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID)
+            !webServer && !hybrid -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID)
+            else                  -> sdkManager.registerUsedAppFeature(FEATURE_AUTH_TYPE_USER_AGENT_HYBRID)
+        }
+    }
+
+    @OptIn(ExperimentalInitialNavigationCanLeaveBrowser::class)
     @VisibleForTesting
     internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+        completedViaBrowserTab = true
+        registerAuthTypeFeatureGlobal()
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN)
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*
              * Set a custom animation to slide in and out for Chrome custom tab
@@ -803,11 +1152,20 @@ open class LoginActivity : FragmentActivity() {
             setCloseButtonIcon(decodeResource(resources, sf__action_back))
             setShareState(CustomTabsIntent.SHARE_STATE_OFF)
 
-            // Use app provided color if set.  Fallback to dynamic color.
-            val background: Color = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value
+            // Use app provided color if set.  Fallback to the default login background color.
             setDefaultColorSchemeParams(
-                CustomTabColorSchemeParams.Builder().setToolbarColor(background.toArgb()).build()
+                CustomTabColorSchemeParams.Builder()
+                    .setToolbarColor(customTabToolbarColor(viewModel.topBarColor).toArgb())
+                    .build()
             )
+
+            // Remove all unnecessary features
+            setBookmarksButtonEnabled(false)
+            setInitialNavigationAllowedToLeaveBrowser(false)
+            setDownloadButtonEnabled(false)
+            setOpenInBrowserButtonState(OPEN_IN_BROWSER_STATE_OFF)
+            setInstantAppsEnabled(false)
+            setBackgroundInteractionEnabled(false)
         }.build()
 
         /*
@@ -822,8 +1180,23 @@ open class LoginActivity : FragmentActivity() {
             customTabsIntent.intent.setPackage(customTabBrowser)
         }
 
-        // Add prompt=login to prevent the browser cookie from bypassing login if it exists.
-        val urlString = if (sharedBrowserSession) loginUrl else loginUrl + PROMPT_LOGIN
+        val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
+
+        if (!isCallbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
+            val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme
+                ?: viewModel.oAuthConfig.redirectUri
+            e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
+                    "matching intent-filter in this app's AndroidManifest.xml. " +
+                    "Add an intent-filter with scheme '$scheme' to LoginActivity.")
+            if (applicationInfo.flags and FLAG_DEBUGGABLE != 0) {
+                AlertDialog.Builder(this@LoginActivity)
+                    .setTitle(sf__advanced_auth_manifest_error_title)
+                    .setMessage(getString(sf__advanced_auth_manifest_error_message, scheme))
+                    .setPositiveButton(android.R.string.ok) { _, _ -> }
+                    .show()
+            }
+            return
+        }
 
         runCatching {
             customTabsIntent.intent.setData(urlString.toUri())
@@ -837,6 +1210,30 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Appends `sdkInfo` and `auth_trigger` to the authorize URL for the native browser (Custom
+     * Tab) path only — the WebView path's real `User-Agent` header already carries this
+     * information, so [LoginViewModel.generateAuthorizationUrl]'s WebView URL is left untouched.
+     * Also appends `prompt=login` (unless a shared browser session is in use) to prevent the
+     * browser cookie from bypassing login if it exists.
+     */
+    @VisibleForTesting
+    internal fun buildCustomTabAuthorizeUrl(
+        loginUrl: String,
+        isAdminLogin: Boolean,
+        sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
+    ): String {
+        @Suppress("DEPRECATION")
+        val authTrigger = selectAuthTrigger(
+            isAdminLogin,
+            isMdmForcedBrowserLogin(),
+            sdkManager.forceAdvancedAuthentication,
+        )
+        val sdkInfo = Uri.encode(sdkManager.getUserAgent(""))
+        val urlWithSdkInfo = "$loginUrl&sdkInfo=$sdkInfo&auth_trigger=$authTrigger"
+        return if (sharedBrowserSession) urlWithSdkInfo else urlWithSdkInfo + PROMPT_LOGIN
+    }
+
     private fun doesBrowserExist(customTabBrowser: String?) =
         when (customTabBrowser) {
             null -> false
@@ -847,37 +1244,22 @@ open class LoginActivity : FragmentActivity() {
             }.getOrDefault(false)
         }
 
-    private fun swapJWTForAccessToken() {
-        CoroutineScope(IO).launch {
-            runCatching {
-                if (viewModel.jwt.isNullOrBlank()) {
-                    return@launch
-                } else {
-                    swapJWTForTokens(HttpAccess.DEFAULT, URI(viewModel.loginUrl.value), viewModel.jwt)
-                }
-            }.onFailure { throwable: Throwable ->
-                jwtFlowError(throwable)
-            }.onSuccess { tokenResponse: TokenEndpointResponse? ->
-                if (tokenResponse?.authToken != null) {
-                    if (tokenResponse.tokenFormat == "jwt") {
-                        e(TAG, "Frontdoor cannot be used with a JWT access tokens.")
-                        jwtFlowError()
-                    } else {
-                        viewModel.authCodeForJwtFlow = tokenResponse.authToken
-                        viewModel.reloadWebView()
-                    }
-                }
-            }
+    /**
+     * Returns true if the app's manifest contains an intent-filter that handles [redirectUri],
+     * false otherwise.  A missing registration causes the custom tab redirect to be silently
+     * dropped by Android, leaving the user on a blank screen at the end of the advanced-auth flow.
+     */
+    @VisibleForTesting
+    @Suppress("DEPRECATION")
+    internal fun isCallbackSchemeRegistered(redirectUri: String): Boolean {
+        val probeIntent = Intent(Intent.ACTION_VIEW, redirectUri.toUri()).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            setPackage(packageName)  // scope to this app; avoids <queries> requirement
         }
-    }
-
-    private fun jwtFlowError(throwable: Throwable? = null) {
-        viewModel.jwt = null
-        onAuthFlowError(
-            error = getString(sf__generic_authentication_error_title),
-            errorDesc = getString(sf__jwt_authentication_error),
-            e = throwable,
-        )
+        return packageManager
+            ?.queryIntentActivities(probeIntent, MATCH_DEFAULT_ONLY)
+            .isNullOrEmpty()
+            .not()
     }
 
     // endregion
@@ -950,12 +1332,12 @@ open class LoginActivity : FragmentActivity() {
         // Set welcome discovery feature flag if applicable
         if (isLoginWithWelcomeDiscovery(intent)) {
             SalesforceSDKManager.getInstance()
-                .registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN);
+                .registerUsedAppFeature(FEATURE_WELCOME_DISCOVERY_LOGIN)
         }
         else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(
                 FEATURE_WELCOME_DISCOVERY_LOGIN
-            );
+            )
         }
 
         // Re-apply user agent to WebView
@@ -975,21 +1357,63 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
+     * If [SalesforceSDKManager.simulatedDiscoveryResult] has been armed by the Login Options
+     * Discovery Result Editor, consume it and dispatch the same hint+host intent the real
+     * `sfdc://discocallback` callback URL handler would dispatch.  This is the test seam
+     * mirroring iOS' `simulatedDomainDiscoveryResult` hook.
+     *
+     * The WebView's current URL is set to ABOUT_BLANK before dispatching so that the
+     * subsequent OAuth-URL reload triggered by [applySalesforceWelcomeLoginHintAndHost]
+     * setting [LoginViewModel.pendingServer] is not suppressed by
+     * [LoginViewModel.LoginUrlSource]'s same-host short-circuit when the simulated host
+     * happens to equal the previously selected server.
+     *
+     * @return Boolean true when the simulated result was applied and the welcome.salesforce.com
+     * discovery WebView load should be skipped, false otherwise.
+     */
+    @VisibleForTesting
+    internal fun applySimulatedDiscoveryResultIfApplicable(): Boolean {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        // Defense-in-depth: refuse to consume a simulated result outside debug builds, mirroring
+        // iOS' `#if DEBUG` wrap on the same hook.
+        if (!sdkManager.isDebugBuild) return false
+        val simulated = sdkManager.simulatedDiscoveryResult ?: return false
+
+        // Consume the simulated result so subsequent welcome-discovery selections run the real flow
+        // unless re-armed via Login Options.
+        sdkManager.simulatedDiscoveryResult = null
+
+        // Reset the WebView so the post-intent reload isn't dropped by the same-host short-circuit.
+        viewModel.loginUrl.value = ABOUT_BLANK
+
+        startDefaultLoginWithHintAndHost(
+            context = this,
+            loginHint = simulated.loginHint,
+            loginHost = simulated.loginHost,
+        )
+        return true
+    }
+
+    /**
      * If the intent has the Salesforce Welcome login hint and host, applies
      * those for use in the generation of the OAuth URL.  This is used by
      * Salesforce Welcome for external linking to default login with a specific
      * login username hint and My Domain log in server.  It is also used in the
      * Salesforce Welcome Discovery flow.
+     *
+     * The My Domain drives [LoginViewModel.pendingServer] for this login
+     * attempt only and is intentionally not persisted to
+     * [com.salesforce.androidsdk.config.LoginServerManager].
+     *
      * @param intent The activity's intent
      */
-    private fun applySalesforceWelcomeLoginHintAndHost(intent: Intent) {
-        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
-
+    @VisibleForTesting
+    internal fun applySalesforceWelcomeLoginHintAndHost(intent: Intent) {
         viewModel.loginHint = intent.getStringExtra(EXTRA_KEY_LOGIN_HINT)
 
         intent.getStringExtra(EXTRA_KEY_LOGIN_HOST)?.let { loginHost ->
             val loginUrl = "https://$loginHost"
-            loginServerManager.addCustomLoginServer(loginHost, loginUrl)
+            viewModel.pendingServer.value = loginUrl
         }
     }
 
@@ -1007,31 +1431,6 @@ open class LoginActivity : FragmentActivity() {
     }
 
     /**
-     * Creates a Salesforce Welcome Discovery mobile URL using the provided
-     * Salesforce Welcome Discovery host and path URL.
-     * @param salesforceWelcomeDiscoveryHostAndPathUrl The Salesforce Welcome
-     * Discovery host and path URL
-     * @return A Salesforce Welcome Discovery mobile URL with all required
-     * parameters
-     */
-    private fun generateSalesforceWelcomeDiscoveryMobileUrl(
-        salesforceWelcomeDiscoveryHostAndPathUrl: Uri
-    ) = salesforceWelcomeDiscoveryHostAndPathUrl.buildUpon()
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_ID,
-            viewModel.oAuthConfig.consumerKey,
-        )
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CLIENT_VERSION,
-            URLEncoder.encode(SalesforceSDKManager.getInstance().appVersion, "utf8")
-        )
-        .appendQueryParameter(
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_URL_QUERY_PARAMETER_KEY_CALLBACK_URL,
-            SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL
-        )
-        .build()
-
-    /**
      * Switches between default or Salesforce Welcome Discovery log in as needed
      * using the provided pending login server URL.
      * @param pendingLoginServerUri The pending login server URL
@@ -1044,16 +1443,23 @@ open class LoginActivity : FragmentActivity() {
         // If the pending login server is a change to a new Salesforce Welcome Discovery URL and host.
         if (isSalesforceWelcomeDiscoveryUrlPath(pendingLoginServerUri)) {
 
-            // Navigate to Salesforce Welcome Discovery.
-            startActivity(
-                Intent(
-                    this,
-                    SalesforceSDKManager.getInstance().webViewLoginActivityClass
-                ).apply {
-                    data = generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
-                    flags = FLAG_ACTIVITY_SINGLE_TOP
-                })
-            true
+            // If a simulated discovery result has been armed via Login Options, bypass the real
+            // welcome.salesforce.com discovery WebView and route directly to default login with
+            // the injected hint and host.  Mirrors iOS' simulatedDomainDiscoveryResult hook.
+            if (applySimulatedDiscoveryResultIfApplicable()) {
+                true
+            } else {
+                // Navigate to Salesforce Welcome Discovery.
+                startActivity(
+                    Intent(
+                        this,
+                        SalesforceSDKManager.getInstance().webViewLoginActivityClass
+                    ).apply {
+                        data = viewModel.generateSalesforceWelcomeDiscoveryMobileUrl(pendingLoginServerUri)
+                        flags = FLAG_ACTIVITY_SINGLE_TOP
+                    })
+                true
+            }
         }
 
         // If the pending login server isn't a Salesforce Welcome Discovery URL but the previous was...
@@ -1081,16 +1487,14 @@ open class LoginActivity : FragmentActivity() {
      * @return Boolean true if default login was started with the provided
      * Salesforce Welcome Discovery URL, otherwise false.
      */
-    private fun useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(
-        uri: Uri
-    ): Boolean {
+    private fun useSalesforceWelcomeDiscoveryMobileCallbackUrlForDefaultLogin(uri: Uri): Boolean {
         return if (isSalesforceWelcomeDiscoveryMobileCallbackUrl(uri)) {
             startDefaultLoginWithHintAndHost(
                 context = this,
                 loginHint = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT) ?: return false,
                 loginHost = uri.getQueryParameter(SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_MY_DOMAIN)?.toUri()?.host ?: return false
             )
-            return true
+            true
         } else false
     }
 
@@ -1164,6 +1568,9 @@ open class LoginActivity : FragmentActivity() {
             val authFlowFinished = formattedUrl.startsWith(callbackUrl)
 
             if (authFlowFinished) {
+                completedViaBrowserTab = false
+                SalesforceSDKManager.getInstance()
+                    .unregisterUsedAppFeature(FEATURE_BROWSER_LOGIN)
                 val params = UriFragmentParser.parse(request.url)
                 val error = params["error"]
                 // Did we fail?
@@ -1179,11 +1586,12 @@ open class LoginActivity : FragmentActivity() {
                         viewModel.authFinished.value = true
 
                         when {
-                            viewModel.useWebServerFlow ->
+                            viewModel.useWebServerFlow() ->
                                 viewModel.onWebServerFlowComplete(
                                     params["code"],
                                     ::onAuthFlowError,
                                     ::onAuthFlowSuccess,
+                                    onAuthFlowFinished = ::onAuthFlowFinished,
                                 )
 
                             else ->
@@ -1192,6 +1600,7 @@ open class LoginActivity : FragmentActivity() {
                                         TokenEndpointResponse(params),
                                         ::onAuthFlowError,
                                         ::onAuthFlowSuccess,
+                                        onAuthFlowFinished = ::onAuthFlowFinished,
                                     )
                                 }
                         }
@@ -1217,8 +1626,15 @@ open class LoginActivity : FragmentActivity() {
                     return@evaluateJavascript
                 }
 
-                viewModel.dynamicBackgroundColor.value = validateAndExtractBackgroundColor(result)
-                    ?: return@evaluateJavascript
+                viewModel.dynamicBackgroundColor.value =
+                    if (url?.toUri()?.let { isSalesforceWelcomeDiscoveryUrlPath(it) } == true) {
+                        // The Welcome Discovery Phase 1 page (welcome.salesforce.com/discovery)
+                        // reports a dark computed background in some states (e.g. after logout),
+                        // which would tint the top and bottom app bars black.
+                        Color.White
+                    } else {
+                        validateAndExtractBackgroundColor(result) ?: return@evaluateJavascript
+                    }
 
                 // Ensure Status Bar Icons are readable no matter which OS theme is used.
                 val titleTextColorLight = viewModel.titleTextColor?.luminance()?.let { it < 0.5 }
@@ -1275,6 +1691,18 @@ open class LoginActivity : FragmentActivity() {
         private const val SETUP_REQUEST_CODE = 72
         private const val TAG = "LoginActivity"
         private const val PROMPT_LOGIN = "&prompt=login"
+
+        // `auth_trigger` values sent to /services/oauth2/authorize on the native browser (Custom
+        // Tab) path. Same string literals as iOS's kSFOAuthAuthTrigger* constants.
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_ORG_CONFIG = "org_config"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_MDM = "mdm"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_FORCE_ADVANCED_AUTH = "force_advanced_auth"
+        @VisibleForTesting
+        internal const val AUTH_TRIGGER_LOGIN_FOR_ADMIN = "login_for_admin"
+
         private const val AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.intent.AUTHENTICATION_ERROR"
         private const val HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE"
         private const val RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR"
@@ -1287,6 +1715,21 @@ open class LoginActivity : FragmentActivity() {
         // region LoginWebviewClient Constants
 
         internal const val ABOUT_BLANK = "about:blank"
+
+        /**
+         * The background color of login.salesforce.com, used as the Custom Tab toolbar color
+         * (unless the app overrides it via [LoginViewModel.topBarColor]).
+         */
+        internal val LOGIN_BACKGROUND_COLOR = Color(red = 244, green = 246, blue = 249)
+
+        /**
+         * The Custom Tab toolbar color: the app-provided [LoginViewModel.topBarColor] when set,
+         * otherwise the fixed [LOGIN_BACKGROUND_COLOR].
+         */
+        @VisibleForTesting
+        internal fun customTabToolbarColor(topBarColor: Color?): Color =
+            topBarColor ?: LOGIN_BACKGROUND_COLOR
+
         internal const val BACKGROUND_COLOR_JAVASCRIPT =
             "(function() { return window.getComputedStyle(document.body, null).getPropertyValue('background-color'); })();"
 
@@ -1300,6 +1743,78 @@ open class LoginActivity : FragmentActivity() {
             val blue = rgbMatch.groupValues[3].toIntOrNull() ?: return null
 
             return Color(red, green, blue)
+        }
+
+        // endregion
+        // region Telemetry marker selection
+
+        /**
+         * Selects the L-marker (login server type) for telemetry.
+         * Exactly one of L1–L5 is selected.
+         *
+         * @param usedWelcomeDiscovery Whether the Welcome Discovery flow was used (captured before WD global is cleared)
+         * @param loginServerUrl The selected login server URL at auth completion time
+         * @return The L-marker feature code to register
+         */
+        @VisibleForTesting
+        internal fun selectLMarker(usedWelcomeDiscovery: Boolean, loginServerUrl: String): String = when {
+            usedWelcomeDiscovery -> FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY                         // L3
+            LoginServerManager.isProductionLoginServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_PRODUCTION  // L1
+            LoginServerManager.SANDBOX_LOGIN_URL == loginServerUrl -> FEATURE_LOGIN_SERVER_SANDBOX  // L2
+            LoginServerManager.isMyDomainServer(loginServerUrl) -> FEATURE_LOGIN_SERVER_MY_DOMAIN   // L4
+            else -> FEATURE_LOGIN_SERVER_OTHER                                                      // L5
+        }
+
+        /**
+         * Selects the B-marker (browser login reason) for telemetry.
+         * Returns exactly one of B1, B3, or B4 if browser login was used, or null if it was not.
+         * Priority: B3 (admin) > B4 (force flag) > B1 (server auth config)
+         *
+         * Note: B2 (MDM) is defined in [Features] but is never selected on Android. On Android,
+         * MDM forces cert auth via a different code path that never sets [completedViaBrowserTab].
+         *
+         * @param completedViaBrowserTab Whether login completed via browser Custom Tab
+         * @param completedViaAdminCustomTab Whether login completed via the "Login for Admin" Custom Tab
+         * @param isMdmForced Unused on Android — reserved for future use (always pass false)
+         * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
+         * @return The B-marker feature code to register, or null if browser login was not used
+         */
+        @VisibleForTesting
+        internal fun selectBMarker(
+            completedViaBrowserTab: Boolean,
+            completedViaAdminCustomTab: Boolean,
+            @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
+            forceAdvancedAuth: Boolean,
+        ): String? = when {
+            !completedViaBrowserTab -> null
+            completedViaAdminCustomTab -> FEATURE_BROWSER_LOGIN_FOR_ADMIN   // B3
+            forceAdvancedAuth -> FEATURE_BROWSER_LOGIN_FORCE_FLAG           // B4
+            else -> FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG                // B1 fallthrough
+        }
+
+        /**
+         * Selects the `auth_trigger` value sent to `/services/oauth2/authorize` on the native
+         * browser (Custom Tab) path, telling the server why browser login was chosen.
+         * Priority: login_for_admin > mdm > force_advanced_auth > org_config, mirroring
+         * [selectBMarker]'s B3 > B2 > B4 > B1 priority.
+         *
+         * @param isAdminLogin Whether this Custom Tab launch is the "Login for Admin" flow
+         * @param isMdmForced Unused on Android — reserved for future use (always pass false).
+         * See [selectBMarker]'s identically-named parameter: MDM forces cert auth via a
+         * different code path that never reaches the Custom Tab launch.
+         * @param forceAdvancedAuth Whether the [SalesforceSDKManager.forceAdvancedAuthentication] flag is set
+         * @return The `auth_trigger` value to send with the authorize request
+         */
+        @VisibleForTesting
+        internal fun selectAuthTrigger(
+            isAdminLogin: Boolean,
+            @Suppress("UNUSED_PARAMETER") isMdmForced: Boolean,
+            forceAdvancedAuth: Boolean,
+        ): String = when {
+            isAdminLogin -> AUTH_TRIGGER_LOGIN_FOR_ADMIN         // B3 — highest priority
+            forceAdvancedAuth -> AUTH_TRIGGER_FORCE_ADVANCED_AUTH // B4
+            else -> AUTH_TRIGGER_ORG_CONFIG                       // B1 — fallback
+            // B2/mdm unreachable here — MDM forces cert auth on Android, see selectBMarker
         }
 
         // endregion
@@ -1461,7 +1976,7 @@ open class LoginActivity : FragmentActivity() {
         // region Salesforce Welcome Login Private Implementation
 
         /** The default Salesforce Welcome Discovery mobile callback URL.  This value is fixed until future Salesforce Welcome updates */
-        private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL = "sfdc://discocallback"
+        internal const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL = "sfdc://discocallback"
 
         /** The Salesforce Welcome Discovery mobile callback URL's "login hint" parameter key */
         private const val SALESFORCE_WELCOME_DISCOVERY_MOBILE_CALLBACK_URL_QUERY_PARAMETER_KEY_LOGIN_HINT = "login_hint"
@@ -1486,9 +2001,20 @@ open class LoginActivity : FragmentActivity() {
         const val SALESFORCE_WELCOME_DISCOVERY_URL_PATH = "/discovery"
 
         /**
+         * The result of a simulated Welcome Discovery flow. Holds the values that the real
+         * `sfdc://discocallback?login_hint=&my_domain=` URL would have provided.  Set on
+         * [SalesforceSDKManager.simulatedDiscoveryResult] from the Login Options screen to
+         * bypass the email round-trip during automated tests.
+         */
+        data class SimulatedDiscoveryResult(
+            val loginHint: String,
+            val loginHost: String,
+        )
+
+        /**
          * Determines if the provided URL has the Salesforce Welcome Discovery
          * path.
-         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * @param uri The URL to examine for the Salesforce Welcome Discovery
          * path
          * @return Boolean true if the URL has the Salesforce Welcome Discovery
          * path or false otherwise
@@ -1503,7 +2029,7 @@ open class LoginActivity : FragmentActivity() {
          * Determines if the provided URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback.  The client id (consumer
          * key) of the URL must match the boot config's consumer key.
-         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * @param uri The URL to examine for the Salesforce Welcome Discovery
          * path and parameters for mobile callback
          * @return Boolean true if the URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback and matches the boot config's
@@ -1529,7 +2055,7 @@ open class LoginActivity : FragmentActivity() {
          * Determines if the provided URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback.  The client id (consumer
          * key) of the URL must match the boot config's consumer key.
-         * @param url The URL to examine for the Salesforce Welcome Discovery
+         * @param uri The URL to examine for the Salesforce Welcome Discovery
          * path and parameters for mobile callback
          * @return Boolean true if the URL has the Salesforce Welcome Discovery
          * path and parameters for mobile callback and matches the boot config's
@@ -1586,7 +2112,7 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal inner class CustomTabActivityResult(
-        private val activity: LoginActivity = this@LoginActivity
+        private val activity: LoginActivity = this@LoginActivity,
     ) : ActivityResultCallback<ActivityResult> {
 
         override fun onActivityResult(result: ActivityResult) {
@@ -1608,7 +2134,7 @@ open class LoginActivity : FragmentActivity() {
      * Activity result callback for the "Login for Admin" custom tab.
      */
     @VisibleForTesting
-    internal inner class AdminCustomTabActivityResult : ActivityResultCallback<ActivityResult> {
+    internal class AdminCustomTabActivityResult : ActivityResultCallback<ActivityResult> {
         override fun onActivityResult(result: ActivityResult) {
             // Intentional no-op: keep the existing WebView visible on cancel.
         }
@@ -1627,7 +2153,7 @@ open class LoginActivity : FragmentActivity() {
      */
     @VisibleForTesting
     internal inner class PendingServerObserver(
-        private val activity: LoginActivity = this@LoginActivity
+        private val activity: LoginActivity = this@LoginActivity,
     ) : Observer<String> {
         override fun onChanged(value: String) {
             val pendingServerUri = value.toUri()

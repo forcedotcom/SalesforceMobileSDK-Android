@@ -30,6 +30,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -90,6 +91,12 @@ public class RestClient {
         String getNewAuthToken();
         String getRefreshToken();
         long getLastRefreshTime();
+
+        /**
+         * @return The token type from the most recent refresh (e.g. "Bearer"
+         * or "DPoP"), or null if not yet known or the server did not specify.
+         */
+        default String getTokenType() { return null; }
     }
 
     /**
@@ -140,10 +147,40 @@ public class RestClient {
      * @param authTokenProvider
      */
     public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+        this(clientInfo, authToken, null, httpAccessor, authTokenProvider);
+    }
+
+    /**
+     * Constructs a RestClient with the given clientInfo, authToken, tokenType, httpAccessor and authTokenProvider.
+     * The tokenType determines the Authorization header scheme (e.g. "Bearer" or "DPoP").
+     *
+     * @param clientInfo
+     * @param authToken
+     * @param tokenType
+     * @param httpAccessor
+     * @param authTokenProvider
+     */
+    public RestClient(ClientInfo clientInfo, String authToken, String tokenType, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+        this(clientInfo, authToken, tokenType, null, httpAccessor, authTokenProvider);
+    }
+
+    /**
+     * Constructs a RestClient with the given clientInfo, authToken, tokenType, credentialsIdentifier,
+     * httpAccessor and authTokenProvider. The tokenType determines the Authorization header scheme
+     * (e.g. "Bearer" or "DPoP"). The credentialsIdentifier is used to look up the DPoP key pair.
+     *
+     * @param clientInfo
+     * @param authToken
+     * @param tokenType
+     * @param credentialsIdentifier
+     * @param httpAccessor
+     * @param authTokenProvider
+     */
+    public RestClient(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
         this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
         this.authTokenProvider = authTokenProvider;
-        setOAuthRefreshInterceptor(authToken);
+        setOAuthRefreshInterceptor(authToken, tokenType, credentialsIdentifier);
         setOkHttpClientBuilder();
         setOkHttpClient(null);
     }
@@ -183,13 +220,20 @@ public class RestClient {
     /**
      * Sets the OAuthRefreshInterceptor associated with this user account.
      */
-    private synchronized void setOAuthRefreshInterceptor(String authToken) {
+    private synchronized void setOAuthRefreshInterceptor(String authToken, String tokenType) {
+        setOAuthRefreshInterceptor(authToken, tokenType, null);
+    }
+
+    /**
+     * Sets the OAuthRefreshInterceptor associated with this user account.
+     */
+    private synchronized void setOAuthRefreshInterceptor(String authToken, String tokenType, String credentialsIdentifier) {
         final String cacheKey = getCacheKey();
         OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
 
         // If none cached, create new one
         if (oAuthRefreshInterceptor == null) {
-            oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider);
+            oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, tokenType, credentialsIdentifier, authTokenProvider);
             OAUTH_REFRESH_INTERCEPTORS.put(cacheKey, oAuthRefreshInterceptor);
         }
         this.oAuthRefreshInterceptor = oAuthRefreshInterceptor;
@@ -209,6 +253,10 @@ public class RestClient {
             okHttpClientBuilder = httpAccessor.createNewClientBuilder();
             if (!cacheKey.equals("unauthenticated")) {
                 okHttpClientBuilder.addInterceptor(getOAuthRefreshInterceptor());
+                final UserAccount user = SalesforceSDKManager.getInstance()
+                        .getUserAccountManager()
+                        .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
+                okHttpClientBuilder.addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(user));
             }
 
             OK_CLIENT_BUILDERS.put(getCacheKey(), okHttpClientBuilder);
@@ -259,7 +307,10 @@ public class RestClient {
         data.put(LOGIN_URL, clientInfo.loginUrl.toString());
         data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
         data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+        UserAccount user = SalesforceSDKManager.getInstance()
+                .getUserAccountManager()
+                .getUserFromOrgAndUserId(clientInfo.orgId, clientInfo.userId);
+        data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent("", user));
         data.put(COMMUNITY_ID, clientInfo.communityId);
         data.put(COMMUNITY_URL, clientInfo.communityUrl);
         return new JSONObject(data);
@@ -304,6 +355,26 @@ public class RestClient {
     }
 
     /**
+     * Proactively refresh this client's access token through the SDK's standard, app-wide
+     * serialized refresh path (the same path used when a request returns 401).
+     *
+     * <p>This is the single source of truth for token refresh: it serializes per-account so
+     * concurrent callers don't each POST, it reads the live refresh token, and it persists any
+     * rotated refresh token (Refresh Token Rotation) plus refreshed session ids (lightning/vf/
+     * content sids, csrf token) onto the {@link com.salesforce.androidsdk.accounts.UserAccount}.
+     *
+     * <p>Hybrid/WebView callers that previously performed their own token-endpoint request should
+     * call this instead, then read the updated values from {@code UserAccount} to set cookies —
+     * avoiding a second, parallel refresh that would rotate the refresh token out from under the
+     * SDK and trigger a spurious logout.
+     *
+     * @throws IOException on network failure or if the refresh token was revoked.
+     */
+    public synchronized void refreshAccessToken() throws IOException {
+        oAuthRefreshInterceptor.refreshAccessToken();
+    }
+
+    /**
      * @return underlying OkHttpClient.Builder
      */
     public OkHttpClient.Builder getOkHttpClientBuilder() {
@@ -339,6 +410,7 @@ public class RestClient {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
+
         return builder.build();
     }
 
@@ -683,6 +755,8 @@ public class RestClient {
 
         private final AuthTokenProvider authTokenProvider;
         private String authToken;
+        String tokenType;
+        String credentialsIdentifier;
         private ClientInfo clientInfo;
 
         /**
@@ -698,8 +772,36 @@ public class RestClient {
          * @param authTokenProvider
          */
         public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, AuthTokenProvider authTokenProvider) {
+            this(clientInfo, authToken, null, authTokenProvider);
+        }
+
+        /**
+         * Overload that accepts a token type, used to select between the Bearer
+         * and DPoP Authorization header schemes.
+         *
+         * @param clientInfo
+         * @param authToken
+         * @param tokenType
+         * @param authTokenProvider
+         */
+        public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, String tokenType, AuthTokenProvider authTokenProvider) {
+            this(clientInfo, authToken, tokenType, null, authTokenProvider);
+        }
+
+        /**
+         * Overload that accepts a token type and credentials identifier for DPoP key lookup.
+         *
+         * @param clientInfo
+         * @param authToken
+         * @param tokenType
+         * @param credentialsIdentifier
+         * @param authTokenProvider
+         */
+        public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, AuthTokenProvider authTokenProvider) {
             this.clientInfo = clientInfo;
             this.authToken = authToken;
+            this.tokenType = tokenType;
+            this.credentialsIdentifier = credentialsIdentifier;
             this.authTokenProvider = authTokenProvider;
         }
 
@@ -804,7 +906,12 @@ public class RestClient {
         private Request buildAuthenticatedRequest(Request request) {
             Request.Builder builder = request.newBuilder();
             setAuthHeader(builder);
+            attachDPoPProofIfNeeded(builder, request.method(), request.url().toString());
             return builder.build();
+        }
+
+        private void attachDPoPProofIfNeeded(Request.Builder builder, String method, String url) {
+            DPoPRequestDecorator.INSTANCE.attachProof(builder, credentialsIdentifier, tokenType, authToken);
         }
 
         /**
@@ -821,7 +928,7 @@ public class RestClient {
          */
         private void setAuthHeader(Request.Builder builder) {
             if (authToken != null) { //Add Auth token to each request if authorized
-                OAuth2.addAuthorizationHeader(builder, authToken);
+                OAuth2.addAuthorizationHeader(builder, authToken, tokenType);
             }
         }
 
@@ -832,6 +939,17 @@ public class RestClient {
          */
         private synchronized void setAuthToken(String newAuthToken) {
             authToken = newAuthToken;
+        }
+
+        /**
+         * Change authToken and tokenType for this RestClient
+         *
+         * @param newAuthToken
+         * @param newTokenType
+         */
+        private synchronized void setAuthToken(String newAuthToken, String newTokenType) {
+            authToken = newAuthToken;
+            tokenType = newTokenType;
         }
 
         /**
@@ -867,8 +985,8 @@ public class RestClient {
                     throw new RefreshTokenRevokedException("Could not refresh token");
                 }
 
-                // Use new token
-                setAuthToken(newAuthToken);
+                // Use new token (and token type, if available)
+                setAuthToken(newAuthToken, authTokenProvider.getTokenType());
 
                 // Check if the instanceUrl changed
                 String instanceUrl = authTokenProvider.getInstanceUrl();

@@ -30,8 +30,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
@@ -273,6 +271,7 @@ fun InfoRowView(
     label: String,
     value: String?,
     isSensitive: Boolean = false,
+    contentDescription: String = label,
 ) {
     var isValueVisible by remember { mutableStateOf(!isSensitive) }
     val emptyText = stringResource(R.string.empty_placeholder)
@@ -323,7 +322,7 @@ fun InfoRowView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(VALUE_WEIGHT)
                 .padding(end = (INNER_CARD_PADDING /2).dp)
-                .semantics { contentDescription = label },
+                .semantics { this.contentDescription = contentDescription },
         )
 
         if (isSensitive && !value.isNullOrEmpty()) {
@@ -354,7 +353,6 @@ private fun copyToClipboard(context: Context, title: String, text: String) {
     clipboard.setPrimaryClip(clip)
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -370,7 +368,6 @@ private fun InfoRowViewPreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -386,7 +383,6 @@ private fun InfoRowViewSensitivePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -421,7 +417,6 @@ private fun InfoRowSectionFallbackThemePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)
@@ -460,7 +455,6 @@ private fun UserCredentialsViewFallbackThemePreview() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @ExcludeFromJacocoGeneratedReport
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, backgroundColor = 0xFF181818)

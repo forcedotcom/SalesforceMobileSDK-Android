@@ -29,10 +29,11 @@ package com.salesforce.samples.authflowtester
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
-import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
-import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -83,4 +84,14 @@ fun testECAJwt_SubsetScopes_NotHybrid() {
 fun testECAJwt_AllScopes() {
         loginAndValidate(knownAppConfig = ECA_JWT, scopeSelection = ALL)
     }
+
+    // region ECA Pool Server Tests
+
+    // Login via the pool server without DPoP and verify the session is valid.
+    @Test
+    fun testECAJwt_ViaLoginPoolServer() {
+        loginAndValidate(knownAppConfig = ECA_JWT, useLoginPoolHost = true)
+    }
+
+    // endregion
 }

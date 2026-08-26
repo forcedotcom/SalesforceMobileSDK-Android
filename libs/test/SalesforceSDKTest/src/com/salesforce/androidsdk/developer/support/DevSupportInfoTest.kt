@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.developer.support
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.auth.AppAttestationClient
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.RuntimeConfig
 import io.mockk.every
@@ -37,7 +39,6 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -525,151 +526,211 @@ class DevSupportInfoTest {
     }
 
     @Test
-    fun createFromLegacyDevInfos_RemovesValuesFromBasicInfoWhenMovedToSections() {
-        val legacyDevInfos = listOf(
-            "SDK Version", "13.2.0",
-            "App Type", "Native",
-            "User Agent", "TestUserAgent",
-            "Use Web Server Authentication", "true",
-            "Browser Login Enabled", "false",
-            "Consumer Key", "test_key",
-            "Redirect URI", "test://redirect",
-            "Scopes", "api web",
-            "Username", "test@test.com",
-            "Instance URL", "https://test.salesforce.com",
-            "Managed App", "false",
-        )
+    fun currentUserSection_BearerSession_ShowsTokenTypeNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = "Bearer")
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
 
-        val devSupportInfo = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
-
-        val basicInfo = devSupportInfo.basicInfo!!
-
-        // Verify auth config values were removed from basicInfo
-        assertFalse(basicInfo.any { it.first == "Use Web Server Authentication" })
-        assertFalse(basicInfo.any { it.first == "Browser Login Enabled" })
-
-        // Verify boot config values were removed from basicInfo
-        assertFalse(basicInfo.any { it.first == "Consumer Key" })
-        assertFalse(basicInfo.any { it.first == "Redirect URI" })
-        assertFalse(basicInfo.any { it.first == "Scopes" })
-
-        // Verify current user values were removed from basicInfo
-        assertFalse(basicInfo.any { it.first == "Username" })
-        assertFalse(basicInfo.any { it.first == "Instance URL" })
-
-        // Verify runtime config values were removed from basicInfo
-        assertFalse(basicInfo.any { it.first == "Managed App" })
-
-        // Verify only basic info values remain
-        assertTrue(basicInfo.any { it.first == "SDK Version" && it.second == "13.2.0" })
-        assertTrue(basicInfo.any { it.first == "App Type" && it.second == "Native" })
-        assertTrue(basicInfo.any { it.first == "User Agent" && it.second == "TestUserAgent" })
-        assertEquals(3, basicInfo.size)
-
-        // Verify values were moved to appropriate sections
-        assertNotNull(devSupportInfo.authConfigSection)
-        assertTrue(devSupportInfo.authConfigSection!!.second.any { it.first == "Use Web Server Authentication" })
-        
-        assertNotNull(devSupportInfo.bootConfigSection)
-        assertTrue(devSupportInfo.bootConfigSection!!.second.any { it.first == "Consumer Key" })
-        
-        assertNotNull(devSupportInfo.currentUserSection)
-        assertTrue(devSupportInfo.currentUserSection!!.second.any { it.first == "Username" })
-        
-        assertNotNull(devSupportInfo.runtimeConfigSection)
-        assertTrue(devSupportInfo.runtimeConfigSection!!.second.any { it.first == "Managed App" })
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
     }
 
     @Test
-    fun createFromLegacyDevInfos_ProducesSameResultAsSecondaryConstructor() {
-        // Create mock objects for secondary constructor
-        val bootConfig = mockk<BootConfig>(relaxed = true) {
-            every { remoteAccessConsumerKey } returns "test_consumer_key"
-            every { oauthRedirectURI } returns "test://redirect"
-            every { oauthScopes } returns arrayOf("api", "web")
-        }
-        val runtimeConfig = createMockRuntimeConfig(
-            isManagedApp = true,
-            oauthId = "test_oauth_id",
-            callbackUrl = "test://callback",
-            requireCertAuth = true,
-            onlyShowAuthorizedHosts = false
-        )
-        val user = createMockUserAccount(
-            username = "test@salesforce.com",
-            displayName = "Test User",
-            clientId = "test_client_id",
-            scope = "api web",
-            instanceServer = "https://test.salesforce.com",
-            tokenFormat = "oauth2"
+    fun currentUserSection_NullTokenType_ShowsBearerNoDPoPRows() {
+        val user = createMockUserAccount(tokenType = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("Bearer", section.find { it.first == "OAuth Token Type" }?.second)
+        assertFalse(section.any { it.first == "DPoP Nonce" })
+        assertFalse(section.any { it.first == "DPoP Key Thumbprint" })
+    }
+
+    @Test
+    fun currentUserSection_DPoPSession_ShowsDPoPRows() {
+        // credentialsIdentifier is null here so thumbprint/nonce fall back to "Unavailable"/"None"
+        val user = createMockUserAccount(tokenType = "DPoP", credentialsIdentifier = null)
+        val section = DevSupportInfo.parseUserInfoSection(user)!!.second
+
+        assertEquals("DPoP", section.find { it.first == "OAuth Token Type" }?.second)
+        assertTrue(section.any { it.first == "DPoP Nonce" })
+        assertTrue(section.any { it.first == "DPoP Key Thumbprint" })
+        assertEquals("None", section.find { it.first == "DPoP Nonce" }?.second)
+        assertEquals("Unavailable", section.find { it.first == "DPoP Key Thumbprint" }?.second)
+    }
+
+    @Test
+    fun jwkThumbprint_ProducesValidBase64UrlString() {
+        // Generate a key pair using the standard Java security API (no Android Keystore needed in unit tests)
+        val keyPairGenerator = java.security.KeyPairGenerator.getInstance("EC")
+        keyPairGenerator.initialize(java.security.spec.ECGenParameterSpec("secp256r1"))
+        val keyPair = keyPairGenerator.generateKeyPair()
+        val publicKey = keyPair.public as java.security.interfaces.ECPublicKey
+
+        val thumbprint = DPoPProofBuilder.jwkThumbprint(publicKey)
+
+        // base64url of a 32-byte SHA-256 digest = 43 characters (no padding)
+        assertEquals(43, thumbprint.length)
+        assertTrue(thumbprint.matches(Regex("[A-Za-z0-9_-]+")))
+    }
+
+    // RTR section
+
+    /** Per-user fields show "N/A" when no user is logged in. */
+    @Test
+    fun rtrSection_NoCurrentUser_ShowsNA() {
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = null, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("N/A", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Before any rotation, shows "RTR Active: false" and
+     * "Last Rotation: Never".
+     */
+    @Test
+    fun rtrSection_UserBeforeRotation_ShowsFalseAndNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = null)
+
+        val (title, rows) = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false)
+
+        assertEquals("RTR", title)
+        assertEquals("false", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * Blank-timestamp guard: a blank persisted timestamp still reads as
+     * "Never".
+     */
+    @Test
+    fun rtrSection_BlankRotationTime_ShowsNever() {
+        val user = createMockUserAccount(lastTokenRotationTime = "")
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = false).second
+
+        assertEquals("Never", rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    /**
+     * After a confirmed rotation, "RTR Active" is true and
+     * "Last Rotation" is the timestamp.
+     */
+    @Test
+    fun rtrSection_UserAfterRotation_ShowsTrueAndTimestamp() {
+        val timestamp = "2026-07-30T12:00:00Z"
+        val user = createMockUserAccount(lastTokenRotationTime = timestamp)
+
+        val rows = DevSupportInfo.parseRtrSection(currentUser = user, rtrActive = true).second
+
+        assertEquals("true", rows.find { it.first == "RTR Active" }?.second)
+        assertEquals(timestamp, rows.find { it.first == "Last Rotation" }?.second)
+    }
+
+    // App Attestation section
+
+    @Test
+    fun appAttestationSection_NoClient_AttestationDisabledAllNA() {
+        val (title, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = null,
+            aaFeatureActive = false,
         )
 
-        // Create DevSupportInfo using secondary constructor
-        val basicInfo = listOf(
-            "SDK Version" to "13.2.0",
-            "App Type" to "Native",
-            "User Agent" to "TestUserAgent",
-            "Authenticated Users" to "Test User (test@salesforce.com)",
+        assertEquals("App Attestation", title)
+        assertEquals("false", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("N/A", rows.find { it.first == "API Host" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Google Cloud Project ID" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Integrity Provider Ready" }?.second)
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_ClientWithoutHost_AttestationDisabled() {
+        val client = createMockAppAttestationClient(apiHostName = null, integrityProviderReady = false)
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
         )
-        val authConfig = listOf(
-            "Use Web Server Authentication" to "true",
-            "Browser Login Enabled" to "false",
+
+        assertEquals("false", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("N/A", rows.find { it.first == "API Host" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_ClientConfigured_ProviderNotReady() {
+        val client = createMockAppAttestationClient(apiHostName = "myorg.my.salesforce.com", integrityProviderReady = false)
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
         )
-        
-        val fromSecondaryConstructor = DevSupportInfo(
-            basicInfo = basicInfo,
-            authConfig = authConfig,
-            bootConfig = bootConfig,
+
+        assertEquals("true", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("myorg.my.salesforce.com", rows.find { it.first == "API Host" }?.second)
+        assertEquals("false", rows.find { it.first == "Integrity Provider Ready" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FullyConfigured_AllFieldsPopulated() {
+        val client = createMockAppAttestationClient(
+            apiHostName = "myorg.my.salesforce.com",
+            googleCloudProjectId = 123456789L,
+            integrityProviderReady = true,
+        )
+
+        val (title, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = client,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("App Attestation", title)
+        assertEquals("true", rows.find { it.first == "Attestation Enabled" }?.second)
+        assertEquals("myorg.my.salesforce.com", rows.find { it.first == "API Host" }?.second)
+        assertEquals("123456789", rows.find { it.first == "Google Cloud Project ID" }?.second)
+        assertEquals("true", rows.find { it.first == "Integrity Provider Ready" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FeatureFlag_NoUser_ShowsNA() {
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = null,
+            aaFeatureActive = false,
+        )
+
+        assertEquals("N/A", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
+
+    @Test
+    fun appAttestationSection_FeatureFlag_UserWithoutFlag_ShowsFalse() {
+        val user = createMockUserAccount()
+
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
             currentUser = user,
-            runtimeConfig = runtimeConfig
+            aaFeatureActive = false,
         )
 
-        // Create equivalent legacy dev infos list
-        val legacyDevInfos = mutableListOf<String>()
-        
-        // Add basic info
-        basicInfo.forEach { (key, value) ->
-            legacyDevInfos.add(key)
-            legacyDevInfos.add(value)
-        }
-        
-        // Add auth config
-        authConfig.forEach { (key, value) ->
-            legacyDevInfos.add(key)
-            legacyDevInfos.add(value)
-        }
-        
-        // Add boot config
-        legacyDevInfos.addAll(listOf(
-            "Consumer Key", "test_consumer_key",
-            "Redirect URI", "test://redirect",
-            "Scopes", "api web",
-        ))
-        
-        // Add current user
-        legacyDevInfos.addAll(listOf(
-            "Username", "test@salesforce.com",
-            "Consumer Key", "test_client_id",
-            "Scopes", "api web",
-            "Instance URL", "https://test.salesforce.com",
-            "Token Format", "oauth2",
-            "Access Token Expiration", "Unknown",
-            "Beacon Child Consumer Key", user.beaconChildConsumerKey ?: "None",
-        ))
-        
-        // Add runtime config
-        legacyDevInfos.addAll(listOf(
-            "Managed App", "true",
-            "OAuth ID", "test_oauth_id",
-            "Callback URL", "test://callback",
-            "Require Cert Auth", "true",
-            "Only Show Authorized Hosts", "false",
-        ))
+        assertEquals("false", rows.find { it.first == "Used in Last Auth" }?.second)
+    }
 
-        val fromLegacy = DevSupportInfo.createFromLegacyDevInfos(legacyDevInfos)
+    @Test
+    fun appAttestationSection_FeatureFlag_UserWithFlag_ShowsTrue() {
+        val user = createMockUserAccount()
 
-        // Assert the two objects are identical
-        assertEquals(fromSecondaryConstructor, fromLegacy)
+        val (_, rows) = DevSupportInfo.parseAppAttestationSection(
+            appAttestationClient = null,
+            currentUser = user,
+            aaFeatureActive = true,
+        )
+
+        assertEquals("true", rows.find { it.first == "Used in Last Auth" }?.second)
     }
 
     // Helper methods
@@ -697,7 +758,10 @@ class DevSupportInfoTest {
         scope: String = "api web",
         instanceServer: String = "https://test.salesforce.com",
         tokenFormat: String = "oauth2",
-        authToken: String = "test_token"
+        authToken: String = "test_token",
+        tokenType: String? = null,
+        credentialsIdentifier: String? = null,
+        lastTokenRotationTime: String? = null,
     ): UserAccount {
         return UserAccount(
             Bundle().apply {
@@ -729,8 +793,23 @@ class DevSupportInfoTest {
                 putString(UserAccount.LOCALE, "en_US")
                 putString(UserAccount.SCOPE, scope)
                 putString(UserAccount.TOKEN_FORMAT, tokenFormat)
+                tokenType?.let { putString(UserAccount.TOKEN_TYPE, it) }
+                credentialsIdentifier?.let { putString(UserAccount.CREDENTIALS_IDENTIFIER, it) }
+                lastTokenRotationTime?.let { putString(UserAccount.LAST_TOKEN_ROTATION_TIME, it) }
             }
         )
+    }
+
+    private fun createMockAppAttestationClient(
+        apiHostName: String? = null,
+        googleCloudProjectId: Long = 0L,
+        integrityProviderReady: Boolean = false,
+    ): AppAttestationClient {
+        return mockk<AppAttestationClient>(relaxed = true) {
+            every { this@mockk.apiHostName } returns apiHostName
+            every { this@mockk.googleCloudProjectId } returns googleCloudProjectId
+            every { integrityTokenProvider } returns if (integrityProviderReady) mockk(relaxed = true) else null
+        }
     }
 
     private fun createMockJwtToken(expirationTime: Long): String {

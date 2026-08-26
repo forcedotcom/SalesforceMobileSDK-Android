@@ -1,0 +1,79 @@
+{
+  "docs": [
+    {
+      "doc": "README.md",
+      "scope": ".",
+      "description": "Salesforce Mobile SDK for Android - Overview and getting started guide"
+    },
+    {
+      "doc": "UPGRADE.md",
+      "scope": ".",
+      "description": "Upgrade steps from v. 7.0 to v. 7.1 for native/hybrid/React Native apps"
+    },
+    {
+      "doc": "CLAUDE.md",
+      "scope": ".",
+      "description": "AI instructions for working with the Android SDK codebase"
+    },
+    {
+      "doc": "native/README.md",
+      "scope": "native",
+      "description": "Native sample projects and development environment setup"
+    },
+    {
+      "doc": "native/NativeSampleApps/AuthFlowTester/README.md",
+      "scope": "native/NativeSampleApps/AuthFlowTester",
+      "description": "AuthFlowTester - UI automation testing app for authentication flows"
+    },
+    {
+      "doc": "docs/salesforcereact/README.md",
+      "scope": "libs/SalesforceReact",
+      "description": "SalesforceReact Library - React Native integration overview"
+    },
+    {
+      "doc": "docs/salesforcereact/ARCHITECTURE.md",
+      "scope": "libs/SalesforceReact",
+      "description": "SalesforceReact Architecture - Technical deep dive"
+    },
+    {
+      "doc": "docs/salesforcereact/API_REFERENCE.md",
+      "scope": "libs/SalesforceReact",
+      "description": "SalesforceReact API Reference - Complete API documentation"
+    },
+    {
+      "doc": "docs/salesforcereact/TESTING.md",
+      "scope": "libs/SalesforceReact",
+      "description": "SalesforceReact Testing Guide - Test infrastructure and execution"
+    },
+    {
+      "doc": "docs/hybrid/README.md",
+      "scope": ["libs/SalesforceHybrid", "hybrid"],
+      "description": "SalesforceHybrid Library - Cordova-based hybrid app bridge"
+    },
+    {
+      "doc": "libs/README.md",
+      "scope": "libs",
+      "description": "SDK library projects and test setup"
+    },
+    {
+      "doc": ".github/test-shards/README.md",
+      "scope": ".github/test-shards",
+      "description": "Test Shards - JSON configuration for parallel test execution"
+    },
+    {
+      "doc": "hybrid/README.md",
+      "scope": "hybrid",
+      "description": "Hybrid sample apps combining native SDK with HTML5 and JavaScript"
+    },
+    {
+      "doc": ".prizm/presubmits/skills/mobile-sdk-android-pr-review/SKILL.md",
+      "scope": ".prizm/presubmits/skills/mobile-sdk-android-pr-review",
+      "description": "Prizm PR review skill for Mobile SDK Android"
+    },
+    {
+      "doc": "docs/mobilesync/README.md",
+      "scope": "libs/MobileSync",
+      "description": "MobileSync library — Android API reference: SyncManager, all sync targets, SyncState, SyncOptions, SOQL/SOSL builders, JSON-driven configuration"
+    }
+  ]
+}

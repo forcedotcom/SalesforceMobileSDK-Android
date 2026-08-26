@@ -33,12 +33,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.androidsdk.R as sdkR
 
 private const val TAG = "AuthorizationPageObject"
-private const val MAX_RETRIES = 5
 /**
  * Short timeout for checking optional UI elements. Used for:
  * - Local Chrome UI (password save dialog) that appears immediately or not at all
@@ -95,12 +94,11 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
         val app = AuthFlowTesterPageObject(composeTestRule)
         swipeUp()
 
-        // Note: The Allow button is server-rendered on Salesforce's OAuth page.
-        // We use a short timeout (500ms) per check but loop MAX_RETRIES times,
-        // giving us 5 × 500ms = 2.5s of total polling. Combined with the
-        // SLEEP_TIME_MS (2.5s) before this method, we have ~5s total to find
-        // the button, balancing speed with reliability for server-side rendering.
-        repeat(MAX_RETRIES) {
+        // Poll for the full TIMEOUT_MS budget (15s on FTL, 10s locally). The Allow button is
+        // server-rendered and arrives at varying latency — a fixed retry count was too short for
+        // second-user logins where Chrome is in a different pre-warmed state.
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
             if (app.isAppLoaded()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
@@ -112,16 +110,16 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
         }
+        Log.w(TAG, "Allow button not found in Custom Tab within ${TIMEOUT_MS}ms.")
     }
 
     /** Original flow: scrolls and polls for Allow in the in-app WebView. */
     private fun tapAllowInWebView() {
         swipeUp()
 
-        // Note: Short timeout per check (500ms) × MAX_RETRIES = 2.5s total polling.
-        // Combined with SLEEP_TIME_MS (2.5s) before this method = ~5s total for
-        // server-rendered Allow button to appear.
-        repeat(MAX_RETRIES) {
+        // Poll for the full TIMEOUT_MS budget (15s on FTL, 10s locally).
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
             if (!loginActivityExists()) {
                 Log.i(TAG, "Left login screen — no approval needed.")
                 return
@@ -133,7 +131,7 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
                 return
             }
         }
-        Log.w(TAG, "Allow button not found after login within retry limit.")
+        Log.w(TAG, "Allow button not found in WebView within ${TIMEOUT_MS}ms.")
     }
 
     /**
@@ -142,13 +140,12 @@ class AuthorizationPageObject(composeTestRule: ComposeTestRule) : BasePageObject
      * and taps Allow.
      */
     fun tapAllowAfterMigration() {
-        // Wait for the page to load, swipe, then poll for the Allow button.
-        // Note: Short timeout (500ms) per check × MAX_RETRIES = 2.5s total
-        // polling for server-rendered Allow button.
         allowButton.waitForExists(QUICK_CHECK_TIMEOUT_MS)
         swipeUp()
 
-        repeat(MAX_RETRIES) {
+        // Poll for the full TIMEOUT_MS budget.
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
             // WebView dismissed means approval completed without us clicking
             val webView = device.findObject(UiSelector().className("android.webkit.WebView"))
             if (!webView.exists()) {

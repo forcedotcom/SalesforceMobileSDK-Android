@@ -22,10 +22,9 @@ MobileSync
 
 SalesforceHybrid
   └── SalesforceSDK
-
-SalesforceReact
-  └── SalesforceSDK
 ```
+
+**Note:** `SalesforceReact` has been removed from this repo as of SDK 14.0. All React Native code (bridges, activity, SDK manager) now lives in `SalesforceMobileSDK-ReactNative/android/` and is distributed via the `react-native-force` npm package.
 
 ### Library Descriptions
 
@@ -36,22 +35,21 @@ SalesforceReact
 | **SmartStore** | `libs/SmartStore/` | Encrypted on-device SQLite storage (backed by SQLCipher). Soup-based data model with indexing and Smart SQL query support |
 | **MobileSync** | `libs/MobileSync/` | Bidirectional data sync between device (SmartStore) and Salesforce cloud. Sync targets, sync managers, layout/metadata sync. `MobileSyncSDKManager` |
 | **SalesforceHybrid** | `libs/SalesforceHybrid/` | Support for Cordova-based hybrid applications |
-| **SalesforceReact** | `libs/SalesforceReact/` | Support for React Native applications |
 
 ### Android Reference Docs
 - [Android Javadoc](https://forcedotcom.github.io/SalesforceMobileSDK-Android/index.html)
 
 ### Android Build Details
-- **Minimum SDK**: 28 (Android 9.0)
-- **Compile SDK**: 35 (Android 15.0)
+- **Minimum SDK**: 31 (Android 12)
+- **Compile SDK**: 36 (Android 15.0)
 - **Target SDK**: Follows compileSdk
-- **Build system**: Gradle 8.14.3 with Kotlin DSL (`.gradle.kts` files)
-- **AGP (Android Gradle Plugin)**: 8.12.0
+- **Build system**: Gradle 9.4.1 with Kotlin DSL (`.gradle.kts` files)
+- **AGP (Android Gradle Plugin)**: 9.1.1
 - **Setup**: Run `./install.sh` after cloning to pull submodule dependencies
 - **Dependency management**: Maven Central for dependencies, libraries published to Maven Central
 - **Encryption**: SmartStore depends on SQLCipher for Android (`net.zetetic:sqlcipher-android:4.10.0`)
-- **Language**: Kotlin for all new code. Legacy Java exists in older classes. No new Java files.
-- **Kotlin version**: 1.9.24 with API/language version 1.6 for backward compatibility
+- **Language**: Kotlin for all new code. Legacy Java exists in older classes (e.g., SalesforceHybrid plugin classes). No new Java files.
+- **Kotlin version**: 2.3.20
 
 ### Android Build & Test Commands
 
@@ -69,10 +67,34 @@ See [README.md](README.md) for basic setup. Commands below are for contributors 
 ./gradlew :libs:SmartStore:build
 ./gradlew :libs:MobileSync:build
 
-# Run tests for a specific library (runs on Firebase Test Lab in CI)
+# Run instrumented tests for a specific library on a connected emulator/device
+# Note: SalesforceSDKTest sources live in libs/test/SalesforceSDKTest but are wired into
+# :libs:SalesforceSDK's androidTest source set via build.gradle.kts setRoot().
+# Run them via :libs:SalesforceSDK:connectedAndroidTest, NOT a separate project.
 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
 ./gradlew :libs:SmartStore:connectedAndroidTest
 ./gradlew :libs:MobileSync:connectedAndroidTest
+
+# Run a single test class on the emulator
+./gradlew :libs:SalesforceSDK:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.androidsdk.auth.LoginViewModelTest
+
+# Run a single test method on the emulator
+./gradlew :libs:SalesforceSDK:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.androidsdk.auth.LoginViewModelTest#generateAuthorizationUrl_WhenUseDPoP_AndPoolServer_AddsDpopJktToUrl
+
+# Run AuthFlowTester UI tests on emulator (requires ui_test_config.json in shared/test/ with valid org credentials)
+# The emulator CAN reach internal test environments when the machine has VPN/network access.
+# First verify emulator is running: adb devices
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.samples.authflowtester.DPoPLoginTests
+
+# Run a single AuthFlowTester UI test method
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.samples.authflowtester.DPoPLoginTests#testECAJwtDPoP_ViaLoginPoolServer
+
+# Run all AuthFlowTester UI tests
+./gradlew :native:NativeSampleApps:AuthFlowTester:connectedAndroidTest
 
 # Run lint checks
 ./gradlew :libs:SalesforceSDK:lint
@@ -184,6 +206,7 @@ When reviewing PRs (or acting as an AI reviewer), verify:
 These rules apply when Claude Code operates as an agent in these repos:
 
 ### Do
+- Before committing, verify changes against the Code Review Checklist in this file. Do not rely on reviewers to catch issues the checklist already covers.
 - Always run the test suite for the affected library before creating a commit. Before running the suite, check that `test_credentials.json` exists in `shared/test`.
 - When fixing a bug, write a failing test first, then fix the code.
 - Check both iOS and Android repos when investigating a feature — the behavior should be consistent across platforms.

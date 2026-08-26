@@ -31,18 +31,13 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
-import android.os.Build.VERSION.SDK_INT
-import android.os.Build.VERSION_CODES.Q
-import android.os.Build.VERSION_CODES.R
+import android.net.Uri
 import android.os.Bundle
-import android.util.Base64.NO_PADDING
 import android.util.Base64.NO_WRAP
-import android.util.Base64.URL_SAFE
 import android.util.Base64.encodeToString
 import android.util.Patterns.EMAIL_ADDRESS
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
 import androidx.biometric.BiometricPrompt
@@ -52,8 +47,10 @@ import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
+import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.NativeLoginManager.StartRegistrationRequestBody.UserData
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION
 import com.salesforce.androidsdk.auth.OAuth2.AUTHORIZATION_CODE
 import com.salesforce.androidsdk.auth.OAuth2.CLIENT_ID
@@ -83,6 +80,7 @@ import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpRequestResult
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback
 import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestRequest.RestEndpoint.LOGIN
@@ -119,6 +117,9 @@ import kotlin.coroutines.suspendCoroutine
  * Google Cloud Console.  Defaults to null to disable reCAPTCHA use
  * @param isReCaptchaEnterprise Specifies if reCAPTCHA uses the enterprise
  * license. Defaults to false to disable reCAPTCHA use
+ * @param restClient The REST client to use for making network requests. This
+ * parameter is intended for testing purposes only. Defaults to the
+ * unauthenticated REST client
  */
 internal class NativeLoginManager(
     private val clientId: String,
@@ -126,7 +127,8 @@ internal class NativeLoginManager(
     private val loginUrl: String,
     private val reCaptchaSiteKeyId: String? = null,
     private val googleCloudProjectId: String? = null,
-    private val isReCaptchaEnterprise: Boolean = false
+    private val isReCaptchaEnterprise: Boolean = false,
+    private val restClient: RestClient = SalesforceSDKManager.getInstance().getUnauthenticatedRestClient()
 ) : NativeLoginManager {
 
     private val accountManager = SalesforceSDKManager.getInstance().userAccountManager
@@ -162,7 +164,15 @@ internal class NativeLoginManager(
             CONTENT_TYPE_HEADER_NAME to CONTENT_TYPE_VALUE_HTTP_POST,
             AUTHORIZATION to "$AUTH_AUTHORIZATION_VALUE_BASIC $encodedCreds",
         )
+        val attestationValue = SalesforceSDKManager.getInstance().appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
+            createAppAttestation(challenge) ?: return@run null
+        }
+        if (attestationValue != null) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION)
+        }
         val authRequestBody = createRequestBody(
+            ATTESTATION to attestationValue,
             RESPONSE_TYPE to CODE_CREDENTIALS,
             CLIENT_ID to clientId,
             REDIRECT_URI to redirectUri,
@@ -255,8 +265,7 @@ internal class NativeLoginManager(
 
     private suspend fun suspendedRestCall(request: RestRequest): RestResponse? {
         return suspendCoroutine { continuation ->
-            SalesforceSDKManager.getInstance().clientManager
-                .peekUnauthenticatedRestClient().sendAsync(request, object : AsyncRequestCallback {
+            restClient.sendAsync(request, object : AsyncRequestCallback {
 
                     override fun onSuccess(request: RestRequest?, response: RestResponse?) {
                         continuation.resume(response)
@@ -272,8 +281,9 @@ internal class NativeLoginManager(
         }
     }
 
-    private fun createRequestBody(vararg kvPairs: Pair<String, String>): RequestBody {
-        val requestBodyString = kvPairs.joinToString("&") { (key, value) -> "$key=$value" }
+    @VisibleForTesting
+    internal fun createRequestBody(vararg kvPairs: Pair<String, String?>): RequestBody {
+        val requestBodyString = kvPairs.filter { it.second != null }.joinToString("&") { (key, value) -> "$key=${Uri.encode(value)}" }
         val mediaType = CONTENT_TYPE_VALUE_HTTP_POST.toMediaTypeOrNull()
         return requestBodyString.toRequestBody(mediaType)
     }
@@ -710,7 +720,7 @@ internal class NativeLoginManager(
         value2: String
     ) = encodeToString(
         "$value1:$value2".toByteArray(),
-        URL_SAFE or NO_WRAP or NO_PADDING
+        NO_WRAP
     )
 
     /**
@@ -942,22 +952,15 @@ internal class NativeLoginManager(
             return false
         }
 
-        // TODO: Remove when min API > 29.
-        val authenticators = when {
-            SDK_INT >= R -> BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-            else -> BIOMETRIC_WEAK or DEVICE_CREDENTIAL
-        }
+        val authenticators = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
 
         if (biometricManager.canAuthenticate(authenticators) != BIOMETRIC_SUCCESS) {
             return false
         }
 
         val username = accountManager.currentUser?.username ?: ""
-        var hasFaceUnlock = false
-        if (SDK_INT >= Q) {
-            hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
-                    || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
-        }
+        val hasFaceUnlock = activity.packageManager.hasSystemFeature(FEATURE_FACE)
+                || activity.packageManager.hasSystemFeature(FEATURE_IRIS)
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(activity.resources.getString(sf__biometric_opt_in_title))
@@ -973,20 +976,24 @@ internal class NativeLoginManager(
     @VisibleForTesting
     internal fun onBiometricAuthenticationSucceeded(
         activity: FragmentActivity,
-        clientManager: ClientManager = SalesforceSDKManager.getInstance().clientManager,
+        clientManager: ClientManager? = SalesforceSDKManager.getInstance().clientManager,
     ) {
         val bioAuthManager = SalesforceSDKManager.getInstance()
             .biometricAuthenticationManager as? BiometricAuthenticationManager
 
-        clientManager.getRestClient(activity) { client ->
-            runCatching {
-                client.oAuthRefreshInterceptor.refreshAccessToken()
-            }.onFailure { e ->
-                e(TAG, "Error encountered while unlocking.", e)
-            }
-            bioAuthManager?.onUnlock()
+        val client = clientManager?.peekRestClient()
+        if (client == null) {
+            SalesforceSDKLogger.e(TAG, "Unable to obtain the authenticated client while unlocking.")
             activity.finish()
+            return
         }
+        runCatching {
+            client.oAuthRefreshInterceptor.refreshAccessToken()
+        }.onFailure { e ->
+            e(TAG, "Error encountered while unlocking.", e)
+        }
+        bioAuthManager?.onUnlock()
+        activity.finish()
     }
 
     // endregion

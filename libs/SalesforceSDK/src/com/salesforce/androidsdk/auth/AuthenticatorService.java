@@ -61,6 +61,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_API_INSTANCE_URL = "apiInstanceUrl";
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_CLIENT_ID = "clientId";
+    public static final String KEY_REDIRECT_URI = "redirectUri";
     public static final String KEY_ORG_ID = "orgId";
     public static final String KEY_USERNAME = "username";
     public static final String KEY_ID_URL = "id";
@@ -87,9 +88,13 @@ public class AuthenticatorService extends Service {
     public static final String KEY_SID_COOKIE_NAME = "sidCookieName";
     public static final String KEY_PARENT_SID = "parentSid";
     public static final String KEY_TOKEN_FORMAT = "tokenFormat";
-    public static final String KEY_BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
-    public static final String KEY_BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    public static final String KEY_BEACON_CHILD_CONSUMER_KEY = "auto_installed_app_org_consumer_key";
+    public static final String KEY_BEACON_CHILD_CONSUMER_SECRET = "auto_installed_app_org_consumer_secret";
     public static final String KEY_SCOPE = "scope";
+    public static final String KEY_FEATURE_FLAGS = "feature_flags";
+    public static final String KEY_CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
+    public static final String KEY_TOKEN_TYPE = "tokenType";
+    public static final String KEY_LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
 
     private static final String TAG = "AuthenticatorService";
 
@@ -132,8 +137,11 @@ public class AuthenticatorService extends Service {
 
             try {
                 final Map<String,String> addlParamsMap = originalUserAccount.getAdditionalOauthValues();
+                final URI tokenServer = OAuth2.overrideLoginServerIfNeeded(originalUserAccount);
+                SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                        new URI(originalUserAccount.getLoginServer()), originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap);
+                        tokenServer, originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap,
+                        originalUserAccount.getCredentialsIdentifier(), originalUserAccount.getTokenType());
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)
@@ -147,13 +155,14 @@ public class AuthenticatorService extends Service {
 
                 return resBundle;
             } catch (OAuthFailedException ofe) {
-                if (ofe.isRefreshTokenInvalid()) {
-                    SalesforceSDKLogger.i(TAG, "Invalid Refresh Token: (Error: " +
-                            ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
+                SalesforceSDKLogger.i(TAG, "Token endpoint error: (Error: " + ofe.response.error + ", Status Code: " + ofe.httpStatusCode + ")", ofe);
+
+                // Terminal errors (except retriable attestation) redirect to login.
+                if (ofe.response.errorCode != OAuthErrorCode.APP_ATTESTATION_FAILED_RETRY && ofe.isRefreshTokenInvalid()) {
                     return makeAuthIntentBundle(response, options);
                 }
 
-                Bundle resBundle = new Bundle();
+                final Bundle resBundle = new Bundle();
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, ofe.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, ofe.response.errorDescription);
                 return resBundle;

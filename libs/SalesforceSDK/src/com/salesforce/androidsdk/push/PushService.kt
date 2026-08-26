@@ -57,10 +57,12 @@ import com.salesforce.androidsdk.push.PushMessaging.setRegistrationId
 import com.salesforce.androidsdk.push.PushMessaging.setRegistrationInfo
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction
 import com.salesforce.androidsdk.push.PushNotificationsRegistrationChangeWorker.PushNotificationsRegistrationAction.Register
+import com.salesforce.androidsdk.push.PushService.Companion.pushNotificationsRegistrationType
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegisterPeriodically
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationDisabled
 import com.salesforce.androidsdk.push.PushService.PushNotificationReRegistrationType.ReRegistrationOnAppForeground
 import com.salesforce.androidsdk.rest.ApiVersionStrings
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.NotificationsTypesResponseBody
@@ -71,6 +73,9 @@ import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.security.KeyStoreWrapper
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.HttpURLConnection.HTTP_CREATED
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
@@ -91,7 +96,14 @@ open class PushService {
         userAccount: UserAccount,
         restClient: RestClient? = getRestClient(userAccount)
     ) {
-        val restClientUnwrapped = restClient ?: return
+        val restClientUnwrapped = restClient ?: run {
+            val action = if (register) "registration" else "deregistration"
+            SalesforceSDKLogger.w(
+                TAG,
+                "Skipping push notification $action because no REST client is available",
+            )
+            return
+        }
         when {
             register ->
                 onRegistered(
@@ -167,11 +179,54 @@ open class PushService {
         restClient: RestClient
     ) {
         val context = SalesforceSDKManager.getInstance().appContext
+        completeUnregistration(
+            account = account,
+            restClient = restClient,
+            deviceId = getDeviceId(context, account),
+            clearLocalRegistration = true,
+        )
+    }
+
+    /**
+     * Starts a best-effort server deregistration without making local logout
+     * wait for the network request. The client and device id are captured while
+     * the account is still persisted; [PushMessaging] owns local-state cleanup.
+     */
+    internal fun unregisterForLogout(account: UserAccount) {
+        val context = SalesforceSDKManager.getInstance().appContext
+        val deviceId = getDeviceId(context, account)
+        val restClient = getRestClient(account)
+
+        if (restClient == null) {
+            context.sendBroadcast(
+                Intent(UNREGISTERED_ATTEMPT_COMPLETE_EVENT)
+                    .setPackage(context.packageName)
+            )
+            return
+        }
+
+        CoroutineScope(IO).launch {
+            completeUnregistration(
+                account = account,
+                restClient = restClient,
+                deviceId = deviceId,
+                clearLocalRegistration = false,
+            )
+        }
+    }
+
+    private fun completeUnregistration(
+        account: UserAccount,
+        restClient: RestClient,
+        deviceId: String?,
+        clearLocalRegistration: Boolean,
+    ) {
+        val context = SalesforceSDKManager.getInstance().appContext
         val packageName = context.packageName
 
         runCatching {
             unregisterSFDCPushNotification(
-                getDeviceId(context, account),
+                deviceId,
                 account,
                 restClient
             )
@@ -183,7 +238,9 @@ open class PushService {
             )
         }
 
-        clearRegistrationInfo(context, account)
+        if (clearLocalRegistration) {
+            clearRegistrationInfo(context, account)
+        }
         context.sendBroadcast(
             Intent(
                 UNREGISTERED_ATTEMPT_COMPLETE_EVENT
@@ -509,7 +566,15 @@ open class PushService {
 
     private fun getRestClient(
         account: UserAccount,
-    ) = SalesforceSDKManager.getInstance().clientManager.let { clientManager ->
+    ): RestClient? {
+        val clientManager = ClientManager(
+            SalesforceSDKManager.getInstance().appContext,
+            account,
+        )
+        if (clientManager.account == null) {
+            SalesforceSDKLogger.e(TAG, "Failed to resolve the account for the REST client")
+            return null
+        }
 
         /*
          * The reason we can't directly call 'peekRestClient()' here is because
@@ -517,7 +582,7 @@ open class PushService {
          * progress. Hence, we build a REST client here manually, with the
          * available data in the 'account' object.
          */
-        runCatching {
+        return runCatching {
             RestClient(
                 ClientInfo(
                     URI(account.instanceServer),
@@ -546,12 +611,7 @@ open class PushService {
                 ),
                 account.authToken,
                 HttpAccess.DEFAULT,
-                AccMgrAuthTokenProvider(
-                    clientManager,
-                    account.instanceServer,
-                    account.authToken,
-                    account.refreshToken
-                )
+                AccMgrAuthTokenProvider(clientManager)
             )
         }.onFailure { throwable ->
             SalesforceSDKLogger.e(
@@ -567,6 +627,15 @@ open class PushService {
 
         /** The active push notifications registration type */
         var pushNotificationsRegistrationType = ReRegistrationOnAppForeground
+
+        /**
+         * Controls which users are re-registered when the app foregrounds.
+         * Defaults to [PushNotificationForegroundRegistrationMode.ALL_USERS].
+         * Only applies when [pushNotificationsRegistrationType] is
+         * [PushNotificationReRegistrationType.ReRegistrationOnAppForeground].
+         */
+        var foregroundRegistrationMode: PushNotificationForegroundRegistrationMode =
+            PushNotificationForegroundRegistrationMode.ALL_USERS
 
         // Salesforce push notification constants.
         private const val MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice"
@@ -619,6 +688,18 @@ open class PushService {
         private const val PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME = "SalesforcePushNotificationsUnregistrationWork"
 
         /**
+         * Returns the unique WorkManager name for one Salesforce user.
+         */
+        @VisibleForTesting
+        internal fun pushNotificationsUnregistrationWorkName(
+            userAccount: UserAccount,
+        ): String? {
+            val orgId = userAccount.orgId?.takeUnless(String::isBlank) ?: return null
+            val userId = userAccount.userId?.takeUnless(String::isBlank) ?: return null
+            return "$PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME:$orgId:$userId"
+        }
+
+        /**
          * The Android background tasks name of the push notifications
          * registration work request
          */
@@ -647,9 +728,23 @@ open class PushService {
             val workManager = WorkManager.getInstance(context)
             // Require network connectivity in case the user is logging out while offline.
             val constraints = Constraints.Builder().setRequiredNetworkType(CONNECTED).build()
-            val userAccountJson = userAccount?.toJson()?.toString()
+            val orgId = userAccount?.orgId?.takeUnless(String::isBlank)
+            val userId = userAccount?.userId?.takeUnless(String::isBlank)
+            if (userAccount != null && (orgId == null || userId == null)) {
+                // A malformed specific-user request must never widen to all users.
+                return
+            }
+            /*
+             * Persist only the non-sensitive org id and user id needed to
+             * re-resolve the target user account, never the account itself.
+             * WorkManager stores input Data unencrypted in its Room database,
+             * so serializing the full user account would leave the auth token,
+             * refresh token, and session cookies in plaintext on disk. The
+             * worker re-resolves the full account from secure storage on read.
+             */
             val workData = Data.Builder()
-                .putString("USER_ACCOUNT", userAccountJson)
+                .putString("ORG_ID", orgId)
+                .putString("USER_ID", userId)
                 .putString("ACTION", action.name)
                 .build()
 
@@ -687,18 +782,22 @@ open class PushService {
                 }
             } else {
                 // Deregister
+                val unregistrationWorkName = userAccount?.let {
+                    pushNotificationsUnregistrationWorkName(it)
+                } ?: return
                 OneTimeWorkRequest.Builder(PushNotificationsRegistrationChangeWorker::class.java)
                     .setInputData(workData)
                     .setConstraints(constraints)
                     .build().also { workRequest ->
                         workManager.enqueueUniqueWork(
-                            PUSH_NOTIFICATIONS_UNREGISTRATION_WORK_NAME,
+                            unregistrationWorkName,
                             REPLACE,
                             workRequest
                         )
                     }
 
-                // Send broadcast now to finish logout if we are offline.
+                // Preserve the existing attempt-complete notification for app-triggered
+                // deregistration while offline. Local logout no longer waits for this event.
                 if (!HttpAccess.DEFAULT.hasNetwork()) {
                     context.sendBroadcast(
                         Intent(
@@ -728,5 +827,27 @@ open class PushService {
          * de-registers push notifications
          */
         ReRegisterPeriodically
+    }
+
+    /**
+     * Controls which users are re-registered for push notifications when the app returns to the
+     * foreground. Only applies when [pushNotificationsRegistrationType] is
+     * [PushNotificationReRegistrationType.ReRegistrationOnAppForeground].
+     */
+    enum class PushNotificationForegroundRegistrationMode {
+
+        /**
+         * Re-registers all authenticated users when the app foregrounds. This is the default.
+         */
+        ALL_USERS,
+
+        /**
+         * Re-registers only the current user when the app foregrounds.
+         *
+         * Use this to preserve pre-14.0 behaviour, or if your app is billed per login event
+         * (e.g. some Publisher customers) and you want to avoid triggering token refreshes —
+         * and thus billable logins — for background users.
+         */
+        CURRENT_USER
     }
 }

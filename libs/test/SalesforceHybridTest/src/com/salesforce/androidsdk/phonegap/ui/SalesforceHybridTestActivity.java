@@ -29,6 +29,9 @@ package com.salesforce.androidsdk.phonegap.ui;
 
 import android.os.Bundle;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountBuilder;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.util.test.TestCredentials;
 
@@ -54,17 +57,32 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		UserAccountManager.getInstance().createAccount(buildTestUser());
 	}
 
 	@Override
 	public ClientManager buildClientManager() {
-		final ClientManager clientManager = super.buildClientManager();
-		clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl,
-        		loginUrl, identityUrl, clientId, orgId, userId,
-				null, null, null, null, null,
-                null, photoUrl, null, null, null,
-				null, null, null, null, null, null, false,
-				language, locale);
-		return clientManager;
+		final UserAccount user = UserAccountManager.getInstance()
+				.getUserFromOrgAndUserId(orgId, userId);
+		return new ClientManager(this, user);
+	}
+
+	private UserAccount buildTestUser() {
+		return UserAccountBuilder.getInstance()
+				.accountName(accountName)
+				.username(username)
+				.refreshToken(refreshToken)
+				.authToken(authToken)
+				.instanceServer(instanceUrl)
+				.loginServer(loginUrl)
+				.idUrl(identityUrl)
+				.clientId(clientId)
+				.orgId(orgId)
+				.userId(userId)
+				.photoUrl(photoUrl)
+				.nativeLogin(false)
+				.language(language)
+				.locale(locale)
+				.build();
 	}
 }

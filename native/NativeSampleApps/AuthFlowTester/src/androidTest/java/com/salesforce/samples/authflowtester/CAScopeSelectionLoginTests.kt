@@ -89,15 +89,50 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
     }
 
     // endregion
+    // region CA Web Server Flow Tests (In-App WebView)
+
+    // Login with CA opaque using default scopes, web server flow, and in-app WebView (advanced auth disabled).
+    @Test
+    fun testCAOpaque_DefaultScopes_WebServerFlow_InAppWebView() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            forceAdvancedAuthentication = false,
+        )
+    }
+
+    // Login with CA opaque using subset of scopes, web server flow, and in-app WebView (advanced auth disabled).
+    @Test
+    fun testCAOpaque_SubsetScopes_WebServerFlow_InAppWebView() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            scopeSelection = SUBSET,
+            forceAdvancedAuthentication = false,
+        )
+    }
+
+    // Login with CA opaque using all scopes, web server flow, and in-app WebView (advanced auth disabled).
+    @Test
+    fun testCAOpaque_AllScopes_WebServerFlow_InAppWebView() {
+        loginAndValidate(
+            knownAppConfig = CA_OPAQUE,
+            scopeSelection = ALL,
+            forceAdvancedAuthentication = false,
+        )
+    }
+
+    // endregion
     // region CA User Agent Flow Tests
 
     // Login with CA opaque using subset of scopes and user agent flow.
+    // forceAdvancedAuthentication=false required: Custom Tab always uses web-server grant,
+    // so user-agent flow tests must use the in-app WebView path.
     @Test
     fun testCAOpaque_SubsetScopes_UserAgentFlow() {
         loginAndValidate(
             knownAppConfig = CA_OPAQUE,
             scopeSelection = SUBSET,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -108,6 +143,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             knownAppConfig = CA_OPAQUE,
             scopeSelection = ALL,
             useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -122,6 +158,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             scopeSelection = SUBSET,
             useWebServerFlow = false,
             useHybridAuthToken = false,
+            forceAdvancedAuthentication = false,
         )
     }
 
@@ -133,6 +170,7 @@ class CAScopeSelectionLoginTests: AuthFlowTest() {
             scopeSelection = ALL,
             useWebServerFlow = false,
             useHybridAuthToken = false,
+            forceAdvancedAuthentication = false,
         )
     }
 

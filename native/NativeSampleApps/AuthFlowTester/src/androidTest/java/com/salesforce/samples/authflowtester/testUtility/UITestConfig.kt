@@ -55,14 +55,20 @@ enum class KnownLoginHostConfig {
 enum class KnownAppConfig {
     ECA_OPAQUE,
     ECA_JWT,
+    ECA_OPAQUE_RTR,
+    ECA_JWT_RTR,
     BEACON_OPAQUE,
     BEACON_JWT,
     CA_OPAQUE,
     CA_JWT,
+    ECA_JWT_DPOP,
+    ECA_JWT_DPOP_RTR,
 }
 
+private val json = Json { ignoreUnknownKeys = true }
+
 val testConfig: UITestConfig by lazy {
-    Json.decodeFromString(
+    json.decodeFromString(
         string = ResourceReaderHelper.readAssetFile(
             InstrumentationRegistry.getInstrumentation().targetContext,
             /* assetFilePath = */ "ui_test_config.json",
@@ -71,7 +77,14 @@ val testConfig: UITestConfig by lazy {
 }
 
 @Serializable
-data class UITestConfig(val loginHosts: List<LoginHost>, val apps: List<AppConfig>) {
+data class UITestConfig(
+    val loginPoolHost: String? = null,
+    val loginHosts: List<LoginHost>,
+    val apps: List<AppConfig>,
+) {
+
+    fun requireLoginPoolHost(): String = loginPoolHost
+        ?: throw Exception("loginPoolHost not found in ui_test_config.json.")
 
     fun getLoginHost(knownLoginHostConfig: KnownLoginHostConfig): LoginHost = loginHosts.find {
         (name, _, _) -> name == knownLoginHostConfig.name.toLowerCase(Locale.current)
@@ -109,6 +122,10 @@ data class AppConfig(
     val scopes: String,
 ) {
     val issuesJwt = name.contains("_jwt")
+    val isBeacon = name.startsWith("beacon_")
+    // W-23971480: beacon apps behave as RTR due to a server bug; drop the beacon_ clause when fixed
+    val isRtr = name.contains("_rtr") || name.startsWith("beacon_")
+    val isDpop = name.contains("_dpop")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"
     val scopeList = scopes.split(" ")
 

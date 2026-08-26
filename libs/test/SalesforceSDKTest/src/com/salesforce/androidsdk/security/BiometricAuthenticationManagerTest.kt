@@ -26,10 +26,12 @@
  */
 package com.salesforce.androidsdk.security
 
+import android.app.Instrumentation
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
@@ -52,9 +54,18 @@ class BiometricAuthenticationManagerTest {
     private lateinit var bioAuthManager: BiometricAuthenticationManager
     private lateinit var userAccount: UserAccount
     private lateinit var accountPrefs: SharedPreferences
+    private lateinit var activityMonitors: List<Instrumentation.ActivityMonitor>
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
     @Before
     fun setUp() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        activityMonitors = listOf(
+            sdkManager.webViewLoginActivityClass,
+            sdkManager.loginActivityClass,
+        )
+            .distinctBy { it.name }
+            .map { instrumentation.addMonitor(it.name, null, true) }
         bioAuthManager = BiometricAuthenticationManager()
         userAccount = ScreenLockManagerTest.buildTestUserAccount()
         accountPrefs = ctx.getSharedPreferences(
@@ -67,6 +78,7 @@ class BiometricAuthenticationManagerTest {
     @After
     fun tearDown() {
         bioAuthManager.cleanUp(userAccount)
+        activityMonitors.forEach(instrumentation::removeMonitor)
     }
 
     @Test
@@ -135,6 +147,44 @@ class BiometricAuthenticationManagerTest {
 
         bioAuthManager.biometricOptIn(false)
         Assert.assertFalse("User should have opted out again", bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
+    fun testHasBiometricOptInDecision_falseUntilUserResponds() {
+        Assert.assertFalse(
+            "Should have no decision recorded before the user responds to the opt-in dialog.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+
+        bioAuthManager.biometricOptIn(false)
+        Assert.assertTrue(
+            "Declining (Use Password) should still be recorded as a decision so the user is not re-prompted.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertFalse("Declining should not opt the user in.", bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
+    fun testHasBiometricOptInDecision_trueAfterOptingIn() {
+        bioAuthManager.biometricOptIn(true)
+        Assert.assertTrue(
+            "Enabling should be recorded as a decision.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertTrue("Enabling should opt the user in.", bioAuthManager.hasBiometricOptedIn())
+    }
+
+    @Test
+    fun testHasBiometricOptInDecision_clearedByCleanUp() {
+        bioAuthManager.biometricOptIn(false)
+        Assert.assertTrue(bioAuthManager.hasBiometricOptInDecision())
+
+        bioAuthManager.cleanUp(userAccount)
+        Assert.assertFalse(
+            "Logout (cleanUp) should clear the opt-in decision so a re-added account is re-prompted.",
+            bioAuthManager.hasBiometricOptInDecision()
+        )
+        Assert.assertFalse(bioAuthManager.hasBiometricOptedIn())
     }
 
     @Test
@@ -226,10 +276,57 @@ class BiometricAuthenticationManagerTest {
     }
 
     @Test
+    fun testAutomaticPresentationDefaultsToTrue() {
+        Assert.assertTrue("Should default to true.", bioAuthManager.automaticPresentation)
+    }
+
+    @Test
+    fun testAutomaticPresentationIsSettable() {
+        bioAuthManager.automaticPresentation = false
+        Assert.assertFalse("Should be settable to false.", bioAuthManager.automaticPresentation)
+
+        bioAuthManager.automaticPresentation = true
+        Assert.assertTrue("Should be settable back to true.", bioAuthManager.automaticPresentation)
+    }
+
+    @Test
+    fun testAutomaticPresentationIsNotPersisted() {
+        bioAuthManager.automaticPresentation = false
+        Assert.assertFalse("Should be false on the existing instance.", bioAuthManager.automaticPresentation)
+
+        val freshBioAuthManager = BiometricAuthenticationManager()
+        Assert.assertTrue("A fresh instance should default to true regardless of prior instances.", freshBioAuthManager.automaticPresentation)
+    }
+
+    @Test
+    fun testOnAppForegroundedDoesNotRelockWhenAlreadyLocked() {
+        bioAuthManager.storeMobilePolicy(userAccount, true, 1)
+        bioAuthManager.lock()
+        Assert.assertTrue("Should be locked.", bioAuthManager.locked)
+        val hitsAfterInitialLock = activityMonitors.sumOf { it.hits }
+        Assert.assertEquals(
+            "lock() should launch exactly one LoginActivity.",
+            1,
+            hitsAfterInitialLock
+        )
+
+        // Foregrounding while already locked -- e.g. backing out of the Custom Tab that the very
+        // lock() call above launched -- must not trigger a second lock(), which would relaunch
+        // the Custom Tab over the server picker and trap the user in a loop.
+        bioAuthManager.onAppForegrounded()
+
+        Assert.assertEquals(
+            "onAppForegrounded() must not call lock() again while already locked.",
+            hitsAfterInitialLock,
+            activityMonitors.sumOf { it.hits }
+        )
+    }
+
+    @Test
     fun testLockWithNoCurrentUser() {
         bioAuthManager.cleanUp(userAccount)
         SalesforceSDKManager.getInstance().userAccountManager
-            .signoutCurrentUser(/* frontActivity = */ null, /* showLoginPage = */ true, OAuth2.LogoutReason.USER_LOGOUT)
+            .signoutCurrentUser(/* frontActivity = */ null, /* showLoginPage = */ false, OAuth2.LogoutReason.USER_LOGOUT)
 
         Assert.assertFalse("Should not be locked by default.", bioAuthManager.locked)
         bioAuthManager.lock()

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.ui.components
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
-import android.os.Build
 import android.webkit.WebView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -59,6 +58,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -78,6 +78,7 @@ import androidx.compose.material3.RichTooltipColors
 import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarDefaults
@@ -91,6 +92,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.core.net.toUri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -98,9 +101,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -108,11 +113,16 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.salesforce.androidsdk.R.string.sf__back_button_content_description
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_approve
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_deny
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_message
+import com.salesforce.androidsdk.R.string.sf__biometric_opt_in_title
 import com.salesforce.androidsdk.R.string.sf__clear_cache
 import com.salesforce.androidsdk.R.string.sf__clear_cookies
 import com.salesforce.androidsdk.R.string.sf__dev_support_title_menu_item
@@ -148,10 +158,16 @@ fun LoginView() {
     val viewModel: LoginViewModel =
         viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     val frontDoorBridgeUrl = viewModel.frontDoorBridgeUrl.observeAsState()
+    // Observe selectedServer and loginUrl AS COMPOSE STATE so that recomposition triggers when
+    // either changes — and so titleText is read inside Compose's snapshot system, not via the
+    // non-reactive `defaultTitleText` getter chain (which reads LiveData.getValue() directly and
+    // is invisible to Compose).
+    val selectedServer = viewModel.selectedServer.observeAsState()
+    val loginUrl = viewModel.loginUrl.observeAsState()
     val titleText = if (frontDoorBridgeUrl.value != null) {
         viewModel.frontdoorBridgeServer ?: ""
     } else {
-        viewModel.titleText ?: viewModel.defaultTitleText
+        viewModel.titleText ?: if (loginUrl.value == LoginActivity.ABOUT_BLANK) "" else selectedServer.value ?: ""
     }
     val showDevSupport = with(SalesforceSDKManager.getInstance()) {
         return@with if (isDebugBuild && isDevSupportEnabled()) {
@@ -161,6 +177,10 @@ fun LoginView() {
         }
     }
 
+    // During WD phase 2, selectedServer is the My Domain, so this is false and LFA is shown.
+    // See LoginActivity guard for the programmatic defense-in-depth check.
+    val isWelcomeDiscoveryServer = selectedServer.value
+        ?.let { LoginActivity.isSalesforceWelcomeDiscoveryUrlPath(it.toUri()) } == true
     val topAppBar = viewModel.topAppBar ?: {
         DefaultTopAppBar(
             backgroundColor = viewModel.topBarColor ?: viewModel.dynamicBackgroundColor.value,
@@ -173,7 +193,9 @@ fun LoginView() {
             shouldShowBackButton = viewModel.shouldShowBackButton,
             showDevSupport = showDevSupport,
             finish = { activity.handleBackBehavior() },
-            onLoginForAdmins = { activity.launchLoginForAdminsAction() },
+            onLoginForAdmins = if (isWelcomeDiscoveryServer) null else {
+                { activity.launchLoginForAdminsAction() }
+            },
         )
     }
 
@@ -204,7 +226,11 @@ fun LoginView() {
         DefaultBottomAppBar(
             backgroundColor = viewModel.dynamicBackgroundColor,
             button = bottomAppBarButton,
-            loading = viewModel.loading.value,
+            // Suppress the loading indicator while the biometric prompt is on screen so it doesn't
+            // show behind the prompt even though generateAuthorizationUrl() concurrently flips
+            // loading to true.  biometricPromptShowing is cleared on success/dismissal, so the
+            // spinner correctly reappears for the subsequent token refresh.
+            loading = viewModel.loading.value && !viewModel.biometricPromptShowing.value,
             showButton = !viewModel.authFinished.value
         )
     }
@@ -219,9 +245,13 @@ fun LoginView() {
         loadingIndicator = viewModel.loadingIndicator ?: { DefaultLoadingIndicator() },
         bottomAppBar = bottomAppBar,
         showServerPicker = viewModel.showServerPicker,
+        biometricPromptShowing = viewModel.biometricPromptShowing.value,
+        showBiometricOptInDialog = viewModel.showBiometricOptInDialog,
+        onBiometricOptInResult = { optedIn -> viewModel.onBiometricOptInResult(optedIn) },
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun LoginView(
     dynamicBackgroundColor: MutableState<Color>,
@@ -233,15 +263,26 @@ internal fun LoginView(
     loadingIndicator: @Composable () -> Unit,
     bottomAppBar: @Composable () -> Unit,
     showServerPicker: MutableState<Boolean>,
+    biometricPromptShowing: Boolean = false,
+    showBiometricOptInDialog: MutableState<Boolean> = remember { mutableStateOf(false) },
+    onBiometricOptInResult: (optedIn: Boolean) -> Unit = {},
 ) {
     val loginUrl = loginUrlData.observeAsState()
     val frontDoorBridgeUrl = frontDoorBridgeUrlData.observeAsState()
+    // Suppress the loading indicator (and the WebView dim that accompanies it) while the biometric
+    // prompt is on screen, so it doesn't show behind the prompt even though generateAuthorizationUrl()
+    // concurrently flips loading to true. biometricPromptShowing is cleared on success/dismissal, so
+    // the spinner correctly reappears for the subsequent token refresh.
+    val showLoading = loading && !biometricPromptShowing
     val alpha: Float by animateFloatAsState(
-        targetValue = if (loading) LOADING_ALPHA else VISIBLE_ALPHA,
+        targetValue = if (showLoading) LOADING_ALPHA else VISIBLE_ALPHA,
         animationSpec = tween(durationMillis = SLOW_ANIMATION_MS),
     )
 
     Scaffold(
+        // Expose Compose testTags as Android resource-ids so UI automation (UIAutomator2/UTAM)
+        // can anchor on the stable, locale-invariant tags rather than localized contentDescriptions.
+        modifier = Modifier.semantics { testTagsAsResourceId = true },
         bottomBar = bottomAppBar,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = topAppBar,
@@ -261,19 +302,45 @@ internal fun LoginView(
                 },
             )
 
-            if (loading) {
+            if (showLoading && !showServerPicker.value) {
                 loadingIndicator()
             }
         }
 
-        if (showServerPicker.value) {
+        // Suppress the server picker render behind the biometric prompt. Gate the render only, not
+        // showServerPicker itself, so the picker reappears if the prompt is dismissed and the
+        // fallback flow needs it.
+        if (showServerPicker.value && !biometricPromptShowing) {
             PickerBottomSheet(PickerStyle.LoginServerPicker)
+        }
+
+        if (showBiometricOptInDialog.value) {
+            BiometricOptInDialog(onResult = onBiometricOptInResult)
         }
     }
 }
 
+@Composable
+internal fun BiometricOptInDialog(onResult: (optedIn: Boolean) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onResult(false) },
+        properties = DialogProperties(dismissOnClickOutside = false),
+        title = { Text(stringResource(sf__biometric_opt_in_title)) },
+        text = { Text(stringResource(sf__biometric_opt_in_message)) },
+        confirmButton = {
+            TextButton(onClick = { onResult(true) }) {
+                Text(stringResource(sf__biometric_opt_in_approve))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onResult(false) }) {
+                Text(stringResource(sf__biometric_opt_in_deny))
+            }
+        },
+    )
+}
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 internal fun DefaultTopAppBar(
     backgroundColor: Color,
@@ -303,62 +370,74 @@ internal fun DefaultTopAppBar(
             )
         },
         actions = @Composable {
-            ToolTipWrapper(sf__more_options) { moreOptionsDescription ->
-                IconButton(
-                    onClick = { showMenu = !showMenu },
-                    colors = IconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = titleTextColor,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = Color.Transparent,
-                    ),
-                ) {
-                    Icon(Icons.Default.MoreVert, contentDescription = moreOptionsDescription)
+            // The picker renders in its own full-screen ModalBottomSheet window above this bar,
+            // so the overflow menu is already covered — hide it too rather than leaving it an
+            // invisible, screen-reader-reachable control behind the scrim.
+            if (!showServerPicker.value) {
+                ToolTipWrapper(sf__more_options) { moreOptionsDescription ->
+                    IconButton(
+                        onClick = { showMenu = !showMenu },
+                        colors = IconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = titleTextColor,
+                            disabledContainerColor = Color.Transparent,
+                            disabledContentColor = Color.Transparent,
+                        ),
+                        modifier = Modifier.testTag(LoginViewTestTags.MORE_OPTIONS_BUTTON),
+                    ) {
+                        Icon(Icons.Default.MoreVert, contentDescription = moreOptionsDescription)
+                    }
                 }
-            }
 
-            CompositionLocalProvider(
-                LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
-            ) {
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
+                CompositionLocalProvider(
+                    LocalRippleConfiguration provides RippleConfiguration(color = colorScheme.onSecondary)
                 ) {
-                    MenuItem(stringResource(sf__pick_server)) {
-                        showServerPicker.value = true
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__clear_cookies)) {
-                        clearCookies()
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__clear_cache)) {
-                        clearWebViewCache()
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    MenuItem(stringResource(sf__reload)) {
-                        reloadWebView()
-                        showMenu = false
-                    }
-                    onLoginForAdmins?.let {
-                        MenuItem(stringResource(sf__login_for_admins)) {
-                            it.invoke()
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        // The menu renders in its own popup window, so opt in here as well to expose
+                        // the menu items' testTags as Android resource-ids for UI automation.
+                        modifier = Modifier.semantics { testTagsAsResourceId = true },
+                    ) {
+                        MenuItem(stringResource(sf__pick_server), testTag = LoginViewTestTags.MENU_ITEM_PICK_SERVER) {
+                            showServerPicker.value = true
                             showMenu = false
                         }
-                    }
-                    showDevSupport?.let {
-                        MenuItem(stringResource(sf__dev_support_title_menu_item)) {
-                            it.invoke()
+                        MenuItem(stringResource(sf__clear_cookies), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_COOKIES) {
+                            clearCookies()
+                            reloadWebView()
                             showMenu = false
+                        }
+                        MenuItem(stringResource(sf__clear_cache), testTag = LoginViewTestTags.MENU_ITEM_CLEAR_CACHE) {
+                            clearWebViewCache()
+                            reloadWebView()
+                            showMenu = false
+                        }
+                        MenuItem(stringResource(sf__reload), testTag = LoginViewTestTags.MENU_ITEM_RELOAD) {
+                            reloadWebView()
+                            showMenu = false
+                        }
+                        onLoginForAdmins?.let {
+                            MenuItem(stringResource(sf__login_for_admins), testTag = LoginViewTestTags.MENU_ITEM_LOGIN_FOR_ADMINS) {
+                                it.invoke()
+                                showMenu = false
+                            }
+                        }
+                        showDevSupport?.let {
+                            MenuItem(stringResource(sf__dev_support_title_menu_item), testTag = LoginViewTestTags.MENU_ITEM_DEV_SUPPORT) {
+                                it.invoke()
+                                showMenu = false
+                            }
                         }
                     }
                 }
             }
         },
         navigationIcon = {
-            if (shouldShowBackButton) {
+            // Hide the back button while the picker is shown, matching the overflow menu: the
+            // picker's own ModalBottomSheet window covers this bar, so leaving the back button
+            // would keep it an invisible, screen-reader-reachable control behind the scrim.
+            if (shouldShowBackButton && !showServerPicker.value) {
                 ToolTipWrapper(sf__back_button_content_description) { backButtonDescription ->
                     IconButton(
                         onClick = { finish() },
@@ -368,6 +447,7 @@ internal fun DefaultTopAppBar(
                             disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Transparent,
                         ),
+                        modifier = Modifier.testTag(LoginViewTestTags.BACK_BUTTON),
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
@@ -391,6 +471,7 @@ internal fun DefaultLoadingIndicator() {
             modifier = Modifier
                 .size(LOADING_INDICATOR_SIZE.dp)
                 .fillMaxSize()
+                .testTag(LoginViewTestTags.LOADING_INDICATOR)
                 .semantics { contentDescription = description },
         )
     }
@@ -399,6 +480,7 @@ internal fun DefaultLoadingIndicator() {
 @Composable
 internal fun MenuItem(
     text: String,
+    testTag: String? = null,
     onClick: () -> Unit,
 ) {
     DropdownMenuItem(
@@ -410,7 +492,9 @@ internal fun MenuItem(
             )
         },
         onClick = onClick,
-        modifier = Modifier.semantics { contentDescription = text }
+        modifier = Modifier
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
+            .semantics { contentDescription = text }
     )
 }
 
@@ -457,6 +541,7 @@ internal fun DefaultBottomAppBar(
                                 .padding(PADDING_SIZE.dp)
                                 .height(BUTTON_HEIGHT.dp)
                                 .fillMaxWidth()
+                                .testTag(LoginViewTestTags.LOGIN_BUTTON)
                                 .shadow(LEVEL_3_ELEVATION.dp, buttonShape),
                             shape = buttonShape,
                             contentPadding = PaddingValues(PADDING_SIZE.dp),
@@ -488,7 +573,6 @@ internal fun ToolTipWrapper(contentDescription: Int, content: @Composable (descr
         positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
         tooltip = {
             RichTooltip(
-                caretSize = DpSize(PADDING_SIZE.dp, PADDING_SIZE.dp),
                 colors = RichTooltipColors(
                     containerColor = colorScheme.outline,
                     contentColor = colorScheme.onSecondary,
@@ -518,12 +602,7 @@ private tailrec fun Context.getActivity(): FragmentActivity? = when (this) {
 
 @Composable
 internal fun Modifier.applyImePaddingConditionally() : Modifier =
-    // TODO:  Remove when min API is > 29
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        windowInsetsPadding(WindowInsets.ime)
-    } else {
-        this
-    }
+    windowInsetsPadding(WindowInsets.ime)
 
 @ExcludeFromJacocoGeneratedReport
 @Preview // Note: the light and dark previews should look the same.

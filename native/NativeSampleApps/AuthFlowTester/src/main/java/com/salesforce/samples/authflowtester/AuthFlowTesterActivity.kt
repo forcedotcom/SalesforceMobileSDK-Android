@@ -32,7 +32,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ScrollView
@@ -40,7 +39,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -113,10 +111,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.accounts.downgradeFromDPoP
 import com.salesforce.androidsdk.accounts.migrateRefreshToken
+import com.salesforce.androidsdk.accounts.upgradeToDPoP
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.JwtAccessToken
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ApiVersionStrings
 import com.salesforce.androidsdk.rest.ClientManager
@@ -126,6 +128,7 @@ import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import com.salesforce.samples.authflowtester.components.InfoSection
+import com.salesforce.samples.authflowtester.components.SECTION_TITLE_SIZE
 import com.salesforce.samples.authflowtester.components.JwtTokenView
 import com.salesforce.samples.authflowtester.components.OAuthConfigurationView
 import com.salesforce.samples.authflowtester.components.UserCredentialsView
@@ -159,10 +162,13 @@ const val CREDS_SECTION_CONTENT_DESC = "user_creds_section"
 const val JWT_SECTION_CONTENT_DESC = "jwt_section"
 const val OAUTH_SECTION_CONTENT_DESC = "oauth_config_section"
 const val MIGRATE_TOKEN_BUTTON_CONTENT_DESC = "migrate_refresh_token_button"
+const val UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC = "upgrade_to_dpop_button"
+const val DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC = "downgrade_from_dpop_button"
 const val MIGRATE_USER_RADIO_CONTENT_DESC = "migrate_user_radio"
 const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
 const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
+const val USER_AGENT_CONTENT_DESC = "user_agent"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -171,11 +177,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Make debug-only UI test affordances visible when launched by the UI test runner.
+        // Mirrors iOS' IS_UI_TESTING launch argument check in LoginOptionsViewController.swift.
+        SalesforceSDKManager.getInstance().isUiTesting =
+            intent.getBooleanExtra(EXTRA_IS_UI_TESTING, false)
+
         setContent {
             MaterialTheme(colorScheme = getColorScheme()) {
                 TesterUI()
             }
         }
+    }
+
+    companion object {
+        /** Intent extra: when true (in a debug build) shows UI-test-only affordances. */
+        const val EXTRA_IS_UI_TESTING = "IS_UI_TESTING"
     }
 
     override fun onResume(client: RestClient?) {
@@ -203,16 +219,50 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         // Set current user when it changes to update UI.
         DisposableEffect(Unit) {
+            val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    currentUser.value = UserAccountManager.getInstance().currentUser
+                    if (intent.action == SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION) showLogoutDialog = false
+                    with(UserAccountManager.getInstance()) {
+                        this.currentUser?.let {
+                            currentUser.value = it
+                            return
+                        }
+
+                        // After an SDK-initiated logout the stored current user
+                        // may be cleared even when other accounts remain (e.g.
+                        // refresh-token revocation logs out one of N users).
+                        // Fall back to the first remaining authenticated user.
+                        val fallback = authenticatedUsers?.firstOrNull()
+                        currentUser.value = fallback
+
+                        // Persist the switch in the SDK (so subsequent SDK calls
+                        // pick up the right user). Defer to allow any in-flight
+                        // logout sequence to finish; otherwise switchToUser ->
+                        // peekRestClient throws AccountInfoNotFoundException
+                        // ("User is logging out") because isLoggingOut is still
+                        // true when the broadcast lands.
+                        if (fallback != null) {
+                            mainHandler.postDelayed({
+                                if (!SalesforceSDKManager.getInstance().isLoggingOut &&
+                                    this.currentUser == null
+                                ) {
+                                    runCatching {
+                                        UserAccountManager.getInstance().switchToUser(fallback)
+                                    }
+                                }
+                            }, /* delayMillis = */ 100)
+                        }
+                    }
                 }
             }
             val filter = IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION)
             filter.addAction(ClientManager.ACCESS_TOKEN_REFRESH_INTENT)
             filter.addAction(ClientManager.INSTANCE_URL_UPDATE_INTENT)
+            filter.addAction(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)
             ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             onDispose {
+                mainHandler.removeCallbacksAndMessages(null)
                 context.unregisterReceiver(receiver)
             }
         }
@@ -282,7 +332,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            SalesforceSDKManager.getInstance().logout(null)
+                            SalesforceSDKManager.getInstance().logout(frontActivity = null)
                         }
                     ) {
                         Text(
@@ -523,6 +573,8 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         var showJsonImportDialog by remember { mutableStateOf(false) }
         var migrationInProgress by remember { mutableStateOf(false) }
         var migrationError: String? by remember { mutableStateOf(null) }
+        var migrateToDPoPInProgress by remember { mutableStateOf(false) }
+        var migrateToDPoPError: String? by remember { mutableStateOf(null) }
         val clipboard = LocalClipboard.current
         val context = LocalContext.current
         val isPreview = LocalInspectionMode.current
@@ -604,6 +656,146 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                         }
                     }
                 }
+
+                // "Upgrade to DPoP": in-place upgrade of the selected user's own connected app,
+                // independent of SalesforceSDKManager.useDPoP — see UserAccountManager.upgradeToDPoP.
+                Text(
+                    text = stringResource(R.string.upgrade_to_dpop_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = (INNER_CARD_PADDING/2).dp),
+                )
+                Text(
+                    text = stringResource(R.string.upgrade_to_dpop_description),
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
+
+                val alreadyDPoPBound = selectedUser?.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE
+
+                Button(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = (INNER_CARD_PADDING/2).dp)
+                        .semantics { contentDescription = UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC },
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    enabled = !alreadyDPoPBound && !migrateToDPoPInProgress && selectedUser != null,
+                    onClick = {
+                        val userToUpgrade = selectedUser ?: return@Button
+                        migrateToDPoPInProgress = true
+
+                        userAccountManager?.upgradeToDPoP(
+                            userAccount = userToUpgrade,
+                            onSuccess = {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@AuthFlowTesterActivity,
+                                        resources.getString(R.string.migration_success),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                    migrateToDPoPInProgress = false
+                                    onDismiss.invoke()
+                                }
+                            },
+                            onFailure = { error, errorDesc, e ->
+                                runOnUiThread {
+                                    migrateToDPoPInProgress = false
+                                    migrateToDPoPError = error +
+                                            (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                            (e?.let { "\n\nThrowable: $it" } ?: "")
+                                }
+                            },
+                        )
+                    },
+                ) {
+                    if (migrateToDPoPInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
+                        )
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
+                        Text(
+                            text = stringResource(R.string.migration_in_progress),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    } else {
+                        Text(text = stringResource(R.string.upgrade_to_dpop_button))
+                    }
+                }
+
+                // "Downgrade from DPoP": in-place downgrade of the selected user's own connected
+                // app back to Bearer, independent of SalesforceSDKManager.useDPoP — see
+                // UserAccountManager.downgradeFromDPoP. Inverse gate of the upgrade button above.
+                Text(
+                    text = stringResource(R.string.downgrade_from_dpop_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = (INNER_CARD_PADDING/2).dp),
+                )
+                Text(
+                    text = stringResource(R.string.downgrade_from_dpop_description),
+                    fontSize = 12.sp,
+                    color = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
+
+                Button(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(vertical = (INNER_CARD_PADDING/2).dp)
+                        .semantics { contentDescription = DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC },
+                    shape = RoundedCornerShape(CORNER_SHAPE.dp),
+                    enabled = alreadyDPoPBound && !migrateToDPoPInProgress && selectedUser != null,
+                    onClick = {
+                        val userToDowngrade = selectedUser ?: return@Button
+                        migrateToDPoPInProgress = true
+
+                        userAccountManager?.downgradeFromDPoP(
+                            userAccount = userToDowngrade,
+                            onSuccess = {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@AuthFlowTesterActivity,
+                                        resources.getString(R.string.migration_success),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                    migrateToDPoPInProgress = false
+                                    onDismiss.invoke()
+                                }
+                            },
+                            onFailure = { error, errorDesc, e ->
+                                runOnUiThread {
+                                    migrateToDPoPInProgress = false
+                                    migrateToDPoPError = error +
+                                            (errorDesc?.let { " \n\nDesc: $it" } ?: "") +
+                                            (e?.let { "\n\nThrowable: $it" } ?: "")
+                                }
+                            },
+                        )
+                    },
+                ) {
+                    if (migrateToDPoPInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(INNER_CARD_PADDING.dp),
+                            strokeWidth = SPINNER_STROKE_WIDTH.dp,
+                        )
+                        Spacer(Modifier.width(INNER_CARD_PADDING.dp))
+                        Text(
+                            text = stringResource(R.string.migration_in_progress),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    } else {
+                        Text(text = stringResource(R.string.downgrade_from_dpop_button))
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = INNER_CARD_PADDING.dp))
+
+                Text(
+                    text = stringResource(R.string.change_connected_app_title),
+                    fontSize = SECTION_TITLE_SIZE.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = (INNER_CARD_PADDING/2).dp),
+                )
 
                 OutlinedTextField(
                     value = consumerKey,
@@ -699,9 +891,9 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                     ?.coerceToText(context)
                     ?.toString() ?: ""
             ) }
-            val alertBody = context.getString(
-                /* resId = */ R.string.json_import,
-                /* ...formatArgs = */ CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
+            val alertBody = stringResource(
+                R.string.json_import,
+                CONSUMER_JSON_KEY, REDIRECT_JSON_KEY, SCOPE_JSON_KEY,
             )
 
             @Suppress("AssignedValueIsNeverRead")
@@ -759,6 +951,21 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 text = { Text(text = errorMessage) },
                 confirmButton = {
                     TextButton(onClick = { migrationError = null }) {
+                        Text("Ok")
+                    }
+                },
+                shape = RoundedCornerShape(CORNER_SHAPE.dp),
+            )
+        }
+
+        migrateToDPoPError?.let { errorMessage ->
+            @Suppress("AssignedValueIsNeverRead")
+            AlertDialog(
+                onDismissRequest = { migrateToDPoPError = null },
+                title = { Text(stringResource(R.string.migration_failure)) },
+                text = { Text(text = errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { migrateToDPoPError = null }) {
                         Text("Ok")
                     }
                 },
@@ -830,22 +1037,14 @@ class AuthFlowTesterActivity : SalesforceActivity() {
     @Composable
     fun getColorScheme(): ColorScheme {
         return with(SalesforceSDKManager.getInstance()) {
-            when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                    if (isDarkTheme) {
-                        dynamicDarkColorScheme(this@AuthFlowTesterActivity)
-                    } else {
-                        dynamicLightColorScheme(this@AuthFlowTesterActivity)
-                    }
-                }
-                else -> {
-                    if (isDarkTheme) sfDarkColors() else sfLightColors()
-                }
+            if (isDarkTheme) {
+                dynamicDarkColorScheme(this@AuthFlowTesterActivity)
+            } else {
+                dynamicLightColorScheme(this@AuthFlowTesterActivity)
             }
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -861,7 +1060,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -884,7 +1082,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
@@ -952,7 +1149,6 @@ class AuthFlowTesterActivity : SalesforceActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     @ExcludeFromJacocoGeneratedReport
     @Preview
     @Preview(name = "Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)

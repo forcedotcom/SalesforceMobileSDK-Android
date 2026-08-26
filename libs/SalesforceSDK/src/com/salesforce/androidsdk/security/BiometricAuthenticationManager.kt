@@ -28,17 +28,16 @@ package com.salesforce.androidsdk.security
 
 import android.content.Intent
 import androidx.core.os.bundleOf
-import androidx.fragment.app.FragmentManager
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
-import com.salesforce.androidsdk.ui.BiometricAuthOptInPrompt
 import com.salesforce.androidsdk.util.EventsObservable
 import androidx.core.content.edit
 
 internal class BiometricAuthenticationManager: AppLockManager(
     BIO_AUTH_POLICY, BIO_AUTH_ENABLED, BIO_AUTH_TIMEOUT
 ), BiometricAuthenticationManager {
+    override var automaticPresentation: Boolean = true
     // @Suppress is necessary due to a Kotlin bug:  https://youtrack.jetbrains.com/issue/KT-31420
     @Suppress("INAPPLICABLE_JVM_NAME")
     @get:JvmName("isEnabled")
@@ -93,6 +92,20 @@ internal class BiometricAuthenticationManager: AppLockManager(
         return false
     }
 
+    /**
+     * Whether the current user has already responded to the biometric opt-in dialog, either by
+     * enabling or declining it.  Unlike [hasBiometricOptedIn], which only reflects whether the
+     * user chose to enable biometric unlock, this distinguishes "declined" from "never asked" so
+     * a user who declined is not re-prompted on every subsequent login.
+     */
+    internal fun hasBiometricOptInDecision(): Boolean {
+        currentUser?.let { user ->
+            return getAccountPrefs(user).contains(USER_BIO_OPT_IN)
+        }
+
+        return false
+    }
+
     fun shouldAllowRefresh(): Boolean {
         return !(enabled && locked)
     }
@@ -109,13 +122,6 @@ internal class BiometricAuthenticationManager: AppLockManager(
         }
 
         return true
-    }
-
-    override fun presentOptInDialog(fragmentManager: FragmentManager) {
-        val biometricPrompt = BiometricAuthOptInPrompt(this)
-        if (!biometricPrompt.isAdded) {
-            biometricPrompt.show(fragmentManager, null)
-        }
     }
 
     companion object {

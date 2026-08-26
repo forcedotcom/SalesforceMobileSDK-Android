@@ -1,5 +1,5 @@
 rootProject.ext["PUBLISH_GROUP_ID"] = "com.salesforce.mobilesdk"
-rootProject.ext["PUBLISH_VERSION"] = "13.2.1"
+rootProject.ext["PUBLISH_VERSION"] = "14.0.0"
 rootProject.ext["PUBLISH_ARTIFACT_ID"] = "SalesforceSDK"
 
 plugins {
@@ -7,65 +7,66 @@ plugins {
     `kotlin-android`
     `publish-module`
     jacoco
-    kotlin("plugin.serialization") version "2.0.21"
+    kotlin("plugin.serialization") version "2.3.20"
     kotlin("plugin.parcelize")
+    kotlin("plugin.compose")
+    id("org.jetbrains.dokka")
 }
 
 dependencies {
-    val composeVersion = "1.8.2" // Update requires Kotlin 2.
-    val lifecycleVersion = "2.8.7" // Update requires Kotlin 2.
-    val androidXActivityVersion = "1.10.1"
-
     api(project(":libs:SalesforceAnalytics"))
-    api("com.squareup.okhttp3:okhttp:4.12.0")
-    api("com.google.firebase:firebase-messaging:25.0.0")
-    api("androidx.core:core:1.16.0") // Update requires API 36 compileSdk
-    api("androidx.browser:browser:1.8.0") // Update requires API 36 compileSdk
-    api("androidx.work:work-runtime-ktx:2.10.3")
+    api(libs.okhttp)
+    api(libs.firebase.messaging)
+    api(libs.androidx.core)
+    api(libs.androidx.browser)
+    api(libs.androidx.work.runtime.ktx)
 
-    implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
-    implementation("com.google.android.material:material:1.13.0")  // remove this when all xml is gone
-    implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
-    implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.core:core-ktx:1.16.0") // Update requires API 36 compileSdk
-    implementation("androidx.activity:activity-ktx:$androidXActivityVersion")
-    implementation("androidx.activity:activity-compose:$androidXActivityVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion")
-    implementation("androidx.lifecycle:lifecycle-service:$lifecycleVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // Update requires Kotlin 2.
-    implementation("androidx.window:window:1.4.0")
-    implementation("androidx.window:window-core:1.4.0")
-    implementation("androidx.compose.material3:material3-android:1.3.2")
-    implementation(platform("androidx.compose:compose-bom:2025.07.00")) // Update requires Kotlin 2.
-    implementation("androidx.compose.foundation:foundation-android:$composeVersion")
-    implementation("androidx.compose.runtime:runtime-livedata:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview-android:$composeVersion")
-    implementation("androidx.compose.material:material:$composeVersion")
+    implementation(libs.play.integrity)
+    implementation(libs.accompanist.drawablepainter)
+    implementation(libs.material)  // remove this when all XML is gone
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    implementation(libs.androidx.lifecycle.service)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.window)
+    implementation(libs.androidx.window.core)
+    implementation(libs.androidx.compose.material3)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.material.icons.extended)
 
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    androidTestImplementation("androidx.test:runner:1.7.0")
-    androidTestImplementation("androidx.test:rules:1.7.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    androidTestImplementation("io.mockk:mockk-android:1.14.0") // Update requires Kotlin 2
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.arch.core.testing)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.work.testing)
+    androidTestImplementation(libs.mockk.android)
 }
 
-android {
+android { // TODO: This cannot be resolved until newDSL=true
     namespace = "com.salesforce.androidsdk"
     testNamespace = "com.salesforce.androidsdk.tests"
 
-    //noinspection GradleDependency - Will be upgraded to 36 in Mobile SDK 14.0
-    compileSdk = 35
+    //noinspection GradleDependency
+    compileSdk = 36 // TODO: MSDK 14 will remain on 36.  The next increment will be in MSDK 15.
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 31
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -78,20 +79,18 @@ android {
     sourceSets {
         getByName("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.srcDirs(arrayOf("src"))
-            resources.srcDirs(arrayOf("src"))
-            aidl.srcDirs(arrayOf("src"))
-            renderscript.srcDirs(arrayOf("src"))
-            res.srcDirs(arrayOf("res"))
-            assets.srcDirs(arrayOf("assets"))
+            java.directories.add("src")
+            resources.directories.add("src")
+            aidl.directories.add("src")
+            res.directories.add("res")
+            assets.directories.add("assets")
         }
 
         getByName("androidTest") {
             setRoot("../test/SalesforceSDKTest")
-            java.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
-            resources.srcDirs(arrayOf("../test/SalesforceSDKTest/src"))
-            res.srcDirs(arrayOf("../test/SalesforceSDKTest/res"))
-            @Suppress("UnstableApiUsage")
+            java.directories.add("../test/SalesforceSDKTest/src")
+            resources.directories.add("../test/SalesforceSDKTest/src")
+            res.directories.add("../test/SalesforceSDKTest/res")
             assets.directories.add("../../shared/test")
         }
     }
@@ -113,15 +112,9 @@ android {
     }
 
     buildFeatures {
-        renderScript = true
         aidl = true
         buildConfig = true
         compose = true
-    }
-
-    @Suppress("UnstableApiUsage")
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     val convertCodeCoverage: TaskProvider<JacocoReport> = tasks.register<JacocoReport>("convertedCodeCoverage") {
@@ -135,12 +128,12 @@ android {
             html.required = true
         }
 
-        sourceDirectories.setFrom("${project.projectDir}/src/main/java")
-        val fileFilter = arrayListOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
+        sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
+        val fileFilter = listOf("**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*", "**/*Test*.*", "android/**/*.*")
         val javaTree = fileTree("${project.projectDir}/build/intermediates/javac/debug") { setExcludes(fileFilter) }
         val kotlinTree = fileTree("${project.projectDir}/build/tmp/kotlin-classes/debug") { setExcludes(fileFilter) }
         classDirectories.setFrom(javaTree, kotlinTree)
-        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(arrayListOf("**/coverage.ec")) })
+        executionData.setFrom(fileTree("$rootDir/firebase") { setIncludes(listOf("**/coverage.ec")) })
     }
 }
 

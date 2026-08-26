@@ -3,7 +3,6 @@ include("libs:SalesforceSDK")
 include("libs:SmartStore")
 include("libs:MobileSync")
 include("libs:SalesforceHybrid")
-include("libs:SalesforceReact")
 include("hybrid:HybridSampleApps:AccountEditor")
 include("native:NativeSampleApps:AppConfigurator")
 include("native:NativeSampleApps:ConfiguredApp")
@@ -18,13 +17,13 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
     repositories {
-        // Android JSC is installed from NPM.
-        maven("${rootProject.projectDir}/libs/SalesforceReact/node_modules/jsc-android/dist") // For stand-alone MSDK builds.
-        maven("${rootProject.projectDir}/../../node_modules/jsc-android/dist") // For template app builds.
         google()
         mavenCentral()
     }

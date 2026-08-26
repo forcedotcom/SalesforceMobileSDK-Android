@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -270,7 +271,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             return null;
         }
         if (doesNotRequireAuth) {
-            return currentActivity.buildClientManager().peekUnauthenticatedRestClient();
+            return SalesforceSDKManager.getInstance().getUnauthenticatedRestClient();
         }
         return currentActivity.getRestClient();
     }
@@ -295,7 +296,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
 
     private static RequestBody buildRequestBody(JSONObject params, JSONObject fileParams) throws URISyntaxException {
         if (fileParams == null || fileParams.length() == 0) {
-            return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, params.toString());
+            return RequestBody.create(params.toString(), RestRequest.MEDIA_TYPE_JSON);
         } else {
             final MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
             final Iterator<String> keys = params.keys();
@@ -324,7 +325,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                             final URI url = new URI(fileParam.optString(FILE_URL_KEY));
                             final File file = new File(url);
                             final MediaType mediaType = MediaType.parse(mimeType);
-                            builder.addFormDataPart(fileKeyStr, name, RequestBody.create(mediaType, file));
+                            builder.addFormDataPart(fileKeyStr, name, RequestBody.create(file, mediaType));
                         }
                     }
                 }

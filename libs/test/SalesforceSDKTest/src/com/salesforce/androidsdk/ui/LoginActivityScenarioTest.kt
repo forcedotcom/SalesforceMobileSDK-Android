@@ -27,9 +27,7 @@
 package com.salesforce.androidsdk.ui
 
 import android.content.Intent
-import android.net.Uri.parse
 import android.webkit.WebView
-import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
@@ -40,14 +38,15 @@ import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,26 +55,36 @@ import org.junit.runner.RunWith
 class LoginActivityScenarioTest {
 
     @Test
-    fun viewModelLoginHint_UpdatesOn_onCreateWithSalesforceWelcomeLoginHintIntentExtras() {
+    fun viewModelLoginHint_UpdatesOn_applyWelcomeLoginHintAndHostIntentExtras() {
         val expectedLoginHint = "ietf_example_domain_reserved_for_test@example.com"
         val expectedLoginServerHostname = "welcome.salesforce.com"
+        val expectedPendingServer = "https://$expectedLoginServerHostname"
 
+        val loginServerManager = SalesforceSDKManager.getInstance().loginServerManager
+        val originalSelectedServer = loginServerManager.selectedLoginServer
+
+        // Production never receives the welcome login hint+host extras as the initial
+        // launch intent: they are dispatched via [LoginActivity.startDefaultLoginWithHintAndHost]
+        // (internal, FLAG_ACTIVITY_SINGLE_TOP) onto the running LoginActivity and arrive
+        // through onNewIntent, which calls applySalesforceWelcomeLoginHintAndHost.  Drive
+        // that function directly here since onNewIntent itself is protected.
         launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            ).apply {
+            Intent(getApplicationContext(), LoginActivity::class.java)
+        ).use { activityScenario ->
+
+            val intentWithExtras = Intent(getApplicationContext(), LoginActivity::class.java).apply {
                 putExtra(EXTRA_KEY_LOGIN_HINT, expectedLoginHint)
                 putExtra(EXTRA_KEY_LOGIN_HOST, expectedLoginServerHostname)
-            }).use { activityScenario ->
+            }
+            activityScenario.onActivity { activity ->
+                activity.applySalesforceWelcomeLoginHintAndHost(intentWithExtras)
+            }
 
             activityScenario.onActivity { activity ->
-
-                val actualLoginHint = activity.viewModel.loginHint
-                val actualLoginServerHostname = SalesforceSDKManager.getInstance().loginServerManager.selectedLoginServer
-
-                assertEquals(expectedLoginHint, actualLoginHint)
-                assertEquals(expectedLoginServerHostname, parse(actualLoginServerHostname.url).host)
+                assertEquals(expectedLoginHint, activity.viewModel.loginHint)
+                assertEquals(expectedPendingServer, activity.viewModel.pendingServer.value)
+                assertEquals(originalSelectedServer, loginServerManager.selectedLoginServer)
+                assertNull(loginServerManager.getLoginServerFromURL(expectedPendingServer))
             }
         }
     }
@@ -220,52 +229,108 @@ class LoginActivityScenarioTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
+        // This test drives the in-app WebView reload path, which only exists when advanced
+        // authentication is NOT forced.  With the force flag on (the default) the login server's
+        // auth-config fetch enables browser login, causing LoginActivity to launch a Chrome Custom
+        // Tab over itself; the tab stops the activity so it never returns to RESUMED and the
+        // moveToState() calls below fail.  Pin the flag off before launching so the WebView path is
+        // exercised, and restore it afterward so we don't leak state onto the shared singleton.
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        sdkManager.forceAdvancedAuthentication = false
+
         // Set loginDevMenuReload to false initially
-        SalesforceSDKManager.getInstance().loginDevMenuReload = false
+        sdkManager.loginDevMenuReload = false
 
-        launch<LoginActivity>(
-            Intent(
-                getApplicationContext(),
-                LoginActivity::class.java
-            )
-        ).use { activityScenario ->
-            // Get the initial login URL
-            var initialUrl: String? = null
-            activityScenario.onActivity { activity ->
-                initialUrl = activity.viewModel.loginUrl.value
-            }
-
-            // Pause the activity (simulating going to dev menu)
-            activityScenario.moveToState(STARTED)
-
-            // Simulate changing login options in dev menu
-            activityScenario.onActivity { _ ->
-                SalesforceSDKManager.getInstance().loginDevMenuReload = true
-            }
-
-            // Resume the activity
-            activityScenario.moveToState(RESUMED)
-
-            // Verify the webview was reloaded (URL should be regenerated)
-            activityScenario.onActivity { activity ->
-                // The reload flag should be reset to false
-                assertFalse(
-                    "loginDevMenuReload should be reset to false after reload",
-                    SalesforceSDKManager.getInstance().loginDevMenuReload
+        try {
+            launch<LoginActivity>(
+                Intent(
+                    getApplicationContext(),
+                    LoginActivity::class.java
                 )
+            ).use { activityScenario ->
+                // Get the initial login URL
+                var initialUrl: String? = null
+                activityScenario.onActivity { activity ->
+                    initialUrl = activity.viewModel.loginUrl.value
+                }
 
-                // For Web Server Flow, the URL changes each time due to code challenge
-                // Verify that reloadWebView was called by checking the URL changed
-                val newUrl = activity.viewModel.loginUrl.value
-                if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
-                    // Web Server Flow generates a new code challenge each time
+                // Pause the activity (simulating going to dev menu)
+                activityScenario.moveToState(STARTED)
+
+                // Simulate changing login options in dev menu
+                activityScenario.onActivity { _ ->
+                    SalesforceSDKManager.getInstance().loginDevMenuReload = true
+                }
+
+                // Resume the activity
+                activityScenario.moveToState(RESUMED)
+
+                // Verify the webview was reloaded (URL should be regenerated)
+                activityScenario.onActivity { activity ->
+                    // The reload flag should be reset to false
+                    assertFalse(
+                        "loginDevMenuReload should be reset to false after reload",
+                        SalesforceSDKManager.getInstance().loginDevMenuReload
+                    )
+
+                    // For Web Server Flow, the URL changes each time due to code challenge
+                    // Verify that reloadWebView was called by checking the URL changed
+                    val newUrl = activity.viewModel.loginUrl.value
+                    if (SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                        // Web Server Flow generates a new code challenge each time
+                        assertTrue(
+                            "Login URL should have changed after reload for Web Server Flow",
+                            newUrl != initialUrl
+                        )
+                    }
+                }
+            }
+        } finally {
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    fun onAuthFlowFinished_enabledAutomaticNotOptedIn_showsDialogAndDefersFinish() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalBioAuthManager = sdkManager.biometricAuthenticationManager
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        // Pin advanced auth off so LoginActivity stays on the in-app WebView and doesn't
+        // launch a Custom Tab, which would move it past onSaveInstanceState (see the similar
+        // note on loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges).
+        sdkManager.forceAdvancedAuthentication = false
+        val bioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true)
+        every { bioAuthManager.enabled } returns true
+        every { bioAuthManager.automaticPresentation } returns true
+        every { bioAuthManager.hasBiometricOptedIn() } returns false
+        sdkManager.biometricAuthenticationManager = bioAuthManager
+
+        try {
+            var proceedCalls = 0
+
+            launch<LoginActivity>(
+                Intent(getApplicationContext(), LoginActivity::class.java)
+            ).use { activityScenario ->
+                activityScenario.onActivity { activity ->
+                    activity.onAuthFlowFinished { proceedCalls += 1 }
+
                     assertTrue(
-                        "Login URL should have changed after reload for Web Server Flow",
-                        newUrl != initialUrl
+                        "Opt-in dialog should be shown when not yet opted in.",
+                        activity.viewModel.showBiometricOptInDialog.value
+                    )
+                    assertTrue(
+                        "proceed() should be deferred until the opt-in dialog is dismissed.",
+                        proceedCalls == 0
                     )
                 }
             }
+        } finally {
+            sdkManager.biometricAuthenticationManager = originalBioAuthManager
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
         }
     }
 

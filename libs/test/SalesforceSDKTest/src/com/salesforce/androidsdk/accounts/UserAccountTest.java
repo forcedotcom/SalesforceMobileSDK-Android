@@ -44,8 +44,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -100,11 +102,14 @@ public class UserAccountTest {
     public static final String TEST_COOKIE_SID_CLIENT = "cookie-sid-client-value";
     public static final String TEST_SID_COOKIE_NAME = "sid-cookie-name";
     public static final String TEST_CLIENT_ID = "test-client-id";
+    public static final String TEST_REDIRECT_URI = "test-redirect-uri://success/done";
     public static final String TEST_PARENT_SID = "test-parent-sid";
     public static final String TEST_TOKEN_FORMAT = "test-token-format";
     public static final String TEST_BEACON_CHILD_CONSUMER_KEY = "test-beacon-child-consumer-key";
     public static final String TEST_BEACON_CHILD_CONSUMER_SECRET = "test-beacon-child-consumer-secret";
     public static final String TEST_SCOPE = "api web openid refresh_token";
+    public static final String TEST_CREDENTIALS_IDENTIFIER = "test-credentials-identifier-uuid";
+    public static final String TEST_TOKEN_TYPE = "DPoP";
 
     // other user
     public static final String TEST_ORG_ID_2 = "test_org_id_2";
@@ -225,6 +230,18 @@ public class UserAccountTest {
                 .scope(TEST_SCOPE_2)
                 .build();
         checkOtherTestAccount(otherUserAccount);
+    }
+
+    @Test
+    public void testEqualsUsesUserAndOrgIdentityRatherThanAccountName() {
+        final UserAccount original = createTestAccount();
+        final UserAccount sameUserWithDifferentAccountName = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .accountName(TEST_ACCOUNT_NAME_2)
+                .build();
+
+        Assert.assertEquals(original, sameUserWithDifferentAccountName);
+        Assert.assertEquals(original.hashCode(), sameUserWithDifferentAccountName.hashCode());
     }
 
     @Test
@@ -426,6 +443,9 @@ public class UserAccountTest {
         object.put(UserAccount.SCOPE, TEST_SCOPE);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.put(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
+        object.put(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.put(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
+        object.put(UserAccount.REDIRECT_URI, TEST_REDIRECT_URI);
         object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -474,6 +494,9 @@ public class UserAccountTest {
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_KEY, TEST_BEACON_CHILD_CONSUMER_KEY);
         object.putString(UserAccount.BEACON_CHILD_CONSUMER_SECRET, TEST_BEACON_CHILD_CONSUMER_SECRET);
         object.putString(UserAccount.SCOPE, TEST_SCOPE);
+        object.putString(UserAccount.CREDENTIALS_IDENTIFIER, TEST_CREDENTIALS_IDENTIFIER);
+        object.putString(UserAccount.TOKEN_TYPE, TEST_TOKEN_TYPE);
+        object.putString(UserAccount.REDIRECT_URI, TEST_REDIRECT_URI);
         object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
@@ -515,11 +538,14 @@ public class UserAccountTest {
                 .cookieSidClient(TEST_COOKIE_SID_CLIENT)
                 .sidCookieName(TEST_SID_COOKIE_NAME)
                 .clientId(TEST_CLIENT_ID)
+                .redirectUri(TEST_REDIRECT_URI)
                 .parentSid(TEST_PARENT_SID)
                 .tokenFormat(TEST_TOKEN_FORMAT)
                 .beaconChildConsumerKey(TEST_BEACON_CHILD_CONSUMER_KEY)
                 .beaconChildConsumerSecret(TEST_BEACON_CHILD_CONSUMER_SECRET)
                 .scope(TEST_SCOPE)
+                .credentialsIdentifier(TEST_CREDENTIALS_IDENTIFIER)
+                .tokenType(TEST_TOKEN_TYPE)
                 .additionalOauthValues(createAdditionalOauthValues())
                 .build();
     }
@@ -655,8 +681,8 @@ public class UserAccountTest {
 
     private OAuth2.TokenEndpointResponse createTokenEndpointResponseLikeWebServerFlow() {
         Map<String, String> params = createTokenEndpointParams();
-        params.put("beacon_child_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
-        params.put("beacon_child_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
+        params.put("auto_installed_app_org_consumer_key", TEST_BEACON_CHILD_CONSUMER_KEY);
+        params.put("auto_installed_app_org_consumer_secret", TEST_BEACON_CHILD_CONSUMER_SECRET);
         JSONObject responseJson = new JSONObject(params);
         MediaType mediaType = MediaType.parse("application/json");
         ResponseBody responseBody = ResponseBody.create(responseJson.toString(), mediaType);
@@ -721,6 +747,135 @@ public class UserAccountTest {
         response.put("language", TEST_LANGUAGE);
         response.put("locale", TEST_LOCALE);
         return new OAuth2.IdServiceResponse(response);
+    }
+
+    /**
+     * Tests that feature flags survive a toJson round-trip.
+     * Verifies that the FEATURE_FLAGS key is present in the serialized JSON and that the
+     * flags can be read back by manually parsing the JSON array (since the JSON constructor
+     * does not populate featureFlags — that path goes through AccountManager).
+     */
+    @Test
+    public void test_givenUserAccountWithFlags_whenToJson_thenFeatureFlagsKeyPresent() throws JSONException {
+        final UserAccount account = createTestAccount();
+        account.setFeatureFlags(new HashSet<>(Arrays.asList("BW", "WD")));
+
+        final JSONObject json = account.toJson(createAdditionalOauthKeys());
+
+        Assert.assertTrue("JSON should contain FEATURE_FLAGS key", json.has(UserAccount.FEATURE_FLAGS));
+
+        // Verify both flags are serialized in the JSON array
+        org.json.JSONArray flagsArray = json.getJSONArray(UserAccount.FEATURE_FLAGS);
+        HashSet<String> serialized = new HashSet<>();
+        for (int i = 0; i < flagsArray.length(); i++) {
+            serialized.add(flagsArray.getString(i));
+        }
+        Assert.assertTrue("Serialized flags should contain BW", serialized.contains("BW"));
+        Assert.assertTrue("Serialized flags should contain WD", serialized.contains("WD"));
+    }
+
+    /**
+     * Tests that a UserAccount built from JSON without a FEATURE_FLAGS key returns an empty set.
+     */
+    @Test
+    public void test_givenUserAccountJsonMissingFeatureFlags_whenFromJson_thenEmptySet() throws JSONException {
+        final JSONObject testJSON = createTestAccountJSON();
+        // Confirm the helper JSON does not include FEATURE_FLAGS
+        Assert.assertFalse("Test JSON should not have FEATURE_FLAGS", testJSON.has(UserAccount.FEATURE_FLAGS));
+
+        final UserAccount account = new UserAccount(testJSON, "SalesforceSDKTest", createAdditionalOauthKeys());
+
+        Assert.assertNotNull("featureFlags should never be null", account.getFeatureFlags());
+        Assert.assertTrue("featureFlags should be empty when key is absent", account.getFeatureFlags().isEmpty());
+    }
+
+    /**
+     * Tests that setFeatureFlags/getFeatureFlags are symmetric.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetFeatureFlags_thenGetFeatureFlagsReturnsSameValues() {
+        final UserAccount account = createTestAccount();
+        final HashSet<String> flags = new HashSet<>(Arrays.asList("AA", "BB", "CC"));
+        account.setFeatureFlags(flags);
+
+        Assert.assertEquals("getFeatureFlags should return the set values", flags, account.getFeatureFlags());
+    }
+
+    /**
+     * Tests that setFeatureFlags(null) results in an empty set, not a NullPointerException.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetFeatureFlagsNull_thenEmptySet() {
+        final UserAccount account = createTestAccount();
+        account.setFeatureFlags(null);
+
+        Assert.assertNotNull("featureFlags should never be null after setFeatureFlags(null)", account.getFeatureFlags());
+        Assert.assertTrue("featureFlags should be empty after setFeatureFlags(null)", account.getFeatureFlags().isEmpty());
+    }
+
+    /**
+     * The last token rotation timestamp survives a toJson round-trip so it can
+     * be surfaced in the developer info screen after an app restart.
+     */
+    @Test
+    public void test_givenUserAccountWithRotationTime_whenJsonRoundTrip_thenTimestampPreserved() throws JSONException {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .lastTokenRotationTime(rotationTime)
+                .build();
+
+        final JSONObject json = account.toJson(createAdditionalOauthKeys());
+        Assert.assertEquals("JSON should carry the rotation timestamp", rotationTime,
+                json.getString(UserAccount.LAST_TOKEN_ROTATION_TIME));
+
+        final UserAccount restored = new UserAccount(json, "SalesforceSDKTest", createAdditionalOauthKeys());
+        Assert.assertEquals("Rotation timestamp should survive JSON round-trip", rotationTime,
+                restored.getLastTokenRotationTime());
+    }
+
+    /**
+     * The last token rotation timestamp survives a toBundle round-trip.
+     */
+    @Test
+    public void test_givenUserAccountWithRotationTime_whenBundleRoundTrip_thenTimestampPreserved() {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .lastTokenRotationTime(rotationTime)
+                .build();
+
+        final UserAccount restored = new UserAccount(account.toBundle(createAdditionalOauthKeys()), createAdditionalOauthKeys());
+        Assert.assertEquals("Rotation timestamp should survive Bundle round-trip", rotationTime,
+                restored.getLastTokenRotationTime());
+    }
+
+    /**
+     * An account with no rotation yet reports a null timestamp, and the
+     * JSON/Bundle omit the key (so existing serialization stays byte-for-byte
+     * compatible).
+     */
+    @Test
+    public void test_givenUserAccountWithoutRotationTime_whenSerialized_thenKeyAbsentAndGetterNull() throws JSONException {
+        final UserAccount account = createTestAccount();
+
+        Assert.assertNull("Rotation timestamp should default to null", account.getLastTokenRotationTime());
+        Assert.assertFalse("JSON should not contain the rotation key when unset",
+                account.toJson(createAdditionalOauthKeys()).has(UserAccount.LAST_TOKEN_ROTATION_TIME));
+        Assert.assertFalse("Bundle should not contain the rotation key when unset",
+                account.toBundle(createAdditionalOauthKeys()).containsKey(UserAccount.LAST_TOKEN_ROTATION_TIME));
+    }
+
+    /**
+     * setLastTokenRotationTime/getLastTokenRotationTime are symmetric.
+     */
+    @Test
+    public void test_givenUserAccount_whenSetRotationTime_thenGetterReturnsSameValue() {
+        final String rotationTime = "2026-07-30T12:00:00Z";
+        final UserAccount account = createTestAccount();
+        account.setLastTokenRotationTime(rotationTime);
+
+        Assert.assertEquals(rotationTime, account.getLastTokenRotationTime());
     }
 
     /**

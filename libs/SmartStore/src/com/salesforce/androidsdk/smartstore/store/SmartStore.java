@@ -376,7 +376,7 @@ public class SmartStore  {
             // Column name or expression the db index is on
             String columnName = soupTableName + "_" + i;
             if (TypeGroup.value_indexed_with_json_extract.isMember(indexSpec.type)) {
-                columnName = "json_extract(" + SOUP_COL + ", '$." + indexSpec.path + "')";
+                columnName = "json_extract(" + SOUP_COL + ", '$." + indexSpec.path.replace("'", "''") + "')";
             }
 
             // for create table

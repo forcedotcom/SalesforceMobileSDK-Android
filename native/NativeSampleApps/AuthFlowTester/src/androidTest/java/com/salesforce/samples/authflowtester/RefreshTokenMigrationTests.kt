@@ -28,6 +28,8 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
@@ -55,6 +57,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.CA_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -69,6 +72,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.ECA_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -83,6 +87,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.BEACON_JWT,
             scopeSelection = ScopeSelection.ALL,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -97,6 +102,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -107,7 +113,8 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -122,9 +129,11 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.ECA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -135,10 +144,12 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.CA_OPAQUE
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_OPAQUE
+            KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.CA_OPAQUE
+            KnownAppConfig.CA_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
@@ -149,10 +160,57 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_JWT
+            KnownAppConfig.BEACON_JWT,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
         migrateAndValidate(
-            KnownAppConfig.BEACON_OPAQUE
+            KnownAppConfig.BEACON_OPAQUE,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+        )
+    }
+
+    // endregion
+    // region User-agent source -> web-server destination cross-app migrations
+
+    /**
+     * Migrate CA (user agent flow) -> ECA with extended scopes. Migration
+     * always uses web-server flow internally
+     * ([LoginViewModel.generateMigrationAuthorizationPath] hard-codes
+     * useWebServerAuthentication = true), so the destination is implicitly
+     * web server. Asserts scope upgrade and working post-migration tokens.
+     */
+    @Test
+    fun testMigrateCAUserAgent_To_ECAExtendedWebServer() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
+            useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
+        )
+        migrateAndValidate(
+            knownAppConfig = KnownAppConfig.ECA_OPAQUE,
+            scopeSelection = ScopeSelection.ALL,
+            expectAdvancedAuth = false,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+        )
+    }
+
+    /**
+     * Migrate CA (user agent flow) -> Beacon with extended scopes. See
+     * [testMigrateCAUserAgent_To_ECAExtendedWebServer] for context on why
+     * the destination flow is implicitly web server.
+     */
+    @Test
+    fun testMigrateCAUserAgent_To_BeaconExtendedWebServer() {
+        loginAndValidate(
+            knownAppConfig = KnownAppConfig.CA_OPAQUE,
+            useWebServerFlow = false,
+            forceAdvancedAuthentication = false,
+        )
+        migrateAndValidate(
+            knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
+            scopeSelection = ScopeSelection.ALL,
+            expectAdvancedAuth = false,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
         )
     }
 
@@ -163,16 +221,26 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         scopeSelection: ScopeSelection,
         useWebServerFlow: Boolean,
         useHybridAuthToken: Boolean,
+        useDPoP: Boolean,
         knownLoginHostConfig: KnownLoginHostConfig,
         knownUserConfig: KnownUserConfig,
+        forceAdvancedAuthentication: Boolean,
+        useWelcomeDiscovery: Boolean,
+        isMultiUser: Boolean,
+        useLoginPoolHost: Boolean,
     ) {
         super.loginAndValidate(
-            knownAppConfig,
-            scopeSelection,
-            useWebServerFlow,
-            useHybridAuthToken = false,
-            knownLoginHostConfig,
+            knownAppConfig = knownAppConfig,
+            scopeSelection = scopeSelection,
+            useWebServerFlow = useWebServerFlow,
+            useHybridAuthToken = false, // TODO: W-20524841 — Pass useHybridAuthToken once server bug is fixed.
+            useDPoP = useDPoP,
+            forceAdvancedAuthentication = forceAdvancedAuthentication,
+            knownLoginHostConfig = knownLoginHostConfig,
             knownUserConfig = user,
+            useWelcomeDiscovery = useWelcomeDiscovery,
+            isMultiUser = isMultiUser,
+            useLoginPoolHost = useLoginPoolHost,
         )
     }
 }

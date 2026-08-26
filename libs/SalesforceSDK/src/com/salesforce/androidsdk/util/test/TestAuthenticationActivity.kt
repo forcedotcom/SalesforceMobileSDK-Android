@@ -31,11 +31,13 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_DEFAULT
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_FIRST_LOGIN
 import com.salesforce.androidsdk.accounts.UserAccountManager.USER_SWITCH_TYPE_LOGIN
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider
 import com.salesforce.androidsdk.util.test.TestCredentials.ACCOUNT_NAME
 import com.salesforce.androidsdk.util.test.TestCredentials.CLIENT_ID
@@ -50,6 +52,9 @@ import com.salesforce.androidsdk.util.test.TestCredentials.PHOTO_URL
 import com.salesforce.androidsdk.util.test.TestCredentials.REFRESH_TOKEN
 import com.salesforce.androidsdk.util.test.TestCredentials.USERNAME
 import com.salesforce.androidsdk.util.test.TestCredentials.USER_ID
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * An activity that authenticates using credentials provided in the intent
@@ -90,17 +95,9 @@ class TestAuthenticationActivity : AppCompatActivity() {
             .username(USERNAME)
             .build()
 
-        val authTokenProvider = AccMgrAuthTokenProvider(
-            SalesforceSDKManager.getInstance().clientManager,
-            INSTANCE_URL,
-            null,
-            REFRESH_TOKEN
-        )
-        authTokenProvider.newAuthToken
-        account.downloadProfilePhoto()
-
         val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
-        // Send user switch intent, create and switch to user.
+        // Persist the account before constructing its bound manager. Token refresh can then
+        // validate and update this exact AccountManager record.
         val numAuthenticatedUsers = userAccountManager.authenticatedUsers?.size ?: 0
         val userSwitchType = when {
             // We've already authenticated the first user, so there should be one.
@@ -112,13 +109,36 @@ class TestAuthenticationActivity : AppCompatActivity() {
             // This should never happen but if it does, pass in the "unknown" value.
             else -> USER_SWITCH_TYPE_DEFAULT
         }
-        userAccountManager.sendUserSwitchIntent(userSwitchType, null)
         userAccountManager.createAccount(account)
-        userAccountManager.switchToUser(account)
 
-        startActivity(Intent(this, SalesforceSDKManager.getInstance().mainActivityClass).apply {
-            setPackage(SalesforceSDKManager.getInstance().appContext.packageName)
-            flags = FLAG_ACTIVITY_NEW_TASK
-        })
+        lifecycleScope.launch {
+            val clientManager = ClientManager(this@TestAuthenticationActivity, account)
+            if (clientManager.account == null) {
+                finish()
+                return@launch
+            }
+            val authToken = withContext(IO) {
+                AccMgrAuthTokenProvider(clientManager).newAuthToken
+            }
+            if (authToken == null) {
+                finish()
+                return@launch
+            }
+            userAccountManager.getUserFromOrgAndUserId(ORG_ID, USER_ID)?.downloadProfilePhoto()
+
+            // Notify observers and select the newly authenticated user.
+            userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+            userAccountManager.switchToUser(account)
+
+            startActivity(
+                Intent(
+                    this@TestAuthenticationActivity,
+                    SalesforceSDKManager.getInstance().mainActivityClass
+                ).apply {
+                    setPackage(SalesforceSDKManager.getInstance().appContext.packageName)
+                    flags = FLAG_ACTIVITY_NEW_TASK
+                }
+            )
+        }
     }
 }

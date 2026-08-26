@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.push
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.work.ListenableWorker.Result.failure
 import androidx.work.ListenableWorker.Result.success
 import androidx.work.Worker
@@ -59,39 +60,111 @@ internal class PushNotificationsRegistrationChangeWorker(
     override fun doWork(): Result {
 
         // Fetch worker input data for registration action and user account.
-        val pushNotificationsRegistrationAction = PushNotificationsRegistrationAction.valueOf(
-            inputData.getString("ACTION") ?: return failure() /* Action is required */
-        )
-        val userAccount = inputData.getString("USER_ACCOUNT")?.let { userAccountJson ->
-            UserAccount(JSONObject(userAccountJson))
-        } /* User account is optional where null specifies all accounts */
+        val action = inputData.getString("ACTION")
+            ?.let { runCatching { PushNotificationsRegistrationAction.valueOf(it) }.getOrNull() }
+            ?: return failure()
 
-        // Instantiate push notifications registrar...
+        // Resolve which authenticated accounts this work targets, failing on a
+        // bad required input rather than widening the scope to all users.
+        val targetAccounts = when (val resolution = resolveTargetAccounts(action)) {
+            is TargetAccounts.Fail -> return failure()
+            is TargetAccounts.Accounts -> resolution.users
+        }
+
+        /*
+         * Instantiate push notifications registrar and change registration for
+         * each targeted account.
+         */
         val pushNotificationsRegistrar = SalesforceSDKManager.getInstance().pushServiceType.newInstance()
-
-        // ...Determine scope of user accounts when...
-        when (userAccount) {
-
-            // ...The input data didn't provide a user account...
-            null ->
-                // ...Change push notification registration for all user accounts.
-                SalesforceSDKManager.getInstance().userAccountManager.authenticatedUsers?.forEach { nextUserAccount ->
-                    pushNotificationsRegistrar.performRegistrationChange(
-                        pushNotificationsRegistrationAction == Register,
-                        nextUserAccount
-                    )
-                }
-
-            // ...The input data provided a specific user account...
-            else ->
-                // ...Change push notification registration for the specified user account.
-                pushNotificationsRegistrar.performRegistrationChange(
-                    pushNotificationsRegistrationAction == Register,
-                    userAccount
-                )
+        targetAccounts.forEach { userAccount ->
+            pushNotificationsRegistrar.performRegistrationChange(
+                action == Register,
+                userAccount
+            )
         }
 
         return success()
+    }
+
+    /**
+     * Resolves the set of authenticated accounts this work request targets from
+     * its input data, without performing any registration change.
+     *
+     * The enqueuer persists only the non-sensitive org id and user id, so the
+     * full user account (with its auth token, refresh token, and session
+     * cookies) is never written to WorkManager's unencrypted storage. Accounts
+     * are re-resolved from secure storage here:
+     *
+     * - Absent identifiers specify all authenticated users only for registration.
+     *   Deregistration requires an exact org/user target.
+     * - Present identifiers that no longer resolve to a stored account (for
+     *   example, the user logged out before this work ran) are a bad required
+     *   input: [TargetAccounts.Fail] rather than silently widening the scope to
+     *   all users. WorkManager does not retry this failure. Registration work is
+     *   re-enqueued with REPLACE on the next app foreground or login.
+     *   Deregistration is best-effort and is abandoned when its exact account
+     *   cannot be resolved; the server record may remain until its TTL expires
+     *   or a later explicit deregistration succeeds.
+     * - A legacy pre-14.0 payload (see below) is migrated to discrete
+     *   identifiers before resolution.
+     *
+     * Legacy payload migration: SDKs before 14.0 persisted the full user
+     * account JSON under "USER_ACCOUNT" instead of the discrete org id and user
+     * id. Such a job — most importantly a single-user deregister — can survive
+     * an in-place app update and run against this worker, whose absent-identifiers
+     * case would otherwise treat it as "all authenticated users" and widen a
+     * one-user deregister to every account. Migrate by reading ONLY the
+     * identifiers from the legacy blob (never the auth token, refresh token, or
+     * session cookies it also carries) and re-resolving the account from secure
+     * storage. A present-but-unparseable legacy payload is a bad required input:
+     * [TargetAccounts.Fail] rather than widen the scope.
+     */
+    @VisibleForTesting
+    internal fun resolveTargetAccounts(
+        action: PushNotificationsRegistrationAction = Register,
+    ): TargetAccounts {
+        var orgId = inputData.getString("ORG_ID")
+        var userId = inputData.getString("USER_ID")
+        val userAccountManager = SalesforceSDKManager.getInstance().userAccountManager
+
+        if (orgId == null && userId == null) {
+            inputData.getString("USER_ACCOUNT")?.let { legacyUserAccountJson ->
+                val legacyUserAccount = runCatching {
+                    UserAccount(JSONObject(legacyUserAccountJson))
+                }.getOrNull() ?: return TargetAccounts.Fail /* Unparseable legacy payload */
+                orgId = legacyUserAccount.orgId
+                userId = legacyUserAccount.userId
+            }
+        }
+
+        if (orgId != null || userId != null) {
+            if (orgId == null || userId == null) {
+                return TargetAccounts.Fail /* Partial identity payload */
+            }
+            val userAccount = userAccountManager.getUserFromOrgAndUserId(orgId, userId)
+                ?: return TargetAccounts.Fail /* Unresolvable account */
+            return TargetAccounts.Accounts(listOf(userAccount))
+        }
+
+        return if (action == Register) {
+            TargetAccounts.Accounts(userAccountManager.authenticatedUsers.orEmpty())
+        } else {
+            TargetAccounts.Fail
+        }
+    }
+
+    /**
+     * The outcome of resolving a work request's target accounts: either the
+     * exact set of accounts to process, or a signal to fail the work.
+     */
+    @VisibleForTesting
+    internal sealed interface TargetAccounts {
+
+        /** A bad required input — the work must fail without widening scope or retrying. */
+        object Fail : TargetAccounts
+
+        /** The exact set of authenticated accounts to process (may be empty). */
+        data class Accounts(val users: List<UserAccount>) : TargetAccounts
     }
 
     /**

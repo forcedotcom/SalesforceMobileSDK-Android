@@ -30,9 +30,12 @@ import android.net.Uri
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.VisibleForTesting
 import com.salesforce.androidsdk.R
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.AppAttestationClient
+import com.salesforce.androidsdk.auth.OAuth2.ATTESTATION
 import com.salesforce.androidsdk.auth.OAuth2.FRONTDOOR_URL_KEY
 import com.salesforce.androidsdk.auth.OAuth2.getAuthorizationUrl
 import com.salesforce.androidsdk.rest.ClientManager
@@ -50,12 +53,13 @@ import java.net.URI
 /**
  * Helper class used in IDP app to get auth code from server
  */
-internal class IDPAuthCodeHelper private constructor(
+internal class IDPAuthCodeHelper @VisibleForTesting internal constructor(
     val webView: WebView,
     val userAccount: UserAccount,
     val spConfig: SPConfig,
     val codeChallenge: String,
-    val onResult:(result:Result) -> Unit
+    val onResult: (result: Result) -> Unit,
+    val appAttestationClient: AppAttestationClient? = SalesforceSDKManager.getInstance().appAttestationClient,
 ) {
     data class Result(
         val success: Boolean,
@@ -94,19 +98,26 @@ internal class IDPAuthCodeHelper private constructor(
     private fun buildRestClient(): RestClient? {
         SalesforceSDKLogger.d(TAG, "Building rest client")
         val context = SalesforceSDKManager.getInstance().appContext
-        val idpAccountType = SalesforceSDKManager.getInstance().accountType
-        val clientManager = ClientManager(context, idpAccountType, false)
-        return clientManager.peekRestClient(userAccount)
+        return ClientManager(context, userAccount).peekRestClient()
     }
 
     /**
      * Compute relative path of authorization url for SP
      * @return authorization relative path
      */
-    fun getAuthorizationPathForSP(): String? {
+    @VisibleForTesting
+    internal suspend fun getAuthorizationPathForSP(): String? {
         SalesforceSDKLogger.d(TAG, "Getting authorization url")
         val context = SalesforceSDKManager.getInstance().appContext
         val useHybridAuthentication = SalesforceSDKManager.getInstance().useHybridAuthentication
+
+        // Add Salesforce Mobile App Attestation parameter to authorization URL if applicable.
+        val additionalParams = appAttestationClient?.run {
+            val challenge = fetchMobileAppAttestationChallenge() ?: return@run null
+            val attestation = createAppAttestation(challenge) ?: return@run null
+            mapOf(ATTESTATION to attestation)
+        }
+
         val authorizationUri = getAuthorizationUrl(
             true, // use web server flow
             useHybridAuthentication,
@@ -116,12 +127,12 @@ internal class IDPAuthCodeHelper private constructor(
             spConfig.oauthScopes,
             context.getString(R.string.oauth_display_type),
             codeChallenge,
-            null
+            additionalParams
         )
 
         return authorizationUri?.let {
             it.path + (it.query?.let { query -> "?$query" } ?: "")
-        } ?: null
+        }
     }
 
     fun getFrontdoorUrl(restClient:RestClient, redirectUri: String): String? {

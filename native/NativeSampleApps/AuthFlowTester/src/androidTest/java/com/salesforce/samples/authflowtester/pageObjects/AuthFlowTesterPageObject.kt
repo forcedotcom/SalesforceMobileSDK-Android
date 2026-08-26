@@ -45,19 +45,35 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import com.salesforce.androidsdk.accounts.UserAccountManager
+import com.salesforce.androidsdk.app.Features
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_NATIVE
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.samples.authflowtester.ALERT_POSITIVE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ALERT_TITLE_CONTENT_DESC
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
+import com.salesforce.samples.authflowtester.DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_TOKEN_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.MIGRATE_USER_RADIO_CONTENT_DESC
+import com.salesforce.samples.authflowtester.UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
+import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
+import com.salesforce.samples.authflowtester.components.DPOP_NONCE
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
+import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
 import com.salesforce.samples.authflowtester.components.USERNAME
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
@@ -70,10 +86,17 @@ import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
+private const val APP_LOAD_TIMEOUT_MS = 30_000L
 
 data class Tokens(
     val accessToken: String,
     val refreshToken: String,
+)
+
+data class DpopInfo(
+    val tokenType: String,
+    val nonce: String,
+    val keyThumbprint: String,
 )
 
 /**
@@ -82,7 +105,7 @@ data class Tokens(
 class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject(composeTestRule) {
 
     fun waitForAppLoad() {
-        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        waitForNode(CREDS_SECTION_CONTENT_DESC, timeoutMillis = APP_LOAD_TIMEOUT_MS)
     }
 
     fun switchToUser(
@@ -173,14 +196,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
             .performScrollToNode(hasContentDescription(REVOKE_BUTTON_CONTENT_DESC))
 
-        waitForNode(REVOKE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
-        // Use performSemanticsAction instead of performClick because
-        // performScrollTo doesn't trigger nested scroll, leaving the button
-        // behind the collapsed top bar where touch input gets intercepted.
-        composeTestRule.onNodeWithContentDescription(REVOKE_BUTTON_CONTENT_DESC)
-            .performSemanticsAction(SemanticsActions.OnClick)
-
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        clickRevokeButton()
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.revoke_successful))
 
@@ -190,17 +206,76 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     fun validateApiRequest() {
-        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
-        composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
-            .performSemanticsAction(SemanticsActions.OnClick)
-
-        waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        clickRequestButton()
         composeTestRule.onNodeWithContentDescription(ALERT_TITLE_CONTENT_DESC)
             .assertTextEquals(getString(R.string.request_successful))
 
         composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
             .performClick()
         composeTestRule.waitForIdle()
+    }
+
+    /** Clicks the revoke-access-token button and waits for its result dialog. */
+    private fun clickRevokeButton() = clickAndWaitForAlert(REVOKE_BUTTON_CONTENT_DESC)
+
+    /** Clicks the make-REST-API-request button and waits for its result dialog. */
+    private fun clickRequestButton() = clickAndWaitForAlert(REQUEST_BUTTON_CONTENT_DESC)
+
+    /**
+     * Clicks the button identified by [buttonContentDesc] and waits for the
+     * resulting alert dialog to appear. Waits for Compose to be idle before
+     * clicking so the OnClick semantic is registered (after a user switch or
+     * activity resume, the button can be momentarily out of composition).
+     * Retries the click once if the alert does not appear within TIMEOUT_MS
+     * and the button is still in its initial (clickable) state — the network
+     * call may have failed silently, leaving showAlertDialog=false.
+     */
+    private fun clickAndWaitForAlert(buttonContentDesc: String) {
+        waitForNode(buttonContentDesc, timeoutMillis = TIMEOUT_MS)
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        try {
+            waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        } catch (e: AssertionError) {
+            // The button's OnClick semantic is removed while the coroutine
+            // is in flight (Material3 Button drops it when enabled=false).
+            // If the OnClick is still present, the first click was a no-op
+            // and we can retry; otherwise rethrow.
+            val hasOnClick = composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+                .fetchSemanticsNode()
+                .config.contains(SemanticsActions.OnClick)
+            if (!hasOnClick) throw e
+
+            composeTestRule.waitForIdle()
+            composeTestRule.onNodeWithContentDescription(buttonContentDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            waitForNode(ALERT_TITLE_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        }
+    }
+
+    /**
+     * Taps the "Make REST API Request" button without asserting outcome.
+     * Used to trigger an automatic refresh that is expected to fail (e.g. when
+     * the user's refresh token has been revoked). Dismisses the result alert
+     * (which may show success or failure) so the test can proceed.
+     */
+    fun triggerApiRequestIgnoringResult() {
+        waitForNode(REQUEST_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+        composeTestRule.onNodeWithContentDescription(REQUEST_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        // The alert may or may not appear (the SDK could log the user out
+        // before the dialog renders). Best-effort dismiss.
+        try {
+            waitForNode(ALERT_POSITIVE_BUTTON_CONTENT_DESC, timeoutMillis = TIMEOUT_MS)
+            composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
+                .performClick()
+            composeTestRule.waitForIdle()
+        } catch (_: AssertionError) {
+            // Dialog never appeared, that's OK.
+        }
     }
 
     fun getTokens(): Tokens {
@@ -212,15 +287,37 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
-    fun validateUser(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+    fun getDpopInfo(): DpopInfo {
+        expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
+        return DpopInfo(
+            tokenType = getText(OAUTH_TOKEN_TYPE),
+            nonce = getSensitiveValue(DPOP_NONCE),
+            keyThumbprint = getText(DPOP_KEY_THUMBPRINT),
+        )
+    }
+
+    fun validateUser(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        knownUserConfig: KnownUserConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+        isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
+    ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         waitForNode(CREDS_SECTION_CONTENT_DESC)
-        
+
         // Wait for the UI to update asynchronously after login or user switch.
         // The view may be recreated and collapsed when the current user state updates.
         try {
-            composeTestRule.waitUntil(TIMEOUT_MS) {
+            composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
                 try {
                     val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
                     val isVisible = nodes.isNotEmpty()
@@ -242,9 +339,13 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 }
             }
         } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
+            throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
         }
         assertEquals(expected.username, getText(USERNAME))
+
+        // Validate feature flags — UI is already settled, reuse the existing layout traversal
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -263,6 +364,15 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assert(accessToken.isNotEmpty()) { "Expected non-empty opaque access token" }
         }
         assert(refreshToken.isNotEmpty()) { "Expected non-empty refresh token" }
+
+        if (expected.isDpop) {
+            val dpopInfo = getDpopInfo()
+            assertEquals("DPoP", dpopInfo.tokenType)
+            assert(dpopInfo.nonce.isNotEmpty()) { "Expected non-empty DPoP nonce after token exchange" }
+            assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+                "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
+            }
+        }
     }
 
     fun migrateToNewApp(
@@ -340,6 +450,85 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
 
         // Wait for the app UI to refresh with new token data
+        waitForAppLoad()
+    }
+
+    /**
+     * Opens the migration bottom sheet and taps "Upgrade to DPoP" for the current user — an
+     * in-place upgrade of the existing connected app (same consumer key/redirect URI/scopes),
+     * independent of [SalesforceSDKManager.useDPoP]. Because the config is unchanged, no
+     * approve/deny screen is expected (A-2 in the spec), but [AuthorizationPageObject
+     * .tapAllowAfterMigration] is still consulted to tolerate a stray consent screen rather than
+     * asserting its strict absence.
+     */
+    fun upgradeToDPoP() {
+        // Tap "Migrate Access Token" bottom bar icon to open the sheet.
+        val migrateDesc = getString(R.string.migrate_access_token)
+        waitForNode(migrateDesc)
+        composeTestRule.onNodeWithContentDescription(migrateDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeTestRule.waitForIdle()
+
+        // Tap the "Upgrade to DPoP" button.
+        waitForNode(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(UPGRADE_TO_DPOP_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
+
+        // Wait for migration to complete and the sheet to auto-dismiss (see migrateToNewApp
+        // for the rationale behind the close-button fallback).
+        val closeDesc = getString(R.string.close_content_description)
+        try {
+            waitForNodeGone(closeDesc)
+        } catch (_: Exception) {
+            composeTestRule.onNodeWithContentDescription(closeDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            composeTestRule.waitForIdle()
+            waitForNodeGone(closeDesc)
+        }
+
+        // Wait for the app UI to refresh with new token data.
+        waitForAppLoad()
+    }
+
+    /**
+     * Opens the migration bottom sheet and taps "Downgrade from DPoP" for the current user — an
+     * in-place downgrade of the existing connected app (same consumer key/redirect URI/scopes)
+     * back to Bearer, independent of [SalesforceSDKManager.useDPoP]. No consent screen is
+     * expected because the consumer key, redirect URI, and scopes are unchanged, but
+     * [AuthorizationPageObject.tapAllowAfterMigration] is still consulted to tolerate a stray
+     * consent screen rather than asserting its strict absence. Mirrors [upgradeToDPoP] with the
+     * inverse button.
+     */
+    fun downgradeFromDPoP() {
+        // Tap "Migrate Access Token" bottom bar icon to open the sheet.
+        val migrateDesc = getString(R.string.migrate_access_token)
+        waitForNode(migrateDesc)
+        composeTestRule.onNodeWithContentDescription(migrateDesc)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeTestRule.waitForIdle()
+
+        // Tap the "Downgrade from DPoP" button.
+        waitForNode(DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(DOWNGRADE_FROM_DPOP_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+
+        AuthorizationPageObject(composeTestRule).tapAllowAfterMigration()
+
+        // Wait for migration to complete and the sheet to auto-dismiss (see migrateToNewApp
+        // for the rationale behind the close-button fallback).
+        val closeDesc = getString(R.string.close_content_description)
+        try {
+            waitForNodeGone(closeDesc)
+        } catch (_: Exception) {
+            composeTestRule.onNodeWithContentDescription(closeDesc)
+                .performSemanticsAction(SemanticsActions.OnClick)
+            composeTestRule.waitForIdle()
+            waitForNodeGone(closeDesc)
+        }
+
+        // Wait for the app UI to refresh with new token data.
         waitForAppLoad()
     }
 
@@ -426,5 +615,195 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         return node.fetchSemanticsNode()
             .config[SemanticsProperties.Text]
             .last().text // Value is last; first is the label
+    }
+
+    fun validateUserAgent(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+        isRtr: Boolean = false,
+        isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
+    ) {
+        expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
+    }
+
+    private fun validateUserAgent(
+        ua: String,
+        knownLoginHostConfig: KnownLoginHostConfig,
+        usesWelcomeDiscovery: Boolean = false,
+        isMultiUser: Boolean = false,
+        expectAdvancedAuth: Boolean = false,
+        isRtr: Boolean = false,
+        isDpop: Boolean = false,
+        expectedBMarker: String? = null,
+        expectedLMarker: String? = null,
+        expectedAMarker: String? = null,
+        wasMigrated: Boolean = false,
+        isJwt: Boolean = false,
+        isBeacon: Boolean = false,
+    ) {
+        assert(ua.contains("SalesforceMobileSDK/")) {
+            "User agent missing 'SalesforceMobileSDK/' prefix: $ua"
+        }
+        assert(ua.contains("ftr_")) {
+            "User agent missing 'ftr_' segment: $ua"
+        }
+
+        // Parse flag codes from the ftr_XXXX segment
+        val ftrSegment = ua.substringAfter("ftr_").substringBefore(" ")
+        val flags = ftrSegment.split(".").toSet()
+
+        val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == KnownLoginHostConfig.ADVANCED_AUTH
+        if (shouldHaveBW) {
+            assert("BW" in flags) {
+                "Expected 'BW' flag for browser-based auth in: $ua"
+            }
+        } else {
+            assert("BW" !in flags) {
+                "Expected no 'BW' flag for in-app WebView auth in: $ua"
+            }
+        }
+
+        if (usesWelcomeDiscovery) {
+            assert("WD" in flags) {
+                "Expected 'WD' flag for Welcome Discovery in: $ua"
+            }
+        } else {
+            assert("WD" !in flags) {
+                "Expected no 'WD' flag when Welcome Discovery was not used in: $ua"
+            }
+        }
+
+        if (isMultiUser) {
+            assert("MU" in flags) {
+                "Expected 'MU' flag for multi-user in: $ua"
+            }
+        } else {
+            assert("MU" !in flags) {
+                "Expected no 'MU' flag when only one user is logged in, in: $ua"
+            }
+        }
+
+        if (isRtr) {
+            assert("RT" in flags) {
+                "Expected 'RT' flag after Refresh Token Rotation in: $ua"
+            }
+        } else {
+            assert("RT" !in flags) {
+                "Expected no 'RT' flag when Refresh Token Rotation has not occurred in: $ua"
+            }
+        }
+
+        if (isDpop) {
+            assert("DP" in flags) {
+                "Expected 'DP' flag for DPoP session in: $ua"
+            }
+        } else {
+            assert("DP" !in flags) {
+                "Expected no 'DP' flag for non-DPoP session in: $ua"
+            }
+        }
+
+        val allBMarkers = listOf(
+            Features.FEATURE_BROWSER_LOGIN_SERVER_AUTH_CONFIG,
+            Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN,
+            Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+        )  // B2 excluded — never registered on Android
+        if (expectedBMarker != null) {
+            assert(expectedBMarker in flags) {
+                "Expected B-marker '$expectedBMarker' in ftr_ flags of: $ua"
+            }
+            allBMarkers.filter { it != expectedBMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected B-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        } else {
+            allBMarkers.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected B-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        }
+
+        val allLMarkers = listOf(
+            Features.FEATURE_LOGIN_SERVER_PRODUCTION,
+            Features.FEATURE_LOGIN_SERVER_SANDBOX,
+            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY,
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            Features.FEATURE_LOGIN_SERVER_OTHER,
+        )
+        if (expectedLMarker != null) {
+            assert(expectedLMarker in flags) {
+                "Expected L-marker '$expectedLMarker' in ftr_ flags of: $ua"
+            }
+            allLMarkers.filter { it != expectedLMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected L-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        }
+
+        val allAMarkers = listOf(
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        if (expectedAMarker != null) {
+            assert(expectedAMarker in flags) {
+                "Expected A-marker '$expectedAMarker' in ftr_ flags of: $ua"
+            }
+            allAMarkers.filter { it != expectedAMarker }.forEach { marker ->
+                assert(marker !in flags) {
+                    "Unexpected A-marker '$marker' in ftr_ flags of: $ua"
+                }
+            }
+        }
+
+        if (wasMigrated) {
+            assert(Features.FEATURE_TOKEN_MIGRATION in flags) {
+                "Expected 'TM' flag for token migration in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_TOKEN_MIGRATION !in flags) {
+                "Expected no 'TM' flag when not migrated in: $ua"
+            }
+        }
+
+        if (isJwt) {
+            assert(Features.FEATURE_TOKEN_FORMAT_JWT in flags) {
+                "Expected 'JT' flag for JWT token format in: $ua"
+            }
+            assert(Features.FEATURE_TOKEN_FORMAT_OPAQUE !in flags) {
+                "Expected no 'OT' flag for JWT token format in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_TOKEN_FORMAT_OPAQUE in flags) {
+                "Expected 'OT' flag for opaque token format in: $ua"
+            }
+            assert(Features.FEATURE_TOKEN_FORMAT_JWT !in flags) {
+                "Expected no 'JT' flag for opaque token format in: $ua"
+            }
+        }
+
+        if (isBeacon) {
+            assert(Features.FEATURE_BEACON in flags) {
+                "Expected 'BN' flag for beacon child app in: $ua"
+            }
+        } else {
+            assert(Features.FEATURE_BEACON !in flags) {
+                "Expected no 'BN' flag when not a beacon child app in: $ua"
+            }
+        }
     }
 }

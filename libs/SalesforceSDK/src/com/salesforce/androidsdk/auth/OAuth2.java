@@ -30,9 +30,17 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.Features;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
+import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder;
+import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -42,6 +50,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyPair;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -53,13 +62,14 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import okhttp3.FormBody;
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
  * Helper methods for common OAuth2 requests.
- *
+ * <p>
  * The typical OAuth2 flow is:
  *
  * <ol>
@@ -103,6 +113,17 @@ public class OAuth2 {
     private static final String HYBRID_REFRESH = "hybrid_refresh";  // Grant Type Values
     public static final String LOGIN_HINT = "login_hint";
     private static final String REFRESH_TOKEN = "refresh_token";  // Grant Type Values
+
+    /**
+     *  OAuth 2.0 authorization endpoint request body parameter names:
+     *  Salesforce App Attestation External Client App Attestation
+     * <p>
+     *  This method is not intended for public use outside of Salesforce Mobile
+     *  SDK.
+     * <p>
+     *  TODO: Make this internal when no longer referenced by Java. ECJ20260421
+     */
+    public static final String ATTESTATION = "attestation";
     protected static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
     protected static final String REDIRECT_URI = "redirect_uri";
@@ -137,6 +158,8 @@ public class OAuth2 {
     private static final String RETURL = "retURL";
     protected static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
+    private static final String TOKEN_TYPE = "token_type";
+    private static final String DPOP = "DPoP";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     protected static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize";
@@ -163,7 +186,6 @@ public class OAuth2 {
     private static final String CSRF_TOKEN = "csrf_token";
     private static final String EMPTY_STRING = "";
     private static final String FORWARD_SLASH = "/";
-    private static final String SINGLE_SPACE = " ";
     private static final String TAG = "OAuth2";
     private static final String ID_URL = "id";
     private static final String ASSERTED_USER = "asserted_user";
@@ -196,8 +218,11 @@ public class OAuth2 {
     private static final String SID_COOKIE_NAME = "sidCookieName";
     private static final String PARENT_SID = "parent_sid";
     private static final String TOKEN_FORMAT = "token_format";
-    private static final String BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
-    private static final String BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
+    private static final String BEACON_CHILD_CONSUMER_SECRET = "auto_installed_app_org_consumer_secret";
+    private static final String BEACON_CHILD_CONSUMER_KEY = "auto_installed_app_org_consumer_key";
+    // TODO: Remove legacy fallback constants once server version 264 has rolled out everywhere.
+    private static final String LEGACY_BEACON_CHILD_CONSUMER_SECRET = "beacon_child_consumer_secret";
+    private static final String LEGACY_BEACON_CHILD_CONSUMER_KEY = "beacon_child_consumer_key";
 
     public static final DateFormat TIMESTAMP_FORMAT;
     static {
@@ -225,6 +250,7 @@ public class OAuth2 {
         UNEXPECTED,              // Unexpected error or crash
         UNEXPECTED_RESPONSE,     // Unexpected response from server
         UNKNOWN,                 // Unknown
+        CLIENT_BLOCKED,          // Device/app blocked by server (e.g. failed attestation)
         USER_LOGOUT,             // User initiated logout
         REFRESH_TOKEN_ROTATED;   // Refresh token rotated
 
@@ -238,7 +264,7 @@ public class OAuth2 {
     /**
      * Builds the URL to the authorization web page for this login server.
      * You need not provide the 'refresh_token' scope, as it is provided automatically.
-     *
+     * <p>
      * This overload defaults `loginHint` to null and does not enable Salesforce Welcome Login hint.
      *
      * @param useWebServerAuthentication True to use web server flow, False to use user agent flow
@@ -250,7 +276,8 @@ public class OAuth2 {
      *                                   the default OAuth scope is provided.
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @param addlParams                 Any additional parameters to add to the
+     *                                   authorization request.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
@@ -292,7 +319,8 @@ public class OAuth2 {
      * @param loginHint                  When applicable, the Salesforce Welcome Login hint
      * @param displayType                OAuth display type. If null, the default of 'touch' is used.
      * @param codeChallenge              Code challenge to use when using web server flow
-     * @param addlParams                 Any additional parameters that may be added to the request.
+     * @param addlParams                 Any additional parameters to add to the
+     *                                   authorization request.
      * @return A URL to start the OAuth flow in a web browser/view.
      * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
      */
@@ -306,8 +334,9 @@ public class OAuth2 {
             String loginHint,
             String displayType,
             String codeChallenge,
-            Map<String,String> addlParams) {
+            Map<String, String> addlParams) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
+
         final String responseType = useWebServerAuthentication
                 ? CODE
                 : useHybridAuthentication ? HYBRID_TOKEN : TOKEN;
@@ -326,7 +355,7 @@ public class OAuth2 {
         if (useWebServerAuthentication) {
             sb.append(AND).append(CODE_CHALLENGE).append(EQUAL).append(Uri.encode(codeChallenge));
         }
-        if (addlParams != null && addlParams.size() > 0) {
+        if (addlParams != null && !addlParams.isEmpty()) {
             for (final Map.Entry<String,String> entry : addlParams.entrySet()) {
                 final String value = entry.getValue() == null ? EMPTY_STRING : entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
@@ -411,6 +440,30 @@ public class OAuth2 {
                                                      String clientId, String code, String codeVerifier,
                                                      String callbackUrl)
             throws OAuthFailedException, IOException {
+        return exchangeCode(httpAccessor, loginServer, clientId, code, codeVerifier, callbackUrl, SalesforceSDKManager.getInstance());
+    }
+
+    /**
+     * An internal, testable Salesforce Mobile SDK overload of
+     * {@link #exchangeCode(HttpAccess, URI, String, String, String, String)}.
+     */
+    public static TokenEndpointResponse exchangeCode(HttpAccess httpAccessor, URI loginServer,
+                                                     String clientId, String code, String codeVerifier,
+                                                     String callbackUrl, SalesforceSDKManager salesforceSdkManager)
+            throws OAuthFailedException, IOException {
+        return exchangeCode(httpAccessor, loginServer, clientId, code, codeVerifier, callbackUrl, salesforceSdkManager, null);
+    }
+
+    /**
+     * An internal, testable Salesforce Mobile SDK overload of
+     * {@link #exchangeCode(HttpAccess, URI, String, String, String, String)} that
+     * accepts a credentials identifier so DPoP proof can be attached when enabled.
+     */
+    public static TokenEndpointResponse exchangeCode(HttpAccess httpAccessor, URI loginServer,
+                                                     String clientId, String code, String codeVerifier,
+                                                     String callbackUrl, SalesforceSDKManager salesforceSdkManager,
+                                                     @Nullable String credentialsIdentifier)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_AUTH_CODE : AUTHORIZATION_CODE;
@@ -420,7 +473,7 @@ public class OAuth2 {
         builder.add(CODE, code);
         builder.add(CODE_VERIFIER, codeVerifier);
         builder.add(REDIRECT_URI, callbackUrl);
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, salesforceSdkManager, credentialsIdentifier);
     }
 
     /**
@@ -440,6 +493,58 @@ public class OAuth2 {
                                                          String clientId, String refreshToken,
                                                          Map<String,String> addlParams)
             throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams, null);
+    }
+
+    /**
+     * Gets a new auth token using the refresh token. Overload that accepts a
+     * credentials identifier so DPoP proof can be attached when enabled. Delegates
+     * to the fully-parameterized overload with a null token type.
+     *
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param refreshToken Refresh token.
+     * @param addlParams Additional parameters.
+     * @param credentialsIdentifier Identifier used to look up the DPoP keypair, or null.
+     * @return Token response.
+     *
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
+     */
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams,
+                                                         @Nullable String credentialsIdentifier)
+            throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
+                credentialsIdentifier, null);
+    }
+
+    /**
+     * Gets a new auth token using the refresh token. Fully-parameterized overload
+     * that accepts the credential's persisted token type. When the credential is
+     * DPoP-bound the refresh request carries a DPoP proof — independent of the
+     * global {@code isUseDPoP} switch, which only gates new logins.
+     *
+     * @param httpAccessor HttpAccess instance.
+     * @param loginServer Login server.
+     * @param clientId Client ID.
+     * @param refreshToken Refresh token.
+     * @param addlParams Additional parameters.
+     * @param credentialsIdentifier Identifier used to look up the DPoP keypair, or null.
+     * @param tokenType Token type persisted on the credential (e.g. "DPoP" or null / "Bearer").
+     * @return Token response.
+     *
+     * @throws OAuthFailedException See {@link OAuthFailedException}.
+     * @throws IOException See {@link IOException}.
+     */
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams,
+                                                         @Nullable String credentialsIdentifier,
+                                                         @Nullable String tokenType)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_REFRESH : REFRESH_TOKEN;
@@ -455,7 +560,7 @@ public class OAuth2 {
                 }
             }
         }
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType);
     }
 
     /**
@@ -501,7 +606,7 @@ public class OAuth2 {
                                                          String jwt) throws IOException, OAuthFailedException {
         final FormBody.Builder formBodyBuilder = new FormBody.Builder().add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
-        return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
+        return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder, SalesforceSDKManager.getInstance());
     }
 
     /**
@@ -515,14 +620,54 @@ public class OAuth2 {
      *
      * @throws IOException See {@link IOException}.
      */
-    public static final IdServiceResponse callIdentityService(HttpAccess httpAccessor,
-                                                              String identityServiceIdUrl,
-                                                              String authToken)
+    public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
+                                                        String identityServiceIdUrl,
+                                                        String authToken)
+            throws IOException {
+        return callIdentityService(httpAccessor, identityServiceIdUrl, authToken, null, null);
+    }
+
+    /**
+     * Calls the identity service to determine the username of the user and the mobile policy, given
+     * their identity service ID and an access token. When the token is DPoP-bound, attaches a DPoP
+     * proof header.
+     *
+     * @param httpAccessor HttpAccessor instance.
+     * @param identityServiceIdUrl Identity service URL.
+     * @param authToken Access token.
+     * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
+     * @param credentialsIdentifier Identifier used to look up the DPoP keypair, or null.
+     * @return IdServiceResponse instance.
+     *
+     * @throws IOException See {@link IOException}.
+     */
+    public static IdServiceResponse callIdentityService(HttpAccess httpAccessor,
+                                                        String identityServiceIdUrl,
+                                                        String authToken,
+                                                        @Nullable String tokenType,
+                                                        @Nullable String credentialsIdentifier)
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
-        addAuthorizationHeader(builder, authToken);
+        addAuthorizationHeader(builder, authToken, tokenType);
+        if (DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType)) {
+            try {
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String host = HttpUrl.get(identityServiceIdUrl).host();
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
+                builder.header(DPOP, proof);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
+            }
+        }
         final Request request = builder.build();
         final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        // Nonce failures on the identity endpoint fall through to SFOAuthSessionRefresher /
+        // OAuthRefreshInterceptor, which re-enters the token endpoint where nonce harvest+retry
+        // already lives. Salesforce only issues DPoP-Nonce on token-endpoint responses, so
+        // inline harvest+retry here would never fire against the server in practice.
         return new IdServiceResponse(response);
     }
 
@@ -532,26 +677,191 @@ public class OAuth2 {
      * @param builder Builder instance.
      * @param authToken Access token.
      */
-    public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
-        return builder.header(AUTHORIZATION, BEARER + authToken);
+    public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
+        return addAuthorizationHeader(builder, authToken, null);
     }
 
-    private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
-                                                                  URI loginServer,
-                                                                  FormBody.Builder formBodyBuilder)
+    /**
+     * Adds the authorization header to the request builder, choosing the
+     * scheme based on the token type. When {@code tokenType} equals
+     * {@code "DPoP"}, the DPoP scheme is used; otherwise Bearer is used.
+     *
+     * @param builder Builder instance.
+     * @param authToken Access token.
+     * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
+     */
+    public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken, @Nullable String tokenType) {
+        final String scheme = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
+        return builder.header(AUTHORIZATION, scheme + authToken);
+    }
+
+    @VisibleForTesting
+    @WorkerThread
+    public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                 URI loginServer,
+                                                                 FormBody.Builder formBodyBuilder,
+                                                                 SalesforceSDKManager salesforceSdkManager)
             throws OAuthFailedException, IOException {
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, null, null);
+    }
+
+    @VisibleForTesting
+    @WorkerThread
+    public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                 URI loginServer,
+                                                                 FormBody.Builder formBodyBuilder,
+                                                                 SalesforceSDKManager salesforceSdkManager,
+                                                                 @Nullable String credentialsIdentifier)
+            throws OAuthFailedException, IOException {
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder, salesforceSdkManager, credentialsIdentifier, null);
+    }
+
+    /**
+     * Canonical implementation of the token-endpoint request. This is the primary production
+     * entry point — {@link #refreshAuthToken} calls it directly. Prefer the shorter overloads
+     * unless a caller genuinely needs to supply {@code credentialsIdentifier} and
+     * {@code tokenType}.
+     */
+    @WorkerThread
+    public static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                 URI loginServer,
+                                                                 FormBody.Builder formBodyBuilder,
+                                                                 SalesforceSDKManager salesforceSdkManager,
+                                                                 @Nullable String credentialsIdentifier,
+                                                                 @Nullable String tokenType)
+            throws OAuthFailedException, IOException {
+
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
-        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(SalesforceSDKManager.getInstance().getDeviceId());
+        sb.append(QUESTION).append(DEVICE_ID).append(EQUAL).append(salesforceSdkManager.getDeviceId());
+
+        final AppAttestationClient appAttestationClient = salesforceSdkManager.getAppAttestationClient();
+        final String challenge = appAttestationClient != null ? appAttestationClient.fetchMobileAppAttestationChallengeBlocking() : null;
+        final String attestationValue = challenge != null ? appAttestationClient.createAppAttestationBlocking(challenge) : null;
+        if (attestationValue != null) {
+            // Note: The attestation value is appended to the token endpoint
+            // query string without Uri.encode by design. The value produced
+            // by OAuthAuthorizationAttestation.toBase64String() is accepted
+            // as-is by the Salesforce token endpoint's server-side contract.
+            // This has been verified end-to-end; do not wrap in Uri.encode.
+            sb.append(AND).append(ATTESTATION).append(EQUAL).append(attestationValue);
+            salesforceSdkManager.registerUsedAppFeature(Features.FEATURE_APP_ATTESTATION);
+        }
+
         final String refreshPath = sb.toString();
+        final String tokenHost = HttpUrl.get(refreshPath).host();
         final RequestBody body = formBodyBuilder.build();
-        final Request request = new Request.Builder().url(refreshPath).post(body).build();
-        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        final Request.Builder requestBuilder = new Request.Builder().url(refreshPath).post(body);
+        final boolean attachDPoP = DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType);
+
+        if (attachDPoP) {
+            try {
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
+                requestBuilder.header(DPOP, proof);
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
+            }
+        }
+
+        final Request request = requestBuilder.build();
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+
+        // Harvest nonce from every response (proactive caching for next call).
+        if (attachDPoP) {
+            final String responseNonce = response.header("DPoP-Nonce");
+            if (!TextUtils.isEmpty(responseNonce)) {
+                DPoPNonceCache.INSTANCE.store(credentialsIdentifier, tokenHost, responseNonce);
+            }
+        }
+        // Nonce challenge: server requires a nonce. Retry once with the harvested nonce.
+        if (attachDPoP && isNonceChallenge(response)) {
+            response.close();
+            try {
+                final String htu = DPoPURLHelper.INSTANCE.canonicalize(refreshPath);
+                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
+                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, tokenHost);
+                final String proof = DPoPProofBuilder.INSTANCE.buildProof("POST", htu, keyPair, nonce, null);
+                final Request retryRequest = request.newBuilder().header(DPOP, proof).build();
+                response = httpAccessor.getOkHttpClient().newCall(retryRequest).execute();
+            } catch (Exception e) {
+                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header on nonce retry", e);
+            }
+        }
+
         if (response.isSuccessful()) {
-            return new TokenEndpointResponse(response);
+            final TokenEndpointResponse tokenResponse = new TokenEndpointResponse(response);
+            tokenResponse.credentialsIdentifier = credentialsIdentifier;
+            return tokenResponse;
         } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
+    }
+
+    private static boolean isNonceChallenge(Response response) {
+        final int code = response.code();
+        if (code != HttpURLConnection.HTTP_BAD_REQUEST && code != HttpURLConnection.HTTP_UNAUTHORIZED) {
+            return false;
+        }
+        try {
+            return response.peekBody(512).string().contains("use_dpop_nonce");
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Selects the server URI to target for token endpoint requests.
+     * Precedence: communityUrl &gt; instanceServer &gt; loginServer.
+     * instanceServer is populated only after the first token response, so a null instanceServer
+     * naturally identifies the code-exchange path which must target the login pool.
+     *
+     * @param loginServer Login server URL string (fallback, never null).
+     * @param instanceServer Instance server URL string, or null if not yet known.
+     * @param communityId Community ID, or null if not a community user.
+     * @param communityUrl Community URL string, or null if not a community user.
+     * @return The URI to use as the token endpoint base.
+     */
+    public static URI overrideLoginServerIfNeeded(String loginServer, @Nullable String instanceServer,
+                                                  @Nullable String communityId, @Nullable String communityUrl) {
+        if (communityId != null && !communityId.isEmpty() && communityUrl != null && !communityUrl.isEmpty()) {
+            try {
+                return new URI(communityUrl);
+            } catch (URISyntaxException e) {
+                SalesforceSDKLogger.w(TAG, "Invalid community URL, falling through to instanceServer", e);
+            }
+        }
+        if (instanceServer != null && !instanceServer.isEmpty()) {
+            try {
+                return new URI(instanceServer);
+            } catch (URISyntaxException e) {
+                SalesforceSDKLogger.w(TAG, "Invalid instance server URL, falling through to loginServer", e);
+            }
+        }
+        try {
+            return new URI(loginServer);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid login server URL: " + loginServer, e);
+        }
+    }
+
+    /**
+     * Selects the server URI to target for token endpoint requests for the given user account.
+     * Precedence: communityUrl &gt; instanceServer &gt; loginServer.
+     *
+     * @param userAccount User account whose server fields are used.
+     * @return The URI to use as the token endpoint base.
+     */
+    public static URI overrideLoginServerIfNeeded(@NonNull UserAccount userAccount) {
+        return overrideLoginServerIfNeeded(
+                userAccount.getLoginServer(),
+                userAccount.getInstanceServer(),
+                userAccount.getCommunityId(),
+                userAccount.getCommunityUrl());
     }
 
     /**
@@ -560,15 +870,21 @@ public class OAuth2 {
      * scope to be added on the client side through bootconfig and on the connected app.
      *
      * @param loginServer Login server.
+     * @param instanceServer Instance server, or null if not yet known.
      * @param clientId Client ID.
+     * @param communityId Community ID, or null if not a community user.
+     * @param communityUrl Community URL, or null if not a community user.
      * @param refreshToken Refresh token.
      * @return OpenID token.
      */
-    public static String getOpenIDToken(String loginServer, String clientId, String refreshToken) {
+    public static String getOpenIDToken(String loginServer, @Nullable String instanceServer,
+                                        String clientId, @Nullable String communityId,
+                                        @Nullable String communityUrl, String refreshToken) {
         String idToken = null;
         try {
+            final URI tokenServer = overrideLoginServerIfNeeded(loginServer, instanceServer, communityId, communityUrl);
             final TokenEndpointResponse tr = refreshAuthToken(HttpAccess.DEFAULT,
-                    new URI(loginServer), clientId, refreshToken, null);
+                    tokenServer, clientId, refreshToken, null);
             idToken = tr.idToken;
         } catch (Exception e) {
             SalesforceSDKLogger.e(TAG, "Exception thrown while fetching OpenID token", e);
@@ -784,6 +1100,7 @@ public class OAuth2 {
 
         public String error;
         public String errorDescription;
+        public OAuthErrorCode errorCode;
 
         /**
          * Parameterized constructor built from an error response.
@@ -795,8 +1112,10 @@ public class OAuth2 {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse.getString(ERROR_DESCRIPTION);
+                errorCode = OAuthErrorCode.from(error);
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token error response", e);
+                errorCode = OAuthErrorCode.UNKNOWN;
             }
         }
 
@@ -839,6 +1158,8 @@ public class OAuth2 {
         public String beaconChildConsumerKey;
         public String beaconChildConsumerSecret;
         public String scope;
+        public String tokenType;
+        public String credentialsIdentifier;
 
         /**
          * Parameterized constructor built from params during user agent login flow.
@@ -880,6 +1201,7 @@ public class OAuth2 {
                 parentSid = callbackUrlParams.get(PARENT_SID);
                 tokenFormat = callbackUrlParams.getOrDefault(TOKEN_FORMAT, "");
                 scope = callbackUrlParams.get(SCOPE);
+                tokenType = callbackUrlParams.get(TOKEN_TYPE);
 
                 // NB: beacon apps not supported with user agent flow so no beacon child fields expected
 
@@ -910,7 +1232,6 @@ public class OAuth2 {
         public TokenEndpointResponse(Response response, List<String> additionalOauthKeys) {
             try {
                 final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
-                SalesforceSDKLogger.d(TAG, "parsedResponse-->" + parsedResponse);
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 if (parsedResponse.has(API_INSTANCE_URL)) {
@@ -951,13 +1272,19 @@ public class OAuth2 {
                 tokenFormat = parsedResponse.optString(TOKEN_FORMAT);
 
                 // Beacon child fields expected when using a beacon app and web server flow
+                // TODO: Remove LEGACY_BEACON_CHILD_CONSUMER_* fallback once server version 264 has rolled out everywhere.
                 if (parsedResponse.has(BEACON_CHILD_CONSUMER_KEY)) {
                     beaconChildConsumerKey = parsedResponse.getString(BEACON_CHILD_CONSUMER_KEY);
+                } else if (parsedResponse.has(LEGACY_BEACON_CHILD_CONSUMER_KEY)) {
+                    beaconChildConsumerKey = parsedResponse.getString(LEGACY_BEACON_CHILD_CONSUMER_KEY);
                 }
                 if (parsedResponse.has(BEACON_CHILD_CONSUMER_SECRET)) {
                     beaconChildConsumerSecret = parsedResponse.getString(BEACON_CHILD_CONSUMER_SECRET);
+                } else if (parsedResponse.has(LEGACY_BEACON_CHILD_CONSUMER_SECRET)) {
+                    beaconChildConsumerSecret = parsedResponse.getString(LEGACY_BEACON_CHILD_CONSUMER_SECRET);
                 }
                 scope = parsedResponse.optString(SCOPE);
+                tokenType = parsedResponse.optString(TOKEN_TYPE, null);
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);
