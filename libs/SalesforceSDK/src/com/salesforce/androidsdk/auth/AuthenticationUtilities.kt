@@ -134,8 +134,11 @@ internal suspend fun onAuthFlowComplete(
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
 
-    // Note: Can't use default parameter value for suspended function parameter fetchUserIdentity
-    val actualFetchUserIdentity = fetchUserIdentity ?: ::fetchUserIdentity
+    // Note: Can't use default parameter value for a suspended function parameter.
+    val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
+        fetchUserIdentity ?: { tr: TokenEndpointResponse ->
+            fetchUserIdentityWithRetry(tr, loginServer)
+        }
 
     if (blockIntegrationUser) {
         /*
@@ -411,16 +414,34 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Helper method to fetch user identity from token response.
+ * Fetches user identity using the URL appropriate for the login server.
+ *
+ * Salesforce always puts the pool-server host in the `id` field of the token response
+ * regardless of which server issued the token. [TokenEndpointResponse.idUrlWithInstance]
+ * corrects this by substituting the issuing server's host, which is correct for My Domain
+ * logins and for Bearer tokens on any server.
+ *
+ * For DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
+ * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
+ * does not issue a nonce challenge the way data endpoints do. The raw
+ * [TokenEndpointResponse.idUrl] (pool-server host) must be used instead.
+ *
+ * No token refresh is attempted: the access token was just issued by the login flow,
+ * so it is valid by construction. A refresh would also be unsafe under Refresh Token
+ * Rotation — consuming the fresh token and discarding the rotated replacement.
  */
-private suspend fun fetchUserIdentity(
-    tokenResponse: TokenEndpointResponse
+private suspend fun fetchUserIdentityWithRetry(
+    tokenResponse: TokenEndpointResponse,
+    loginServer: String,
 ): OAuth2.IdServiceResponse? {
+    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true)
+        && LoginServerManager.isPoolServer(loginServer)
+    ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
     return runCatching {
         withContext(Default) {
             callIdentityService(
                 HttpAccess.DEFAULT,
-                tokenResponse.idUrlWithInstance,
+                url,
                 tokenResponse.authToken,
                 tokenResponse.tokenType,
                 tokenResponse.credentialsIdentifier,

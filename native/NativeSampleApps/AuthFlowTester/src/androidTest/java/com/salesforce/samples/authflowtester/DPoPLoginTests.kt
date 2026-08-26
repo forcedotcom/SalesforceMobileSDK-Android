@@ -275,14 +275,9 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // region DPoP Pool Server Tests
 
-    // Login via the pool server (login.test1.pc-rnd.salesforce.com) with DPoP enabled
-    // and verify dpop_jkt was accepted and DPoP binding holds after a revoke+refresh.
-    //
-    // Skipped: server-side bug W-23864247 — the pool login server returns
-    // invalid_dpop_proof on the authorization-code token exchange even though the
-    // DPoP proof is cryptographically valid and the JWK thumbprint exactly matches
-    // the dpop_jkt sent in /authorize.  Re-enable when the server fix is confirmed.
-    @Ignore("W-23864247: pool login server rejects valid dpop_jkt token exchange")
+    // Login via the pool server with DPoP enabled and verify dpop_jkt was accepted
+    // and DPoP binding holds after a revoke+refresh. The pool server routes through
+    // production login infrastructure, so the user agent carries L1 (production), not L4.
     @Test
     fun testECAJwtDPoP_ViaLoginPoolServer() {
         loginAndValidate(
@@ -291,7 +286,25 @@ class DPoPLoginTests : AuthFlowTest() {
             useDPoP = true,
             useLoginPoolHost = true,
         )
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+    }
+
+    // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
+    // This is a safety net for the RTR-unsafe credential-refresh pattern seen on iOS: if the
+    // identity fetch were to consume the refresh token (e.g. by triggering a credential refresh
+    // to resolve a Wrong_Org routing error), assertRevokeAndRefreshWorks below would fail because
+    // the refresh token would already be spent. Android's two-attempt URL strategy avoids that by
+    // resolving the routing problem with the still-valid access token, never touching the refresh
+    // token. W-23991713 tracks the equivalent iOS investigation.
+    @Test
+    fun testECAJwtDPoP_ViaLoginPoolServer_Rtr() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            useHybridAuthToken = false,
+            useDPoP = true,
+            useLoginPoolHost = true,
+        )
+        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // endregion

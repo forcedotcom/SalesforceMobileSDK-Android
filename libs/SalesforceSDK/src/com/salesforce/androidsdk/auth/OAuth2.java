@@ -654,7 +654,8 @@ public class OAuth2 {
                 final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
                 final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
                 final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, HttpUrl.get(identityServiceIdUrl).host());
+                final String host = HttpUrl.get(identityServiceIdUrl).host();
+                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
                 final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
                 builder.header(DPOP, proof);
             } catch (Exception e) {

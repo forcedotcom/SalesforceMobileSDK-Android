@@ -290,7 +290,13 @@ abstract class AuthFlowTest {
 
         ensureRegularAuthServer(expectCustomTab = forceAdvancedAuthentication, forceAdvancedAuthentication = forceAdvancedAuthentication)
 
-        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP ||
+        // SDK 14.0 defaults useDPoP=true. On the CA_OPAQUE all-defaults path the Login Options
+        // screen is otherwise skipped, so the OAuth URL built at app startup (with useDPoP=true)
+        // would contain dpop_jkt even for Bearer tests. Opening and dismissing Login Options
+        // triggers loginDevMenuReload, which causes LoginActivity to regenerate the URL with the
+        // current useDPoP=false value before login proceeds.
+        val needsDPoPUrlReset = !useDPoP && knownAppConfig == CA_OPAQUE && scopeSelection == EMPTY
+        val needsLoginOptions = !useWebServerFlow || !useHybridAuthToken || useDPoP || needsDPoPUrlReset ||
                 !forceAdvancedAuthentication || knownAppConfig != CA_OPAQUE ||
                 scopeSelection != EMPTY || useWelcomeDiscovery
 
@@ -835,6 +841,7 @@ abstract class AuthFlowTest {
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
+        useLoginPoolHost: Boolean = false,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -858,6 +865,11 @@ abstract class AuthFlowTest {
         } else {
             null
         }
+        val expectedLMarker = if (useLoginPoolHost) {
+            Features.FEATURE_LOGIN_SERVER_PRODUCTION
+        } else {
+            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        }
         app.validateUserAgent(
             knownLoginHostConfig = knownLoginHostConfig,
             expectAdvancedAuth = expectAdvancedAuth,
@@ -865,7 +877,7 @@ abstract class AuthFlowTest {
             isRtr = isRtr,
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
-            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedLMarker = expectedLMarker,
             expectedAMarker = expectedAMarker,
             wasMigrated = wasMigrated,
             isJwt = isJwt,
