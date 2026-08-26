@@ -1246,8 +1246,8 @@ open class LoginActivity : FragmentActivity() {
 
     /**
      * Returns true if the app's manifest contains an intent-filter that handles [redirectUri],
-     * false otherwise.  A missing registration causes the CCT redirect to be silently dropped by
-     * Android, leaving the user on a blank screen at the end of the advanced-auth flow.
+     * false otherwise.  A missing registration causes the custom tab redirect to be silently
+     * dropped by Android, leaving the user on a blank screen at the end of the advanced-auth flow.
      */
     @VisibleForTesting
     @Suppress("DEPRECATION")
