@@ -37,9 +37,9 @@ import org.junit.runner.RunWith
  * This class runs the same tests as BeaconLoginTests but uses the advanced_auth login host
  * with Chrome Custom Tabs instead of the in-app WebView.
  *
- * NB: Requires intent filters in AndroidManifest.xml matching the beacon redirect URIs:
- * - beaconadvancedopaque://success/done (for Beacon Opaque)
- * - beaconadvancedjwt://success/done (for Beacon JWT)
+ * NB: Requires intent filters in AndroidManifest.xml for the beacon redirect URIs
+ * (beaconopaque://success/done and beaconjwt://success/done) — same URIs as BeaconLoginTests
+ * since both classes use forceAdvancedAuthentication=true (Custom Tabs) by default.
  *
  * NB: Tests use the second user from ui_test_config.json (advanced_auth host) to avoid
  * login conflicts when running in parallel with regular auth tests.

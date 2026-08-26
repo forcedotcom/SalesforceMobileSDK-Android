@@ -33,9 +33,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-            <!-- Intent filter for advanced authentication with Beacon Opaque app -->
+            <!-- Intent filter for Beacon Opaque app -->
             <intent-filter>
-                <data android:scheme="beaconadvancedopaque"
+                <data android:scheme="beaconopaque"
                     android:host="success"
                     android:path="/done" />
                 <action android:name="android.intent.action.VIEW" />
@@ -43,9 +43,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-            <!-- Intent filter for advanced authentication with Beacon JWT app -->
+            <!-- Intent filter for Beacon JWT app -->
             <intent-filter>
-                <data android:scheme="beaconadvancedjwt"
+                <data android:scheme="beaconjwt"
                     android:host="success"
                     android:path="/done" />
                 <action android:name="android.intent.action.VIEW" />
