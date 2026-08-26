@@ -69,6 +69,7 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testDowngrade_DPoP_InPlace_ToBearer` | ECA JWT | — | DPoP → Bearer in-place downgrade; session is established on the DPoP-optional ECA via per-call `useDPoP=true` (global flag stays on the whole time); downgrade deletes the obsolete DPoP key pair and nonce cache entry on success |
 | `testECAJwtDPoP_WithRestart` | ECA JWT DPoP | — | DPoP EC key pair survives process restart (AndroidKeyStore) |
 | `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | Pool server login with DPoP; `dpop_jkt` accepted; L1 (production) marker in UA |
+| `testECAJwtDPoP_ViaLoginPoolServer_Rtr` | ECA JWT DPoP RTR | — | Pool server + DPoP + RTR; safety net: refresh token must survive the post-login identity fetch (W-23991713) |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 
 #### RTRLoginTests
