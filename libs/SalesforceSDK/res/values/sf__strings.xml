@@ -142,4 +142,8 @@
     <string name="sf__login_options_discovery_login_host_field_content_description" translatable="false">Discovery Login Host Field</string>
     <string name="sf__login_options_discovery_username_field_content_description" translatable="false">Discovery Username Field</string>
     <string name="sf__login_options_discovery_save_button_content_description" translatable="false">Save Simulated Result Button</string>
+
+    <!-- Advanced auth manifest misconfiguration alert (debug builds only) -->
+    <string name="sf__advanced_auth_manifest_error_title">Advanced Auth Setup Error</string>
+    <string name="sf__advanced_auth_manifest_error_message">The redirect URI scheme \'%1$s\' is not registered in this app\'s AndroidManifest.xml.\n\nAdd an intent-filter with scheme \'%1$s\' to LoginActivity to complete the advanced auth flow.</string>
 </resources>
