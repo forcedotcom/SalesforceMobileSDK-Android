@@ -202,4 +202,45 @@ class DPoPRequestDecoratorTest {
     fun isNonceChallenge_401_noNonceHeader_returnsFalse() {
         assertFalse(DPoPRequestDecorator.isNonceChallenge(response(401, "{}")))
     }
+
+    @Test
+    fun harvestNonce_headerPresent_storesInCache() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(
+                response(400, """{"error":"use_dpop_nonce"}""", dpopNonce = "harvested-nonce"),
+                testScope,
+                "test.salesforce.com",
+            )
+            assertEquals("harvested-nonce", DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    @Test
+    fun harvestNonce_missingHeader_isNoOp() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(response(400, "{}"), testScope, "test.salesforce.com")
+            assertNull(DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    @Test
+    fun harvestNonce_nullCredentialsIdentifier_isNoOp() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(
+                response(400, "{}", dpopNonce = "n"),
+                null,
+                "test.salesforce.com",
+            )
+            assertNull(DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
 }
