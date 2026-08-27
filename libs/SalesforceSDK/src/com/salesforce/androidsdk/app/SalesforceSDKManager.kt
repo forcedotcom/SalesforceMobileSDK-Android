@@ -513,13 +513,25 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var customTabBrowser: String? = "com.android.chrome"
 
+    // Backing field for [useWebServerAuthentication].  The SDK reads this directly so its own
+    // internal use of the flag doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _useWebServerAuthentication = true
+
     /**
      * Optionally enables the web server flow for web view log on.  Defaults to
      * true
      */
+    @Deprecated("The OAuth user agent flow is being retired; the web server flow will be used for " +
+            "WebView login going forward. This flag will be removed in 15.0, or sooner if the server " +
+            "no longer supports the user agent flow.")
     @get:JvmName("shouldUseWebServerAuthentication")
     @set:Synchronized
-    var useWebServerAuthentication = true
+    var useWebServerAuthentication: Boolean
+        get() = _useWebServerAuthentication
+        set(value) {
+            _useWebServerAuthentication = value
+        }
 
     /**
      * Optionally, enables the hybrid authentication flow.  Defaults to true
@@ -1775,7 +1787,7 @@ open class SalesforceSDKManager protected constructor(
                 "Authenticated Users" to (userList ?: "None"),
             )
             val authConfig = listOf(
-                "Use Web Server Authentication" to "$useWebServerAuthentication",
+                "Use Web Server Authentication" to "$_useWebServerAuthentication",
                 "Use Hybrid Authentication Token" to "$useHybridAuthentication",
                 "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
                 "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
