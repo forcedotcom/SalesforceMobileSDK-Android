@@ -31,8 +31,9 @@ if (rootProject.name == "SalesforceMobileSDK-Android") {
                             url.set("https://github.com/forcedotcom/SalesforceMobileSDK-Android")
                             licenses {
                                 license {
-                                    name.set("The Apache Software License, Version 2.0")
-                                    url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                                    name.set("BSD-3-Clause")
+                                    url.set("https://opensource.org/license/bsd-3-clause")
+                                    distribution.set("repo")
                                 }
                             }
                             developers {
