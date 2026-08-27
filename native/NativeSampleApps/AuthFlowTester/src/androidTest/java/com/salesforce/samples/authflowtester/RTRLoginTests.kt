@@ -32,7 +32,6 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_H
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE_RTR
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -47,9 +46,7 @@ class RTRLoginTests : AuthFlowTest() {
 
     // region ECA JWT RTR Tests
 
-    // TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows.
-    // Server currently returns invalid_grant for RTR + JWT tokens in hybrid flow.
-    @Ignore("TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows")
+    // Login with ECA JWT RTR using hybrid auth token flow.
     @Test
     fun testECAJwtRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_RTR)

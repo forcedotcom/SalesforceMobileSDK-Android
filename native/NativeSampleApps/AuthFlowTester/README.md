@@ -58,7 +58,7 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 |------|-----------|--------|-------|
 | `testECAJwtDPoP_Hybrid` | ECA JWT DPoP | Yes | |
 | `testECAJwtDPoP_NoHybrid` | ECA JWT DPoP | No | |
-| `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes | `@Ignore` (W-22512846 — server does not yet support Named JWTs for Hybrid Flows) |
+| `testECAJwtDPoPRtr_Hybrid` | ECA JWT DPoP RTR | Yes | DPoP + refresh token rotation, hybrid auth token |
 | `testECAJwtDPoPRtr_NoHybrid` | ECA JWT DPoP RTR | No | DPoP + refresh token rotation |
 | `testECAJwtDPoP_MultiUser_UniqueTokens` | ECA JWT DPoP | — | Two users; unique tokens; independent revoke+refresh per user |
 | `testECAJwtDPoP_And_NonDPoP_MultiUser_FlagOff_IndependentProofs` | ECA JWT DPoP + ECA JWT | — | DPoP and non-DPoP users coexist; toggling DPoP off for second user does not affect first |
@@ -77,7 +77,7 @@ Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies
 
 | Test | App Config | Hybrid | Notes |
 |------|-----------|--------|-------|
-| `testECAJwtRtr_Hybrid` | ECA JWT RTR | Yes | `@Ignore` (W-22512846 — server does not yet support Named JWTs for Hybrid Flows) |
+| `testECAJwtRtr_Hybrid` | ECA JWT RTR | Yes | |
 | `testECAJwtRtr_NoHybrid` | ECA JWT RTR | No | |
 | `testECAOpaqueRtr_Hybrid` | ECA Opaque RTR | Yes | |
 | `testECAOpaqueRtr_NoHybrid` | ECA Opaque RTR | No | |

@@ -37,7 +37,6 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertNotEquals
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -76,9 +75,7 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // region ECA JWT DPoP RTR Tests
 
-    // TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows.
-    // Server currently returns invalid_grant for RTR + JWT tokens in hybrid flow.
-    @Ignore("TODO: W-22512846 — Re-enable when server enables Named JWTs for Hybrid Flows")
+    // Login with ECA JWT DPoP RTR using hybrid auth token flow.
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
@@ -176,19 +173,15 @@ class DPoPLoginTests : AuthFlowTest() {
     }
 
     // Login with DPoP ECA, migrate to DPoP+RTR ECA — refresh token rotation now enabled.
-    // Uses useHybridAuthToken = false: the server rejects hybrid grants with RTR + JWT enabled
-    // (W-22512846), so the non-hybrid path is used as a workaround.
     @Test
     fun testMigrate_ECAJwtDPoP_To_ECAJwtDPoPRtr() {
         loginAndValidate(
             knownAppConfig = ECA_JWT_DPOP,
-            useHybridAuthToken = false,
             useDPoP = true,
         )
         migrateAndValidate(
             ECA_JWT_DPOP_RTR,
             isDpop = true,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
         )
     }
 
