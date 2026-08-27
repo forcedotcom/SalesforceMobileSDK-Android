@@ -53,6 +53,7 @@ import java.net.URI
 /**
  * Helper class used in IDP app to get auth code from server
  */
+@Suppress("DEPRECATION") // Uses the deprecated SPConfig type until it is removed in 15.0.
 internal class IDPAuthCodeHelper @VisibleForTesting internal constructor(
     val webView: WebView,
     val userAccount: UserAccount,

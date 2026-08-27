@@ -157,8 +157,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager.Theme.DARK
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuthErrorCode
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.ManagedAppCertAlias
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey.RequireCertAuth
@@ -901,8 +899,9 @@ open class LoginActivity : FragmentActivity() {
         }
     }
 
-    internal inner class SPStatusCallback : StatusUpdateCallback {
-        override fun onStatusUpdate(status: Status) {
+    @Suppress("DEPRECATION") // Implements the deprecated StatusUpdateCallback/Status types until they are removed in 15.0.
+    internal inner class SPStatusCallback : com.salesforce.androidsdk.auth.idp.interfaces.SPManager.StatusUpdateCallback {
+        override fun onStatusUpdate(status: com.salesforce.androidsdk.auth.idp.interfaces.SPManager.Status) {
             runOnUiThread {
                 makeText(
                     applicationContext,
@@ -1079,6 +1078,9 @@ open class LoginActivity : FragmentActivity() {
     /**
      * Called when the IDP login button is clicked.
      */
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+    @Suppress("DEPRECATION") // Reads the deprecated spManager flag until it is removed in 15.0.
     open fun onIDPLoginClick() {
         SalesforceSDKManager.getInstance().spManager?.kickOffSPInitiatedLoginFlow(
             this,

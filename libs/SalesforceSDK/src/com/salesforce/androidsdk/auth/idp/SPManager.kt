@@ -24,6 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+@file:Suppress("DEPRECATION") // Imports and uses the deprecated SPManager/Status types throughout until they are removed in 15.0.
 package com.salesforce.androidsdk.auth.idp
 
 import android.app.Activity
@@ -49,6 +50,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  *      - or the receiver context in the case it was started in response to a IDP login request
  *      the code verifier
  */
+@Suppress("DEPRECATION") // Uses the deprecated Status type until it is removed in 15.0.
 internal class SPLoginFlow private constructor(context:Context, val onStatusUpdate: (Status) -> Unit)
     : ActiveFlow(context) {
 
@@ -81,6 +83,7 @@ internal class SPLoginFlow private constructor(context:Context, val onStatusUpda
 /**
  * Class handling SP operations within a SP app
  */
+@Suppress("DEPRECATION") // Implements the deprecated SPManager interface and uses the Status type until they are removed in 15.0.
 internal class SPManager(
     private val idpAppPackageName: String,
     // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test

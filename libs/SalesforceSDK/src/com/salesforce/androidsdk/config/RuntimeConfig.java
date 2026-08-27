@@ -61,6 +61,12 @@ public class RuntimeConfig {
         RequireCertAuth,
         ManagedAppCertAlias,
         OnlyShowAuthorizedHosts,
+
+        /**
+         * @deprecated The IDP (Identity Provider) login flow is deprecated and will be removed
+         * in Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.
+         */
+        @Deprecated
         IDPAppPackageName
     }
 

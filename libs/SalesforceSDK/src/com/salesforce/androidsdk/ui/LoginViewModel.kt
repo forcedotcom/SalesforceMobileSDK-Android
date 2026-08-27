@@ -179,6 +179,7 @@ open class LoginViewModel(
     internal var previousPendingServer: String? = null
 
     internal val authFinished = mutableStateOf(false)
+    @Suppress("DEPRECATION") // Reads the deprecated isIDPLoginFlowEnabled flag until it is removed in 15.0.
     internal val isIDPLoginFlowEnabled = derivedStateOf {
         SalesforceSDKManager.getInstance().isIDPLoginFlowEnabled
     }
