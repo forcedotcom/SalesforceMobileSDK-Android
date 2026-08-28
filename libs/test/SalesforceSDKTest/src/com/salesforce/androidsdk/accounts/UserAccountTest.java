@@ -902,6 +902,60 @@ public class UserAccountTest {
         Assert.assertEquals("test_parent_sid", account.getMainSid());
     }
 
+    @Test
+    public void test_givenDPoPTokenType_whenBuildFromTokenEndpointResponse_thenUiSidCaptured() {
+        Map<String, String> params = new HashMap<>(createTokenEndpointParams());
+        params.put("token_type", "DPoP");
+        params.put("ui_sid", "test_ui_sid");
+        OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromTokenEndpointResponse(tr)
+                .build();
+
+        Assert.assertEquals("ui_sid must be captured when token_type is DPoP", "test_ui_sid", account.getUiSid());
+    }
+
+    @Test
+    public void test_givenBearerTokenType_whenBuildFromTokenEndpointResponse_thenUiSidNotCaptured() {
+        Map<String, String> params = new HashMap<>(createTokenEndpointParams());
+        params.put("token_type", "Bearer");
+        params.put("ui_sid", "test_ui_sid");
+        OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromTokenEndpointResponse(tr)
+                .build();
+
+        Assert.assertNull("ui_sid must be ignored when token_type is not DPoP", account.getUiSid());
+    }
+
+    @Test
+    public void test_givenUiSidPresent_whenGetMainSid_thenReturnsUiSid() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("jwt")
+                .uiSid("test_ui_sid")
+                .build();
+
+        Assert.assertEquals("test_ui_sid", account.getMainSid());
+    }
+
+    @Test
+    public void test_givenUiSidAbsent_whenGetMainSid_thenFallsBackToExistingLogic() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("jwt")
+                .build();
+
+        Assert.assertNull(account.getUiSid());
+        Assert.assertEquals("test_parent_sid", account.getMainSid());
+    }
+
     /**
      * Check the user accounts are the same
      * @param expected Expected UserAccount

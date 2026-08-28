@@ -95,6 +95,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
     public static final String KEY_TOKEN_TYPE = "tokenType";
     public static final String KEY_LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
+    public static final String KEY_UI_SID = "uiSid";
 
     private static final String TAG = "AuthenticatorService";
 
