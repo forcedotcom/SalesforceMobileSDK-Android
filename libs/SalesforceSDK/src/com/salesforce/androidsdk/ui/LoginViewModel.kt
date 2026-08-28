@@ -256,6 +256,7 @@ open class LoginViewModel(
      * @return True if Web Server Flow is enabled, false if User-Agent Flow is
      * enabled.
      */
+    @Suppress("DEPRECATION") // Reads the deprecated useWebServerAuthentication flag until it is removed in 15.0.
     internal fun useWebServerFlow(
         sdkManager: SalesforceSDKManager = SalesforceSDKManager.getInstance(),
     ): Boolean = with(sdkManager) {
@@ -408,7 +409,9 @@ open class LoginViewModel(
             selectedServer.value?.let { server ->
                 // The Web Server Flow code challenge makes the authorization url unique each time,
                 // which triggers recomposition.  For User Agent Flow, change it to blank.
-                if (!SalesforceSDKManager.getInstance().useWebServerAuthentication) {
+                @Suppress("DEPRECATION") // Reads the deprecated useWebServerAuthentication flag until it is removed in 15.0.
+                val useWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
+                if (!useWebServer) {
                     loginUrl.value = ABOUT_BLANK
                 }
 
