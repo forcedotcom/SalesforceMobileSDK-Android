@@ -839,6 +839,7 @@ public class RestClient {
             // HTTP 400 use_dpop_nonce. Harvest once and rebuild the proof. Do not treat
             // 401 as a nonce retry — that remains the token-refresh path.
             if (credentialsIdentifier != null && !credentialsIdentifier.isEmpty()
+                    && request.header("DPoP") != null
                     && response.code() == HttpURLConnection.HTTP_BAD_REQUEST
                     && DPoPRequestDecorator.INSTANCE.isNonceChallenge(response)) {
                 DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, request.url().host());

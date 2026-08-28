@@ -220,6 +220,38 @@ class OAuthRefreshInterceptorNonceTest {
         assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
     }
 
+    /**
+     * Bearer session receives 400 use_dpop_nonce. The nonce retry guard requires
+     * request.header("DPoP") != null — Bearer requests carry no DPoP header, so
+     * the harvest+retry branch must not fire.
+     */
+    @Test
+    fun test_givenBearerTokenType_when400UseDpopNonce_thenNoHarvestAndNoRetry() {
+        val request = buildRequest()
+        val interceptor = buildInterceptor(tokenType = "Bearer")
+        var callCount = 0
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns request
+            every { proceed(any()) } answers {
+                callCount++
+                Response.Builder()
+                    .request(firstArg())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(400)
+                    .message("Bad Request")
+                    .header("DPoP-Nonce", "should-not-be-harvested")
+                    .body("""{"error":"use_dpop_nonce"}""".toResponseBody("application/json".toMediaType()))
+                    .build()
+            }
+        }
+
+        val response = interceptor.intercept(chain)
+
+        assertEquals(1, callCount)
+        assertEquals(400, response.code)
+        assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
+    }
+
     private fun nonceChallengeResponse(request: Request, nonce: String): Response =
         Response.Builder()
             .request(request)
