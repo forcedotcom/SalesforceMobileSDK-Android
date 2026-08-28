@@ -69,8 +69,12 @@ import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
+import com.salesforce.samples.authflowtester.components.CONTENT_SID
 import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
 import com.salesforce.samples.authflowtester.components.DPOP_NONCE
+import com.salesforce.samples.authflowtester.components.LIGHTNING_DOMAIN
+import com.salesforce.samples.authflowtester.components.LIGHTNING_SID
 import com.salesforce.samples.authflowtester.components.MAIN_SID
 import com.salesforce.samples.authflowtester.components.PARENT_SID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
@@ -79,6 +83,8 @@ import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
 import com.salesforce.samples.authflowtester.components.UI_SID
 import com.salesforce.samples.authflowtester.components.USERNAME
+import com.salesforce.samples.authflowtester.components.VF_DOMAIN
+import com.salesforce.samples.authflowtester.components.VF_SID
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -352,7 +358,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
-    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true) {
         val expected = testConfig.getApp(knownAppConfig)
         val (accessToken, refreshToken) = getTokens()
 
@@ -378,20 +384,35 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        validateSIDs(isDpop = expected.isDpop, accessToken = accessToken)
+        validateSIDs(isDpop = expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
     }
 
-    private fun validateSIDs(isDpop: Boolean, accessToken: String) {
-        expandUserCredentialsSection(targetNode = MAIN_SID)
+    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>) {
+        val hasContentScope = scopeList.contains("content")
+        val hasLightningScope = scopeList.contains("lightning")
+        val hasVisualforceScope = scopeList.contains("visualforce")
+
+        // Expand once; individual reads handle their own scrolling via performScrollTo().
+        expandUserCredentialsSection(targetNode = CONTENT_DOMAIN)
+        val contentDomain = getText(CONTENT_DOMAIN).emptyIfPlaceholder()
+        val contentSid = getSensitiveValue(CONTENT_SID).emptyIfPlaceholder()
+        val lightningDomain = getText(LIGHTNING_DOMAIN).emptyIfPlaceholder()
+        val lightningSid = getSensitiveValue(LIGHTNING_SID).emptyIfPlaceholder()
+        val vfDomain = getText(VF_DOMAIN).emptyIfPlaceholder()
+        val vfSid = getSensitiveValue(VF_SID).emptyIfPlaceholder()
+        val parentSid = getSensitiveValue(PARENT_SID).emptyIfPlaceholder()
         val mainSid = getSensitiveValue(MAIN_SID).emptyIfPlaceholder()
         val uiSid = getSensitiveValue(UI_SID).emptyIfPlaceholder()
-        val parentSid = getSensitiveValue(PARENT_SID).emptyIfPlaceholder()
 
-        assert(mainSid.isNotEmpty()) { "Main SID should not be empty" }
-
-        if (isDpop) {
-            assert(uiSid.isNotEmpty()) { "UI SID should not be empty for DPoP session" }
-        }
+        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && useHybrid, "Content domain")
+        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && useHybrid, "Content SID")
+        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning domain")
+        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning SID")
+        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
+        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
+        assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
+        assertNotEmpty(mainSid, shouldNotBeEmpty = true, "Main SID")
+        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop, "UI SID")
 
         if (uiSid.isNotEmpty()) {
             assertEquals("Main SID should equal UI SID when UI SID is present", uiSid, mainSid)
@@ -399,6 +420,14 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assertEquals("Main SID should equal Parent SID when UI SID is absent and Parent SID is present", parentSid, mainSid)
         } else {
             assertEquals("Main SID should equal Access Token when neither UI SID nor Parent SID is present", accessToken, mainSid)
+        }
+    }
+
+    private fun assertNotEmpty(value: String, shouldNotBeEmpty: Boolean, name: String) {
+        if (shouldNotBeEmpty) {
+            assert(value.isNotEmpty()) { "$name should not be empty" }
+        } else {
+            assert(value.isEmpty()) { "$name should be empty" }
         }
     }
 
