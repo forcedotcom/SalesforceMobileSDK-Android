@@ -383,9 +383,9 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
     private fun validateSIDs(isDpop: Boolean, accessToken: String) {
         expandUserCredentialsSection(targetNode = MAIN_SID)
-        val mainSid = getSensitiveValue(MAIN_SID)
-        val uiSid = getSensitiveValue(UI_SID)
-        val parentSid = getSensitiveValue(PARENT_SID)
+        val mainSid = getSensitiveValue(MAIN_SID).emptyIfPlaceholder()
+        val uiSid = getSensitiveValue(UI_SID).emptyIfPlaceholder()
+        val parentSid = getSensitiveValue(PARENT_SID).emptyIfPlaceholder()
 
         assert(mainSid.isNotEmpty()) { "Main SID should not be empty" }
 
@@ -401,6 +401,8 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assertEquals("Main SID should equal Access Token when neither UI SID nor Parent SID is present", accessToken, mainSid)
         }
     }
+
+    private fun String.emptyIfPlaceholder() = if (this == "(empty)") "" else this
 
     fun migrateToNewApp(
         knownAppConfig: KnownAppConfig,
