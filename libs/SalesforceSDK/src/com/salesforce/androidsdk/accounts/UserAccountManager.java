@@ -785,9 +785,10 @@ public class UserAccountManager {
 		if (userAccount.getLastTokenRotationTime() != null) {
 			extras.putString(AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, SalesforceSDKManager.encrypt(userAccount.getLastTokenRotationTime(), encryptionKey));
 		}
-		if (userAccount.getUiSid() != null) {
-			extras.putString(AuthenticatorService.KEY_UI_SID, SalesforceSDKManager.encrypt(userAccount.getUiSid(), encryptionKey));
-		}
+		// Always write KEY_UI_SID: a null value calls setUserData(key, null) which clears any
+		// stale DPoP uiSid left in AccountManager after a DPoP-to-Bearer downgrade.
+		extras.putString(AuthenticatorService.KEY_UI_SID,
+			userAccount.getUiSid() != null ? SalesforceSDKManager.encrypt(userAccount.getUiSid(), encryptionKey) : null);
 		final Set<String> featureFlags = userAccount.getFeatureFlags();
 		if (!featureFlags.isEmpty()) {
 			extras.putString(AuthenticatorService.KEY_FEATURE_FLAGS,

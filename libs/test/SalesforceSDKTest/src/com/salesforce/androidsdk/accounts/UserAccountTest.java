@@ -903,22 +903,31 @@ public class UserAccountTest {
     }
 
     @Test
-    public void test_givenDPoPTokenType_whenBuildAccount_thenUiSidCaptured() {
+    public void test_givenDPoPTokenType_whenBuildFromTokenEndpointResponse_thenUiSidCaptured() {
+        Map<String, String> params = new HashMap<>(createTokenEndpointParams());
+        params.put("token_type", "DPoP");
+        params.put("ui_sid", "test_ui_sid");
+        OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+
         final UserAccount account = UserAccountBuilder.getInstance()
-                .populateFromUserAccount(createTestAccount())
-                .uiSid("test_ui_sid")
+                .populateFromTokenEndpointResponse(tr)
                 .build();
 
-        Assert.assertEquals("test_ui_sid", account.getUiSid());
+        Assert.assertEquals("ui_sid must be captured when token_type is DPoP", "test_ui_sid", account.getUiSid());
     }
 
     @Test
-    public void test_givenNoDPoPTokenType_whenBuildAccount_thenUiSidIsNull() {
+    public void test_givenBearerTokenType_whenBuildFromTokenEndpointResponse_thenUiSidNotCaptured() {
+        Map<String, String> params = new HashMap<>(createTokenEndpointParams());
+        params.put("token_type", "Bearer");
+        params.put("ui_sid", "test_ui_sid");
+        OAuth2.TokenEndpointResponse tr = new OAuth2.TokenEndpointResponse(params, createAdditionalOauthKeys());
+
         final UserAccount account = UserAccountBuilder.getInstance()
-                .populateFromUserAccount(createTestAccount())
+                .populateFromTokenEndpointResponse(tr)
                 .build();
 
-        Assert.assertNull(account.getUiSid());
+        Assert.assertNull("ui_sid must be ignored when token_type is not DPoP", account.getUiSid());
     }
 
     @Test
