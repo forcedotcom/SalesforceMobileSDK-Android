@@ -71,10 +71,13 @@ import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
 import com.salesforce.samples.authflowtester.components.DPOP_NONCE
+import com.salesforce.samples.authflowtester.components.MAIN_SID
+import com.salesforce.samples.authflowtester.components.PARENT_SID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
 import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
+import com.salesforce.samples.authflowtester.components.UI_SID
 import com.salesforce.samples.authflowtester.components.USERNAME
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
@@ -373,6 +376,29 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             assert(dpopInfo.keyThumbprint.matches(Regex("[A-Za-z0-9_-]{43}"))) {
                 "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
             }
+        }
+
+        validateSIDs(isDpop = expected.isDpop, accessToken = accessToken)
+    }
+
+    private fun validateSIDs(isDpop: Boolean, accessToken: String) {
+        expandUserCredentialsSection(targetNode = MAIN_SID)
+        val mainSid = getSensitiveValue(MAIN_SID)
+        val uiSid = getSensitiveValue(UI_SID)
+        val parentSid = getSensitiveValue(PARENT_SID)
+
+        assert(mainSid.isNotEmpty()) { "Main SID should not be empty" }
+
+        if (isDpop) {
+            assert(uiSid.isNotEmpty()) { "UI SID should not be empty for DPoP session" }
+        }
+
+        if (uiSid.isNotEmpty()) {
+            assertEquals("Main SID should equal UI SID when UI SID is present", uiSid, mainSid)
+        } else if (parentSid.isNotEmpty()) {
+            assertEquals("Main SID should equal Parent SID when UI SID is absent and Parent SID is present", parentSid, mainSid)
+        } else {
+            assertEquals("Main SID should equal Access Token when neither UI SID nor Parent SID is present", accessToken, mainSid)
         }
     }
 
