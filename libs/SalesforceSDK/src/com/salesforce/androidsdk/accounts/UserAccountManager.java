@@ -576,7 +576,6 @@ public class UserAccountManager {
 		final String tokenType = decryptUserData(account, AuthenticatorService.KEY_TOKEN_TYPE, encryptionKey);
 		final String lastTokenRotationTime = decryptUserData(account, AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, encryptionKey);
 		final String uiSid = decryptUserData(account, AuthenticatorService.KEY_UI_SID, encryptionKey);
-		final String uiSid = decryptUserData(account, AuthenticatorService.KEY_UI_SID, encryptionKey);
 		final String featureFlagsRaw = decryptUserData(account, AuthenticatorService.KEY_FEATURE_FLAGS, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
