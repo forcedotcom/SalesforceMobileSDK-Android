@@ -59,16 +59,16 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoP_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true)
     }
 
     // Login with ECA JWT DPoP without hybrid auth token.
     @Test
     fun testECAJwtDPoP_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion
@@ -79,16 +79,16 @@ class DPoPLoginTests : AuthFlowTest() {
     @Test
     fun testECAJwtDPoPRtr_Hybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, isJwt = true)
     }
 
     // Login with ECA JWT DPoP RTR without hybrid auth token.
     @Test
     fun testECAJwtDPoPRtr_NoHybrid() {
         loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useHybridAuthToken = false, useDPoP = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID, isJwt = true)
     }
 
     // endregion
@@ -113,12 +113,12 @@ class DPoPLoginTests : AuthFlowTest() {
         // Switch back to initial user; revoke + refresh must work with DPoP nonce rotation
         switchToUserAndValidateUser(user, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isMultiUser = true, isJwt = true)
 
         // Switch to other user; revoke + refresh must work independently with its own nonce
         switchToUserAndValidateUser(otherUser, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isMultiUser = true, isJwt = true)
     }
 
     // Mixed DPoP + non-DPoP users with the process-wide DPoP flag flipped off after both are
@@ -144,13 +144,13 @@ class DPoPLoginTests : AuthFlowTest() {
         // ECA_JWT_DPOP issues JWT tokens, so isJwt=true is required to expect JT in the UA.
         switchToUserAndValidateUser(user, isDpop = true, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isMultiUser = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isMultiUser = true, isJwt = true)
 
         // Switch to user B (Bearer). Refresh + REST GET must NOT attach DPoP anywhere.
         // ECA_JWT issues JWT tokens, so isJwt=true is required to expect JT (not OT) in the UA.
         switchToUserAndValidateUser(otherUser, isDpop = false, isJwt = true)
         app.validateOAuthValues(knownAppConfig = ECA_JWT, scopeSelection = ScopeSelection.EMPTY)
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, isMultiUser = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, isMultiUser = true, isJwt = true)
     }
 
     // endregion
@@ -259,7 +259,7 @@ class DPoPLoginTests : AuthFlowTest() {
         // After restart the key pair must still be valid — revoke+refresh proves it.
         // The nonce-change assertion also confirms the server accepted the DPoP proof
         // built with the key pair loaded from AndroidKeyStore after restart.
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true)
     }
 
     // endregion
@@ -279,7 +279,7 @@ class DPoPLoginTests : AuthFlowTest() {
             useDPoP = true,
             useLoginPoolHost = true,
         )
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
@@ -297,7 +297,7 @@ class DPoPLoginTests : AuthFlowTest() {
             useDPoP = true,
             useLoginPoolHost = true,
         )
-        assertRevokeAndRefreshWorks(isRtr = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
     }
 
     // endregion

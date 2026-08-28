@@ -309,6 +309,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
         isBeacon: Boolean = false,
+        expectedRtMarker: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -345,7 +346,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
     fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
@@ -622,7 +623,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
-        isRtr: Boolean = false,
+        expectedRtMarker: Boolean = false,
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
@@ -632,7 +633,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isBeacon: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
     }
 
     private fun validateUserAgent(
@@ -641,7 +642,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
-        isRtr: Boolean = false,
+        expectedRtMarker: Boolean = false,
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
@@ -692,7 +693,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        if (isRtr) {
+        if (expectedRtMarker) {
             assert("RT" in flags) {
                 "Expected 'RT' flag after Refresh Token Rotation in: $ua"
             }

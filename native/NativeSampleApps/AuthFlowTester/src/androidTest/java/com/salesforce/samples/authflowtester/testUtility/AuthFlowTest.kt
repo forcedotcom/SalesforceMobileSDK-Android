@@ -101,6 +101,37 @@ abstract class AuthFlowTest {
     }
 
     /**
+     * Per-user, observed RT feature-marker state.
+     *
+     * RT is a sticky SDK marker: it starts absent after login and is registered only when a normal
+     * refresh (through the session refresher) observes a changed refresh token. Login, migration,
+     * and restart never advance it. A config that *can* rotate ([AppConfig.expectsRefreshTokenRotation])
+     * is not the same as a user that *has* been observed rotating — so UA assertions must consult
+     * this observed state rather than the config capability, otherwise migrations that follow a
+     * rotating refresh would falsely expect RT to be absent (or present). Mirrors iOS
+     * `BaseAuthFlowTester.expectedRTRFeatureMarkerByUsername`.
+     */
+    private val expectedRtMarkerByUsername = mutableMapOf<String, Boolean>()
+
+    private fun usernameFor(
+        knownLoginHostConfig: KnownLoginHostConfig,
+        knownUserConfig: KnownUserConfig,
+    ): String = testConfig.getUser(knownLoginHostConfig, knownUserConfig).username
+
+    private fun currentUsername(): String =
+        SalesforceSDKManager.getInstance().userAccountManager.currentUser?.username
+            ?: throw AssertionError("No current user to read the RT feature-marker state for")
+
+    private fun expectedRtMarker(username: String): Boolean =
+        expectedRtMarkerByUsername[username]
+            ?: throw AssertionError("No RT feature-marker state recorded for user $username")
+
+    /** Sticky update: once a user has been observed rotating, RT stays expected. */
+    private fun recordRefreshTokenRotation(username: String, rotated: Boolean) {
+        expectedRtMarkerByUsername[username] = (expectedRtMarkerByUsername[username] ?: false) || rotated
+    }
+
+    /**
      * Establishes a Bearer baseline before every test.
      *
      * SDK 14.0 defaults [SalesforceSDKManager.useDPoP] to true, but the UI tests build a fresh
@@ -116,6 +147,9 @@ abstract class AuthFlowTest {
     @Before
     open fun baselineDPoPOff() {
         SalesforceSDKManager.getInstance().useDPoP = false
+        // Each test logs in fresh users; cleanup() logs everyone out, clearing the SDK's per-user
+        // markers. Reset the mirrored observed-RT state so it cannot leak across tests.
+        expectedRtMarkerByUsername.clear()
     }
 
     @After
@@ -395,6 +429,11 @@ abstract class AuthFlowTest {
             else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
         }
         val appConfig = testConfig.getApp(knownAppConfig)
+        // An authorization-code login never runs the session refresher, so it cannot set RT.
+        // Record this explicitly: later migration/switch/restart checks preserve it until a
+        // test-triggered normal refresh observes token rotation.
+        val username = usernameFor(knownLoginHostConfig, knownUserConfig)
+        expectedRtMarkerByUsername[username] = false
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -407,6 +446,7 @@ abstract class AuthFlowTest {
             expectedAMarker = expectedAMarker,
             isJwt = appConfig.issuesJwt,
             isBeacon = appConfig.isBeacon,
+            expectedRtMarker = expectedRtMarker(username),
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
         app.validateApiRequest()
@@ -478,6 +518,9 @@ abstract class AuthFlowTest {
             else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
         }
         val appConfig = testConfig.getApp(knownAppConfig)
+        // A restart reloads persisted state; it never runs the session refresher, so the RT marker is
+        // unchanged. Assert with the RT state carried across the restart.
+        val username = usernameFor(knownLoginHostConfig, knownUserConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -489,6 +532,7 @@ abstract class AuthFlowTest {
             expectedAMarker = expectedAMarker,
             isJwt = appConfig.issuesJwt,
             isBeacon = appConfig.isBeacon,
+            expectedRtMarker = expectedRtMarker(username),
         )
     }
 
@@ -594,7 +638,10 @@ abstract class AuthFlowTest {
 
         app.waitForAppLoad()
         val appConfig = testConfig.getApp(knownAppConfig)
-        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon)
+        // Admin login is still an authorization-code login, so RT starts absent for this user.
+        // Reuse the username already resolved above for the Chrome login.
+        expectedRtMarkerByUsername[username] = false
+        app.validateUser(REGULAR_AUTH, user, expectAdvancedAuth = true, isDpop = useDPoP, expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FOR_ADMIN, expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN, expectedAMarker = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, isJwt = appConfig.issuesJwt, isBeacon = appConfig.isBeacon, expectedRtMarker = expectedRtMarker(username))
         app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
         app.validateApiRequest()
     }
@@ -719,6 +766,10 @@ abstract class AuthFlowTest {
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
         val appConfig = testConfig.getApp(knownAppConfig)
+        // Migration re-issues tokens through the token-migration path, not the session refresher, so
+        // it never advances the RT marker. Assert with the RT state carried over from before this
+        // migration (a rotation from an earlier normal refresh stays sticky).
+        val username = usernameFor(knownLoginHostConfig, knownUserConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -730,12 +781,17 @@ abstract class AuthFlowTest {
             wasMigrated = true,
             isJwt = appConfig.issuesJwt,
             isBeacon = appConfig.isBeacon,
+            expectedRtMarker = expectedRtMarker(username),
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
-        // Assert new tokens work
+        // Assert new tokens work. This revoke forces a normal refresh through the session refresher —
+        // the one path that registers the sticky RT marker — so a beacon app that rotates its refresh
+        // token here (W-23971480) will legitimately carry RT on the next validation.
         app.revokeAccessToken()
         app.validateApiRequest()
+        val (_, refreshedRefreshToken) = app.getTokens()
+        recordRefreshTokenRotation(username, rotated = refreshedRefreshToken != postRefreshToken)
     }
 
     /**
@@ -782,7 +838,7 @@ abstract class AuthFlowTest {
         // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
         // and persists across subsequent refreshes — the marker tracks the migration mechanism, not
         // whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     /**
@@ -829,11 +885,11 @@ abstract class AuthFlowTest {
         // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is
         // legitimately registered and persists across subsequent refreshes — the marker tracks the
         // migration mechanism, not whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(isRtr = false, isDpop = false, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     fun assertRevokeAndRefreshWorks(
-        isRtr: Boolean,
+        expectsRefreshTokenRotation: Boolean,
         isDpop: Boolean = false,
         knownLoginHostConfig: KnownLoginHostConfig = REGULAR_AUTH,
         expectAdvancedAuth: Boolean = true,
@@ -850,11 +906,18 @@ abstract class AuthFlowTest {
 
         assert(preAccessToken != postAccessToken) { "Access token should have been refreshed" }
 
-        if (isRtr) {
-            assert(preRefreshToken != postRefreshToken) { "Refresh token should have rotated (RTR app)" }
+        val refreshTokenRotated = preRefreshToken != postRefreshToken
+        if (expectsRefreshTokenRotation) {
+            assert(refreshTokenRotated) { "Refresh token should have rotated (RTR app)" }
         } else {
-            assert(preRefreshToken == postRefreshToken) { "Refresh token should not have changed (non-RTR app)" }
+            assert(!refreshTokenRotated) { "Refresh token should not have changed (non-RTR app)" }
         }
+
+        // This is a normal refresh through the session refresher, the only path that registers the
+        // sticky RT marker. Record the observation for the current user *before* reading it back for
+        // the UA assertion, so a rotation seen here is reflected in what we expect the UA to carry.
+        val username = currentUsername()
+        recordRefreshTokenRotation(username, rotated = refreshTokenRotated)
 
         if (isDpop) {
             val postNonce = app.getDpopInfo().nonce
@@ -874,7 +937,7 @@ abstract class AuthFlowTest {
             knownLoginHostConfig = knownLoginHostConfig,
             expectAdvancedAuth = expectAdvancedAuth,
             isMultiUser = isMultiUser,
-            isRtr = isRtr,
+            expectedRtMarker = expectedRtMarker(username),
             isDpop = isDpop,
             expectedBMarker = expectedBMarker,
             expectedLMarker = expectedLMarker,
@@ -899,6 +962,9 @@ abstract class AuthFlowTest {
         composeTestRule.waitForIdle()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
+        // Switching users only changes which credential is active; it never runs the session
+        // refresher, so assert with the target user's own carried-over RT state.
+        val username = usernameFor(knownLoginHostConfig, knownUserConfig)
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -908,6 +974,7 @@ abstract class AuthFlowTest {
             expectedBMarker = expectedBMarker,
             expectedAMarker = expectedAMarker,
             isJwt = isJwt,
+            expectedRtMarker = expectedRtMarker(username),
         )
     }
 }
