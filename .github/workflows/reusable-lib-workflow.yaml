@@ -24,6 +24,10 @@ jobs:
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+      # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+      PR_API_VERSION: "36"
+      FULL_API_RANGE: "31 32 33 34 35 36 37"
+      PS16K_MIN_API_VERSION: "36"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
@@ -126,9 +130,6 @@ jobs:
         continue-on-error: true
         if: success() || failure()
         env:
-          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "36"
-          FULL_API_RANGE: "31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
           LIB: ${{ inputs.lib }}
           RUN_NUMBER: ${{ github.run_number }}
@@ -160,13 +161,17 @@ jobs:
           for LEVEL in $LEVELS_TO_TEST
             do
               GCLOUD_RESULTS_DIR="${LIB}-api-${LEVEL}-build-${RUN_NUMBER}"
+              DEVICE_MODEL="MediumPhone.arm"
+              if [ "$PS16K_MIN_API_VERSION" -le "$LEVEL" ]; then
+                DEVICE_MODEL="MediumPhone_ps16k.arm"
+              fi
 
               eval gcloud beta firebase test android run \
                 --project mobile-apps-firebase-test \
                 --type instrumentation \
                 --app "native/NativeSampleApps/RestExplorer/build/outputs/apk/debug/RestExplorer-debug.apk" \
                 --test="libs/${LIB}/build/outputs/apk/androidTest/debug/${LIB}-debug-androidTest.apk" \
-                --device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait" \
+                --device "model=${DEVICE_MODEL},version=${LEVEL},locale=en,orientation=portrait" \
                 --environment-variables coverage=true,coverageFile="/sdcard/coverage.ec" \
                 --directories-to-pull=/sdcard \
                 --results-dir="${GCLOUD_RESULTS_DIR}" \
@@ -179,9 +184,6 @@ jobs:
         continue-on-error: true
         if: success() || failure()
         env:
-          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "36"
-          FULL_API_RANGE: "31 32 33 34 35 36"
           IS_PR: ${{ inputs.is_pr }}
           LIB: ${{ inputs.lib }}
           RUN_NUMBER: ${{ github.run_number }}
