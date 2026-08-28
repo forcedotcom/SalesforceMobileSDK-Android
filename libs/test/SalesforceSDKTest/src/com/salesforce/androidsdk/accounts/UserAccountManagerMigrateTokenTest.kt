@@ -372,6 +372,7 @@ class UserAccountManagerMigrateTokenTest {
     fun downgradeFromDPoP_withNullClientId_callsOnFailure() {
         // Given
         val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
         every { mockUserAccount.clientId } returns null
         every { mockUserAccount.loginServer } returns "login.example.com"
 
@@ -394,6 +395,7 @@ class UserAccountManagerMigrateTokenTest {
     fun downgradeFromDPoP_withNullLoginServer_callsOnFailure() {
         // Given
         val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
         every { mockUserAccount.clientId } returns "testClientId"
         every { mockUserAccount.loginServer } returns null
 
@@ -495,8 +497,12 @@ class UserAccountManagerMigrateTokenTest {
         callbacksSlot.captured.onMigrationSuccess(migratedAccount)
 
         // Then - the OLD (pre-migration) identifier's key/nonce are reclaimed.
+        // Compute the expected alias outside the verify block: in MockK verify mode, calls to
+        // mocked functions return default values rather than executing callOriginal(), so
+        // aliasForCredentialsIdentifier() would return "" inside verify {} and produce a wrong matcher.
+        val expectedAlias = DPoPKeyManager.aliasForCredentialsIdentifier(oldCredId)
         verify(exactly = 1) {
-            DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(oldCredId))
+            DPoPKeyManager.deleteKeyPair(expectedAlias)
         }
         verify(exactly = 1) { DPoPNonceCache.clear(oldCredId) }
         verify(exactly = 1) { onMigrationSuccess.invoke(migratedAccount) }
