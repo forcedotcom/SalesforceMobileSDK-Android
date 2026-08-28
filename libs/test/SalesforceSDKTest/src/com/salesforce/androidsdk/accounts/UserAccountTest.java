@@ -878,6 +878,30 @@ public class UserAccountTest {
         Assert.assertEquals(rotationTime, account.getLastTokenRotationTime());
     }
 
+    @Test
+    public void test_givenAccessTokenFormat_whenGetMainSid_thenReturnsAuthToken() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("access_token")
+                .build();
+
+        Assert.assertEquals("test_auth_token", account.getMainSid());
+    }
+
+    @Test
+    public void test_givenJwtTokenFormat_whenGetMainSid_thenReturnsParentSid() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("jwt")
+                .build();
+
+        Assert.assertEquals("test_parent_sid", account.getMainSid());
+    }
+
     /**
      * Check the user accounts are the same
      * @param expected Expected UserAccount
