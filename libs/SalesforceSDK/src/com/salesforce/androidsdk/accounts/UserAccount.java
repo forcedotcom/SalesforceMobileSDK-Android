@@ -740,6 +740,16 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the session ID to use as the main SID cookie.
+	 * For JWT token format, this is the parent SID; otherwise it is the auth token.
+	 *
+	 * @return main SID string
+	 */
+	public String getMainSid() {
+		return "jwt".equals(tokenFormat) ? parentSid : authToken;
+	}
+
+	/**
 	 * Returns the token format.
 	 *
 	 * @return token format.
