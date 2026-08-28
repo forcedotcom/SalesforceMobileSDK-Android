@@ -322,7 +322,7 @@ open class LoginActivity : FragmentActivity() {
         // Set content
         setContent {
             MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
-                LoginView()
+                LoginView(viewModel = viewModel)
             }
         }
 

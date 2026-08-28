@@ -153,10 +153,10 @@ internal const val LOADING_INDICATOR_SIZE = 50
 internal const val SLOW_ANIMATION_MS = 500
 
 @Composable
-fun LoginView() {
+fun LoginView(
+    viewModel: LoginViewModel = viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory),
+) {
     val activity: LoginActivity = LocalContext.current.getActivity() as LoginActivity
-    val viewModel: LoginViewModel =
-        viewModel(factory = SalesforceSDKManager.getInstance().loginViewModelFactory)
     val frontDoorBridgeUrl = viewModel.frontDoorBridgeUrl.observeAsState()
     // Observe selectedServer and loginUrl AS COMPOSE STATE so that recomposition triggers when
     // either changes — and so titleText is read inside Compose's snapshot system, not via the
