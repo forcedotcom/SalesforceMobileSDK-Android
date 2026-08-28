@@ -28,6 +28,11 @@ jobs:
     runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/.github/DangerFiles/Gemfile
+      # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
+      PR_API_VERSION: "36"
+      PR_DEVICE_MODEL: "MediumPhone_ps16k.arm"
+      FULL_API_RANGE: "31 32 33 34 35 36 37"
+      PS16K_MIN_API_VERSION: "36"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
@@ -92,8 +97,6 @@ jobs:
         continue-on-error: true
         if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         env:
-          # Most used according to https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide
-          PR_API_VERSION: "36"
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
@@ -114,7 +117,7 @@ jobs:
             --environment-variables clearPackageData=true \
             --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
             --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=MediumPhone.arm,version=${PR_API_VERSION},locale=en,orientation=portrait" \
+            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
             --directories-to-pull=/sdcard \
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
@@ -126,7 +129,6 @@ jobs:
         continue-on-error: true
         if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
         env:
-          PR_API_VERSION: "36"
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
@@ -138,7 +140,7 @@ jobs:
             --environment-variables clearPackageData=true \
             --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
             --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
-            --device "model=MediumPhone.arm,version=${PR_API_VERSION},locale=en,orientation=portrait" \
+            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
             --directories-to-pull=/sdcard \
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
@@ -149,13 +151,16 @@ jobs:
         continue-on-error: true
         if: ${{ ! inputs.is_pr }}
         env:
-          FULL_API_RANGE: "31 32 33 34 35 36"
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           GCLOUD_RESULTS_DIR="authflowtester-single-user-build-${RUN_NUMBER}"
           DEVICE_ARGS=()
           for LEVEL in $FULL_API_RANGE; do
-            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
+            DEVICE_MODEL="MediumPhone.arm"
+            if [ "$PS16K_MIN_API_VERSION" -le "$LEVEL" ]; then
+              DEVICE_MODEL="MediumPhone_ps16k.arm"
+            fi
+            DEVICE_ARGS+=(--device "model=${DEVICE_MODEL},version=${LEVEL},locale=en,orientation=portrait")
           done
 
           gcloud firebase test android run \
@@ -177,13 +182,16 @@ jobs:
         continue-on-error: true
         if: ${{ ! inputs.is_pr }}
         env:
-          FULL_API_RANGE: "31 32 33 34 35 36"
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           GCLOUD_RESULTS_DIR="authflowtester-multi-user-build-${RUN_NUMBER}"
           DEVICE_ARGS=()
           for LEVEL in $FULL_API_RANGE; do
-            DEVICE_ARGS+=(--device "model=MediumPhone.arm,version=${LEVEL},locale=en,orientation=portrait")
+            DEVICE_MODEL="MediumPhone.arm"
+            if [ "$PS16K_MIN_API_VERSION" -le "$LEVEL" ]; then
+              DEVICE_MODEL="MediumPhone_ps16k.arm"
+            fi
+            DEVICE_ARGS+=(--device "model=${DEVICE_MODEL},version=${LEVEL},locale=en,orientation=portrait")
           done
 
           gcloud firebase test android run \
