@@ -677,6 +677,18 @@ open class SalesforceSDKManager protected constructor(
         }.getOrDefault("")
 
 
+    // Backing field for [idpManager].  The SDK reads this directly so its own internal use of the
+    // manager doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    @Suppress("DEPRECATION") // References the deprecated IDPManager type until it is removed in 15.0.
+    private var _idpManager: com.salesforce.androidsdk.auth.idp.interfaces.IDPManager? = null
+
+    // Backing field for [spManager].  The SDK reads this directly so its own internal use of the
+    // manager doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    @Suppress("DEPRECATION") // References the deprecated SPManager type until it is removed in 15.0.
+    private var _spManager: com.salesforce.androidsdk.auth.idp.interfaces.SPManager? = null
+
     /**
      * The Salesforce SDK manager's admin settings manager. Only
      * defined if setAllowedSPApps() was called first
@@ -684,8 +696,11 @@ open class SalesforceSDKManager protected constructor(
     @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
             "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     @Suppress("DEPRECATION") // References the deprecated IDPManager type until it is removed in 15.0.
-    var idpManager: com.salesforce.androidsdk.auth.idp.interfaces.IDPManager? = null
-        private set
+    var idpManager: com.salesforce.androidsdk.auth.idp.interfaces.IDPManager?
+        get() = _idpManager
+        private set(value) {
+            _idpManager = value
+        }
 
     /**
      * The Salesforce SDK manager's SP manager. Only defined if
@@ -694,15 +709,17 @@ open class SalesforceSDKManager protected constructor(
     @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
             "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     @Suppress("DEPRECATION") // References the deprecated SPManager type until it is removed in 15.0.
-    var spManager: com.salesforce.androidsdk.auth.idp.interfaces.SPManager? = null
-        private set
+    var spManager: com.salesforce.androidsdk.auth.idp.interfaces.SPManager?
+        get() = _spManager
+        private set(value) {
+            _spManager = value
+        }
 
     /** Indicates if IDP login flow is enabled */
     @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
             "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     val isIDPLoginFlowEnabled
-        @Suppress("DEPRECATION") // Reads the deprecated spManager flag until it is removed in 15.0.
-        get() = spManager != null
+        get() = _spManager != null
 
     /**
      * The available Mobile SDK style themes.
@@ -902,9 +919,8 @@ open class SalesforceSDKManager protected constructor(
     }
 
     /** Indicates if this app is configured as an identity provider */
-    @Suppress("DEPRECATION") // Reads the deprecated idpManager flag until it is removed in 15.0.
     private val isIdentityProvider
-        get() = idpManager != null
+        get() = _idpManager != null
 
     /**
      * Sets the IDP package name for this app.
@@ -913,10 +929,9 @@ open class SalesforceSDKManager protected constructor(
      */
     @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
             "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
-    @Suppress("DEPRECATION") // Sets the deprecated spManager flag until it is removed in 15.0.
     fun setIDPAppPackageName(idpAppPackageName: String?) {
         registerUsedAppFeature(FEATURE_APP_IS_SP)
-        spManager = idpAppPackageName?.let { DefaultSPManager(it) }
+        _spManager = idpAppPackageName?.let { DefaultSPManager(it) }
     }
 
     /**
@@ -926,10 +941,10 @@ open class SalesforceSDKManager protected constructor(
      */
     @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
             "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
-    @Suppress("unused", "DEPRECATION") // Sets the deprecated idpManager flag until it is removed in 15.0.
+    @Suppress("unused", "DEPRECATION") // References the deprecated SPConfig parameter type until it is removed in 15.0.
     fun setAllowedSPApps(allowedSPApps: List<com.salesforce.androidsdk.auth.idp.SPConfig>) {
         registerUsedAppFeature(FEATURE_APP_IS_IDP)
-        idpManager = DefaultIDPManager(allowedSPApps)
+        _idpManager = DefaultIDPManager(allowedSPApps)
     }
 
 
