@@ -902,6 +902,51 @@ public class UserAccountTest {
         Assert.assertEquals("test_parent_sid", account.getMainSid());
     }
 
+    @Test
+    public void test_givenDPoPTokenType_whenBuildAccount_thenUiSidCaptured() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .uiSid("test_ui_sid")
+                .build();
+
+        Assert.assertEquals("test_ui_sid", account.getUiSid());
+    }
+
+    @Test
+    public void test_givenNoDPoPTokenType_whenBuildAccount_thenUiSidIsNull() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .build();
+
+        Assert.assertNull(account.getUiSid());
+    }
+
+    @Test
+    public void test_givenUiSidPresent_whenGetMainSid_thenReturnsUiSid() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("jwt")
+                .uiSid("test_ui_sid")
+                .build();
+
+        Assert.assertEquals("test_ui_sid", account.getMainSid());
+    }
+
+    @Test
+    public void test_givenUiSidAbsent_whenGetMainSid_thenFallsBackToExistingLogic() {
+        final UserAccount account = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(createTestAccount())
+                .authToken("test_auth_token")
+                .parentSid("test_parent_sid")
+                .tokenFormat("jwt")
+                .build();
+
+        Assert.assertNull(account.getUiSid());
+        Assert.assertEquals("test_parent_sid", account.getMainSid());
+    }
+
     /**
      * Check the user accounts are the same
      * @param expected Expected UserAccount

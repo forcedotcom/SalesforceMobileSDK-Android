@@ -575,6 +575,8 @@ public class UserAccountManager {
 		final String credentialsIdentifier = decryptUserData(account, AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER, encryptionKey);
 		final String tokenType = decryptUserData(account, AuthenticatorService.KEY_TOKEN_TYPE, encryptionKey);
 		final String lastTokenRotationTime = decryptUserData(account, AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, encryptionKey);
+		final String uiSid = decryptUserData(account, AuthenticatorService.KEY_UI_SID, encryptionKey);
+		final String uiSid = decryptUserData(account, AuthenticatorService.KEY_UI_SID, encryptionKey);
 		final String featureFlagsRaw = decryptUserData(account, AuthenticatorService.KEY_FEATURE_FLAGS, encryptionKey);
 
 		Map<String, String> additionalOauthValues = null;
@@ -635,6 +637,7 @@ public class UserAccountManager {
 					.credentialsIdentifier(credentialsIdentifier)
 					.tokenType(tokenType)
 					.lastTokenRotationTime(lastTokenRotationTime)
+					.uiSid(uiSid)
 					.additionalOauthValues(additionalOauthValues)
 					.build();
 			if (!TextUtils.isEmpty(featureFlagsRaw)) {
@@ -782,6 +785,9 @@ public class UserAccountManager {
 		}
 		if (userAccount.getLastTokenRotationTime() != null) {
 			extras.putString(AuthenticatorService.KEY_LAST_TOKEN_ROTATION_TIME, SalesforceSDKManager.encrypt(userAccount.getLastTokenRotationTime(), encryptionKey));
+		}
+		if (userAccount.getUiSid() != null) {
+			extras.putString(AuthenticatorService.KEY_UI_SID, SalesforceSDKManager.encrypt(userAccount.getUiSid(), encryptionKey));
 		}
 		final Set<String> featureFlags = userAccount.getFeatureFlags();
 		if (!featureFlags.isEmpty()) {
