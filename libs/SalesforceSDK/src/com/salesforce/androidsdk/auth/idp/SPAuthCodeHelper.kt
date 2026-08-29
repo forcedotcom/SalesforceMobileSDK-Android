@@ -41,6 +41,7 @@ import java.net.URI
 /**
  * Helper class used in SP app to get auth tokens and create user given auth code
  */
+@Suppress("DEPRECATION") // Uses the deprecated SPConfig type until it is removed in 15.0.
 internal class SPAuthCodeHelper private constructor (
     val context: Context,
     val loginUrl: String,

@@ -24,6 +24,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+@file:Suppress("DEPRECATION") // Imports and uses the deprecated IDPManager/SPManager types and IDP login flow APIs until they are removed in 15.0.
+
 package com.salesforce.androidsdk.app
 
 import android.accounts.Account
@@ -120,9 +122,6 @@ import com.salesforce.androidsdk.auth.OAuth2.revokeRefreshToken
 import com.salesforce.androidsdk.auth.RemoteAccessConsumerKeyProvider
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
-import com.salesforce.androidsdk.auth.idp.SPConfig
-import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
-import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
 import com.salesforce.androidsdk.config.AdminPermsManager
 import com.salesforce.androidsdk.config.AdminSettingsManager
 import com.salesforce.androidsdk.config.BootConfig.getBootConfig
@@ -182,6 +181,8 @@ import java.util.regex.Pattern
 import kotlin.time.Duration.Companion.milliseconds
 import com.salesforce.androidsdk.auth.idp.IDPManager as DefaultIDPManager
 import com.salesforce.androidsdk.auth.idp.SPManager as DefaultSPManager
+import com.salesforce.androidsdk.auth.idp.interfaces.IDPManager
+import com.salesforce.androidsdk.auth.idp.interfaces.SPManager
 import com.salesforce.androidsdk.auth.interfaces.NativeLoginManager as NativeLoginManagerInterface
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager as BiometricAuthenticationManagerInterface
 import com.salesforce.androidsdk.security.interfaces.ScreenLockManager as ScreenLockManagerInterface
@@ -680,23 +681,45 @@ open class SalesforceSDKManager protected constructor(
         }.getOrDefault("")
 
 
+    // Backing field for [idpManager].  The SDK reads this directly so its own internal use of the
+    // manager doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _idpManager: IDPManager? = null
+
+    // Backing field for [spManager].  The SDK reads this directly so its own internal use of the
+    // manager doesn't trigger the deprecation warning on the public property.
+    @Volatile
+    private var _spManager: SPManager? = null
+
     /**
      * The Salesforce SDK manager's admin settings manager. Only
      * defined if setAllowedSPApps() was called first
      */
-    var idpManager: IDPManager? = null
-        private set
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+    var idpManager: IDPManager?
+        get() = _idpManager
+        private set(value) {
+            _idpManager = value
+        }
 
     /**
      * The Salesforce SDK manager's SP manager. Only defined if
      * setIdpAppPackageName() was called first
      */
-    var spManager: SPManager? = null
-        private set
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+    var spManager: SPManager?
+        get() = _spManager
+        private set(value) {
+            _spManager = value
+        }
 
     /** Indicates if IDP login flow is enabled */
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     val isIDPLoginFlowEnabled
-        get() = spManager != null
+        get() = _spManager != null
 
     /**
      * The available Mobile SDK style themes.
@@ -897,16 +920,18 @@ open class SalesforceSDKManager protected constructor(
 
     /** Indicates if this app is configured as an identity provider */
     private val isIdentityProvider
-        get() = idpManager != null
+        get() = _idpManager != null
 
     /**
      * Sets the IDP package name for this app.
      * As a result, this app gets an SP Manager and can be used as an SP
      * @param idpAppPackageName The IDP app package name
      */
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     fun setIDPAppPackageName(idpAppPackageName: String?) {
         registerUsedAppFeature(FEATURE_APP_IS_SP)
-        spManager = idpAppPackageName?.let { DefaultSPManager(it) }
+        _spManager = idpAppPackageName?.let { DefaultSPManager(it) }
     }
 
     /**
@@ -914,10 +939,12 @@ open class SalesforceSDKManager protected constructor(
      * As a result this app gets an IDP manager and can be used as an IDP
      * @param allowedSPApps The list of allows SP app
      */
-    @Suppress("unused")
-    fun setAllowedSPApps(allowedSPApps: List<SPConfig>) {
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+    @Suppress("unused", "DEPRECATION") // References the deprecated SPConfig parameter type until it is removed in 15.0.
+    fun setAllowedSPApps(allowedSPApps: List<com.salesforce.androidsdk.auth.idp.SPConfig>) {
         registerUsedAppFeature(FEATURE_APP_IS_IDP)
-        idpManager = DefaultIDPManager(allowedSPApps)
+        _idpManager = DefaultIDPManager(allowedSPApps)
     }
 
 
@@ -1776,6 +1803,7 @@ open class SalesforceSDKManager protected constructor(
 
     /** Information to display in the developer support dialog */
     open val devSupportInfo: DevSupportInfo
+        // Reads the deprecated isIDPLoginFlowEnabled flag until it is removed in 15.0.
         get() {
             val userList = userAccountManager.authenticatedUsers?.joinToString(separator = ",\n") {
                 "${it.displayName} (${it.username})"
@@ -2123,6 +2151,7 @@ open class SalesforceSDKManager protected constructor(
          * @param context The Android context
          */
         @JvmStatic
+        // Auto-wires the deprecated IDP login flow from MDM config until it is removed in 15.0.
         fun initInternal(context: Context) {
 
             // Upgrades to the latest version
