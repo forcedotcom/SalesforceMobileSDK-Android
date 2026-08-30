@@ -243,4 +243,20 @@ class DPoPRequestDecoratorTest {
             DPoPNonceCache.clearAll()
         }
     }
+
+    @Test
+    fun applyAuthHeaders_lowercaseDPoPTokenType_stampsDPoPSchemeNotBearer() {
+        // Regression for W-24027018: server returns lowercase "dpop" in token refresh responses.
+        // Prior case-sensitive comparison caused addAuthorizationHeader to use Bearer on replay.
+        seedKeyPair(testScope)
+        val builder = requestBuilder()
+
+        DPoPRequestDecorator.applyAuthHeaders(builder, userAccount(tokenType = "dpop"))
+
+        val request = builder.build()
+        val auth = request.header("Authorization")
+        assertNotNull(auth)
+        assertTrue("lowercase 'dpop' must produce Authorization: DPoP …, got: $auth", auth!!.startsWith("DPoP "))
+        assertNotNull("lowercase 'dpop' must attach a DPoP proof header", request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
 }
