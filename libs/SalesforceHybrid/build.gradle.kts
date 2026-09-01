@@ -23,6 +23,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    testImplementation("junit:junit:4.13.2")
 }
 
 android { // TODO: This cannot be resolved until newDSL=true
@@ -50,6 +51,10 @@ android { // TODO: This cannot be resolved until newDSL=true
             aidl.directories.add("src")
             res.directories.add("res")
             assets.directories.add("assets")
+        }
+
+        getByName("test") {
+            java.setSrcDirs(listOf("unitTest/java"))
         }
 
         getByName("androidTest") {

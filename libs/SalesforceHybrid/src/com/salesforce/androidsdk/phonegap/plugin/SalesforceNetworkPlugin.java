@@ -109,6 +109,11 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
+            String callerUrl = webView.getUrl();
+            if (!isTrustedCallerOrigin(callerUrl)) {
+                callbackContext.error("pgSendRequest blocked: untrusted caller origin");
+                return;
+            }
             final RestRequest request = prepareRestRequest(args);
             final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
             final boolean doesNotRequireAuth = ((JSONObject) args.get(0)).optBoolean(DOES_NOT_REQUIRE_AUTHENTICATION, false);
@@ -181,6 +186,23 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             }
             callbackContext.error(errorObject.toString());
         }
+    }
+
+    // Trusted origins mirror the <access origin> entries in
+    // SalesforceMobileSDK-CordovaPlugin/src/android/libs/mobile_sdk/libs/SalesforceHybrid/res/xml/config.xml.
+    // If that list changes, update this method to match.
+    /* package */ boolean isTrustedCallerOrigin(String url) {
+        if (url == null) return false;
+        if (url.startsWith("file://")) return true;
+        try {
+            String host = new java.net.URL(url).getHost();
+            if (host.equals("localhost")) return true;
+            for (String suffix : new String[]{".salesforce.com", ".force.com", ".visualforce.com",
+                                              ".documentforce.com", ".salesforce-communities.com"}) {
+                if (host.endsWith(suffix)) return true;
+            }
+        } catch (Exception e) { /* malformed URL → block */ }
+        return false;
     }
 
     private Object parsedResponse(RestResponse response) throws IOException {
