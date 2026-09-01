@@ -41,10 +41,18 @@ object DPoPKeyManager {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
     /**
-     * RFC 9449 token type string. Case-sensitive per the spec. Single source of truth —
-     * `OAuth2.java` references this constant rather than redefining the literal.
+     * RFC 9449 token type string. Canonical casing — compare via [isDPoPTokenType] since
+     * RFC 6749 §5.1 does not mandate casing; servers may return `"dpop"`, `"DPoP"`, or any variant.
      */
     const val DPOP_TOKEN_TYPE = "DPoP"
+
+    /**
+     * Returns true iff [tokenType] matches `"DPoP"` case-insensitively (RFC 6749 §5.1).
+     * Handles null/empty safely — never returns true for those.
+     */
+    @JvmStatic
+    fun isDPoPTokenType(tokenType: String?): Boolean =
+        tokenType?.equals(DPOP_TOKEN_TYPE, ignoreCase = true) == true
 
     private const val TAG = "DPoPKeyManager"
 
@@ -108,7 +116,7 @@ object DPoPKeyManager {
      * by `credentialsIdentifier`.
      *
      * An explicit `tokenType` is authoritative:
-     * - `tokenType == "DPoP"` → attach.
+     * - `tokenType` matches `"DPoP"` case-insensitively (RFC 6749 §5.1) → attach.
      * - any other non-null type (e.g. "Bearer") → do NOT attach, and fast-exit before any
      *   KeyStore I/O. This protects the DPoP→Bearer migration / Bearer re-auth path: a Bearer
      *   credential that reuses a `credentialsIdentifier` still holding a stale DPoP key pair
@@ -120,7 +128,7 @@ object DPoPKeyManager {
      */
     fun shouldAttachDPoP(credentialsIdentifier: String?, tokenType: String?): Boolean {
         if (credentialsIdentifier.isNullOrEmpty()) return false
-        if (DPOP_TOKEN_TYPE == tokenType) return true
+        if (isDPoPTokenType(tokenType)) return true
         if (tokenType != null) return false // explicit non-DPoP type — fast exit, no KeyStore I/O
         // tokenType is null — transition window between /authorize and /token.
         return hasKeyPairForCredentialsIdentifier(credentialsIdentifier)
