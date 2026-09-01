@@ -411,7 +411,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
         assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
         assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
-        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop, "UI SID")
+        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop && useHybrid, "UI SID")
 
         if (useHybrid) {
             if (isDpop) {
