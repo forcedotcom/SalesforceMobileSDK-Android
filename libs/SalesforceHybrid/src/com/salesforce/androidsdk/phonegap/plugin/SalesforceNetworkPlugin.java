@@ -189,7 +189,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     }
 
     // Trusted origins mirror the <access origin> entries in
-    // SalesforceMobileSDK-CordovaPlugin/src/android/libs/mobile_sdk/libs/SalesforceHybrid/res/xml/config.xml.
+    // libs/SalesforceHybrid/res/xml/config.xml (also mirrored in
+    // SalesforceMobileSDK-CordovaPlugin/src/android/libs/mobile_sdk/libs/SalesforceHybrid/res/xml/config.xml).
     // If that list changes, update this method to match.
     /* package */ boolean isTrustedCallerOrigin(String url) {
         if (url == null) return false;
