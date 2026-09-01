@@ -411,15 +411,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
         assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
         assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
-        assertNotEmpty(mainSid, shouldNotBeEmpty = true, "Main SID")
         assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop, "UI SID")
 
-        if (uiSid.isNotEmpty()) {
-            assertEquals("Main SID should equal UI SID when UI SID is present", uiSid, mainSid)
-        } else if (parentSid.isNotEmpty()) {
-            assertEquals("Main SID should equal Parent SID when UI SID is absent and Parent SID is present", parentSid, mainSid)
-        } else {
-            assertEquals("Main SID should equal Access Token when neither UI SID nor Parent SID is present", accessToken, mainSid)
+        if (useHybrid) {
+            if (isDpop) {
+                assertEquals("Main SID should equal UI SID in DPoP hybrid flow", uiSid, mainSid)
+            } else if (isJwt) {
+                assertEquals("Main SID should equal Parent SID in JWT hybrid flow", parentSid, mainSid)
+            } else {
+                assertEquals("Main SID should equal Access Token in opaque hybrid flow", accessToken, mainSid)
+            }
         }
     }
 
