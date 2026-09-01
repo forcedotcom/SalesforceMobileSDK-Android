@@ -448,7 +448,7 @@ abstract class AuthFlowTest {
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken)
         app.validateApiRequest()
     }
 

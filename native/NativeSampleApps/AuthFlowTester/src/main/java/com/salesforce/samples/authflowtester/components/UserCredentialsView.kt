@@ -97,13 +97,15 @@ private const val COMMUNITY_ID = "Community ID"
 private const val COMMUNITY_URL = "Community URL"
 
 // Domains and SIDs fields
-private const val LIGHTNING_DOMAIN = "Lightning Domain"
-private const val LIGHTNING_SID = "Lightning SID"
-private const val VF_DOMAIN = "VF Domain"
-private const val VF_SID = "VF SID"
-private const val CONTENT_DOMAIN = "Content Domain"
-private const val CONTENT_SID = "Content SID"
-private const val PARENT_SID = "Parent SID"
+const val LIGHTNING_DOMAIN = "Lightning Domain"
+const val LIGHTNING_SID = "Lightning SID"
+const val VF_DOMAIN = "VF Domain"
+const val VF_SID = "VF SID"
+const val CONTENT_DOMAIN = "Content Domain"
+const val CONTENT_SID = "Content SID"
+const val PARENT_SID = "Parent SID"
+const val MAIN_SID = "Main SID"
+const val UI_SID = "UI SID"
 private const val SID_COOKIE_NAME = "SID Cookie Name"
 
 // Cookies and Security fields
@@ -164,6 +166,8 @@ fun UserCredentialsView(currentUser: UserAccount?) {
             InfoRowView(label = CONTENT_DOMAIN, value = currentUser?.contentDomain)
             InfoRowView(label = CONTENT_SID, value = currentUser?.contentSid, isSensitive = true)
             InfoRowView(label = PARENT_SID, value = currentUser?.parentSid, isSensitive = true)
+            InfoRowView(label = MAIN_SID, value = currentUser?.mainSid, isSensitive = true)
+            InfoRowView(label = UI_SID, value = currentUser?.uiSid, isSensitive = true)
             InfoRowView(label = SID_COOKIE_NAME, value = currentUser?.sidCookieName)
         }
 
@@ -284,6 +288,8 @@ private fun generateCredentialsJSON(user: UserAccount?): String {
                 put(CONTENT_DOMAIN, user.contentDomain)
                 put(CONTENT_SID, user.contentSid)
                 put(PARENT_SID, user.parentSid)
+                put(MAIN_SID, user.mainSid)
+                put(UI_SID, user.uiSid)
                 put(SID_COOKIE_NAME, user.sidCookieName)
             }
 
