@@ -65,7 +65,10 @@ class NativeLoginManagerTest {
 
     @After
     fun tearDown() {
-        realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
+        if (realUserAccountManager.currentAccount != null) {
+            realUserAccountManager.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT)
+        }
+        instrumentation.waitForIdleSync()
         activityMonitors.forEach(instrumentation::removeMonitor)
         unmockkAll()
     }
