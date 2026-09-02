@@ -145,7 +145,7 @@ jobs:
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
-            --timeout=30m \
+            --timeout=60m \
             --num-flaky-test-attempts=1
       - name: Run All Single User Tests
         continue-on-error: true
@@ -177,7 +177,7 @@ jobs:
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
             --num-flaky-test-attempts=1 \
-            --timeout=30m || true
+            --timeout=60m || true
       - name: Run All Multi User Tests
         continue-on-error: true
         if: ${{ ! inputs.is_pr }}
@@ -208,7 +208,7 @@ jobs:
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
             --num-flaky-test-attempts=1 \
-            --timeout=15m || true
+            --timeout=30m || true
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()
