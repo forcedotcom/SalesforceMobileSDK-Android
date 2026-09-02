@@ -448,7 +448,7 @@ abstract class AuthFlowTest {
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP)
         app.validateApiRequest()
     }
 
@@ -832,7 +832,7 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = true)
 
         // Assert the newly DPoP-bound tokens work. upgradeToDPoP delegates to the refresh-token
         // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
@@ -879,7 +879,7 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = false)
 
         // Assert the newly Bearer tokens work with no DPoP proof. downgradeFromDPoP delegates to
         // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is

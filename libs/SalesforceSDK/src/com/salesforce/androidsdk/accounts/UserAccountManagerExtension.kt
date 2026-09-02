@@ -159,7 +159,7 @@ fun UserAccountManager.upgradeToDPoP(
     onSuccess: (userAccount: UserAccount) -> Unit,
     onFailure: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
 ) {
-    if (userAccount.tokenType == DPoPKeyManager.DPOP_TOKEN_TYPE) {
+    if (DPoPKeyManager.isDPoPTokenType(userAccount.tokenType)) {
         onSuccess(userAccount)
         return
     }
@@ -251,7 +251,7 @@ fun UserAccountManager.downgradeFromDPoP(
     onSuccess: (userAccount: UserAccount) -> Unit,
     onFailure: (error: String, errorDesc: String?, e: Throwable?) -> Unit,
 ) {
-    if (userAccount.tokenType != DPoPKeyManager.DPOP_TOKEN_TYPE) {
+    if (!DPoPKeyManager.isDPoPTokenType(userAccount.tokenType)) {
         onSuccess(userAccount)
         return
     }

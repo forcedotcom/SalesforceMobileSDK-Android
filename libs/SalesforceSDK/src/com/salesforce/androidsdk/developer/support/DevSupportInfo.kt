@@ -116,7 +116,7 @@ data class DevSupportInfo(
                 "Beacon Child Consumer Key" to (currentUser.beaconChildConsumerKey ?: "None"),
                 "OAuth Token Type" to (currentUser.tokenType?.ifBlank { "Bearer" } ?: "Bearer"),
             )
-            if (currentUser.tokenType == "DPoP") {
+            if (DPoPKeyManager.isDPoPTokenType(currentUser.tokenType)) {
                 val credId = currentUser.credentialsIdentifier
                 val host = currentUser.instanceServer
                     ?.toHttpUrlOrNull()?.host ?: ""

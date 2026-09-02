@@ -692,7 +692,7 @@ public class OAuth2 {
      * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
      */
     public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken, @Nullable String tokenType) {
-        final String scheme = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
+        final String scheme = DPoPKeyManager.isDPoPTokenType(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
         return builder.header(AUTHORIZATION, scheme + authToken);
     }
 
@@ -1204,7 +1204,7 @@ public class OAuth2 {
                 tokenFormat = callbackUrlParams.getOrDefault(TOKEN_FORMAT, "");
                 scope = callbackUrlParams.get(SCOPE);
                 tokenType = callbackUrlParams.get(TOKEN_TYPE);
-                uiSid = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? callbackUrlParams.get(UI_SID) : null;
+                uiSid = DPoPKeyManager.isDPoPTokenType(tokenType) ?callbackUrlParams.get(UI_SID) : null;
 
                 // NB: beacon apps not supported with user agent flow so no beacon child fields expected
 
@@ -1288,7 +1288,7 @@ public class OAuth2 {
                 }
                 scope = parsedResponse.optString(SCOPE);
                 tokenType = parsedResponse.optString(TOKEN_TYPE, null);
-                uiSid = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? parsedResponse.optString(UI_SID, null) : null;
+                uiSid = DPoPKeyManager.isDPoPTokenType(tokenType) ?parsedResponse.optString(UI_SID, null) : null;
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);

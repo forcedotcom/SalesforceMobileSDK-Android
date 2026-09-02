@@ -58,6 +58,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
@@ -220,7 +221,7 @@ internal suspend fun onAuthFlowComplete(
         // DP: DPoP-bound session. Token migration bypasses LoginActivity.onAuthFlowSuccess (the
         // usual site of this marker), so an in-place upgrade to DPoP would otherwise never advertise
         // the flag. tokenType is a per-session property, so mirror it onto the migrated account here.
-        if ("DPoP" == account.tokenType) {
+        if (DPoPKeyManager.isDPoPTokenType(account.tokenType)) {
             SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_DPOP, account)
         } else {
             SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_DPOP, account)
