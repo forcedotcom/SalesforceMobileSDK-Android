@@ -71,6 +71,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      checks: write
     needs: [test-orchestrator]
     strategy:
       fail-fast: false
