@@ -30,25 +30,25 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import com.salesforce.androidsdk.ui.components.LoginViewTestTags
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.UiDevice
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
+import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
-import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
-import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
+import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -786,8 +786,7 @@ abstract class AuthFlowTest {
         app.validateOAuthValues(knownAppConfig, scopeSelection)
 
         // Assert new tokens work. This revoke forces a normal refresh through the session refresher —
-        // the one path that registers the sticky RT marker — so a beacon app that rotates its refresh
-        // token here (W-23971480) will legitimately carry RT on the next validation.
+        // the one path that registers the sticky RT marker.
         app.revokeAccessToken()
         app.validateApiRequest()
         val (_, refreshedRefreshToken) = app.getTokens()

@@ -125,8 +125,7 @@ data class AppConfig(
     val isBeacon = name.startsWith("beacon_")
     // Config-level capability: does this app configuration rotate the refresh token on refresh?
     // Distinct from the per-user, observed RT feature marker tracked in the test base class.
-    // W-23971480: beacon apps behave as RTR due to a server bug; drop the beacon_ clause when fixed
-    val expectsRefreshTokenRotation = name.contains("_rtr") || name.startsWith("beacon_")
+    val expectsRefreshTokenRotation = name.contains("_rtr")
     val isDpop = name.contains("_dpop")
     val expectedTokenFormat = if (issuesJwt) "jwt" else "Opaque"
     val scopeList = scopes.split(" ")
