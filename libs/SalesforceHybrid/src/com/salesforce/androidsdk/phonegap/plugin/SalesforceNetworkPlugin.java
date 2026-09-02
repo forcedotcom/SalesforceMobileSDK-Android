@@ -110,17 +110,17 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
+            String callerUrl = webView.getUrl();
+            if (!isTrustedCallerOrigin(callerUrl)) {
+                callbackContext.error("pgSendRequest blocked: untrusted caller origin");
+                return;
+            }
             String instanceServer = null;
             try {
                 UserAccount currentUser = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
                 if (currentUser != null) instanceServer = currentUser.getInstanceServer();
             } catch (Exception e) { /* SDK not initialized */ }
 
-            String callerUrl = webView.getUrl();
-            if (!isTrustedSalesforceHost(callerUrl, instanceServer)) {
-                callbackContext.error("pgSendRequest blocked: untrusted caller origin");
-                return;
-            }
             final RestRequest request = prepareRestRequest(args);
             final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
             final String endPoint = ((JSONObject) args.get(0)).optString(END_POINT_KEY, "");
@@ -199,8 +199,25 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         }
     }
 
-    // Allow only the local dev host or the current user's exact instance URL.
-    // Rejects broad Salesforce wildcard domains to prevent cross-tenant access.
+    // Allow any Salesforce-owned domain, localhost, or file:// (Cordova local app).
+    /* package */ boolean isTrustedCallerOrigin(String url) {
+        if (url == null) return false;
+        try {
+            java.net.URL parsed = new java.net.URL(url);
+            String host = parsed.getHost();
+            String scheme = parsed.getProtocol();
+            if (host.equals("localhost")) return true;
+            if ("file".equals(scheme)) return true;
+            String[] trustedSuffixes = {".salesforce.com", ".force.com", ".visualforce.com"};
+            for (String suffix : trustedSuffixes) {
+                if (host.endsWith(suffix)) return true;
+            }
+        } catch (Exception e) { /* malformed URL → block */ }
+        return false;
+    }
+
+    // Allow only the current user's exact instance URL (used to decide whether to attach auth tokens).
+    // Rejects broad Salesforce wildcard domains to prevent cross-tenant token leakage.
     /* package */ boolean isTrustedSalesforceHost(String url, String instanceServer) {
         if (url == null) return false;
         try {

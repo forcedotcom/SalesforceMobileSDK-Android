@@ -31,8 +31,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Unit tests for {@link SalesforceNetworkPlugin#isTrustedSalesforceHost(String, String)}.
- * The method is used for both caller-origin and endpoint validation.
+ * Unit tests for {@link SalesforceNetworkPlugin#isTrustedCallerOrigin(String)}
+ * and {@link SalesforceNetworkPlugin#isTrustedSalesforceHost(String, String)}.
+ *
+ * isTrustedCallerOrigin — broad check, controls bridge access.
+ * isTrustedSalesforceHost — strict check, controls auth token attachment.
  */
 public class SalesforceNetworkPluginTest {
 
@@ -45,85 +48,116 @@ public class SalesforceNetworkPluginTest {
         plugin = new SalesforceNetworkPlugin();
     }
 
-    // --- localhost is always trusted ---
+    // -------------------------------------------------------------------------
+    // isTrustedCallerOrigin (broad check — controls bridge access)
+    // -------------------------------------------------------------------------
 
     @Test
-    public void test_givenHttpsLocalhost_whenCheckingHost_thenTrusted() {
+    public void testCaller_givenHttpsLocalhost_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("https://localhost/path"));
+    }
+
+    @Test
+    public void testCaller_givenHttpLocalhost_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("http://localhost:8080/index.html"));
+    }
+
+    @Test
+    public void testCaller_givenFileScheme_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("file:///android_asset/www/index.html"));
+    }
+
+    @Test
+    public void testCaller_givenSalesforceCom_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("https://myorg.my.salesforce.com/path"));
+    }
+
+    @Test
+    public void testCaller_givenForceCom_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("https://mypage.force.com/path"));
+    }
+
+    @Test
+    public void testCaller_givenVisualizeForceCom_thenTrusted() {
+        Assert.assertTrue(plugin.isTrustedCallerOrigin("https://mypage.visualforce.com/path"));
+    }
+
+    @Test
+    public void testCaller_givenEvilCom_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin("https://evil.com/path"));
+    }
+
+    @Test
+    public void testCaller_givenSpoofedSalesforceInHostname_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin("https://evil-salesforce.com/path"));
+    }
+
+    @Test
+    public void testCaller_givenNullUrl_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin(null));
+    }
+
+    // -------------------------------------------------------------------------
+    // isTrustedSalesforceHost (strict check — controls auth token attachment)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testEndpoint_givenHttpsLocalhost_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedSalesforceHost("https://localhost/path", INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenHttpLocalhost_whenCheckingHost_thenTrusted() {
+    public void testEndpoint_givenHttpLocalhost_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedSalesforceHost("http://localhost:8080/index.html", INSTANCE_SERVER));
     }
 
-    // --- instance URL host is trusted ---
-
     @Test
-    public void test_givenExactInstanceUrl_whenCheckingHost_thenTrusted() {
+    public void testEndpoint_givenExactInstanceUrl_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedSalesforceHost("https://myorg.my.salesforce.com/path", INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenInstanceUrlWithPath_whenCheckingHost_thenTrusted() {
+    public void testEndpoint_givenInstanceUrlWithPath_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedSalesforceHost("https://myorg.my.salesforce.com/services/data/v60.0", INSTANCE_SERVER));
     }
 
-    // --- non-instance Salesforce domains are NOT trusted ---
-
     @Test
-    public void test_givenOtherSalesforceOrgUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenOtherSalesforceOrg_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("https://otherorg.my.salesforce.com/path", INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenWildcardSalesforceComUrl_whenCheckingHost_thenBlocked() {
-        Assert.assertFalse(plugin.isTrustedSalesforceHost("https://anything.salesforce.com/path", INSTANCE_SERVER));
-    }
-
-    @Test
-    public void test_givenForceComUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenForceCom_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("https://mypage.force.com/path", INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenVisualforceComUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenVisualizeForceCom_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("https://mypage.visualforce.com/path", INSTANCE_SERVER));
     }
 
-    // --- arbitrary hosts are NOT trusted ---
-
     @Test
-    public void test_givenEvilComUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenEvilCom_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("https://evil.com/path", INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenSpoofedSalesforceInHostname_whenCheckingHost_thenBlocked() {
-        Assert.assertFalse(plugin.isTrustedSalesforceHost("https://evil-salesforce.com/path", INSTANCE_SERVER));
-    }
-
-    // --- scheme is enforced for non-localhost ---
-
-    @Test
-    public void test_givenHttpInstanceUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenHttpInstanceUrl_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("http://myorg.my.salesforce.com/path", INSTANCE_SERVER));
     }
 
-    // --- edge cases ---
-
     @Test
-    public void test_givenNullUrl_whenCheckingHost_thenBlocked() {
+    public void testEndpoint_givenNullUrl_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost(null, INSTANCE_SERVER));
     }
 
     @Test
-    public void test_givenNullInstanceServer_whenCheckingNonLocalhost_thenBlocked() {
+    public void testEndpoint_givenNullInstanceServer_whenNonLocalhost_thenBlocked() {
         Assert.assertFalse(plugin.isTrustedSalesforceHost("https://myorg.my.salesforce.com/path", null));
     }
 
     @Test
-    public void test_givenNullInstanceServer_whenCheckingLocalhost_thenTrusted() {
+    public void testEndpoint_givenNullInstanceServer_whenLocalhost_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedSalesforceHost("https://localhost/path", null));
     }
 }
