@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.phonegap.util.SalesforceHybridLogger;
@@ -109,14 +110,24 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      */
     protected void sendRequest(JSONArray args, final CallbackContext callbackContext) {
         try {
+            String instanceServer = null;
+            try {
+                UserAccount currentUser = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+                if (currentUser != null) instanceServer = currentUser.getInstanceServer();
+            } catch (Exception e) { /* SDK not initialized */ }
+
             String callerUrl = webView.getUrl();
-            if (!isTrustedCallerOrigin(callerUrl)) {
+            if (!isTrustedSalesforceHost(callerUrl, instanceServer)) {
                 callbackContext.error("pgSendRequest blocked: untrusted caller origin");
                 return;
             }
             final RestRequest request = prepareRestRequest(args);
             final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
-            final boolean doesNotRequireAuth = ((JSONObject) args.get(0)).optBoolean(DOES_NOT_REQUIRE_AUTHENTICATION, false);
+            final String endPoint = ((JSONObject) args.get(0)).optString(END_POINT_KEY, "");
+            final boolean callerRequestedNoAuth = ((JSONObject) args.get(0)).optBoolean(DOES_NOT_REQUIRE_AUTHENTICATION, false);
+            // Strip auth if the endPoint targets a non-instance host; never send OAuth tokens off-instance.
+            final boolean doesNotRequireAuth = callerRequestedNoAuth
+                    || (!endPoint.isEmpty() && !isTrustedSalesforceHost(endPoint, instanceServer));
 
             // Sends the request.
             final RestClient restClient = getRestClient(doesNotRequireAuth);
@@ -188,18 +199,21 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         }
     }
 
-    // Trusted origins mirror the <access origin> entries in
-    // SalesforceMobileSDK-CordovaPlugin/plugin.xml (source of truth).
-    // If that list changes, update this method to match.
-    /* package */ boolean isTrustedCallerOrigin(String url) {
+    // Allow only the local dev host or the current user's exact instance URL.
+    // Rejects broad Salesforce wildcard domains to prevent cross-tenant access.
+    /* package */ boolean isTrustedSalesforceHost(String url, String instanceServer) {
         if (url == null) return false;
-        if (url.startsWith("file://")) return true;
         try {
-            String host = new java.net.URL(url).getHost();
+            java.net.URL parsed = new java.net.URL(url);
+            String host = parsed.getHost();
+            // localhost is trusted for local hybrid apps (http or https)
             if (host.equals("localhost")) return true;
-            for (String suffix : new String[]{".salesforce.com", ".force.com", ".visualforce.com",
-                                              ".documentforce.com", ".salesforce-communities.com"}) {
-                if (host.endsWith(suffix)) return true;
+            // All other hosts require https
+            if (!"https".equals(parsed.getProtocol())) return false;
+            // Allow only the authenticated user's own instance host
+            if (instanceServer != null) {
+                String instanceHost = new java.net.URL(instanceServer).getHost();
+                return host.equals(instanceHost);
             }
         } catch (Exception e) { /* malformed URL → block */ }
         return false;
