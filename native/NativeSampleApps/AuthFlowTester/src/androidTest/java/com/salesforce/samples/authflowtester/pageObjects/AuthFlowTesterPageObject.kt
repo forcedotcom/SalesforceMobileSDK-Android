@@ -358,7 +358,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
-    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true) {
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null) {
         val expected = testConfig.getApp(knownAppConfig)
         val (accessToken, refreshToken) = getTokens()
 
@@ -384,7 +384,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        validateSIDs(isDpop = expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
+        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
     }
 
     private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>) {
@@ -411,15 +411,16 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
         assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
         assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
-        assertNotEmpty(mainSid, shouldNotBeEmpty = true, "Main SID")
-        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop, "UI SID")
+        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop && useHybrid, "UI SID")
 
-        if (uiSid.isNotEmpty()) {
-            assertEquals("Main SID should equal UI SID when UI SID is present", uiSid, mainSid)
-        } else if (parentSid.isNotEmpty()) {
-            assertEquals("Main SID should equal Parent SID when UI SID is absent and Parent SID is present", parentSid, mainSid)
-        } else {
-            assertEquals("Main SID should equal Access Token when neither UI SID nor Parent SID is present", accessToken, mainSid)
+        if (useHybrid) {
+            if (isDpop) {
+                assertEquals("Main SID should equal UI SID in DPoP hybrid flow", uiSid, mainSid)
+            } else if (isJwt) {
+                assertEquals("Main SID should equal Parent SID in JWT hybrid flow", parentSid, mainSid)
+            } else {
+                assertEquals("Main SID should equal Access Token in opaque hybrid flow", accessToken, mainSid)
+            }
         }
     }
 

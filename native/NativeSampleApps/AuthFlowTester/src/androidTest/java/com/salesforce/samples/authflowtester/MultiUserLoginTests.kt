@@ -561,7 +561,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
             isJwt = false,
         )
-        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY, useHybridAuthToken = false)
 
         // Switch back to User B — must still have A2, JT
         switchToUserAndValidate(
@@ -604,7 +604,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isJwt = false,
             isBeacon = false,
         )
-        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY, useHybridAuthToken = false)
     }
 
     /**
@@ -785,7 +785,7 @@ class MultiUserLoginTests: AuthFlowTest() {
             isJwt = false,
             isBeacon = false,
         )
-        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig = CA_OPAQUE, scopeSelection = EMPTY, useHybridAuthToken = false)
 
         // Switch back to User B — must still have A2, JT
         switchToUserAndValidate(
