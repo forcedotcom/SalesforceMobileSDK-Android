@@ -125,9 +125,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
             final boolean returnBinary = ((JSONObject) args.get(0)).optBoolean(RETURN_BINARY, false);
             final String endPoint = ((JSONObject) args.get(0)).optString(END_POINT_KEY, "");
             final boolean callerRequestedNoAuth = ((JSONObject) args.get(0)).optBoolean(DOES_NOT_REQUIRE_AUTHENTICATION, false);
-            // Strip auth if the endPoint targets a non-instance host; never send OAuth tokens off-instance.
+            // Strip auth if the endPoint is not the authenticated instance; never send OAuth tokens elsewhere.
             final boolean doesNotRequireAuth = callerRequestedNoAuth
-                    || (!endPoint.isEmpty() && !isTrustedSalesforceHost(endPoint, instanceServer));
+                    || (!endPoint.isEmpty() && !isInstanceServer(endPoint, instanceServer));
 
             // Sends the request.
             final RestClient restClient = getRestClient(doesNotRequireAuth);
@@ -216,22 +216,15 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         return false;
     }
 
-    // Allow only the current user's exact instance URL (used to decide whether to attach auth tokens).
-    // Rejects broad Salesforce wildcard domains to prevent cross-tenant token leakage.
-    /* package */ boolean isTrustedSalesforceHost(String url, String instanceServer) {
-        if (url == null) return false;
+    // Returns true only if url points to the authenticated user's exact instance host (https required).
+    // Used to decide whether to attach OAuth tokens; localhost is intentionally excluded.
+    /* package */ boolean isInstanceServer(String url, String instanceServer) {
+        if (url == null || instanceServer == null) return false;
         try {
             java.net.URL parsed = new java.net.URL(url);
-            String host = parsed.getHost();
-            // localhost is trusted for local hybrid apps (http or https)
-            if (host.equals("localhost")) return true;
-            // All other hosts require https
             if (!"https".equals(parsed.getProtocol())) return false;
-            // Allow only the authenticated user's own instance host
-            if (instanceServer != null) {
-                String instanceHost = new java.net.URL(instanceServer).getHost();
-                return host.equals(instanceHost);
-            }
+            String instanceHost = new java.net.URL(instanceServer).getHost();
+            return parsed.getHost().equals(instanceHost);
         } catch (Exception e) { /* malformed URL → block */ }
         return false;
     }
