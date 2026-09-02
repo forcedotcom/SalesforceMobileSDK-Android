@@ -199,15 +199,22 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         }
     }
 
-    // Allow any Salesforce-owned domain, localhost, or file:// (Cordova local app).
+    // Allow localhost, packaged app assets (file:///android_asset/www/), or any Salesforce-owned domain over https.
     /* package */ boolean isTrustedCallerOrigin(String url) {
         if (url == null) return false;
         try {
             java.net.URL parsed = new java.net.URL(url);
             String host = parsed.getHost();
             String scheme = parsed.getProtocol();
+            // localhost is trusted for local hybrid apps (Cordova uses https://localhost on modern Android)
             if (host.equals("localhost")) return true;
-            if ("file".equals(scheme)) return true;
+            // file:// only trusted for content served from the packaged www/ directory
+            if ("file".equals(scheme)) {
+                String path = parsed.getPath();
+                return path != null && path.startsWith("/android_asset/www/");
+            }
+            // Salesforce-owned domains require https (no http or other schemes)
+            if (!"https".equals(scheme)) return false;
             String[] trustedSuffixes = {".salesforce.com", ".force.com", ".visualforce.com"};
             for (String suffix : trustedSuffixes) {
                 if (host.endsWith(suffix)) return true;

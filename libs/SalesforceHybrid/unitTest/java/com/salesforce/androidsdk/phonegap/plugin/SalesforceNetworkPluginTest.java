@@ -63,8 +63,23 @@ public class SalesforceNetworkPluginTest {
     }
 
     @Test
-    public void testCaller_givenFileScheme_thenTrusted() {
+    public void testCaller_givenFileInPackagedWww_thenTrusted() {
         Assert.assertTrue(plugin.isTrustedCallerOrigin("file:///android_asset/www/index.html"));
+    }
+
+    @Test
+    public void testCaller_givenFileOutsidePackagedWww_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin("file:///sdcard/evil.html"));
+    }
+
+    @Test
+    public void testCaller_givenFileInOtherAssetDir_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin("file:///android_asset/other/index.html"));
+    }
+
+    @Test
+    public void testCaller_givenHttpSalesforceCom_thenBlocked() {
+        Assert.assertFalse(plugin.isTrustedCallerOrigin("http://myorg.my.salesforce.com/path"));
     }
 
     @Test
