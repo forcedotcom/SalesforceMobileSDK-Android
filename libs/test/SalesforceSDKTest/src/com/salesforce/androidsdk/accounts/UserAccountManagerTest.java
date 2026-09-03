@@ -60,6 +60,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for UserAccountManager.
@@ -390,6 +391,20 @@ public class UserAccountManagerTest {
     }
 
     /**
+     * Test that signing out the current user is a no-op when there is no current account.
+     */
+    @Test
+    public void testSignoutCurrentUserDoesNothingWithoutCurrentAccount() throws InterruptedException {
+        Assert.assertNull("There should be no current account", userAccMgr.getCurrentAccount());
+
+        userAccMgr.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        Assert.assertFalse(
+                "Logout completion should not be broadcast when there is no current account",
+                logoutCompleteReceiver.awaitCompletion(1, TimeUnit.SECONDS));
+    }
+
+    /**
      * Test to signout of the current user.
      */
     @Test
@@ -626,6 +641,10 @@ public class UserAccountManagerTest {
             }
             completionSemaphore.release();
             return lastUserAccountReceived;
+        }
+
+        public boolean awaitCompletion(long timeout, TimeUnit timeUnit) throws InterruptedException {
+            return completionSemaphore.tryAcquire(timeout, timeUnit);
         }
     }
 
