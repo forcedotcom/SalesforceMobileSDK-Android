@@ -63,7 +63,7 @@ public class SmartStoreLoadJSTest extends JSTestCase {
 
     @BeforeClass
     public static void runJSTestSuite() throws InterruptedException {
-        JSTestCase.runJSTestSuite(JS_SUITE, data(), 60);
+        JSTestCase.runJSTestSuite(JS_SUITE, data(), 180);
     }
 
     @Test

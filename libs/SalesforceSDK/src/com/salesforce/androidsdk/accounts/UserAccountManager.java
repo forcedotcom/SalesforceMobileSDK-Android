@@ -394,8 +394,11 @@ public class UserAccountManager {
 	 * @param reason The reason for the logout.
 	 */
 	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage, OAuth2.LogoutReason reason) {
-		SalesforceSDKManager.getInstance().logout(
-				getCurrentAccount(), frontActivity, showLoginPage, reason);
+		final Account currentAccount = getCurrentAccount();
+		if (currentAccount != null) {
+			SalesforceSDKManager.getInstance().logout(
+					currentAccount, frontActivity, showLoginPage, reason);
+		}
 	}
 
 	/**
