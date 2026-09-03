@@ -31,6 +31,7 @@ import androidx.core.os.bundleOf
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager
+import com.salesforce.androidsdk.ui.BiometricOptInActivity
 import com.salesforce.androidsdk.util.EventsObservable
 import androidx.core.content.edit
 
@@ -90,6 +91,14 @@ internal class BiometricAuthenticationManager: AppLockManager(
         }
 
         return false
+    }
+
+    override fun presentOptInDialog() {
+        with(SalesforceSDKManager.getInstance()) {
+            val intent = Intent(appContext, BiometricOptInActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            appContext.startActivity(intent)
+        }
     }
 
     /**

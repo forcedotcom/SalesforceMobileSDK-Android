@@ -67,6 +67,12 @@
             android:theme="@style/AccountSwitcher"
             android:exported="false" />
 
+        <!-- Biometric opt-in activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.BiometricOptInActivity"
+            android:excludeFromRecents="true"
+            android:theme="@style/BiometricOptIn"
+            android:exported="false" />
+
         <!-- IDP auth code activity -->
         <activity android:name="com.salesforce.androidsdk.auth.idp.IDPAuthCodeActivity"
             android:excludeFromRecents="true"

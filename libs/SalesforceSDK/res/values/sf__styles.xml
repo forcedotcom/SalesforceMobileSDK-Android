@@ -2,11 +2,28 @@
 
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <style name="AccountSwitcher" parent="Theme.Material3.Dark.NoActionBar">
+    <!-- Base theme for activities that render only a Compose dialog over a transparent,
+         translucent window (no action bar).  Consumers should inherit from this rather than
+         from a sibling activity's theme so their chrome stays decoupled. -->
+    <style name="TransparentActivity" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="AccountSwitcher" parent="TransparentActivity" />
+
+    <!-- Like the base transparent activity, but fades in/out instead of using the platform's
+         default slide-up-from-bottom activity transition.  A centered alert dialog should not
+         slide up like a bottom sheet (see AccountSwitcher, which keeps the slide on purpose). -->
+    <style name="BiometricOptIn" parent="TransparentActivity">
+        <item name="android:windowAnimationStyle">@style/BiometricOptInWindowAnimation</item>
+    </style>
+
+    <style name="BiometricOptInWindowAnimation">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
     </style>
 
     <style name="SalesforceSDK" parent="Theme.AppCompat.Light.DarkActionBar">
