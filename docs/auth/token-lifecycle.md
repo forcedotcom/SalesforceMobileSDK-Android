@@ -85,9 +85,7 @@ which calls `attachDPoPProofIfNeeded()`:
 
 ```
 attachDPoPProofIfNeeded(builder, method, url):
-  if tokenType != "DPoP"  →  return (Bearer path, unmodified)
-  if !isUseDPoP()         →  return
-  if credentialsIdentifier == null  →  return
+  if !DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType)  →  return
   htu    = DPoPURLHelper.canonicalize(url)   // strips query + fragment
   host   = HttpUrl.get(url).host()
   alias  = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
@@ -100,8 +98,13 @@ attachDPoPProofIfNeeded(builder, method, url):
 `setAuthHeader()` also sets `Authorization: DPoP <accessToken>` (instead of Bearer) when
 `tokenType == "DPoP"`.
 
-**The interceptor never writes to `DPoPNonceCache`** — it only reads. All cache writes are
-done by `OAuth2.java` after token-endpoint and identity-endpoint responses.
+The gate is deliberately per credential, not the mutable global `useDPoP` flag. Once a
+credential is DPoP-bound, its requests must continue carrying proofs even if the global flag
+later changes.
+
+The interceptor normally reads the nonce cache. It also writes a resource-host nonce when an
+HTTP 400 `use_dpop_nonce` challenge includes `DPoP-Nonce`, then rebuilds and retries that
+request once. A 401 remains the access-token-refresh path.
 
 ---
 
@@ -198,20 +201,22 @@ HTTP calls in the worst case — happens entirely outside the lock.
 
 ## 5. DPoP Nonce Lifecycle
 
-Nonces are issued exclusively by the **`/token` endpoint** (confirmed by the Salesforce DPoP
-implementation team). Resource servers do not issue nonces.
+Salesforce normally seeds and rotates the session nonce at the **`/token` endpoint**. The SDK
+also implements RFC 9449 resource-server challenge handling so it remains correct if a resource
+host returns HTTP 400 `use_dpop_nonce` with a `DPoP-Nonce` header, such as when the process-local
+cache is cold.
 
 ```
 DPoPNonceCache
-  Key:   credentialsIdentifier + ":" + host
-  Value: most recent nonce received from that host's /token response
+  Key:   credentialsIdentifier + "|" + host
+  Value: most recent nonce received from that host
   Type:  ConcurrentHashMap (thread-safe singleton)
 ```
 
-### Write path (OAuth2.java only)
+### Write paths
 
-Both `makeTokenEndpointRequest()` and `callIdentityService()` harvest `DPoP-Nonce` from
-**every** response (success or error) before inspecting the status code:
+`OAuth2.makeTokenEndpointRequest()` harvests `DPoP-Nonce` from the first token-endpoint
+response before inspecting whether it is a nonce challenge:
 
 ```
 response = httpClient.newCall(request).execute()
@@ -223,20 +228,35 @@ if isNonceChallenge(response):
     if second attempt also fails → throw OAuthFailedException
 ```
 
+`OAuthRefreshInterceptor` handles the resource-server fallback independently:
+
+```
+response = chain.proceed(authenticatedRequest)
+if response is HTTP 400 use_dpop_nonce and the request carried DPoP:
+    harvest DPoP-Nonce for (credentialsIdentifier, resourceHost)
+    rebuild the request with a fresh proof
+    retry once
+```
+
+The identity endpoint does not harvest or retry inline. Its 401/403 path refreshes through the
+token endpoint, and the subsequent identity request is rebuilt with the refreshed credentials.
+
 ### Read path (interceptor + OAuth2.java)
 
 Every DPoP proof — whether in `attachDPoPProofIfNeeded()` (API calls) or
 `makeTokenEndpointRequest()` (token requests) — reads the cache before calling
 `buildProof()`. On a warm path (cache hit) the nonce is included proactively and no
-extra round-trip occurs. On a cold path (first login, or nonce rotated) the proof goes
-out without a nonce; the token endpoint's challenge-retry handles it transparently.
+extra round-trip occurs. Because entries are host-scoped, the login host and instance host do
+not overwrite one another. On a cold token-endpoint path, the token endpoint challenge-retry
+handles the missing nonce. On a cold resource-server path, the interceptor handles one HTTP 400
+nonce challenge inline.
 
 ### Interaction with the RTR lock
 
-Because the interceptor never writes the nonce cache and never retries on nonce challenges,
-nonce handling has no interaction with the RTR lock. Nonce writes happen inside
-`makeTokenEndpointRequest()`, which runs only on the winner thread, after the lock has
-been released.
+Resource-server nonce retry happens before the interceptor considers access-token refresh, so it
+does not acquire the RTR lock. Token-endpoint nonce handling runs only on the elected refresh
+winner and happens after that winner has released the coordination lock. The two retry mechanisms
+therefore share credential state but do not perform network I/O while holding the RTR lock.
 
 ### Logout
 
@@ -280,7 +300,22 @@ intercept()
   return response
 ```
 
-### 6.3 Access token expired + nonce missing or expired
+### 6.3 Resource-server nonce challenge
+
+```
+intercept()
+  buildAuthenticatedRequest()  (no resource-host nonce in a cold cache)
+  chain.proceed()  →  400 use_dpop_nonce + DPoP-Nonce
+  harvest nonce for (credentialsIdentifier, resourceHost)
+  buildAuthenticatedRequest()  (fresh proof with harvested nonce)
+  chain.proceed()  →  200
+  return response
+```
+
+Only HTTP 400 takes this inline nonce-retry path. A resource-server 401 continues to token
+refresh.
+
+### 6.4 Access token expired + token-endpoint nonce missing or expired
 
 ```
 intercept()
@@ -301,11 +336,11 @@ intercept()
   return response
 ```
 
-Note: cases 6.2 and 6.3 collapse into the same code path. The distinction is invisible to
+Note: cases 6.2 and 6.4 collapse into the same token-refresh code path. The distinction is invisible to
 `intercept()` — it always sees a single 401 from the resource server and a single successful
 token after `refreshAccessToken()` returns.
 
-### 6.4 Concurrent 401s from two threads (same account, RTR enabled)
+### 6.5 Concurrent 401s from two threads (same account, RTR enabled)
 
 ```
 Thread A                              Thread B
