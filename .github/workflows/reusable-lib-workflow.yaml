@@ -210,12 +210,13 @@ jobs:
                   for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep -v "rerun"); do
                     gsutil cp "${RESULT_FILE}" "firebase_results/api_${LEVEL}_test_result.xml"
                   done
-                  # Pass 2: merge rerun testcases into originals so check_retries detects flaky tests
-                  for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep "rerun"); do
-                    RERUN_TMP="firebase_results/api_${LEVEL}_rerun_tmp.xml"
-                    ORIG_FILE="firebase_results/api_${LEVEL}_test_result.xml"
-                    gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
-                    python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
+                fi
+                # Pass 2: merge rerun testcases into originals so check_retries detects flaky tests
+                for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep "rerun"); do
+                  RERUN_TMP="firebase_results/api_${LEVEL}_rerun_tmp.xml"
+                  ORIG_FILE="firebase_results/api_${LEVEL}_test_result.xml"
+                  gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
+                  python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
           import sys, xml.etree.ElementTree as ET
           orig = ET.parse(sys.argv[1])
           rerun = ET.parse(sys.argv[2])
@@ -236,9 +237,8 @@ jobs:
           with open(sys.argv[3], 'w') as f:
             f.write(ET.tostring(orig.getroot(), encoding='unicode'))
           PYEOF
-                    rm "${RERUN_TMP}"
-                  done
-                fi
+                  rm "${RERUN_TMP}"
+                done
 
                 # Copy all shard data for code coverage (only needed for one level)
                 if [ "$LEVEL" == "$PR_API_VERSION" ] ; then
