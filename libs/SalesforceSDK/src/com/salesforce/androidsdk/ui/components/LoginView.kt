@@ -30,7 +30,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.webkit.WebView
-import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -41,7 +40,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -330,44 +328,17 @@ internal fun BiometricOptInDialog(onResult: (optedIn: Boolean) -> Unit) {
         properties = DialogProperties(dismissOnClickOutside = false),
         title = { Text(stringResource(sf__biometric_opt_in_title)) },
         text = { Text(stringResource(sf__biometric_opt_in_message)) },
-        confirmButton = { BiometricOptInApproveButton(onResult) },
-        dismissButton = { BiometricOptInDenyButton(onResult) },
+        confirmButton = {
+            TextButton(onClick = { onResult(true) }) {
+                Text(stringResource(sf__biometric_opt_in_approve))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onResult(false) }) {
+                Text(stringResource(sf__biometric_opt_in_deny))
+            }
+        },
     )
-}
-
-@Composable
-private fun BiometricOptInApproveButton(onResult: (optedIn: Boolean) -> Unit) {
-    TextButton(onClick = { onResult(true) }) {
-        Text(stringResource(sf__biometric_opt_in_approve))
-    }
-}
-
-@Composable
-private fun BiometricOptInDenyButton(onResult: (optedIn: Boolean) -> Unit) {
-    TextButton(onClick = { onResult(false) }) {
-        Text(stringResource(sf__biometric_opt_in_deny))
-    }
-}
-
-/**
- * Window-less rendering of the biometric opt-in dialog's content, used by instrumented tests.
- *
- * [BiometricOptInDialog] presents this same title, message, and buttons inside a Material3
- * [AlertDialog].  Tests render this composable directly so the Compose test harness does not have
- * to synchronize idleness against the AlertDialog's separate Dialog window — that second-window
- * surface/focus sync never completes on some emulator and Firebase Test Lab devices, hanging the
- * test until it is killed by the watchdog.  The button-to-callback wiring is shared with the
- * production dialog above, so this exercises the real behavior.
- */
-@VisibleForTesting
-@Composable
-internal fun BiometricOptInDialogContent(onResult: (optedIn: Boolean) -> Unit) {
-    Column {
-        Text(stringResource(sf__biometric_opt_in_title))
-        Text(stringResource(sf__biometric_opt_in_message))
-        BiometricOptInApproveButton(onResult)
-        BiometricOptInDenyButton(onResult)
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
