@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -58,24 +59,34 @@ class BiometricOptInDialogTest {
 
     @Test
     fun optInDialog_DisplaysTitleMessageAndButtons() {
+        // Backing state lets the test remove the dialog window before the rule tears down the
+        // composition.  A lingering AlertDialog window can keep Compose from ever going idle,
+        // which hangs whichever dialog test runs last (see optInDialog_UsePasswordButton...).
+        val showDialog = mutableStateOf(true)
         composeTestRule.setContent {
-            BiometricOptInDialog(onResult = {})
+            if (showDialog.value) BiometricOptInDialog(onResult = {})
         }
-        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText(titleText).assertIsDisplayed()
         composeTestRule.onNodeWithText(messageText).assertIsDisplayed()
         composeTestRule.onNodeWithText(approveText).assertIsDisplayed()
         composeTestRule.onNodeWithText(denyText).assertIsDisplayed()
+
+        showDialog.value = false
+        composeTestRule.waitForIdle()
     }
 
     @Test
     fun optInDialog_EnableButton_ReturnsOptedInTrue() {
         var result: Boolean? = null
+        // Dismiss the dialog on result, mirroring real usage where the host activity finishes.
+        // This removes the AlertDialog window so the composition can settle before teardown.
+        val showDialog = mutableStateOf(true)
         composeTestRule.setContent {
-            BiometricOptInDialog(onResult = { result = it })
+            if (showDialog.value) {
+                BiometricOptInDialog(onResult = { result = it; showDialog.value = false })
+            }
         }
-        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText(approveText).performClick()
         composeTestRule.waitForIdle()
@@ -86,10 +97,14 @@ class BiometricOptInDialogTest {
     @Test
     fun optInDialog_UsePasswordButton_ReturnsOptedInFalse() {
         var result: Boolean? = null
+        // Dismiss the dialog on result, mirroring real usage where the host activity finishes.
+        // This removes the AlertDialog window so the composition can settle before teardown.
+        val showDialog = mutableStateOf(true)
         composeTestRule.setContent {
-            BiometricOptInDialog(onResult = { result = it })
+            if (showDialog.value) {
+                BiometricOptInDialog(onResult = { result = it; showDialog.value = false })
+            }
         }
-        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText(denyText).performClick()
         composeTestRule.waitForIdle()
