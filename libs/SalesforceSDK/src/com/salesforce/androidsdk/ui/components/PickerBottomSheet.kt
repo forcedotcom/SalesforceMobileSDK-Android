@@ -702,7 +702,10 @@ internal fun AddConnection(
                 onValueChange = { url = it },
                 label = { Text(stringResource(sf__server_url_default_custom_url)) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    autoCorrect = false,
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = PADDING_SIZE.dp, end = PADDING_SIZE.dp)
