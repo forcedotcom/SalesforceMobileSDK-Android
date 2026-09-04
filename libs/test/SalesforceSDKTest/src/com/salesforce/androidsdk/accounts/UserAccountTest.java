@@ -233,6 +233,46 @@ public class UserAccountTest {
     }
 
     @Test
+    public void test_givenRefreshResponseOmittingOptionalAccountFields_whenRebuildingAccount_thenOriginalValuesRemain() {
+        final UserAccount original = createTestAccount();
+        final Map<String, String> params = new HashMap<>();
+        params.put("access_token", TEST_AUTH_TOKEN);
+        params.put("instance_url", TEST_INSTANCE_URL);
+        params.put("id", TEST_IDENTITY_URL);
+        final ResponseBody responseBody = ResponseBody.create(
+                new JSONObject(params).toString(), MediaType.parse("application/json"));
+        final Response response = new Response.Builder()
+                .code(200)
+                .message("OK")
+                .protocol(Protocol.HTTP_1_1)
+                .request(new Request.Builder().url("https://something.salesforce.com").build())
+                .body(responseBody)
+                .build();
+
+        final OAuth2.TokenEndpointResponse tokenResponse =
+                new OAuth2.TokenEndpointResponse(response, createAdditionalOauthKeys());
+        Assert.assertNull(tokenResponse.idToken);
+        Assert.assertNull(tokenResponse.lightningDomain);
+        Assert.assertNull(tokenResponse.lightningSid);
+        Assert.assertNull(tokenResponse.vfDomain);
+        Assert.assertNull(tokenResponse.vfSid);
+        Assert.assertNull(tokenResponse.contentDomain);
+        Assert.assertNull(tokenResponse.contentSid);
+
+        final UserAccount rebuilt = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(original)
+                .allowUnset(false)
+                .populateFromTokenEndpointResponse(tokenResponse)
+                .build();
+        Assert.assertEquals(TEST_LIGHTNING_DOMAIN, rebuilt.getLightningDomain());
+        Assert.assertEquals(TEST_LIGHTNING_SID, rebuilt.getLightningSid());
+        Assert.assertEquals(TEST_VF_DOMAIN, rebuilt.getVFDomain());
+        Assert.assertEquals(TEST_VF_SID, rebuilt.getVFSid());
+        Assert.assertEquals(TEST_CONTENT_DOMAIN, rebuilt.getContentDomain());
+        Assert.assertEquals(TEST_CONTENT_SID, rebuilt.getContentSid());
+    }
+
+    @Test
     public void testEqualsUsesUserAndOrgIdentityRatherThanAccountName() {
         final UserAccount original = createTestAccount();
         final UserAccount sameUserWithDifferentAccountName = UserAccountBuilder.getInstance()

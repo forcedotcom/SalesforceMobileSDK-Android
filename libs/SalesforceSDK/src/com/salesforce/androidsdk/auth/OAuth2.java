@@ -1260,13 +1260,13 @@ public class OAuth2 {
                         }
                     }
                 }
-                idToken = parsedResponse.optString(ID_TOKEN);
-                lightningDomain = parsedResponse.optString(LIGHTNING_DOMAIN);
-                lightningSid = parsedResponse.optString(LIGHTNING_SID);
-                vfDomain = parsedResponse.optString(VF_DOMAIN);
-                vfSid = parsedResponse.optString(VF_SID);
-                contentDomain = parsedResponse.optString(CONTENT_DOMAIN);
-                contentSid = parsedResponse.optString(CONTENT_SID);
+                idToken = parsedResponse.optString(ID_TOKEN, null);
+                lightningDomain = parsedResponse.optString(LIGHTNING_DOMAIN, null);
+                lightningSid = parsedResponse.optString(LIGHTNING_SID, null);
+                vfDomain = parsedResponse.optString(VF_DOMAIN, null);
+                vfSid = parsedResponse.optString(VF_SID, null);
+                contentDomain = parsedResponse.optString(CONTENT_DOMAIN, null);
+                contentSid = parsedResponse.optString(CONTENT_SID, null);
                 csrfToken = parsedResponse.optString(CSRF_TOKEN);
                 cookieClientSrc = parsedResponse.optString(COOKIE_CLIENT_SRC);
                 cookieSidClient = parsedResponse.optString(COOKIE_SID_CLIENT);
