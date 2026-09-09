@@ -28,7 +28,6 @@ package com.salesforce.samples.authflowtester
 
 import android.app.Application
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.auth.HttpAccess
 
 class AuthFlowTesterApplication : Application() {
 
@@ -42,7 +41,6 @@ class AuthFlowTesterApplication : Application() {
             applicationContext,
             AuthFlowTesterActivity::class.java,
         )
-        HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
 
         with(SalesforceSDKManager.getInstance()) {
             registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
