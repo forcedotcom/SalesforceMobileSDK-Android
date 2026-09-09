@@ -73,7 +73,7 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 
 #### RTRLoginTests
-Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. DPoP+RTR tests live in `DPoPLoginTests`.
+Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`.
 
 | Test | App Config | Hybrid | Notes |
 |------|-----------|--------|-------|
@@ -81,6 +81,7 @@ Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies
 | `testECAJwtRtr_NoHybrid` | ECA JWT RTR | No | |
 | `testECAOpaqueRtr_Hybrid` | ECA Opaque RTR | Yes | |
 | `testECAOpaqueRtr_NoHybrid` | ECA Opaque RTR | No | |
+| `testECAOpaqueRtr_Hybrid_WithRestart` | ECA Opaque RTR | Yes | After restart, the first refresh request sends RT + A2 + OT in its final User-Agent |
 
 #### BeaconLoginTests
 Beacon app login tests for lightweight authentication use cases, covering both opaque and JWT token formats.
@@ -243,7 +244,7 @@ Tests for the Welcome Discovery login flow. Uses the SDK's Login Options "Discov
 | `testWelcomeDiscovery_AdvancedAuthLoginHost` | Advanced Auth | Beacon Opaque |
 
 #### LoginWithRestartTests
-Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested: BW (browser-based / advanced auth) and WD (welcome discovery). The DPoP restart test lives in `DPoPLoginTests`.
+Tests that user sessions and per-user feature flags persist across a cold app restart. Each test logs in, kills the app process (leaving the instrumentation runner alive), relaunches the app, and verifies that both session credentials and user-agent feature flags are reloaded correctly from disk. Feature flags tested here include BW (browser-based / advanced auth) and WD (welcome discovery). The RTR restart test lives in `RTRLoginTests`; it verifies the actual token-request User-Agent. The DPoP restart test lives in `DPoPLoginTests`.
 
 | Test | App Config | Scopes | Config Type | Feature Flag |
 |------|-----------|--------|-------------|--------------|
@@ -285,6 +286,7 @@ Multi-user tests additionally verify:
 Restart tests additionally verify:
 - Session credentials are **reloaded from disk** after a cold process restart
 - Per-user feature flags (BW, WD, B-markers, L-markers) encoded in the user agent string **persist** across restarts via `hydratePerUserFeatures()`
+- The RTR restart regression captures the final `/services/oauth2/token` request after the SDK User-Agent interceptor and verifies that its `ftr_` segment contains **RT + A2 + OT** for the owning account
 - DPoP EC key pairs stored in **AndroidKeyStore** survive a process kill and restart
 
 ### B- and L-markers in `ftr_`
@@ -414,4 +416,3 @@ The token migration sheet allows you to exchange a user's refresh token for a ne
 6. On success, the sheet dismisses and the main screen refreshes with the new tokens
 
 After migration, verify the new configuration by expanding the User Credentials card to check the updated client ID, scopes, and token format.
-

@@ -66,6 +66,7 @@ import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
@@ -692,6 +693,20 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
+    }
+
+    fun validateLastTokenRequestUserAgent(vararg expectedMarkers: String) {
+        expandUserCredentialsSection(targetNode = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC)
+        val userAgent = getText(TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC)
+        val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "")
+            .substringBefore(" ")
+            .split(".")
+            .toSet()
+        expectedMarkers.forEach { expectedMarker ->
+            assert(expectedMarker in flags) {
+                "Expected '$expectedMarker' in the last token-request User-Agent: $userAgent"
+            }
+        }
     }
 
     private fun validateUserAgent(

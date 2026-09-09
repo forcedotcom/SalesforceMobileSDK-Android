@@ -67,7 +67,13 @@ delegates to `AccMgrAuthTokenProvider.getNewAuthToken()`. That method:
 4. **`refreshStaleToken()`** → **`OAuth2.refreshAuthToken()`** builds a
    `POST /services/oauth2/token` form body with `grant_type=refresh_token`. DPoP proof
    and nonce handling here are identical to code exchange: proactive nonce inclusion,
-   harvest from response, retry-once on `use_dpop_nonce`.
+   harvest from response, retry-once on `use_dpop_nonce`. The refresh operation also passes its
+   resolved `UserAccount` into `OAuth2`, which attaches it as request-scoped context. The final
+   `HttpAccess.UserAgentInterceptor` uses that account to compute global and per-user feature
+   markers instead of relying on mutable current-user state. This ensures the first refresh after
+   a process restart includes sticky markers such as RT, along with the account's auth-flow and
+   token-format markers. A DPoP nonce retry is rebuilt from the original request and therefore
+   preserves the same account context and User-Agent.
 
 5. On success: broadcasts `ACCESS_TOKEN_REFRESH_INTENT` (or `INSTANCE_URL_UPDATE_INTENT` if
    the instance URL changed), publishes the new tokens to the per-account `RefreshState`,

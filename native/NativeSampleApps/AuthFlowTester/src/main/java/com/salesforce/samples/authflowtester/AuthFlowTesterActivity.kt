@@ -169,6 +169,7 @@ const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
 const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 const val USER_AGENT_CONTENT_DESC = "user_agent"
+const val TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC = "token_endpoint_user_agent"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null

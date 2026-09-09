@@ -209,8 +209,17 @@ public class HttpAccess {
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request originalRequest = chain.request();
+            final UserAccount requestUser = originalRequest.tag(UserAccount.class);
+            final String resolvedUserAgent;
+            if (requestUser != null) {
+                resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgent("", requestUser);
+            } else if (userAgent != null) {
+                resolvedUserAgent = userAgent;
+            } else {
+                resolvedUserAgent = SalesforceSDKManager.getInstance().getUserAgent("", user);
+            }
             Request requestWithUserAgent = originalRequest.newBuilder()
-                    .header(HttpAccess.USER_AGENT, userAgent != null ? userAgent : SalesforceSDKManager.getInstance().getUserAgent("", user))
+                    .header(HttpAccess.USER_AGENT, resolvedUserAgent)
                     .build();
             return chain.proceed(requestWithUserAgent);
         }
