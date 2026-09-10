@@ -94,9 +94,11 @@ class UserAccountDownloadProfilePhotoTest {
 
     @Test
     fun downloadProfilePhoto_whenPackageUnknown_doesNotCrashAndSkipsDownload() {
-        // Given - the downloads provider package doesn't exist on this
-        // device at all, so the PackageManager query itself throws rather
-        // than returning a disabled state.
+        /*
+         * Given - the downloads provider package doesn't exist on this
+         * device at all, so the PackageManager query itself throws rather
+         * than returning a disabled state.
+         */
         every {
             mockPackageManager.getApplicationEnabledSetting("com.android.providers.downloads")
         } throws IllegalArgumentException("Unknown package: com.android.providers.downloads")
