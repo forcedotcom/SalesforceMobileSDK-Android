@@ -346,10 +346,11 @@ open class LoginActivity : FragmentActivity() {
             }
         }
 
-        // Take control of the back logic if the device is locked.
+        // On API 33+ the predictive back gesture (enableOnBackInvokedCallback) bypasses
+        // onKeyDown, so route Back through the dispatcher. handleBackBehavior() no-ops while locked.
         // TODO:  Remove SDK_INT check when min API > 33
-        if (SDK_INT >= TIRAMISU && biometricAuthenticationManager?.locked == true) {
-            onBackPressedDispatcher.addCallback { handleBackBehavior() }
+        if (SDK_INT >= TIRAMISU) {
+            onBackPressedDispatcher.addCallback(this) { handleBackBehavior() }
         }
 
         // Add view model observers.
