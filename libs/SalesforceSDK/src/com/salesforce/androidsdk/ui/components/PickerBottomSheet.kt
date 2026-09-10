@@ -30,6 +30,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -329,6 +330,18 @@ internal fun PickerBottomSheet(
             var addingNewServer by remember { mutableStateOf(false) }
             val mutableList = remember { list.pickerDistinctBy().toMutableStateList() }
             var mutableSelectedListItem = selectedListItem
+
+            // Route Back through the in-sheet affordances instead of the (blocked) sheet dismiss:
+            // back out of the add-connection view, else defer to handleBackBehavior().
+            if (pickerStyle == PickerStyle.LoginServerPicker) {
+                BackHandler {
+                    if (addingNewServer) {
+                        addingNewServer = false
+                    } else {
+                        onLoginBackButtonClick?.invoke()
+                    }
+                }
+            }
 
             Column(
                 modifier = Modifier
