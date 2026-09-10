@@ -936,7 +936,22 @@ public class UserAccount {
 
 		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
 		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
-		int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+		int state;
+		try {
+			state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+		} catch (IllegalArgumentException e) {
+			/*
+			 * On some OEM/enterprise-managed devices,
+			 * com.android.providers.downloads is absent rather than merely
+			 * disabled, and the query itself throws instead of returning a
+			 * disabled state. Treat that the same as "disabled" and skip
+			 * the download rather than crashing.
+			 */
+			SalesforceSDKLogger.w(TAG,
+					"Could not determine if com.android.providers.downloads is enabled",
+					e);
+			return;
+		}
 		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
 			state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
