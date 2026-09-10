@@ -48,9 +48,10 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * Regression coverage for [UserAccount.downloadProfilePhoto]: must not crash when
- * [PackageManager.getApplicationEnabledSetting] throws, which happens on OEM/enterprise-managed
- * devices where com.android.providers.downloads is absent rather than merely disabled.
+ * Regression coverage for [UserAccount.downloadProfilePhoto]: must not crash
+ * when [PackageManager.getApplicationEnabledSetting] throws, which happens on
+ * OEM/enterprise-managed devices where com.android.providers.downloads is
+ * absent rather than merely disabled.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -93,8 +94,9 @@ class UserAccountDownloadProfilePhotoTest {
 
     @Test
     fun downloadProfilePhoto_whenPackageUnknown_doesNotCrashAndSkipsDownload() {
-        // Given - the downloads provider package doesn't exist on this device at all, so the
-        // PackageManager query itself throws rather than returning a disabled state.
+        // Given - the downloads provider package doesn't exist on this
+        // device at all, so the PackageManager query itself throws rather
+        // than returning a disabled state.
         every {
             mockPackageManager.getApplicationEnabledSetting("com.android.providers.downloads")
         } throws IllegalArgumentException("Unknown package: com.android.providers.downloads")
