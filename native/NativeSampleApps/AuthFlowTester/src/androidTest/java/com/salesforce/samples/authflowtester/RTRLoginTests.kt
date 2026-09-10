@@ -28,7 +28,10 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_RTR
+import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE_RTR
@@ -43,6 +46,25 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class RTRLoginTests : AuthFlowTest() {
+
+    /**
+     * A user that has already rotated must send RT on the first token request after restart.
+     * This asserts the final header captured by the OkHttp network interceptor, not the user agent
+     * recomputed after the refresh response registers RT again.
+     */
+    @Test
+    fun testECAOpaqueRtr_Hybrid_WithRestart() {
+        loginAndValidate(knownAppConfig = ECA_OPAQUE_RTR)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true)
+
+        restartApp()
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true)
+        app.validateLastTokenRequestUserAgent(
+            FEATURE_RTR,
+            FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            FEATURE_TOKEN_FORMAT_OPAQUE,
+        )
+    }
 
     // region ECA JWT RTR Tests
 

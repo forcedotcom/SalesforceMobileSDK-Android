@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -11,7 +11,7 @@
  * and/or other materials provided with the distribution.
  * - Neither the name of salesforce.com, inc. nor the names of its contributors
  * may be used to endorse or promote products derived from this software without
- * specific prior written permission of salesforce.com, inc.
+ * specific prior written permission of the copyright holder.
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -26,24 +26,32 @@
  */
 package com.salesforce.samples.authflowtester
 
-import android.app.Application
+import android.content.Context
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import okhttp3.OkHttpClient
 
-class AuthFlowTesterApplication : Application() {
+/** Records the final token-request User-Agent for UI-test assertions. */
+class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, null) {
+
+    override fun createNewClientBuilder(): OkHttpClient.Builder =
+        super.createNewClientBuilder().addNetworkInterceptor { chain ->
+            val request = chain.request()
+            if (SalesforceSDKManager.getInstance().isUiTesting &&
+                request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)
+            ) {
+                lastTokenRequestUserAgentState.value = request.header(USER_AGENT_HEADER)
+            }
+            chain.proceed(request)
+        }
 
     companion object {
-        private const val FEATURE_APP_USES_KOTLIN = "KT"
-    }
+        private const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"
+        private const val USER_AGENT_HEADER = "User-Agent"
 
-    override fun onCreate() {
-        super.onCreate()
-        SalesforceSDKManager.initNative(
-            applicationContext,
-            AuthFlowTesterActivity::class.java,
-        )
-
-        with(SalesforceSDKManager.getInstance()) {
-            registerUsedAppFeature(FEATURE_APP_USES_KOTLIN)
-        }
+        private val lastTokenRequestUserAgentState = MutableStateFlow<String?>(null)
+        val lastTokenRequestUserAgent = lastTokenRequestUserAgentState.asStateFlow()
     }
 }

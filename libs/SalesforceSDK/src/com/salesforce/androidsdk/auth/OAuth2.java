@@ -31,6 +31,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
@@ -546,6 +547,23 @@ public class OAuth2 {
                                                          @Nullable String credentialsIdentifier,
                                                          @Nullable String tokenType)
             throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
+                credentialsIdentifier, tokenType, null);
+    }
+
+    /**
+     * Gets a new auth token using the refresh token for a known user. The user is carried as
+     * request-scoped context so the final HTTP interceptor can build the correct per-user agent
+     * without consulting mutable current-user state.
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams,
+                                                         @Nullable String credentialsIdentifier,
+                                                         @Nullable String tokenType,
+                                                         @Nullable UserAccount userAccount)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_REFRESH : REFRESH_TOKEN;
@@ -561,7 +579,8 @@ public class OAuth2 {
                 }
             }
         }
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder,
+                SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType, userAccount);
     }
 
     /**
@@ -731,6 +750,20 @@ public class OAuth2 {
                                                                  @Nullable String credentialsIdentifier,
                                                                  @Nullable String tokenType)
             throws OAuthFailedException, IOException {
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder,
+                salesforceSdkManager, credentialsIdentifier, tokenType, null);
+    }
+
+    /** Canonical token-endpoint implementation with optional request-scoped user context. */
+    @WorkerThread
+    private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                  URI loginServer,
+                                                                  FormBody.Builder formBodyBuilder,
+                                                                  SalesforceSDKManager salesforceSdkManager,
+                                                                  @Nullable String credentialsIdentifier,
+                                                                  @Nullable String tokenType,
+                                                                  @Nullable UserAccount userAccount)
+            throws OAuthFailedException, IOException {
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
@@ -753,6 +786,9 @@ public class OAuth2 {
         final String tokenHost = HttpUrl.get(refreshPath).host();
         final RequestBody body = formBodyBuilder.build();
         final Request.Builder requestBuilder = new Request.Builder().url(refreshPath).post(body);
+        if (userAccount != null) {
+            requestBuilder.tag(UserAccount.class, userAccount);
+        }
         final boolean attachDPoP = DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType);
 
         if (attachDPoP) {

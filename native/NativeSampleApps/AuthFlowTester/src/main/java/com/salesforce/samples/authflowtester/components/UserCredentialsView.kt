@@ -33,6 +33,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.salesforce.androidsdk.accounts.UserAccount
@@ -41,12 +43,14 @@ import com.salesforce.androidsdk.auth.ScopeParser.Companion.toScopeParser
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder
-import java.security.interfaces.ECPublicKey
 import com.salesforce.androidsdk.ui.theme.sfDarkColors
 import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TokenRequestCapturingHttpAccess
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
+import java.security.interfaces.ECPublicKey
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -123,6 +127,9 @@ private const val USER_AGENT_LABEL = "User Agent"
 
 @Composable
 fun UserCredentialsView(currentUser: UserAccount?) {
+    val lastTokenRequestUserAgent by TokenRequestCapturingHttpAccess
+        .lastTokenRequestUserAgent
+        .collectAsState()
     ExpandableCard(
         title = CARD_TITLE,
         exportedJSON = generateCredentialsJSON(currentUser),
@@ -209,6 +216,13 @@ fun UserCredentialsView(currentUser: UserAccount?) {
                 value = getUserAgentString(currentUser),
                 contentDescription = USER_AGENT_CONTENT_DESC,
             )
+            if (SalesforceSDKManager.getInstance().isUiTesting) {
+                InfoRowView(
+                    label = "Last Token Request User Agent",
+                    value = lastTokenRequestUserAgent,
+                    contentDescription = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC,
+                )
+            }
         }
     }
 }

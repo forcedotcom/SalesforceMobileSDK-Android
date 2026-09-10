@@ -117,6 +117,7 @@ import com.salesforce.androidsdk.accounts.downgradeFromDPoP
 import com.salesforce.androidsdk.accounts.migrateRefreshToken
 import com.salesforce.androidsdk.accounts.upgradeToDPoP
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.JwtAccessToken
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.config.OAuthConfig
@@ -169,6 +170,7 @@ const val ALERT_TITLE_CONTENT_DESC = "alert_title"
 const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
 const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 const val USER_AGENT_CONTENT_DESC = "user_agent"
+const val TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC = "token_endpoint_user_agent"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -179,8 +181,13 @@ class AuthFlowTesterActivity : SalesforceActivity() {
 
         // Make debug-only UI test affordances visible when launched by the UI test runner.
         // Mirrors iOS' IS_UI_TESTING launch argument check in LoginOptionsViewController.swift.
-        SalesforceSDKManager.getInstance().isUiTesting =
-            intent.getBooleanExtra(EXTRA_IS_UI_TESTING, false)
+        val sdkManager = SalesforceSDKManager.getInstance()
+        sdkManager.isUiTesting = intent.getBooleanExtra(EXTRA_IS_UI_TESTING, false)
+        // SalesforceActivity builds its RestClient during onResume, after this method completes,
+        // so UI-test mode is known before any auth request can use the replacement HTTP client.
+        if (sdkManager.isUiTesting) {
+            HttpAccess.DEFAULT = TokenRequestCapturingHttpAccess(applicationContext)
+        }
 
         setContent {
             MaterialTheme(colorScheme = getColorScheme()) {
