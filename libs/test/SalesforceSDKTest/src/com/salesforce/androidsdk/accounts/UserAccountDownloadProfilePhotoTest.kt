@@ -28,7 +28,10 @@ package com.salesforce.androidsdk.accounts
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Context.DOWNLOAD_SERVICE
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -68,7 +71,7 @@ class UserAccountDownloadProfilePhotoTest {
         mockDownloadManager = mockk(relaxed = true)
         mockContext = mockk(relaxed = true)
         every { mockContext.packageManager } returns mockPackageManager
-        every { mockContext.getSystemService(Context.DOWNLOAD_SERVICE) } returns mockDownloadManager
+        every { mockContext.getSystemService(DOWNLOAD_SERVICE) } returns mockDownloadManager
         every { mockContext.externalCacheDir } returns File("/tmp/UserAccountDownloadProfilePhotoTest")
 
         mockSdkManager = mockk(relaxed = true)
@@ -113,7 +116,7 @@ class UserAccountDownloadProfilePhotoTest {
     fun downloadProfilePhoto_whenPackageDisabled_skipsDownload() {
         every {
             mockPackageManager.getApplicationEnabledSetting("com.android.providers.downloads")
-        } returns PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        } returns COMPONENT_ENABLED_STATE_DISABLED
 
         buildTestAccount().downloadProfilePhoto()
 
@@ -124,7 +127,7 @@ class UserAccountDownloadProfilePhotoTest {
     fun downloadProfilePhoto_whenPackageEnabled_enqueuesDownload() {
         every {
             mockPackageManager.getApplicationEnabledSetting("com.android.providers.downloads")
-        } returns PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } returns COMPONENT_ENABLED_STATE_ENABLED
 
         buildTestAccount().downloadProfilePhoto()
 
