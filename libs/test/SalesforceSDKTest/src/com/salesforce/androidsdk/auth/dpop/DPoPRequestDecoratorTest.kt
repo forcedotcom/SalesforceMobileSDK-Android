@@ -202,4 +202,61 @@ class DPoPRequestDecoratorTest {
     fun isNonceChallenge_401_noNonceHeader_returnsFalse() {
         assertFalse(DPoPRequestDecorator.isNonceChallenge(response(401, "{}")))
     }
+
+    @Test
+    fun harvestNonce_headerPresent_storesInCache() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(
+                response(400, """{"error":"use_dpop_nonce"}""", dpopNonce = "harvested-nonce"),
+                testScope,
+                "test.salesforce.com",
+            )
+            assertEquals("harvested-nonce", DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    @Test
+    fun harvestNonce_missingHeader_isNoOp() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(response(400, "{}"), testScope, "test.salesforce.com")
+            assertNull(DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    @Test
+    fun harvestNonce_nullCredentialsIdentifier_isNoOp() {
+        DPoPNonceCache.clearAll()
+        try {
+            DPoPRequestDecorator.harvestNonce(
+                response(400, "{}", dpopNonce = "n"),
+                null,
+                "test.salesforce.com",
+            )
+            assertNull(DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    @Test
+    fun applyAuthHeaders_lowercaseDPoPTokenType_stampsDPoPSchemeNotBearer() {
+        // Regression for W-24027018: server returns lowercase "dpop" in token refresh responses.
+        // Prior case-sensitive comparison caused addAuthorizationHeader to use Bearer on replay.
+        seedKeyPair(testScope)
+        val builder = requestBuilder()
+
+        DPoPRequestDecorator.applyAuthHeaders(builder, userAccount(tokenType = "dpop"))
+
+        val request = builder.build()
+        val auth = request.header("Authorization")
+        assertNotNull(auth)
+        assertTrue("lowercase 'dpop' must produce Authorization: DPoP …, got: $auth", auth!!.startsWith("DPoP "))
+        assertNotNull("lowercase 'dpop' must attach a DPoP proof header", request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
 }

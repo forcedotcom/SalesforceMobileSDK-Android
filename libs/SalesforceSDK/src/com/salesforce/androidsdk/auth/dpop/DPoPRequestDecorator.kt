@@ -63,6 +63,17 @@ object DPoPRequestDecorator {
     }
 
     /**
+     * Stores [DPOP_NONCE_HEADER] from [response] in [DPoPNonceCache] when present.
+     * No-op if the header, [credentialsIdentifier], or [host] is missing or empty.
+     */
+    fun harvestNonce(response: Response, credentialsIdentifier: String?, host: String?) {
+        if (credentialsIdentifier.isNullOrEmpty() || host.isNullOrEmpty()) return
+        val nonce = response.header(DPOP_NONCE_HEADER) ?: return
+        if (nonce.isEmpty()) return
+        DPoPNonceCache.store(credentialsIdentifier, host, nonce)
+    }
+
+    /**
      * Returns true if [response] is a DPoP nonce challenge per RFC 9449 §8:
      * - 400 with body containing `error=use_dpop_nonce`
      * - 401 with a non-empty `DPoP-Nonce` response header

@@ -835,6 +835,19 @@ public class RestClient {
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
 
+            // Cold nonce cache (e.g. after process restart): resource server may return
+            // HTTP 400 use_dpop_nonce. Harvest once and rebuild the proof. Do not treat
+            // 401 as a nonce retry — that remains the token-refresh path.
+            if (credentialsIdentifier != null && !credentialsIdentifier.isEmpty()
+                    && request.header("DPoP") != null
+                    && response.code() == HttpURLConnection.HTTP_BAD_REQUEST
+                    && DPoPRequestDecorator.INSTANCE.isNonceChallenge(response)) {
+                DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, request.url().host());
+                response.close();
+                request = buildAuthenticatedRequest(request);
+                response = chain.proceed(request);
+            }
+
             /*
              * Standard access token expiry returns 401 as the error code.
              */

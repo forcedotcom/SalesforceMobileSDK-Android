@@ -53,10 +53,9 @@ import java.net.URI
 /**
  * Tests for DPoP nonce handling in OAuthRefreshInterceptor.
  *
- * Nonces are issued exclusively by the /token endpoint (during token exchange and refresh)
- * and cached by OAuth2.java. The interceptor's role is limited to proactively reading
- * the cached nonce when building each DPoP proof — it does not harvest nonces from
- * resource-server responses and does not retry on use_dpop_nonce challenges.
+ * The interceptor proactively includes a cached nonce in each DPoP proof. On HTTP 400
+ * use_dpop_nonce it harvests DPoP-Nonce and retries once. It does not harvest from
+ * successful resource-server responses and does not treat 401 as a nonce retry.
  */
 @SmallTest
 @RunWith(AndroidJUnit4::class)
@@ -179,8 +178,8 @@ class OAuthRefreshInterceptorNonceTest {
     }
 
     /**
-     * A DPoP-Nonce header in a resource-server response is not harvested by the interceptor.
-     * Only the token endpoint (OAuth2.java) populates the cache.
+     * A DPoP-Nonce header on a successful resource-server response is not harvested.
+     * Harvest happens only on HTTP 400 use_dpop_nonce.
      */
     @Test
     fun test_givenResourceServerResponseWithDPoPNonceHeader_whenRequestCompletes_thenNonceIsNotCached() {
@@ -220,4 +219,98 @@ class OAuthRefreshInterceptorNonceTest {
         assertEquals(1, callCount)
         assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
     }
+
+    /**
+     * Bearer session receives 400 use_dpop_nonce. The nonce retry guard requires
+     * request.header("DPoP") != null — Bearer requests carry no DPoP header, so
+     * the harvest+retry branch must not fire.
+     */
+    @Test
+    fun test_givenBearerTokenType_when400UseDpopNonce_thenNoHarvestAndNoRetry() {
+        val request = buildRequest()
+        val interceptor = buildInterceptor(tokenType = "Bearer")
+        var callCount = 0
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns request
+            every { proceed(any()) } answers {
+                callCount++
+                Response.Builder()
+                    .request(firstArg())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(400)
+                    .message("Bad Request")
+                    .header("DPoP-Nonce", "should-not-be-harvested")
+                    .body("""{"error":"use_dpop_nonce"}""".toResponseBody("application/json".toMediaType()))
+                    .build()
+            }
+        }
+
+        val response = interceptor.intercept(chain)
+
+        assertEquals(1, callCount)
+        assertEquals(400, response.code)
+        assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
+    }
+
+    private fun nonceChallengeResponse(request: Request, nonce: String): Response =
+        Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(400)
+            .message("Bad Request")
+            .header("DPoP-Nonce", nonce)
+            .body("""{"error":"use_dpop_nonce"}""".toResponseBody("application/json".toMediaType()))
+            .build()
+
+    @Test
+    fun test_given400UseDpopNonce_whenIntercept_thenHarvestsNonceAndRetriesOnceWithProof() {
+        val request = buildRequest()
+        val interceptor = buildInterceptor()
+        val captured = mutableListOf<Request>()
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns request
+            every { proceed(any()) } answers {
+                val sent = firstArg<Request>()
+                captured.add(sent)
+                if (captured.size == 1) nonceChallengeResponse(sent, "n1")
+                else successResponse(sent)
+            }
+        }
+
+        val response = interceptor.intercept(chain)
+
+        assertEquals(200, response.code)
+        assertEquals(2, captured.size)
+        assertEquals("n1", DPoPNonceCache.get(credentialsId, instanceHost))
+        val retryProof = captured[1].header("DPoP")
+        assertNotNull(retryProof)
+        val payloadJson = String(
+            android.util.Base64.decode(
+                retryProof!!.split(".")[1],
+                android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING
+            ),
+            Charsets.UTF_8
+        )
+        assert(payloadJson.contains("n1")) { "Retry proof should contain harvested nonce. Payload: $payloadJson" }
+    }
+
+    @Test
+    fun test_given400UseDpopNonceTwice_whenIntercept_thenDoesNotLoop() {
+        val request = buildRequest()
+        val interceptor = buildInterceptor()
+        var callCount = 0
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns request
+            every { proceed(any()) } answers {
+                callCount++
+                nonceChallengeResponse(firstArg(), "n-loop")
+            }
+        }
+
+        val response = interceptor.intercept(chain)
+
+        assertEquals(2, callCount)
+        assertEquals(400, response.code)
+    }
+
 }

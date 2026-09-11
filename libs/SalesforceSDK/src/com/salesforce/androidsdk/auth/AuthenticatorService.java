@@ -95,6 +95,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
     public static final String KEY_TOKEN_TYPE = "tokenType";
     public static final String KEY_LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
+    public static final String KEY_UI_SID = "uiSid";
 
     private static final String TAG = "AuthenticatorService";
 
@@ -141,7 +142,8 @@ public class AuthenticatorService extends Service {
                 SalesforceSDKLogger.i(TAG, "Initiating token refresh to host: " + tokenServer.getHost());
                 final OAuth2.TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
                         tokenServer, originalUserAccount.getClientIdForRefresh(), originalUserAccount.getRefreshToken(), addlParamsMap,
-                        originalUserAccount.getCredentialsIdentifier(), originalUserAccount.getTokenType());
+                        originalUserAccount.getCredentialsIdentifier(), originalUserAccount.getTokenType(),
+                        originalUserAccount);
 
                 UserAccount updatedUserAccount = UserAccountBuilder.getInstance()
                         .populateFromUserAccount(originalUserAccount)

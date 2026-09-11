@@ -60,6 +60,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for UserAccountManager.
@@ -275,6 +276,39 @@ public class UserAccountManagerTest {
                 rotationTime, restored.getLastTokenRotationTime());
     }
 
+    /*
+     * Regression test: uiSid stored during a DPoP session must be cleared when the account is
+     * updated with a Bearer token response (e.g. DPoP-to-Bearer downgrade). Without the fix,
+     * buildAuthBundle skips KEY_UI_SID when uiSid is null, leaving the old encrypted value in
+     * AccountManager. The next buildUserAccount reload then restores the stale uiSid, causing
+     * getMainSid() to return a DPoP session ID instead of the Bearer access token.
+     */
+    @Test
+    public void test_givenDPoPAccountWithUiSid_whenUpdateAccountWithBearerAccount_thenUiSidClearedAfterReload() {
+        UserAccount dpopAccount = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("DPoP")
+                .uiSid("dpop-ui-sid")
+                .build();
+        userAccMgr.createAccount(dpopAccount);
+        Account account = userAccMgr.getCurrentAccount();
+
+        Assert.assertEquals("Precondition: uiSid must be set on the DPoP account",
+                "dpop-ui-sid", userAccMgr.buildUserAccount(account).getUiSid());
+
+        UserAccount bearerAccount = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(dpopAccount)
+                .tokenType("Bearer")
+                .uiSid(null)
+                .build();
+        userAccMgr.updateAccount(account, bearerAccount);
+
+        UserAccount restored = userAccMgr.buildUserAccount(account);
+        Assert.assertNull("uiSid must be cleared after DPoP-to-Bearer downgrade", restored.getUiSid());
+        Assert.assertEquals("getMainSid must return authToken after uiSid is cleared",
+                UserAccountTest.TEST_AUTH_TOKEN, restored.getMainSid());
+    }
+
     /**
      * Test to get all authenticated users.
      */
@@ -354,6 +388,20 @@ public class UserAccountManagerTest {
         userAccMgr.createAccount(secondUser);
         Assert.assertTrue("User should exist now", userAccMgr.doesUserAccountExist(firstUser));
         Assert.assertTrue("User should exist now", userAccMgr.doesUserAccountExist(secondUser));
+    }
+
+    /**
+     * Test that signing out the current user is a no-op when there is no current account.
+     */
+    @Test
+    public void testSignoutCurrentUserDoesNothingWithoutCurrentAccount() throws InterruptedException {
+        Assert.assertNull("There should be no current account", userAccMgr.getCurrentAccount());
+
+        userAccMgr.signoutCurrentUser(null, false, OAuth2.LogoutReason.USER_LOGOUT);
+
+        Assert.assertFalse(
+                "Logout completion should not be broadcast when there is no current account",
+                logoutCompleteReceiver.awaitCompletion(1, TimeUnit.SECONDS));
     }
 
     /**
@@ -593,6 +641,10 @@ public class UserAccountManagerTest {
             }
             completionSemaphore.release();
             return lastUserAccountReceived;
+        }
+
+        public boolean awaitCompletion(long timeout, TimeUnit timeUnit) throws InterruptedException {
+            return completionSemaphore.tryAcquire(timeout, timeUnit);
         }
     }
 

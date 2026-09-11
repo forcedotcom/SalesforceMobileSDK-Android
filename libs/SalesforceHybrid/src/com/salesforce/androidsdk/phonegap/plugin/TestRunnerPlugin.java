@@ -35,6 +35,7 @@ import org.json.JSONObject;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * PhoneGap plugin to run javascript tests.
@@ -51,7 +52,7 @@ public class TestRunnerPlugin extends ForcePlugin {
 	
 	// To synchronize with the tests
 	public final static BlockingQueue<Boolean> readyForTests = new ArrayBlockingQueue<Boolean>(1);
-	public final static BlockingQueue<TestResult> testResults = new ArrayBlockingQueue<TestResult>(1);
+	public final static BlockingQueue<TestResult> testResults = new LinkedBlockingQueue<TestResult>();
 	
 	/**
 	 * Supported plugin actions that the client can take.

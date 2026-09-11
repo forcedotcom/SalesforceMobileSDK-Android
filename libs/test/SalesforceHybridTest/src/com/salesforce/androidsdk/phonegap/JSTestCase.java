@@ -44,6 +44,7 @@ import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -72,6 +73,8 @@ public abstract class JSTestCase {
 
             // Start main activity
             Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+            TestRunnerPlugin.readyForTests.clear();
+            TestRunnerPlugin.testResults.clear();
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
@@ -90,7 +93,12 @@ public abstract class JSTestCase {
                 // Block until test completes or times out
                 TestResult result;
                 try {
-                    result = TestRunnerPlugin.testResults.poll(timeout, TimeUnit.SECONDS);
+                    result = pollForTestResult(
+                            TestRunnerPlugin.testResults,
+                            testName,
+                            timeout,
+                            TimeUnit.SECONDS
+                    );
                     if (result == null) {
                         result = new TestResult(testName, false, "Timeout (" + timeout + " seconds) exceeded", timeout);
                     }
@@ -108,6 +116,28 @@ public abstract class JSTestCase {
             eq.tearDown();
             activity.finish();
         }
+    }
+
+    static TestResult pollForTestResult(
+            BlockingQueue<TestResult> results,
+            String expectedTestName,
+            long timeout,
+            TimeUnit timeUnit
+    ) throws InterruptedException {
+        final long deadline = System.nanoTime() + timeUnit.toNanos(timeout);
+        long remainingNanos = deadline - System.nanoTime();
+        while (remainingNanos > 0) {
+            final TestResult result = results.poll(remainingNanos, TimeUnit.NANOSECONDS);
+            if (result == null || expectedTestName.equals(result.testName)) {
+                return result;
+            }
+            SalesforceHybridLogger.w(
+                    TAG,
+                    "Ignoring late result for " + result.testName + " while waiting for " + expectedTestName
+            );
+            remainingNanos = deadline - System.nanoTime();
+        }
+        return null;
     }
 
     /**

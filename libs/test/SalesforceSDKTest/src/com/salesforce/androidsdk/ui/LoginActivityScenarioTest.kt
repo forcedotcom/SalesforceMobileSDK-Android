@@ -229,7 +229,7 @@ class LoginActivityScenarioTest {
     }
 
     @Test
-    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun loginActivity_ReloadsWebview_OnResumeWithLoginOptionChanges() {
         // This test drives the in-app WebView reload path, which only exists when advanced
         // authentication is NOT forced.  With the force flag on (the default) the login server's

@@ -208,6 +208,7 @@ fun LoginView() {
                 viewModel.biometricAuthenticationButtonAction.value?.invoke() ?: activity.onBioAuthClick()
             }
         } else null
+    @Suppress("DEPRECATION") // Calls the deprecated onIDPLoginClick until it is removed in 15.0.
     val idpButton =
         if (viewModel.isIDPLoginFlowEnabled.value) {
             LoginViewModel.BottomBarButton(stringResource(sf__launch_idp)) {

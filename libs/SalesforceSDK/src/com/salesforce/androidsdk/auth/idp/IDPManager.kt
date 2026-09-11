@@ -24,6 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+@file:Suppress("DEPRECATION") // Imports and uses the deprecated IDPManager/IDPAuthCodeActivity/Status types throughout until they are removed in 15.0.
 package com.salesforce.androidsdk.auth.idp
 
 import android.content.Context
@@ -47,6 +48,7 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
  * e.g. the context (activity) that started it
  *      the web view to get the auth code in
  */
+@Suppress("DEPRECATION") // Uses the deprecated SPConfig/Status types until they are removed in 15.0.
 internal class IDPLoginFlow(context:Context, val user:UserAccount, val spConfig: SPConfig, val onStatusUpdate:(Status) -> Unit) : ActiveFlow(context) {
 
     var authCodeActivity: IDPAuthCodeActivity? = null
@@ -70,6 +72,7 @@ internal class IDPLoginFlow(context:Context, val user:UserAccount, val spConfig:
 /**
  * Class handling IDP operations within an IDP app
  */
+@Suppress("DEPRECATION") // Implements the deprecated IDPManager interface and uses SPConfig/Status until they are removed in 15.0.
 internal class IDPManager(
     val allowedSPApps: List<SPConfig>,
     // the following allows us to decouple IDPManager from other part of the SDK and make it easier to test

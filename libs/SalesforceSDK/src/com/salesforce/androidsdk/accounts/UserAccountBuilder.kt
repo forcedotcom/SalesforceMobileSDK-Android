@@ -76,6 +76,7 @@ class UserAccountBuilder private constructor() {
     private var credentialsIdentifier: String? = null
     private var tokenType: String? = null
     private var lastTokenRotationTime: String? = null
+    private var uiSid: String? = null
 
     /**
      * Set fields from token end point response
@@ -113,6 +114,7 @@ class UserAccountBuilder private constructor() {
             .beaconChildConsumerSecret(tr.beaconChildConsumerSecret)
             .scope(tr.scope)
             .tokenType(tr.tokenType)
+            .uiSid(tr.uiSid)
     }
 
     /**
@@ -185,6 +187,7 @@ class UserAccountBuilder private constructor() {
             .credentialsIdentifier(userAccount.credentialsIdentifier)
             .tokenType(userAccount.tokenType)
             .lastTokenRotationTime(userAccount.lastTokenRotationTime)
+            .uiSid(userAccount.uiSid)
     }
 
     /**
@@ -637,6 +640,16 @@ class UserAccountBuilder private constructor() {
     }
 
     /**
+     * Sets the UI session ID (present in DPoP flows).
+     *
+     * @param uiSid UI session ID.
+     * @return Instance of this class.
+     */
+    fun uiSid(uiSid: String?): UserAccountBuilder {
+        return if (!allowUnset && uiSid == null) this else apply { this.uiSid = uiSid }
+    }
+
+    /**
      * Builds and returns a UserAccount object.
      *
      * @return UserAccount object.
@@ -686,6 +699,7 @@ class UserAccountBuilder private constructor() {
         account.credentialsIdentifier = credentialsIdentifier
         account.tokenType = tokenType
         account.lastTokenRotationTime = lastTokenRotationTime
+        account.uiSid = uiSid
         return account
     }
 

@@ -31,6 +31,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
@@ -217,6 +218,7 @@ public class OAuth2 {
     private static final String COOKIE_SID_CLIENT = "cookie-sid_Client";
     private static final String SID_COOKIE_NAME = "sidCookieName";
     private static final String PARENT_SID = "parent_sid";
+    private static final String UI_SID = "ui_sid";
     private static final String TOKEN_FORMAT = "token_format";
     private static final String BEACON_CHILD_CONSUMER_SECRET = "auto_installed_app_org_consumer_secret";
     private static final String BEACON_CHILD_CONSUMER_KEY = "auto_installed_app_org_consumer_key";
@@ -545,6 +547,23 @@ public class OAuth2 {
                                                          @Nullable String credentialsIdentifier,
                                                          @Nullable String tokenType)
             throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, addlParams,
+                credentialsIdentifier, tokenType, null);
+    }
+
+    /**
+     * Gets a new auth token using the refresh token for a known user. The user is carried as
+     * request-scoped context so the final HTTP interceptor can build the correct per-user agent
+     * without consulting mutable current-user state.
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static TokenEndpointResponse refreshAuthToken(HttpAccess httpAccessor, URI loginServer,
+                                                         String clientId, String refreshToken,
+                                                         Map<String,String> addlParams,
+                                                         @Nullable String credentialsIdentifier,
+                                                         @Nullable String tokenType,
+                                                         @Nullable UserAccount userAccount)
+            throws OAuthFailedException, IOException {
         final FormBody.Builder builder = new FormBody.Builder();
         final boolean useHybridAuthentication = SalesforceSDKManager.getInstance().shouldUseHybridAuthentication();
         final String grantType = useHybridAuthentication ? HYBRID_REFRESH : REFRESH_TOKEN;
@@ -560,7 +579,8 @@ public class OAuth2 {
                 }
             }
         }
-        return makeTokenEndpointRequest(httpAccessor, loginServer, builder, SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType);
+        return makeTokenEndpointRequest(httpAccessor, loginServer, builder,
+                SalesforceSDKManager.getInstance(), credentialsIdentifier, tokenType, userAccount);
     }
 
     /**
@@ -691,7 +711,7 @@ public class OAuth2 {
      * @param tokenType Token type (e.g. "Bearer" or "DPoP"), or null for default Bearer.
      */
     public static Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken, @Nullable String tokenType) {
-        final String scheme = DPoPKeyManager.DPOP_TOKEN_TYPE.equals(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
+        final String scheme = DPoPKeyManager.isDPoPTokenType(tokenType) ? DPoPKeyManager.DPOP_TOKEN_TYPE + " " : BEARER;
         return builder.header(AUTHORIZATION, scheme + authToken);
     }
 
@@ -730,6 +750,20 @@ public class OAuth2 {
                                                                  @Nullable String credentialsIdentifier,
                                                                  @Nullable String tokenType)
             throws OAuthFailedException, IOException {
+        return makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder,
+                salesforceSdkManager, credentialsIdentifier, tokenType, null);
+    }
+
+    /** Canonical token-endpoint implementation with optional request-scoped user context. */
+    @WorkerThread
+    private static TokenEndpointResponse makeTokenEndpointRequest(HttpAccess httpAccessor,
+                                                                  URI loginServer,
+                                                                  FormBody.Builder formBodyBuilder,
+                                                                  SalesforceSDKManager salesforceSdkManager,
+                                                                  @Nullable String credentialsIdentifier,
+                                                                  @Nullable String tokenType,
+                                                                  @Nullable UserAccount userAccount)
+            throws OAuthFailedException, IOException {
 
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_TOKEN_PATH);
@@ -752,6 +786,9 @@ public class OAuth2 {
         final String tokenHost = HttpUrl.get(refreshPath).host();
         final RequestBody body = formBodyBuilder.build();
         final Request.Builder requestBuilder = new Request.Builder().url(refreshPath).post(body);
+        if (userAccount != null) {
+            requestBuilder.tag(UserAccount.class, userAccount);
+        }
         final boolean attachDPoP = DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType);
 
         if (attachDPoP) {
@@ -1154,6 +1191,7 @@ public class OAuth2 {
         public String cookieSidClient;
         public String sidCookieName;
         public String parentSid;
+        public String uiSid;
         public String tokenFormat;
         public String beaconChildConsumerKey;
         public String beaconChildConsumerSecret;
@@ -1202,6 +1240,7 @@ public class OAuth2 {
                 tokenFormat = callbackUrlParams.getOrDefault(TOKEN_FORMAT, "");
                 scope = callbackUrlParams.get(SCOPE);
                 tokenType = callbackUrlParams.get(TOKEN_TYPE);
+                uiSid = DPoPKeyManager.isDPoPTokenType(tokenType) ?callbackUrlParams.get(UI_SID) : null;
 
                 // NB: beacon apps not supported with user agent flow so no beacon child fields expected
 
@@ -1285,6 +1324,7 @@ public class OAuth2 {
                 }
                 scope = parsedResponse.optString(SCOPE);
                 tokenType = parsedResponse.optString(TOKEN_TYPE, null);
+                uiSid = DPoPKeyManager.isDPoPTokenType(tokenType) ?parsedResponse.optString(UI_SID, null) : null;
 
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Could not parse token endpoint response", e);

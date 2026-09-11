@@ -109,6 +109,7 @@ public class UserAccount {
 	public static final String CREDENTIALS_IDENTIFIER = "credentialsIdentifier";
 	public static final String TOKEN_TYPE = "tokenType";
 	public static final String LAST_TOKEN_ROTATION_TIME = "lastTokenRotationTime";
+	public static final String UI_SID = "uiSid";
 
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
@@ -160,6 +161,7 @@ public class UserAccount {
 	private String credentialsIdentifier;
 	private String tokenType;
 	private String lastTokenRotationTime;
+	private String uiSid;
 	private Set<String> featureFlags = new java.util.HashSet<>();
 
 	/**
@@ -309,6 +311,7 @@ public class UserAccount {
 			credentialsIdentifier = object.optString(CREDENTIALS_IDENTIFIER, null);
 			tokenType = object.optString(TOKEN_TYPE, null);
 			lastTokenRotationTime = object.optString(LAST_TOKEN_ROTATION_TIME, null);
+			uiSid = object.optString(UI_SID, null);
 			additionalOauthValues = MapUtil.addJSONObjectToMap(object, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -370,6 +373,7 @@ public class UserAccount {
 			credentialsIdentifier = bundle.getString(CREDENTIALS_IDENTIFIER);
 			tokenType = bundle.getString(TOKEN_TYPE);
 			lastTokenRotationTime = bundle.getString(LAST_TOKEN_ROTATION_TIME);
+			uiSid = bundle.getString(UI_SID);
 			additionalOauthValues = MapUtil.addBundleToMap(bundle, additionalOauthKeys, additionalOauthValues);
 		}
 	}
@@ -740,6 +744,35 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the session ID to use as the main SID cookie.
+	 * Returns uiSid when present (DPoP flows); for JWT token format returns parentSid; otherwise returns authToken.
+	 *
+	 * @return main SID string
+	 */
+	public String getMainSid() {
+		if (uiSid != null) return uiSid;
+		return "jwt".equals(tokenFormat) ? parentSid : authToken;
+	}
+
+	/**
+	 * Returns the UI session ID provided by the server for DPoP flows.
+	 *
+	 * @return ui SID string, or null if not present.
+	 */
+	public String getUiSid() {
+		return uiSid;
+	}
+
+	/**
+	 * Sets the UI session ID.
+	 *
+	 * @param uiSid UI session ID.
+	 */
+	public void setUiSid(String uiSid) {
+		this.uiSid = uiSid;
+	}
+
+	/**
 	 * Returns the token format.
 	 *
 	 * @return token format.
@@ -903,7 +936,22 @@ public class UserAccount {
 
 		// Checks if DownloadManager is enabled on the device, to ensure it doesn't crash.
 		final PackageManager pm = SalesforceSDKManager.getInstance().getAppContext().getPackageManager();
-		int state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+		int state;
+		try {
+			state = pm.getApplicationEnabledSetting("com.android.providers.downloads");
+		} catch (IllegalArgumentException e) {
+			/*
+			 * On some OEM/enterprise-managed devices,
+			 * com.android.providers.downloads is absent rather than merely
+			 * disabled, and the query itself throws instead of returning a
+			 * disabled state. Treat that the same as "disabled" and skip
+			 * the download rather than crashing.
+			 */
+			SalesforceSDKLogger.w(TAG,
+					"Could not determine if com.android.providers.downloads is enabled",
+					e);
+			return;
+		}
 		if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
 			state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
 			final DownloadManager.Request downloadReq = new DownloadManager.Request(srcUri);
@@ -1140,6 +1188,7 @@ public class UserAccount {
 			if (credentialsIdentifier != null) object.put(CREDENTIALS_IDENTIFIER, credentialsIdentifier);
 			if (tokenType != null) object.put(TOKEN_TYPE, tokenType);
 			if (lastTokenRotationTime != null) object.put(LAST_TOKEN_ROTATION_TIME, lastTokenRotationTime);
+			if (uiSid != null) object.put(UI_SID, uiSid);
 			if (!featureFlags.isEmpty()) {
 				org.json.JSONArray flagsArray = new org.json.JSONArray();
 				for (String f : featureFlags) flagsArray.put(f);
@@ -1210,6 +1259,7 @@ public class UserAccount {
 		if (credentialsIdentifier != null) object.putString(CREDENTIALS_IDENTIFIER, credentialsIdentifier);
 		if (tokenType != null) object.putString(TOKEN_TYPE, tokenType);
 		if (lastTokenRotationTime != null) object.putString(LAST_TOKEN_ROTATION_TIME, lastTokenRotationTime);
+		if (uiSid != null) object.putString(UI_SID, uiSid);
 		object = MapUtil.addMapToBundle(additionalOauthValues, additionalOauthKeys, object);
 		return object;
 	}

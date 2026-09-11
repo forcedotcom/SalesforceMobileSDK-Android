@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.auth.idp.interfaces
 
 import android.webkit.WebView
 
+@Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+        "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
 interface IDPAuthCodeActivity {
 
     val webView: WebView

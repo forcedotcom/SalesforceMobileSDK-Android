@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_ENABLED
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_POLICY
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.BIO_AUTH_TIMEOUT
+import com.salesforce.androidsdk.ui.BiometricOptInActivity
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -320,6 +321,31 @@ class BiometricAuthenticationManagerTest {
             hitsAfterInitialLock,
             activityMonitors.sumOf { it.hits }
         )
+    }
+
+    @Test
+    fun testPresentOptInDialogLaunchesActivity() {
+        val optInActivityMonitor = instrumentation.addMonitor(
+            BiometricOptInActivity::class.java.name, null, false
+        )
+        try {
+            Assert.assertEquals(
+                "No BiometricOptInActivity should have launched yet.",
+                0,
+                optInActivityMonitor.hits
+            )
+
+            bioAuthManager.presentOptInDialog()
+
+            val launched = optInActivityMonitor.waitForActivityWithTimeout(10_000)
+            Assert.assertNotNull(
+                "presentOptInDialog() should launch a BiometricOptInActivity.",
+                launched
+            )
+            launched?.finish()
+        } finally {
+            instrumentation.removeMonitor(optInActivityMonitor)
+        }
     }
 
     @Test

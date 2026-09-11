@@ -28,17 +28,13 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
-import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import org.junit.Test
 import org.junit.runner.RunWith
-
-// TODO: remove loginAndValidate override when W-20524841 is fixed.
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -57,7 +53,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.CA_JWT,
             scopeSelection = ScopeSelection.ALL,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -72,7 +68,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.ECA_JWT,
             scopeSelection = ScopeSelection.ALL,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -87,7 +83,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         migrateAndValidate(
             KnownAppConfig.BEACON_JWT,
             scopeSelection = ScopeSelection.ALL,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -102,7 +98,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -114,7 +110,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.CA_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -129,11 +125,11 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.ECA_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         migrateAndValidate(
             KnownAppConfig.CA_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -145,11 +141,11 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         migrateAndValidate(
             KnownAppConfig.CA_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -161,11 +157,11 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_JWT,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
         migrateAndValidate(
             KnownAppConfig.BEACON_OPAQUE,
-            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         )
     }
 
@@ -190,7 +186,7 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.ECA_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
             expectAdvancedAuth = false,
-            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
         )
     }
 
@@ -210,37 +206,9 @@ class RefreshTokenMigrationTests: AuthFlowTest() {
             knownAppConfig = KnownAppConfig.BEACON_OPAQUE,
             scopeSelection = ScopeSelection.ALL,
             expectAdvancedAuth = false,
-            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            expectedAMarker = FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
         )
     }
 
     // endregion
-
-    override fun loginAndValidate(
-        knownAppConfig: KnownAppConfig,
-        scopeSelection: ScopeSelection,
-        useWebServerFlow: Boolean,
-        useHybridAuthToken: Boolean,
-        useDPoP: Boolean,
-        knownLoginHostConfig: KnownLoginHostConfig,
-        knownUserConfig: KnownUserConfig,
-        forceAdvancedAuthentication: Boolean,
-        useWelcomeDiscovery: Boolean,
-        isMultiUser: Boolean,
-        useLoginPoolHost: Boolean,
-    ) {
-        super.loginAndValidate(
-            knownAppConfig = knownAppConfig,
-            scopeSelection = scopeSelection,
-            useWebServerFlow = useWebServerFlow,
-            useHybridAuthToken = false, // TODO: W-20524841 — Pass useHybridAuthToken once server bug is fixed.
-            useDPoP = useDPoP,
-            forceAdvancedAuthentication = forceAdvancedAuthentication,
-            knownLoginHostConfig = knownLoginHostConfig,
-            knownUserConfig = user,
-            useWelcomeDiscovery = useWelcomeDiscovery,
-            isMultiUser = isMultiUser,
-            useLoginPoolHost = useLoginPoolHost,
-        )
-    }
 }

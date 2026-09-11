@@ -238,6 +238,60 @@ public class HttpAccessTest {
 		}
 	}
 
+	/**
+	 * A request-scoped account must win over the ambient current-user fallback. This is the
+	 * token-refresh shape used after a cold start, when the refresh operation owns the account but
+	 * current-user state may not yet be available.
+	 */
+	@Test
+	public void test_givenRequestScopedUser_whenNoArgInterceptor_thenHeaderUsesRequestUser()
+			throws Exception {
+		final UserAccount requestUser = buildMinimalUserAccount("requestOrg", "requestUser");
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("RT", requestUser);
+		try {
+			final Request request = new Request.Builder()
+					.url(new HttpUrl.Builder().scheme("https").host("test.salesforce.com").build())
+					.tag(UserAccount.class, requestUser)
+					.build();
+			final String header = captureUserAgentHeader(
+					new HttpAccess.UserAgentInterceptor(), request);
+			Assert.assertTrue(
+					"User-Agent should contain the request-scoped user's RT flag",
+					header.contains("RT"));
+		} finally {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("RT", requestUser);
+		}
+	}
+
+	/**
+	 * Request-scoped identity must take precedence over a different interceptor identity. This
+	 * makes the regression deterministic without depending on whichever account is current in the
+	 * instrumentation process.
+	 */
+	@Test
+	public void test_givenRequestAndConfiguredUsers_whenIntercept_thenRequestUserWins()
+			throws Exception {
+		final UserAccount requestUser = buildMinimalUserAccount("requestOrg2", "requestUser2");
+		final UserAccount configuredUser = buildMinimalUserAccount("configuredOrg", "configuredUser");
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("RQ", requestUser);
+		SalesforceSDKManager.getInstance().registerUsedAppFeature("CF", configuredUser);
+		try {
+			final Request request = new Request.Builder()
+					.url(new HttpUrl.Builder().scheme("https").host("test.salesforce.com").build())
+					.tag(UserAccount.class, requestUser)
+					.build();
+			final String header = captureUserAgentHeader(
+					new HttpAccess.UserAgentInterceptor(configuredUser), request);
+			Assert.assertTrue("User-Agent should contain the request user's RQ flag",
+					header.contains("RQ"));
+			Assert.assertFalse("User-Agent should not contain the configured user's CF flag",
+					header.contains("CF"));
+		} finally {
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("RQ", requestUser);
+			SalesforceSDKManager.getInstance().unregisterUsedAppFeature("CF", configuredUser);
+		}
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -249,10 +303,15 @@ public class HttpAccessTest {
 	 */
 	private static String captureUserAgentHeader(HttpAccess.UserAgentInterceptor interceptor)
 			throws IOException {
-		final AtomicReference<String> captured = new AtomicReference<>();
 		final HttpUrl dummyUrl = new HttpUrl.Builder()
 				.scheme("https").host("test.salesforce.com").build();
 		final Request original = new Request.Builder().url(dummyUrl).build();
+		return captureUserAgentHeader(interceptor, original);
+	}
+
+	private static String captureUserAgentHeader(HttpAccess.UserAgentInterceptor interceptor,
+			Request original) throws IOException {
+		final AtomicReference<String> captured = new AtomicReference<>();
 
 		interceptor.intercept(new Interceptor.Chain() {
 			@Override

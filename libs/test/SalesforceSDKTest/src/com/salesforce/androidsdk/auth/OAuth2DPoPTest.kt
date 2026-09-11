@@ -30,6 +30,8 @@ import android.app.Instrumentation
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.TestForceApp
+import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
@@ -42,8 +44,10 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -147,6 +151,49 @@ class OAuth2DPoPTest {
         )
     }
 
+    /** Refresh carries its owning account through to the final User-Agent interceptor. */
+    @Test
+    fun test_refreshAuthToken_withUserAccount_tagsRequestAndUsesRequestUserAgent() {
+        val user = buildUserAccount("request")
+        val configuredUser = buildUserAccount("configured")
+        val requestHttpAccess = CapturingHttpAccess(configuredUser)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature("RQ", user)
+        SalesforceSDKManager.getInstance().registerUsedAppFeature("CF", configuredUser)
+        requestHttpAccess.enqueueTokenSuccess()
+
+        try {
+            OAuth2.refreshAuthToken(
+                requestHttpAccess,
+                URI.create("https://example-token.test/"),
+                "test-client-id",
+                "test-refresh-token",
+                null,
+                null,
+                null,
+                user
+            )
+
+            val request = requestHttpAccess.lastRequest()!!
+            assertSame(
+                "refresh request should retain its owning UserAccount",
+                user,
+                request.tag(UserAccount::class.java)
+            )
+            val userAgent = request.header("User-Agent")!!
+            assertTrue(
+                "User-Agent should contain the request user's RQ flag",
+                userAgent.contains("RQ")
+            )
+            assertFalse(
+                "User-Agent should not contain the configured user's CF flag",
+                userAgent.contains("CF")
+            )
+        } finally {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature("RQ", user)
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature("CF", configuredUser)
+        }
+    }
+
     /** `use_dpop_nonce` retry re-attaches a proof and consumes the harvested nonce. */
     @Test
     fun test_refreshAuthToken_nonceChallenge_retryAttachesProof_flagOff() {
@@ -154,6 +201,8 @@ class OAuth2DPoPTest {
         DPoPKeyManager.generateOrLoadKeyPair(alias)
 
         val host = "example-nonce.test"
+        val user = buildUserAccount("nonce")
+        SalesforceSDKManager.getInstance().registerUsedAppFeature("RT", user)
         DPoPNonceCache.clear(credentialsIdentifier)
 
         // First response: 400 use_dpop_nonce + DPoP-Nonce header for harvest.
@@ -165,25 +214,44 @@ class OAuth2DPoPTest {
         // Second response: 200 success — expected after nonce retry.
         httpAccess.enqueueTokenSuccess()
 
-        OAuth2.refreshAuthToken(
-            httpAccess,
-            URI.create("https://$host/"),
-            "test-client-id",
-            "test-refresh-token",
-            null,
-            credentialsIdentifier,
-            "DPoP"
-        )
+        try {
+            OAuth2.refreshAuthToken(
+                httpAccess,
+                URI.create("https://$host/"),
+                "test-client-id",
+                "test-refresh-token",
+                null,
+                credentialsIdentifier,
+                "DPoP",
+                user
+            )
 
-        val requests = httpAccess.allRequests()
-        assertEquals("Expected exactly two token endpoint requests", 2, requests.size)
-        assertNotNull("Initial request should carry a DPoP proof", requests[0].header("DPoP"))
-        assertNotNull("Retry request should carry a DPoP proof", requests[1].header("DPoP"))
-        // The retry proof is minted after the nonce is harvested, so it must differ from the first.
-        assertTrue(
-            "Retry proof header should be re-minted (i.e. differ from the initial one)",
-            requests[0].header("DPoP") != requests[1].header("DPoP")
-        )
+            val requests = httpAccess.allRequests()
+            assertEquals("Expected exactly two token endpoint requests", 2, requests.size)
+            assertNotNull("Initial request should carry a DPoP proof", requests[0].header("DPoP"))
+            assertNotNull("Retry request should carry a DPoP proof", requests[1].header("DPoP"))
+            // The retry proof is minted after the nonce is harvested, so it must differ from the first.
+            assertTrue(
+                "Retry proof header should be re-minted (i.e. differ from the initial one)",
+                requests[0].header("DPoP") != requests[1].header("DPoP")
+            )
+            assertSame(
+                "DPoP retry should preserve request-scoped user context",
+                user,
+                requests[1].tag(UserAccount::class.java)
+            )
+            assertTrue(
+                "Initial request User-Agent should contain the owning user's RT flag",
+                requests[0].header("User-Agent")!!.contains("RT")
+            )
+            assertEquals(
+                "DPoP retry should preserve the owning user's User-Agent",
+                requests[0].header("User-Agent"),
+                requests[1].header("User-Agent")
+            )
+        } finally {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature("RT", user)
+        }
     }
 
     /** Identity-service call attaches DPoP for a DPoP-bound credential even with flag off. */
@@ -245,7 +313,9 @@ class OAuth2DPoPTest {
      * request and (b) return canned responses without touching the network. Avoids the need for
      * the MockWebServer dependency, which is not on this module's test classpath.
      */
-    private class CapturingHttpAccess : HttpAccess(null, "dummy-agent") {
+    private class CapturingHttpAccess(
+        private val configuredUserAgentUser: UserAccount? = null
+    ) : HttpAccess(null, "dummy-agent") {
 
         private val recordedRequests = mutableListOf<Request>()
         private val enqueuedResponses = ArrayDeque<CannedResponse>()
@@ -268,7 +338,14 @@ class OAuth2DPoPTest {
         }
 
         override fun createNewClientBuilder(): OkHttpClient.Builder =
-            OkHttpClient.Builder().addInterceptor(capturingInterceptor)
+            OkHttpClient.Builder().apply {
+                if (configuredUserAgentUser == null) {
+                    addInterceptor(HttpAccess.UserAgentInterceptor())
+                } else {
+                    addInterceptor(HttpAccess.UserAgentInterceptor(configuredUserAgentUser))
+                }
+                addInterceptor(capturingInterceptor)
+            }
 
         fun enqueue(code: Int, body: String, headers: Map<String, String> = emptyMap()) {
             synchronized(enqueuedResponses) { enqueuedResponses.addLast(CannedResponse(code, body, headers)) }
@@ -306,4 +383,16 @@ class OAuth2DPoPTest {
 
         private data class CannedResponse(val code: Int, val body: String, val headers: Map<String, String>)
     }
+
+    private fun buildUserAccount(suffix: String): UserAccount = UserAccountBuilder.getInstance()
+        .authToken("$suffix-access-token")
+        .refreshToken("$suffix-refresh-token")
+        .loginServer("https://example-token.test")
+        .idUrl("https://example-token.test/id/00D$suffix/005$suffix")
+        .instanceServer("https://instance.test")
+        .orgId("00D$suffix")
+        .userId("005$suffix")
+        .username("$suffix-user@example.test")
+        .accountName("$suffix-user")
+        .build()
 }

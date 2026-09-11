@@ -66,16 +66,26 @@ import com.salesforce.samples.authflowtester.R
 import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
+import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
+import com.salesforce.samples.authflowtester.components.CONTENT_SID
 import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
 import com.salesforce.samples.authflowtester.components.DPOP_NONCE
+import com.salesforce.samples.authflowtester.components.LIGHTNING_DOMAIN
+import com.salesforce.samples.authflowtester.components.LIGHTNING_SID
+import com.salesforce.samples.authflowtester.components.MAIN_SID
+import com.salesforce.samples.authflowtester.components.PARENT_SID
 import com.salesforce.samples.authflowtester.components.REFRESH_TOKEN
 import com.salesforce.samples.authflowtester.components.SCOPES
 import com.salesforce.samples.authflowtester.components.OAUTH_TOKEN_TYPE
 import com.salesforce.samples.authflowtester.components.TOKEN_FORMAT
+import com.salesforce.samples.authflowtester.components.UI_SID
 import com.salesforce.samples.authflowtester.components.USERNAME
+import com.salesforce.samples.authflowtester.components.VF_DOMAIN
+import com.salesforce.samples.authflowtester.components.VF_SID
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -309,6 +319,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
         isBeacon: Boolean = false,
+        expectedRtMarker: Boolean = false,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
@@ -345,10 +356,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
-    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection) {
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null) {
         val expected = testConfig.getApp(knownAppConfig)
         val (accessToken, refreshToken) = getTokens()
 
@@ -373,7 +384,56 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 "DPoP key thumbprint must be a 43-char base64url string; got: '${dpopInfo.keyThumbprint}'"
             }
         }
+
+        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
     }
+
+    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>) {
+        val hasContentScope = scopeList.contains("content")
+        val hasLightningScope = scopeList.contains("lightning")
+        val hasVisualforceScope = scopeList.contains("visualforce")
+
+        // Expand once; individual reads handle their own scrolling via performScrollTo().
+        expandUserCredentialsSection(targetNode = CONTENT_DOMAIN)
+        val contentDomain = getText(CONTENT_DOMAIN).emptyIfPlaceholder()
+        val contentSid = getSensitiveValue(CONTENT_SID).emptyIfPlaceholder()
+        val lightningDomain = getText(LIGHTNING_DOMAIN).emptyIfPlaceholder()
+        val lightningSid = getSensitiveValue(LIGHTNING_SID).emptyIfPlaceholder()
+        val vfDomain = getText(VF_DOMAIN).emptyIfPlaceholder()
+        val vfSid = getSensitiveValue(VF_SID).emptyIfPlaceholder()
+        val parentSid = getSensitiveValue(PARENT_SID).emptyIfPlaceholder()
+        val mainSid = getSensitiveValue(MAIN_SID).emptyIfPlaceholder()
+        val uiSid = getSensitiveValue(UI_SID).emptyIfPlaceholder()
+
+        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && useHybrid, "Content domain")
+        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && useHybrid, "Content SID")
+        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning domain")
+        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning SID")
+        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
+        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
+        assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
+        assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop && useHybrid, "UI SID")
+
+        if (useHybrid) {
+            if (isDpop) {
+                assertEquals("Main SID should equal UI SID in DPoP hybrid flow", uiSid, mainSid)
+            } else if (isJwt) {
+                assertEquals("Main SID should equal Parent SID in JWT hybrid flow", parentSid, mainSid)
+            } else {
+                assertEquals("Main SID should equal Access Token in opaque hybrid flow", accessToken, mainSid)
+            }
+        }
+    }
+
+    private fun assertNotEmpty(value: String, shouldNotBeEmpty: Boolean, name: String) {
+        if (shouldNotBeEmpty) {
+            assert(value.isNotEmpty()) { "$name should not be empty" }
+        } else {
+            assert(value.isEmpty()) { "$name should be empty" }
+        }
+    }
+
+    private fun String.emptyIfPlaceholder() = if (this == "(empty)") "" else this
 
     fun migrateToNewApp(
         knownAppConfig: KnownAppConfig,
@@ -622,7 +682,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
-        isRtr: Boolean = false,
+        expectedRtMarker: Boolean = false,
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
@@ -632,7 +692,21 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isBeacon: Boolean = false,
     ) {
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
-        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, isRtr, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
+        validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker, isDpop, expectedBMarker, expectedLMarker, expectedAMarker, wasMigrated, isJwt, isBeacon)
+    }
+
+    fun validateLastTokenRequestUserAgent(vararg expectedMarkers: String) {
+        expandUserCredentialsSection(targetNode = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC)
+        val userAgent = getText(TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC)
+        val flags = userAgent.substringAfter("ftr_", missingDelimiterValue = "")
+            .substringBefore(" ")
+            .split(".")
+            .toSet()
+        expectedMarkers.forEach { expectedMarker ->
+            assert(expectedMarker in flags) {
+                "Expected '$expectedMarker' in the last token-request User-Agent: $userAgent"
+            }
+        }
     }
 
     private fun validateUserAgent(
@@ -641,7 +715,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         usesWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         expectAdvancedAuth: Boolean = false,
-        isRtr: Boolean = false,
+        expectedRtMarker: Boolean = false,
         isDpop: Boolean = false,
         expectedBMarker: String? = null,
         expectedLMarker: String? = null,
@@ -692,7 +766,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        if (isRtr) {
+        if (expectedRtMarker) {
             assert("RT" in flags) {
                 "Expected 'RT' flag after Refresh Token Rotation in: $ua"
             }

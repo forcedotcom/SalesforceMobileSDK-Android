@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-present, salesforce.com, inc.
+ * Copyright (c) 2025-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,50 +24,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.ui
 
-import androidx.test.filters.LargeTest;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.MaterialTheme
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.ui.components.BiometricOptInDialog
 
 /**
- * Running javascript tests for SmartStore plugin.
+ * This class provides UI to ask the user to opt in to biometric authentication.  It renders the
+ * biometric opt-in dialog over a transparent background and records the user's choice before
+ * finishing.  It is launched by
+ * [com.salesforce.androidsdk.security.interfaces.BiometricAuthenticationManager.presentOptInDialog].
  */
-@RunWith(Parameterized.class)
-@LargeTest
-public class SmartStoreLoadJSTest extends JSTestCase {
+open class BiometricOptInActivity: AppCompatActivity() {
 
-    private static final String JS_SUITE = "SmartStoreLoadTestSuite";
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-    @Parameterized.Parameter
-    public String testName;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static List<String> data() {
-        return Arrays.asList(new String[]{
-                "testNumerousFields",
-                "testIncreasingFieldLength",
-                "testAddAndRetrieveManyEntries",
-                "testUpsertManyEntries",
-                "testUpsertAndQueryEntries",
-                "testUpsertConcurrentEntries"
-
-        });
-    }
-
-    @BeforeClass
-    public static void runJSTestSuite() throws InterruptedException {
-        JSTestCase.runJSTestSuite(JS_SUITE, data(), 180);
-    }
-
-    @Test
-    public void test() {
-        runTest(JS_SUITE, testName);
+        // Set content
+        setContent {
+            MaterialTheme(colorScheme = SalesforceSDKManager.getInstance().colorScheme()) {
+                BiometricOptInDialog(onResult = { optedIn ->
+                    SalesforceSDKManager.getInstance().biometricAuthenticationManager?.biometricOptIn(optedIn)
+                    finish()
+                })
+            }
+        }
     }
 }

@@ -32,6 +32,9 @@ import com.salesforce.androidsdk.config.BootConfig
 /**
  * SP app configuration
  */
+@Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+        "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+@Suppress("DEPRECATION") // References itself internally in equals()/hashCode()/forCurrentApp() until it is removed in 15.0.
 data class SPConfig (
     val appPackageName: String,
     val componentName: String,
@@ -41,6 +44,8 @@ data class SPConfig (
 ) {
     companion object {
         @JvmStatic
+        @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+                "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
         fun forCurrentApp(): SPConfig {
             val sdkMgr = SalesforceSDKManager.getInstance()
             return with(BootConfig.getBootConfig(sdkMgr.appContext)) {

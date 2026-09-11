@@ -52,7 +52,7 @@ class SalesforceWebViewCookieManager {
         val lightningSid = userAccount.lightningSid
         val contentDomain = userAccount.contentDomain
         val contentSid = userAccount.contentSid
-        val mainSid = if (userAccount.tokenFormat == "jwt") userAccount.parentSid else userAccount.authToken
+        val mainSid = userAccount.mainSid
         val vfDomain = userAccount.vfDomain
         val vfSid = userAccount.vfSid
         val clientSrc = userAccount.cookieClientSrc

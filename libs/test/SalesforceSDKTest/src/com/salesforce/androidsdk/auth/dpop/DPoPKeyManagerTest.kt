@@ -163,4 +163,26 @@ class DPoPKeyManagerTest {
         assertFalse(DPoPKeyManager.shouldAttachDPoP(id, "Bearer"))
         assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPoP"))
     }
+
+    @Test
+    fun test_isDPoPTokenType_matchesCaseInsensitivelyAndRejectsNilEmpty() {
+        // RFC 6749 §5.1 does not mandate casing — servers may return "dpop" or "DPoP".
+        assertTrue(DPoPKeyManager.isDPoPTokenType("DPoP"))
+        assertTrue(DPoPKeyManager.isDPoPTokenType("dpop"))
+        assertTrue(DPoPKeyManager.isDPoPTokenType("DPOP"))
+
+        assertFalse(DPoPKeyManager.isDPoPTokenType(null))
+        assertFalse(DPoPKeyManager.isDPoPTokenType(""))
+        assertFalse(DPoPKeyManager.isDPoPTokenType("Bearer"))
+        assertFalse(DPoPKeyManager.isDPoPTokenType("bearer"))
+    }
+
+    @Test
+    fun test_shouldAttachDPoP_lowercaseDPoPTokenType_returnsTrue() {
+        // Regression for W-24027018: server returns lowercase "dpop" in refresh responses.
+        val id = "lowercase_dpop_${UUID.randomUUID()}"
+        aliasesToCleanUp.add(DPoPKeyManager.aliasForCredentialsIdentifier(id))
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "dpop"))
+        assertTrue(DPoPKeyManager.shouldAttachDPoP(id, "DPOP"))
+    }
 }

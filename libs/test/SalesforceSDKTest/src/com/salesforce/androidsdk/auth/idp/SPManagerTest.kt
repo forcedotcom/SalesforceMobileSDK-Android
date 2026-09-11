@@ -24,6 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+// This suite exercises the IDP/SP login flow, which is deprecated (14.0, removal targeted for 15.0).
+// The flow still ships and must keep working, so the tests intentionally use the deprecated APIs.
+@file:Suppress("DEPRECATION")
+
 package com.salesforce.androidsdk.auth.idp
 
 import android.app.Activity

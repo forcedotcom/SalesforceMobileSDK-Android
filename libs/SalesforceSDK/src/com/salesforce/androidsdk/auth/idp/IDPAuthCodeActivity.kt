@@ -60,9 +60,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.util.LogUtil
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
-import com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity as IDPAuthCodeActivityInterface
 
-class IDPAuthCodeActivity : ComponentActivity(), IDPAuthCodeActivityInterface {
+@Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+        "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+@Suppress("DEPRECATION") // Implements the deprecated IDPAuthCodeActivity interface and reads the deprecated idpManager flag until they are removed in 15.0.
+class IDPAuthCodeActivity : ComponentActivity(), com.salesforce.androidsdk.auth.idp.interfaces.IDPAuthCodeActivity {
 
     companion object {
         private val TAG: String = IDPAuthCodeActivity::class.java.simpleName

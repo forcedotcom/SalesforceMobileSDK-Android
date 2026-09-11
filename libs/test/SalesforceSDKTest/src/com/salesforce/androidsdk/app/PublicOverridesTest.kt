@@ -32,6 +32,9 @@ import org.junit.runner.RunWith
 internal class PublicOverridesTest {
     private val context = InstrumentationRegistry.getInstrumentation().context
 
+    // onIDPLoginClick() is deprecated (IDP flow, 14.0 → removal targeted for 15.0); overriding it
+    // here only verifies the override point still exists, so suppress the deprecation warning.
+    @Suppress("DEPRECATION")
     @Test
     fun overrideLoginActivity() {
         class OverrideLoginActivity : LoginActivity() {

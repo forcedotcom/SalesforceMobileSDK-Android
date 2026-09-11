@@ -30,8 +30,13 @@ import android.content.Context
 import android.content.Intent
 import com.salesforce.androidsdk.R
 
+@Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+        "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
+@Suppress("DEPRECATION") // Members below reference the deprecated Status/StatusUpdateCallback types until they are removed in 15.0.
 interface SPManager {
 
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     enum class Status(val resIdForDescription:Int) {
         FAILED_TO_SEND_REQUEST_TO_IDP(R.string.sf__failed_to_send_request_to_idp),
         LOGIN_REQUEST_SENT_TO_IDP(R.string.sf__login_request_sent_to_idp),
@@ -40,6 +45,8 @@ interface SPManager {
         FAILED_TO_EXCHANGE_AUTHORIZATION_CODE(R.string.sf__failed_to_exchange_authorization_code),
         LOGIN_COMPLETE(R.string.sf__login_complete)
     }
+    @Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+            "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
     interface StatusUpdateCallback {
         fun onStatusUpdate(status: Status)
     }

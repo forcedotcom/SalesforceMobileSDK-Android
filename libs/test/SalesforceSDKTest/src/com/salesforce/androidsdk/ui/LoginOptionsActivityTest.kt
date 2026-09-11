@@ -88,7 +88,7 @@ class LoginOptionsActivityTest {
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
-    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun setup() {
         // Save original values
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
@@ -123,7 +123,7 @@ class LoginOptionsActivityTest {
     }
 
     @After
-    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication flag.
+    @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun teardown() {
         // Restore original values
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
@@ -148,6 +148,7 @@ class LoginOptionsActivityTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun loginOptionsActivity_WebServerFlowToggle_UpdatesSdkManager() {
         // Set initial state via the activity's LiveData
         composeTestRule.activity.runOnUiThread {
@@ -223,6 +224,7 @@ class LoginOptionsActivityTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun loginOptionsActivity_InitialToggleStates_ReflectSdkManagerValues() {
         // Set known states via the activity's LiveData
         composeTestRule.activity.runOnUiThread {
@@ -330,6 +332,7 @@ class LoginOptionsActivityTest {
     }
 
     @Test
+    @Suppress("DEPRECATION") // Exercises the deprecated useWebServerAuthentication flag.
     fun loginOptionsActivity_MultipleToggles_WorkIndependently() {
         // Set initial states
         composeTestRule.activity.runOnUiThread {

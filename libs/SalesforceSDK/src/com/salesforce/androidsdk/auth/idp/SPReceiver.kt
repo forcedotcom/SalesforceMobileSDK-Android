@@ -36,7 +36,10 @@ import com.salesforce.androidsdk.util.SalesforceSDKLogger
 /**
  * Receiver running in SP app handling calls from IDP app
  */
+@Deprecated("The IDP (Identity Provider) login flow is deprecated and will be removed in " +
+        "Salesforce Mobile SDK 15.0. Apps should use advanced (browser-based) authentication.")
 class SPReceiver : BroadcastReceiver() {
+    @Suppress("DEPRECATION") // Reads the deprecated spManager flag until it is removed in 15.0.
     override fun onReceive(context: Context, intent: Intent) {
         SalesforceSDKManager.getInstance().spManager?.onReceive(context, intent) ?: run {
             SalesforceSDKLogger.d(this::class.java.simpleName, "onReceive no sp manager to handle ${LogUtil.intentToString(intent)}")

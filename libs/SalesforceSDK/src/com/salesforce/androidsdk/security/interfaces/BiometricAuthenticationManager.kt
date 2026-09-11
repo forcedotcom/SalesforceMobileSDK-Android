@@ -76,6 +76,17 @@ interface BiometricAuthenticationManager {
     fun hasBiometricOptedIn(): Boolean
 
     /**
+     * Presents a dialog to the user asking them to opt in to biometric authentication.  The
+     * dialog is shown over a transparent background activity, so no host activity or fragment
+     * manager is required.  The user's choice is recorded via [biometricOptIn].
+     *
+     * The SDK presents this dialog automatically after a fresh login when
+     * [automaticPresentation] is true; call this only if you have disabled automatic
+     * presentation and wish to control when the dialog appears.
+     */
+    fun presentOptInDialog()
+
+    /**
      * Enables or disables a native button on the login screen that allows the user to bypass
      * username password authentication with biometric.  By default the button is enabled.
      *

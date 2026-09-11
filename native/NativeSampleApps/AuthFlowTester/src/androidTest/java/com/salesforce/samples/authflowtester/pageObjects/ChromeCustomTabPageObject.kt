@@ -76,10 +76,12 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         // empty password, which triggers the client-side "Please enter your password" error and
         // re-renders the form (previously this stray tap, combined with setPassword grabbing the
         // first text field, caused the password to be typed into the username field).
-        val passwordAlreadyVisible = device
-            .findObject(UiSelector().className("android.widget.EditText").instance(1))
+        val passwordAlreadyVisible = combinedFormPasswordField()
             .waitForExists(QUICK_CHECK_TIMEOUT_MS)
-        if (!passwordAlreadyVisible) tapLogin()
+        if (!passwordAlreadyVisible) {
+            tapLogin()
+            waitForPasswordStep(username)
+        }
         setPassword(password)
         // On the combined page the Log In button sits directly below the password field, so the
         // soft keyboard raised by setPassword covers it — a tap would land on the keyboard instead
@@ -94,9 +96,10 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
 
     override fun welcomeLogin(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         skipGoogleSignIn()
-        val (_, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
+        val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         // The OAuth login_hint already pre-filled the username; advance, enter password, submit.
         tapLogin()
+        waitForPasswordStep(username)
         setPassword(password)
         tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
@@ -197,10 +200,8 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         // two-step page's password screen. Prefer instance(1) (combined page) and fall back to
         // instance(0) (two-step). Using instance(0) unconditionally would target the USERNAME field
         // on a combined page, typing the password into it.
-        val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
+        val passwordField = combinedFormPasswordField()
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
-            ?: device.findObject(UiSelector().className("android.widget.EditText").instance(1))
-                .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
                 .also {
                     if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
@@ -210,6 +211,41 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         passwordField.click()
         passwordField.setText(password)
     }
+
+    /**
+     * Waits for a two-step Salesforce login page to replace the username input with the password
+     * input before typing. The previous page can remain accessible for several seconds after its
+     * Log In button is tapped; falling back to EditText instance(0) during that window overwrites
+     * the username with the password.
+     */
+    private fun waitForPasswordStep(username: String) {
+        val combinedPasswordField = combinedFormPasswordField()
+        val firstTextField = device.findObject(
+            UiSelector().className("android.widget.EditText").instance(0)
+        )
+        val deadline = System.currentTimeMillis() + WEBVIEW_ACTION_TIMEOUT_MS
+
+        while (System.currentTimeMillis() < deadline) {
+            val firstTextFieldIsPassword = runCatching {
+                firstTextField.exists() && firstTextField.text != username
+            }.getOrDefault(false)
+
+            if (combinedPasswordField.exists() || firstTextFieldIsPassword) {
+                return
+            }
+            device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
+        }
+
+        throw AssertionError("Password step did not replace the username field in Custom Tab")
+    }
+
+    /**
+     * Returns the password field on a combined username/password form. Chrome does not expose HTML
+     * element IDs as Android resource IDs, so the second EditText is the reliable selector here.
+     */
+    private fun combinedFormPasswordField() = device.findObject(
+        UiSelector().className("android.widget.EditText").instance(1)
+    )
 
     override fun tapLogin() {
         val loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
