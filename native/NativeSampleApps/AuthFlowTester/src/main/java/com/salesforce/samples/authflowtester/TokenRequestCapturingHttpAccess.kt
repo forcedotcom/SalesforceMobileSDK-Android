@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.auth.HttpAccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.OkHttpClient
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Records the final token-request User-Agent for UI-test assertions. */
 class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, null) {
@@ -43,6 +44,7 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
                 request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)
             ) {
                 lastTokenRequestUserAgentState.value = request.header(USER_AGENT_HEADER)
+                tokenRequestCountState.value = tokenRequestCount.incrementAndGet()
             }
             chain.proceed(request)
         }
@@ -53,5 +55,9 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
 
         private val lastTokenRequestUserAgentState = MutableStateFlow<String?>(null)
         val lastTokenRequestUserAgent = lastTokenRequestUserAgentState.asStateFlow()
+
+        private val tokenRequestCount = AtomicInteger(0)
+        private val tokenRequestCountState = MutableStateFlow(0)
+        val capturedTokenRequestCount = tokenRequestCountState.asStateFlow()
     }
 }

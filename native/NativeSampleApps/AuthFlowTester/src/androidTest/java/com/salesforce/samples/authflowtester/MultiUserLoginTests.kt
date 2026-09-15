@@ -46,6 +46,8 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_J
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
@@ -56,6 +58,7 @@ import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.ALL
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.SUBSET
 import com.salesforce.samples.authflowtester.testUtility.testConfig
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import okhttp3.FormBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -75,6 +78,50 @@ import java.net.URI
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class MultiUserLoginTests: AuthFlowTest() {
+
+    @Test
+    fun testRtrAndDPoPRtrUsers_LogoutCurrentDuringManyRequests_OtherUserRemainsUsable() {
+        val retainedUsername = testConfig.getUser(REGULAR_AUTH, user).username
+        val removedUsername = testConfig.getUser(REGULAR_AUTH, otherUser).username
+        loginAndValidate(knownAppConfig = ECA_JWT_RTR)
+        val retainedUserTokens = app.getTokens()
+
+        addOtherUserAndValidate(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            useDPoP = true,
+        )
+        app.selectManyRequestInterruption(ManyRequestInterruption.LOGOUT)
+
+        app.startManyRequests()
+
+        app.waitForManyRequestsSubmitted()
+        app.waitForManyRequestInterruption("Logout requested")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            isDpop = false,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            expectedRtMarker = false,
+        )
+        assertEquals(retainedUserTokens, app.getTokens())
+        app.validateApiRequest()
+
+        restartAndValidateUser(knownAppConfig = ECA_JWT_RTR)
+        val usersAfterRestart = sdkManager.userAccountManager.authenticatedUsers.orEmpty()
+        assertEquals(1, usersAfterRestart.size)
+        assertEquals(retainedUsername, usersAfterRestart.single().username)
+        assertTrue(usersAfterRestart.none { it.username == removedUsername })
+        assertEquals(retainedUserTokens, app.getTokens())
+        app.validateApiRequest()
+    }
 
     // Both users use the same default app type and default scopes, with additional token validation.
     @Test

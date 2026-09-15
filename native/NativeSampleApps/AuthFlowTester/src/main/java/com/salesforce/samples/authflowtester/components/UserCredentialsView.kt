@@ -48,6 +48,7 @@ import com.salesforce.androidsdk.ui.theme.sfLightColors
 import com.salesforce.androidsdk.util.test.ExcludeFromJacocoGeneratedReport
 import com.salesforce.samples.authflowtester.CREDS_SECTION_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TokenRequestCapturingHttpAccess
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import java.security.interfaces.ECPublicKey
@@ -129,6 +130,9 @@ private const val USER_AGENT_LABEL = "User Agent"
 fun UserCredentialsView(currentUser: UserAccount?) {
     val lastTokenRequestUserAgent by TokenRequestCapturingHttpAccess
         .lastTokenRequestUserAgent
+        .collectAsState()
+    val capturedTokenRequestCount by TokenRequestCapturingHttpAccess
+        .capturedTokenRequestCount
         .collectAsState()
     ExpandableCard(
         title = CARD_TITLE,
@@ -221,6 +225,11 @@ fun UserCredentialsView(currentUser: UserAccount?) {
                     label = "Last Token Request User Agent",
                     value = lastTokenRequestUserAgent,
                     contentDescription = TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC,
+                )
+                InfoRowView(
+                    label = "Captured Token Request Count",
+                    value = capturedTokenRequestCount.toString(),
+                    contentDescription = TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC,
                 )
             }
         }
