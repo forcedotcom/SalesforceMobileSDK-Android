@@ -436,6 +436,12 @@ red square to inspect and copy its request type, endpoint, HTTP status, error, a
 Automatic interruption begins after up to five requests have been submitted to OkHttp and reports its state
 inline; it does not show a modal confirmation that would block the race being exercised.
 
+#### Screenshots
+
+| Expanded options | Completed request grid | Tappable error details |
+|------------------|------------------------|------------------------|
+| ![Concurrent REST request options](Screenshots/concurrent-rest-options.png) | ![Twenty completed concurrent REST requests](Screenshots/concurrent-rest-completed.png) | ![Concurrent REST request error details](Screenshots/concurrent-rest-error-details.png) |
+
 ### Token Migration
 
 The token migration sheet allows you to exchange a user's refresh token for a new one under a different connected app configuration.
