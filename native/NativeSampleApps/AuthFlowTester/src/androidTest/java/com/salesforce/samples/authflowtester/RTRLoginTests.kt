@@ -35,6 +35,9 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE_RTR
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -46,6 +49,45 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class RTRLoginTests : AuthFlowTest() {
+
+    @Test
+    fun testECAJwtRtr_RevokedBeforeManyRequests_OneRefreshAndAllSucceed() {
+        loginAndValidate(knownAppConfig = ECA_JWT_RTR)
+        val beforeTokens = app.getTokens()
+        app.revokeAccessToken()
+        val tokenRequestsBeforeBatch = app.getCapturedTokenRequestCount()
+
+        app.startManyRequests()
+
+        val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
+        assertEquals(20, counts.successes)
+        assertEquals(0, counts.failures)
+        val afterTokens = app.getTokens()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals(
+            "Concurrent 401 responses should share one RTR token refresh",
+            1,
+            app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch,
+        )
+    }
+
+    @Test
+    fun testECAJwtRtr_RevokeWhenInFlight_BatchAndFollowUpRecover() {
+        loginAndValidate(knownAppConfig = ECA_JWT_RTR)
+        val beforeTokens = app.getTokens()
+        app.selectManyRequestInterruption(ManyRequestInterruption.REVOKE)
+
+        app.startManyRequests()
+
+        app.waitForManyRequestsSubmitted()
+        app.waitForManyRequestInterruption("Revoke completed")
+        app.waitForManyRequestsToComplete(configuredCount = 20)
+        app.validateApiRequest()
+        val afterTokens = app.getTokens()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+    }
 
     /**
      * A user that has already rotated must send RT on the first token request after restart.
