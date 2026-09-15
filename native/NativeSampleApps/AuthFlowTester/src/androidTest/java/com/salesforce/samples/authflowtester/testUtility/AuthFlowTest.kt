@@ -300,6 +300,7 @@ abstract class AuthFlowTest {
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         useLoginPoolHost: Boolean = false,
+        assertUsername: Boolean = true,
     ) {
         // When forceAdvancedAuthentication is true (default) every login completes in a Custom Tab:
         // a ChromeCustomTabPageObject serves both roles — its inherited Compose actions
@@ -447,6 +448,7 @@ abstract class AuthFlowTest {
             isJwt = appConfig.issuesJwt,
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
+            assertUsername = assertUsername,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP)
         app.validateApiRequest()
@@ -629,9 +631,8 @@ abstract class AuthFlowTest {
         chromePage.skipGoogleSignIn()
         val (username, password) = testConfig.getUser(REGULAR_AUTH, user)
         chromePage.setUsername(username)
-        chromePage.tapLogin()
-        chromePage.setPassword(password)
-        chromePage.tapLogin()
+        chromePage.advanceToPasswordStep()
+        chromePage.submitPassword(password)
 
         // OAuth approval page is rendered inside the Chrome Custom Tab.
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
@@ -705,9 +706,8 @@ abstract class AuthFlowTest {
         val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
         try {
             loginPage.setUsername(username)
-            loginPage.tapLogin()
-            loginPage.setPassword(password)
-            loginPage.tapLogin()
+            loginPage.advanceToPasswordStep()
+            loginPage.submitPassword(password)
         } catch (e: AssertionError) {
             // Verify the failure was due to a missing login form, not a different
             // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
@@ -897,6 +897,7 @@ abstract class AuthFlowTest {
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
         useLoginPoolHost: Boolean = false,
+        assertRefreshUserAgent: Boolean = true,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -915,13 +916,15 @@ abstract class AuthFlowTest {
         // This is a normal refresh through the session refresher, the only path that registers the
         // sticky RT marker. Record the observation for the current user *before* reading it back for
         // the UA assertion, so a rotation seen here is reflected in what we expect the UA to carry.
-        val username = currentUsername()
-        recordRefreshTokenRotation(username, rotated = refreshTokenRotated)
+        val username = if (assertRefreshUserAgent) currentUsername() else null
+        username?.let { recordRefreshTokenRotation(it, rotated = refreshTokenRotated) }
 
         if (isDpop) {
             val postNonce = app.getDpopInfo().nonce
             assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
         }
+        if (username == null) return
+
         val expectedBMarker = if (expectAdvancedAuth) {
             Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
         } else {

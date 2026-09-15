@@ -26,6 +26,10 @@
  */
 package com.salesforce.samples.authflowtester.pageObjects
 
+import android.os.Bundle
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasClickAction
@@ -57,6 +61,18 @@ private const val QUICK_CHECK_TIMEOUT_MS = 500L
 private const val FRE_DISMISS_TIMEOUT_MS = 30_000L
 
 /**
+ * Maximum number of actual submission attempts when Chrome UI intercepts the form. A missing button
+ * does not consume an attempt: the page object keeps looking throughout the server-render timeout.
+ * Enter is used at most once, and only while the intended Chrome credential field still has focus.
+ */
+private const val MAX_LOGIN_SUBMISSION_ATTEMPTS = 3
+
+private enum class CredentialField {
+    USERNAME,
+    PASSWORD,
+}
+
+/**
  * Handles Custom Tab interactions.
  * UiAutomator is required here because the browser (often Chrome) runs in a
  * separate process that Espresso and Compose Test APIs cannot access.
@@ -64,6 +80,7 @@ private const val FRE_DISMISS_TIMEOUT_MS = 30_000L
 class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObject(composeTestRule) {
 
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    private var lastFocusedCredentialField: CredentialField? = null
 
     override fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         skipGoogleSignIn()
@@ -76,19 +93,11 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         // empty password, which triggers the client-side "Please enter your password" error and
         // re-renders the form (previously this stray tap, combined with setPassword grabbing the
         // first text field, caused the password to be typed into the username field).
-        val passwordAlreadyVisible = combinedFormPasswordField()
-            .waitForExists(QUICK_CHECK_TIMEOUT_MS)
+        val passwordAlreadyVisible = isPasswordStepVisible()
         if (!passwordAlreadyVisible) {
-            tapLogin()
-            waitForPasswordStep(username)
+            advanceToPasswordStep()
         }
-        setPassword(password)
-        // On the combined page the Log In button sits directly below the password field, so the
-        // soft keyboard raised by setPassword covers it — a tap would land on the keyboard instead
-        // of the button and the form would never submit. Dismiss the keyboard first (Back closes
-        // the IME without leaving the Custom Tab) so the button is on-screen and clickable.
-        dismissKeyboard()
-        tapLogin()
+        submitPassword(password)
         // Under forced advanced authentication every login completes in the Custom Tab, so the
         // OAuth approval page is always rendered there regardless of the configured host.
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
@@ -96,12 +105,11 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
 
     override fun welcomeLogin(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
         skipGoogleSignIn()
+        lastFocusedCredentialField = null
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         // The OAuth login_hint already pre-filled the username; advance, enter password, submit.
-        tapLogin()
-        waitForPasswordStep(username)
-        setPassword(password)
-        tapLogin()
+        advanceToPasswordStep()
+        submitPassword(password)
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
     }
 
@@ -182,34 +190,45 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
         val usernameField = device.findObject(UiSelector().resourceId(USERNAME_ID))
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-                .also {
-                    // Use the extended WebView timeout: the Salesforce login page can take
-                    // 20–30 s to render the first input field after the tab toolbar appears.
-                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
-                        throw AssertionError("Username field not found in Custom Tab")
-                    }
-                }
-        usernameField.click()
-        usernameField.setText(name)
+                .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+        if (usernameField != null) {
+            usernameField.click()
+            usernameField.setText(name)
+            lastFocusedCredentialField = CredentialField.USERNAME
+            return
+        }
+
+        // API 35 Chrome intermittently focuses the WebEmailAddress editor (confirmed by the IME)
+        // while UiSelector exposes no EditText at all. Accessibility focus still identifies the
+        // HTML input in that state, and ACTION_SET_TEXT avoids an unreliable coordinate tap.
+        if (!setTextUsingAccessibility(name, expectPassword = false)) {
+            throw AssertionError("Username field not found in Custom Tab")
+        }
+        lastFocusedCredentialField = CredentialField.USERNAME
     }
 
     override fun setPassword(password: String) {
-        // resourceId("password") never resolves inside Chrome (HTML element IDs are not Android
-        // resource IDs — see setUsername), so the field must be located by position. The password
-        // input is the 2nd text field on a combined username+password page, or the only field on a
-        // two-step page's password screen. Prefer instance(1) (combined page) and fall back to
-        // instance(0) (two-step). Using instance(0) unconditionally would target the USERNAME field
-        // on a combined page, typing the password into it.
-        val passwordField = combinedFormPasswordField()
+        // Current Chrome exposes the HTML password element's ID as its accessibility resource ID.
+        // Prefer that stable signal, then support combined forms by position. The final instance(0)
+        // fallback is safe after advanceToPasswordStep has confirmed that the password screen is
+        // visible; using it before that confirmation could overwrite the username during a render.
+        val passwordField = device.findObject(UiSelector().resourceId(PASSWORD_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: combinedFormPasswordField()
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(UiSelector().className("android.widget.EditText").instance(0))
-                .also {
-                    if (!it.waitForExists(WEBVIEW_ACTION_TIMEOUT_MS)) {
-                        throw AssertionError("Password field not found in Custom Tab")
-                    }
-                }
-        passwordField.click()
-        passwordField.setText(password)
+                .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+        if (passwordField != null) {
+            passwordField.click()
+            passwordField.setText(password)
+            lastFocusedCredentialField = CredentialField.PASSWORD
+            return
+        }
+
+        if (!setTextUsingAccessibility(password, expectPassword = true)) {
+            throw AssertionError("Password field not found in Custom Tab")
+        }
+        lastFocusedCredentialField = CredentialField.PASSWORD
     }
 
     /**
@@ -218,26 +237,152 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
      * Log In button is tapped; falling back to EditText instance(0) during that window overwrites
      * the username with the password.
      */
-    private fun waitForPasswordStep(username: String) {
-        val combinedPasswordField = combinedFormPasswordField()
-        val firstTextField = device.findObject(
-            UiSelector().className("android.widget.EditText").instance(0)
-        )
-        val deadline = System.currentTimeMillis() + WEBVIEW_ACTION_TIMEOUT_MS
+    fun advanceToPasswordStep() {
+        // Chrome may show an autofill suggestion anchored below the focused username field. On
+        // the FTL viewport that popup covers Log In, so dismiss the focused-field UI before the
+        // checked tap. The guarded Back press closes the IME/popup without leaving the Custom Tab.
+        dismissKeyboard()
+        tapLoginUntil(
+            failureMessage = "Password step did not replace the username field in Custom Tab",
+            expectedFocusedField = CredentialField.USERNAME,
+        ) {
+            isPasswordStepVisible()
+        }
+    }
 
-        while (System.currentTimeMillis() < deadline) {
-            val firstTextFieldIsPassword = runCatching {
-                firstTextField.exists() && firstTextField.text != username
-            }.getOrDefault(false)
-
-            if (combinedPasswordField.exists() || firstTextFieldIsPassword) {
-                return
+    /**
+     * Enters and submits a password, confirming that Chrome actually left the login form. This
+     * catches both an autofill popup intercepting the tap and an input event dropped by Chrome.
+     */
+    fun submitPassword(password: String) {
+        setPassword(password)
+        // On the combined page the Log In button sits directly below the password field, so the
+        // soft keyboard raised by setPassword covers it. Back closes the IME without leaving the
+        // Custom Tab, making the button visible before the checked tap.
+        dismissKeyboard()
+        var loginFormWasGone = false
+        tapLoginUntil(
+            failureMessage = "Login form remained on screen after password submission",
+            expectedFocusedField = CredentialField.PASSWORD,
+        ) {
+            val loginFormIsGone = !isLoginButtonVisible() && !isPasswordStepVisible()
+            // Chrome can briefly remove the Log In accessibility node while an autofill popup
+            // handles the tap or the form re-renders. Require two consecutive observations of the
+            // whole form being gone before treating the submission as complete.
+            if (loginFormIsGone && loginFormWasGone) {
+                true
+            } else {
+                loginFormWasGone = loginFormIsGone
+                false
             }
-            device.waitForIdle(QUICK_CHECK_TIMEOUT_MS)
+        }
+    }
+
+    private fun isPasswordStepVisible(): Boolean =
+        device.findObject(UiSelector().resourceId(PASSWORD_ID)).exists() ||
+            combinedFormPasswordField().exists() ||
+            hasVisiblePasswordInput()
+
+    /**
+     * Finds a password input by accessibility semantics. On API 35 Chrome exposes a two-step
+     * password field as the first EditText with no HTML resource ID; its `password` property is the
+     * stable distinction from the username field while the page is replacing one with the other.
+     */
+    private fun hasVisiblePasswordInput(): Boolean =
+        findVisibleChromeInput(expectPassword = true) != null
+
+    /**
+     * Sets an HTML input when UiSelector cannot see Chrome's focused editor. Prefer the focused
+     * node, then traverse visible Chrome inputs while the page finishes rendering.
+     */
+    private fun setTextUsingAccessibility(text: String, expectPassword: Boolean): Boolean {
+        val deadline = System.currentTimeMillis() + WEBVIEW_ACTION_TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            val input = findVisibleChromeInput(expectPassword)
+            if (input != null) {
+                if (!input.isFocused) {
+                    input.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                    input.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
+                val arguments = Bundle().apply {
+                    putCharSequence(
+                        AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                        text,
+                    )
+                }
+                if (input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
+                    return true
+                }
+            }
+            if (setTextInFocusedChromeEditor(text)) return true
+            Thread.sleep(QUICK_CHECK_TIMEOUT_MS)
+        }
+        return false
+    }
+
+    /**
+     * Types into Chrome's focused HTML editor when the control is visible and focused but absent
+     * from UiAutomation's accessibility tree. This state occurs intermittently on FTL API 35/37.
+     * The caller has already established whether it is on the username or password step; requiring
+     * the IME to repeat that subtype is unreliable because API 35 can reset it to an unspecified
+     * Chrome editor while the HTML field visibly remains focused.
+     */
+    private fun setTextInFocusedChromeEditor(text: String): Boolean {
+        val inputMethodState = runCatching {
+            device.executeShellCommand("dumpsys input_method").replace(" ", "")
+        }.getOrDefault("")
+        val chromeHasInputFocus = inputMethodState.contains("packageName=com.android.chrome")
+        if (device.currentPackageName != "com.android.chrome" || !chromeHasInputFocus) {
+            return false
         }
 
-        throw AssertionError("Password step did not replace the username field in Custom Tab")
+        // Replace any browser-restored value instead of appending to it.
+        device.pressKeyCode(KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON)
+        val keyEvents = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
+            .getEvents(text.toCharArray())
+            ?: return false
+        val keyDownEvents = keyEvents.filter { it.action == KeyEvent.ACTION_DOWN }
+        return keyDownEvents.isNotEmpty() &&
+            keyDownEvents.all { device.pressKeyCode(it.keyCode, it.metaState) }
     }
+
+    private fun findVisibleChromeInput(expectPassword: Boolean): AccessibilityNodeInfo? {
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val focusedInput = runCatching {
+            uiAutomation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        }.getOrNull()
+        if (focusedInput.isMatchingChromeInput(expectPassword)) {
+            return focusedInput
+        }
+
+        val windows = uiAutomation.windows
+        for (window in windows) {
+            val root = window.root ?: continue
+            val queue = ArrayDeque<AccessibilityNodeInfo>()
+            queue.add(root)
+            while (queue.isNotEmpty()) {
+                val node = queue.removeFirst()
+                if (node.packageName == "com.android.chrome" &&
+                    node.isEditable &&
+                    node.isPassword == expectPassword &&
+                    node.isVisibleToUser
+                ) {
+                    return node
+                }
+                for (index in 0 until node.childCount) {
+                    node.getChild(index)?.let(queue::addLast)
+                }
+            }
+        }
+        return null
+    }
+
+    private fun AccessibilityNodeInfo?.isMatchingChromeInput(expectPassword: Boolean): Boolean =
+        this != null &&
+            packageName == "com.android.chrome" &&
+            isEditable &&
+            isPassword == expectPassword &&
+            isVisibleToUser
 
     /**
      * Returns the password field on a combined username/password form. Chrome does not expose HTML
@@ -248,16 +393,94 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     )
 
     override fun tapLogin() {
-        val loginButton = device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
-            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
-            ?: device.findObject(UiSelector().className("android.widget.Button").textContains("Log In"))
-                .also {
-                    if (!it.waitForExists(TIMEOUT_MS)) {
-                        throw AssertionError("Log In button not found in Custom Tab")
-                    }
-                }
+        val loginButton = findLoginButton(TIMEOUT_MS)
+            ?: throw AssertionError("Log In button not found in Custom Tab")
         loginButton.click()
     }
+
+    /**
+     * Taps Log In and checks the resulting screen state instead of trusting click injection. Chrome
+     * autofill can cover the button while leaving the underlying accessibility node discoverable,
+     * so the first click may dismiss/select the suggestion without submitting the form.
+     */
+    private fun tapLoginUntil(
+        failureMessage: String,
+        expectedFocusedField: CredentialField,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.currentTimeMillis() + WEBVIEW_ACTION_TIMEOUT_MS
+        var submissionAttempts = 0
+        var nextSubmissionAt = System.currentTimeMillis()
+        var enterFallbackUsed = false
+
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return
+
+            val now = System.currentTimeMillis()
+            if (submissionAttempts < MAX_LOGIN_SUBMISSION_ATTEMPTS && now >= nextSubmissionAt) {
+                val loginButton = findLoginButton(QUICK_CHECK_TIMEOUT_MS)
+                val submitted = when {
+                    loginButton != null -> {
+                        loginButton.click()
+                        true
+                    }
+                    !enterFallbackUsed && isExpectedCredentialFieldFocused(expectedFocusedField) -> {
+                        // API 35/37 Chrome can omit the button from UiAutomator while keeping the
+                        // intended HTML editor focused. Enter submits that form without relying on
+                        // an unsafe coordinate click.
+                        device.pressEnter()
+                        enterFallbackUsed = true
+                        true
+                    }
+                    else -> false
+                }
+                if (submitted) {
+                    submissionAttempts++
+                    nextSubmissionAt = System.currentTimeMillis() + SLEEP_TIME_MS
+                }
+            }
+
+            val remaining = deadline - System.currentTimeMillis()
+            if (remaining > 0) {
+                Thread.sleep(minOf(QUICK_CHECK_TIMEOUT_MS, remaining))
+            }
+        }
+
+        throw AssertionError(failureMessage)
+    }
+
+    private fun isExpectedCredentialFieldFocused(expectedField: CredentialField): Boolean {
+        val expectsPassword = expectedField == CredentialField.PASSWORD
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val focusedInput = runCatching {
+            uiAutomation.rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        }.getOrNull()
+        if (focusedInput.isMatchingChromeInput(expectsPassword) && focusedInput?.isFocused == true) {
+            return true
+        }
+
+        // When Chrome omits the focused HTML node from the accessibility tree, require both the
+        // field most recently focused by this page object and Chrome's active input connection.
+        val chromeHasInputFocus = runCatching {
+            device.executeShellCommand("dumpsys input_method")
+                .replace(" ", "")
+                .contains("packageName=com.android.chrome")
+        }.getOrDefault(false)
+        return lastFocusedCredentialField == expectedField && chromeHasInputFocus
+    }
+
+    private fun isLoginButtonVisible(): Boolean =
+        device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID)).exists() ||
+            device.findObject(
+                UiSelector().className("android.widget.Button").textContains("Log In")
+            ).exists()
+
+    private fun findLoginButton(fallbackTimeoutMs: Long) =
+        device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
+            .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
+            ?: device.findObject(
+                UiSelector().className("android.widget.Button").textContains("Log In")
+            ).takeIf { it.waitForExists(fallbackTimeoutMs) }
 
     /**
      * Dismisses the soft keyboard if it is showing.
@@ -269,8 +492,8 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
      * keyboard is actually shown, so this never accidentally navigates the tab when it is hidden.
      */
     private fun dismissKeyboard() {
-        // Default to true if the shell probe fails: the only caller invokes this right after typing
-        // into the password field, so the keyboard is reliably up and dismissing it is safe.
+        // Default to true if the shell probe fails: callers invoke this immediately after typing
+        // into a login field, so the keyboard is reliably up and dismissing it is safe.
         val keyboardShown = runCatching {
             device.executeShellCommand("dumpsys input_method")
                 .replace(" ", "")
