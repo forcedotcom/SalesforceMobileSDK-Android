@@ -372,8 +372,6 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
-            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
-            assertUsername = false,
         )
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
@@ -381,8 +379,6 @@ class DPoPLoginTests : AuthFlowTest() {
             isJwt = true,
             useLoginPoolHost = true,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
-            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
-            assertRefreshUserAgent = false,
         )
     }
 
@@ -397,8 +393,6 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
-            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
-            assertUsername = false,
         )
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true,
@@ -406,8 +400,6 @@ class DPoPLoginTests : AuthFlowTest() {
             isJwt = true,
             useLoginPoolHost = true,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
-            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
-            assertRefreshUserAgent = false,
         )
     }
 
