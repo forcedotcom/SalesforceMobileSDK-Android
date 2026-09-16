@@ -372,8 +372,18 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
+            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
+            assertUsername = false,
         )
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = false,
+            isDpop = true,
+            isJwt = true,
+            useLoginPoolHost = true,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
+            assertRefreshUserAgent = false,
+        )
     }
 
     // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
@@ -387,8 +397,18 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
+            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
+            assertUsername = false,
         )
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = true,
+            isDpop = true,
+            isJwt = true,
+            useLoginPoolHost = true,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
+            assertRefreshUserAgent = false,
+        )
     }
 
     // endregion
