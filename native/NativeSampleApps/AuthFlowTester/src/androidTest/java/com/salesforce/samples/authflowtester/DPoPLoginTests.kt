@@ -36,7 +36,10 @@ import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.testConfig
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -52,6 +55,86 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class DPoPLoginTests : AuthFlowTest() {
+
+    @Test
+    fun testECAJwtDPoP_RevokeWhenInFlight_PreservesBindingAndRecovers() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val beforeTokens = app.getTokens()
+        val beforeDpop = app.getDpopInfo()
+        app.selectManyRequestInterruption(ManyRequestInterruption.REVOKE)
+
+        app.startManyRequests()
+
+        app.waitForManyRequestsSubmitted()
+        app.waitForManyRequestInterruption("Revoke completed")
+        app.waitForManyRequestsToComplete(configuredCount = 20)
+        app.validateApiRequest()
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
+        assertNotEquals(beforeDpop.nonce, afterDpop.nonce)
+    }
+
+    @Test
+    fun testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        val beforeTokens = app.getTokens()
+        val beforeDpop = app.getDpopInfo()
+        app.revokeAccessToken()
+        val tokenRequestsBeforeBatch = app.getCapturedTokenRequestCount()
+
+        app.startManyRequests()
+
+        val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
+        assertEquals(20, counts.successes)
+        assertEquals(0, counts.failures)
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
+        assertNotEquals(beforeDpop.nonce, afterDpop.nonce)
+        assertEquals(
+            "A warm DPoP+RTR batch should share one token refresh",
+            1,
+            app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch,
+        )
+    }
+
+    @Test
+    fun testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        val keyThumbprintBeforeRestart = app.getDpopInfo().keyThumbprint
+        restartAndValidateUser(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            isDpop = true,
+        )
+        val beforeTokens = app.getTokens()
+        app.revokeAccessToken()
+        val tokenRequestsBeforeBatch = app.getCapturedTokenRequestCount()
+
+        app.startManyRequests()
+
+        val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
+        assertEquals(20, counts.successes)
+        assertEquals(0, counts.failures)
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(keyThumbprintBeforeRestart, afterDpop.keyThumbprint)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
+        assertEquals(
+            "A cold nonce cache should cause one challenge plus one successful token request",
+            2,
+            app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch,
+        )
+    }
 
     // region ECA JWT DPoP Tests
 

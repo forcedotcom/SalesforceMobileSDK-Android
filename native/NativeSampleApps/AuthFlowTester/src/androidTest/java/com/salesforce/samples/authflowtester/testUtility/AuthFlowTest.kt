@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
+import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
@@ -146,6 +147,9 @@ abstract class AuthFlowTest {
      */
     @Before
     open fun baselineDPoPOff() {
+        ConcurrentRequestTestHooks.failedRequestIndex = null
+        ConcurrentRequestTestHooks.submittedCount = 0
+        ConcurrentRequestTestHooks.lastInterruptionStatus = null
         SalesforceSDKManager.getInstance().useDPoP = false
         // Each test logs in fresh users; cleanup() logs everyone out, clearing the SDK's per-user
         // markers. Reset the mirrored observed-RT state so it cannot leak across tests.
@@ -154,6 +158,9 @@ abstract class AuthFlowTest {
 
     @After
     open fun cleanup() {
+        ConcurrentRequestTestHooks.failedRequestIndex = null
+        ConcurrentRequestTestHooks.submittedCount = 0
+        ConcurrentRequestTestHooks.lastInterruptionStatus = null
         with(SalesforceSDKManager.getInstance()) {
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
@@ -465,7 +472,7 @@ abstract class AuthFlowTest {
      * After the kill, we relaunch via an explicit intent so the SDK re-runs
      * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
      */
-    fun restartApp() {
+    fun restartApp(waitForAuthenticatedApp: Boolean = true) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val packageName = context.packageName
@@ -487,7 +494,7 @@ abstract class AuthFlowTest {
             putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
         }
         context.startActivity(launchIntent)
-        app.waitForAppLoad()
+        if (waitForAuthenticatedApp) app.waitForAppLoad()
     }
 
     /**
