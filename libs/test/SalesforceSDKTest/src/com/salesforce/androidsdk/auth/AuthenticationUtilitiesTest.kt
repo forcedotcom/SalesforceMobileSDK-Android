@@ -289,42 +289,30 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testOnAuthFlowComplete_successfulFlowWithoutIdScope_shouldCallSuccess() = runTest {
+    fun testOnAuthFlowComplete_withoutIdScopeAndIdentity_shouldCallError() = runTest {
         // Given
         val tokenResponseWithoutIdScope = createTokenEndpointResponse(
             scope = "refresh_token" // Missing id scope
         )
 
-        // Mock fetchUserIdentity to return null (simulating no id scope)
+        // Identity is required to create a valid account, regardless of the returned scope list.
         coEvery { fetchUserIdentity.invoke(any()) } returns null
-
-        // Create the expected UserAccount object without IdServiceResponse population
-        val expectedAccount = UserAccountBuilder.getInstance()
-            .populateFromTokenEndpointResponse(tokenResponseWithoutIdScope)
-            .populateFromIdServiceResponse(null) // No identity service response
-            .accountName(buildAccountName(null, tokenResponseWithoutIdScope.instanceUrl))
-            .loginServer("https://login.salesforce.com")
-            .clientId("test_consumer_key")
-            .nativeLogin(false)
-            .build()
 
         // When
         callOnAuthFlowComplete(tokenResponseWithoutIdScope)
 
         // Then
-        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
-        verify { onAuthFlowSuccess.invoke(expectedAccount) }
-        verify { mockUserAccountManager.createAccount(expectedAccount) }
-        verify { mockUserAccountManager.switchToUser(expectedAccount) }
-        verify { setAdministratorPreferences.invoke(null, expectedAccount) }
-        verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, null) }
-        verify { addAccount.invoke(expectedAccount) }
-        verify { updateLoggingPrefs.invoke(expectedAccount) }
-        verify { startMainActivity.invoke() }
-        verify { handleScreenLockPolicy.invoke(null, expectedAccount) }
-        verify { handleBiometricAuthPolicy.invoke(null, expectedAccount) }
-
-        // Verify that fetchUserIdentity was called but returned null
+        verify {
+            onAuthFlowError.invoke(
+                "Error",
+                "Authentication error. Please try again.",
+                any<IllegalStateException>(),
+            )
+        }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+        verify(exactly = 0) { addAccount.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
 
@@ -472,18 +460,14 @@ class AuthenticationUtilitiesTest {
     @Test
     fun testOnAuthFlowComplete_withNativeLogin_shouldCallSuccess() = runTest {
         // Given
-        val tokenResponseWithoutIdScope = createTokenEndpointResponse(
-            scope = "refresh_token" // Missing id scope
-        )
+        val tokenResponse = createTokenEndpointResponse()
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
 
-        // Mock fetchUserIdentity to return null (simulating no id scope)
-        coEvery { fetchUserIdentity.invoke(any()) } returns null
-
-        // Create the expected UserAccount object without IdServiceResponse population
         val expectedAccount = UserAccountBuilder.getInstance()
-            .populateFromTokenEndpointResponse(tokenResponseWithoutIdScope)
-            .populateFromIdServiceResponse(null) // No identity service response
-            .accountName(buildAccountName(null, tokenResponseWithoutIdScope.instanceUrl))
+            .populateFromTokenEndpointResponse(tokenResponse)
+            .populateFromIdServiceResponse(userIdentity)
+            .accountName(buildAccountName(userIdentity.username, tokenResponse.instanceUrl))
             .loginServer("https://login.salesforce.com")
             .clientId("test_consumer_key")
             .nativeLogin(true) // Expect true
@@ -491,7 +475,7 @@ class AuthenticationUtilitiesTest {
 
         // When
         callOnAuthFlowComplete(
-            customTokenResponse = tokenResponseWithoutIdScope,
+            customTokenResponse = tokenResponse,
             nativeLogin = true,
         )
 
@@ -500,16 +484,15 @@ class AuthenticationUtilitiesTest {
         verify { onAuthFlowSuccess.invoke(expectedAccount) }
         verify { mockUserAccountManager.createAccount(expectedAccount) }
         verify { mockUserAccountManager.switchToUser(expectedAccount) }
-        verify { setAdministratorPreferences.invoke(null, expectedAccount) }
-        verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, null) }
+        verify { setAdministratorPreferences.invoke(userIdentity, expectedAccount) }
+        verify { handleDuplicateUserAccount.invoke(mockUserAccountManager, expectedAccount, userIdentity) }
         verify { addAccount.invoke(expectedAccount) }
         verify { updateLoggingPrefs.invoke(expectedAccount) }
         verify { startMainActivity.invoke() }
-        verify { handleScreenLockPolicy.invoke(null, expectedAccount) }
-        verify { handleBiometricAuthPolicy.invoke(null, expectedAccount) }
+        verify { handleScreenLockPolicy.invoke(userIdentity, expectedAccount) }
+        verify { handleBiometricAuthPolicy.invoke(userIdentity, expectedAccount) }
 
-        // Verify that fetchUserIdentity was called but returned null
-        coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
+        coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponse) }
     }
 
 

@@ -181,7 +181,7 @@ internal suspend fun onAuthFlowComplete(
         )
         return
     }
-    if (scopeParser.hasIdentityScope() && userIdentity?.username.isNullOrBlank()) {
+    if (userIdentity?.username.isNullOrBlank()) {
         val error = IllegalStateException("Identity service did not return a user identity")
         w(TAG, "Cannot complete authentication because user identity is missing.", error)
         onAuthFlowError(
@@ -478,6 +478,11 @@ internal suspend fun fetchUserIdentityWithRetry(
     tokenRefresher: suspend (response: TokenEndpointResponse) -> TokenEndpointResponse =
         { response ->
             withContext(IO) {
+                // Login has not created a UserAccount yet, so ClientManager's per-account
+                // refresh coordinator cannot coordinate this request. This flow owns the
+                // TokenEndpointResponse, permits only one refresh, and copies any rotated
+                // refresh token back before the account is built. If Android gains a
+                // credential-scoped pre-account coordinator, route this refresh through it.
                 OAuth2.refreshAuthToken(
                     HttpAccess.DEFAULT,
                     OAuth2.overrideLoginServerIfNeeded(
