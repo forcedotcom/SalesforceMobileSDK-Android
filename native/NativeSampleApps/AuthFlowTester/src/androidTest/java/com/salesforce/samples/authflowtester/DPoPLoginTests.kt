@@ -378,10 +378,8 @@ class DPoPLoginTests : AuthFlowTest() {
 
     // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
     // This is a safety net for the RTR-unsafe credential-refresh pattern seen on iOS: if the
-    // identity fetch were to consume the refresh token (e.g. by triggering a credential refresh
-    // to resolve a Wrong_Org routing error), assertRevokeAndRefreshWorks below would fail because
-    // the refresh token would already be spent. Android sends the still-valid access token to the
-    // raw pool identity URL for this combination and never touches the refresh token during login.
+    // identity fetch consumes the refresh token to recover from a 401/403, the SDK must persist the
+    // rotated replacement. assertRevokeAndRefreshWorks below catches any stale-token persistence.
     @Test
     fun testECAJwtDPoP_ViaLoginPoolServer_Rtr() {
         loginAndValidate(

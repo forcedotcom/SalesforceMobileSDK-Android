@@ -71,11 +71,11 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +84,8 @@ import okhttp3.Interceptor
 import okhttp3.Request.Builder
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.HttpURLConnection.HTTP_FORBIDDEN
+import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
 import java.net.URI
 import java.util.function.Consumer
 
@@ -139,7 +141,7 @@ internal suspend fun onAuthFlowComplete(
     // Note: Can't use default parameter value for a suspended function parameter.
     val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
         fetchUserIdentity ?: { tr: TokenEndpointResponse ->
-            fetchUserIdentityWithRetry(tr, loginServer)
+            fetchUserIdentityWithRetry(tr, loginServer, consumerKey)
         }
 
     if (blockIntegrationUser) {
@@ -448,34 +450,102 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
  * For DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
  * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
  * does not issue a nonce challenge the way data endpoints do. The raw
- * [TokenEndpointResponse.idUrl] (pool-server host) must be used instead.
+ * [TokenEndpointResponse.idUrl] (pool-server host) must be used for the initial request instead.
+ * If that request requires a credential refresh, the refreshed token is issued by the instance
+ * token endpoint, so the replay uses [TokenEndpointResponse.idUrlWithInstance].
  *
- * No token refresh is attempted: the access token was just issued by the login flow,
- * so it is valid by construction. A refresh would also be unsafe under Refresh Token
- * Rotation — consuming the fresh token and discarding the rotated replacement.
+ * Identity 401/403 responses are handled like iOS: refresh once against the instance token
+ * endpoint, apply the complete refreshed credential state (including a rotated refresh token),
+ * and replay the identity request. The retry is bounded to avoid an identity-refresh loop.
  */
-private suspend fun fetchUserIdentityWithRetry(
+@VisibleForTesting
+internal suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
+    consumerKey: String,
+    identityFetcher: suspend (url: String, response: TokenEndpointResponse) -> OAuth2.IdServiceResponse =
+        { url, response ->
+            withContext(IO) {
+                callIdentityService(
+                    HttpAccess.DEFAULT,
+                    url,
+                    response.authToken,
+                    response.tokenType,
+                    response.credentialsIdentifier,
+                )
+            }
+        },
+    tokenRefresher: suspend (response: TokenEndpointResponse) -> TokenEndpointResponse =
+        { response ->
+            withContext(IO) {
+                OAuth2.refreshAuthToken(
+                    HttpAccess.DEFAULT,
+                    OAuth2.overrideLoginServerIfNeeded(
+                        loginServer,
+                        response.instanceUrl,
+                        response.communityId,
+                        response.communityUrl,
+                    ),
+                    consumerKey,
+                    checkNotNull(response.refreshToken) {
+                        "Cannot refresh identity without a refresh token"
+                    },
+                    response.additionalOauthValues,
+                    response.credentialsIdentifier,
+                    response.tokenType,
+                )
+            }
+        },
 ): OAuth2.IdServiceResponse {
-    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
-        LoginServerManager.isPoolServer(loginServer)
-    ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
-    return try {
-        withContext(Default) {
-            callIdentityService(
-                HttpAccess.DEFAULT,
-                url,
-                tokenResponse.authToken,
-                tokenResponse.tokenType,
-                tokenResponse.credentialsIdentifier,
-            )
+    var refreshAttempted = false
+    while (true) {
+        val url = if (!refreshAttempted &&
+            "DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
+            LoginServerManager.isPoolServer(loginServer)
+        ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
+        try {
+            return identityFetcher(url, tokenResponse)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val statusCode = (e as? OAuth2.IdentityServiceException)?.httpStatusCode
+            val canRefresh = !refreshAttempted &&
+                (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) &&
+                !tokenResponse.refreshToken.isNullOrBlank()
+            if (!canRefresh) {
+                w(TAG, "Cannot fetch user identity due to an error.", e)
+                throw e
+            }
+
+            refreshAttempted = true
+            i(TAG, "Identity request returned HTTP $statusCode; refreshing credentials once.")
+            val refreshedResponse = tokenRefresher(tokenResponse)
+            applyRefreshedCredentials(tokenResponse, refreshedResponse)
         }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        w(TAG, "Cannot fetch user identity due to an error.", e)
-        throw e
+    }
+}
+
+private fun applyRefreshedCredentials(
+    target: TokenEndpointResponse,
+    refreshed: TokenEndpointResponse,
+) {
+    target.authToken = refreshed.authToken?.takeIf(String::isNotBlank)
+        ?: throw IllegalStateException("Token refresh did not return an access token")
+    refreshed.refreshToken?.takeIf(String::isNotBlank)?.let { target.refreshToken = it }
+    refreshed.instanceUrl?.takeIf(String::isNotBlank)?.let { target.instanceUrl = it }
+    refreshed.apiInstanceUrl?.takeIf(String::isNotBlank)?.let { target.apiInstanceUrl = it }
+    refreshed.idUrl?.takeIf(String::isNotBlank)?.let { target.idUrl = it }
+    refreshed.idUrlWithInstance?.takeIf(String::isNotBlank)?.let { target.idUrlWithInstance = it }
+    refreshed.orgId?.takeIf(String::isNotBlank)?.let { target.orgId = it }
+    refreshed.userId?.takeIf(String::isNotBlank)?.let { target.userId = it }
+    refreshed.communityId?.takeIf(String::isNotBlank)?.let { target.communityId = it }
+    refreshed.communityUrl?.takeIf(String::isNotBlank)?.let { target.communityUrl = it }
+    refreshed.scope?.takeIf(String::isNotBlank)?.let { target.scope = it }
+    refreshed.tokenType?.takeIf(String::isNotBlank)?.let { target.tokenType = it }
+    refreshed.tokenFormat?.takeIf(String::isNotBlank)?.let { target.tokenFormat = it }
+    refreshed.uiSid?.takeIf(String::isNotBlank)?.let { target.uiSid = it }
+    refreshed.credentialsIdentifier?.takeIf(String::isNotBlank)?.let {
+        target.credentialsIdentifier = it
     }
 }
 

@@ -55,6 +55,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -363,6 +365,108 @@ class AuthenticationUtilitiesTest {
         verify(exactly = 0) { addAccount.invoke(any()) }
         verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
         verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_identityForbidden_refreshesOnceAndPreservesRtr() = runTest {
+        val tokenResponse = createTokenEndpointResponse(
+            accessToken = "initial-access-token",
+            refreshToken = "initial-refresh-token",
+        ).apply {
+            tokenType = "DPoP"
+            credentialsIdentifier = "test-credentials-id"
+        }
+        val refreshedResponse = createTokenEndpointResponse(
+            accessToken = "refreshed-access-token",
+            refreshToken = "rotated-refresh-token",
+            instanceUrl = "https://refreshed.my.salesforce.com",
+            idUrl = "https://login.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
+        ).apply {
+            tokenType = "DPoP"
+            credentialsIdentifier = "test-credentials-id"
+        }
+        val expectedIdentity = createIdServiceResponse()
+        var identityCalls = 0
+        var refreshCalls = 0
+        val identityUrls = mutableListOf<String>()
+
+        val identity = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { url, response ->
+                identityCalls++
+                assertSame(tokenResponse, response)
+                identityUrls += url
+                if (identityCalls == 1) {
+                    throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                }
+                expectedIdentity
+            },
+            tokenRefresher = { response ->
+                refreshCalls++
+                assertSame(tokenResponse, response)
+                refreshedResponse
+            },
+        )
+
+        assertSame(expectedIdentity, identity)
+        assertEquals(2, identityCalls)
+        assertEquals(1, refreshCalls)
+        assertEquals(
+            listOf(
+                "https://test.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
+                "https://refreshed.my.salesforce.com/id/00D000000000000EAA/005000000000000AAA",
+            ),
+            identityUrls,
+        )
+        assertEquals("refreshed-access-token", tokenResponse.authToken)
+        assertEquals("rotated-refresh-token", tokenResponse.refreshToken)
+        assertEquals("https://refreshed.my.salesforce.com", tokenResponse.instanceUrl)
+        assertEquals(refreshedResponse.idUrl, tokenResponse.idUrl)
+        assertEquals("DPoP", tokenResponse.tokenType)
+        assertEquals("test-credentials-id", tokenResponse.credentialsIdentifier)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_replayForbidden_doesNotRefreshAgain() = runTest {
+        val tokenResponse = createTokenEndpointResponse().apply {
+            tokenType = "DPoP"
+            credentialsIdentifier = "test-credentials-id"
+        }
+        val refreshedResponse = createTokenEndpointResponse(
+            accessToken = "refreshed-access-token",
+            refreshToken = "rotated-refresh-token",
+            instanceUrl = "https://refreshed.my.salesforce.com",
+        ).apply {
+            tokenType = "DPoP"
+            credentialsIdentifier = "test-credentials-id"
+        }
+        var identityCalls = 0
+        var refreshCalls = 0
+        var thrown: OAuth2.IdentityServiceException? = null
+
+        try {
+            fetchUserIdentityWithRetry(
+                tokenResponse = tokenResponse,
+                loginServer = "https://login.salesforce.com",
+                consumerKey = "test_consumer_key",
+                identityFetcher = { _, _ ->
+                    identityCalls++
+                    throw OAuth2.IdentityServiceException(403, "Wrong_Org")
+                },
+                tokenRefresher = {
+                    refreshCalls++
+                    refreshedResponse
+                },
+            )
+        } catch (e: OAuth2.IdentityServiceException) {
+            thrown = e
+        }
+
+        assertEquals(403, thrown?.httpStatusCode)
+        assertEquals(2, identityCalls)
+        assertEquals(1, refreshCalls)
     }
 
     @Test

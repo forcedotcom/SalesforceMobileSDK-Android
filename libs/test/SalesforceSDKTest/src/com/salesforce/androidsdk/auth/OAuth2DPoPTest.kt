@@ -314,7 +314,7 @@ class OAuth2DPoPTest {
     fun test_callIdentityService_nonSuccessfulResponse_throws() {
         httpAccess.enqueue(403, "Wrong_Org")
 
-        val error = assertThrows(IOException::class.java) {
+        val error = assertThrows(OAuth2.IdentityServiceException::class.java) {
             OAuth2.callIdentityService(
                 httpAccess,
                 "https://example-id.test/id/orgId/userId",
@@ -324,6 +324,7 @@ class OAuth2DPoPTest {
 
         assertTrue(error.message.orEmpty().contains("HTTP status 403"))
         assertTrue(error.message.orEmpty().contains("Wrong_Org"))
+        assertEquals(403, error.httpStatusCode)
     }
 
     @Test

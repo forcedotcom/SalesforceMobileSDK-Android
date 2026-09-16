@@ -686,8 +686,7 @@ public class OAuth2 {
         try (final Response response = httpAccessor.getOkHttpClient().newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 final String responseBody = response.peekBody(512).string();
-                throw new IOException("Identity service request failed with HTTP status "
-                        + response.code() + ": " + responseBody);
+                throw new IdentityServiceException(response.code(), responseBody);
             }
 
             final IdServiceResponse identity = new IdServiceResponse(response);
@@ -696,6 +695,25 @@ public class OAuth2 {
                 throw new IOException("Identity service returned a malformed response");
             }
             return identity;
+        }
+    }
+
+    /**
+     * HTTP error returned by the identity service. Exposes the status code so callers can
+     * distinguish an expired credential (401/403) from other identity failures.
+     */
+    public static class IdentityServiceException extends IOException {
+
+        private final int httpStatusCode;
+
+        public IdentityServiceException(int httpStatusCode, @Nullable String responseBody) {
+            super("Identity service request failed with HTTP status " + httpStatusCode
+                    + ": " + (responseBody == null ? "" : responseBody));
+            this.httpStatusCode = httpStatusCode;
+        }
+
+        public int getHttpStatusCode() {
+            return httpStatusCode;
         }
     }
 
