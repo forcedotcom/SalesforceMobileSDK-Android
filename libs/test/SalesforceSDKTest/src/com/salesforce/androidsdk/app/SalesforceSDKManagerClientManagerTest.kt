@@ -145,6 +145,28 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun clientManager_afterCachedAccountIsRemovedAndReAdded_returnsFreshlyBoundInstance() {
+        // Regression guard: the cache must not survive removal of the account it is
+        // bound to. If the same identity is re-added afterward, the next access must
+        // resolve a fresh ClientManager bound to the new persisted Account, not the
+        // stale cached instance from before the removal.
+        val user = persistUser("removed-and-readded")
+        val staleManager = requireNotNull(sdkManager.clientManager)
+        val staleAccount = requireNotNull(staleManager.account)
+
+        sdkManager.logout(staleAccount, null, false)
+
+        userAccountManager.createAccount(user)
+        val freshManager = requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "A cache entry must not survive removal of the account it is bound to",
+            staleManager !== freshManager,
+        )
+        assertManagerBoundTo(freshManager, user)
+    }
+
+    @Test
     fun retainedClient_refreshesPersistedAWhileBRemainsCurrent() {
         val userA = persistUser("refresh-a")
         val managerA = requireNotNull(sdkManager.clientManager)

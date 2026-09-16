@@ -1024,6 +1024,10 @@ open class SalesforceSDKManager protected constructor(
         RestClient.clearCaches(userAccount)
         UserAccountManager.getInstance().clearCachedCurrentUser()
 
+        // The removed/malformed account may be the one clientManager has cached; drop it so the
+        // next access re-resolves rather than returning a manager bound to a now-invalid account.
+        cachedClientManager = null
+
         userAccount?.let { userAccountResolved ->
             (screenLockManager as ScreenLockManager?)?.cleanUp(userAccountResolved)
             (biometricAuthenticationManager as BiometricAuthenticationManager)
