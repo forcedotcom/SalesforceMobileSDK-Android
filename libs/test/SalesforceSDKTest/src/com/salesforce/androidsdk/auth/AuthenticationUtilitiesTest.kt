@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
+import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.RuntimeConfig
@@ -317,6 +318,20 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
+    fun testOnAuthFlowComplete_withoutIdScopeWithIdentity_shouldSucceed() = runTest {
+        val tokenResponseWithoutIdScope = createTokenEndpointResponse(scope = "refresh_token")
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+
+        callOnAuthFlowComplete(tokenResponseWithoutIdScope)
+
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verify { onAuthFlowSuccess.invoke(match { it.username == userIdentity.username }) }
+        verify { mockUserAccountManager.createAccount(match { it.username == userIdentity.username }) }
+        coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
+    }
+
+    @Test
     fun testOnAuthFlowComplete_identityFetchFailure_shouldCallErrorWithoutAddingAccount() = runTest {
         val identityError = IllegalStateException("Identity service response was rejected")
         coEvery { fetchUserIdentity.invoke(any()) } throws identityError
@@ -378,7 +393,7 @@ class AuthenticationUtilitiesTest {
         var refreshCalls = 0
         val identityUrls = mutableListOf<String>()
 
-        val identity = fetchUserIdentityWithRetry(
+        val result = fetchUserIdentityWithRetry(
             tokenResponse = tokenResponse,
             loginServer = "https://login.salesforce.com",
             consumerKey = "test_consumer_key",
@@ -391,14 +406,17 @@ class AuthenticationUtilitiesTest {
                 }
                 expectedIdentity
             },
-            tokenRefresher = { response ->
+            tokenRefresher = { response, refreshLoginServer, refreshConsumerKey ->
                 refreshCalls++
                 assertSame(tokenResponse, response)
+                assertEquals("https://login.salesforce.com", refreshLoginServer)
+                assertEquals("test_consumer_key", refreshConsumerKey)
                 refreshedResponse
             },
         )
 
-        assertSame(expectedIdentity, identity)
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(true, result.refreshTokenRotationTime?.isNotBlank())
         assertEquals(2, identityCalls)
         assertEquals(1, refreshCalls)
         assertEquals(
@@ -443,7 +461,7 @@ class AuthenticationUtilitiesTest {
                     identityCalls++
                     throw OAuth2.IdentityServiceException(403, "Wrong_Org")
                 },
-                tokenRefresher = {
+                tokenRefresher = { _, _, _ ->
                     refreshCalls++
                     refreshedResponse
                 },
@@ -455,6 +473,173 @@ class AuthenticationUtilitiesTest {
         assertEquals(403, thrown?.httpStatusCode)
         assertEquals(2, identityCalls)
         assertEquals(1, refreshCalls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_unrecognizedForbidden_doesNotRefresh() = runTest {
+        val tokenResponse = createTokenEndpointResponse().apply {
+            tokenType = "DPoP"
+            credentialsIdentifier = "test-credentials-id"
+        }
+        val identityError = OAuth2.IdentityServiceException(403, "insufficient_scope")
+        var refreshCalls = 0
+        var thrown: Exception? = null
+
+        try {
+            fetchUserIdentityWithRetry(
+                tokenResponse = tokenResponse,
+                loginServer = "https://login.salesforce.com",
+                consumerKey = "test_consumer_key",
+                identityFetcher = { _, _ -> throw identityError },
+                tokenRefresher = { _, _, _ ->
+                    refreshCalls++
+                    createTokenEndpointResponse()
+                },
+            )
+        } catch (e: Exception) {
+            thrown = e
+        }
+
+        assertSame(identityError, thrown)
+        assertEquals("insufficient_scope", identityError.responseBody)
+        assertEquals(0, refreshCalls)
+    }
+
+    @Test
+    fun testFetchUserIdentityWithRetry_hybridRefreshMergesCompleteCredentialState() = runTest {
+        val tokenResponse = createTokenEndpointResponse(
+            accessToken = "initial-access-token",
+            refreshToken = "initial-refresh-token",
+        ).apply {
+            apiInstanceUrl = "https://old-api.example.com"
+            code = "old-code"
+            communityId = "old-community-id"
+            communityUrl = "https://old-community.example.com"
+            additionalOauthValues = mapOf("preserved" to "old", "replaced" to "old")
+            idToken = "old-id-token"
+            lightningDomain = "https://old-lightning.example.com"
+            lightningSid = "old-lightning-sid"
+            vfDomain = "https://old-vf.example.com"
+            vfSid = "old-vf-sid"
+            contentDomain = "https://old-content.example.com"
+            contentSid = "old-content-sid"
+            csrfToken = "old-csrf"
+            cookieClientSrc = "old-client-src"
+            cookieSidClient = "old-sid-client"
+            sidCookieName = "old-cookie-name"
+            parentSid = "old-parent-sid"
+            uiSid = "old-ui-sid"
+            tokenFormat = "opaque"
+            beaconChildConsumerKey = "old-beacon-key"
+            beaconChildConsumerSecret = "old-beacon-secret"
+            tokenType = "DPoP"
+            credentialsIdentifier = "old-credentials-id"
+        }
+        val refreshedResponse = createTokenEndpointResponse(
+            accessToken = "refreshed-access-token",
+            refreshToken = null,
+            instanceUrl = "https://refreshed.my.salesforce.com",
+            idUrl = "https://login.salesforce.com/id/00DREFRESHED/005REFRESHED",
+            scope = "refreshed-scope",
+        ).apply {
+            apiInstanceUrl = "https://new-api.example.com"
+            code = "new-code"
+            communityId = "new-community-id"
+            communityUrl = "https://new-community.example.com"
+            additionalOauthValues = mapOf("replaced" to "new", "added" to "new")
+            idToken = "new-id-token"
+            lightningDomain = "https://new-lightning.example.com"
+            lightningSid = ""
+            vfDomain = "https://new-vf.example.com"
+            vfSid = "new-vf-sid"
+            contentDomain = "https://new-content.example.com"
+            contentSid = ""
+            csrfToken = "new-csrf"
+            cookieClientSrc = "new-client-src"
+            cookieSidClient = "new-sid-client"
+            sidCookieName = "new-cookie-name"
+            parentSid = "new-parent-sid"
+            uiSid = "new-ui-sid"
+            tokenFormat = "jwt"
+            beaconChildConsumerKey = "new-beacon-key"
+            beaconChildConsumerSecret = "new-beacon-secret"
+            tokenType = "DPoP"
+            credentialsIdentifier = "new-credentials-id"
+        }
+        val expectedIdentity = createIdServiceResponse()
+        var identityCalls = 0
+
+        val result = fetchUserIdentityWithRetry(
+            tokenResponse = tokenResponse,
+            loginServer = "https://login.salesforce.com",
+            consumerKey = "test_consumer_key",
+            identityFetcher = { _, _ ->
+                identityCalls++
+                if (identityCalls == 1) {
+                    throw OAuth2.IdentityServiceException(401, "expired_token")
+                }
+                expectedIdentity
+            },
+            tokenRefresher = { _, _, _ -> refreshedResponse },
+        )
+
+        assertSame(expectedIdentity, result.identity)
+        assertEquals(null, result.refreshTokenRotationTime)
+        assertEquals("refreshed-access-token", tokenResponse.authToken)
+        assertEquals("initial-refresh-token", tokenResponse.refreshToken)
+        assertEquals("https://refreshed.my.salesforce.com", tokenResponse.instanceUrl)
+        assertEquals("https://new-api.example.com", tokenResponse.apiInstanceUrl)
+        assertEquals(refreshedResponse.idUrl, tokenResponse.idUrl)
+        assertEquals(refreshedResponse.idUrlWithInstance, tokenResponse.idUrlWithInstance)
+        assertEquals("00DREFRESHED", tokenResponse.orgId)
+        assertEquals("005REFRESHED", tokenResponse.userId)
+        assertEquals("new-code", tokenResponse.code)
+        assertEquals("new-community-id", tokenResponse.communityId)
+        assertEquals("https://new-community.example.com", tokenResponse.communityUrl)
+        assertEquals(
+            mapOf("preserved" to "old", "replaced" to "new", "added" to "new"),
+            tokenResponse.additionalOauthValues,
+        )
+        assertEquals("new-id-token", tokenResponse.idToken)
+        assertEquals("https://new-lightning.example.com", tokenResponse.lightningDomain)
+        assertEquals("", tokenResponse.lightningSid)
+        assertEquals("https://new-vf.example.com", tokenResponse.vfDomain)
+        assertEquals("new-vf-sid", tokenResponse.vfSid)
+        assertEquals("https://new-content.example.com", tokenResponse.contentDomain)
+        assertEquals("", tokenResponse.contentSid)
+        assertEquals("new-csrf", tokenResponse.csrfToken)
+        assertEquals("new-client-src", tokenResponse.cookieClientSrc)
+        assertEquals("new-sid-client", tokenResponse.cookieSidClient)
+        assertEquals("new-cookie-name", tokenResponse.sidCookieName)
+        assertEquals("new-parent-sid", tokenResponse.parentSid)
+        assertEquals("new-ui-sid", tokenResponse.uiSid)
+        assertEquals("jwt", tokenResponse.tokenFormat)
+        assertEquals("new-beacon-key", tokenResponse.beaconChildConsumerKey)
+        assertEquals("new-beacon-secret", tokenResponse.beaconChildConsumerSecret)
+        assertEquals("refreshed-scope", tokenResponse.scope)
+        assertEquals("DPoP", tokenResponse.tokenType)
+        assertEquals("new-credentials-id", tokenResponse.credentialsIdentifier)
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_rotatedRefreshToken_recordsAndRegistersRtrAfterPersistence() = runTest {
+        val rotationTime = "2026-09-16T19:45:20Z"
+        val userIdentity = createIdServiceResponse()
+        val mockSdkManager = setupMockSdkManager()
+
+        callOnAuthFlowComplete(
+            identityFetchResult = IdentityFetchResult(userIdentity, rotationTime),
+        )
+
+        verifyOrder {
+            mockUserAccountManager.createAccount(
+                match { it.lastTokenRotationTime == rotationTime },
+            )
+            mockSdkManager.registerUsedAppFeature(
+                FEATURE_RTR,
+                match { it.lastTokenRotationTime == rotationTime },
+            )
+        }
     }
 
     @Test
@@ -1109,6 +1294,7 @@ class AuthenticationUtilitiesTest {
         nativeLogin: Boolean = false,
         tokenMigration: Boolean = false,
         blockIntegrationUser: Boolean = false,
+        identityFetchResult: IdentityFetchResult? = null,
     ) {
         onAuthFlowComplete(
             tokenResponse = customTokenResponse ?: createTokenEndpointResponse(),
@@ -1125,6 +1311,9 @@ class AuthenticationUtilitiesTest {
             runtimeConfig = mockRuntimeConfig,
             updateLoggingPrefs = updateLoggingPrefs,
             fetchUserIdentity = fetchUserIdentity,
+            fetchUserIdentityResult = identityFetchResult?.let { result ->
+                { _: OAuth2.TokenEndpointResponse -> result }
+            },
             startMainActivity = startMainActivity,
             setAdministratorPreferences = setAdministratorPreferences,
             addAccount = addAccount,

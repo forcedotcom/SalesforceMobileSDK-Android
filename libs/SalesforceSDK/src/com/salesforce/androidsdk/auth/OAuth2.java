@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache;
 import com.salesforce.androidsdk.auth.dpop.DPoPProofBuilder;
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator;
 import com.salesforce.androidsdk.auth.dpop.DPoPURLHelper;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -669,51 +670,77 @@ public class OAuth2 {
             throws IOException {
         final Request.Builder builder = new Request.Builder().url(identityServiceIdUrl).get();
         addAuthorizationHeader(builder, authToken, tokenType);
-        if (DPoPKeyManager.INSTANCE.shouldAttachDPoP(credentialsIdentifier, tokenType)) {
-            try {
-                final String htu = DPoPURLHelper.INSTANCE.canonicalize(identityServiceIdUrl);
-                final String alias = DPoPKeyManager.INSTANCE.aliasForCredentialsIdentifier(credentialsIdentifier);
-                final KeyPair keyPair = DPoPKeyManager.INSTANCE.generateOrLoadKeyPair(alias);
-                final String host = HttpUrl.get(identityServiceIdUrl).host();
-                final String nonce = DPoPNonceCache.INSTANCE.get(credentialsIdentifier, host);
-                final String proof = DPoPProofBuilder.INSTANCE.buildProof("GET", htu, keyPair, nonce, authToken);
-                builder.header(DPOP, proof);
-            } catch (Exception e) {
-                SalesforceSDKLogger.e(TAG, "Failed to attach DPoP header, proceeding without it", e);
-            }
-        }
+        DPoPRequestDecorator.INSTANCE.attachProof(builder, credentialsIdentifier, tokenType, authToken);
         final Request request = builder.build();
-        try (final Response response = httpAccessor.getOkHttpClient().newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                final String responseBody = response.peekBody(512).string();
-                throw new IdentityServiceException(response.code(), responseBody);
-            }
+        final boolean attachDPoP = request.header(DPOP) != null;
+        final String host = request.url().host();
 
-            final IdServiceResponse identity = new IdServiceResponse(response);
-            if (TextUtils.isEmpty(identity.username) || TextUtils.isEmpty(identity.userId)
-                    || TextUtils.isEmpty(identity.orgId)) {
-                throw new IOException("Identity service returned a malformed response");
-            }
-            return identity;
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        if (attachDPoP) {
+            DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, host);
+        }
+        if (attachDPoP && DPoPRequestDecorator.INSTANCE.isNonceChallenge(response)) {
+            response.close();
+            final Request.Builder retryBuilder = request.newBuilder();
+            DPoPRequestDecorator.INSTANCE.attachProof(
+                    retryBuilder,
+                    credentialsIdentifier,
+                    tokenType,
+                    authToken
+            );
+            response = httpAccessor.getOkHttpClient().newCall(retryBuilder.build()).execute();
+            DPoPRequestDecorator.INSTANCE.harvestNonce(response, credentialsIdentifier, host);
+        }
+
+        try (final Response responseToParse = response) {
+            return parseIdentityServiceResponse(responseToParse);
         }
     }
 
+    private static IdServiceResponse parseIdentityServiceResponse(Response response) throws IOException {
+        if (!response.isSuccessful()) {
+            final String responseBody = response.peekBody(512).string();
+            throw new IdentityServiceException(response.code(), responseBody);
+        }
+
+        final IdServiceResponse identity = new IdServiceResponse(response);
+        if (TextUtils.isEmpty(identity.username) || TextUtils.isEmpty(identity.userId)
+                || TextUtils.isEmpty(identity.orgId)) {
+            throw new IOException("Identity service returned a malformed response");
+        }
+        return identity;
+    }
+
     /**
-     * HTTP error returned by the identity service. Exposes the status code so callers can
-     * distinguish an expired credential (401/403) from other identity failures.
+     * HTTP error returned by the identity service. Exposes the status code and bounded response
+     * body so callers can distinguish refreshable credential failures from other authorization
+     * failures.
      */
     public static class IdentityServiceException extends IOException {
 
         private final int httpStatusCode;
+        @Nullable
+        private final String responseBody;
 
         public IdentityServiceException(int httpStatusCode, @Nullable String responseBody) {
             super("Identity service request failed with HTTP status " + httpStatusCode
                     + ": " + (responseBody == null ? "" : responseBody));
             this.httpStatusCode = httpStatusCode;
+            this.responseBody = responseBody;
         }
 
         public int getHttpStatusCode() {
             return httpStatusCode;
+        }
+
+        /**
+         * Returns the bounded response body captured from the failed identity request.
+         *
+         * @return Response body, or {@code null} when none was available.
+         */
+        @Nullable
+        public String getResponseBody() {
+            return responseBody;
         }
     }
 

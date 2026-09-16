@@ -76,7 +76,6 @@ import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_D
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ConcurrentRequestType
-import com.salesforce.samples.authflowtester.concurrentRequestType
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
@@ -394,9 +393,14 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     fun validateMixedSuccessfulRequests(count: Int) {
+        val expectedRequestTypes = listOf(
+            ConcurrentRequestType.RESOURCES,
+            ConcurrentRequestType.RESOURCES,
+            ConcurrentRequestType.DESCRIBE_GLOBAL,
+        )
         repeat(count) { index ->
             waitForManyRequestSquareState(index, "Succeeded")
-            val expectedType = concurrentRequestType(index)
+            val expectedType = expectedRequestTypes[index % expectedRequestTypes.size]
             val descriptions = composeTestRule.onNodeWithTag(manyRequestSquareTestTag(index))
                 .fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
             assertEquals(listOf("Request ${index + 1}, ${expectedType.displayName}"), descriptions)

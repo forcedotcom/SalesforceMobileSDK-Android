@@ -284,6 +284,72 @@ class OAuth2DPoPTest {
         )
     }
 
+    /** Identity nonce challenges are harvested and replayed once with a rebuilt proof. */
+    @Test
+    fun test_callIdentityService_nonceChallenge_retriesOnceWithNonce() {
+        SalesforceSDKManager.getInstance().useDPoP = false
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        DPoPNonceCache.clear(credentialsIdentifier)
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce")
+        )
+        httpAccess.enqueueIdentitySuccess()
+
+        OAuth2.callIdentityService(
+            httpAccess,
+            "https://example-id.test/id/orgId/userId",
+            "test-access-token",
+            "DPoP",
+            credentialsIdentifier
+        )
+
+        val requests = httpAccess.allRequests()
+        assertEquals("Expected one initial request and one nonce retry", 2, requests.size)
+        assertNull(dpopPayload(requests[0]).optString("nonce").takeIf(String::isNotEmpty))
+        assertEquals("identity-nonce", dpopPayload(requests[1]).getString("nonce"))
+        assertEquals(
+            "identity-nonce",
+            DPoPNonceCache.get(credentialsIdentifier, "example-id.test")
+        )
+    }
+
+    /** A repeated nonce challenge is returned to the caller instead of causing a retry loop. */
+    @Test
+    fun test_callIdentityService_repeatedNonceChallenge_retriesOnlyOnce() {
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        DPoPNonceCache.clear(credentialsIdentifier)
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce-1")
+        )
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce-2")
+        )
+
+        val error = assertThrows(OAuth2.IdentityServiceException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token",
+                "DPoP",
+                credentialsIdentifier
+            )
+        }
+
+        assertEquals(401, error.httpStatusCode)
+        assertEquals(2, httpAccess.allRequests().size)
+        assertEquals("identity-nonce-1", dpopPayload(httpAccess.allRequests()[1]).getString("nonce"))
+        assertEquals(
+            "identity-nonce-2",
+            DPoPNonceCache.get(credentialsIdentifier, "example-id.test")
+        )
+    }
+
     /**
      * Bearer credential must not carry DPoP header on the identity endpoint.
      */
@@ -325,6 +391,7 @@ class OAuth2DPoPTest {
         assertTrue(error.message.orEmpty().contains("HTTP status 403"))
         assertTrue(error.message.orEmpty().contains("Wrong_Org"))
         assertEquals(403, error.httpStatusCode)
+        assertEquals("Wrong_Org", error.responseBody)
     }
 
     @Test
@@ -431,4 +498,16 @@ class OAuth2DPoPTest {
         .username("$suffix-user@example.test")
         .accountName("$suffix-user")
         .build()
+
+    private fun dpopPayload(request: Request): org.json.JSONObject {
+        val proof = checkNotNull(request.header("DPoP"))
+        val parts = proof.split(".")
+        assertEquals("DPoP proof should be a three-part JWT", 3, parts.size)
+        val payload = android.util.Base64.decode(
+            parts[1],
+            android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or
+                android.util.Base64.NO_WRAP
+        )
+        return org.json.JSONObject(String(payload, Charsets.UTF_8))
+    }
 }
