@@ -104,12 +104,12 @@ abstract class AuthFlowTest {
     /**
      * Per-user, observed RT feature-marker state.
      *
-     * RT is a sticky SDK marker: it starts absent after login and is registered only when a normal
-     * refresh (through the session refresher) observes a changed refresh token. Login, migration,
-     * and restart never advance it. A config that *can* rotate ([AppConfig.expectsRefreshTokenRotation])
-     * is not the same as a user that *has* been observed rotating — so UA assertions must consult
-     * this observed state rather than the config capability, otherwise migrations that follow a
-     * rotating refresh would falsely expect RT to be absent (or present). Mirrors iOS
+     * RT is a sticky SDK marker registered after an observed refresh-token rotation. It normally
+     * starts absent after an authorization-code login, but login-pool identity recovery may need
+     * an immediate refresh and therefore register RT before the app first renders. Initialize the
+     * expectation from the persisted rotation metadata, then carry it forward as later test-driven
+     * refreshes rotate tokens. A config that *can* rotate ([AppConfig.expectsRefreshTokenRotation])
+     * is not the same as a user that *has* been observed rotating. Mirrors iOS
      * `BaseAuthFlowTester.expectedRTRFeatureMarkerByUsername`.
      */
     private val expectedRtMarkerByUsername = mutableMapOf<String, Boolean>()
@@ -437,11 +437,14 @@ abstract class AuthFlowTest {
             else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
         }
         val appConfig = testConfig.getApp(knownAppConfig)
-        // An authorization-code login never runs the session refresher, so it cannot set RT.
-        // Record this explicitly: later migration/switch/restart checks preserve it until a
-        // test-triggered normal refresh observes token rotation.
         val username = usernameFor(knownLoginHostConfig, knownUserConfig)
-        expectedRtMarkerByUsername[username] = false
+        // Most authorization-code logins have not rotated yet. Login-pool identity recovery is
+        // the exception: a selected 403 can trigger a refresh before the first screen, and the SDK
+        // persists lastTokenRotationTime when that refresh returns a replacement token. Reading
+        // the independent persisted metadata keeps this assertion valid both before and after the
+        // server-side W-23992239 behavior changes.
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
