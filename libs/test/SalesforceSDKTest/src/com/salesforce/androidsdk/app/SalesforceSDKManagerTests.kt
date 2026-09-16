@@ -1095,6 +1095,29 @@ class SalesforceSDKManagerTests {
     // -------------------------------------------------------------------------
 
     @Test
+    fun test_givenFeatureAlreadyRegistered_whenRegisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
+        /*
+         * Regression guard: registerUsedAppFeature(code, user) must not re-run the
+         * AccountManager persistence round-trip when the feature code was already
+         * registered for that user — repeated calls with an unchanged flag set were
+         * driving a full account decrypt/update cycle on every hot-path call.
+         */
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        try {
+            verify(exactly = 1) {
+                sdkManager.userAccountManager.updateAccount(any(), any())
+            }
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+        }
+    }
+
+    @Test
     fun test_givenTwoUsers_whenRegisterFeatureForUserA_thenOnlyUserAUAContainsFlag() {
         val sdkManager = createSdkManagerWithMockedAccountManager()
 

@@ -112,6 +112,39 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun clientManager_repeatedAccessForSameCurrentUser_returnsSameCachedInstance() {
+        // Regression guard for the account-resolution caching fix: repeated
+        // access for an unchanged current user must not reconstruct
+        // ClientManager (and re-resolve its backing Account) on every call.
+        persistUser("cached")
+        val first = requireNotNull(sdkManager.clientManager)
+        val second = requireNotNull(sdkManager.clientManager)
+        val third = requireNotNull(sdkManager.clientManager)
+
+        assertTrue("Repeated access for the same current user must return the cached instance", first === second)
+        assertTrue("Repeated access for the same current user must return the cached instance", second === third)
+    }
+
+    @Test
+    fun clientManager_afterCurrentUserSwitch_freshGetterReturnsNewInstanceBoundToNewUser() {
+        // Regression guard for W-19758940: switching the current user must
+        // invalidate the cache so the next access resolves a client bound to
+        // the new user, not a stale cached instance from the old user.
+        val userA = persistUser("switch-a")
+        val managerForA = requireNotNull(sdkManager.clientManager)
+
+        val userB = persistUser("switch-b")
+        val managerForB = requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "Switching the current user must produce a differently-bound ClientManager instance",
+            managerForA !== managerForB,
+        )
+        assertManagerBoundTo(managerForA, userA)
+        assertManagerBoundTo(managerForB, userB)
+    }
+
+    @Test
     fun retainedClient_refreshesPersistedAWhileBRemainsCurrent() {
         val userA = persistUser("refresh-a")
         val managerA = requireNotNull(sdkManager.clientManager)

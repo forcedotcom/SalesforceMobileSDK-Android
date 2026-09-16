@@ -1531,8 +1531,11 @@ open class SalesforceSDKManager protected constructor(
         if (user == null) { registerUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
         val set = perUserFeatures.getOrPut(key) { ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER) }
-        set.add(appFeatureCode)
-        persistUserFeatureFlags(user, set)
+        // add() returns false when the code is already present, so this skips the
+        // AccountManager round-trip in persistUserFeatureFlags on repeat calls.
+        if (set.add(appFeatureCode)) {
+            persistUserFeatureFlags(user, set)
+        }
     }
 
     /**
@@ -1593,16 +1596,31 @@ open class SalesforceSDKManager protected constructor(
             }
         """.trimIndent()
 
+    /** Cache for [clientManager], keyed by the current user's org/user ID pair. */
+    @Volatile
+    private var cachedClientManager: Pair<String, ClientManager>? = null
+
     /**
      * Returns a manager bound to the user who is current at the time of access,
      * or null when there is no current user. Retaining the returned manager
      * retains that user's identity even if the application later switches
      * users.
+     *
+     * The manager is cached per current-user identity to avoid re-resolving the
+     * AccountManager-backed account on every access; the cache is invalidated
+     * whenever the current user's identity changes.
      */
     val clientManager: ClientManager?
-        get() = userAccountManager.currentUser?.let { user ->
-            ClientManager(appContext, user)
-        }?.takeIf { manager -> manager.account != null }
+        get() {
+            val user = userAccountManager.currentUser ?: return null
+            val key = "${user.orgId}/${user.userId}"
+            cachedClientManager?.let { (cachedKey, manager) ->
+                if (cachedKey == key) return manager
+            }
+            val manager = ClientManager(appContext, user).takeIf { it.account != null } ?: return null
+            cachedClientManager = key to manager
+            return manager
+        }
 
     /**
      * Returns an authenticated client for the current user or starts login when
