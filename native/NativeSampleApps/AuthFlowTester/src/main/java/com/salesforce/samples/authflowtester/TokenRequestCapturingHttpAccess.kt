@@ -27,6 +27,8 @@
 package com.salesforce.samples.authflowtester
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.HttpAccess
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,8 +45,12 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
             if (SalesforceSDKManager.getInstance().isUiTesting &&
                 request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)
             ) {
-                lastTokenRequestUserAgentState.value = request.header(USER_AGENT_HEADER)
-                tokenRequestCountState.value = tokenRequestCount.incrementAndGet()
+                val userAgent = request.header(USER_AGENT_HEADER)
+                tokenRequestCount.incrementAndGet()
+                mainHandler.post {
+                    lastTokenRequestUserAgentState.value = userAgent
+                    tokenRequestCountState.value = tokenRequestCount.get()
+                }
             }
             chain.proceed(request)
         }
@@ -53,6 +59,7 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
         private const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"
         private const val USER_AGENT_HEADER = "User-Agent"
 
+        private val mainHandler = Handler(Looper.getMainLooper())
         private val lastTokenRequestUserAgentState = MutableStateFlow<String?>(null)
         val lastTokenRequestUserAgent = lastTokenRequestUserAgentState.asStateFlow()
 

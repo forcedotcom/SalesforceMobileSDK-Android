@@ -117,6 +117,9 @@ import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
 private const val APP_LOAD_TIMEOUT_MS = 30_000L
+private const val READ_RETRY_INTERVAL_MS = 500L
+private const val SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS = 2_000L
+private const val EMPTY_VALUE_PLACEHOLDER = "(empty)"
 private const val MANY_REQUEST_TIMEOUT_MS = 120_000L
 
 data class Tokens(
@@ -544,39 +547,42 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isJwt: Boolean = false,
         isBeacon: Boolean = false,
         expectedRtMarker: Boolean = false,
+        assertUsername: Boolean = true,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         waitForNode(CREDS_SECTION_CONTENT_DESC)
 
-        // Wait for the UI to update asynchronously after login or user switch.
-        // The view may be recreated and collapsed when the current user state updates.
-        try {
-            composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
-                try {
-                    val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
-                    val isVisible = nodes.isNotEmpty()
-                    var isMatch = false
+        if (assertUsername) {
+            // Wait for the UI to update asynchronously after login or user switch.
+            // The view may be recreated and collapsed when the current user state updates.
+            try {
+                composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
+                    try {
+                        val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
+                        val isVisible = nodes.isNotEmpty()
+                        var isMatch = false
 
-                    if (isVisible) {
-                        val config = nodes.first().config
-                        if (config.contains(SemanticsProperties.Text)) {
-                            isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                        if (isVisible) {
+                            val config = nodes.first().config
+                            if (config.contains(SemanticsProperties.Text)) {
+                                isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                            }
+                        } else {
+                            composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
+                            composeTestRule.waitForIdle()
                         }
-                    } else {
-                        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
-                        composeTestRule.waitForIdle()
-                    }
 
-                    isMatch
-                } catch (_: Exception) {
-                    false
+                        isMatch
+                    } catch (_: Exception) {
+                        false
+                    }
                 }
+            } catch (e: ComposeTimeoutException) {
+                throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
             }
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
+            assertEquals(expected.username, getText(USERNAME))
         }
-        assertEquals(expected.username, getText(USERNAME))
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
@@ -657,7 +663,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
     }
 
-    private fun String.emptyIfPlaceholder() = if (this == "(empty)") "" else this
+    private fun String.emptyIfPlaceholder() = if (this == EMPTY_VALUE_PLACEHOLDER) "" else this
 
     fun migrateToNewApp(
         knownAppConfig: KnownAppConfig,
@@ -875,25 +881,120 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     private fun getSensitiveValue(contentDescription: String): String {
-        val node = composeTestRule.onNodeWithContentDescription(contentDescription)
-        node.performScrollTo()
-        node.performSemanticsAction(SemanticsActions.OnClick) // Reveal full value
-        composeTestRule.waitForIdle()
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        var revealMayHaveSucceeded = false
+        try {
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    val hiddenText = readTextFromFreshNode(contentDescription)
+                    if (hiddenText == EMPTY_VALUE_PLACEHOLDER) return hiddenText
+                    if (!hiddenText.contains("...")) {
+                        revealMayHaveSucceeded = true
+                        return hiddenText
+                    }
 
-        val text = node.fetchSemanticsNode()
-            .config[SemanticsProperties.Text]
-            .last().text // Value is last; first is the label (e.g. "Access Token:")
+                    revealMayHaveSucceeded = true
+                    composeTestRule.onNodeWithContentDescription(contentDescription)
+                        .performSemanticsAction(SemanticsActions.OnClick)
+                    composeTestRule.waitForIdle()
 
-        assert(!text.contains("...")) {
-            "Got truncated value for '$contentDescription': $text"
+                    waitForSensitiveTextState(
+                        contentDescription = contentDescription,
+                        shouldBeHidden = false,
+                        overallDeadline = deadline,
+                    )?.let { return it }
+                } catch (_: AssertionError) {
+                    // Retry below.
+                } catch (_: IllegalStateException) {
+                    // Retry below.
+                }
+                // The keyed credentials view can be replaced while a user switch settles. Resolve
+                // a fresh node on the next pass instead of retaining a stale interaction.
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            }
+            throw AssertionError("Timed out revealing full value for '$contentDescription'")
+        } finally {
+            if (revealMayHaveSucceeded) {
+                hideSensitiveValue(contentDescription)
+            }
         }
+    }
 
-        node.performSemanticsAction(SemanticsActions.OnClick) // Hide value
-        composeTestRule.waitForIdle()
-        return text
+    private fun hideSensitiveValue(contentDescription: String) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                if (readTextFromFreshNode(contentDescription).contains("...")) return
+
+                composeTestRule.onNodeWithContentDescription(contentDescription)
+                    .performSemanticsAction(SemanticsActions.OnClick)
+                composeTestRule.waitForIdle()
+                val hiddenText = waitForSensitiveTextState(
+                    contentDescription = contentDescription,
+                    shouldBeHidden = true,
+                    overallDeadline = deadline,
+                )
+                if (hiddenText != null) return
+            } catch (_: AssertionError) {
+                // Retry with a fresh node below.
+            } catch (_: IllegalStateException) {
+                // Retry with a fresh node below.
+            }
+            Thread.sleep(READ_RETRY_INTERVAL_MS)
+        }
+        throw AssertionError("Timed out restoring hidden value for '$contentDescription'")
+    }
+
+    /**
+     * Gives a sensitive-row click time to finish recomposing before another click is attempted.
+     * Without this settle window, a delayed reveal can be immediately toggled back to hidden.
+     */
+    private fun waitForSensitiveTextState(
+        contentDescription: String,
+        shouldBeHidden: Boolean,
+        overallDeadline: Long,
+    ): String? {
+        val transitionDeadline = minOf(
+            overallDeadline,
+            System.currentTimeMillis() + SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS,
+        )
+        while (System.currentTimeMillis() < transitionDeadline) {
+            try {
+                val text = readTextFromFreshNode(contentDescription)
+                if (text == EMPTY_VALUE_PLACEHOLDER) {
+                    if (shouldBeHidden) return text
+                } else if (text.contains("...") == shouldBeHidden) {
+                    return text
+                }
+            } catch (_: AssertionError) {
+                // Resolve a fresh node on the next pass.
+            } catch (_: IllegalStateException) {
+                // Resolve a fresh node on the next pass.
+            }
+
+            val remaining = transitionDeadline - System.currentTimeMillis()
+            if (remaining > 0) {
+                Thread.sleep(minOf(READ_RETRY_INTERVAL_MS, remaining))
+            }
+        }
+        return null
     }
 
     private fun getText(contentDescription: String): String {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                return readTextFromFreshNode(contentDescription)
+            } catch (_: AssertionError) {
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            } catch (_: IllegalStateException) {
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            }
+        }
+        throw AssertionError("Timed out reading value for '$contentDescription'")
+    }
+
+    private fun readTextFromFreshNode(contentDescription: String): String {
         val node = composeTestRule.onNodeWithContentDescription(contentDescription)
         node.performScrollTo()
         return node.fetchSemanticsNode()
