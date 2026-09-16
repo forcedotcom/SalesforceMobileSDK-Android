@@ -98,6 +98,7 @@ import com.salesforce.androidsdk.R as sdkR
 
 private const val APP_LOAD_TIMEOUT_MS = 30_000L
 private const val READ_RETRY_INTERVAL_MS = 500L
+private const val SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS = 2_000L
 private const val EMPTY_VALUE_PLACEHOLDER = "(empty)"
 
 data class Tokens(
@@ -673,8 +674,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                         .performSemanticsAction(SemanticsActions.OnClick)
                     composeTestRule.waitForIdle()
 
-                    val revealedText = readTextFromFreshNode(contentDescription)
-                    if (!revealedText.contains("...")) return revealedText
+                    waitForSensitiveTextState(
+                        contentDescription = contentDescription,
+                        shouldBeHidden = false,
+                        overallDeadline = deadline,
+                    )?.let { return it }
                 } catch (_: AssertionError) {
                     // Retry below.
                 } catch (_: IllegalStateException) {
@@ -701,7 +705,12 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 composeTestRule.onNodeWithContentDescription(contentDescription)
                     .performSemanticsAction(SemanticsActions.OnClick)
                 composeTestRule.waitForIdle()
-                if (readTextFromFreshNode(contentDescription).contains("...")) return
+                val hiddenText = waitForSensitiveTextState(
+                    contentDescription = contentDescription,
+                    shouldBeHidden = true,
+                    overallDeadline = deadline,
+                )
+                if (hiddenText != null) return
             } catch (_: AssertionError) {
                 // Retry with a fresh node below.
             } catch (_: IllegalStateException) {
@@ -710,6 +719,41 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             Thread.sleep(READ_RETRY_INTERVAL_MS)
         }
         throw AssertionError("Timed out restoring hidden value for '$contentDescription'")
+    }
+
+    /**
+     * Gives a sensitive-row click time to finish recomposing before another click is attempted.
+     * Without this settle window, a delayed reveal can be immediately toggled back to hidden.
+     */
+    private fun waitForSensitiveTextState(
+        contentDescription: String,
+        shouldBeHidden: Boolean,
+        overallDeadline: Long,
+    ): String? {
+        val transitionDeadline = minOf(
+            overallDeadline,
+            System.currentTimeMillis() + SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS,
+        )
+        while (System.currentTimeMillis() < transitionDeadline) {
+            try {
+                val text = readTextFromFreshNode(contentDescription)
+                if (text == EMPTY_VALUE_PLACEHOLDER) {
+                    if (shouldBeHidden) return text
+                } else if (text.contains("...") == shouldBeHidden) {
+                    return text
+                }
+            } catch (_: AssertionError) {
+                // Resolve a fresh node on the next pass.
+            } catch (_: IllegalStateException) {
+                // Resolve a fresh node on the next pass.
+            }
+
+            val remaining = transitionDeadline - System.currentTimeMillis()
+            if (remaining > 0) {
+                Thread.sleep(minOf(READ_RETRY_INTERVAL_MS, remaining))
+            }
+        }
+        return null
     }
 
     private fun getText(contentDescription: String): String {

@@ -95,12 +95,14 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f'  # v2.2.1
         if: success() || failure()
-      - name: Run PR Tests
+      - name: Run PR Smoke Tests
         continue-on-error: true
         if: ${{ inputs.is_pr && !inputs.run_all_ui_tests }}
         env:
           RUN_NUMBER: ${{ github.run_number }}
         run: |
+          # Ordinary PRs run a representative smoke subset, including two multi-user cases.
+          # AuthFlowTester-changing PRs skip this step and run every test in the shards below.
           GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
 
           PR_TESTS="class com.salesforce.samples.authflowtester.BootConfigLoginTests#testCAOpaque_DefaultScopes_WebServerFlow, \
@@ -127,13 +129,15 @@ jobs:
             --test-targets="${PR_TESTS}" \
             --timeout=10m \
             --num-flaky-test-attempts=1
-      - name: Run All UI Tests (AuthFlowTester changed in PR)
+      - name: Run Login Tests (AuthFlowTester changed in PR)
         continue-on-error: true
         if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
         env:
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          GCLOUD_RESULTS_DIR="authflowtester-pr-build-${RUN_NUMBER}"
+          # This is the catch-all shard. New test classes land here automatically unless they are
+          # explicitly moved to one of the dedicated whole-class shards below.
+          GCLOUD_RESULTS_DIR="authflowtester-pr-login-build-${RUN_NUMBER}"
 
           gcloud firebase test android run \
             --project mobile-apps-firebase-test \
@@ -147,7 +151,82 @@ jobs:
             --results-dir="${GCLOUD_RESULTS_DIR}" \
             --results-history-name=AuthFlowTester \
             --no-performance-metrics \
+            --test-targets "notClass com.salesforce.samples.authflowtester.MultiUserLoginTests,notClass com.salesforce.samples.authflowtester.DPoPLoginTests,notClass com.salesforce.samples.authflowtester.LoginWithRestartTests,notClass com.salesforce.samples.authflowtester.RTRLoginTests,notClass com.salesforce.samples.authflowtester.RefreshTokenMigrationTests,notClass com.salesforce.samples.authflowtester.WelcomeLoginTests" \
             --timeout=60m \
+            --num-flaky-test-attempts=1
+      - name: Run Welcome Discovery Tests (AuthFlowTester changed in PR)
+        continue-on-error: true
+        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          # NegativeLoginTests intentionally finishes with Chrome displaying an OAuth error.
+          # Keep Welcome tests in a fresh execution so delayed task cleanup cannot kill them.
+          GCLOUD_RESULTS_DIR="authflowtester-pr-welcome-build-${RUN_NUMBER}"
+
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --test-targets "class com.salesforce.samples.authflowtester.WelcomeLoginTests" \
+            --timeout=10m \
+            --num-flaky-test-attempts=1
+      - name: Run Token Lifecycle Tests (AuthFlowTester changed in PR)
+        continue-on-error: true
+        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          # Select whole classes rather than individual methods, so new tests in these classes are
+          # included automatically. New classes remain covered by the catch-all login shard.
+          GCLOUD_RESULTS_DIR="authflowtester-pr-token-lifecycle-build-${RUN_NUMBER}"
+
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --test-targets "class com.salesforce.samples.authflowtester.DPoPLoginTests,class com.salesforce.samples.authflowtester.LoginWithRestartTests,class com.salesforce.samples.authflowtester.RTRLoginTests,class com.salesforce.samples.authflowtester.RefreshTokenMigrationTests" \
+            --timeout=60m \
+            --num-flaky-test-attempts=1
+      - name: Run All Multi User Tests (AuthFlowTester changed in PR)
+        continue-on-error: true
+        if: ${{ inputs.is_pr && inputs.run_all_ui_tests }}
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          # Unlike the mutually exclusive PR smoke step, this runs the complete multi-user class.
+          GCLOUD_RESULTS_DIR="authflowtester-pr-multi-user-build-${RUN_NUMBER}"
+
+          gcloud firebase test android run \
+            --project mobile-apps-firebase-test \
+            --type instrumentation \
+            --use-orchestrator \
+            --environment-variables clearPackageData=true \
+            --app "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/debug/AuthFlowTester-debug.apk" \
+            --test "native/NativeSampleApps/AuthFlowTester/build/outputs/apk/androidTest/debug/AuthFlowTester-debug-androidTest.apk" \
+            --device "model=${PR_DEVICE_MODEL},version=${PR_API_VERSION},locale=en,orientation=portrait" \
+            --directories-to-pull=/sdcard \
+            --results-dir="${GCLOUD_RESULTS_DIR}" \
+            --results-history-name=AuthFlowTester \
+            --no-performance-metrics \
+            --test-targets "class com.salesforce.samples.authflowtester.MultiUserLoginTests" \
+            --timeout=45m \
             --num-flaky-test-attempts=1
       - name: Run All Single User Tests
         continue-on-error: true
@@ -216,6 +295,7 @@ jobs:
         if: success() || failure()
         env:
           IS_PR: ${{ inputs.is_pr }}
+          RUN_ALL_UI_TESTS: ${{ inputs.run_all_ui_tests }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           mkdir -p firebase_results
@@ -229,9 +309,13 @@ jobs:
             for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep -v "rerun"); do
               DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
               API_LEVEL=$(echo "${DEVICE_DIR}" | sed 's/.*-\([0-9]*\)-.*/\1/')
+              EXECUTION_DIR="${RESULT_FILE%/test_result_1.xml}"
               gsutil cp "${RESULT_FILE}" "firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
+              gsutil cp "${EXECUTION_DIR}/instrumentation.results" \
+                "firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_instrumentation.results"
             done
-            # Pass 2: merge rerun testcases into originals so check_retries detects flaky tests
+            # Pass 2: merge failed and missing rerun cases. A crashed orchestrator process can
+            # omit a test from the original XML entirely even though AndroidJUnitRunner found it.
             for RESULT_FILE in $(gsutil ls "${BUCKET_PATH}/*/test_result_1.xml" 2>/dev/null | grep "rerun"); do
               DEVICE_DIR=$(echo "${RESULT_FILE}" | sed 's|.*/\([^/]*\)/test_result_1.xml|\1|')
               API_LEVEL=$(echo "${DEVICE_DIR}" | sed 's/.*-\([0-9]*\)-.*/\1/')
@@ -247,13 +331,18 @@ jobs:
             return r if r.tag == 'testsuite' else r.find('testsuite')
           os_el, rs_el = suite(orig), suite(rerun)
           failed_keys = set()
+          existing_keys = set()
           for tc in os_el.findall('testcase'):
+            key = f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}"
+            existing_keys.add(key)
             if tc.find('failure') is not None or tc.find('error') is not None:
-              failed_keys.add(f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}")
+              failed_keys.add(key)
           added = 0
           for tc in rs_el.findall('testcase'):
-            if f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}" in failed_keys:
+            key = f"{tc.get('name','')}|{tc.get('classname','')}|{tc.get('file','')}"
+            if key in failed_keys or key not in existing_keys:
               os_el.append(tc)
+              existing_keys.add(key)
               added += 1
           os_el.set('tests', str(int(os_el.get('tests','0')) + added))
           with open(sys.argv[3], 'w') as f:
@@ -264,9 +353,31 @@ jobs:
           }
 
           if [ "$IS_PR" = "true" ] ; then
-            BUCKET_PATH="${BUCKET}/authflowtester-pr-build-${RUN_NUMBER}"
-            if gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
-              copy_results_by_api_level "${BUCKET_PATH}" "pr"
+            if [ "$RUN_ALL_UI_TESTS" = "true" ] ; then
+              PR_LOGIN_PATH="${BUCKET}/authflowtester-pr-login-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_LOGIN_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_LOGIN_PATH}" "pr-login"
+              fi
+
+              PR_WELCOME_PATH="${BUCKET}/authflowtester-pr-welcome-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_WELCOME_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_WELCOME_PATH}" "pr-welcome"
+              fi
+
+              PR_TOKEN_PATH="${BUCKET}/authflowtester-pr-token-lifecycle-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_TOKEN_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_TOKEN_PATH}" "pr-token-lifecycle"
+              fi
+
+              PR_MULTI_PATH="${BUCKET}/authflowtester-pr-multi-user-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_MULTI_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_MULTI_PATH}" "pr-multi-user"
+              fi
+            else
+              PR_PATH="${BUCKET}/authflowtester-pr-build-${RUN_NUMBER}"
+              if gsutil ls "${PR_PATH}" > /dev/null 2>&1; then
+                copy_results_by_api_level "${PR_PATH}" "pr"
+              fi
             fi
           else
             SINGLE_PATH="${BUCKET}/authflowtester-single-user-build-${RUN_NUMBER}"
@@ -279,6 +390,59 @@ jobs:
               copy_results_by_api_level "${MULTI_PATH}" "multi-user"
             fi
           fi
+      - name: Validate Complete PR Test Results
+        if: ${{ !cancelled() && inputs.is_pr && inputs.run_all_ui_tests }}
+        run: |
+          python3 - << 'PYEOF'
+          import glob
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+
+          expected_prefixes = {"pr-login", "pr-welcome", "pr-token-lifecycle", "pr-multi-user"}
+          instrumentation_files = glob.glob("firebase_results/*_instrumentation.results")
+          found_prefixes = set()
+          errors = []
+
+          for instrumentation_file in instrumentation_files:
+              output_prefix = re.sub(r"_api_\d+_instrumentation\.results$", "", instrumentation_file.split("/")[-1])
+              if output_prefix not in expected_prefixes:
+                  continue
+              found_prefixes.add(output_prefix)
+
+              xml_file = instrumentation_file.replace("_instrumentation.results", "_test_result.xml")
+              try:
+                  instrumentation = open(instrumentation_file).read()
+                  expected_counts = [int(value) for value in re.findall(r"numtests=(\d+)", instrumentation)]
+                  if not expected_counts:
+                      raise ValueError("missing AndroidJUnitRunner numtests value")
+
+                  root = ET.parse(xml_file).getroot()
+                  test_keys = {
+                      (tc.get("classname", ""), tc.get("name", ""), tc.get("file", ""))
+                      for tc in root.iter("testcase")
+                  }
+                  expected_count = max(expected_counts)
+                  if len(test_keys) < expected_count:
+                      errors.append(
+                          f"{output_prefix}: AndroidJUnitRunner found {expected_count} tests, "
+                          f"but Firebase reported only {len(test_keys)} unique test cases"
+                      )
+              except (OSError, ET.ParseError, ValueError) as error:
+                  errors.append(f"{output_prefix}: could not validate complete results: {error}")
+
+          missing_prefixes = expected_prefixes - found_prefixes
+          if missing_prefixes:
+              errors.append("missing result groups: " + ", ".join(sorted(missing_prefixes)))
+
+          if errors:
+              print("Incomplete Firebase Test Lab results:", file=sys.stderr)
+              for error in errors:
+                  print(f"- {error}", file=sys.stderr)
+              sys.exit(1)
+
+          print("All Firebase Test Lab result groups contain every discovered test case.")
+          PYEOF
       - name: Test Report
         uses: mikepenz/action-junit-report@3a81627bfac62268172037048872e8ebd4207e6d  # v6.4.1
         if: success() || failure()
