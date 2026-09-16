@@ -325,6 +325,46 @@ class AuthenticationUtilitiesTest {
         // Verify that fetchUserIdentity was called but returned null
         coVerify(exactly = 1) { fetchUserIdentity.invoke(tokenResponseWithoutIdScope) }
     }
+
+    @Test
+    fun testOnAuthFlowComplete_identityFetchFailure_shouldCallErrorWithoutAddingAccount() = runTest {
+        val identityError = IllegalStateException("Identity service response was rejected")
+        coEvery { fetchUserIdentity.invoke(any()) } throws identityError
+
+        callOnAuthFlowComplete()
+
+        verify {
+            onAuthFlowError.invoke(
+                "Error",
+                "Authentication error. Please try again.",
+                identityError,
+            )
+        }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+        verify(exactly = 0) { addAccount.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_identityScopeWithoutIdentity_shouldCallErrorWithoutAddingAccount() = runTest {
+        coEvery { fetchUserIdentity.invoke(any()) } returns null
+
+        callOnAuthFlowComplete()
+
+        verify {
+            onAuthFlowError.invoke(
+                "Error",
+                "Authentication error. Please try again.",
+                any<IllegalStateException>(),
+            )
+        }
+        verify(exactly = 0) { onAuthFlowSuccess.invoke(any()) }
+        verify(exactly = 0) { addAccount.invoke(any()) }
+        verify(exactly = 0) { mockUserAccountManager.createAccount(any()) }
+        verify(exactly = 0) { mockUserAccountManager.switchToUser(any()) }
+    }
+
     @Test
     fun testOnAuthFlowComplete_withNativeLogin_shouldCallSuccess() = runTest {
         // Given

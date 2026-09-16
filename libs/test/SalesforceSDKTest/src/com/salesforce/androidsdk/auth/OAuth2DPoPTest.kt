@@ -49,9 +49,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -308,6 +310,37 @@ class OAuth2DPoPTest {
         )
     }
 
+    @Test
+    fun test_callIdentityService_nonSuccessfulResponse_throws() {
+        httpAccess.enqueue(403, "Wrong_Org")
+
+        val error = assertThrows(IOException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token"
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("HTTP status 403"))
+        assertTrue(error.message.orEmpty().contains("Wrong_Org"))
+    }
+
+    @Test
+    fun test_callIdentityService_malformedSuccessfulResponse_throws() {
+        httpAccess.enqueue(200, "Wrong_Org")
+
+        val error = assertThrows(IOException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token"
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("malformed response"))
+    }
+
     /**
      * A HttpAccess subclass that installs an OkHttp interceptor to (a) capture every outbound
      * request and (b) return canned responses without touching the network. Avoids the need for
@@ -362,14 +395,16 @@ class OAuth2DPoPTest {
         }
 
         fun enqueueIdentitySuccess() {
-            // Minimal identity response — enough JSON keys for IdServiceResponse to parse without NPE.
+            // Minimal valid identity response for tests that only assert outbound headers.
             enqueue(
                 200,
                 """{"id":"https://example-id.test/id/00Dxxxxx/005xxxxx",
                     "user_id":"005xxxxx","organization_id":"00Dxxxxx",
-                    "username":"unit@test.example","display_name":"unit","email":"unit@test.example",
-                    "urls":{},"active":true,"user_type":"STANDARD",
-                    "language":"en_US","locale":"en_US","utcOffset":0}""".trimIndent()
+                    "username":"unit@test.example","email":"unit@test.example",
+                    "first_name":"Unit","last_name":"Test","display_name":"Unit Test",
+                    "nick_name":"unit","active":true,"user_type":"STANDARD",
+                    "language":"en_US","locale":"en_US","utcOffset":0,
+                    "last_modified_date":"2026-01-01T00:00:00.000+0000"}""".trimIndent()
             )
         }
 

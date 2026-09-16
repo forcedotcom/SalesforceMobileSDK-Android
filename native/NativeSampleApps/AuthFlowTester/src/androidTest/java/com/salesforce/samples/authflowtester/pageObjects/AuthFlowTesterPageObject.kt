@@ -29,6 +29,7 @@ package com.salesforce.samples.authflowtester.pageObjects
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context.CLIPBOARD_SERVICE
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertTextEquals
@@ -44,6 +45,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
@@ -73,6 +76,7 @@ import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_D
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.ConcurrentRequestType
+import com.salesforce.samples.authflowtester.concurrentRequestType
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
@@ -100,6 +104,8 @@ import com.salesforce.samples.authflowtester.components.MANY_REQUEST_FAILURE_COU
 import com.salesforce.samples.authflowtester.components.MANY_REQUEST_INTERRUPTION_STATUS_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.MANY_REQUEST_IN_FLIGHT_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_EXPANDED_STATE
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_TEST_TAG
 import com.salesforce.samples.authflowtester.components.MANY_REQUEST_QUEUED_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.MANY_REQUEST_SUCCESS_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
@@ -118,6 +124,8 @@ import com.salesforce.androidsdk.R as sdkR
 
 private const val APP_LOAD_TIMEOUT_MS = 30_000L
 private const val MANY_REQUEST_TIMEOUT_MS = 120_000L
+private const val MANY_REQUEST_REVEAL_SCROLL_ATTEMPTS = 12
+private const val MANY_REQUEST_REVEAL_SCROLL_STEP_PX = 180f
 
 data class Tokens(
     val accessToken: String,
@@ -223,6 +231,17 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             false // Compose hierarchy temporarily unavailable
         }
 
+    fun waitForAppUnloaded(timeoutMillis: Long = APP_LOAD_TIMEOUT_MS) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis) { !isAppLoaded() }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out after ${timeoutMillis}ms waiting for the session detail screen to close",
+                e,
+            )
+        }
+    }
+
     fun revokeAccessToken() {
         composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
             .performScrollToNode(hasContentDescription(REVOKE_BUTTON_CONTENT_DESC))
@@ -266,25 +285,51 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
 
     fun selectManyRequestInterruption(interruption: ManyRequestInterruption) {
         expandManyRequestOptions()
+        revealManyRequestNode(
+            manyRequestInterruptionContentDescription(ManyRequestInterruption.MANUAL)
+        )
         val contentDescription = manyRequestInterruptionContentDescription(interruption)
-        waitForNode(contentDescription)
+        revealManyRequestNode(contentDescription)
         composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
         composeTestRule.waitForIdle()
     }
 
     private fun expandManyRequestOptions() {
-        val manualContentDescription =
-            manyRequestInterruptionContentDescription(ManyRequestInterruption.MANUAL)
+        val firstCountContentDescription = manyRequestCountContentDescription(5)
         val alreadyExpanded = composeTestRule
-            .onAllNodesWithContentDescription(manualContentDescription)
+            .onAllNodesWithContentDescription(firstCountContentDescription)
             .fetchSemanticsNodes()
             .isNotEmpty()
         if (alreadyExpanded) return
 
         scrollToManyRequestNode(MANY_REQUEST_OPTIONS_CONTENT_DESC)
-        composeTestRule.onNodeWithContentDescription(MANY_REQUEST_OPTIONS_CONTENT_DESC)
-            .performClick()
-        scrollToManyRequestNode(manualContentDescription)
+        composeTestRule.onNodeWithTag(MANY_REQUEST_OPTIONS_TEST_TAG, useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        waitForManyRequestOptionsExpanded()
+        revealManyRequestNode(firstCountContentDescription)
+    }
+
+    private fun waitForManyRequestOptionsExpanded() {
+        try {
+            composeTestRule.waitUntil(TIMEOUT_MS) {
+                composeTestRule
+                    .onAllNodesWithTag(MANY_REQUEST_OPTIONS_TEST_TAG, useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .firstOrNull()
+                    ?.config
+                    ?.let { config ->
+                        if (config.contains(SemanticsProperties.StateDescription)) {
+                            config[SemanticsProperties.StateDescription]
+                        } else {
+                            null
+                        }
+                    } ==
+                    MANY_REQUEST_OPTIONS_EXPANDED_STATE
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Concurrent request options did not expand", e)
+        }
+        composeTestRule.waitForIdle()
     }
 
     fun startManyRequests() {
@@ -351,12 +396,18 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     fun validateMixedSuccessfulRequests(count: Int) {
         repeat(count) { index ->
             waitForManyRequestSquareState(index, "Succeeded")
-            val expectedType = ConcurrentRequestType.entries[index % ConcurrentRequestType.entries.size]
+            val expectedType = concurrentRequestType(index)
             val descriptions = composeTestRule.onNodeWithTag(manyRequestSquareTestTag(index))
                 .fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
             assertEquals(listOf("Request ${index + 1}, ${expectedType.displayName}"), descriptions)
         }
     }
+
+    fun failedManyRequestIndices(count: Int): List<Int> =
+        (0 until count).filter { index ->
+            composeTestRule.onNodeWithTag(manyRequestSquareTestTag(index))
+                .fetchSemanticsNode().config[SemanticsProperties.StateDescription] == "Failed"
+        }.map { it + 1 }
 
     fun tapFailedManyRequest(index: Int, type: ConcurrentRequestType): String {
         val testTag = manyRequestSquareTestTag(index)
@@ -414,6 +465,35 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     private fun scrollToManyRequestNode(contentDescription: String) {
         composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
             .performScrollToNode(hasContentDescription(contentDescription))
+        waitForNode(contentDescription)
+    }
+
+    /**
+     * Brings a control added below the visible part of the non-lazy scroll container into its
+     * semantics tree. `performScrollToNode` cannot target a node until Compose exposes it, so
+     * advance in small bounded steps before doing the precise scroll.
+     */
+    private fun revealManyRequestNode(contentDescription: String) {
+        val scrollContainer = composeTestRule
+            .onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
+        repeat(MANY_REQUEST_REVEAL_SCROLL_ATTEMPTS) {
+            val isExposed = composeTestRule
+                .onAllNodesWithContentDescription(contentDescription)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+            if (isExposed) {
+                scrollToManyRequestNode(contentDescription)
+                return
+            }
+            scrollContainer.performTouchInput {
+                swipe(
+                    start = center + Offset(0f, MANY_REQUEST_REVEAL_SCROLL_STEP_PX / 2),
+                    end = center - Offset(0f, MANY_REQUEST_REVEAL_SCROLL_STEP_PX / 2),
+                    durationMillis = 100,
+                )
+            }
+            composeTestRule.waitForIdle()
+        }
         waitForNode(contentDescription)
     }
 

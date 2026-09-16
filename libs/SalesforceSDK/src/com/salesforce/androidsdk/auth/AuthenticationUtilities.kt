@@ -72,6 +72,7 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Compani
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
@@ -165,7 +166,29 @@ internal suspend fun onAuthFlowComplete(
         w(TAG, "Missing refresh token scope.")
     }
 
-    val userIdentity = actualFetchUserIdentity(tokenResponse)
+    val userIdentity = try {
+        actualFetchUserIdentity(tokenResponse)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        w(TAG, "Cannot complete authentication because user identity could not be retrieved.", e)
+        onAuthFlowError(
+            context.getString(sf__generic_authentication_error_title),
+            context.getString(sf__generic_authentication_error),
+            e,
+        )
+        return
+    }
+    if (scopeParser.hasIdentityScope() && userIdentity?.username.isNullOrBlank()) {
+        val error = IllegalStateException("Identity service did not return a user identity")
+        w(TAG, "Cannot complete authentication because user identity is missing.", error)
+        onAuthFlowError(
+            context.getString(sf__generic_authentication_error_title),
+            context.getString(sf__generic_authentication_error),
+            error,
+        )
+        return
+    }
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
     if (mustBeManagedApp && !runtimeConfig.isManagedApp) {
         onAuthFlowError(
@@ -434,11 +457,11 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 private suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
-): OAuth2.IdServiceResponse? {
-    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true)
-        && LoginServerManager.isPoolServer(loginServer)
+): OAuth2.IdServiceResponse {
+    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
+        LoginServerManager.isPoolServer(loginServer)
     ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
-    return runCatching {
+    return try {
         withContext(Default) {
             callIdentityService(
                 HttpAccess.DEFAULT,
@@ -448,9 +471,12 @@ private suspend fun fetchUserIdentityWithRetry(
                 tokenResponse.credentialsIdentifier,
             )
         }
-    }.onFailure { throwable ->
-        w(TAG, "Cannot fetch user identity due to an error.", throwable)
-    }.getOrNull()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        w(TAG, "Cannot fetch user identity due to an error.", e)
+        throw e
+    }
 }
 
 /**

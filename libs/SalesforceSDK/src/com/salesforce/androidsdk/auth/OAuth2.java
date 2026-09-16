@@ -683,12 +683,20 @@ public class OAuth2 {
             }
         }
         final Request request = builder.build();
-        final Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
-        // Nonce failures on the identity endpoint fall through to SFOAuthSessionRefresher /
-        // OAuthRefreshInterceptor, which re-enters the token endpoint where nonce harvest+retry
-        // already lives. Salesforce only issues DPoP-Nonce on token-endpoint responses, so
-        // inline harvest+retry here would never fire against the server in practice.
-        return new IdServiceResponse(response);
+        try (final Response response = httpAccessor.getOkHttpClient().newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                final String responseBody = response.peekBody(512).string();
+                throw new IOException("Identity service request failed with HTTP status "
+                        + response.code() + ": " + responseBody);
+            }
+
+            final IdServiceResponse identity = new IdServiceResponse(response);
+            if (TextUtils.isEmpty(identity.username) || TextUtils.isEmpty(identity.userId)
+                    || TextUtils.isEmpty(identity.orgId)) {
+                throw new IOException("Identity service returned a malformed response");
+            }
+            return identity;
+        }
     }
 
     /**

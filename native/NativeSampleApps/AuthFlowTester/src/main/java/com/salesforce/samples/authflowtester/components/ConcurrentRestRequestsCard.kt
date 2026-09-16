@@ -92,6 +92,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 const val MANY_REQUEST_CARD_CONTENT_DESC = "many_request_card"
 const val MANY_REQUEST_OPTIONS_CONTENT_DESC = "many_request_options"
+const val MANY_REQUEST_OPTIONS_TEST_TAG = "many_request_options_toggle"
+const val MANY_REQUEST_OPTIONS_EXPANDED_STATE = "Expanded"
+const val MANY_REQUEST_OPTIONS_COLLAPSED_STATE = "Collapsed"
 const val MANY_REQUEST_BUTTON_CONTENT_DESC = "many_request_button"
 const val MANY_REQUEST_SUMMARY_CONTENT_DESC = "many_request_summary"
 const val MANY_REQUEST_COMPLETED_COUNT_CONTENT_DESC = "many_request_completed_count"
@@ -190,7 +193,15 @@ fun ConcurrentRestRequestsCard(
                     .fillMaxWidth()
                     .clickable(enabled = !batchInProgress) { optionsExpanded = !optionsExpanded }
                     .padding(PADDING.dp)
-                    .semantics { contentDescription = MANY_REQUEST_OPTIONS_CONTENT_DESC },
+                    .testTag(MANY_REQUEST_OPTIONS_TEST_TAG)
+                    .semantics {
+                        contentDescription = MANY_REQUEST_OPTIONS_CONTENT_DESC
+                        stateDescription = if (optionsExpanded) {
+                            MANY_REQUEST_OPTIONS_EXPANDED_STATE
+                        } else {
+                            MANY_REQUEST_OPTIONS_COLLAPSED_STATE
+                        }
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
