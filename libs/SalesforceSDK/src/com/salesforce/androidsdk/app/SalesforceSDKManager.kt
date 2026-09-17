@@ -1031,8 +1031,11 @@ open class SalesforceSDKManager protected constructor(
         RestClient.clearCaches(userAccount)
         UserAccountManager.getInstance().clearCachedCurrentUser()
 
-        // The removed/malformed account may be the one clientManager has cached; drop it so the
-        // next access re-resolves rather than returning a manager bound to a now-invalid account.
+        /*
+         * The removed/malformed account may be the one clientManager has
+         * cached; drop it so the next access re-resolves rather than
+         * returning a manager bound to a now-invalid account.
+         */
         cachedClientManager = null
 
         userAccount?.let { userAccountResolved ->
@@ -1542,8 +1545,11 @@ open class SalesforceSDKManager protected constructor(
         if (user == null) { registerUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
         val set = perUserFeatures.getOrPut(key) { ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER) }
-        // add() returns false when the code is already present, so this skips the
-        // AccountManager round-trip in persistUserFeatureFlags on repeat calls.
+        /*
+         * add() returns false when the code is already present, so this skips
+         * the AccountManager round-trip in persistUserFeatureFlags on repeat
+         * calls.
+         */
         if (set.add(appFeatureCode)) {
             persistUserFeatureFlags(user, set)
         }
@@ -1559,8 +1565,11 @@ open class SalesforceSDKManager protected constructor(
         if (user == null) { unregisterUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
         val set = perUserFeatures[key] ?: return
-        // remove() returns false when the code was already absent, so this skips the
-        // AccountManager round-trip in persistUserFeatureFlags on repeat/no-op calls.
+        /*
+         * remove() returns false when the code was already absent, so this
+         * skips the AccountManager round-trip in persistUserFeatureFlags on
+         * repeat/no-op calls.
+         */
         if (set.remove(appFeatureCode)) {
             persistUserFeatureFlags(user, set)
         }

@@ -1133,8 +1133,10 @@ class SalesforceSDKManagerTests {
         sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
         sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
 
-        // One persist from register, one from the actual removal; the second (no-op)
-        // unregister call must not add a third.
+        /*
+         * One persist from register, one from the actual removal; the
+         * second (no-op) unregister call must not add a third.
+         */
         verify(exactly = 2) {
             sdkManager.userAccountManager.updateAccount(any(), any())
         }
@@ -1142,13 +1144,19 @@ class SalesforceSDKManagerTests {
 
     @Test
     fun test_givenFeatureNeverRegisteredForUser_whenUnregisterUsedAppFeature_thenAccountIsNotPersisted() {
-        // Regression guard: unregistering a feature for a user with no per-user feature
-        // set at all (never registered anything) must not touch AccountManager either.
+        /*
+         * Regression guard: unregistering a feature for a user with no
+         * per-user feature set at all (never registered anything) must not
+         * touch AccountManager either.
+         */
         val sdkManager = createSdkManagerWithMockedAccountManager()
         val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
-        // Force the lazily-created mock into existence before recording the verify
-        // block below; otherwise this no-op call never touches it and MockK ends up
-        // creating the mock mid-recording, which corrupts the verify DSL state.
+        /*
+         * Force the lazily-created mock into existence before recording the
+         * verify block below; otherwise this no-op call never touches it and
+         * MockK ends up creating the mock mid-recording, which corrupts the
+         * verify DSL state.
+         */
         sdkManager.userAccountManager
 
         sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
