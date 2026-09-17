@@ -1642,14 +1642,16 @@ open class SalesforceSDKManager protected constructor(
         """.trimIndent()
 
     /**
-     * Cache for [clientManager], keyed by the current user's org/user ID pair.
+     * Single-entry current-user cache for [clientManager], keyed by the
+     * current user's org/user ID pair.
      *
-     * Holds at most one `(key, manager)` pair, not a per-account map — a
-     * single cheap key comparison replaces the AccountManager IPC this
-     * cache exists to avoid. The tradeoff: an access pattern that rapidly
-     * alternates the current user gets no caching benefit (every access is
-     * a miss). Not a regression, since that pattern paid the full IPC cost
-     * before this cache existed too.
+     * Holds at most one `(key, manager)` pair, not a per-account map: an A
+     * -> B -> A user-switch sequence does not retain A's manager across the
+     * trip through B, it replaces A with B and then constructs a new
+     * manager when A becomes current again. The tradeoff: an access
+     * pattern that rapidly alternates the current user gets no caching
+     * benefit (every access is a miss). Not a regression, since that
+     * pattern paid the full IPC cost before this cache existed too.
      */
     @Volatile
     private var cachedClientManager: Pair<String, ClientManager>? = null
