@@ -367,6 +367,33 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun getRestClient_withCurrentUser_populatesClientManagerCacheWithDeliveredInstance() {
+        /*
+         * Regression guard for the account-resolution caching fix:
+         * getRestClient() must resolve through the cached clientManager
+         * property rather than constructing a new ClientManager per call,
+         * since it is invoked from SalesforceActivityDelegate's onResume()
+         * on every Activity resume. Before the fix, getRestClient() built
+         * its own ClientManager directly and never touched the cache field,
+         * so this assertion fails against the pre-fix implementation.
+         */
+        val user = persistUser("resume")
+        val activity = mockk<Activity>(relaxed = true)
+        val deliveredManagers = mutableListOf<RestClient>()
+        clearCachedClientManagerField()
+
+        sdkManager.getRestClient(activity) { client -> deliveredManagers += client }
+
+        assertEquals(1, deliveredManagers.size)
+        assertClientFor(deliveredManagers.single(), user)
+        val cachedEntry = readCachedClientManagerField()
+        assertTrue(
+            "getRestClient() must populate the clientManager cache, not bypass it",
+            cachedEntry != null,
+        )
+    }
+
+    @Test
     fun getRestClient_withUnusableCurrentUser_removesExactAccountWithoutCallback() {
         val user = persistUser("unusable")
         val account = requireNotNull(userAccountManager.buildAccount(user))
@@ -439,6 +466,18 @@ class SalesforceSDKManagerClientManagerTest {
         assertEquals(user.userId, client.clientInfo.userId)
         assertEquals(user.orgId, client.clientInfo.orgId)
     }
+
+    private fun cachedClientManagerField() =
+        SalesforceSDKManager::class.java.getDeclaredField("cachedClientManager").apply {
+            isAccessible = true
+        }
+
+    private fun clearCachedClientManagerField() {
+        cachedClientManagerField().set(sdkManager, null)
+    }
+
+    private fun readCachedClientManagerField(): Any? =
+        cachedClientManagerField().get(sdkManager)
 
     private fun mockRefreshHttpClient(
         request: CapturingSlot<Request>,

@@ -1670,6 +1670,12 @@ open class SalesforceSDKManager protected constructor(
      * valid user and client, removes that exact corrupt account and completes
      * the normal logout, account-switching, or login flow without invoking
      * [restClientCallback].
+     *
+     * Called from `SalesforceActivityDelegate.onResume()`, so this is on the
+     * Activity-resume hot path; it goes through [clientManager] rather than
+     * constructing a `ClientManager` directly so repeated resumes for the
+     * same current user reuse the cached instance instead of re-resolving
+     * the account via `AccountManager` on every resume.
      */
     fun getRestClient(
         activityContext: Activity,
@@ -1677,8 +1683,7 @@ open class SalesforceSDKManager protected constructor(
     ) {
         val account = userAccountManager.currentAccount
         if (account != null) {
-            val user = userAccountManager.buildUserAccount(account)
-            val client = user?.let { ClientManager(appContext, it).peekRestClient() }
+            val client = clientManager?.peekRestClient()
             if (client == null) {
                 w(TAG, "Removing a corrupt current account that cannot create a REST client")
                 logout(
