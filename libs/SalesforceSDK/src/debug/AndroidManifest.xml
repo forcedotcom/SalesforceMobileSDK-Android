@@ -1,7 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Debug-Only: Post notifications permission supports the show developer support notification. -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
     <application>
         <!-- Test Authentication Activity For Automated Testing. This activity is only functional for debug builds of the app using Salesforce Mobile SDK -->
         <activity
