@@ -1035,6 +1035,15 @@ open class SalesforceSDKManager protected constructor(
          * The removed/malformed account may be the one clientManager has
          * cached; drop it so the next access re-resolves rather than
          * returning a manager bound to a now-invalid account.
+         *
+         * This is event-driven invalidation, not per-access re-validation:
+         * the cache is only checked for validity here, when an account is
+         * actually removed, not on every clientManager read. Re-validating
+         * on every access would reintroduce the AccountManager IPC cost
+         * this whole cache exists to avoid. Every account-removal path
+         * (logout, purgeMalformedPersistedAccount, and the corrupt-account
+         * path in getRestClient) funnels through this method, so it is a
+         * complete invalidation point for the cache's lifetime.
          */
         cachedClientManager = null
 
@@ -1620,7 +1629,16 @@ open class SalesforceSDKManager protected constructor(
             }
         """.trimIndent()
 
-    /** Cache for [clientManager], keyed by the current user's org/user ID pair. */
+    /**
+     * Cache for [clientManager], keyed by the current user's org/user ID pair.
+     *
+     * Holds at most one `(key, manager)` pair, not a per-account map — a
+     * single cheap key comparison replaces the AccountManager IPC this
+     * cache exists to avoid. The tradeoff: an access pattern that rapidly
+     * alternates the current user gets no caching benefit (every access is
+     * a miss). Not a regression, since that pattern paid the full IPC cost
+     * before this cache existed too.
+     */
     @Volatile
     private var cachedClientManager: Pair<String, ClientManager>? = null
 
