@@ -1097,10 +1097,11 @@ class SalesforceSDKManagerTests {
     @Test
     fun test_givenFeatureAlreadyRegistered_whenRegisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
         /*
-         * Regression guard: registerUsedAppFeature(code, user) must not re-run the
-         * AccountManager persistence round-trip when the feature code was already
-         * registered for that user — repeated calls with an unchanged flag set were
-         * driving a full account decrypt/update cycle on every hot-path call.
+         * Regression guard: registerUsedAppFeature(code, user) must not re-run
+         * the AccountManager persistence round-trip when the feature code was
+         * already registered for that user — repeated calls with an unchanged
+         * flag set were driving a full account decrypt/update cycle on every
+         * hot-path call.
          */
         val sdkManager = createSdkManagerWithMockedAccountManager()
         val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
@@ -1120,11 +1121,11 @@ class SalesforceSDKManagerTests {
     @Test
     fun test_givenFeatureAlreadyUnregistered_whenUnregisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
         /*
-         * Regression guard: unregisterUsedAppFeature(code, user) must not re-run the
-         * AccountManager persistence round-trip when the feature code is already absent
-         * for that user — mirrors the no-op guard added to registerUsedAppFeature, since
-         * LoginActivity's marker-clearing sweeps call this for markers that are already
-         * unset on every login.
+         * Regression guard: unregisterUsedAppFeature(code, user) must not
+         * re-run the AccountManager persistence round-trip when the feature
+         * code is already absent for that user — mirrors the no-op guard added
+         * to registerUsedAppFeature, since LoginActivity's marker-clearing
+         * sweeps call this for markers that are already unset on every login.
          */
         val sdkManager = createSdkManagerWithMockedAccountManager()
         val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
