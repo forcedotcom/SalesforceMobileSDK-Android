@@ -57,6 +57,7 @@ import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import android.widget.Toast
+import androidx.annotation.CallSuper
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -1017,8 +1018,15 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Clean up cached data.
      *
+     * Overrides must call `super.cleanUp(userAccount)` — this base
+     * implementation invalidates [cachedClientManager] and other
+     * account-scoped caches. Skipping the super call reintroduces stale
+     * cache reads for the removed/malformed account. [CallSuper] makes
+     * Android Lint enforce this at build time.
+     *
      * @param userAccount The user account
      */
+    @CallSuper
     protected open fun cleanUp(userAccount: UserAccount?) {
         SalesforceAnalyticsManager.reset(userAccount)
         RestClient.clearCaches(userAccount)
