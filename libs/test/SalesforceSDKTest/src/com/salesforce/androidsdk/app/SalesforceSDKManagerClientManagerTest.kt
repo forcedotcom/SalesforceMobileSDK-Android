@@ -128,6 +128,32 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun clientManager_repeatedAccess_doesNotForceFreshCurrentUserResolution() {
+        /*
+         * Regression guard: clientManager's identity lookup must not
+         * unconditionally re-resolve the current user via AccountManager on
+         * every access. UserAccountManager.getCurrentUser() always
+         * allocates a new UserAccount by decrypting AccountManager-backed
+         * fields, so its cached reference changes identity every time it
+         * runs. Seeding that cache once and then confirming the reference
+         * is unchanged after repeated clientManager access proves those
+         * accesses used the cached identity lookup instead of re-invoking
+         * getCurrentUser().
+         */
+        persistUser("no-fresh-lookup")
+        val seededCurrentUser = requireNotNull(userAccountManager.currentUser)
+
+        requireNotNull(sdkManager.clientManager)
+        requireNotNull(sdkManager.clientManager)
+        requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "Repeated clientManager access must not force a fresh currentUser resolution",
+            seededCurrentUser === userAccountManager.cachedCurrentUser,
+        )
+    }
+
+    @Test
     fun clientManager_afterCurrentUserSwitch_freshGetterReturnsNewInstanceBoundToNewUser() {
         /*
          * Regression guard: switching the current user must invalidate the

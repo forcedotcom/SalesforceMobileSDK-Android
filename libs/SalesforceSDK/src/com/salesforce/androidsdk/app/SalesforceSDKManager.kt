@@ -1663,10 +1663,20 @@ open class SalesforceSDKManager protected constructor(
      * The manager is cached per current-user identity to avoid re-resolving the
      * AccountManager-backed account on every access; the cache is invalidated
      * whenever the current user's identity changes.
+     *
+     * Uses [UserAccountManager.getCachedCurrentUser] rather than
+     * `getCurrentUser()` for the identity lookup: `getCurrentUser()`
+     * unconditionally re-resolves the current account via `AccountManager`
+     * on every call, which would reintroduce exactly the IPC this cache
+     * exists to avoid. `cachedCurrentUser` only cares about identity
+     * (org/user ID) to compute the cache key, so its possibly-stale OAuth
+     * fields are fine here; `storeCurrentUserInfo` invalidates this
+     * underlying cache on every user switch, so the identity itself is
+     * never stale across a switch.
      */
     val clientManager: ClientManager?
         get() {
-            val user = userAccountManager.currentUser ?: return null
+            val user = userAccountManager.cachedCurrentUser ?: return null
             val key = "${user.orgId}/${user.userId}"
             cachedClientManager?.let { (cachedKey, manager) ->
                 if (cachedKey == key) return manager
