@@ -46,10 +46,12 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
                 request.url.encodedPath.endsWith(TOKEN_ENDPOINT_PATH)
             ) {
                 val userAgent = request.header(USER_AGENT_HEADER)
-                tokenRequestCount.incrementAndGet()
-                mainHandler.post {
-                    lastTokenRequestUserAgentState.value = userAgent
-                    tokenRequestCountState.value = tokenRequestCount.get()
+                synchronized(captureLock) {
+                    val requestCount = tokenRequestCount.incrementAndGet()
+                    mainHandler.post {
+                        lastTokenRequestUserAgentState.value = userAgent
+                        tokenRequestCountState.value = requestCount
+                    }
                 }
             }
             chain.proceed(request)
@@ -58,8 +60,9 @@ class TokenRequestCapturingHttpAccess(context: Context) : HttpAccess(context, nu
     companion object {
         private const val TOKEN_ENDPOINT_PATH = "/services/oauth2/token"
         private const val USER_AGENT_HEADER = "User-Agent"
-
+        private val captureLock = Any()
         private val mainHandler = Handler(Looper.getMainLooper())
+
         private val lastTokenRequestUserAgentState = MutableStateFlow<String?>(null)
         val lastTokenRequestUserAgent = lastTokenRequestUserAgentState.asStateFlow()
 

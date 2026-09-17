@@ -49,9 +49,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -282,6 +284,72 @@ class OAuth2DPoPTest {
         )
     }
 
+    /** Identity nonce challenges are harvested and replayed once with a rebuilt proof. */
+    @Test
+    fun test_callIdentityService_nonceChallenge_retriesOnceWithNonce() {
+        SalesforceSDKManager.getInstance().useDPoP = false
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        DPoPNonceCache.clear(credentialsIdentifier)
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce")
+        )
+        httpAccess.enqueueIdentitySuccess()
+
+        OAuth2.callIdentityService(
+            httpAccess,
+            "https://example-id.test/id/orgId/userId",
+            "test-access-token",
+            "DPoP",
+            credentialsIdentifier
+        )
+
+        val requests = httpAccess.allRequests()
+        assertEquals("Expected one initial request and one nonce retry", 2, requests.size)
+        assertNull(dpopPayload(requests[0]).optString("nonce").takeIf(String::isNotEmpty))
+        assertEquals("identity-nonce", dpopPayload(requests[1]).getString("nonce"))
+        assertEquals(
+            "identity-nonce",
+            DPoPNonceCache.get(credentialsIdentifier, "example-id.test")
+        )
+    }
+
+    /** A repeated nonce challenge is returned to the caller instead of causing a retry loop. */
+    @Test
+    fun test_callIdentityService_repeatedNonceChallenge_retriesOnlyOnce() {
+        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        DPoPNonceCache.clear(credentialsIdentifier)
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce-1")
+        )
+        httpAccess.enqueue(
+            code = 401,
+            body = """{"error":"use_dpop_nonce"}""",
+            headers = mapOf("DPoP-Nonce" to "identity-nonce-2")
+        )
+
+        val error = assertThrows(OAuth2.IdentityServiceException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token",
+                "DPoP",
+                credentialsIdentifier
+            )
+        }
+
+        assertEquals(401, error.httpStatusCode)
+        assertEquals(2, httpAccess.allRequests().size)
+        assertEquals("identity-nonce-1", dpopPayload(httpAccess.allRequests()[1]).getString("nonce"))
+        assertEquals(
+            "identity-nonce-2",
+            DPoPNonceCache.get(credentialsIdentifier, "example-id.test")
+        )
+    }
+
     /**
      * Bearer credential must not carry DPoP header on the identity endpoint.
      */
@@ -306,6 +374,39 @@ class OAuth2DPoPTest {
             "Bearer test-access-token",
             recorded.header("Authorization")
         )
+    }
+
+    @Test
+    fun test_callIdentityService_nonSuccessfulResponse_throws() {
+        httpAccess.enqueue(403, "Wrong_Org")
+
+        val error = assertThrows(OAuth2.IdentityServiceException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token"
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("HTTP status 403"))
+        assertTrue(error.message.orEmpty().contains("Wrong_Org"))
+        assertEquals(403, error.httpStatusCode)
+        assertEquals("Wrong_Org", error.responseBody)
+    }
+
+    @Test
+    fun test_callIdentityService_malformedSuccessfulResponse_throws() {
+        httpAccess.enqueue(200, "Wrong_Org")
+
+        val error = assertThrows(IOException::class.java) {
+            OAuth2.callIdentityService(
+                httpAccess,
+                "https://example-id.test/id/orgId/userId",
+                "test-access-token"
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("malformed response"))
     }
 
     /**
@@ -362,14 +463,16 @@ class OAuth2DPoPTest {
         }
 
         fun enqueueIdentitySuccess() {
-            // Minimal identity response — enough JSON keys for IdServiceResponse to parse without NPE.
+            // Minimal valid identity response for tests that only assert outbound headers.
             enqueue(
                 200,
                 """{"id":"https://example-id.test/id/00Dxxxxx/005xxxxx",
                     "user_id":"005xxxxx","organization_id":"00Dxxxxx",
-                    "username":"unit@test.example","display_name":"unit","email":"unit@test.example",
-                    "urls":{},"active":true,"user_type":"STANDARD",
-                    "language":"en_US","locale":"en_US","utcOffset":0}""".trimIndent()
+                    "username":"unit@test.example","email":"unit@test.example",
+                    "first_name":"Unit","last_name":"Test","display_name":"Unit Test",
+                    "nick_name":"unit","active":true,"user_type":"STANDARD",
+                    "language":"en_US","locale":"en_US","utcOffset":0,
+                    "last_modified_date":"2026-01-01T00:00:00.000+0000"}""".trimIndent()
             )
         }
 
@@ -395,4 +498,16 @@ class OAuth2DPoPTest {
         .username("$suffix-user@example.test")
         .accountName("$suffix-user")
         .build()
+
+    private fun dpopPayload(request: Request): org.json.JSONObject {
+        val proof = checkNotNull(request.header("DPoP"))
+        val parts = proof.split(".")
+        assertEquals("DPoP proof should be a three-part JWT", 3, parts.size)
+        val payload = android.util.Base64.decode(
+            parts[1],
+            android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or
+                android.util.Base64.NO_WRAP
+        )
+        return org.json.JSONObject(String(payload, Charsets.UTF_8))
+    }
 }

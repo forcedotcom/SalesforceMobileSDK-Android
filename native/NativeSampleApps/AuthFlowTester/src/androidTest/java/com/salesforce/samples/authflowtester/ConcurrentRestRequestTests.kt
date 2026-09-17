@@ -87,6 +87,7 @@ class ConcurrentRestRequestTests : AuthFlowTest() {
         app.waitForManyRequestsSubmitted()
         app.waitForManyRequestInterruption("Logout requested")
         waitForAuthenticatedUserCount(expectedCount = 0)
+        app.waitForAppUnloaded()
         assertFalse("Session detail screen should close after logout", app.isAppLoaded())
 
         restartApp(waitForAuthenticatedApp = false)

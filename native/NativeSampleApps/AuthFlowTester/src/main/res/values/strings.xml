@@ -19,7 +19,7 @@
     <string name="concurrent_rest_requests">Concurrent REST Requests</string>
     <string name="many_request_options_summary">Options: %1$d requests · Mixed · %2$s</string>
     <string name="request_count">Request count</string>
-    <string name="request_mix_description">Mixed: Resources, Limits, and Describe Global</string>
+    <string name="request_mix_description">Mixed: API Resources and Describe Global</string>
     <string name="interruption">Interruption</string>
     <string name="make_many_rest_api_requests">Make Many REST API Requests</string>
     <string name="making_many_requests">Making Requests…</string>

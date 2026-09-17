@@ -52,10 +52,18 @@ const val AUTH_REQUIRED = "Please authenticate to use this function."
 data class RequestResult(val success: Boolean, val displayValue: String, val response: String? = null)
 
 enum class ConcurrentRequestType(val displayName: String) {
-    RESOURCES("Resources"),
-    LIMITS("Limits"),
+    RESOURCES("API Resources"),
     DESCRIBE_GLOBAL("Describe Global"),
 }
+
+private val CONCURRENT_REQUEST_MIX = listOf(
+    ConcurrentRequestType.RESOURCES,
+    ConcurrentRequestType.RESOURCES,
+    ConcurrentRequestType.DESCRIBE_GLOBAL,
+)
+
+fun concurrentRequestType(index: Int): ConcurrentRequestType =
+    CONCURRENT_REQUEST_MIX[index % CONCURRENT_REQUEST_MIX.size]
 
 enum class ConcurrentRequestState {
     QUEUED,
@@ -148,7 +156,7 @@ fun concurrentRestRequest(
     apiVersion: String,
     failedRequestIndex: Int?,
 ): Pair<ConcurrentRequestType, RestRequest> {
-    val type = ConcurrentRequestType.entries[index % ConcurrentRequestType.entries.size]
+    val type = concurrentRequestType(index)
     val request = if (failedRequestIndex == index) {
         RestRequest(
             RestRequest.RestMethod.GET,
@@ -157,7 +165,6 @@ fun concurrentRestRequest(
     } else {
         when (type) {
             ConcurrentRequestType.RESOURCES -> RestRequest.getRequestForResources(apiVersion)
-            ConcurrentRequestType.LIMITS -> RestRequest.getRequestForLimits(apiVersion)
             ConcurrentRequestType.DESCRIBE_GLOBAL -> RestRequest.getRequestForDescribeGlobal(apiVersion)
         }
     }

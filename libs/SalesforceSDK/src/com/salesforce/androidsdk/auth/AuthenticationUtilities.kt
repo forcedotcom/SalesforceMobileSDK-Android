@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_H
 import com.salesforce.androidsdk.app.Features.FEATURE_BEACON
 import com.salesforce.androidsdk.app.Features.FEATURE_BIOMETRIC_AUTH
 import com.salesforce.androidsdk.app.Features.FEATURE_DPOP
+import com.salesforce.androidsdk.app.Features.FEATURE_RTR
 import com.salesforce.androidsdk.app.Features.FEATURE_SCREEN_LOCK
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_JWT
 import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_FORMAT_OPAQUE
@@ -71,10 +72,11 @@ import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.isBiometricAuthenticationEnabled
 import com.salesforce.androidsdk.security.ScreenLockManager
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.i
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,7 +85,10 @@ import okhttp3.Interceptor
 import okhttp3.Request.Builder
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.HttpURLConnection.HTTP_FORBIDDEN
+import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
 import java.net.URI
+import java.time.Instant
 import java.util.function.Consumer
 
 /**
@@ -93,6 +98,14 @@ import java.util.function.Consumer
 private const val MUST_BE_MANAGED_APP_PERM = "must_be_managed_app"
 
 private const val TAG = "AuthenticationUtilities"
+private const val BAD_OAUTH_TOKEN = "Bad_OAuth_Token"
+private const val WRONG_ORG = "Wrong_Org"
+
+@VisibleForTesting
+internal data class IdentityFetchResult(
+    val identity: OAuth2.IdServiceResponse?,
+    val refreshTokenRotationTime: String? = null,
+)
 
 /**
  * Called when any (User Agent flow, Web Server after PKCE, Native Login, IDP, ect) authentication
@@ -123,6 +136,7 @@ internal suspend fun onAuthFlowComplete(
     runtimeConfig: RuntimeConfig = getRuntimeConfig(SalesforceSDKManager.getInstance().appContext),
     updateLoggingPrefs: (account: UserAccount) -> Unit = ::updateLoggingPrefsHelper,
     fetchUserIdentity: (suspend (tokenResponse: TokenEndpointResponse) -> OAuth2.IdServiceResponse?)? = null,
+    fetchUserIdentityResult: (suspend (tokenResponse: TokenEndpointResponse) -> IdentityFetchResult)? = null,
     startMainActivity: () -> Unit = ::startMainActivityHelper,
     setAdministratorPreferences: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::setAdministratorPreferences,
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
@@ -134,12 +148,6 @@ internal suspend fun onAuthFlowComplete(
 ) {
     // Reset Dev Support LoginOptionsActivity override
     SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
-
-    // Note: Can't use default parameter value for a suspended function parameter.
-    val actualFetchUserIdentity: suspend (TokenEndpointResponse) -> OAuth2.IdServiceResponse? =
-        fetchUserIdentity ?: { tr: TokenEndpointResponse ->
-            fetchUserIdentityWithRetry(tr, loginServer)
-        }
 
     if (blockIntegrationUser) {
         /*
@@ -165,7 +173,34 @@ internal suspend fun onAuthFlowComplete(
         w(TAG, "Missing refresh token scope.")
     }
 
-    val userIdentity = actualFetchUserIdentity(tokenResponse)
+    val identityResult = try {
+        when {
+            fetchUserIdentityResult != null -> fetchUserIdentityResult(tokenResponse)
+            fetchUserIdentity != null -> IdentityFetchResult(fetchUserIdentity(tokenResponse))
+            else -> fetchUserIdentityWithRetry(tokenResponse, loginServer, consumerKey)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        w(TAG, "Cannot complete authentication because user identity could not be retrieved.", e)
+        onAuthFlowError(
+            context.getString(sf__generic_authentication_error_title),
+            context.getString(sf__generic_authentication_error),
+            e,
+        )
+        return
+    }
+    val userIdentity = identityResult.identity
+    if (userIdentity?.username.isNullOrBlank()) {
+        val error = IllegalStateException("Identity service did not return a user identity")
+        w(TAG, "Cannot complete authentication because user identity is missing.", error)
+        onAuthFlowError(
+            context.getString(sf__generic_authentication_error_title),
+            context.getString(sf__generic_authentication_error),
+            error,
+        )
+        return
+    }
     val mustBeManagedApp = userIdentity?.customPermissions?.optBoolean(MUST_BE_MANAGED_APP_PERM) ?: false
     if (mustBeManagedApp && !runtimeConfig.isManagedApp) {
         onAuthFlowError(
@@ -175,7 +210,7 @@ internal suspend fun onAuthFlowComplete(
         return
     }
 
-    val account = UserAccountBuilder.getInstance()
+    val accountBuilder = UserAccountBuilder.getInstance()
         .populateFromTokenEndpointResponse(tokenResponse)
         .populateFromIdServiceResponse(userIdentity)
         .accountName(buildAccountName(userIdentity?.username, tokenResponse.instanceUrl))
@@ -184,7 +219,8 @@ internal suspend fun onAuthFlowComplete(
         .redirectUri(redirectUri)
         .nativeLogin(nativeLogin)
         .credentialsIdentifier(credentialsIdentifier)
-        .build()
+    identityResult.refreshTokenRotationTime?.let(accountBuilder::lastTokenRotationTime)
+    val account = accountBuilder.build()
 
     // Set additional administrator prefs if they exist
     setAdministratorPreferences(userIdentity, account)
@@ -280,6 +316,12 @@ internal suspend fun onAuthFlowComplete(
             else -> USER_SWITCH_TYPE_DEFAULT
         }
         userAccountManager.sendUserSwitchIntent(userSwitchType, null)
+    }
+
+    // Registration persists the per-user feature flag, so it must happen only after the account
+    // has been created or updated above. The timestamp was included in the primary persistence.
+    if (identityResult.refreshTokenRotationTime != null) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_RTR, account)
     }
 
     /*
@@ -422,35 +464,168 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
  * corrects this by substituting the issuing server's host, which is correct for My Domain
  * logins and for Bearer tokens on any server.
  *
- * For DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
+ * Workaround for
+ * [W-23992239](https://gus.my.salesforce.com/lightning/r/ADM_Work__c/a07EE00002imeECYAY/view):
+ * for DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
  * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
  * does not issue a nonce challenge the way data endpoints do. The raw
- * [TokenEndpointResponse.idUrl] (pool-server host) must be used instead.
+ * [TokenEndpointResponse.idUrl] (pool-server host) must be used for the initial request instead.
+ * If that request requires a credential refresh, the refreshed token is issued by the instance
+ * token endpoint, so the replay uses [TokenEndpointResponse.idUrlWithInstance].
  *
- * No token refresh is attempted: the access token was just issued by the login flow,
- * so it is valid by construction. A refresh would also be unsafe under Refresh Token
- * Rotation — consuming the fresh token and discarding the rotated replacement.
+ * Identity 401 responses and the known `Bad_OAuth_Token`/`Wrong_Org` 403 responses trigger one
+ * refresh against the instance token endpoint. The complete refreshed credential state (including
+ * a rotated refresh token) is applied before one replay. Other 403 responses are surfaced without
+ * retry so authorization failures are not masked.
  */
-private suspend fun fetchUserIdentityWithRetry(
+@VisibleForTesting
+internal suspend fun fetchUserIdentityWithRetry(
     tokenResponse: TokenEndpointResponse,
     loginServer: String,
-): OAuth2.IdServiceResponse? {
-    val url = if ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true)
-        && LoginServerManager.isPoolServer(loginServer)
+    consumerKey: String,
+    identityFetcher: suspend (url: String, response: TokenEndpointResponse) -> OAuth2.IdServiceResponse =
+        ::fetchIdentityForAuthentication,
+    tokenRefresher: suspend (
+        response: TokenEndpointResponse,
+        loginServer: String,
+        consumerKey: String,
+    ) -> TokenEndpointResponse = ::refreshCredentialsForIdentity,
+): IdentityFetchResult {
+    val initialUrl = if (
+        "DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
+        LoginServerManager.isPoolServer(loginServer)
     ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
-    return runCatching {
-        withContext(Default) {
-            callIdentityService(
-                HttpAccess.DEFAULT,
-                url,
-                tokenResponse.authToken,
-                tokenResponse.tokenType,
-                tokenResponse.credentialsIdentifier,
-            )
+
+    try {
+        return IdentityFetchResult(identityFetcher(initialUrl, tokenResponse))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
+            w(TAG, "Cannot fetch user identity due to an error.", e)
+            throw e
         }
-    }.onFailure { throwable ->
-        w(TAG, "Cannot fetch user identity due to an error.", throwable)
-    }.getOrNull()
+
+        val statusCode = (e as OAuth2.IdentityServiceException).httpStatusCode
+        i(TAG, "Identity request returned HTTP $statusCode; refreshing credentials once.")
+    }
+
+    val originalRefreshToken = tokenResponse.refreshToken
+    val refreshedResponse = tokenRefresher(tokenResponse, loginServer, consumerKey)
+    val refreshTokenRotated = !refreshedResponse.refreshToken.isNullOrBlank() &&
+        refreshedResponse.refreshToken != originalRefreshToken
+    mergeRefreshedCredentials(tokenResponse, refreshedResponse)
+
+    return try {
+        IdentityFetchResult(
+            identity = identityFetcher(tokenResponse.idUrlWithInstance, tokenResponse),
+            refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        w(TAG, "Cannot fetch user identity after refreshing credentials.", e)
+        throw e
+    }
+}
+
+private suspend fun fetchIdentityForAuthentication(
+    url: String,
+    response: TokenEndpointResponse,
+): OAuth2.IdServiceResponse = withContext(IO) {
+    callIdentityService(
+        HttpAccess.DEFAULT,
+        url,
+        response.authToken,
+        response.tokenType,
+        response.credentialsIdentifier,
+    )
+}
+
+private suspend fun refreshCredentialsForIdentity(
+    response: TokenEndpointResponse,
+    loginServer: String,
+    consumerKey: String,
+): TokenEndpointResponse = withContext(IO) {
+    // Login has not created a UserAccount yet, so ClientManager's per-account refresh coordinator
+    // cannot coordinate this request. This flow owns the response and permits exactly one refresh.
+    // If Android gains a credential-scoped pre-account coordinator, route this refresh through it.
+    OAuth2.refreshAuthToken(
+        HttpAccess.DEFAULT,
+        OAuth2.overrideLoginServerIfNeeded(
+            loginServer,
+            response.instanceUrl,
+            response.communityId,
+            response.communityUrl,
+        ),
+        consumerKey,
+        checkNotNull(response.refreshToken) { "Cannot refresh identity without a refresh token" },
+        response.additionalOauthValues,
+        response.credentialsIdentifier,
+        response.tokenType,
+    )
+}
+
+private fun isRefreshableIdentityFailure(error: Exception): Boolean {
+    val identityError = error as? OAuth2.IdentityServiceException ?: return false
+    if (identityError.httpStatusCode == HTTP_UNAUTHORIZED) return true
+    if (identityError.httpStatusCode != HTTP_FORBIDDEN) return false
+
+    return identityError.responseBody?.let { body ->
+        body.contains(BAD_OAUTH_TOKEN, ignoreCase = true) ||
+            body.contains(WRONG_ORG, ignoreCase = true)
+    } == true
+}
+
+/**
+ * Applies the same refresh merge semantics used by ClientManager's UserAccountBuilder path:
+ * values omitted as null retain their existing value, values returned as empty strings clear stale
+ * session data, and additional OAuth values are merged. The access token is always required.
+ */
+private fun mergeRefreshedCredentials(
+    target: TokenEndpointResponse,
+    refreshed: TokenEndpointResponse,
+) {
+    target.authToken = refreshed.authToken?.takeIf(String::isNotBlank)
+        ?: throw IllegalStateException("Token refresh did not return an access token")
+    target.refreshToken = refreshed.refreshToken ?: target.refreshToken
+    target.instanceUrl = refreshed.instanceUrl ?: target.instanceUrl
+    target.apiInstanceUrl = refreshed.apiInstanceUrl ?: target.apiInstanceUrl
+    target.idUrl = refreshed.idUrl ?: target.idUrl
+    target.idUrlWithInstance = refreshed.idUrlWithInstance ?: target.idUrlWithInstance
+    target.orgId = refreshed.orgId ?: target.orgId
+    target.userId = refreshed.userId ?: target.userId
+    target.code = refreshed.code ?: target.code
+    target.communityId = refreshed.communityId ?: target.communityId
+    target.communityUrl = refreshed.communityUrl ?: target.communityUrl
+    target.additionalOauthValues = when (val refreshedValues = refreshed.additionalOauthValues) {
+        null -> target.additionalOauthValues
+        else -> (target.additionalOauthValues?.toMutableMap() ?: mutableMapOf()).apply {
+            putAll(refreshedValues)
+        }
+    }
+    target.idToken = refreshed.idToken ?: target.idToken
+    target.lightningDomain = refreshed.lightningDomain ?: target.lightningDomain
+    target.lightningSid = refreshed.lightningSid ?: target.lightningSid
+    target.vfDomain = refreshed.vfDomain ?: target.vfDomain
+    target.vfSid = refreshed.vfSid ?: target.vfSid
+    target.contentDomain = refreshed.contentDomain ?: target.contentDomain
+    target.contentSid = refreshed.contentSid ?: target.contentSid
+    target.csrfToken = refreshed.csrfToken ?: target.csrfToken
+    target.cookieClientSrc = refreshed.cookieClientSrc ?: target.cookieClientSrc
+    target.cookieSidClient = refreshed.cookieSidClient ?: target.cookieSidClient
+    target.sidCookieName = refreshed.sidCookieName ?: target.sidCookieName
+    target.parentSid = refreshed.parentSid ?: target.parentSid
+    target.uiSid = refreshed.uiSid ?: target.uiSid
+    target.tokenFormat = refreshed.tokenFormat ?: target.tokenFormat
+    target.beaconChildConsumerKey =
+        refreshed.beaconChildConsumerKey ?: target.beaconChildConsumerKey
+    target.beaconChildConsumerSecret =
+        refreshed.beaconChildConsumerSecret ?: target.beaconChildConsumerSecret
+    target.scope = refreshed.scope ?: target.scope
+    target.tokenType = refreshed.tokenType ?: target.tokenType
+    target.credentialsIdentifier =
+        refreshed.credentialsIdentifier ?: target.credentialsIdentifier
 }
 
 /**

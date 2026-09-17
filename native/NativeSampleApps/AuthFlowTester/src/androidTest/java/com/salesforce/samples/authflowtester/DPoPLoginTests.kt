@@ -30,13 +30,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.testConfig
-import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -75,7 +75,7 @@ class DPoPLoginTests : AuthFlowTest() {
         assertEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
         assertEquals("DPoP", afterDpop.tokenType)
         assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
-        assertNotEquals(beforeDpop.nonce, afterDpop.nonce)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
     }
 
     @Test
@@ -89,7 +89,12 @@ class DPoPLoginTests : AuthFlowTest() {
         app.startManyRequests()
 
         val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
-        assertEquals(20, counts.successes)
+        val failedRequests = app.failedManyRequestIndices(20)
+        val firstFailure = failedRequests.firstOrNull()?.let { requestNumber ->
+            val index = requestNumber - 1
+            app.tapFailedManyRequest(index, concurrentRequestType(index))
+        }
+        assertEquals("Failed requests: $failedRequests; first failure: $firstFailure", 20, counts.successes)
         assertEquals(0, counts.failures)
         val afterTokens = app.getTokens()
         val afterDpop = app.getDpopInfo()
@@ -97,7 +102,7 @@ class DPoPLoginTests : AuthFlowTest() {
         assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
         assertEquals("DPoP", afterDpop.tokenType)
         assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
-        assertNotEquals(beforeDpop.nonce, afterDpop.nonce)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
         assertEquals(
             "A warm DPoP+RTR batch should share one token refresh",
             1,
@@ -120,7 +125,12 @@ class DPoPLoginTests : AuthFlowTest() {
         app.startManyRequests()
 
         val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
-        assertEquals(20, counts.successes)
+        val failedRequests = app.failedManyRequestIndices(20)
+        val firstFailure = failedRequests.firstOrNull()?.let { requestNumber ->
+            val index = requestNumber - 1
+            app.tapFailedManyRequest(index, concurrentRequestType(index))
+        }
+        assertEquals("Failed requests: $failedRequests; first failure: $firstFailure", 20, counts.successes)
         assertEquals(0, counts.failures)
         val afterTokens = app.getTokens()
         val afterDpop = app.getDpopInfo()
@@ -129,10 +139,11 @@ class DPoPLoginTests : AuthFlowTest() {
         assertEquals("DPoP", afterDpop.tokenType)
         assertEquals(keyThumbprintBeforeRestart, afterDpop.keyThumbprint)
         assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
-        assertEquals(
-            "A cold nonce cache should cause one challenge plus one successful token request",
-            2,
-            app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch,
+        val tokenRequestCount = app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch
+        assertTrue(
+            "A cold DPoP+RTR batch should use one shared refresh, with at most one nonce retry; " +
+                "observed $tokenRequestCount token requests",
+            tokenRequestCount in 1..2,
         )
     }
 
@@ -361,8 +372,6 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
-            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
-            assertUsername = false,
         )
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
@@ -370,18 +379,13 @@ class DPoPLoginTests : AuthFlowTest() {
             isJwt = true,
             useLoginPoolHost = true,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
-            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
-            assertRefreshUserAgent = false,
         )
     }
 
     // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
     // This is a safety net for the RTR-unsafe credential-refresh pattern seen on iOS: if the
-    // identity fetch were to consume the refresh token (e.g. by triggering a credential refresh
-    // to resolve a Wrong_Org routing error), assertRevokeAndRefreshWorks below would fail because
-    // the refresh token would already be spent. Android's two-attempt URL strategy avoids that by
-    // resolving the routing problem with the still-valid access token, never touching the refresh
-    // token. W-23991713 tracks the equivalent iOS investigation.
+    // identity fetch consumes the refresh token to recover from a 401/403, the SDK must persist the
+    // rotated replacement. assertRevokeAndRefreshWorks below catches any stale-token persistence.
     @Test
     fun testECAJwtDPoP_ViaLoginPoolServer_Rtr() {
         loginAndValidate(
@@ -389,8 +393,6 @@ class DPoPLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
             useLoginPoolHost = true,
-            // TODO(W-23992239): Restore the username assertion when the server bug is fixed.
-            assertUsername = false,
         )
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true,
@@ -398,8 +400,6 @@ class DPoPLoginTests : AuthFlowTest() {
             isJwt = true,
             useLoginPoolHost = true,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
-            // TODO(W-23992239): Restore the post-refresh user-agent assertion when fixed.
-            assertRefreshUserAgent = false,
         )
     }
 

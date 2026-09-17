@@ -328,7 +328,7 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                             if (capturedAccount != null) {
                                 manager.logout(
                                     account = capturedAccount,
-                                    frontActivity = null,
+                                    frontActivity = this@AuthFlowTesterActivity,
                                 )
                             }
                         }

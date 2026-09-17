@@ -72,8 +72,8 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testECAJwtDPoP_ViaLoginPoolServer_Rtr` | ECA JWT DPoP RTR | — | Pool server + DPoP + RTR; safety net: refresh token must survive the post-login identity fetch |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
 | `testECAJwtDPoP_RevokeWhenInFlight_PreservesBindingAndRecovers` | ECA JWT DPoP | — | Concurrent mixed batch; automatic in-flight revoke; follow-up refresh preserves DPoP binding |
-| `testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding` | ECA JWT DPoP RTR | — | Twenty concurrent 401s share one refresh; access token, refresh token, and nonce rotate |
-| `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; one nonce challenge/retry; key binding survives restart |
+| `testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding` | ECA JWT DPoP RTR | — | Twenty concurrent 401s share one refresh; access and refresh tokens rotate while DPoP binding remains valid |
+| `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; at most one nonce challenge/retry; key binding survives restart |
 
 #### RTRLoginTests
 Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`.
@@ -90,7 +90,7 @@ Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies
 
 #### ConcurrentRestRequestTests
 Concurrent REST stress-harness tests. The card defaults to twenty read-only requests in a
-Resources / Limits / Describe Global round-robin mix. It can interrupt a live batch with revoke or
+API Resources / API Resources / Describe Global weighted mix. It can interrupt a live batch with revoke or
 logout and exposes stable Compose semantics for each request and aggregate count.
 
 | Test | App Config | Notes |
@@ -426,7 +426,7 @@ The separate **Concurrent REST Requests** card launches a read-only mixed batch 
 the existing single-request workflow. Its options are collapsed initially:
 
 - **Request count:** 5, 10, 20, or 50 (default 20)
-- **Request mix:** fixed round-robin Resources, Limits, and Describe Global requests
+- **Request mix:** fixed weighted cycle of two API Resources requests and one Describe Global request
 - **Interruption:** Manual (default), Revoke when requests are in flight, or Logout when requests
   are in flight
 
