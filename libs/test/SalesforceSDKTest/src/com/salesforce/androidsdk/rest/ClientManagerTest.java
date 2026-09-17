@@ -200,7 +200,13 @@ public class ClientManagerTest {
     /** Provider credentials come only from the manager's bound user. */
     @Test
     public void testProviderInheritsManagerIdentity() {
-        final UserAccount userA = createTestAccountInAccountManager();
+        final UserAccount userA = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("DPoP")
+                .uiSid("test_ui_sid")
+                .build();
+        userAccountManager.createAccount(userA);
+        clientManager = new ClientManager(targetContext, userA);
         final UserAccount userB = UserAccountBuilder.getInstance()
                 .populateFromUserAccount(UserAccountTest.createOtherTestAccount())
                 .refreshToken("other_refresh_token")
@@ -212,6 +218,8 @@ public class ClientManagerTest {
                 new ClientManager.AccMgrAuthTokenProvider(clientManager);
 
         Assert.assertEquals(userA.getRefreshToken(), provider.getRefreshToken());
+        Assert.assertEquals(userA.getTokenType(), provider.getTokenType());
+        Assert.assertEquals(userA.getUiSid(), provider.getUiSid());
     }
 
     /** Missing required identifiers leave the manager unbound without throwing. */

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.rest;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator;
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
@@ -42,6 +41,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -97,6 +97,12 @@ public class RestClient {
          * or "DPoP"), or null if not yet known or the server did not specify.
          */
         default String getTokenType() { return null; }
+
+        /**
+         * @return The UI session ID from the most recent refresh, or null when unavailable.
+         * Existing providers remain source and binary compatible through this default method.
+         */
+        default String getUiSid() { return null; }
     }
 
     /**
@@ -177,10 +183,19 @@ public class RestClient {
      * @param authTokenProvider
      */
     public RestClient(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+        this(clientInfo, authToken, tokenType, credentialsIdentifier, null, httpAccessor, authTokenProvider);
+    }
+
+    /**
+     * Constructs a RestClient with all credential fields used to authenticate requests.
+     *
+     * @param uiSid UI session ID used as a Bearer token only when the request-path policy selects it
+     */
+    public RestClient(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, String uiSid, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
         this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
         this.authTokenProvider = authTokenProvider;
-        setOAuthRefreshInterceptor(authToken, tokenType, credentialsIdentifier);
+        setOAuthRefreshInterceptor(authToken, tokenType, credentialsIdentifier, uiSid);
         setOkHttpClientBuilder();
         setOkHttpClient(null);
     }
@@ -220,21 +235,20 @@ public class RestClient {
     /**
      * Sets the OAuthRefreshInterceptor associated with this user account.
      */
-    private synchronized void setOAuthRefreshInterceptor(String authToken, String tokenType) {
-        setOAuthRefreshInterceptor(authToken, tokenType, null);
-    }
-
-    /**
-     * Sets the OAuthRefreshInterceptor associated with this user account.
-     */
-    private synchronized void setOAuthRefreshInterceptor(String authToken, String tokenType, String credentialsIdentifier) {
+    private synchronized void setOAuthRefreshInterceptor(String authToken, String tokenType, String credentialsIdentifier, String uiSid) {
         final String cacheKey = getCacheKey();
         OAuthRefreshInterceptor oAuthRefreshInterceptor = OAUTH_REFRESH_INTERCEPTORS.get(cacheKey);
 
         // If none cached, create new one
         if (oAuthRefreshInterceptor == null) {
-            oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, tokenType, credentialsIdentifier, authTokenProvider);
+            oAuthRefreshInterceptor = new OAuthRefreshInterceptor(clientInfo, authToken, tokenType, credentialsIdentifier, uiSid, authTokenProvider);
             OAUTH_REFRESH_INTERCEPTORS.put(cacheKey, oAuthRefreshInterceptor);
+        } else {
+            // A cache entry may have been created through a legacy constructor that did not carry
+            // uiSid. Adopt metadata only when the access token is the same credential generation;
+            // never let a later client built from stale account data roll back a refreshed token.
+            oAuthRefreshInterceptor.adoptCredentialMetadataIfSameAuthToken(
+                    authToken, tokenType, credentialsIdentifier, uiSid);
         }
         this.oAuthRefreshInterceptor = oAuthRefreshInterceptor;
     }
@@ -757,6 +771,7 @@ public class RestClient {
         private String authToken;
         String tokenType;
         String credentialsIdentifier;
+        private String uiSid;
         private ClientInfo clientInfo;
 
         /**
@@ -798,10 +813,18 @@ public class RestClient {
          * @param authTokenProvider
          */
         public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, AuthTokenProvider authTokenProvider) {
+            this(clientInfo, authToken, tokenType, credentialsIdentifier, null, authTokenProvider);
+        }
+
+        /**
+         * Overload that also accepts the UI session ID used by request-path authentication policy.
+         */
+        public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, String tokenType, String credentialsIdentifier, String uiSid, AuthTokenProvider authTokenProvider) {
             this.clientInfo = clientInfo;
             this.authToken = authToken;
             this.tokenType = tokenType;
             this.credentialsIdentifier = credentialsIdentifier;
+            this.uiSid = uiSid;
             this.authTokenProvider = authTokenProvider;
         }
 
@@ -916,15 +939,11 @@ public class RestClient {
          * @param request
          * @return
          */
-        private Request buildAuthenticatedRequest(Request request) {
+        private synchronized Request buildAuthenticatedRequest(Request request) {
             Request.Builder builder = request.newBuilder();
-            setAuthHeader(builder);
-            attachDPoPProofIfNeeded(builder, request.method(), request.url().toString());
+            DPoPRequestDecorator.INSTANCE.applyAuthHeaders(
+                    builder, credentialsIdentifier, tokenType, authToken, uiSid);
             return builder.build();
-        }
-
-        private void attachDPoPProofIfNeeded(Request.Builder builder, String method, String url) {
-            DPoPRequestDecorator.INSTANCE.attachProof(builder, credentialsIdentifier, tokenType, authToken);
         }
 
         /**
@@ -935,34 +954,29 @@ public class RestClient {
         }
 
         /**
-         * Set auth header
-         *
-         * @param builder
-         */
-        private void setAuthHeader(Request.Builder builder) {
-            if (authToken != null) { //Add Auth token to each request if authorized
-                OAuth2.addAuthorizationHeader(builder, authToken, tokenType);
-            }
-        }
-
-        /**
-         * Change authToken for this RestClient
-         *
-         * @param newAuthToken
-         */
-        private synchronized void setAuthToken(String newAuthToken) {
-            authToken = newAuthToken;
-        }
-
-        /**
-         * Change authToken and tokenType for this RestClient
+         * Change all authentication fields for this RestClient atomically.
          *
          * @param newAuthToken
          * @param newTokenType
+         * @param newUiSid
          */
-        private synchronized void setAuthToken(String newAuthToken, String newTokenType) {
+        private synchronized void setAuthToken(String newAuthToken, String newTokenType, String newUiSid) {
             authToken = newAuthToken;
             tokenType = newTokenType;
+            uiSid = newUiSid;
+        }
+
+        private synchronized void adoptCredentialMetadataIfSameAuthToken(
+                String candidateAuthToken,
+                String candidateTokenType,
+                String candidateCredentialsIdentifier,
+                String candidateUiSid) {
+            if (!Objects.equals(authToken, candidateAuthToken)) {
+                return;
+            }
+            tokenType = candidateTokenType;
+            credentialsIdentifier = candidateCredentialsIdentifier;
+            uiSid = candidateUiSid;
         }
 
         /**
@@ -999,7 +1013,7 @@ public class RestClient {
                 }
 
                 // Use new token (and token type, if available)
-                setAuthToken(newAuthToken, authTokenProvider.getTokenType());
+                setAuthToken(newAuthToken, authTokenProvider.getTokenType(), authTokenProvider.getUiSid());
 
                 // Check if the instanceUrl changed
                 String instanceUrl = authTokenProvider.getInstanceUrl();

@@ -317,6 +317,25 @@ open class SalesforceSDKManager protected constructor(
         OAuthConfig(getBootConfig(appContext))
     }
 
+    /**
+     * Selects requests that should use the UI session as a Bearer token when the current
+     * credential is DPoP-bound and has a non-empty UI session ID. This policy is synchronous
+     * because it is evaluated while an HTTP request is being authenticated.
+     *
+     * Apps may replace this function process-wide. It is not called for ordinary Bearer
+     * credentials or when no UI session ID is available. By default, `/lwr` and paths beneath
+     * `/lwr/` use the UI session because those endpoints do not currently accept DPoP-bound
+     * access tokens.
+     */
+    @Volatile
+    var shouldUseUiSidBearerForPath: (path: String) -> Boolean = { path ->
+        path == "/lwr" || path.startsWith("/lwr/")
+    }
+
+    /** Resolves [shouldUseUiSidBearerForPath] for an authenticated request path. */
+    fun shouldUseUiSidBearerForPath(path: String): Boolean =
+        shouldUseUiSidBearerForPath.invoke(path)
+
     internal var debugOverrideAppConfig: OAuthConfig? = null
 
     /**
