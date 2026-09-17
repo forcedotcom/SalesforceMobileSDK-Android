@@ -113,9 +113,11 @@ class SalesforceSDKManagerClientManagerTest {
 
     @Test
     fun clientManager_repeatedAccessForSameCurrentUser_returnsSameCachedInstance() {
-        // Regression guard for the account-resolution caching fix: repeated
-        // access for an unchanged current user must not reconstruct
-        // ClientManager (and re-resolve its backing Account) on every call.
+        /*
+         * Regression guard for the account-resolution caching fix: repeated
+         * access for an unchanged current user must not reconstruct
+         * ClientManager (and re-resolve its backing Account) on every call.
+         */
         persistUser("cached")
         val first = requireNotNull(sdkManager.clientManager)
         val second = requireNotNull(sdkManager.clientManager)
@@ -127,9 +129,11 @@ class SalesforceSDKManagerClientManagerTest {
 
     @Test
     fun clientManager_afterCurrentUserSwitch_freshGetterReturnsNewInstanceBoundToNewUser() {
-        // Regression guard for W-19758940: switching the current user must
-        // invalidate the cache so the next access resolves a client bound to
-        // the new user, not a stale cached instance from the old user.
+        /*
+         * Regression guard: switching the current user must invalidate the
+         * cache so the next access resolves a client bound to the new user,
+         * not a stale cached instance from the old user.
+         */
         val userA = persistUser("switch-a")
         val managerForA = requireNotNull(sdkManager.clientManager)
 
@@ -146,10 +150,13 @@ class SalesforceSDKManagerClientManagerTest {
 
     @Test
     fun clientManager_afterCachedAccountIsRemovedAndReAdded_returnsFreshlyBoundInstance() {
-        // Regression guard: the cache must not survive removal of the account it is
-        // bound to. If the same identity is re-added afterward, the next access must
-        // resolve a fresh ClientManager bound to the new persisted Account, not the
-        // stale cached instance from before the removal.
+        /*
+         * Regression guard: the cache must not survive removal of the
+         * account it is bound to. If the same identity is re-added
+         * afterward, the next access must resolve a fresh ClientManager
+         * bound to the new persisted Account, not the stale cached instance
+         * from before the removal.
+         */
         val user = persistUser("removed-and-readded")
         val staleManager = requireNotNull(sdkManager.clientManager)
         val staleAccount = requireNotNull(staleManager.account)
