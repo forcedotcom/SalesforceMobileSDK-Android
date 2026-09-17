@@ -106,7 +106,6 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_CLIENT_SRC
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_SID_CLIENT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CSRF_TOKEN
-import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_LIGHTNING_SID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_PARENT_SID
