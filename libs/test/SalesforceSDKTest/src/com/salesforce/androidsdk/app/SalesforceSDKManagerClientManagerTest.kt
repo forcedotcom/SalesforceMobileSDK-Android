@@ -174,6 +174,42 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun clientManager_afterLogoutAndReloginAsSameIdentity_startsWithClearedFeatureMarkers() {
+        /*
+         * Regression guard: logging out and back in as the same identity
+         * must not carry the previous session's per-user feature markers
+         * forward. cleanUp() must drop this identity's perUserFeatures
+         * entry so a fresh login starts from an empty set and can select a
+         * different login type without the old session's markers lingering.
+         */
+        val user = persistUser("relogin-same-identity")
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_NATIVE, user)
+        assertTrue(
+            "Marker must be registered before logout",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
+
+        sdkManager.logout(requireNotNull(userAccountManager.buildAccount(user)), null, false)
+
+        userAccountManager.createAccount(user)
+        assertFalse(
+            "A fresh login as the same identity must not inherit the previous " +
+                "session's feature markers",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, user)
+        assertTrue(
+            "The new session must be able to select a different login type",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, user),
+        )
+        assertFalse(
+            "The old session's login-type marker must not carry forward",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
+    }
+
+    @Test
     fun retainedClient_refreshesPersistedAWhileBRemainsCurrent() {
         val userA = persistUser("refresh-a")
         val managerA = requireNotNull(sdkManager.clientManager)

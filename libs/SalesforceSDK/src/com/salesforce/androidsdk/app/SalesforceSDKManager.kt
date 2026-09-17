@@ -1048,6 +1048,18 @@ open class SalesforceSDKManager protected constructor(
         cachedClientManager = null
 
         userAccount?.let { userAccountResolved ->
+            /*
+             * Drops this user's persisted feature markers so a later login
+             * as the same identity starts from an empty set rather than
+             * inheriting the previous session's markers. Without this, the
+             * no-op guards in registerUsedAppFeature/unregisterUsedAppFeature
+             * (which only persist on an actual set change) can skip writing
+             * the new session's flags if they happen to match what's left
+             * over from the old one, leaving in-memory and persisted state
+             * inconsistent.
+             */
+            perUserFeatures.remove("${userAccountResolved.orgId}/${userAccountResolved.userId}")
+
             (screenLockManager as ScreenLockManager?)?.cleanUp(userAccountResolved)
             (biometricAuthenticationManager as BiometricAuthenticationManager)
                 .cleanUp(userAccountResolved)
