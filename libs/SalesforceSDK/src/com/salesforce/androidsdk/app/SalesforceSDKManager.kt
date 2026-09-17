@@ -1659,6 +1659,16 @@ open class SalesforceSDKManager protected constructor(
             cachedClientManager?.let { (cachedKey, manager) ->
                 if (cachedKey == key) return manager
             }
+            /*
+             * Check-then-act, not atomic: concurrent callers can both miss
+             * here and each construct their own ClientManager, with the
+             * last write to cachedClientManager winning. @Volatile only
+             * guarantees the write is visible to other threads, not that
+             * this read-then-write is exclusive. Accepted as benign — the
+             * losing manager is simply discarded, not left in an
+             * inconsistent state — rather than paying for a lock on this
+             * hot path.
+             */
             val manager = ClientManager(appContext, user).takeIf { it.account != null } ?: return null
             cachedClientManager = key to manager
             return manager
@@ -1854,6 +1864,13 @@ open class SalesforceSDKManager protected constructor(
         user: UserAccount,
         restClient: RestClient? = null
     ): String = try {
+        /*
+         * Deliberately does not go through the clientManager cache: that
+         * cache is bound to userAccountManager.currentUser, but the debug
+         * action this backs lets a developer force-refresh a non-current
+         * user's token, so this must resolve fresh for the exact [user]
+         * passed in rather than reusing whichever account is cached.
+         */
         val resolvedClient = restClient ?: ClientManager(appContext, user).peekRestClient()
         if (resolvedClient == null) {
             "Token refresh failed: user is unavailable"
