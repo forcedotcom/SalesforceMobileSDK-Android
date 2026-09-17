@@ -41,6 +41,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
@@ -73,7 +74,6 @@ import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
 import androidx.window.layout.WindowMetricsCalculator
-import com.salesforce.androidsdk.BuildConfig.DEBUG
 import com.salesforce.androidsdk.R.string.account_type
 import com.salesforce.androidsdk.R.string.sf__dev_support_title
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog
@@ -735,13 +735,13 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * The app specified option to enable developer support features, which
-     * overrides the default value from BuildConfig.DEBUG.
+     * overrides the default value from the app's debuggable state.
      */
     private var isDevSupportEnabledOverride: Boolean? = null
 
     /**
      * Indicates if developer support features are enabled.  Defaults to
-     * BuildConfig.DEBUG unless another value is specified.
+     * the app's debuggable state unless another value is specified.
      * @return Boolean true enables developer support features; false otherwise
      */
     open fun isDevSupportEnabled() = isDevSupportEnabledOverride ?: isDebugBuild
@@ -1908,9 +1908,9 @@ open class SalesforceSDKManager protected constructor(
         fun onSelected()
     }
 
-    /** Indicates if this is a debug build */
+    /** Indicates if the application consuming the SDK is debuggable. */
     internal open val isDebugBuild
-        get() = DEBUG
+        get() = appContext.applicationInfo.flags and FLAG_DEBUGGABLE != 0
 
 
     /**
