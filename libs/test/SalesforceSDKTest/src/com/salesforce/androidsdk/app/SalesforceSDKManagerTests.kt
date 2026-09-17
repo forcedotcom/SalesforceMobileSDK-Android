@@ -3,6 +3,10 @@ package com.salesforce.androidsdk.app
 import android.accounts.Account
 import android.accounts.AccountManager
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ApplicationInfo
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
 import android.webkit.CookieManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
@@ -139,6 +143,26 @@ class SalesforceSDKManagerTests {
             forceAdvancedAuthentication = true
         }
         unmockkAll()
+    }
+
+    @Test
+    fun test_givenDebuggableApplication_whenCheckingDebugBuild_thenReturnsTrue() {
+        val sdkManager = createTestSalesforceSDKManager(
+            context = contextWithApplicationFlags(FLAG_DEBUGGABLE)
+        )
+
+        assertTrue(sdkManager.isDebugBuild)
+        assertTrue(sdkManager.isDevSupportEnabled())
+    }
+
+    @Test
+    fun test_givenNonDebuggableApplication_whenCheckingDebugBuild_thenReturnsFalse() {
+        val sdkManager = createTestSalesforceSDKManager(
+            context = contextWithApplicationFlags(ApplicationInfo.FLAG_SUPPORTS_RTL)
+        )
+
+        assertFalse(sdkManager.isDebugBuild)
+        assertFalse(sdkManager.isDevSupportEnabled())
     }
 
     @Test
@@ -1692,20 +1716,31 @@ class SalesforceSDKManagerTests {
      * [googleCloudProjectId] for app attestation tests.
      */
     private fun createTestSalesforceSDKManager(
-        googleCloudProjectId: Long? = null
+        googleCloudProjectId: Long? = null,
+        context: Context = getInstrumentation().targetContext,
     ): SalesforceSDKManager = if (googleCloudProjectId != null) {
         TestSalesforceSDKManagerWithAttestation(
-            context = getInstrumentation().targetContext,
+            context = context,
             mainActivity = LoginActivity::class.java,
             loginActivity = LoginActivity::class.java,
             googleCloudProjectId = googleCloudProjectId,
         )
     } else {
         SalesforceSDKManager(
-            context = getInstrumentation().targetContext,
+            context = context,
             mainActivity = LoginActivity::class.java,
             loginActivity = LoginActivity::class.java,
         )
+    }
+
+    private fun contextWithApplicationFlags(flags: Int): Context {
+        val targetContext = getInstrumentation().targetContext
+        val applicationInfo = ApplicationInfo(targetContext.applicationInfo).apply {
+            this.flags = flags
+        }
+        return object : ContextWrapper(targetContext) {
+            override fun getApplicationInfo() = applicationInfo
+        }
     }
 
     /**
