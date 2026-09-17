@@ -1118,6 +1118,47 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun test_givenFeatureAlreadyUnregistered_whenUnregisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
+        /*
+         * Regression guard: unregisterUsedAppFeature(code, user) must not re-run the
+         * AccountManager persistence round-trip when the feature code is already absent
+         * for that user — mirrors the no-op guard added to registerUsedAppFeature, since
+         * LoginActivity's marker-clearing sweeps call this for markers that are already
+         * unset on every login.
+         */
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        // One persist from register, one from the actual removal; the second (no-op)
+        // unregister call must not add a third.
+        verify(exactly = 2) {
+            sdkManager.userAccountManager.updateAccount(any(), any())
+        }
+    }
+
+    @Test
+    fun test_givenFeatureNeverRegisteredForUser_whenUnregisterUsedAppFeature_thenAccountIsNotPersisted() {
+        // Regression guard: unregistering a feature for a user with no per-user feature
+        // set at all (never registered anything) must not touch AccountManager either.
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        // Force the lazily-created mock into existence before recording the verify
+        // block below; otherwise this no-op call never touches it and MockK ends up
+        // creating the mock mid-recording, which corrupts the verify DSL state.
+        sdkManager.userAccountManager
+
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        verify(exactly = 0) {
+            sdkManager.userAccountManager.updateAccount(any(), any())
+        }
+    }
+
+    @Test
     fun test_givenTwoUsers_whenRegisterFeatureForUserA_thenOnlyUserAUAContainsFlag() {
         val sdkManager = createSdkManagerWithMockedAccountManager()
 

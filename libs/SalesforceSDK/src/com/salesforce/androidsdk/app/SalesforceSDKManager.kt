@@ -1551,8 +1551,12 @@ open class SalesforceSDKManager protected constructor(
     fun unregisterUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
         if (user == null) { unregisterUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
-        perUserFeatures[key]?.remove(appFeatureCode)
-        persistUserFeatureFlags(user, perUserFeatures[key] ?: emptySet())
+        val set = perUserFeatures[key] ?: return
+        // remove() returns false when the code was already absent, so this skips the
+        // AccountManager round-trip in persistUserFeatureFlags on repeat/no-op calls.
+        if (set.remove(appFeatureCode)) {
+            persistUserFeatureFlags(user, set)
+        }
     }
 
     private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
