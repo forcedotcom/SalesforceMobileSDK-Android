@@ -59,6 +59,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -351,96 +352,110 @@ public class UserAccountManagerTest {
     }
 
     /*
-     * Regression test for a switch race: storeCurrentUserInfo() clears the
-     * cached current user before publishing the new user/org IDs to
-     * SharedPreferences. A concurrent getCachedCurrentUser() call landing in
-     * that window can repopulate the cache from the not-yet-updated IDs,
-     * pinning the pre-switch user until some unrelated invalidation. The fix
-     * clears the cache again immediately after the SharedPreferences write,
-     * so once storeCurrentUserInfo() returns, the next getCachedCurrentUser()
-     * call always rebuilds from the new IDs regardless of what a concurrent
-     * reader observed mid-call. This hammers concurrent readers against many
-     * switch-back-and-forth trials: with the fix, it cannot fail (the
-     * guarantee is unconditional); without it, it reliably reproduces the
-     * regression.
+     * Deterministic regression test for the switch race originally caught by
+     * a probabilistic stress test: storeCurrentUserInfo() and
+     * clearStoredCurrentUserInfo() must be mutually exclusive with a
+     * concurrent getCachedCurrentUser()/getCurrentUser() cache-populate call,
+     * so that a reader can never observe (or publish) a stale user/org ID
+     * that a concurrent switch or clear is in the middle of replacing.
+     *
+     * Rather than racing threads against each other and hoping the scheduler
+     * lands in the vulnerable window (probabilistic, slow, and only ever
+     * proves absence of failure over N trials), this pins a reader inside
+     * getCurrentAccount() - the innermost call made while holding
+     * currentUserLock - using a same-package subclass that blocks on a
+     * CountDownLatch. While the reader is parked there it provably still
+     * holds the lock, so a concurrent writer call is provably blocked, not
+     * merely unobserved to race. This exercises the exact mechanism the fix
+     * relies on (a single shared monitor around the whole read/write
+     * sequence) directly and deterministically, in under a second, instead
+     * of inferring it from thousands of racing trials.
      */
-    @Test
-    public void testStoreCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringSwitch() throws InterruptedException {
-        UserAccount userA = createTestAccountInAccountManager(userAccMgr);
-        UserAccount userB = createOtherTestAccountInAccountManager();
-        userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+    private static final class BlockingUserAccountManager extends UserAccountManager {
 
-        final AtomicBoolean stop = new AtomicBoolean(false);
-        final Thread[] readers = new Thread[4];
-        for (int i = 0; i < readers.length; i++) {
-            readers[i] = new Thread(() -> {
-                while (!stop.get()) {
-                    userAccMgr.getCachedCurrentUser();
+        private final CountDownLatch readerEnteredCriticalSection = new CountDownLatch(1);
+        private final CountDownLatch releaseReader = new CountDownLatch(1);
+        private volatile boolean pauseOnNextRead = false;
+
+        @Override
+        public Account getCurrentAccount() {
+            final Account account = super.getCurrentAccount();
+            if (pauseOnNextRead) {
+                pauseOnNextRead = false;
+                readerEnteredCriticalSection.countDown();
+                try {
+                    releaseReader.await(5, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-            });
-            readers[i].start();
-        }
-
-        try {
-            UserAccount expected = userB;
-            UserAccount other = userA;
-            for (int trial = 0; trial < 1000; trial++) {
-                userAccMgr.storeCurrentUserInfo(expected.getUserId(), expected.getOrgId());
-                checkSameUserAccount(expected, userAccMgr.getCachedCurrentUser());
-                final UserAccount tmp = expected;
-                expected = other;
-                other = tmp;
             }
-        } finally {
-            stop.set(true);
-            for (Thread reader : readers) {
-                reader.join();
-            }
+            return account;
         }
     }
 
-    /*
-     * Regression test for the same race as
-     * testStoreCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringSwitch(),
-     * on clearStoredCurrentUserInfo() instead of storeCurrentUserInfo():
-     * that method cleared the cached current user before clearing the stored
-     * user/org ID from SharedPreferences. A concurrent getCachedCurrentUser()
-     * call landing in that window can repopulate the cache from the
-     * not-yet-cleared IDs, so the cache keeps returning the logged-out user
-     * after clearStoredCurrentUserInfo() returns. This hammers concurrent
-     * readers against many clear trials: with the fix, it cannot fail (the
-     * guarantee is unconditional); without it, it reliably reproduces the
-     * regression.
-     */
     @Test
-    public void testClearStoredCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringClear() throws InterruptedException {
-        UserAccount userA = createTestAccountInAccountManager(userAccMgr);
-        userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+    public void testStoreCurrentUserInfoBlocksUntilConcurrentCacheReadCompletes() throws InterruptedException {
+        BlockingUserAccountManager blockingMgr = new BlockingUserAccountManager();
+        UserAccount userA = createTestAccountInAccountManager(blockingMgr);
+        UserAccount userB = UserAccountTest.createOtherTestAccount();
+        blockingMgr.createAccount(userB);
+        blockingMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+        blockingMgr.clearCachedCurrentUser();
 
-        final AtomicBoolean stop = new AtomicBoolean(false);
-        final Thread[] readers = new Thread[4];
-        for (int i = 0; i < readers.length; i++) {
-            readers[i] = new Thread(() -> {
-                while (!stop.get()) {
-                    userAccMgr.getCachedCurrentUser();
-                }
-            });
-            readers[i].start();
-        }
+        blockingMgr.pauseOnNextRead = true;
+        Thread reader = new Thread(blockingMgr::getCachedCurrentUser);
+        reader.start();
+        Assert.assertTrue("Reader must enter its critical section",
+                blockingMgr.readerEnteredCriticalSection.await(5, TimeUnit.SECONDS));
 
-        try {
-            for (int trial = 0; trial < 150; trial++) {
-                userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
-                userAccMgr.clearStoredCurrentUserInfo();
-                Assert.assertNull("Cached current user must be cleared after clearStoredCurrentUserInfo() returns",
-                        userAccMgr.getCachedCurrentUser());
-            }
-        } finally {
-            stop.set(true);
-            for (Thread reader : readers) {
-                reader.join();
-            }
-        }
+        final AtomicBoolean writerReturned = new AtomicBoolean(false);
+        Thread writer = new Thread(() -> {
+            blockingMgr.storeCurrentUserInfo(userB.getUserId(), userB.getOrgId());
+            writerReturned.set(true);
+        });
+        writer.start();
+        writer.join(200);
+        Assert.assertFalse("storeCurrentUserInfo() must block while the reader holds currentUserLock",
+                writerReturned.get());
+
+        blockingMgr.releaseReader.countDown();
+        reader.join(5000);
+        writer.join(5000);
+        Assert.assertTrue("storeCurrentUserInfo() must complete once the reader releases the lock",
+                writerReturned.get());
+        checkSameUserAccount(userB, blockingMgr.getCachedCurrentUser());
+    }
+
+    @Test
+    public void testClearStoredCurrentUserInfoBlocksUntilConcurrentCacheReadCompletes() throws InterruptedException {
+        BlockingUserAccountManager blockingMgr = new BlockingUserAccountManager();
+        UserAccount userA = createTestAccountInAccountManager(blockingMgr);
+        blockingMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+        blockingMgr.clearCachedCurrentUser();
+
+        blockingMgr.pauseOnNextRead = true;
+        Thread reader = new Thread(blockingMgr::getCachedCurrentUser);
+        reader.start();
+        Assert.assertTrue("Reader must enter its critical section",
+                blockingMgr.readerEnteredCriticalSection.await(5, TimeUnit.SECONDS));
+
+        final AtomicBoolean writerReturned = new AtomicBoolean(false);
+        Thread writer = new Thread(() -> {
+            blockingMgr.clearStoredCurrentUserInfo();
+            writerReturned.set(true);
+        });
+        writer.start();
+        writer.join(200);
+        Assert.assertFalse("clearStoredCurrentUserInfo() must block while the reader holds currentUserLock",
+                writerReturned.get());
+
+        blockingMgr.releaseReader.countDown();
+        reader.join(5000);
+        writer.join(5000);
+        Assert.assertTrue("clearStoredCurrentUserInfo() must complete once the reader releases the lock",
+                writerReturned.get());
+        Assert.assertNull("Cached current user must be cleared after clearStoredCurrentUserInfo() returns",
+                blockingMgr.getCachedCurrentUser());
     }
 
     /**
