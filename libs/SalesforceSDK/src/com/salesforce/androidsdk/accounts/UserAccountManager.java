@@ -115,6 +115,7 @@ public class UserAccountManager {
 	private final Context context;
 	private final AccountManager accountManager;
 	private final String accountType;
+	private final Object currentUserLock = new Object();
 	private UserAccount cachedCurrentUserAccount;
 
 	/**
@@ -145,13 +146,22 @@ public class UserAccountManager {
 	 * @param orgId Org ID.
 	 */
 	public void storeCurrentUserInfo(String userId, String orgId) {
-		clearCachedCurrentUser();
-		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
-				Context.MODE_PRIVATE);
-		final Editor e = sp.edit();
-		e.putString(USER_ID_KEY, userId);
-		e.putString(ORG_ID_KEY, orgId);
-		e.apply();
+
+		/*
+		 * Serialized against getCurrentUser()/getCachedCurrentUser() so a
+		 * concurrent cache-populate call can't rebuild from the not-yet-
+		 * updated stored user/org ID and publish that stale result to
+		 * cachedCurrentUserAccount after this switch completes.
+		 */
+		synchronized (currentUserLock) {
+			cachedCurrentUserAccount = null;
+			final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+					Context.MODE_PRIVATE);
+			final Editor e = sp.edit();
+			e.putString(USER_ID_KEY, userId);
+			e.putString(ORG_ID_KEY, orgId);
+			e.apply();
+		}
 	}
 
 	/**
@@ -182,8 +192,10 @@ public class UserAccountManager {
 	 * @return Current user that's logged in.
 	 */
 	public UserAccount getCurrentUser() {
-		cachedCurrentUserAccount = buildUserAccount(getCurrentAccount());
-		return cachedCurrentUserAccount;
+		synchronized (currentUserLock) {
+			cachedCurrentUserAccount = buildUserAccount(getCurrentAccount());
+			return cachedCurrentUserAccount;
+		}
 	}
 
 	/**
@@ -196,14 +208,18 @@ public class UserAccountManager {
 	 * @return Current user that's logged in (with potentially outdated oauth tokens)
 	 */
 	public UserAccount getCachedCurrentUser() {
-		return cachedCurrentUserAccount != null ? cachedCurrentUserAccount : getCurrentUser() /* will populate cachedCurrentUserAccount */ ;
+		synchronized (currentUserLock) {
+			return cachedCurrentUserAccount != null ? cachedCurrentUserAccount : getCurrentUser() /* will populate cachedCurrentUserAccount */ ;
+		}
 	}
 
 	/**
 	 * Get rid of cached current user account
 	 */
 	public void clearCachedCurrentUser() {
-		cachedCurrentUserAccount = null;
+		synchronized (currentUserLock) {
+			cachedCurrentUserAccount = null;
+		}
 	}
 
 	/**
@@ -822,10 +838,21 @@ public class UserAccountManager {
 	 * when the last user logs out to ensure no user information remains on the device.
 	 */
 	public void clearStoredCurrentUserInfo() {
-		clearCachedCurrentUser();
-		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
-				Context.MODE_PRIVATE);
-		sp.edit().clear().apply();
+
+		/*
+		 * Serialized against getCurrentUser()/getCachedCurrentUser() for the
+		 * same reason as storeCurrentUserInfo(): a concurrent cache-populate
+		 * call landing between the cache clear and the SharedPreferences
+		 * clear could otherwise rebuild cachedCurrentUserAccount from the
+		 * not-yet-cleared stored user/org ID and publish that stale result
+		 * after this call completes.
+		 */
+		synchronized (currentUserLock) {
+			cachedCurrentUserAccount = null;
+			final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+					Context.MODE_PRIVATE);
+			sp.edit().clear().apply();
+		}
 		SalesforceSDKLogger.d(TAG, "Cleared current user info from shared preferences");
 	}
 }
