@@ -129,12 +129,20 @@ public class ClientManager {
      * or mismatched {@code user} will not be caught by this overload, since it trusts the
      * caller's fields rather than re-reading them from {@link #account}.
      *
+     * <p>Package-private rather than public: {@code MobileSdk14ApiSurfaceTest}
+     * asserts no {@code peekRestClient} overload beyond the no-arg form is
+     * public API, so this is exposed to {@code com.salesforce.androidsdk.app}
+     * only via the {@code internal} Kotlin extension function
+     * {@code peekRestClientWithResolvedUser} in
+     * {@code ClientManagerInternal.kt} (same module, same package as this
+     * class).
+     *
      * @param user This manager's bound user, already resolved by the caller.
      * @return Client for {@code user}, or null if the bound account is no longer available or
      * {@code user} fails validation.
      */
     @Nullable
-    public RestClient peekRestClient(@NonNull UserAccount user) {
+    RestClient peekRestClient(@NonNull UserAccount user) {
         final UserAccount validatedUser = validateUser(/* requireRefreshFields = */ false, user);
         if (validatedUser == null) {
             SalesforceSDKLogger.w(TAG, "Bound user account is no longer available");

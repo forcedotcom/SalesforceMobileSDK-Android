@@ -146,6 +146,7 @@ import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.peekRestClientWithResolvedUser
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
@@ -1722,9 +1723,12 @@ open class SalesforceSDKManager protected constructor(
      * constructing a `ClientManager` directly so repeated resumes for the
      * same current user reuse the cached instance instead of re-resolving
      * the account via `AccountManager` on every resume. Passes the already-
-     * built [user] into [ClientManager.peekRestClient] rather than its
-     * no-arg overload, which would otherwise re-decrypt a second
-     * [UserAccount] from the same [Account] on every call.
+     * built [user] into `ClientManager`'s package-private
+     * [UserAccount]-accepting `peekRestClient` overload (via the module-
+     * internal `peekRestClientWithResolvedUser` bridge in
+     * `ClientManagerInternal.kt`) rather than its public no-arg overload,
+     * which would otherwise re-decrypt a second [UserAccount] from the same
+     * [Account] on every call.
      */
     fun getRestClient(
         activityContext: Activity,
@@ -1749,7 +1753,7 @@ open class SalesforceSDKManager protected constructor(
         val user = account?.let { userAccountManager.buildUserAccount(it) }
         if (account != null) {
             val client = user?.let { resolvedUser ->
-                resolveClientManager(resolvedUser)?.peekRestClient(resolvedUser)
+                resolveClientManager(resolvedUser)?.peekRestClientWithResolvedUser(resolvedUser)
             }
             if (client == null) {
                 w(TAG, "Removing a corrupt current account that cannot create a REST client")
