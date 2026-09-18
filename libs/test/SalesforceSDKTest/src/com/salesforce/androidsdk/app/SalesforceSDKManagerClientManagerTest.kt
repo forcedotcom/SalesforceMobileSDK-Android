@@ -44,6 +44,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import okhttp3.Call
@@ -487,6 +488,35 @@ class SalesforceSDKManagerClientManagerTest {
         verify(exactly = 0) {
             activity.startActivityForResult(any<Intent>(), any())
         }
+    }
+
+    @Test
+    fun getRestClient_resolvesCurrentAccountExactlyOnce() {
+        /*
+         * Regression guard for a switch race: before the fix, account came
+         * from userAccountManager.currentAccount and client came from
+         * clientManager, which independently re-resolves identity via
+         * cachedCurrentUser — two separate current-user reads that could
+         * observe different users if the current user switched in between,
+         * e.g. delivering one user's client while logging out a different,
+         * stale-snapshot account. The fix reads currentAccount exactly once
+         * and derives the client from that same account (via
+         * buildUserAccount + the shared resolveClientManager helper), so
+         * there is only one identity read for the whole call, closing the
+         * window by construction. Asserting the call count directly catches
+         * a future regression that reintroduces a second independent read.
+         */
+        persistUser("single-read")
+        val spyUserAccountManager = spyk(userAccountManager)
+        val spySdkManager = spyk(sdkManager)
+        every { spySdkManager.userAccountManager } returns spyUserAccountManager
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        spySdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(1, callbackCount)
+        verify(exactly = 1) { spyUserAccountManager.currentAccount }
     }
 
     @Test

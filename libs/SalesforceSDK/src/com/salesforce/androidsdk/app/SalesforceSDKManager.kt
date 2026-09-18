@@ -1679,24 +1679,36 @@ open class SalesforceSDKManager protected constructor(
     val clientManager: ClientManager?
         get() {
             val user = userAccountManager.cachedCurrentUser ?: return null
-            val key = "${user.orgId}/${user.userId}"
-            cachedClientManager?.let { (cachedKey, manager) ->
-                if (cachedKey == key) return manager
-            }
-            /*
-             * Check-then-act, not atomic: concurrent callers can both miss
-             * here and each construct their own ClientManager, with the
-             * last write to cachedClientManager winning. @Volatile only
-             * guarantees the write is visible to other threads, not that
-             * this read-then-write is exclusive. Accepted as benign — the
-             * losing manager is simply discarded, not left in an
-             * inconsistent state — rather than paying for a lock on this
-             * hot path.
-             */
-            val manager = ClientManager(appContext, user).takeIf { it.account != null } ?: return null
-            cachedClientManager = key to manager
-            return manager
+            return resolveClientManager(user)
         }
+
+    /**
+     * Resolves (and caches) the [ClientManager] bound to [user]'s identity.
+     * Shared by [clientManager] and [getRestClient], which each obtain
+     * [user] from a different identity source: [clientManager] re-resolves
+     * "who is current" itself via `cachedCurrentUser`, while [getRestClient]
+     * derives it from an [Account] it already read once, so the two callers
+     * never perform two independent current-user resolutions within the
+     * same request.
+     */
+    private fun resolveClientManager(user: UserAccount): ClientManager? {
+        val key = "${user.orgId}/${user.userId}"
+        cachedClientManager?.let { (cachedKey, manager) ->
+            if (cachedKey == key) return manager
+        }
+        /*
+         * Check-then-act, not atomic: concurrent callers can both miss here
+         * and each construct their own ClientManager, with the last write to
+         * cachedClientManager winning. @Volatile only guarantees the write is
+         * visible to other threads, not that this read-then-write is
+         * exclusive. Accepted as benign — the losing manager is simply
+         * discarded, not left in an inconsistent state — rather than paying
+         * for a lock on this hot path.
+         */
+        val manager = ClientManager(appContext, user).takeIf { it.account != null } ?: return null
+        cachedClientManager = key to manager
+        return manager
+    }
 
     /**
      * Returns an authenticated client for the current user or starts login when
@@ -1715,9 +1727,25 @@ open class SalesforceSDKManager protected constructor(
         activityContext: Activity,
         restClientCallback: RestClientCallback,
     ) {
+
+        /*
+         * Resolve identity once (account, then the user built from that
+         * exact account) rather than reading userAccountManager.currentAccount
+         * and clientManager separately: each independently re-resolves "who
+         * is current," so reading them apart could observe two different
+         * users if the current user switches in between, delivering one
+         * user's client while logging out the other's (stale) account
+         * snapshot. Resolving the user from this exact account (rather than
+         * from clientManager's own cachedCurrentUser lookup) also preserves
+         * the corrupt-account detection below: a malformed account (missing
+         * a required field) still resolves to a non-null Account here, so
+         * it's still the exact account removed on failure, matching the
+         * pre-cache behavior.
+         */
         val account = userAccountManager.currentAccount
+        val user = account?.let { userAccountManager.buildUserAccount(it) }
         if (account != null) {
-            val client = clientManager?.peekRestClient()
+            val client = user?.let { resolveClientManager(it) }?.peekRestClient()
             if (client == null) {
                 w(TAG, "Removing a corrupt current account that cannot create a REST client")
                 logout(
