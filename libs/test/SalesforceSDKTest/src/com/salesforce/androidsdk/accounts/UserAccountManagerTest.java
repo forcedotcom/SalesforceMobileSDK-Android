@@ -61,6 +61,7 @@ import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for UserAccountManager.
@@ -347,6 +348,55 @@ public class UserAccountManagerTest {
     public void testGetCurrentUserAccount() {
         UserAccount userAccount = createTestAccountInAccountManager(userAccMgr);
         checkSameUserAccount(userAccount, userAccMgr.getCurrentUser());
+    }
+
+    /*
+     * Regression test for a switch race: storeCurrentUserInfo() clears the
+     * cached current user before publishing the new user/org IDs to
+     * SharedPreferences. A concurrent getCachedCurrentUser() call landing in
+     * that window can repopulate the cache from the not-yet-updated IDs,
+     * pinning the pre-switch user until some unrelated invalidation. The fix
+     * clears the cache again immediately after the SharedPreferences write,
+     * so once storeCurrentUserInfo() returns, the next getCachedCurrentUser()
+     * call always rebuilds from the new IDs regardless of what a concurrent
+     * reader observed mid-call. This hammers concurrent readers against many
+     * switch-back-and-forth trials: with the fix, it cannot fail (the
+     * guarantee is unconditional); without it, it reliably reproduces the
+     * regression.
+     */
+    @Test
+    public void testStoreCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringSwitch() throws InterruptedException {
+        UserAccount userA = createTestAccountInAccountManager(userAccMgr);
+        UserAccount userB = createOtherTestAccountInAccountManager();
+        userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+
+        final AtomicBoolean stop = new AtomicBoolean(false);
+        final Thread[] readers = new Thread[4];
+        for (int i = 0; i < readers.length; i++) {
+            readers[i] = new Thread(() -> {
+                while (!stop.get()) {
+                    userAccMgr.getCachedCurrentUser();
+                }
+            });
+            readers[i].start();
+        }
+
+        try {
+            UserAccount expected = userB;
+            UserAccount other = userA;
+            for (int trial = 0; trial < 1000; trial++) {
+                userAccMgr.storeCurrentUserInfo(expected.getUserId(), expected.getOrgId());
+                checkSameUserAccount(expected, userAccMgr.getCachedCurrentUser());
+                final UserAccount tmp = expected;
+                expected = other;
+                other = tmp;
+            }
+        } finally {
+            stop.set(true);
+            for (Thread reader : readers) {
+                reader.join();
+            }
+        }
     }
 
     /**
