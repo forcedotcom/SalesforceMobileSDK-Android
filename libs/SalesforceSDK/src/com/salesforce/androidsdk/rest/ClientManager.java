@@ -117,6 +117,32 @@ public class ClientManager {
         return createRestClient(user);
     }
 
+    /**
+     * Creates a client for this manager's bound user, reusing a {@link UserAccount} the caller
+     * already resolved instead of re-decrypting one from {@link #account} internally.
+     *
+     * <p>Still performs the same {@link #accountExists()} liveness re-check and user/org ID
+     * validation as {@link #peekRestClient()} — only the {@code AccountManager} decrypt-and-
+     * rebuild of the {@link UserAccount} itself is skipped. The caller is responsible for
+     * ensuring {@code user} reflects this manager's bound account from a resolution no older
+     * than this call (e.g. built from the same {@link Account} immediately beforehand); a stale
+     * or mismatched {@code user} will not be caught by this overload, since it trusts the
+     * caller's fields rather than re-reading them from {@link #account}.
+     *
+     * @param user This manager's bound user, already resolved by the caller.
+     * @return Client for {@code user}, or null if the bound account is no longer available or
+     * {@code user} fails validation.
+     */
+    @Nullable
+    public RestClient peekRestClient(@NonNull UserAccount user) {
+        final UserAccount validatedUser = validateUser(/* requireRefreshFields = */ false, user);
+        if (validatedUser == null) {
+            SalesforceSDKLogger.w(TAG, "Bound user account is no longer available");
+            return null;
+        }
+        return createRestClient(validatedUser);
+    }
+
     @Nullable
     private RestClient createRestClient(UserAccount userAccount) {
         if (account == null) {
@@ -191,7 +217,19 @@ public class ClientManager {
         if (account == null || !accountExists()) {
             return null;
         }
-        final UserAccount user = UserAccountManager.getInstance().buildUserAccount(account);
+        return validateUser(requireRefreshFields, UserAccountManager.getInstance().buildUserAccount(account));
+    }
+
+    /**
+     * Applies the same liveness and field-completeness checks as {@link #getValidatedUser} to a
+     * {@link UserAccount} the caller already resolved, without re-decrypting one from
+     * {@link #account}.
+     */
+    @Nullable
+    private UserAccount validateUser(boolean requireRefreshFields, @Nullable UserAccount user) {
+        if (account == null || !accountExists()) {
+            return null;
+        }
         if (user == null
                 || isMissing(user.getUserId())
                 || isMissing(user.getOrgId())) {

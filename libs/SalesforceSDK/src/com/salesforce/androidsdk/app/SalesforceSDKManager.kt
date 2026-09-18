@@ -1721,7 +1721,10 @@ open class SalesforceSDKManager protected constructor(
      * Activity-resume hot path; it goes through [clientManager] rather than
      * constructing a `ClientManager` directly so repeated resumes for the
      * same current user reuse the cached instance instead of re-resolving
-     * the account via `AccountManager` on every resume.
+     * the account via `AccountManager` on every resume. Passes the already-
+     * built [user] into [ClientManager.peekRestClient] rather than its
+     * no-arg overload, which would otherwise re-decrypt a second
+     * [UserAccount] from the same [Account] on every call.
      */
     fun getRestClient(
         activityContext: Activity,
@@ -1745,7 +1748,9 @@ open class SalesforceSDKManager protected constructor(
         val account = userAccountManager.currentAccount
         val user = account?.let { userAccountManager.buildUserAccount(it) }
         if (account != null) {
-            val client = user?.let { resolveClientManager(it) }?.peekRestClient()
+            val client = user?.let { resolvedUser ->
+                resolveClientManager(resolvedUser)?.peekRestClient(resolvedUser)
+            }
             if (client == null) {
                 w(TAG, "Removing a corrupt current account that cannot create a REST client")
                 logout(
