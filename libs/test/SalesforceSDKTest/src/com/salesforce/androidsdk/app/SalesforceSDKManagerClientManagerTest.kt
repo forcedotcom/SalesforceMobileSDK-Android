@@ -129,6 +129,88 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun clientManager_survivesTwoSequentialRefreshTokenRotationsWithoutReconstructionOrLogout() {
+        /*
+         * Regression guard: the cached clientManager must keep working
+         * correctly across repeated server-side refresh token rotations
+         * (RTR), not just a single one. Guards the token-provider
+         * rehydration path (peekRestClient() -> getValidatedUser() ->
+         * UserAccountManager.buildUserAccount()) against silently breaking
+         * under a cached manager in a future change: if the cache ever held
+         * a stale reference across a rotation, the second refresh would
+         * submit the ORIGINAL refresh token (already invalidated by the
+         * server after the first rotation) instead of the newly-rotated
+         * one, and/or the manager identity would change between accesses.
+         */
+        val user = persistUser("rtr-two-rounds")
+        val managerBeforeFirstRefresh = requireNotNull(sdkManager.clientManager)
+        val client = requireNotNull(managerBeforeFirstRefresh.peekRestClient())
+        val account = requireNotNull(managerBeforeFirstRefresh.account)
+
+        val firstRequest = slot<Request>()
+        mockRefreshHttpClient(
+            firstRequest,
+            successfulRefreshResponse(
+                suffix = "rtr-two-rounds",
+                accessToken = "auth-token-rtr-round-1",
+                refreshToken = "refresh-token-rtr-round-1",
+            ),
+        )
+        try {
+            client.refreshAccessToken()
+        } finally {
+            unmockkObject(HttpAccess.DEFAULT)
+        }
+        assertEquals(
+            "First refresh must submit the originally-persisted refresh token",
+            "refresh-token-rtr-two-rounds",
+            requestFormValue(firstRequest.captured, "refresh_token"),
+        )
+
+        val managerAfterFirstRefresh = requireNotNull(sdkManager.clientManager)
+        assertTrue(
+            "The cached manager must be reused across a refresh, not reconstructed",
+            managerBeforeFirstRefresh === managerAfterFirstRefresh,
+        )
+
+        val secondRequest = slot<Request>()
+        val secondHttpClient = mockRefreshHttpClient(
+            secondRequest,
+            successfulRefreshResponse(
+                suffix = "rtr-two-rounds",
+                accessToken = "auth-token-rtr-round-2",
+                refreshToken = "refresh-token-rtr-round-2",
+            ),
+        )
+        try {
+            managerAfterFirstRefresh.peekRestClient()!!.refreshAccessToken()
+        } finally {
+            unmockkObject(HttpAccess.DEFAULT)
+        }
+
+        assertEquals(
+            "The second refresh must submit the FIRST rotation's refresh token, not the " +
+                "original one, proving the cached manager rehydrated the latest persisted state",
+            "refresh-token-rtr-round-1",
+            requestFormValue(secondRequest.captured, "refresh_token"),
+        )
+        val finalUser = requireNotNull(userAccountManager.buildUserAccount(account))
+        assertEquals(
+            "The second rotation's refresh token must be persisted",
+            "refresh-token-rtr-round-2",
+            finalUser.refreshTokenForPersistence,
+        )
+        assertEquals("auth-token-rtr-round-2", finalUser.authToken)
+        assertEquals(
+            "No logout must occur across either rotation",
+            user.userId,
+            userAccountManager.currentUser?.userId,
+        )
+        assertEquals(user.orgId, userAccountManager.currentUser?.orgId)
+        verify(exactly = 1) { secondHttpClient.newCall(any()) }
+    }
+
+    @Test
     fun clientManager_repeatedAccess_doesNotForceFreshCurrentUserResolution() {
         /*
          * Regression guard: clientManager's identity lookup must not
