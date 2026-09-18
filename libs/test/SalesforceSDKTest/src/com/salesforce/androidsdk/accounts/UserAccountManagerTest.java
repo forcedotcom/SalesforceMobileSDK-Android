@@ -399,6 +399,50 @@ public class UserAccountManagerTest {
         }
     }
 
+    /*
+     * Regression test for the same race as
+     * testStoreCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringSwitch(),
+     * on clearStoredCurrentUserInfo() instead of storeCurrentUserInfo():
+     * that method cleared the cached current user before clearing the stored
+     * user/org ID from SharedPreferences. A concurrent getCachedCurrentUser()
+     * call landing in that window can repopulate the cache from the
+     * not-yet-cleared IDs, so the cache keeps returning the logged-out user
+     * after clearStoredCurrentUserInfo() returns. This hammers concurrent
+     * readers against many clear trials: with the fix, it cannot fail (the
+     * guarantee is unconditional); without it, it reliably reproduces the
+     * regression.
+     */
+    @Test
+    public void testClearStoredCurrentUserInfoIsNotStaleAfterConcurrentCacheReadDuringClear() throws InterruptedException {
+        UserAccount userA = createTestAccountInAccountManager(userAccMgr);
+        userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+
+        final AtomicBoolean stop = new AtomicBoolean(false);
+        final Thread[] readers = new Thread[4];
+        for (int i = 0; i < readers.length; i++) {
+            readers[i] = new Thread(() -> {
+                while (!stop.get()) {
+                    userAccMgr.getCachedCurrentUser();
+                }
+            });
+            readers[i].start();
+        }
+
+        try {
+            for (int trial = 0; trial < 150; trial++) {
+                userAccMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+                userAccMgr.clearStoredCurrentUserInfo();
+                Assert.assertNull("Cached current user must be cleared after clearStoredCurrentUserInfo() returns",
+                        userAccMgr.getCachedCurrentUser());
+            }
+        } finally {
+            stop.set(true);
+            for (Thread reader : readers) {
+                reader.join();
+            }
+        }
+    }
+
     /**
      * Test to switch to a user account.
      */

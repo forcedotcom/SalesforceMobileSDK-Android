@@ -838,10 +838,21 @@ public class UserAccountManager {
 	 * when the last user logs out to ensure no user information remains on the device.
 	 */
 	public void clearStoredCurrentUserInfo() {
-		clearCachedCurrentUser();
-		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
-				Context.MODE_PRIVATE);
-		sp.edit().clear().apply();
+
+		/*
+		 * Serialized against getCurrentUser()/getCachedCurrentUser() for the
+		 * same reason as storeCurrentUserInfo(): a concurrent cache-populate
+		 * call landing between the cache clear and the SharedPreferences
+		 * clear could otherwise rebuild cachedCurrentUserAccount from the
+		 * not-yet-cleared stored user/org ID and publish that stale result
+		 * after this call completes.
+		 */
+		synchronized (currentUserLock) {
+			cachedCurrentUserAccount = null;
+			final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+					Context.MODE_PRIVATE);
+			sp.edit().clear().apply();
+		}
 		SalesforceSDKLogger.d(TAG, "Cleared current user info from shared preferences");
 	}
 }
