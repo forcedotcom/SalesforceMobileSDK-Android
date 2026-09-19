@@ -190,6 +190,32 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun shouldUseUiSidBearerForPath_defaultMatchesOnlyLwrPathSegment() {
+        val manager = SalesforceSDKManager.getInstance()
+
+        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr"))
+        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr/"))
+        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr/application/bootstrap"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/lwrx/application"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/services/data/lwr/application"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/services/data?q=/lwr/application"))
+    }
+
+    @Test
+    fun shouldUseUiSidBearerForPath_appCanReplacePolicySynchronously() {
+        val manager = SalesforceSDKManager.getInstance()
+        val originalPolicy = manager.shouldUseUiSidBearerForPath
+        try {
+            manager.shouldUseUiSidBearerForPath = { path -> path == "/custom/session" }
+
+            assertTrue(manager.shouldUseUiSidBearerForPath("/custom/session"))
+            assertFalse(manager.shouldUseUiSidBearerForPath("/lwr/application"))
+        } finally {
+            manager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
     fun salesforceSdkManager_Updates_onFetchAuthenticationConfigurationForMyWelcomeLoginServer() {
 
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = true

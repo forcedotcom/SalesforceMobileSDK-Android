@@ -193,7 +193,9 @@ public class ClientManager {
                     userAccount.getUserId(), userAccount.getOrgId(), userAccount.getCommunityId(), userAccount.getCommunityUrl(),
                     userAccount.getFirstName(), userAccount.getLastName(), userAccount.getDisplayName(), userAccount.getEmail(), userAccount.getPhotoUrl(), userAccount.getThumbnailUrl(), userAccount.getAdditionalOauthValues(),
                     userAccount.getLightningDomain(), userAccount.getLightningSid(), userAccount.getVFDomain(), userAccount.getVFSid(), userAccount.getContentDomain(), userAccount.getContentSid(), userAccount.getCSRFToken());
-            return new RestClient(clientInfo, userAccount.getAuthToken(), userAccount.getTokenType(), userAccount.getCredentialsIdentifier(), HttpAccess.DEFAULT, authTokenProvider);
+            return new RestClient(clientInfo, userAccount.getAuthToken(), userAccount.getTokenType(),
+                    userAccount.getCredentialsIdentifier(), userAccount.getUiSid(), HttpAccess.DEFAULT,
+                    authTokenProvider);
         } catch (URISyntaxException e) {
             SalesforceSDKLogger.w(TAG, "Invalid server URL", e);
             return null;
@@ -294,6 +296,7 @@ public class ClientManager {
             String newInstanceUrl;      // last winner's instance URL (losers need it; see RestClient.refreshAccessToken)
             String rotatedRefreshToken; // refresh token after rotation, for losers to adopt
             String newTokenType;        // last winner's token type (e.g. "Bearer" or "DPoP")
+            String newUiSid;            // UI session paired with the published credential generation
             long lastRefreshTime = -1;
         }
 
@@ -334,6 +337,7 @@ public class ClientManager {
         private String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
         private String lastTokenType;
+        private String lastUiSid;
 
         /**
          * Constructs a provider whose account identity comes exclusively from its bound manager.
@@ -370,6 +374,8 @@ public class ClientManager {
                 refreshToken = user.getRefreshTokenForPersistence();
                 lastNewAuthToken = user.getAuthToken();
                 lastNewInstanceUrl = user.getInstanceServer();
+                lastTokenType = user.getTokenType();
+                lastUiSid = user.getUiSid();
             }
         }
 
@@ -493,6 +499,7 @@ public class ClientManager {
             String newAuthToken = null;
             String newInstanceUrl = null;
             String newTokenType = null;
+            String newUiSid = null;
 
             try {
                 /*
@@ -527,6 +534,7 @@ public class ClientManager {
                         newAuthToken = storedAuthToken;
                         newInstanceUrl = currentAccount.getInstanceServer();
                         newTokenType = currentAccount.getTokenType();
+                        newUiSid = currentAccount.getUiSid();
                         refreshToken = storedRefreshToken;
                         return newAuthToken;
                     }
@@ -552,12 +560,14 @@ public class ClientManager {
                 newAuthToken = userAccount.getAuthToken();
                 newInstanceUrl = userAccount.getInstanceServer();
                 newTokenType = userAccount.getTokenType();
+                newUiSid = userAccount.getUiSid();
 
                 if (clientManager.getValidatedUser(
                         /* requireRefreshFields = */ false) == null) {
                     newAuthToken = null;
                     newInstanceUrl = null;
                     newTokenType = null;
+                    newUiSid = null;
                     return null;
                 }
 
@@ -642,6 +652,7 @@ public class ClientManager {
                 lastNewAuthToken = newAuthToken;
                 lastNewInstanceUrl = newInstanceUrl;
                 lastTokenType = newTokenType;
+                lastUiSid = newUiSid;
                 if (newAuthToken != null) {
                     lastRefreshTime = System.currentTimeMillis();
                 }
@@ -655,6 +666,7 @@ public class ClientManager {
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
                         state.newTokenType = newTokenType;
+                        state.newUiSid = newUiSid;
                         state.lastRefreshTime = System.currentTimeMillis();
                         // Bump the generation ONLY on success. A loser woken by a failed cycle sees
                         // no edge and cannot mistake the retained prior result for a new result
@@ -694,6 +706,7 @@ public class ClientManager {
                     || !Objects.equals(liveUser.getRefreshTokenForPersistence(),
                     state.rotatedRefreshToken)
                     || !Objects.equals(liveUser.getTokenType(), state.newTokenType)
+                    || !Objects.equals(liveUser.getUiSid(), state.newUiSid)
                     || (state.newInstanceUrl != null
                     && !Objects.equals(liveUser.getInstanceServer(), state.newInstanceUrl))) {
                 return false;
@@ -701,6 +714,7 @@ public class ClientManager {
             this.lastNewAuthToken = state.newAuthToken;
             this.lastRefreshTime = state.lastRefreshTime;
             this.lastTokenType = state.newTokenType;
+            this.lastUiSid = state.newUiSid;
             if (state.newInstanceUrl != null) {
                 this.lastNewInstanceUrl = state.newInstanceUrl;
             }
@@ -738,6 +752,11 @@ public class ClientManager {
         @Override
         public String getTokenType() {
             return lastTokenType;
+        }
+
+        @Override
+        public String getUiSid() {
+            return lastUiSid;
         }
 
         @Nullable

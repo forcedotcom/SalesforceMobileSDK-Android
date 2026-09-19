@@ -252,6 +252,51 @@ class OAuthRefreshInterceptorNonceTest {
         assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
     }
 
+    @Test
+    fun test_givenUiSidBearerSelected_when400UseDpopNonce_thenNoHarvestAndNoRetry() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        every { sdkManager.shouldUseUiSidBearerForPath("/lwr/application") } returns true
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo,
+            authToken,
+            "DPoP",
+            credentialsId,
+            "test-ui-sid",
+            null,
+        )
+        val request = Request.Builder()
+            .url("https://test.salesforce.com/lwr/application")
+            .get()
+            .build()
+        var callCount = 0
+        var capturedRequest: Request? = null
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns request
+            every { proceed(any()) } answers {
+                callCount++
+                capturedRequest = firstArg()
+                Response.Builder()
+                    .request(firstArg())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(400)
+                    .message("Bad Request")
+                    .header("DPoP-Nonce", "should-not-be-stored")
+                    .body(
+                        """{"error":"use_dpop_nonce"}"""
+                            .toResponseBody("application/json".toMediaType())
+                    )
+                    .build()
+            }
+        }
+
+        interceptor.intercept(chain)
+
+        assertEquals(1, callCount)
+        assertEquals("Bearer test-ui-sid", capturedRequest?.header("Authorization"))
+        assertNull(capturedRequest?.header("DPoP"))
+        assertNull(DPoPNonceCache.get(credentialsId, instanceHost))
+    }
+
     private fun nonceChallengeResponse(request: Request, nonce: String): Response =
         Response.Builder()
             .request(request)

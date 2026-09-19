@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.dpop
 
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import okhttp3.Request
@@ -38,7 +39,9 @@ import okhttp3.Response
  *
  * Gating is per-credential via [DPoPKeyManager.shouldAttachDPoP], not the global
  * [com.salesforce.androidsdk.app.SalesforceSDKManager.useDPoP] flag. A DPoP-bound
- * credential carries proofs on every request regardless of that flag.
+ * credential normally carries proofs regardless of that flag; when a UI session exists,
+ * [SalesforceSDKManager.shouldUseUiSidBearerForPath] may select clean UI-session Bearer
+ * authentication for a request path instead.
  */
 object DPoPRequestDecorator {
 
@@ -48,15 +51,51 @@ object DPoPRequestDecorator {
     private const val NONCE_ERROR_VALUE = "use_dpop_nonce"
 
     /**
-     * Stamps [Authorization] and, if the account is DPoP-bound, a [DPoP] proof header
-     * on [builder]. No-op when [UserAccount.getAuthToken] is null or empty.
+     * Stamps the complete [Authorization] and optional [DPoP] proof header set on [builder].
+     * No-op when [UserAccount.getAuthToken] is null or empty.
      */
     fun applyAuthHeaders(builder: Request.Builder, userAccount: UserAccount) {
         val authToken = userAccount.authToken ?: return
         if (authToken.isEmpty()) return
 
-        val tokenType = userAccount.tokenType
-        val credentialsIdentifier = userAccount.credentialsIdentifier
+        applyAuthHeaders(
+            builder,
+            userAccount.credentialsIdentifier,
+            userAccount.tokenType,
+            authToken,
+            userAccount.uiSid,
+        )
+    }
+
+    /**
+     * Applies the complete authentication header set for one request. A DPoP credential may use
+     * `Bearer <ui_sid>` when the SDK manager's path policy selects it; otherwise normal DPoP or
+     * Bearer access-token authentication is retained.
+     */
+    @JvmName("applyAuthHeaders")
+    internal fun applyAuthHeaders(
+        builder: Request.Builder,
+        credentialsIdentifier: String?,
+        tokenType: String?,
+        authToken: String?,
+        uiSid: String?,
+    ) {
+        if (authToken.isNullOrEmpty()) return
+
+        val requestPath = builder.build().url.encodedPath
+        val useUiSidBearer = DPoPKeyManager.isDPoPTokenType(tokenType) &&
+            !uiSid.isNullOrBlank() &&
+            SalesforceSDKManager.getInstance()
+                .shouldUseUiSidBearerForPath(requestPath)
+
+        // A replay starts from the previously authenticated request. Remove any old proof before
+        // selecting the complete header set for this attempt so switching to UI-session Bearer is
+        // always clean.
+        builder.removeHeader(DPOP_HEADER)
+        if (useUiSidBearer) {
+            OAuth2.addAuthorizationHeader(builder, uiSid, "Bearer")
+            return
+        }
 
         OAuth2.addAuthorizationHeader(builder, authToken, tokenType)
         attachProof(builder, credentialsIdentifier, tokenType, authToken)

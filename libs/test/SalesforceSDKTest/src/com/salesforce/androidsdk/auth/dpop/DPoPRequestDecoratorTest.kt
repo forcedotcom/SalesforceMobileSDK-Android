@@ -69,10 +69,16 @@ class DPoPRequestDecoratorTest {
             .url("https://test.salesforce.com/services/data")
             .get()
 
+    private fun requestBuilder(path: String): Request.Builder =
+        Request.Builder()
+            .url("https://test.salesforce.com$path")
+            .get()
+
     private fun userAccount(
         authToken: String? = "__ACCESS_TOKEN__",
         tokenType: String?,
         credentialsIdentifier: String? = testScope,
+        uiSid: String? = null,
     ): UserAccount = UserAccountBuilder.getInstance()
         .accountName("account")
         .username("user@example.com")
@@ -86,6 +92,7 @@ class DPoPRequestDecoratorTest {
         .userId("userId")
         .tokenType(tokenType)
         .credentialsIdentifier(credentialsIdentifier)
+        .uiSid(uiSid)
         .build()
 
     private fun response(
@@ -258,5 +265,102 @@ class DPoPRequestDecoratorTest {
         assertNotNull(auth)
         assertTrue("lowercase 'dpop' must produce Authorization: DPoP …, got: $auth", auth!!.startsWith("DPoP "))
         assertNotNull("lowercase 'dpop' must attach a DPoP proof header", request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopWithUiSidOnLwr_usesCleanUiSidBearerHeaders() {
+        val builder = requestBuilder("/lwr/application")
+            .header(DPoPRequestDecorator.DPOP_HEADER, "stale-proof")
+
+        DPoPRequestDecorator.applyAuthHeaders(
+            builder,
+            userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
+        )
+
+        val request = builder.build()
+        assertEquals("Bearer __UI_SID__", request.header("Authorization"))
+        assertNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopWithUiSidOnNonLwr_keepsDpopHeaders() {
+        seedKeyPair(testScope)
+        val builder = requestBuilder("/services/data/v65.0/query")
+
+        DPoPRequestDecorator.applyAuthHeaders(
+            builder,
+            userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
+        )
+
+        val request = builder.build()
+        assertEquals("DPoP __ACCESS_TOKEN__", request.header("Authorization"))
+        assertNotNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
+
+    @Test
+    fun applyAuthHeaders_customPolicyOverridesDefault() {
+        val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { path -> path == "/custom/session" }
+            val builder = requestBuilder("/custom/session")
+
+            DPoPRequestDecorator.applyAuthHeaders(
+                builder,
+                userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
+            )
+
+            assertEquals("Bearer __UI_SID__", builder.build().header("Authorization"))
+            assertNull(builder.build().header(DPoPRequestDecorator.DPOP_HEADER))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
+    fun applyAuthHeaders_withoutUiSid_doesNotConsultPolicy() {
+        seedKeyPair(testScope)
+        val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        var callCount = 0
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = {
+                callCount++
+                true
+            }
+
+            DPoPRequestDecorator.applyAuthHeaders(
+                requestBuilder("/lwr/application"),
+                userAccount(tokenType = "DPoP", uiSid = ""),
+            )
+
+            assertEquals(0, callCount)
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
+    fun applyAuthHeaders_bearerCredentialDoesNotConsultPolicy() {
+        val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        var callCount = 0
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = {
+                callCount++
+                true
+            }
+            val builder = requestBuilder("/lwr/application")
+
+            DPoPRequestDecorator.applyAuthHeaders(
+                builder,
+                userAccount(tokenType = "Bearer", uiSid = "__UI_SID__"),
+            )
+
+            assertEquals(0, callCount)
+            assertEquals("Bearer __ACCESS_TOKEN__", builder.build().header("Authorization"))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
     }
 }
