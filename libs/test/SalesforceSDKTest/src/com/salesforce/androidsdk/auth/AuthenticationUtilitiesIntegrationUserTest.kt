@@ -32,6 +32,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.TestForceApp
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import io.mockk.every
@@ -263,7 +264,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
         assertNull(capturedRequest?.header("DPoP"))
     }
 
-    private fun buildTokenEndpointResponse(tokenType: String?): OAuth2.TokenEndpointResponse {
+    private fun buildTokenEndpointResponse(tokenType: String?): TokenEndpointResponse {
         val params = mutableMapOf(
             "access_token" to "test-access-token",
             "instance_url" to "https://instance.test",
@@ -271,7 +272,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
             "scope" to "refresh_token id",
         )
         tokenType?.let { params["token_type"] = it }
-        return OAuth2.TokenEndpointResponse(params).apply {
+        return TokenEndpointResponse(params).apply {
             this.tokenType = tokenType
             this.credentialsIdentifier = this@AuthenticationUtilitiesIntegrationUserTest.credentialsIdentifier
         }
