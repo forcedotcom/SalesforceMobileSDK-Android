@@ -85,7 +85,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
@@ -220,7 +220,7 @@ class LoginActivityTest {
 
         assertTrue(
             "onAuthFlowError should have been called once the launched coroutine caught the exception",
-            latch.await(10, TimeUnit.SECONDS)
+            latch.await(10, SECONDS)
         )
         assertEquals("Token Request Error", capturedError)
         assertEquals("Integration user check failed", capturedErrorDesc)
