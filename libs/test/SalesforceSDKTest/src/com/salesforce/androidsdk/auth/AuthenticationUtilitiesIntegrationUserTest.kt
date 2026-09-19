@@ -26,21 +26,24 @@
  */
 package com.salesforce.androidsdk.auth
 
-import android.app.Instrumentation
+import android.app.Instrumentation.newApplication
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.TestForceApp
 import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
-import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
-import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.aliasForCredentialsIdentifier
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.deleteKeyPair
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.generateOrLoadKeyPair
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.clear
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.Interceptor
+import okhttp3.Interceptor.Chain
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Protocol
+import okhttp3.Protocol.HTTP_1_1
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -56,8 +59,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.UUID.randomUUID
 
 /**
  * Tests that [fetchIsSalesforceIntegrationUser] attaches a DPoP proof (not
@@ -76,7 +78,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
     @Before
     fun setUp() {
-        val app = Instrumentation.newApplication(
+        val app = newApplication(
             TestForceApp::class.java,
             getInstrumentation().context
         )
@@ -86,14 +88,14 @@ class AuthenticationUtilitiesIntegrationUserTest {
         httpAccess = CapturingHttpAccess()
         DEFAULT = httpAccess
 
-        credentialsIdentifier = "integration-user-test-${UUID.randomUUID()}"
-        alias = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
+        credentialsIdentifier = "integration-user-test-${randomUUID()}"
+        alias = aliasForCredentialsIdentifier(credentialsIdentifier)
     }
 
     @After
     fun tearDown() {
         DEFAULT = originalDefaultHttpAccess
-        DPoPKeyManager.deleteKeyPair(alias)
+        deleteKeyPair(alias)
     }
 
     /**
@@ -102,7 +104,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
      */
     @Test
     fun test_fetchIsSalesforceIntegrationUser_dpopBoundCredential_attachesProofAndDPoPScheme() {
-        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        generateOrLoadKeyPair(alias)
         httpAccess.enqueueIntegrationUserSuccess(isIntegrationUser = false)
 
         val tokenResponse = buildTokenEndpointResponse(tokenType = "DPoP")
@@ -149,8 +151,8 @@ class AuthenticationUtilitiesIntegrationUserTest {
     /** A cold nonce cache triggers exactly one retry with a rebuilt proof. */
     @Test
     fun test_fetchIsSalesforceIntegrationUser_nonceChallenge_retriesOnceWithNonce() {
-        DPoPKeyManager.generateOrLoadKeyPair(alias)
-        DPoPNonceCache.clear(credentialsIdentifier)
+        generateOrLoadKeyPair(alias)
+        clear(credentialsIdentifier)
         httpAccess.enqueue(
             code = 401,
             body = """{"error":"use_dpop_nonce"}""",
@@ -206,7 +208,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
      */
     @Test
     fun test_reattachAuthOnRedirect_salesforceRedirect_reattachesAuthAndDPoPHeaders() {
-        DPoPKeyManager.generateOrLoadKeyPair(alias)
+        generateOrLoadKeyPair(alias)
         val originalUrl = "https://login.salesforce.com/services/oauth2/userinfo"
         val redirectedRequest = Request.Builder()
             .url("https://my-instance.salesforce.com/services/oauth2/userinfo")
@@ -214,13 +216,13 @@ class AuthenticationUtilitiesIntegrationUserTest {
             .build()
 
         var capturedRequest: Request? = null
-        val chain = mockk<Interceptor.Chain> {
+        val chain = mockk<Chain> {
             every { request() } returns redirectedRequest
             every { proceed(any()) } answers {
                 capturedRequest = firstArg()
                 Response.Builder()
                     .request(firstArg())
-                    .protocol(Protocol.HTTP_1_1)
+                    .protocol(HTTP_1_1)
                     .code(200)
                     .message("OK")
                     .body("{}".toResponseBody("application/json".toMediaType()))
@@ -244,13 +246,13 @@ class AuthenticationUtilitiesIntegrationUserTest {
         val sameRequest = Request.Builder().url(originalUrl).get().build()
 
         var capturedRequest: Request? = null
-        val chain = mockk<Interceptor.Chain> {
+        val chain = mockk<Chain> {
             every { request() } returns sameRequest
             every { proceed(any()) } answers {
                 capturedRequest = firstArg()
                 Response.Builder()
                     .request(firstArg())
-                    .protocol(Protocol.HTTP_1_1)
+                    .protocol(HTTP_1_1)
                     .code(200)
                     .message("OK")
                     .body("{}".toResponseBody("application/json".toMediaType()))
@@ -288,7 +290,6 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
         private val recordedRequests = mutableListOf<Request>()
         private val enqueuedResponses = ArrayDeque<CannedResponse>()
-        private val cursor = AtomicInteger(0)
 
         private val capturingInterceptor = Interceptor { chain ->
             val req = chain.request()
@@ -298,7 +299,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
             } ?: CannedResponse(200, "{}", emptyMap())
             val builder = Response.Builder()
                 .request(req)
-                .protocol(Protocol.HTTP_1_1)
+                .protocol(HTTP_1_1)
                 .code(canned.code)
                 .message(if (canned.code < 300) "OK" else "ERR")
                 .body(canned.body.toResponseBody("application/json".toMediaType()))
