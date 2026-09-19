@@ -29,8 +29,9 @@ package com.salesforce.androidsdk.auth
 import android.app.Instrumentation
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.salesforce.androidsdk.TestForceApp
+import com.salesforce.androidsdk.auth.HttpAccess.DEFAULT
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import io.mockk.every
@@ -76,13 +77,13 @@ class AuthenticationUtilitiesIntegrationUserTest {
     fun setUp() {
         val app = Instrumentation.newApplication(
             TestForceApp::class.java,
-            InstrumentationRegistry.getInstrumentation().context
+            getInstrumentation().context
         )
-        InstrumentationRegistry.getInstrumentation().callApplicationOnCreate(app)
+        getInstrumentation().callApplicationOnCreate(app)
 
-        originalDefaultHttpAccess = HttpAccess.DEFAULT
+        originalDefaultHttpAccess = DEFAULT
         httpAccess = CapturingHttpAccess()
-        HttpAccess.DEFAULT = httpAccess
+        DEFAULT = httpAccess
 
         credentialsIdentifier = "integration-user-test-${UUID.randomUUID()}"
         alias = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
@@ -90,7 +91,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
     @After
     fun tearDown() {
-        HttpAccess.DEFAULT = originalDefaultHttpAccess
+        DEFAULT = originalDefaultHttpAccess
         DPoPKeyManager.deleteKeyPair(alias)
     }
 
