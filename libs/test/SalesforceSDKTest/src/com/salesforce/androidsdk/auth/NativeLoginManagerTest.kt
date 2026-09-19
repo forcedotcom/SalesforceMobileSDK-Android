@@ -13,11 +13,16 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.accounts.UserAccountTest
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.OAuth2.CODE
 import com.salesforce.androidsdk.auth.OAuth2.OAUTH_AUTH_PATH
+import com.salesforce.androidsdk.auth.OAuth2.OAUTH_TOKEN_PATH
+import com.salesforce.androidsdk.auth.OAuth2.SFDC_COMMUNITY_URL
+import com.salesforce.androidsdk.auth.interfaces.NativeLoginResult.UnknownError
 import com.salesforce.androidsdk.auth.interfaces.OtpVerificationMethod
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
+import com.salesforce.androidsdk.rest.RestRequest
 import com.salesforce.androidsdk.rest.RestResponse
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager.Companion.SHOW_BIOMETRIC
@@ -25,6 +30,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -32,12 +38,15 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.Call
+import okhttp3.Response
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -422,6 +431,56 @@ class NativeLoginManagerTest {
     }
 
     /**
+     * Tests that [NativeLoginManager.login] converts an exception thrown by
+     * [onAuthFlowComplete] (for example, the fail-closed [java.io.IOException]
+     * from an integration-user check failure) into [NativeLoginResult.UnknownError]
+     * rather than letting it propagate uncaught out of the suspend function,
+     * since [NativeLoginManager.login]'s documented contract is to always
+     * return a result rather than throw.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun nativeLoginManager_login_convertsOnAuthFlowCompleteExceptionToUnknownError() = runTest {
+        mockkStatic("com.salesforce.androidsdk.auth.AuthenticationUtilitiesKt")
+        coEvery {
+            onAuthFlowComplete(
+                tokenResponse = any(),
+                loginServer = any(),
+                consumerKey = any(),
+                redirectUri = any(),
+                onAuthFlowError = any(),
+                onAuthFlowSuccess = any(),
+                buildAccountName = any(),
+                nativeLogin = any(),
+                tokenMigration = any(),
+                credentialsIdentifier = any(),
+                context = any(),
+                userAccountManager = any(),
+                blockIntegrationUser = any(),
+                runtimeConfig = any(),
+                updateLoggingPrefs = any(),
+                fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
+                startMainActivity = any(),
+                setAdministratorPreferences = any(),
+                addAccount = any(),
+                handleScreenLockPolicy = any(),
+                handleBiometricAuthPolicy = any(),
+                handleDuplicateUserAccount = any(),
+                onAuthFlowFinished = any(),
+            )
+        } throws IOException("Integration user check failed")
+
+        val restClient = createRestClientStubbingSuccessfulLoginResponse()
+        mgr = createNativeLoginManagerForTest(restClient = restClient)
+
+        val result = mgr.login(TEST_USERNAME, TEST_PASSWORD)
+        advanceUntilIdle()
+
+        assertEquals(UnknownError, result)
+    }
+
+    /**
      * Tests that [NativeLoginManager.login] builds the Basic-Auth
      * `Authorization` header using the standard Base64 alphabet with padding
      * (RFC 4648 §4, as required by RFC 7617), rather than the URL-safe
@@ -549,6 +608,39 @@ class NativeLoginManagerTest {
             every { sendAsync(any(), any()) } answers {
                 val callback = secondArg<RestClient.AsyncRequestCallback>()
                 callback.onSuccess(firstArg(), mockResponse)
+                mockk<Call>(relaxed = true)
+            }
+        }
+    }
+
+    /**
+     * Stubs a [RestClient] to succeed on both of [NativeLoginManager.login]'s
+     * REST calls: the authorization request (returns a `code` and
+     * `sfdc_community_url`) and the subsequent token request. Used by tests
+     * exercising the [onAuthFlowComplete] hand-off after a successful login.
+     */
+    private fun createRestClientStubbingSuccessfulLoginResponse(): RestClient {
+        val authResponse = mockk<RestResponse>(relaxed = true).apply {
+            every { isSuccess } returns true
+            every { asJSONObject() } returns JSONObject().apply {
+                put(CODE, "test_code")
+                put(SFDC_COMMUNITY_URL, TEST_LOGIN_URL)
+            }
+        }
+        val tokenResponse = mockk<RestResponse>(relaxed = true).apply {
+            every { isSuccess } returns true
+            every { rawResponse } returns mockk<Response>(relaxed = true)
+        }
+        return mockk<RestClient>(relaxed = true).apply {
+            every { sendAsync(any(), any()) } answers {
+                val request = firstArg<RestRequest>()
+                val callback = secondArg<RestClient.AsyncRequestCallback>()
+                val response = if (request.path == "$TEST_LOGIN_URL$OAUTH_TOKEN_PATH") {
+                    tokenResponse
+                } else {
+                    authResponse
+                }
+                callback.onSuccess(request, response)
                 mockk<Call>(relaxed = true)
             }
         }

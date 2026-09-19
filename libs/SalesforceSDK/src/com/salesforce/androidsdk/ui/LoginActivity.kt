@@ -1599,12 +1599,16 @@ open class LoginActivity : FragmentActivity() {
 
                             else ->
                                 CoroutineScope(Default).launch {
-                                    viewModel.onAuthFlowComplete(
-                                        TokenEndpointResponse(params),
-                                        ::onAuthFlowError,
-                                        ::onAuthFlowSuccess,
-                                        onAuthFlowFinished = ::onAuthFlowFinished,
-                                    )
+                                    try {
+                                        viewModel.onAuthFlowComplete(
+                                            TokenEndpointResponse(params),
+                                            ::onAuthFlowError,
+                                            ::onAuthFlowSuccess,
+                                            onAuthFlowFinished = ::onAuthFlowFinished,
+                                        )
+                                    } catch (ex: Exception) {
+                                        onAuthFlowError("Token Request Error", ex.message, ex)
+                                    }
                                 }
                         }
                     }
