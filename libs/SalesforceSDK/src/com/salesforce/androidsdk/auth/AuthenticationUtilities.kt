@@ -147,6 +147,7 @@ internal suspend fun onAuthFlowComplete(
     addAccount: (account: UserAccount) -> Unit = ::addAccountHelper,
     handleScreenLockPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleScreenLockPolicy,
     handleBiometricAuthPolicy: (userIdentity: OAuth2.IdServiceResponse?, account: UserAccount) -> Unit = ::handleBiometricAuthPolicy,
+    enforceMobilePolicyOnFinalizationFailure: (userIdentity: OAuth2.IdServiceResponse?) -> Unit = ::enforceMobilePolicyOnFinalizationFailureHelper,
     handleDuplicateUserAccount: (userAccountManager: UserAccountManager, account: UserAccount, userIdentity: OAuth2.IdServiceResponse?) -> Unit
         = { uam, acct, identity -> com.salesforce.androidsdk.auth.handleDuplicateUserAccount(uam, acct, identity) },
     onAuthFlowFinished: (proceed: () -> Unit) -> Unit = { proceed -> proceed() },
@@ -376,13 +377,16 @@ internal suspend fun onAuthFlowComplete(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        // Biometric/Screen Lock are CA/ECA mobile security policies, not routine UI work, so a
-        // failure here is logged at error (not warning) severity to keep it discoverable. As
-        // with the original unguarded code, a failure here still means any as-yet-unapplied
-        // step in this same try block (e.g. screen lock, if biometric policy above threw) does
-        // not run — the difference is that it no longer crashes/double-reports the outer flow.
+        // Biometric/Screen Lock are CA/ECA mobile security policies, not routine UI work: an
+        // uncaught throw here on the original (pre-DPoP-fix) code crashed the coroutine, which
+        // had the side effect of never handing the user a usable, unlocked app instance. That
+        // side effect is lost now that this is caught (required to avoid double-resuming/
+        // double-reporting the outer flow — see onAuthFlowSuccess above), so
+        // enforceMobilePolicyOnFinalizationFailure forces the relevant lock screen instead,
+        // restoring "the app does not proceed unguarded" without crashing or double-reporting.
         e(TAG, "Failed to apply Biometric Authentication or Screen Lock mobile policy after " +
                 "successful authentication; the policy may not be enforced for this login.", e)
+        enforceMobilePolicyOnFinalizationFailure(userIdentity)
     }
 }
 
@@ -820,6 +824,37 @@ internal fun handleBiometricAuthPolicy(
     } else if (internalBiometricAuthenticationManager?.enabled == true) {
         SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_BIOMETRIC_AUTH, account)
         internalBiometricAuthenticationManager.cleanUp(account)
+    }
+}
+
+/**
+ * Called when [handleScreenLockPolicy] or [handleBiometricAuthPolicy] (or the finalization work
+ * that runs alongside them, such as [startMainActivityHelper]) throws after login has already
+ * succeeded. Forces the lock screen for whichever mobile policy is actually relevant to this
+ * login — i.e. the identity response requests it, or a prior login already had it enabled for
+ * this account — so a policy that failed to apply cannot silently let the user into an unlocked
+ * app. Does nothing when neither policy is relevant, so a login on an org with no CA/ECA
+ * configured at all is not locked out by an unrelated failure.
+ */
+@VisibleForTesting
+internal fun enforceMobilePolicyOnFinalizationFailureHelper(
+    userIdentity: OAuth2.IdServiceResponse?,
+) {
+    val screenLockManager = SalesforceSDKManager.getInstance().screenLockManager as ScreenLockManager?
+    val screenLockApplicable = userIdentity?.screenLockTimeout?.compareTo(0) == 1 ||
+            screenLockManager?.enabled == true
+    if (screenLockApplicable) {
+        runCatching { screenLockManager?.lock() }
+            .onFailure { lockException -> e(TAG, "Failed to force Screen Lock after a policy application failure.", lockException) }
+    }
+
+    val biometricAuthenticationManager =
+        SalesforceSDKManager.getInstance().biometricAuthenticationManager as BiometricAuthenticationManager?
+    val biometricAuthApplicable = userIdentity?.biometricAuth == true ||
+            biometricAuthenticationManager?.enabled == true
+    if (biometricAuthApplicable) {
+        runCatching { biometricAuthenticationManager?.lock() }
+            .onFailure { lockException -> e(TAG, "Failed to force Biometric Authentication after a policy application failure.", lockException) }
     }
 }
 
