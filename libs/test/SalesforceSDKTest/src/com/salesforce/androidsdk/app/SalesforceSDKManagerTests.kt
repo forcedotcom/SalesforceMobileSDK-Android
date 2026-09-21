@@ -166,15 +166,12 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
-    fun shouldUseUiSidBearerForPath_defaultMatchesOnlyLwrPathSegment() {
+    fun shouldUseUiSidBearerForPath_defaultReturnsFalse() {
         val manager = SalesforceSDKManager.getInstance()
 
-        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr"))
-        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr/"))
-        assertTrue(manager.shouldUseUiSidBearerForPath("/lwr/application/bootstrap"))
-        assertFalse(manager.shouldUseUiSidBearerForPath("/lwrx/application"))
-        assertFalse(manager.shouldUseUiSidBearerForPath("/services/data/lwr/application"))
-        assertFalse(manager.shouldUseUiSidBearerForPath("/services/data?q=/lwr/application"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/services/data"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/any/path"))
+        assertFalse(manager.shouldUseUiSidBearerForPath("/"))
     }
 
     @Test
@@ -185,7 +182,7 @@ class SalesforceSDKManagerTests {
             manager.shouldUseUiSidBearerForPath = { path -> path == "/custom/session" }
 
             assertTrue(manager.shouldUseUiSidBearerForPath("/custom/session"))
-            assertFalse(manager.shouldUseUiSidBearerForPath("/lwr/application"))
+            assertFalse(manager.shouldUseUiSidBearerForPath("/other/path"))
         } finally {
             manager.shouldUseUiSidBearerForPath = originalPolicy
         }

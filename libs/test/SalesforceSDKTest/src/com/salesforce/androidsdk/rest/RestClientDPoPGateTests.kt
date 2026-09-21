@@ -192,21 +192,28 @@ class RestClientDPoPGateTests {
     }
 
     @Test
-    fun test_givenDPoPAndUiSidOnLwr_whenIntercept_thenUsesCleanUiSidBearerHeaders() {
-        val id = trackId("lwr_ui_sid")
-        val interceptor = RestClient.OAuthRefreshInterceptor(
-            null,
-            "__ACCESS_TOKEN__",
-            "DPoP",
-            id,
-            "__UI_SID__",
-            null,
-        )
+    fun test_givenDPoPAndUiSidWhenPolicySelects_whenIntercept_thenUsesCleanUiSidBearerHeaders() {
+        val id = trackId("selected_ui_sid")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
+            val interceptor = RestClient.OAuthRefreshInterceptor(
+                null,
+                "__ACCESS_TOKEN__",
+                "DPoP",
+                id,
+                "__UI_SID__",
+                null,
+            )
 
-        val captured = captureAuthenticatedRequest(interceptor, "/lwr/application/bootstrap")
+            val captured = captureAuthenticatedRequest(interceptor, "/services/session/bootstrap")
 
-        assertEquals("Bearer __UI_SID__", captured.header("Authorization"))
-        assertNull(captured.header("DPoP"))
+            assertEquals("Bearer __UI_SID__", captured.header("Authorization"))
+            assertNull(captured.header("DPoP"))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
     }
 
     @Test
@@ -236,7 +243,7 @@ class RestClientDPoPGateTests {
                 provider,
             )
             val original = Request.Builder()
-                .url("https://instance.example.com/lwr/application/bootstrap")
+                .url("https://instance.example.com/services/session/bootstrap")
                 .get()
                 .build()
             val attempts = mutableListOf<Request>()
@@ -270,7 +277,10 @@ class RestClientDPoPGateTests {
     fun test_givenCachedInterceptorWithoutUiSid_whenSameTokenClientAddsUiSid_thenCacheAdoptsMetadata() {
         RestClient.clearCaches()
         val id = trackId("cached_ui_sid")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
         try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
             val info = clientInfo()
             RestClient(
                 info,
@@ -293,12 +303,13 @@ class RestClientDPoPGateTests {
 
             val captured = captureAuthenticatedRequest(
                 updatedClient.oAuthRefreshInterceptor,
-                "/lwr/application/bootstrap",
+                "/services/session/bootstrap",
             )
 
             assertEquals("Bearer __UI_SID__", captured.header("Authorization"))
             assertNull(captured.header("DPoP"))
         } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
             RestClient.clearCaches()
         }
     }

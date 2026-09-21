@@ -107,10 +107,10 @@ applyAuthHeaders(builder, credentialsIdentifier, tokenType, authToken, uiSid):
 ```
 
 `SalesforceSDKManager.shouldUseUiSidBearerForPath` is a synchronous, process-wide function that
-apps may replace. Its built-in implementation returns true for `/lwr` and paths beneath `/lwr/`,
-without matching `/lwrx`, a hostname, or query text. Authentication evaluates it only for an
-explicit DPoP token type with a nonblank `uiSid`. Bearer credentials and DPoP credentials without a
-UI session do not invoke it.
+apps may replace. Its built-in implementation returns false for every path, so no request uses
+UI-session Bearer authentication until an app registers a policy. Authentication evaluates it only
+for an explicit DPoP token type with a nonblank `uiSid`. Bearer credentials and DPoP credentials
+without a UI session do not invoke it.
 
 The gate is deliberately per credential, not the mutable global `useDPoP` flag. Once a
 credential is DPoP-bound, its requests must continue carrying proofs even if the global flag

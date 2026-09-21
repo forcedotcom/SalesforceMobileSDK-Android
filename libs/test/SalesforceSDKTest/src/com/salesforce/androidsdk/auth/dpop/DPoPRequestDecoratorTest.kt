@@ -268,22 +268,29 @@ class DPoPRequestDecoratorTest {
     }
 
     @Test
-    fun applyAuthHeaders_dpopWithUiSidOnLwr_usesCleanUiSidBearerHeaders() {
-        val builder = requestBuilder("/lwr/application")
-            .header(DPoPRequestDecorator.DPOP_HEADER, "stale-proof")
+    fun applyAuthHeaders_dpopWithUiSidWhenPolicySelects_usesCleanUiSidBearerHeaders() {
+        val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
+            val builder = requestBuilder("/services/session")
+                .header(DPoPRequestDecorator.DPOP_HEADER, "stale-proof")
 
-        DPoPRequestDecorator.applyAuthHeaders(
-            builder,
-            userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
-        )
+            DPoPRequestDecorator.applyAuthHeaders(
+                builder,
+                userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
+            )
 
-        val request = builder.build()
-        assertEquals("Bearer __UI_SID__", request.header("Authorization"))
-        assertNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+            val request = builder.build()
+            assertEquals("Bearer __UI_SID__", request.header("Authorization"))
+            assertNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
     }
 
     @Test
-    fun applyAuthHeaders_dpopWithUiSidOnNonLwr_keepsDpopHeaders() {
+    fun applyAuthHeaders_dpopWithUiSidWhenPolicyDeclines_keepsDpopHeaders() {
         seedKeyPair(testScope)
         val builder = requestBuilder("/services/data/v65.0/query")
 
@@ -330,7 +337,7 @@ class DPoPRequestDecoratorTest {
             }
 
             DPoPRequestDecorator.applyAuthHeaders(
-                requestBuilder("/lwr/application"),
+                requestBuilder("/services/session"),
                 userAccount(tokenType = "DPoP", uiSid = ""),
             )
 
@@ -350,7 +357,7 @@ class DPoPRequestDecoratorTest {
                 callCount++
                 true
             }
-            val builder = requestBuilder("/lwr/application")
+            val builder = requestBuilder("/services/session")
 
             DPoPRequestDecorator.applyAuthHeaders(
                 builder,

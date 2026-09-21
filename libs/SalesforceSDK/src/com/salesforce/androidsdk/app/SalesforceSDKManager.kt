@@ -323,14 +323,11 @@ open class SalesforceSDKManager protected constructor(
      * because it is evaluated while an HTTP request is being authenticated.
      *
      * Apps may replace this function process-wide. It is not called for ordinary Bearer
-     * credentials or when no UI session ID is available. By default, `/lwr` and paths beneath
-     * `/lwr/` use the UI session because those endpoints do not currently accept DPoP-bound
-     * access tokens.
+     * credentials or when no UI session ID is available. By default it returns false for every
+     * path, so no request uses the UI session until an app opts specific paths in.
      */
     @Volatile
-    var shouldUseUiSidBearerForPath: (path: String) -> Boolean = { path ->
-        path == "/lwr" || path.startsWith("/lwr/")
-    }
+    var shouldUseUiSidBearerForPath: (path: String) -> Boolean = { false }
 
     /** Resolves [shouldUseUiSidBearerForPath] for an authenticated request path. */
     fun shouldUseUiSidBearerForPath(path: String): Boolean =

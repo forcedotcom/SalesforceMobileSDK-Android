@@ -255,7 +255,7 @@ class OAuthRefreshInterceptorNonceTest {
     @Test
     fun test_givenUiSidBearerSelected_when400UseDpopNonce_thenNoHarvestAndNoRetry() {
         val sdkManager = SalesforceSDKManager.getInstance()
-        every { sdkManager.shouldUseUiSidBearerForPath("/lwr/application") } returns true
+        every { sdkManager.shouldUseUiSidBearerForPath("/services/session") } returns true
         val interceptor = RestClient.OAuthRefreshInterceptor(
             clientInfo,
             authToken,
@@ -265,7 +265,7 @@ class OAuthRefreshInterceptorNonceTest {
             null,
         )
         val request = Request.Builder()
-            .url("https://test.salesforce.com/lwr/application")
+            .url("https://test.salesforce.com/services/session")
             .get()
             .build()
         var callCount = 0
