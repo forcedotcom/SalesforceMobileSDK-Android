@@ -189,6 +189,41 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
+    fun testOnAuthFlowComplete_biometricPolicyThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
+        // Given - onAuthFlowSuccess already ran to completion (per verifyOrder below) before
+        // finalization work runs, so a caller resuming a single-shot continuation from both
+        // onAuthFlowSuccess and a catch around onAuthFlowComplete would crash on double-resume.
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { handleBiometricAuthPolicy.invoke(any(), any()) } throws RuntimeException("policy storage failed")
+
+        // When
+        callOnAuthFlowComplete()
+
+        // Then - the thrown exception is swallowed, not surfaced as a second terminal outcome
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verifyOrder {
+            onAuthFlowSuccess.invoke(any())
+            handleBiometricAuthPolicy.invoke(any(), any())
+        }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_startMainActivityThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
+        // Given
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { startMainActivity.invoke() } throws RuntimeException("activity launch failed")
+
+        // When
+        callOnAuthFlowComplete()
+
+        // Then
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verify { onAuthFlowSuccess.invoke(any()) }
+    }
+
+    @Test
     fun testOnAuthFlowComplete_defaultOnAuthFlowFinished_isNoOp() = runTest {
         // Given
         val userIdentity = createIdServiceResponse()

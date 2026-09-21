@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.aliasForCredentialsIdentifier
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.deleteKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.generateOrLoadKeyPair
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.clear
 import io.mockk.every
 import io.mockk.mockk
@@ -170,6 +171,37 @@ class AuthenticationUtilitiesIntegrationUserTest {
     }
 
     /**
+     * When the final response comes from a different host than the initial request (a
+     * cross-host Salesforce redirect, e.g. pool server -> instance), the harvested nonce
+     * must be stored under the response's host, not the pre-redirect request's host —
+     * otherwise a retry proof built for the response's host never finds it.
+     */
+    @Test
+    fun test_fetchIsSalesforceIntegrationUser_crossHostRedirect_harvestsNonceUnderResponseHost() {
+        generateOrLoadKeyPair(alias)
+        clear(credentialsIdentifier)
+        httpAccess.enqueueIntegrationUserSuccess(
+            isIntegrationUser = false,
+            headers = mapOf("DPoP-Nonce" to "instance-nonce"),
+            responseHost = "my-instance.salesforce.com",
+        )
+
+        val tokenResponse = buildTokenEndpointResponse(tokenType = "DPoP")
+
+        fetchIsSalesforceIntegrationUser(tokenResponse, "https://login.salesforce.com")
+
+        assertNull(
+            "Nonce must not be stored under the pre-redirect request host",
+            DPoPNonceCache.get(credentialsIdentifier, "login.salesforce.com")
+        )
+        assertEquals(
+            "Nonce must be stored under the host that actually returned it",
+            "instance-nonce",
+            DPoPNonceCache.get(credentialsIdentifier, "my-instance.salesforce.com")
+        )
+    }
+
+    /**
      * A non-JSON error body (the literal "Bad_OAuth_Token" string) must not
      * throw JSONException.
      */
@@ -296,9 +328,15 @@ class AuthenticationUtilitiesIntegrationUserTest {
             synchronized(recordedRequests) { recordedRequests += req }
             val canned = synchronized(enqueuedResponses) {
                 enqueuedResponses.removeFirstOrNull()
-            } ?: CannedResponse(200, "{}", emptyMap())
+            } ?: CannedResponse(200, "{}", emptyMap(), responseHost = null)
+            // responseHost stands in for a cross-host Salesforce redirect: OkHttp's
+            // Response.request reflects whichever physical request actually produced it,
+            // which after a real redirect differs from the pre-redirect request.
+            val responseRequest = canned.responseHost?.let {
+                req.newBuilder().url(req.url.newBuilder().host(it).build()).build()
+            } ?: req
             val builder = Response.Builder()
-                .request(req)
+                .request(responseRequest)
                 .protocol(HTTP_1_1)
                 .code(canned.code)
                 .message(if (canned.code < 300) "OK" else "ERR")
@@ -312,12 +350,23 @@ class AuthenticationUtilitiesIntegrationUserTest {
                 addInterceptor(capturingInterceptor)
             }
 
-        fun enqueue(code: Int, body: String, headers: Map<String, String> = emptyMap()) {
-            synchronized(enqueuedResponses) { enqueuedResponses.addLast(CannedResponse(code, body, headers)) }
+        fun enqueue(
+            code: Int,
+            body: String,
+            headers: Map<String, String> = emptyMap(),
+            responseHost: String? = null,
+        ) {
+            synchronized(enqueuedResponses) {
+                enqueuedResponses.addLast(CannedResponse(code, body, headers, responseHost))
+            }
         }
 
-        fun enqueueIntegrationUserSuccess(isIntegrationUser: Boolean) {
-            enqueue(200, """{"is_salesforce_integration_user":$isIntegrationUser}""")
+        fun enqueueIntegrationUserSuccess(
+            isIntegrationUser: Boolean,
+            headers: Map<String, String> = emptyMap(),
+            responseHost: String? = null,
+        ) {
+            enqueue(200, """{"is_salesforce_integration_user":$isIntegrationUser}""", headers, responseHost)
         }
 
         fun lastRequest(): Request? = synchronized(recordedRequests) {
@@ -332,6 +381,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
             val code: Int,
             val body: String,
             val headers: Map<String, String>,
+            val responseHost: String?,
         )
     }
 }

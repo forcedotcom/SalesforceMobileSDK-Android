@@ -339,26 +339,37 @@ internal suspend fun onAuthFlowComplete(
      */
     register(context, account)
 
-    // Let the calling process resume
+    // Let the calling process resume. This is the terminal outcome of the auth flow: the
+    // account is already created, so any failure in the finalization work below (biometric/
+    // screen-lock policy, launching the main activity) must not be reported back to
+    // onAuthFlowError/the caller's exception handling — that would turn an already-succeeded
+    // login into a reported failure, and callers that resume a single-shot continuation from
+    // both onAuthFlowSuccess and a catch around this call would crash resuming it twice.
     onAuthFlowSuccess(account)
 
-    // Biometric authorization required by mobile policy.  This must run before
-    // onAuthFlowFinished so the biometric opt-in dialog's presentation decision
-    // (which depends on the freshly-stored policy) can be made while the caller
-    // is still in front, i.e. before startMainActivity() below occludes it.
-    handleBiometricAuthPolicy(userIdentity, account)
+    try {
+        // Biometric authorization required by mobile policy.  This must run before
+        // onAuthFlowFinished so the biometric opt-in dialog's presentation decision
+        // (which depends on the freshly-stored policy) can be made while the caller
+        // is still in front, i.e. before startMainActivity() below occludes it.
+        handleBiometricAuthPolicy(userIdentity, account)
 
-    withContext(Dispatchers.Main) {
-        onAuthFlowFinished {
-            // Kickoff the end of the flow before storing mobile policy to prevent launching
-            // the main activity over/after the screen lock.
-            if (!tokenMigration) {
-                startMainActivity()
+        withContext(Dispatchers.Main) {
+            onAuthFlowFinished {
+                // Kickoff the end of the flow before storing mobile policy to prevent launching
+                // the main activity over/after the screen lock.
+                if (!tokenMigration) {
+                    startMainActivity()
+                }
+
+                // Screen lock required by mobile policy
+                handleScreenLockPolicy(userIdentity, account)
             }
-
-            // Screen lock required by mobile policy
-            handleScreenLockPolicy(userIdentity, account)
         }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        w(TAG, "Post-login finalization failed after successful authentication.", e)
     }
 }
 
@@ -409,10 +420,12 @@ internal fun fetchIsSalesforceIntegrationUser(
     var request = buildAuthenticatedRequest()
     var response = client.newCall(request).execute()
     val attachedDPoP = request.header(DPoPRequestDecorator.DPOP_HEADER) != null
-    val host = request.url.host
 
+    // The nonce is scoped to the host that actually issued it, which after a
+    // cross-host Salesforce redirect (e.g. pool server -> instance) is response.request's
+    // host, not the pre-redirect request's host.
     if (attachedDPoP) {
-        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, host)
+        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, response.request.url.host)
     }
 
     /*
@@ -424,7 +437,7 @@ internal fun fetchIsSalesforceIntegrationUser(
         response.close()
         request = buildAuthenticatedRequest()
         response = client.newCall(request).execute()
-        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, host)
+        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, response.request.url.host)
     }
 
     val responseString = response.body.string()
