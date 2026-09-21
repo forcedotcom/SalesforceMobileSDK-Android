@@ -209,8 +209,10 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testOnAuthFlowComplete_startMainActivityThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
-        // Given
+    fun testOnAuthFlowComplete_startMainActivityThrowsAfterSuccess_stillAppliesScreenLockPolicy() = runTest {
+        // Given - startMainActivity failing to launch (e.g. no launcher activity configured) is
+        // scoped to its own catch so it cannot prevent the screen lock mobile policy, a CA/ECA
+        // security control, from being applied.
         val userIdentity = createIdServiceResponse()
         coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
         every { startMainActivity.invoke() } throws RuntimeException("activity launch failed")
@@ -221,6 +223,28 @@ class AuthenticationUtilitiesTest {
         // Then
         verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
         verify { onAuthFlowSuccess.invoke(any()) }
+        verify { handleScreenLockPolicy.invoke(userIdentity, any()) }
+    }
+
+    @Test
+    fun testOnAuthFlowComplete_screenLockPolicyThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
+        // Given - Screen Lock policy application failing (e.g. keystore/SharedPreferences write
+        // error) must not be reported back to the caller as a login failure: the account is
+        // already created and onAuthFlowSuccess has already run.
+        val userIdentity = createIdServiceResponse()
+        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
+        every { handleScreenLockPolicy.invoke(any(), any()) } throws RuntimeException("policy storage failed")
+
+        // When
+        callOnAuthFlowComplete()
+
+        // Then
+        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
+        verifyOrder {
+            onAuthFlowSuccess.invoke(any())
+            startMainActivity.invoke()
+            handleScreenLockPolicy.invoke(any(), any())
+        }
     }
 
     @Test

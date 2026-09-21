@@ -340,8 +340,7 @@ internal suspend fun onAuthFlowComplete(
     register(context, account)
 
     // Let the calling process resume. This is the terminal outcome of the auth flow: the
-    // account is already created, so any failure in the finalization work below (biometric/
-    // screen-lock policy, launching the main activity) must not be reported back to
+    // account is already created, so no failure below can be reported back to
     // onAuthFlowError/the caller's exception handling — that would turn an already-succeeded
     // login into a reported failure, and callers that resume a single-shot continuation from
     // both onAuthFlowSuccess and a catch around this call would crash resuming it twice.
@@ -357,9 +356,17 @@ internal suspend fun onAuthFlowComplete(
         withContext(Dispatchers.Main) {
             onAuthFlowFinished {
                 // Kickoff the end of the flow before storing mobile policy to prevent launching
-                // the main activity over/after the screen lock.
+                // the main activity over/after the screen lock. Scoped to its own catch: a
+                // failure to launch is routine (misconfigured intent, no launcher activity) and
+                // must not prevent the screen lock policy below from being applied.
                 if (!tokenMigration) {
-                    startMainActivity()
+                    try {
+                        startMainActivity()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        w(TAG, "Failed to start the main activity after successful authentication.", e)
+                    }
                 }
 
                 // Screen lock required by mobile policy
@@ -369,7 +376,13 @@ internal suspend fun onAuthFlowComplete(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        w(TAG, "Post-login finalization failed after successful authentication.", e)
+        // Biometric/Screen Lock are CA/ECA mobile security policies, not routine UI work, so a
+        // failure here is logged at error (not warning) severity to keep it discoverable. As
+        // with the original unguarded code, a failure here still means any as-yet-unapplied
+        // step in this same try block (e.g. screen lock, if biometric policy above threw) does
+        // not run — the difference is that it no longer crashes/double-reports the outer flow.
+        e(TAG, "Failed to apply Biometric Authentication or Screen Lock mobile policy after " +
+                "successful authentication; the policy may not be enforced for this login.", e)
     }
 }
 
