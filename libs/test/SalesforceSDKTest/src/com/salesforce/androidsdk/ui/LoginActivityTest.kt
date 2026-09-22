@@ -33,7 +33,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.webkit.WebResourceRequest
 import androidx.activity.result.ActivityResult
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_IDENTITY_CHECK_NOT_ACTIVE
@@ -42,14 +41,12 @@ import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
 import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.app.SalesforceSDKManager
-import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
@@ -69,7 +66,6 @@ import com.salesforce.androidsdk.ui.LoginActivity.Companion.startDefaultLoginWit
 import com.salesforce.androidsdk.accounts.UserAccountManager
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import io.mockk.Runs
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -83,9 +79,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.IOException
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit.SECONDS
 
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
@@ -170,61 +163,6 @@ class LoginActivityTest {
         customTabActivityResult.onActivityResult(ActivityResult(RESULT_CANCELED, Intent()))
 
         verify(exactly = 1) { loginUrl.value = ABOUT_BLANK }
-    }
-
-    /**
-     * Tests that when [LoginActivity.AuthWebViewClient] hands the User-Agent
-     * flow's token response to [LoginViewModel.onAuthFlowComplete] and that
-     * call throws (for example, the fail-closed [IOException] from an
-     * integration-user check failure), the exception is converted to a
-     * graceful [LoginActivity.onAuthFlowError] call rather than propagating
-     * uncaught out of the launched coroutine.
-     */
-    @Test
-    fun authWebViewClient_shouldOverrideUrlLoading_convertsOnAuthFlowCompleteExceptionToOnAuthFlowError() {
-        val redirectUri = "testapp://oauth/callback"
-        val mockViewModel = mockk<LoginViewModel>(relaxed = true) {
-            every { oAuthConfig } returns OAuthConfig(
-                consumerKey = "test_consumer_key",
-                redirectUri = redirectUri,
-                scopes = listOf("api"),
-            )
-            every { useWebServerFlow() } returns false
-            every { authFinished } returns mutableStateOf(false)
-            every { selectedServer } returns MediatorLiveData()
-            coEvery { onAuthFlowComplete(any(), any(), any(), any(), any(), any(), any()) } throws
-                IOException("Integration user check failed")
-        }
-
-        var capturedError: String? = null
-        var capturedErrorDesc: String? = null
-        var capturedException: Throwable? = null
-        val latch = CountDownLatch(1)
-
-        val mockRequest = mockk<WebResourceRequest> {
-            every { url } returns "$redirectUri?code=test_code".toUri()
-        }
-
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val activity = object : LoginActivity() {
-                override val viewModel: LoginViewModel = mockViewModel
-                override fun onAuthFlowError(error: String, errorDesc: String?, e: Throwable?) {
-                    capturedError = error
-                    capturedErrorDesc = errorDesc
-                    capturedException = e
-                    latch.countDown()
-                }
-            }
-            activity.webViewClient.shouldOverrideUrlLoading(mockk(relaxed = true), mockRequest)
-        }
-
-        assertTrue(
-            "onAuthFlowError should have been called once the launched coroutine caught the exception",
-            latch.await(10, SECONDS)
-        )
-        assertEquals("Token Request Error", capturedError)
-        assertEquals("Integration user check failed", capturedErrorDesc)
-        assertTrue(capturedException is IOException)
     }
 
     private fun invokeDoTokenRefresh(activity: LoginActivity) =

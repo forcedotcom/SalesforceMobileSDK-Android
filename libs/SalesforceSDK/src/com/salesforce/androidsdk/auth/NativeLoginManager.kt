@@ -244,25 +244,20 @@ internal class NativeLoginManager(
         return withContext(Default) {
             suspendCoroutine { continuation ->
                 runBlocking {
-                    try {
-                        onAuthFlowComplete(
-                            tokenResponse = tokenEndpointResponse,
-                            loginServer = loginUrl,
-                            consumerKey = clientId,
-                            onAuthFlowError = { error, errorDesc, e ->
-                                SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
-                                continuation.resume(UnknownError)
-                            },
-                            onAuthFlowSuccess = { userAccount ->
-                                SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
-                                continuation.resume(Success)
-                            },
-                            nativeLogin = true,
-                        )
-                    } catch (e: Exception) {
-                        SalesforceSDKLogger.e(TAG, "Native login auth flow failed.", e)
-                        continuation.resume(UnknownError)
-                    }
+                    onAuthFlowComplete(
+                        tokenResponse = tokenEndpointResponse,
+                        loginServer = loginUrl,
+                        consumerKey = clientId,
+                        onAuthFlowError = { error, errorDesc, e ->
+                            SalesforceSDKLogger.e(TAG, "$error: $errorDesc", e)
+                            continuation.resume(UnknownError)
+                        },
+                        onAuthFlowSuccess = { userAccount ->
+                            SalesforceSDKLogger.d(TAG, "onAuthFlowSuccess $userAccount")
+                            continuation.resume(Success)
+                        },
+                        nativeLogin = true,
+                    )
                 }
             }
         }

@@ -84,7 +84,6 @@ class AuthenticationUtilitiesTest {
     private val addAccount: (UserAccount) -> Unit = mockk()
     private val handleScreenLockPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
     private val handleBiometricAuthPolicy: (OAuth2.IdServiceResponse?, UserAccount) -> Unit = mockk()
-    private val enforceMobilePolicyOnFinalizationFailure: (OAuth2.IdServiceResponse?) -> Unit = mockk()
     private val handleDuplicateUserAccount: (UserAccountManager, UserAccount, OAuth2.IdServiceResponse?) -> Unit = mockk()
 
     @Before
@@ -107,7 +106,6 @@ class AuthenticationUtilitiesTest {
         every { addAccount.invoke(any()) } returns Unit
         every { handleScreenLockPolicy.invoke(any(), any()) } returns Unit
         every { handleBiometricAuthPolicy.invoke(any(), any()) } returns Unit
-        every { enforceMobilePolicyOnFinalizationFailure.invoke(any()) } returns Unit
         every { handleDuplicateUserAccount.invoke(any(), any(), any()) } returns Unit
 
         // Setup mock for UserAccountManager methods
@@ -191,96 +189,6 @@ class AuthenticationUtilitiesTest {
     }
 
     @Test
-    fun testOnAuthFlowComplete_biometricPolicyThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
-        // Given - onAuthFlowSuccess already ran to completion (per verifyOrder below) before
-        // finalization work runs, so a caller resuming a single-shot continuation from both
-        // onAuthFlowSuccess and a catch around onAuthFlowComplete would crash on double-resume.
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-        every { handleBiometricAuthPolicy.invoke(any(), any()) } throws RuntimeException("policy storage failed")
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then - the thrown exception is swallowed, not surfaced as a second terminal outcome
-        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
-        verifyOrder {
-            onAuthFlowSuccess.invoke(any())
-            handleBiometricAuthPolicy.invoke(any(), any())
-        }
-    }
-
-    @Test
-    fun testOnAuthFlowComplete_biometricPolicyThrowsAfterSuccess_enforcesMobilePolicy() = runTest {
-        // Given - a policy application failure must not silently let the user into an unlocked
-        // app: the lock screen for whichever policy is relevant is forced instead.
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-        every { handleBiometricAuthPolicy.invoke(any(), any()) } throws RuntimeException("policy storage failed")
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then
-        verify { enforceMobilePolicyOnFinalizationFailure.invoke(userIdentity) }
-    }
-
-    @Test
-    fun testOnAuthFlowComplete_startMainActivityThrowsAfterSuccess_stillAppliesScreenLockPolicy() = runTest {
-        // Given - startMainActivity failing to launch (e.g. no launcher activity configured) is
-        // scoped to its own catch so it cannot prevent the screen lock mobile policy, a CA/ECA
-        // security control, from being applied.
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-        every { startMainActivity.invoke() } throws RuntimeException("activity launch failed")
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then
-        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
-        verify { onAuthFlowSuccess.invoke(any()) }
-        verify { handleScreenLockPolicy.invoke(userIdentity, any()) }
-    }
-
-    @Test
-    fun testOnAuthFlowComplete_startMainActivityThrowsAfterSuccess_doesNotForceMobilePolicyLock() = runTest {
-        // Given - a routine startMainActivity failure (its own catch, not the outer one) is not
-        // a policy-application failure, so it must not trigger the lock-screen fallback.
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-        every { startMainActivity.invoke() } throws RuntimeException("activity launch failed")
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then
-        verify(exactly = 0) { enforceMobilePolicyOnFinalizationFailure.invoke(any()) }
-    }
-
-    @Test
-    fun testOnAuthFlowComplete_screenLockPolicyThrowsAfterSuccess_doesNotResumeCallerWithError() = runTest {
-        // Given - Screen Lock policy application failing (e.g. keystore/SharedPreferences write
-        // error) must not be reported back to the caller as a login failure: the account is
-        // already created and onAuthFlowSuccess has already run.
-        val userIdentity = createIdServiceResponse()
-        coEvery { fetchUserIdentity.invoke(any()) } returns userIdentity
-        every { handleScreenLockPolicy.invoke(any(), any()) } throws RuntimeException("policy storage failed")
-
-        // When
-        callOnAuthFlowComplete()
-
-        // Then
-        verify(exactly = 0) { onAuthFlowError.invoke(any(), any(), any()) }
-        verifyOrder {
-            onAuthFlowSuccess.invoke(any())
-            startMainActivity.invoke()
-            handleScreenLockPolicy.invoke(any(), any())
-        }
-        verify { enforceMobilePolicyOnFinalizationFailure.invoke(userIdentity) }
-    }
-
-    @Test
     fun testOnAuthFlowComplete_defaultOnAuthFlowFinished_isNoOp() = runTest {
         // Given
         val userIdentity = createIdServiceResponse()
@@ -330,7 +238,6 @@ class AuthenticationUtilitiesTest {
             addAccount = addAccount,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
-            enforceMobilePolicyOnFinalizationFailure = enforceMobilePolicyOnFinalizationFailure,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
             onAuthFlowFinished = onAuthFlowFinished,
         )
@@ -373,7 +280,6 @@ class AuthenticationUtilitiesTest {
             addAccount = addAccount,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
-            enforceMobilePolicyOnFinalizationFailure = enforceMobilePolicyOnFinalizationFailure,
             handleDuplicateUserAccount = handleDuplicateUserAccount,
             onAuthFlowFinished = onAuthFlowFinished,
         )
@@ -1151,155 +1057,6 @@ class AuthenticationUtilitiesTest {
 
     // endregion
 
-    // region enforceMobilePolicyOnFinalizationFailureHelper Tests
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_screenLockRequestedByIdentity_forcesLock() {
-        // Given - the identity response requests screen lock, independent of whether the
-        // manager was already enabled from a prior login.
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        val userIdentity = createIdServiceResponse()
-        userIdentity.screenLockTimeout = 10
-        userIdentity.biometricAuth = false
-
-        // When
-        enforceMobilePolicyOnFinalizationFailureHelper(userIdentity)
-
-        // Then
-        verify { mockScreenLockManager.lock() }
-        verify(exactly = 0) { mockBioAuthManager.lock() }
-    }
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_screenLockPreviouslyEnabled_forcesLockEvenWithoutIdentity() {
-        // Given - a prior login already enabled screen lock for this account, so it is still
-        // relevant even though the identity response could not be used to confirm it this time.
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns true
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        // When
-        enforceMobilePolicyOnFinalizationFailureHelper(null)
-
-        // Then
-        verify { mockScreenLockManager.lock() }
-        verify(exactly = 0) { mockBioAuthManager.lock() }
-    }
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_biometricRequestedByIdentity_forcesLock() {
-        // Given
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        val userIdentity = createIdServiceResponse()
-        userIdentity.biometricAuth = true
-
-        // When
-        enforceMobilePolicyOnFinalizationFailureHelper(userIdentity)
-
-        // Then
-        verify { mockBioAuthManager.lock() }
-        verify(exactly = 0) { mockScreenLockManager.lock() }
-    }
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_biometricPreviouslyEnabled_forcesLockEvenWithoutIdentity() {
-        // Given
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns true
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        // When
-        enforceMobilePolicyOnFinalizationFailureHelper(null)
-
-        // Then
-        verify { mockBioAuthManager.lock() }
-        verify(exactly = 0) { mockScreenLockManager.lock() }
-    }
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_neitherPolicyApplicable_doesNotForceEitherLock() {
-        // Given - no CA/ECA policy is configured for this org/account at all: an unrelated
-        // failure elsewhere must not lock out a user who was never subject to either policy.
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        val userIdentity = createIdServiceResponse()
-        userIdentity.screenLockTimeout = 0
-        userIdentity.biometricAuth = false
-
-        // When
-        enforceMobilePolicyOnFinalizationFailureHelper(userIdentity)
-
-        // Then
-        verify(exactly = 0) { mockScreenLockManager.lock() }
-        verify(exactly = 0) { mockBioAuthManager.lock() }
-    }
-
-    @Test
-    fun testEnforceMobilePolicyOnFinalizationFailureHelper_lockItselfThrows_doesNotPropagate() {
-        // Given - forcing the lock is a last resort; if even that fails (e.g. no foreground
-        // activity to launch it from), it must be logged, not rethrown, since this runs inside
-        // an already-caught exception handler after login has succeeded.
-        val mockScreenLockManager = mockk<ScreenLockManager>(relaxed = true) {
-            every { enabled } returns true
-            every { lock() } throws RuntimeException("no foreground activity")
-        }
-        val mockBioAuthManager = mockk<BiometricAuthenticationManager>(relaxed = true) {
-            every { enabled } returns false
-        }
-        setupMockSdkManager(
-            screenLockManager = mockScreenLockManager,
-            biometricAuthenticationManager = mockBioAuthManager,
-        )
-
-        // When / Then - does not throw
-        enforceMobilePolicyOnFinalizationFailureHelper(null)
-    }
-
-    // endregion
-
     // region handleDuplicateUserAccount Tests
 
     @Test
@@ -1562,7 +1319,6 @@ class AuthenticationUtilitiesTest {
             addAccount = addAccount,
             handleScreenLockPolicy = handleScreenLockPolicy,
             handleBiometricAuthPolicy = handleBiometricAuthPolicy,
-            enforceMobilePolicyOnFinalizationFailure = enforceMobilePolicyOnFinalizationFailure,
             handleDuplicateUserAccount = handleDuplicateUserAccount
         )
     }
