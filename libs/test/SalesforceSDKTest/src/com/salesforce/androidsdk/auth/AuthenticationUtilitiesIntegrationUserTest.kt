@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.deleteKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.generateOrLoadKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.clear
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.get
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.store
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.Interceptor
@@ -48,6 +49,7 @@ import okhttp3.Protocol.HTTP_1_1
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -189,7 +191,7 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
         assertNull(
             "Nonce must not be stored under the pre-redirect request host",
-            get(credentialsIdentifier, "login.salesforce.com")
+            get(credentialsIdentifier, "instance.test")
         )
         assertEquals(
             "Nonce must be stored under the host that actually returned it",
@@ -233,6 +235,50 @@ class AuthenticationUtilitiesIntegrationUserTest {
     }
 
     /**
+     * After a cross-host redirect, the nonce harvested under the response
+     * host must be the one [reattachAuthOnRedirect] echoes back to that same
+     * host — a nonce cached under the wrong host would silently omit the
+     * `nonce` claim from the reattached proof instead of failing loudly.
+     */
+    @Test
+    fun test_reattachAuthOnRedirect_crossHostRedirect_reattachedProofUsesResponseHostNonce() {
+        generateOrLoadKeyPair(alias)
+        val originalUrl = "https://login.salesforce.com/services/oauth2/userinfo"
+        val redirectedUrl = "https://my-instance.salesforce.com/services/oauth2/userinfo"
+        store(credentialsIdentifier, "my-instance.salesforce.com", "instance-nonce")
+        val redirectedRequest = Request.Builder().url(redirectedUrl).get().build()
+
+        var capturedRequest: Request? = null
+        val chain = mockk<Chain> {
+            every { request() } returns redirectedRequest
+            every { proceed(any()) } answers {
+                capturedRequest = firstArg()
+                Response.Builder()
+                    .request(firstArg())
+                    .protocol(HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body("{}".toResponseBody("application/json".toMediaType()))
+                    .build()
+            }
+        }
+
+        reattachAuthOnRedirect(chain, originalUrl, "test-access-token", "DPoP", credentialsIdentifier)
+
+        val payload = dpopProofPayload(checkNotNull(capturedRequest))
+        assertEquals(
+            "Reattached proof's htu must match the redirected host",
+            redirectedUrl,
+            payload.getString("htu")
+        )
+        assertEquals(
+            "Reattached proof must echo the nonce cached under the redirected host",
+            "instance-nonce",
+            payload.getString("nonce")
+        )
+    }
+
+    /**
      * No redirect (URL unchanged): [reattachAuthOnRedirect] must not add
      * any auth headers.
      */
@@ -260,6 +306,19 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
         assertNull(capturedRequest?.header("Authorization"))
         assertNull(capturedRequest?.header("DPoP"))
+    }
+
+    /** Decodes [request]'s DPoP proof JWT payload. */
+    private fun dpopProofPayload(request: Request): JSONObject {
+        val proof = checkNotNull(request.header("DPoP"))
+        val parts = proof.split(".")
+        assertEquals("DPoP proof should be a three-part JWT", 3, parts.size)
+        val payload = android.util.Base64.decode(
+            parts[1],
+            android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or
+                android.util.Base64.NO_WRAP
+        )
+        return JSONObject(String(payload, Charsets.UTF_8))
     }
 
     private fun buildTokenEndpointResponse(tokenType: String?): TokenEndpointResponse {
