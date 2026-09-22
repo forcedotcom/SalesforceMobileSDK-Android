@@ -48,25 +48,21 @@ import okhttp3.Protocol.HTTP_1_1
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.json.JSONException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.IOException
 import java.util.UUID.randomUUID
 
 /**
  * Tests that [fetchIsSalesforceIntegrationUser] attaches a DPoP proof (not
  * just a bare Bearer header) for the `/services/oauth2/userinfo` integration-
- * user check when the authenticated credential is DPoP-bound, and handles a
- * non-JSON response body without throwing an unhandled [JSONException].
+ * user check when the authenticated credential is DPoP-bound.
  */
 @RunWith(AndroidJUnit4::class)
 @SmallTest
@@ -199,39 +195,6 @@ class AuthenticationUtilitiesIntegrationUserTest {
             "instance-nonce",
             DPoPNonceCache.get(credentialsIdentifier, "my-instance.salesforce.com")
         )
-    }
-
-    /**
-     * A non-JSON error body (the literal "Bad_OAuth_Token" string) must not
-     * throw JSONException.
-     */
-    @Test
-    fun test_fetchIsSalesforceIntegrationUser_nonJsonErrorResponse_throwsIOExceptionNotJSONException() {
-        httpAccess.enqueue(code = 403, body = "Bad_OAuth_Token")
-
-        val tokenResponse = buildTokenEndpointResponse(tokenType = "DPoP")
-
-        val error = assertThrows(IOException::class.java) {
-            fetchIsSalesforceIntegrationUser(tokenResponse, "https://login.salesforce.com")
-        }
-
-        assertTrue(error.message.orEmpty().contains("Bad_OAuth_Token"))
-    }
-
-    /**
-     * A malformed (non-JSON) 200 response must not throw JSONException
-     * either.
-     */
-    @Test
-    fun test_fetchIsSalesforceIntegrationUser_malformedSuccessfulResponse_throwsIOExceptionNotJSONException() {
-        httpAccess.enqueue(code = 200, body = "not-json")
-
-        val tokenResponse = buildTokenEndpointResponse(tokenType = "DPoP")
-
-        val error = assertThrows(IOException::class.java) {
-            fetchIsSalesforceIntegrationUser(tokenResponse, "https://login.salesforce.com")
-        }
-        assertTrue(error.cause is JSONException)
     }
 
     /**

@@ -87,9 +87,7 @@ import okhttp3.Request
 import okhttp3.Request.Builder
 import okhttp3.Response
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
 import java.net.HttpURLConnection.HTTP_UNAUTHORIZED
 import java.net.URI
@@ -430,20 +428,7 @@ internal fun fetchIsSalesforceIntegrationUser(
     }
 
     val responseString = response.body.string()
-    if (!response.isSuccessful) {
-        throw IOException(
-            "Integration user check failed with HTTP status ${response.code}: $responseString"
-        )
-    }
-
-    return try {
-        JSONObject(responseString).getBoolean("is_salesforce_integration_user")
-    } catch (jsonException: JSONException) {
-        throw IOException(
-            "Could not parse integration user response as JSON: $responseString",
-            jsonException,
-        )
-    }
+    return JSONObject(responseString).getBoolean("is_salesforce_integration_user")
 }
 
 /**
