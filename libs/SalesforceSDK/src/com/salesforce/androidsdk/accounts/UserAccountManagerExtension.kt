@@ -275,12 +275,10 @@ fun UserAccountManager.downgradeFromDPoP(
 
     val onSuccessWithCleanup: (userAccount: UserAccount) -> Unit = { migratedUser ->
         oldCredId?.takeIf { it.isNotEmpty() }?.let { id ->
-            runCatching {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
-                DPoPNonceCache.clear(id)
-            }.onFailure { e ->
-                SalesforceSDKLogger.w(TAG, "Failed to delete obsolete DPoP state on downgrade", e)
+            if (!DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))) {
+                SalesforceSDKLogger.w(TAG, "Failed to delete obsolete DPoP state on downgrade")
             }
+            DPoPNonceCache.clear(id)
         }
         onSuccess(migratedUser)
     }
