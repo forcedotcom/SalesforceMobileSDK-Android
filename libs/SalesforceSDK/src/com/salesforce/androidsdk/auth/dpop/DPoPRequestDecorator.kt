@@ -49,14 +49,16 @@ object DPoPRequestDecorator {
 
     /**
      * Stamps [Authorization] and, if the account is DPoP-bound, a [DPoP] proof header
-     * on [builder]. No-op when [UserAccount.getAuthToken] is null or empty.
+     * on [builder]. No-op when [UserAccount.getAuthToken] is null or empty. Rejects an
+     * incomplete DPoP credential before mutating [builder].
      */
     fun applyAuthHeaders(builder: Request.Builder, userAccount: UserAccount) {
-        val authToken = userAccount.authToken ?: return
-        if (authToken.isEmpty()) return
-
         val tokenType = userAccount.tokenType
         val credentialsIdentifier = userAccount.credentialsIdentifier
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
+
+        val authToken = userAccount.authToken ?: return
+        if (authToken.isEmpty()) return
 
         OAuth2.addAuthorizationHeader(builder, authToken, tokenType)
         attachProof(builder, credentialsIdentifier, tokenType, authToken)
@@ -100,6 +102,7 @@ object DPoPRequestDecorator {
         tokenType: String?,
         authToken: String?
     ) {
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
         if (!DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType)) return
         try {
             val request = builder.build()
@@ -114,6 +117,15 @@ object DPoPRequestDecorator {
             builder.header(DPOP_HEADER, proof)
         } catch (e: Exception) {
             SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof", e)
+        }
+    }
+
+    private fun requireCompleteDPoPCredentials(
+        credentialsIdentifier: String?,
+        tokenType: String?
+    ) {
+        check(DPoPKeyManager.hasCompleteDPoPCredentials(credentialsIdentifier, tokenType)) {
+            "DPoP credentials require a non-blank credentials identifier"
         }
     }
 }

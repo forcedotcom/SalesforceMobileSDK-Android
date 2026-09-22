@@ -356,6 +356,50 @@ public class ClientManagerTest {
         Assert.assertNull(clientManager.peekRestClient(incompleteUser));
     }
 
+    /** Persisted DPoP credentials without a key identifier are rejected as corrupt. */
+    @Test
+    public void testPeekRestClientWithDPoPAndNullCredentialsIdentifierReturnsNull() {
+        final UserAccount corruptUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("DPoP")
+                .allowUnset(true)
+                .credentialsIdentifier(null)
+                .build();
+        userAccountManager.createAccount(corruptUser);
+        clientManager = new ClientManager(targetContext, corruptUser);
+
+        Assert.assertNull(clientManager.peekRestClient());
+    }
+
+    /** DPoP matching is case-insensitive and whitespace is not a usable key identifier. */
+    @Test
+    public void testPeekRestClientWithMixedCaseDPoPAndBlankCredentialsIdentifierReturnsNull() {
+        final UserAccount corruptUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("dPoP")
+                .credentialsIdentifier("   ")
+                .build();
+        userAccountManager.createAccount(corruptUser);
+        clientManager = new ClientManager(targetContext, corruptUser);
+
+        Assert.assertNull(clientManager.peekRestClient());
+    }
+
+    /** Bearer accounts do not require a DPoP credentials identifier. */
+    @Test
+    public void testPeekRestClientWithBearerAndNullCredentialsIdentifierReturnsClient() {
+        final UserAccount bearerUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("Bearer")
+                .allowUnset(true)
+                .credentialsIdentifier(null)
+                .build();
+        userAccountManager.createAccount(bearerUser);
+        clientManager = new ClientManager(targetContext, bearerUser);
+
+        Assert.assertNotNull(clientManager.peekRestClient());
+    }
+
     /**
      * Checks there are no test accounts
      */

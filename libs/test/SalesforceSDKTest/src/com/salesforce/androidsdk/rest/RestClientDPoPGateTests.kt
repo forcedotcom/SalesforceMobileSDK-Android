@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -39,6 +40,7 @@ import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -166,22 +168,53 @@ class RestClientDPoPGateTests {
         )
     }
 
-    // Null credentialsIdentifier short-circuits — no DPoP header regardless of tokenType.
+    // An explicit DPoP token type without its key identifier is corrupt. Fail before the
+    // OkHttp chain can transmit an Authorization header without a proof.
     @Test
-    fun test_givenNullCredentialsIdentifier_whenIntercept_thenNoDPoPHeader() {
+    fun test_givenDPoPWithNullCredentialsIdentifier_whenIntercept_thenFailsBeforeNetwork() {
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            null,
+            "__ACCESS_TOKEN__",
+            "dPoP",
+            null,
+            null,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+
+        assertThrows(IllegalStateException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenDPoPWithBlankCredentialsIdentifier_whenIntercept_thenFailsBeforeNetwork() {
         val interceptor = RestClient.OAuthRefreshInterceptor(
             null,
             "__ACCESS_TOKEN__",
             "DPoP",
-            null,
+            "   ",
             null,
         )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
 
-        val captured = captureAuthenticatedRequest(interceptor)
+        assertThrows(IllegalStateException::class.java) {
+            interceptor.intercept(chain)
+        }
 
-        assertNull(
-            "Did not expect DPoP header when credentialsIdentifier is null",
-            captured.header("DPoP"),
-        )
+        verify(exactly = 0) { chain.proceed(any()) }
     }
 }

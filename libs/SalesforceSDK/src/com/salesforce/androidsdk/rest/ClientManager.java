@@ -54,6 +54,7 @@ import com.salesforce.androidsdk.auth.OAuth2.LogoutReason;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenErrorResponse;
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.util.SalesforceSDKLogger;
 
@@ -240,7 +241,9 @@ public class ClientManager {
         }
         if (user == null
                 || isMissing(user.getUserId())
-                || isMissing(user.getOrgId())) {
+                || isMissing(user.getOrgId())
+                || !DPoPKeyManager.hasCompleteDPoPCredentials(
+                        user.getCredentialsIdentifier(), user.getTokenType())) {
             return null;
         }
         if (requireRefreshFields && (isMissing(user.getRefreshTokenForPersistence())
