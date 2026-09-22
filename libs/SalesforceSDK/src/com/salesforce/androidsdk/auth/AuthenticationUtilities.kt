@@ -60,7 +60,10 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
-import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.DPOP_HEADER
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.attachProof
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.harvestNonce
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.isNonceChallenge
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
@@ -406,13 +409,15 @@ internal fun fetchIsSalesforceIntegrationUser(
 
     var request = buildAuthenticatedRequest()
     var response = client.newCall(request).execute()
-    val attachedDPoP = request.header(DPoPRequestDecorator.DPOP_HEADER) != null
+    val attachedDPoP = request.header(DPOP_HEADER) != null
 
-    // The nonce is scoped to the host that actually issued it, which after a
-    // cross-host Salesforce redirect (e.g. pool server -> instance) is response.request's
-    // host, not the pre-redirect request's host.
+    /*
+     * The nonce is scoped to the host that actually issued it, which after a
+     * cross-host Salesforce redirect (e.g. pool server -> instance) is
+     * response.request's host, not the pre-redirect request's host.
+     */
     if (attachedDPoP) {
-        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        harvestNonce(response, credentialsIdentifier, response.request.url.host)
     }
 
     /*
@@ -420,11 +425,11 @@ internal fun fetchIsSalesforceIntegrationUser(
      * DPoP nonce challenge. Harvest the nonce once and retry with a rebuilt
      * proof, mirroring OAuth2.callIdentityService's nonce-retry handling.
      */
-    if (attachedDPoP && DPoPRequestDecorator.isNonceChallenge(response)) {
+    if (attachedDPoP && isNonceChallenge(response)) {
         response.close()
         request = buildAuthenticatedRequest()
         response = client.newCall(request).execute()
-        DPoPRequestDecorator.harvestNonce(response, credentialsIdentifier, response.request.url.host)
+        harvestNonce(response, credentialsIdentifier, response.request.url.host)
     }
 
     val responseString = response.body.string()
@@ -443,9 +448,7 @@ private fun attachAuthHeaders(
     credentialsIdentifier: String?,
 ) {
     addAuthorizationHeader(builder, authToken, tokenType)
-    DPoPRequestDecorator.attachProof(
-        builder, credentialsIdentifier, tokenType, authToken
-    )
+    attachProof(builder, credentialsIdentifier, tokenType, authToken)
 }
 
 /**

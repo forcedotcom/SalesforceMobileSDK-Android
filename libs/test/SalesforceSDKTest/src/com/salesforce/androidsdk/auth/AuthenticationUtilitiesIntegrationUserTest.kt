@@ -36,8 +36,8 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.aliasForCredentialsIdentifier
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.deleteKeyPair
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager.generateOrLoadKeyPair
-import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.clear
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache.get
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.Interceptor
@@ -167,10 +167,11 @@ class AuthenticationUtilitiesIntegrationUserTest {
     }
 
     /**
-     * When the final response comes from a different host than the initial request (a
-     * cross-host Salesforce redirect, e.g. pool server -> instance), the harvested nonce
-     * must be stored under the response's host, not the pre-redirect request's host —
-     * otherwise a retry proof built for the response's host never finds it.
+     * When the final response comes from a different host than the initial
+     * request (a cross-host Salesforce redirect, e.g. pool server ->
+     * instance), the harvested nonce must be stored under the response's
+     * host, not the pre-redirect request's host — otherwise a retry proof
+     * built for the response's host never finds it.
      */
     @Test
     fun test_fetchIsSalesforceIntegrationUser_crossHostRedirect_harvestsNonceUnderResponseHost() {
@@ -188,12 +189,12 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
         assertNull(
             "Nonce must not be stored under the pre-redirect request host",
-            DPoPNonceCache.get(credentialsIdentifier, "login.salesforce.com")
+            get(credentialsIdentifier, "login.salesforce.com")
         )
         assertEquals(
             "Nonce must be stored under the host that actually returned it",
             "instance-nonce",
-            DPoPNonceCache.get(credentialsIdentifier, "my-instance.salesforce.com")
+            get(credentialsIdentifier, "my-instance.salesforce.com")
         )
     }
 
@@ -292,9 +293,12 @@ class AuthenticationUtilitiesIntegrationUserTest {
             val canned = synchronized(enqueuedResponses) {
                 enqueuedResponses.removeFirstOrNull()
             } ?: CannedResponse(200, "{}", emptyMap(), responseHost = null)
-            // responseHost stands in for a cross-host Salesforce redirect: OkHttp's
-            // Response.request reflects whichever physical request actually produced it,
-            // which after a real redirect differs from the pre-redirect request.
+            /*
+             * responseHost stands in for a cross-host Salesforce redirect:
+             * OkHttp's Response.request reflects whichever physical request
+             * actually produced it, which after a real redirect differs from
+             * the pre-redirect request.
+             */
             val responseRequest = canned.responseHost?.let {
                 req.newBuilder().url(req.url.newBuilder().host(it).build()).build()
             } ?: req
