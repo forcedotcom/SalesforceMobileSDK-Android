@@ -95,11 +95,17 @@ attachDPoPProofIfNeeded(builder, method, url):
   htu    = DPoPURLHelper.canonicalize(url)   // strips query + fragment
   host   = HttpUrl.get(url).host()
   alias  = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
-  keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+  keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias) // process cache, then AndroidKeyStore
   nonce  = DPoPNonceCache.get(credentialsIdentifier, host)  // null until token exchange completes
   proof  = DPoPProofBuilder.buildProof(method, htu, keyPair, nonce, authToken)
   builder.header("DPoP", proof)
 ```
+
+`DPoPKeyManager` keeps a process-local cache keyed by the Android Keystore alias. A warm request
+returns the cached `KeyPair` handle without querying Android Keystore for the private-key metadata
+or certificate again. The first use after process start loads the persistent key into the cache;
+the first use for a new credential generates and caches it. Proof signing still uses Android
+Keystore for every request and never exports private-key material.
 
 `setAuthHeader()` also sets `Authorization: DPoP <accessToken>` (instead of Bearer) when
 `tokenType == "DPoP"`.
@@ -267,7 +273,8 @@ therefore share credential state but do not perform network I/O while holding th
 ### Logout
 
 `SalesforceSDKManager.removeAccount()` calls:
-- `DPoPKeyManager.deleteKeyPair(alias)` — destroys the EC keypair from the Android Keystore
+- `DPoPKeyManager.deleteKeyPair(alias)` — evicts the process-local handle and destroys the EC
+  keypair from the Android Keystore
 - `DPoPNonceCache.clear(credentialsIdentifier)` — evicts cached nonces for this session
 
 ---
