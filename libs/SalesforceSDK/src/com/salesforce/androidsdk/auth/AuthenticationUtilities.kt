@@ -60,6 +60,10 @@ import com.salesforce.androidsdk.app.Features.FEATURE_TOKEN_MIGRATION
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.app.SalesforceSDKManager.Companion.encryptionKey
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.DPOP_HEADER
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.attachProof
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.harvestNonce
+import com.salesforce.androidsdk.auth.dpop.DPoPRequestDecorator.isNonceChallenge
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse
 import com.salesforce.androidsdk.auth.OAuth2.addAuthorizationHeader
 import com.salesforce.androidsdk.auth.OAuth2.callIdentityService
@@ -82,7 +86,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Request.Builder
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection.HTTP_FORBIDDEN
@@ -375,38 +381,100 @@ internal fun defaultBuildAccountName(
  * False indicates otherwise.
  * @throws Exception Any exception that prevents returning the result
  */
+@VisibleForTesting
 @Throws(Exception::class)
-private fun fetchIsSalesforceIntegrationUser(
+internal fun fetchIsSalesforceIntegrationUser(
     tokenEndpointResponse: TokenEndpointResponse?,
     loginServer: String,
 ): Boolean {
+    val authToken = tokenEndpointResponse?.authToken
+    val tokenType = tokenEndpointResponse?.tokenType
+    val credentialsIdentifier = tokenEndpointResponse?.credentialsIdentifier
     val baseUrl = tokenEndpointResponse?.instanceUrl ?: loginServer
     val userInfoEndpoint = "$baseUrl/services/oauth2/userinfo"
-    val builder: Builder = Builder().url(userInfoEndpoint).get()
-    addAuthorizationHeader(
-        builder,
-        tokenEndpointResponse?.authToken
-    )
-    val request = builder.build()
 
-    val clientBuilder = HttpAccess.DEFAULT.okHttpClient.newBuilder()
-    clientBuilder.addNetworkInterceptor { chain: Interceptor.Chain ->
-        val url = chain.request().url
-        val interceptedRequestBuilder = chain.request().newBuilder()
+    fun buildAuthenticatedRequest(): Request {
+        val builder: Builder = Builder().url(userInfoEndpoint).get()
+        attachAuthHeaders(builder, authToken, tokenType, credentialsIdentifier)
+        return builder.build()
+    }
 
-        // if the url no longer matches we were redirected
-        if (url.toString() != userInfoEndpoint && url.isSalesforceUrl()) {
-            addAuthorizationHeader(
-                interceptedRequestBuilder,
-                tokenEndpointResponse?.authToken,
+    val client = HttpAccess.DEFAULT.okHttpClient.newBuilder()
+        .addNetworkInterceptor { chain: Interceptor.Chain ->
+            reattachAuthOnRedirect(
+                chain, userInfoEndpoint, authToken, tokenType, credentialsIdentifier
             )
         }
+        .build()
 
-        chain.proceed(interceptedRequestBuilder.build())
+    var request = buildAuthenticatedRequest()
+    var response = client.newCall(request).execute()
+    val attachedDPoP = request.header(DPOP_HEADER) != null
+
+    /*
+     * The nonce is scoped to the host that actually issued it, which after a
+     * cross-host Salesforce redirect (e.g. pool server -> instance) is
+     * response.request's host, not the pre-redirect request's host.
+     */
+    if (attachedDPoP) {
+        harvestNonce(response, credentialsIdentifier, response.request.url.host)
     }
-    val response = clientBuilder.build().newCall(request).execute()
-    val responseString = response.body?.string()
-    return responseString != null && JSONObject(responseString).getBoolean("is_salesforce_integration_user")
+
+    /*
+     * Cold nonce cache (e.g. after process restart): the server may return a
+     * DPoP nonce challenge. Harvest the nonce once and retry with a rebuilt
+     * proof, mirroring OAuth2.callIdentityService's nonce-retry handling.
+     */
+    if (attachedDPoP && isNonceChallenge(response)) {
+        response.close()
+        request = buildAuthenticatedRequest()
+        response = client.newCall(request).execute()
+        harvestNonce(response, credentialsIdentifier, response.request.url.host)
+    }
+
+    val responseString = response.body.string()
+    return JSONObject(responseString).getBoolean("is_salesforce_integration_user")
+}
+
+/**
+ * Attaches the Authorization header and, for a DPoP-bound credential, a
+ * signed DPoP proof to [builder]. Shared by the initial request and the
+ * redirect-reattachment path so both stay in sync.
+ */
+private fun attachAuthHeaders(
+    builder: Builder,
+    authToken: String?,
+    tokenType: String?,
+    credentialsIdentifier: String?,
+) {
+    addAuthorizationHeader(builder, authToken, tokenType)
+    attachProof(builder, credentialsIdentifier, tokenType, authToken)
+}
+
+/**
+ * Network interceptor body for [fetchIsSalesforceIntegrationUser]. Re-attaches
+ * the Authorization/DPoP headers when [chain]'s request URL no longer matches
+ * [originalUrl] (i.e. we were redirected) and the new URL is a Salesforce host.
+ */
+@VisibleForTesting
+internal fun reattachAuthOnRedirect(
+    chain: Interceptor.Chain,
+    originalUrl: String,
+    authToken: String?,
+    tokenType: String?,
+    credentialsIdentifier: String?,
+): Response {
+    val url = chain.request().url
+    val interceptedRequestBuilder = chain.request().newBuilder()
+
+    // if the url no longer matches we were redirected
+    if (url.toString() != originalUrl && url.isSalesforceUrl()) {
+        attachAuthHeaders(
+            interceptedRequestBuilder, authToken, tokenType, credentialsIdentifier
+        )
+    }
+
+    return chain.proceed(interceptedRequestBuilder.build())
 }
 
 private fun HttpUrl.isSalesforceUrl(): Boolean {
