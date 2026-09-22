@@ -34,6 +34,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.R.string.oauth_display_type
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import com.salesforce.androidsdk.config.BootConfig
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
@@ -43,6 +44,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginViewModel
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -51,6 +53,8 @@ import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -90,6 +94,12 @@ class LoginViewModelTest {
     private lateinit var viewModel: LoginViewModel
     private var originalBrowserLoginEnabled = false
     private var originalUseDPoP = false
+    private val pendingServerObserver = Observer<String> {
+        // This completes the validation of the pending login server usually performed by the
+        // login activity before setting selected server.
+        viewModel.selectedServer.value = it
+    }
+    private val noOpObserver = Observer<String?> { }
 
     @Before
     fun setup() {
@@ -118,23 +128,24 @@ class LoginViewModelTest {
 
         // This is required for the LiveData to actually update during the test
         // because it isn't actually being observed since there is no lifecycle.
-        viewModel.pendingServer.observeForever {
-            // This completes the validation of the pending login server usually performed by the login activity before setting selected server.
-            viewModel.selectedServer.value = it
-        }
-        viewModel.selectedServer.observeForever { }
-        viewModel.loginUrl.observeForever { }
+        viewModel.pendingServer.observeForever(pendingServerObserver)
+        viewModel.selectedServer.observeForever(noOpObserver)
+        viewModel.loginUrl.observeForever(noOpObserver)
 
         testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @After
     fun teardown() {
-        Dispatchers.resetMain()
+        viewModel.pendingServer.removeObserver(pendingServerObserver)
+        viewModel.selectedServer.removeObserver(noOpObserver)
+        viewModel.loginUrl.removeObserver(noOpObserver)
+        viewModel.browserCustomTabUrl.removeObserver(noOpObserver)
         SalesforceSDKManager.getInstance().loginServerManager.reset()
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().isBrowserLoginEnabled = originalBrowserLoginEnabled
         SalesforceSDKManager.getInstance().useDPoP = originalUseDPoP
+        Dispatchers.resetMain()
     }
 
     // Google's recommended naming scheme for view model test is "thingUnderTest_TriggerOfTest_ResultOfTest"
@@ -198,7 +209,7 @@ class LoginViewModelTest {
     @Test
     fun browserCustomTabUrl_IsPopulated_AfterAuthorizationUrlGeneration() {
         // Observe so the MediatorLiveData actually propagates in the test environment.
-        viewModel.browserCustomTabUrl.observeForever { }
+        viewModel.browserCustomTabUrl.observeForever(noOpObserver)
 
         val browserCustomTabUrl = viewModel.browserCustomTabUrl.value
         assertNotNull("browserCustomTabUrl should be populated for the admin flow", browserCustomTabUrl)
@@ -215,8 +226,8 @@ class LoginViewModelTest {
     @Test
     @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun browserCustomTabUrl_UsesWebServerFlow_EvenWhenUserAgentFlowIsActive() {
-        viewModel.browserCustomTabUrl.observeForever { }
-        viewModel.loginUrl.observeForever { }
+        viewModel.browserCustomTabUrl.observeForever(noOpObserver)
+        viewModel.loginUrl.observeForever(noOpObserver)
 
         val sdkManager = SalesforceSDKManager.getInstance()
         val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
@@ -272,8 +283,8 @@ class LoginViewModelTest {
     @Test
     @Suppress("DEPRECATION") // Exercises the deprecated forceAdvancedAuthentication and useWebServerAuthentication flags.
     fun browserCustomTabUrl_UsesWebServerFlow_WhenForceFlagOnAndWebServerAuthDisabled() {
-        viewModel.browserCustomTabUrl.observeForever { }
-        viewModel.loginUrl.observeForever { }
+        viewModel.browserCustomTabUrl.observeForever(noOpObserver)
+        viewModel.loginUrl.observeForever(noOpObserver)
 
         val originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
         try {
@@ -310,7 +321,7 @@ class LoginViewModelTest {
 
     @Test
     fun browserCustomTabUrl_UpdatesOn_selectedServerChange() {
-        viewModel.browserCustomTabUrl.observeForever { }
+        viewModel.browserCustomTabUrl.observeForever(noOpObserver)
 
         val initialUrl = viewModel.browserCustomTabUrl.value
         assertNotNull(initialUrl)
@@ -357,7 +368,7 @@ class LoginViewModelTest {
         // (flashing its host in the action bar) behind the launching Custom Tab and lingers behind
         // the server picker when the Custom Tab is cancelled.  The real authorization URL is still
         // delivered to the Custom Tab via browserCustomTabUrl.
-        viewModel.loginUrl.observeForever { }
+        viewModel.loginUrl.observeForever(noOpObserver)
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManagerMock.isDebugBuild } returns false
         every { sdkManagerMock.useHybridAuthentication } returns false
@@ -375,7 +386,7 @@ class LoginViewModelTest {
     @Test
     fun generateAuthorizationUrl_LoadsUrlInWebView_WhenBrowserLoginDisabled() {
         // The WebView login path (no Custom Tab) loads the real authorization URL in the WebView.
-        viewModel.loginUrl.observeForever { }
+        viewModel.loginUrl.observeForever(noOpObserver)
         val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManagerMock.isDebugBuild } returns false
         every { sdkManagerMock.useHybridAuthentication } returns false
@@ -471,6 +482,55 @@ class LoginViewModelTest {
         val url = viewModel.loginUrl.value ?: ""
         assert(!url.contains("dpop_jkt")) {
             "Expected no dpop_jkt in authorization URL when useDPoP=false, got: $url"
+        }
+    }
+
+    @Test
+    fun test_givenPendingDPoPKeyDeletionFails_whenGenerateAuthorizationUrlWithDPoPDisabled_thenAuthorizationUrlStillGenerated() = runBlocking {
+        val server = "https://test.salesforce.com"
+        val credentialsIdentifier = "stale-dpop-credentials-id"
+        val expectedAlias = "dpop_$credentialsIdentifier"
+        viewModel.pendingCredentialsIdentifier = credentialsIdentifier
+        viewModel.additionalParameters["dpop_jkt"] = "stale-thumbprint"
+
+        val sdkManagerMock = mockk<SalesforceSDKManager>(relaxed = true)
+        every { sdkManagerMock.isDebugBuild } returns false
+        every { sdkManagerMock.useHybridAuthentication } returns false
+        every { sdkManagerMock.isBrowserLoginEnabled } returns false
+        every { sdkManagerMock.appConfigForLoginHost } returns { _ -> null }
+        every { sdkManagerMock.debugOverrideAppConfig } returns null
+        every { sdkManagerMock.useDPoP } returns false
+
+        mockkObject(DPoPKeyManager)
+        mockkStatic(SalesforceSDKLogger::class)
+        try {
+            every {
+                DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
+            } answers { callOriginal() }
+            every {
+                DPoPKeyManager.deleteKeyPair(expectedAlias)
+            } returns false
+            every { SalesforceSDKLogger.w(any(), any()) } returns Unit
+
+            viewModel.generateAuthorizationUrl(server, sdkManagerMock)
+
+            val loginUri = viewModel.loginUrl.value!!.toUri()
+            val browserCustomTabUri = viewModel.browserCustomTabUrl.value!!.toUri()
+            listOf(loginUri, browserCustomTabUri).forEach { authorizationUri ->
+                assertEquals("https", authorizationUri.scheme)
+                assertEquals("test.salesforce.com", authorizationUri.host)
+                assertEquals("/services/oauth2/authorize", authorizationUri.path)
+                assertNull(authorizationUri.getQueryParameter("dpop_jkt"))
+            }
+            assertNull(viewModel.pendingCredentialsIdentifier)
+            assertFalse(viewModel.additionalParameters.containsKey("dpop_jkt"))
+            verify(exactly = 1) { DPoPKeyManager.deleteKeyPair(expectedAlias) }
+            verify(exactly = 1) {
+                SalesforceSDKLogger.w(any(), "Failed to delete stale DPoP key pair")
+            }
+        } finally {
+            unmockkStatic(SalesforceSDKLogger::class)
+            unmockkObject(DPoPKeyManager)
         }
     }
 

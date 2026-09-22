@@ -30,6 +30,8 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_VF_SID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -40,6 +42,7 @@ import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LogoutComplete
 import com.salesforce.androidsdk.util.test.EventsObserver
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -817,6 +820,30 @@ class SalesforceSDKManagerTests {
         assertFalse(fixture.sdkManager.isLoggingOut)
         assertFalse(fixture.sdkManager.isLoggingOut(fixture.account))
         assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+    }
+
+    @Test
+    fun logout_whenDPoPKeyDeletionFails_warnsClearsNonceAndCompletesLogout() {
+        val credentialsIdentifier = "logout-dpop-credentials"
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        mockkStatic(SalesforceSDKLogger::class)
+        every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns false
+        every { DPoPNonceCache.clear(any()) } just runs
+        every { SalesforceSDKLogger.w(any(), any()) } just runs
+        val fixture = createLogoutFixture(credentialsIdentifier = credentialsIdentifier)
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(any(), "Failed to delete DPoP key pair on logout")
+        }
+        verify(exactly = 1) { DPoPNonceCache.clear(credentialsIdentifier) }
+        verify(exactly = 1) { fixture.accountManager.removeAccountExplicitly(fixture.account) }
+        assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+        assertFalse(fixture.sdkManager.isLoggingOut)
     }
 
     @Test
@@ -1874,6 +1901,7 @@ class SalesforceSDKManagerTests {
         refreshToken: String? = "refresh-token-user",
         loginServer: String? = "https://login.example.com",
         removeAccountSucceeds: Boolean = true,
+        credentialsIdentifier: String? = null,
     ): LogoutFixture {
         val account = Account("logout-account", "logout-account-type")
         val otherAccount = Account("other-account", "logout-account-type")
@@ -1883,6 +1911,7 @@ class SalesforceSDKManagerTests {
             orgId = "org",
             refreshToken = refreshToken,
             loginServer = loginServer,
+            credentialsIdentifier = credentialsIdentifier,
         )
         val otherUser = buildLogoutIdentity(
             accountName = otherAccount.name,
@@ -1991,6 +2020,7 @@ class SalesforceSDKManagerTests {
         orgId: String,
         refreshToken: String? = "refresh-token-$userId",
         loginServer: String? = "https://login.example.com",
+        credentialsIdentifier: String? = null,
     ): UserAccount = UserAccountBuilder.getInstance()
         .accountName(accountName)
         .userId(userId)
@@ -1999,6 +2029,7 @@ class SalesforceSDKManagerTests {
         .refreshToken(refreshToken)
         .instanceServer("https://instance.example.com")
         .loginServer(loginServer)
+        .credentialsIdentifier(credentialsIdentifier)
         .idUrl("https://id.example.com/$orgId/$userId")
         .build()
 
