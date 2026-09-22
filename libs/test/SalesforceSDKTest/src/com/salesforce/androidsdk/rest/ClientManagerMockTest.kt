@@ -977,6 +977,41 @@ class ClientManagerMockTest {
     }
 
     @Test
+    fun testClearRefreshState_RemovesOnlyMatchingAccount() {
+        val userA = testUser(userId = "user-a", orgId = "org-a")
+        val userB = testUser(userId = "user-b", orgId = "org-b")
+        ClientManager.AccMgrAuthTokenProvider.createRefreshStateForTest(userA)
+        ClientManager.AccMgrAuthTokenProvider.createRefreshStateForTest(userB)
+
+        ClientManager.AccMgrAuthTokenProvider.clearRefreshState(userA)
+        ClientManager.AccMgrAuthTokenProvider.clearRefreshState(userA)
+
+        assertFalse(
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(userA),
+        )
+        assertTrue(
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(userB),
+        )
+    }
+
+    @Test
+    fun testGetNewAuthToken_AccountRemovedBeforeStateElection_DoesNotRecreateState() {
+        val account = mockk<Account>(relaxed = true)
+        val user = testUser(userId = "removed-user", orgId = "removed-org")
+        val validationCalls = AtomicInteger(0)
+        val manager = mockk<ClientManager>(relaxed = true) {
+            every { getAccount() } returns account
+            every { getValidatedUser(any()) } answers {
+                if (validationCalls.getAndIncrement() < 2) user else null
+            }
+        }
+        val provider = ClientManager.AccMgrAuthTokenProvider(manager)
+
+        assertNull(provider.getNewAuthToken())
+        assertFalse(ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(user))
+    }
+
+    @Test
     fun testGetNewAuthToken_AccountRemovedDuringSuccessfulRefresh_DiscardsResponse() {
         assertInFlightRemovalSuppressesSideEffects(successResponse(ROTATED_REFRESH_TOKEN))
     }

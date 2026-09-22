@@ -308,6 +308,27 @@ public class ClientManager {
             REFRESH_STATES.clear();
         }
 
+        /**
+         * Removes refresh coordination data for an account whose SDK session is ending.
+         * Threads that already hold the removed state can finish safely, while future refreshes
+         * for the same identity start with a fresh coordination state.
+         */
+        static void clearRefreshState(UserAccount user) {
+            if (user != null) {
+                REFRESH_STATES.remove(refreshStateKeyFor(user));
+            }
+        }
+
+        @VisibleForTesting
+        static void createRefreshStateForTest(UserAccount user) {
+            REFRESH_STATES.put(refreshStateKeyFor(user), new RefreshState());
+        }
+
+        @VisibleForTesting
+        static boolean hasRefreshStateForTest(UserAccount user) {
+            return REFRESH_STATES.containsKey(refreshStateKeyFor(user));
+        }
+
         /** Bounded safety-net so a loser never parks forever if a winner is somehow lost. */
         private static final long LOSER_WAIT_TIMEOUT_MILLIS = 30_000L;
 
@@ -424,6 +445,16 @@ public class ClientManager {
             // broadcasting.
             final RefreshState state = REFRESH_STATES.computeIfAbsent(
                     refreshStateKey, k -> new RefreshState());
+
+            // Account cleanup can race between the validation above and computeIfAbsent. Recheck
+            // after insertion so a refresh that lost its account cannot recreate an entry after
+            // logout removed it. Compare-removal avoids deleting a replacement state installed by
+            // a later session.
+            if (clientManager.getValidatedUser(/* requireRefreshFields = */ true) == null) {
+                REFRESH_STATES.remove(refreshStateKey, state);
+                return null;
+            }
+
             synchronized (state.lock) {
                 if (state.refreshing) {
                     // Snapshot the publish generation BEFORE waiting. We adopt on a generation
