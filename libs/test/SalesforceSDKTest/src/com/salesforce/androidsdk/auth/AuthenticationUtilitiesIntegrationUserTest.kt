@@ -53,6 +53,7 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -147,7 +148,11 @@ class AuthenticationUtilitiesIntegrationUserTest {
         )
     }
 
-    /** A cold nonce cache triggers exactly one retry with a rebuilt proof. */
+    /**
+     * A cold nonce cache triggers exactly one retry with a rebuilt proof
+     * that actually carries the harvested nonce (a fresh `jti`, distinct
+     * from the initial proof's) and targets the expected `htu`.
+     */
     @Test
     fun test_fetchIsSalesforceIntegrationUser_nonceChallenge_retriesOnceWithNonce() {
         generateOrLoadKeyPair(alias)
@@ -166,6 +171,35 @@ class AuthenticationUtilitiesIntegrationUserTest {
         assertFalse(result)
         val requests = httpAccess.allRequests()
         assertEquals("Expected one initial request and one nonce retry", 2, requests.size)
+
+        val initialProof = dpopProofPayload(requests[0])
+        val retryProof = dpopProofPayload(requests[1])
+        val expectedHtu = "${tokenResponse.instanceUrl}/services/oauth2/userinfo"
+
+        assertFalse(
+            "Initial proof must not carry a nonce (cold cache)",
+            initialProof.has("nonce")
+        )
+        assertEquals(
+            "Retry proof must echo the nonce harvested from the challenge",
+            "userinfo-nonce",
+            retryProof.getString("nonce")
+        )
+        assertEquals(
+            "Initial proof's htu must target the userinfo endpoint",
+            expectedHtu,
+            initialProof.getString("htu")
+        )
+        assertEquals(
+            "Retry proof's htu must target the userinfo endpoint",
+            expectedHtu,
+            retryProof.getString("htu")
+        )
+        assertNotEquals(
+            "Retry proof must use a fresh jti, not replay the initial proof's",
+            initialProof.getString("jti"),
+            retryProof.getString("jti")
+        )
     }
 
     /**
