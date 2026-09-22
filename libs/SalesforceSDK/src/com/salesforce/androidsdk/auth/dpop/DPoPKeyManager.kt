@@ -35,6 +35,7 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.spec.ECGenParameterSpec
+import java.util.concurrent.ConcurrentHashMap
 
 object DPoPKeyManager {
 
@@ -55,8 +56,20 @@ object DPoPKeyManager {
         tokenType?.equals(DPOP_TOKEN_TYPE, ignoreCase = true) == true
 
     private const val TAG = "DPoPKeyManager"
+    private val keyPairCache = ConcurrentHashMap<String, KeyPair>()
+    private val keyStoreLock = Any()
 
     fun generateOrLoadKeyPair(alias: String): KeyPair {
+        keyPairCache[alias]?.let { return it }
+
+        return synchronized(keyStoreLock) {
+            keyPairCache[alias] ?: loadOrGenerateKeyPair(alias).also {
+                keyPairCache[alias] = it
+            }
+        }
+    }
+
+    private fun loadOrGenerateKeyPair(alias: String): KeyPair {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         val existingKey = keyStore.getKey(alias, null)
         if (existingKey != null) {
@@ -83,18 +96,28 @@ object DPoPKeyManager {
      *
      * Returns `true` when all AndroidKeyStore operations complete normally, including when the
      * alias is absent. Returns `false` when an ordinary [Exception] prevents completion; physical
-     * deletion is not guaranteed in that case. Such failures are logged internally with their
-     * cause and do not escape this method.
+     * deletion is not guaranteed in that case. Such failures are logged by exception type without
+     * exception details or the alias, and do not escape this method.
      */
     fun deleteKeyPair(alias: String): Boolean = try {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        if (keyStore.containsAlias(alias)) {
-            keyStore.deleteEntry(alias)
+        synchronized(keyStoreLock) {
+            keyPairCache.remove(alias)
+            val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+            if (keyStore.containsAlias(alias)) {
+                keyStore.deleteEntry(alias)
+            }
         }
         true
     } catch (e: Exception) {
-        SalesforceSDKLogger.w(TAG, "DPoP key pair deletion failed", e)
+        SalesforceSDKLogger.w(TAG, "DPoP key pair deletion failed (${e.javaClass.simpleName})")
         false
+    }
+
+    /** Clears process-local key handles without deleting their Android Keystore entries. */
+    internal fun clearInMemoryCache() {
+        synchronized(keyStoreLock) {
+            keyPairCache.clear()
+        }
     }
 
     fun aliasForCredentialsIdentifier(id: String): String = "dpop_$id"
@@ -105,6 +128,7 @@ object DPoPKeyManager {
      */
     fun hasKeyPair(alias: String): Boolean {
         if (alias.isEmpty()) return false
+        if (keyPairCache.containsKey(alias)) return true
         return try {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
             keyStore.containsAlias(alias)

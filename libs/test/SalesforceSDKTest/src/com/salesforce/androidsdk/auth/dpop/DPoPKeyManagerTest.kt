@@ -37,13 +37,19 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.security.interfaces.ECPublicKey
+import java.security.KeyPair
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.interfaces.ECPublicKey
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class DPoPKeyManagerTest {
@@ -75,10 +81,53 @@ class DPoPKeyManagerTest {
         val alias = trackedAlias("same_pubkey")
         val first = DPoPKeyManager.generateOrLoadKeyPair(alias)
         val second = DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertSame(first, second)
         assertEquals(
             first.public.encoded.toList(),
             second.public.encoded.toList()
         )
+    }
+
+    @Test
+    fun test_givenConcurrentCallers_whenGenerateOrLoad_thenSameCachedKeyPairReturned() {
+        val alias = trackedAlias("concurrent_${UUID.randomUUID()}")
+        val workerCount = 8
+        val executor = Executors.newFixedThreadPool(workerCount)
+        val ready = CountDownLatch(workerCount)
+        val start = CountDownLatch(1)
+
+        try {
+            val futures = List(workerCount) {
+                executor.submit<KeyPair> {
+                    ready.countDown()
+                    start.await()
+                    DPoPKeyManager.generateOrLoadKeyPair(alias)
+                }
+            }
+
+            assertTrue(ready.await(10, TimeUnit.SECONDS))
+            start.countDown()
+            val keyPairs = futures.map { it.get(30, TimeUnit.SECONDS) }
+            keyPairs.drop(1).forEach { assertSame(keyPairs.first(), it) }
+        } finally {
+            start.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun test_givenMemoryCacheCleared_whenGenerateOrLoad_thenPersistentKeyReloaded() {
+        val alias = trackedAlias("memory_reset_${UUID.randomUUID()}")
+        val first = DPoPKeyManager.generateOrLoadKeyPair(alias)
+
+        DPoPKeyManager.clearInMemoryCache()
+        val reloaded = DPoPKeyManager.generateOrLoadKeyPair(alias)
+
+        assertEquals(
+            first.public.encoded.toList(),
+            reloaded.public.encoded.toList()
+        )
+        assertSame(reloaded, DPoPKeyManager.generateOrLoadKeyPair(alias))
     }
 
     @Test
@@ -101,8 +150,10 @@ class DPoPKeyManagerTest {
     }
 
     @Test
-    fun test_givenKeyStoreDeletionThrows_whenDeleted_thenReturnsFalseAndLogsThrowable() {
-        val failure = KeyStoreException("forced deletion failure")
+    fun test_givenAliasBearingKeyStoreDeletionFailure_whenDeleted_thenReturnsFalseEvictsCacheAndLogsSanitizedType() {
+        val alias = trackedAlias("sensitive-credentials-identifier")
+        val cachedKeyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+        val failure = KeyStoreException("Failed to delete entry: $alias")
         val keyStore = mockk<KeyStore>()
         mockkStatic(KeyStore::class)
         mockkStatic(SalesforceSDKLogger::class)
@@ -111,20 +162,22 @@ class DPoPKeyManagerTest {
             every { keyStore.load(null) } returns Unit
             every { keyStore.containsAlias(any()) } returns true
             every { keyStore.deleteEntry(any()) } throws failure
+            every { SalesforceSDKLogger.w(any(), any()) } returns Unit
             every { SalesforceSDKLogger.w(any(), any(), any()) } returns Unit
 
-            assertFalse(DPoPKeyManager.deleteKeyPair("non-sensitive-test-alias"))
+            assertFalse(DPoPKeyManager.deleteKeyPair(alias))
             verify(exactly = 1) {
-                SalesforceSDKLogger.w(
-                    any(),
-                    "DPoP key pair deletion failed",
-                    failure,
-                )
+                SalesforceSDKLogger.w(any(), "DPoP key pair deletion failed (KeyStoreException)")
             }
+            verify(exactly = 0) { SalesforceSDKLogger.w(any(), any(), any()) }
         } finally {
             unmockkStatic(SalesforceSDKLogger::class)
             unmockkStatic(KeyStore::class)
         }
+
+        val reloadedKeyPair = DPoPKeyManager.generateOrLoadKeyPair(alias)
+        assertNotSame(cachedKeyPair, reloadedKeyPair)
+        assertEquals(cachedKeyPair.public.encoded.toList(), reloadedKeyPair.public.encoded.toList())
     }
 
     @Test
