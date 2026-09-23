@@ -995,7 +995,7 @@ class ClientManagerMockTest {
     }
 
     @Test
-    fun testGetNewAuthToken_AccountRemovedBeforeStateElection_DoesNotRecreateState() {
+    fun testGetNewAuthToken_AccountRemovedBeforeRefresh_FailsClosedWithoutUnlinkingSharedState() {
         val account = mockk<Account>(relaxed = true)
         val user = testUser(userId = "removed-user", orgId = "removed-org")
         val validationCalls = AtomicInteger(0)
@@ -1007,8 +1007,16 @@ class ClientManagerMockTest {
         }
         val provider = ClientManager.AccMgrAuthTokenProvider(manager)
 
-        assertNull(provider.getNewAuthToken())
-        assertFalse(ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(user))
+        try {
+            assertNull(provider.getNewAuthToken())
+            assertTrue(
+                "A failed revalidation must not unlink state another provider may already share",
+                ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(user),
+            )
+            verify(exactly = 0) { mockOkHttpClient.newCall(any()) }
+        } finally {
+            ClientManager.AccMgrAuthTokenProvider.clearRefreshState(user)
+        }
     }
 
     @Test

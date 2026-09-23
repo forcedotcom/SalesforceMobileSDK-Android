@@ -447,11 +447,12 @@ public class ClientManager {
                     refreshStateKey, k -> new RefreshState());
 
             // Account cleanup can race between the validation above and computeIfAbsent. Recheck
-            // after insertion so a refresh that lost its account cannot recreate an entry after
-            // logout removed it. Compare-removal avoids deleting a replacement state installed by
-            // a later session.
+            // after acquiring the shared state so a refresh that lost its account fails closed
+            // before making a token request. Do not unlink the state here: another provider for a
+            // newly restored session may already be using the same object. Normal account cleanup
+            // owns map removal; this rare race may retain one bounded stale entry until the next
+            // cleanup rather than splitting refresh coordination across two live states.
             if (clientManager.getValidatedUser(/* requireRefreshFields = */ true) == null) {
-                REFRESH_STATES.remove(refreshStateKey, state);
                 return null;
             }
 
