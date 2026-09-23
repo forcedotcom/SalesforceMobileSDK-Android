@@ -6,8 +6,8 @@ A native Android sample app for the Salesforce Mobile SDK that serves as the pri
 
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
-- **PR runs** — a subset of representative tests on a single API level
-- **Nightly runs** — all tests batched across API level. Multi-user tests run in separate batches with even/odd API level splitting to avoid credential collisions between adjacent levels.
+- **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in four sequential groups.
+- **Nightly runs** — all 110 logical test executions run on every supported API level in four sequential groups: login/catch-all, welcome discovery, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
 
 ### Test Suites
 
@@ -20,6 +20,15 @@ Legacy login tests using the default Connected App (CA) opaque configuration fro
 | `testCAOpaque_DefaultScopes_WebServerFlow_NotHybrid` | CA Opaque | Default | Web Server | No |
 | `testCAOpaque_DefaultScopes_UserAgentFlow` | CA Opaque | Default | User Agent | Yes |
 | `testCAOpaque_DefaultScopes_UserAgentFlow_NotHybrid` | CA Opaque | Default | User Agent | No |
+
+#### LegacyLoginTests
+Bearer compatibility tests that explicitly disable DPoP while exercising the legacy Connected App configuration.
+
+| Test | App Config | Scopes | Flow |
+|------|-----------|--------|------|
+| `testCAOpaque_DefaultScopes_WebServerFlow` | CA Opaque | Default | Web Server |
+| `testCAOpaque_SubsetScopes_WebServerFlow` | CA Opaque | Subset | Web Server |
+| `testCAOpaque_AllScopes_WebServerFlow` | CA Opaque | All | Web Server |
 
 #### CAScopeSelectionLoginTests
 Connected App login tests with explicit scope selection across web server and user agent flows, both hybrid and non-hybrid. Includes in-app WebView variants (`forceAdvancedAuthentication = false`) that exercise the legacy WKWebView path.
@@ -164,6 +173,7 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testSameApp_SameScopes_uniqueTokens` | Two users on CA Opaque; validates unique tokens, user switching, and token refresh per user |
 | `testSameApp_ECA_DifferentScopes` | Two users on ECA JWT with different scopes; validates scope isolation after switching |
 | `testSameApp_Beacon_DifferentScopes` | Two users on Beacon Opaque with different scopes |
+| `testRetainedUserClient_refreshesWhileOtherUserCurrent` | Retains User A's SDK client while User B is current; validates User A's 401, refresh, and request retry without switching users |
 | `testFirstStatic_SecondDynamic_DifferentApps` | First user on boot config (CA), second on dynamic config (Beacon JWT) |
 | `testFirstDynamic_SecondStatic_DifferentApps` | First user on dynamic config (ECA JWT), second on boot config (CA) |
 | `testDifferentApps_differentScopes` | Two users on different apps with different scopes |
@@ -176,6 +186,7 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt` | User A: A1+OT; User B: A2+JT. Detects A-marker and token-format leakage across user switches. |
 | `testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque` | User A: A2+JT+BN (beacon); User B: A1+OT. Maximum orthogonality — all three axes (A-marker, token format, beacon) differ. |
 | `testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque` | User A: A2+OT+BN (beacon); User B: A1+OT. Tests A-marker and BN leakage; both users use web server flow. |
+| `testMultiUser_TM_isolation` | Migrates one user and verifies the TM, token-format, and beacon flags remain isolated from the other user |
 | `testRtrAndDPoPRtrUsers_LogoutCurrentDuringManyRequests_OtherUserRemainsUsable` | User A uses RTR; User B uses DPoP+RTR and logs out under concurrent load; User A's tokens remain unchanged and usable before and after restart. |
 
 ### Multi-user flag leakage detection tests

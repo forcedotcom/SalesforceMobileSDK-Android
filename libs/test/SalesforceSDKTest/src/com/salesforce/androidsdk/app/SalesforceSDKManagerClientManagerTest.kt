@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.auth.AuthenticatorService
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RefreshStateTestAccess
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.LoginActivity
 import io.mockk.CapturingSlot
@@ -280,6 +281,30 @@ class SalesforceSDKManagerClientManagerTest {
             staleManager !== freshManager,
         )
         assertManagerBoundTo(freshManager, user)
+    }
+
+    @Test
+    fun logout_removesOnlyDepartingAccountsRefreshState() {
+        val userA = persistUser("refresh-state-a")
+        val accountA = requireNotNull(userAccountManager.buildAccount(userA))
+        val userB = persistUser("refresh-state-b")
+        RefreshStateTestAccess.create(userA)
+        RefreshStateTestAccess.create(userB)
+
+        try {
+            sdkManager.logout(accountA, null, false)
+
+            assertFalse(
+                "Logout must remove refresh coordination state for the departing account",
+                RefreshStateTestAccess.contains(userA),
+            )
+            assertTrue(
+                "Logout must preserve refresh coordination state for other accounts",
+                RefreshStateTestAccess.contains(userB),
+            )
+        } finally {
+            RefreshStateTestAccess.clear(userB)
+        }
     }
 
     @Test
