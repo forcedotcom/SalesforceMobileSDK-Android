@@ -386,7 +386,7 @@ jobs:
               RERUN_TMP="firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_rerun_tmp.xml"
               ORIG_FILE="firebase_results/${OUTPUT_PREFIX}_api_${API_LEVEL}_test_result.xml"
               gsutil cp "${RESULT_FILE}" "${RERUN_TMP}"
-              python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
+              if ! python3 - "${ORIG_FILE}" "${RERUN_TMP}" "${ORIG_FILE}" << 'PYEOF'
           import sys
           import xml.etree.ElementTree as ET
           from pathlib import Path
@@ -438,6 +438,9 @@ jobs:
           original_suite.set('skipped', str(sum(tc.find('skipped') is not None for tc in testcases)))
           Path(sys.argv[3]).write_bytes(ET.tostring(orig.getroot(), encoding='utf-8', xml_declaration=True))
           PYEOF
+              then
+                echo "::warning title=Retry result merge failed::${OUTPUT_PREFIX} API ${API_LEVEL}: keeping the original Firebase result; see the Python error above"
+              fi
               rm "${RERUN_TMP}"
             done
           }
