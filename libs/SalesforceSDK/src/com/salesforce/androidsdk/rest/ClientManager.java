@@ -286,6 +286,10 @@ public class ClientManager {
             // object (rather than synchronizing on the RefreshState reference itself) makes the
             // intent explicit and avoids the "synchronization on local variable" inspection.
             final Object lock = new Object();
+            // Lifecycle leases prevent logout cleanup from unlinking this state while a caller
+            // can still use it. All lifecycle fields are guarded by lock.
+            int activeCallers;
+            boolean cleanupRequested;
             boolean refreshing;
             // Incremented once per successful publish. Waiting losers adopt only when this edge
             // advances, so a failed refresh cannot be mistaken for a usable result.
@@ -309,13 +313,67 @@ public class ClientManager {
         }
 
         /**
-         * Removes refresh coordination data for an account whose SDK session is ending.
-         * Threads that already hold the removed state can finish safely, while future refreshes
-         * for the same identity start with a fresh coordination state.
+         * Clears refresh coordination data for an account whose SDK session is ending. Published
+         * credentials are scrubbed immediately. An idle state is removed immediately; a leased
+         * state remains mapped until its last caller exits so a same-identity login cannot create
+         * a second refresh coordinator while an old-session refresh is still in flight.
          */
         static void clearRefreshState(UserAccount user) {
-            if (user != null) {
-                REFRESH_STATES.remove(refreshStateKeyFor(user));
+            if (user == null) {
+                return;
+            }
+            final String refreshStateKey = refreshStateKeyFor(user);
+            final RefreshState state = REFRESH_STATES.get(refreshStateKey);
+            if (state == null) {
+                return;
+            }
+            synchronized (state.lock) {
+                if (REFRESH_STATES.get(refreshStateKey) != state) {
+                    return;
+                }
+                state.cleanupRequested = true;
+                state.newAuthToken = null;
+                state.newInstanceUrl = null;
+                state.rotatedRefreshToken = null;
+                state.newTokenType = null;
+                state.lastRefreshTime = -1;
+                state.lock.notifyAll();
+                if (state.activeCallers == 0) {
+                    REFRESH_STATES.remove(refreshStateKey, state);
+                }
+            }
+        }
+
+        /**
+         * Acquires a lifecycle lease on the current per-account state. A state undergoing cleanup
+         * deliberately rejects new callers so they fail closed until every old-session caller has
+         * drained and the state can be removed without splitting coordination.
+         */
+        @Nullable
+        private static RefreshState acquireRefreshState(String refreshStateKey) {
+            while (true) {
+                final RefreshState state = REFRESH_STATES.computeIfAbsent(
+                        refreshStateKey, k -> new RefreshState());
+                synchronized (state.lock) {
+                    if (state.cleanupRequested) {
+                        return null;
+                    }
+                    if (REFRESH_STATES.get(refreshStateKey) != state) {
+                        continue;
+                    }
+                    state.activeCallers++;
+                    return state;
+                }
+            }
+        }
+
+        /** Releases a lifecycle lease and completes deferred cleanup for the last caller. */
+        private static void releaseRefreshState(String refreshStateKey, RefreshState state) {
+            synchronized (state.lock) {
+                state.activeCallers--;
+                if (state.cleanupRequested && state.activeCallers == 0) {
+                    REFRESH_STATES.remove(refreshStateKey, state);
+                }
             }
         }
 
@@ -443,20 +501,32 @@ public class ClientManager {
             // Losers wait (looping on the condition to absorb spurious/lost wakeups) for the
             // winner's published result and adopt it without re-attempting, logging out, or
             // broadcasting.
-            final RefreshState state = REFRESH_STATES.computeIfAbsent(
-                    refreshStateKey, k -> new RefreshState());
+            final RefreshState state = acquireRefreshState(refreshStateKey);
+            if (state == null) {
+                return null;
+            }
+            try {
+                return refreshWithState(state, matchingAccount);
+            } finally {
+                releaseRefreshState(refreshStateKey, state);
+            }
+        }
 
-            // Account cleanup can race between the validation above and computeIfAbsent. Recheck
-            // after acquiring the shared state so a refresh that lost its account fails closed
-            // before making a token request. Do not unlink the state here: another provider for a
-            // newly restored session may already be using the same object. Normal account cleanup
-            // owns map removal; this rare race may retain one bounded stale entry until the next
-            // cleanup rather than splitting refresh coordination across two live states.
+        private String refreshWithState(RefreshState state, Account matchingAccount) {
+
+            // Account cleanup can race between the validation above and lifecycle-lease
+            // acquisition. Recheck after acquiring the shared state so a refresh that lost its
+            // account fails closed before making a token request. Do not unlink the state here:
+            // another provider for a newly restored session may already be using the same object.
+            // Normal account cleanup owns map removal.
             if (clientManager.getValidatedUser(/* requireRefreshFields = */ true) == null) {
                 return null;
             }
 
             synchronized (state.lock) {
+                if (state.cleanupRequested) {
+                    return null;
+                }
                 if (state.refreshing) {
                     // Snapshot the publish generation BEFORE waiting. We adopt on a generation
                     // change (an edge), not on refreshing becoming false (a level). If a later
@@ -469,19 +539,23 @@ public class ClientManager {
                         // Loop until a result is published or the in-flight refresh ends without
                         // one. The generation guard absorbs spurious and lost wakeups; the deadline
                         // prevents a lost winner from parking this caller forever.
-                        while (state.refreshing && state.publishGeneration == startGeneration) {
+                        while (!state.cleanupRequested
+                                && state.refreshing
+                                && state.publishGeneration == startGeneration) {
                             final long timeRemaining = deadline - System.currentTimeMillis();
                             if (timeRemaining <= 0) {
                                 break;
                             }
                             state.lock.wait(timeRemaining);
                         }
-                        published = state.publishGeneration != startGeneration;
+                        published = !state.cleanupRequested
+                                && state.publishGeneration != startGeneration;
                     } catch (InterruptedException e) {
                         SalesforceSDKLogger.w(TAG,
                                 "Interrupted while waiting for in-flight token refresh", e);
                         Thread.currentThread().interrupt();
-                        if (state.publishGeneration != startGeneration
+                        if (!state.cleanupRequested
+                                && state.publishGeneration != startGeneration
                                 && tryAdoptWinnerResult(state)) {
                             return state.newAuthToken;
                         }
@@ -669,20 +743,18 @@ public class ClientManager {
             } catch (Exception e) {
                 SalesforceSDKLogger.w(TAG, "Exception thrown while getting auth token", e);
             } finally {
-                // Keep the attempted result in this provider, but only successful refresh or
-                // storage-adoption paths count as a completed refresh.
-                lastNewAuthToken = newAuthToken;
-                lastNewInstanceUrl = newInstanceUrl;
-                lastTokenType = newTokenType;
-                if (newAuthToken != null) {
-                    lastRefreshTime = System.currentTimeMillis();
-                }
                 // Publish the result to the per-account state and wake any waiting losers.
                 // This is the SINGLE publish path and ALWAYS runs on every winner exit path so
                 // losers never wait forever and never wake without a definitive result.
                 synchronized (state.lock) {
                     state.refreshing = false;
-                    if (newAuthToken != null) {
+                    if (state.cleanupRequested) {
+                        // Logout won the state-lock race. Do not republish credentials into the
+                        // scrubbed state or return an old-session token to the caller.
+                        newAuthToken = null;
+                        newInstanceUrl = null;
+                        newTokenType = null;
+                    } else if (newAuthToken != null) {
                         state.newAuthToken = newAuthToken;
                         state.newInstanceUrl = newInstanceUrl;
                         state.rotatedRefreshToken = this.refreshToken;
@@ -700,6 +772,15 @@ public class ClientManager {
                     // result, while lastRefreshTime prevents fresh arrivals from adopting an
                     // indefinitely stale retained value.
                     state.lock.notifyAll();
+                }
+                // Keep the attempted result in this provider, but only successful refresh or
+                // storage-adoption paths count as a completed refresh. This runs after the cleanup
+                // check above so an old-session result cannot survive cleanup in the provider.
+                lastNewAuthToken = newAuthToken;
+                lastNewInstanceUrl = newInstanceUrl;
+                lastTokenType = newTokenType;
+                if (newAuthToken != null) {
+                    lastRefreshTime = System.currentTimeMillis();
                 }
             }
             return newAuthToken;

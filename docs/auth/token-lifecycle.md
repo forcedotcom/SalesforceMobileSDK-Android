@@ -135,6 +135,8 @@ static final ConcurrentHashMap<String, RefreshState> REFRESH_STATES
 
 class RefreshState {
     final Object lock             // coordination primitive
+    int activeCallers             // callers holding a lifecycle lease
+    boolean cleanupRequested      // logout has scrubbed and retired this state
     boolean refreshing            // true while winner is in-flight
     long publishGeneration        // incremented only on successful publish
     String newAuthToken           // last successfully refreshed token
@@ -144,6 +146,13 @@ class RefreshState {
     long lastRefreshTime          // wall-clock time of last successful publish
 }
 ```
+
+Each caller acquires a lifecycle lease before using the state and releases it on every exit
+path. Logout immediately marks the state for cleanup and scrubs its published access token,
+refresh token, instance URL, and token type. An idle state is removed immediately. If callers are
+still active, the scrubbed state remains mapped until the final lease is released; new callers
+that encounter it fail closed. This prevents a quick same-identity login from creating a second
+coordinator while an old-session refresh is still in flight.
 
 ### Flow
 
@@ -273,6 +282,8 @@ therefore share credential state but do not perform network I/O while holding th
 ### Logout
 
 `SalesforceSDKManager.removeAccount()` calls:
+- `AccMgrAuthTokenProvider.clearRefreshState(user)` — scrubs published refresh results and removes
+  the per-account coordinator immediately or after its last active lifecycle lease is released
 - `DPoPKeyManager.deleteKeyPair(alias)` — evicts the process-local handle and attempts to destroy
   the EC keypair from the Android Keystore
 - `DPoPNonceCache.clear(credentialsIdentifier)` — evicts cached nonces for this session
