@@ -111,6 +111,11 @@ apps may replace. Its built-in implementation returns false for every path, so n
 UI-session Bearer authentication until an app registers a policy. Authentication evaluates it only
 for an explicit DPoP token type with a nonblank `uiSid`. Bearer credentials and DPoP credentials
 without a UI session do not invoke it.
+`DPoPKeyManager` keeps a process-local cache keyed by the Android Keystore alias. A warm request
+returns the cached `KeyPair` handle without querying Android Keystore for the private-key metadata
+or certificate again. The first use after process start loads the persistent key into the cache;
+the first use for a new credential generates and caches it. Proof signing still uses Android
+Keystore for every request and never exports private-key material.
 
 The gate is deliberately per credential, not the mutable global `useDPoP` flag. Once a
 credential is DPoP-bound, its requests must continue carrying proofs even if the global flag
@@ -287,7 +292,8 @@ therefore share credential state but do not perform network I/O while holding th
 ### Logout
 
 `SalesforceSDKManager.removeAccount()` calls:
-- `DPoPKeyManager.deleteKeyPair(alias)` — destroys the EC keypair from the Android Keystore
+- `DPoPKeyManager.deleteKeyPair(alias)` — evicts the process-local handle and attempts to destroy
+  the EC keypair from the Android Keystore
 - `DPoPNonceCache.clear(credentialsIdentifier)` — evicts cached nonces for this session
 
 ---

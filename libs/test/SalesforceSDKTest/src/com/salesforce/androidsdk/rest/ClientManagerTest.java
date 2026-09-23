@@ -327,6 +327,44 @@ public class ClientManagerTest {
     }
 
     /**
+     * The {@code UserAccount}-accepting overload builds the same client as the no-arg overload,
+     * given the exact user the manager is bound to.
+     */
+    @Test
+    public void testPeekRestClientWithUserProducesSameClientAsNoArgOverload() throws URISyntaxException {
+        final UserAccount userAccount = createTestAccountInAccountManager();
+
+        final RestClient restClient = clientManager.peekRestClient(userAccount);
+
+        Assert.assertNotNull("RestClient expected", restClient);
+        Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
+        Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+    }
+
+    /** The overload still re-checks liveness rather than trusting the caller's user unconditionally. */
+    @Test
+    public void testPeekRestClientWithUserFailsClosedWhenBoundAccountRemoved() {
+        final UserAccount userAccount = createTestAccountInAccountManager();
+        final Account boundAccount = clientManager.getAccount();
+        Assert.assertNotNull(boundAccount);
+        accountManager.removeAccountExplicitly(boundAccount);
+
+        Assert.assertNull(clientManager.peekRestClient(userAccount));
+    }
+
+    /** The overload still applies field-completeness validation to the supplied user. */
+    @Test
+    public void testPeekRestClientWithUserFailsClosedWhenSuppliedUserMissingUserId() {
+        createTestAccountInAccountManager();
+        final UserAccount incompleteUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .userId(null)
+                .build();
+
+        Assert.assertNull(clientManager.peekRestClient(incompleteUser));
+    }
+
+    /**
      * Checks there are no test accounts
      */
     private void assertNoAccounts() {

@@ -3,6 +3,10 @@ package com.salesforce.androidsdk.app
 import android.accounts.Account
 import android.accounts.AccountManager
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ApplicationInfo
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
 import android.webkit.CookieManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
@@ -26,6 +30,8 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_VF_SID
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.auth.OAuth2.LogoutReason.USER_LOGOUT
+import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
+import com.salesforce.androidsdk.auth.dpop.DPoPNonceCache
 import com.salesforce.androidsdk.config.LoginServerManager
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
@@ -36,6 +42,7 @@ import com.salesforce.androidsdk.ui.LoginActivity
 import com.salesforce.androidsdk.util.EventsObservable
 import com.salesforce.androidsdk.util.EventsObservable.EventType.LogoutComplete
 import com.salesforce.androidsdk.util.test.EventsObserver
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -139,6 +146,26 @@ class SalesforceSDKManagerTests {
             forceAdvancedAuthentication = true
         }
         unmockkAll()
+    }
+
+    @Test
+    fun test_givenDebuggableApplication_whenCheckingDebugBuild_thenReturnsTrue() {
+        val sdkManager = createTestSalesforceSDKManager(
+            context = contextWithApplicationFlags(FLAG_DEBUGGABLE)
+        )
+
+        assertTrue(sdkManager.isDebugBuild)
+        assertTrue(sdkManager.isDevSupportEnabled())
+    }
+
+    @Test
+    fun test_givenNonDebuggableApplication_whenCheckingDebugBuild_thenReturnsFalse() {
+        val sdkManager = createTestSalesforceSDKManager(
+            context = contextWithApplicationFlags(ApplicationInfo.FLAG_SUPPORTS_RTL)
+        )
+
+        assertFalse(sdkManager.isDebugBuild)
+        assertFalse(sdkManager.isDevSupportEnabled())
     }
 
     @Test
@@ -819,6 +846,30 @@ class SalesforceSDKManagerTests {
     }
 
     @Test
+    fun logout_whenDPoPKeyDeletionFails_warnsClearsNonceAndCompletesLogout() {
+        val credentialsIdentifier = "logout-dpop-credentials"
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        mockkStatic(SalesforceSDKLogger::class)
+        every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns false
+        every { DPoPNonceCache.clear(any()) } just runs
+        every { SalesforceSDKLogger.w(any(), any()) } just runs
+        val fixture = createLogoutFixture(credentialsIdentifier = credentialsIdentifier)
+
+        fixture.sdkManager.logout(fixture.account, null, false, USER_LOGOUT)
+
+        assertTrue(fixture.removalCompleted.await(5, SECONDS))
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(any(), "Failed to delete DPoP key pair on logout")
+        }
+        verify(exactly = 1) { DPoPNonceCache.clear(credentialsIdentifier) }
+        verify(exactly = 1) { fixture.accountManager.removeAccountExplicitly(fixture.account) }
+        assertEquals(listOf(fixture.user), fixture.sdkManager.cleanedUsers)
+        assertFalse(fixture.sdkManager.isLoggingOut)
+    }
+
+    @Test
     fun logout_SuccessfulRemovalSelectsTheLiveRemainingUser() {
         val fixture = createLogoutFixture()
 
@@ -1116,6 +1167,79 @@ class SalesforceSDKManagerTests {
     // -------------------------------------------------------------------------
     // Per-user feature flag tests
     // -------------------------------------------------------------------------
+
+    @Test
+    fun test_givenFeatureAlreadyRegistered_whenRegisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
+        /*
+         * Regression guard: registerUsedAppFeature(code, user) must not re-run
+         * the AccountManager persistence round-trip when the feature code was
+         * already registered for that user — repeated calls with an unchanged
+         * flag set were driving a full account decrypt/update cycle on every
+         * hot-path call.
+         */
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        try {
+            verify(exactly = 1) {
+                sdkManager.userAccountManager.updateAccount(any(), any())
+            }
+        } finally {
+            sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+        }
+    }
+
+    @Test
+    fun test_givenFeatureAlreadyUnregistered_whenUnregisterUsedAppFeatureAgain_thenAccountIsNotPersistedAgain() {
+        /*
+         * Regression guard: unregisterUsedAppFeature(code, user) must not
+         * re-run the AccountManager persistence round-trip when the feature
+         * code is already absent for that user — mirrors the no-op guard added
+         * to registerUsedAppFeature, since LoginActivity's marker-clearing
+         * sweeps call this for markers that are already unset on every login.
+         */
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        /*
+         * One persist from register, one from the actual removal; the
+         * second (no-op) unregister call must not add a third.
+         */
+        verify(exactly = 2) {
+            sdkManager.userAccountManager.updateAccount(any(), any())
+        }
+    }
+
+    @Test
+    fun test_givenFeatureNeverRegisteredForUser_whenUnregisterUsedAppFeature_thenAccountIsNotPersisted() {
+        /*
+         * Regression guard: unregistering a feature for a user with no
+         * per-user feature set at all (never registered anything) must not
+         * touch AccountManager either.
+         */
+        val sdkManager = createSdkManagerWithMockedAccountManager()
+        val userA = buildMinimalUserAccount(orgId = "org1", userId = "user1")
+        /*
+         * Force the lazily-created mock into existence before recording the
+         * verify block below; otherwise this no-op call never touches it and
+         * MockK ends up creating the mock mid-recording, which corrupts the
+         * verify DSL state.
+         */
+        sdkManager.userAccountManager
+
+        sdkManager.unregisterUsedAppFeature(Features.FEATURE_RTR, userA)
+
+        verify(exactly = 0) {
+            sdkManager.userAccountManager.updateAccount(any(), any())
+        }
+    }
 
     @Test
     fun test_givenTwoUsers_whenRegisterFeatureForUserA_thenOnlyUserAUAContainsFlag() {
@@ -1715,20 +1839,31 @@ class SalesforceSDKManagerTests {
      * [googleCloudProjectId] for app attestation tests.
      */
     private fun createTestSalesforceSDKManager(
-        googleCloudProjectId: Long? = null
+        googleCloudProjectId: Long? = null,
+        context: Context = getInstrumentation().targetContext,
     ): SalesforceSDKManager = if (googleCloudProjectId != null) {
         TestSalesforceSDKManagerWithAttestation(
-            context = getInstrumentation().targetContext,
+            context = context,
             mainActivity = LoginActivity::class.java,
             loginActivity = LoginActivity::class.java,
             googleCloudProjectId = googleCloudProjectId,
         )
     } else {
         SalesforceSDKManager(
-            context = getInstrumentation().targetContext,
+            context = context,
             mainActivity = LoginActivity::class.java,
             loginActivity = LoginActivity::class.java,
         )
+    }
+
+    private fun contextWithApplicationFlags(flags: Int): Context {
+        val targetContext = getInstrumentation().targetContext
+        val applicationInfo = ApplicationInfo(targetContext.applicationInfo).apply {
+            this.flags = flags
+        }
+        return object : ContextWrapper(targetContext) {
+            override fun getApplicationInfo() = applicationInfo
+        }
     }
 
     /**
@@ -1789,6 +1924,7 @@ class SalesforceSDKManagerTests {
         refreshToken: String? = "refresh-token-user",
         loginServer: String? = "https://login.example.com",
         removeAccountSucceeds: Boolean = true,
+        credentialsIdentifier: String? = null,
     ): LogoutFixture {
         val account = Account("logout-account", "logout-account-type")
         val otherAccount = Account("other-account", "logout-account-type")
@@ -1798,6 +1934,7 @@ class SalesforceSDKManagerTests {
             orgId = "org",
             refreshToken = refreshToken,
             loginServer = loginServer,
+            credentialsIdentifier = credentialsIdentifier,
         )
         val otherUser = buildLogoutIdentity(
             accountName = otherAccount.name,
@@ -1906,6 +2043,7 @@ class SalesforceSDKManagerTests {
         orgId: String,
         refreshToken: String? = "refresh-token-$userId",
         loginServer: String? = "https://login.example.com",
+        credentialsIdentifier: String? = null,
     ): UserAccount = UserAccountBuilder.getInstance()
         .accountName(accountName)
         .userId(userId)
@@ -1914,6 +2052,7 @@ class SalesforceSDKManagerTests {
         .refreshToken(refreshToken)
         .instanceServer("https://instance.example.com")
         .loginServer(loginServer)
+        .credentialsIdentifier(credentialsIdentifier)
         .idUrl("https://id.example.com/$orgId/$userId")
         .build()
 

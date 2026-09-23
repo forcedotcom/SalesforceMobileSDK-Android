@@ -59,8 +59,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for UserAccountManager.
@@ -347,6 +349,113 @@ public class UserAccountManagerTest {
     public void testGetCurrentUserAccount() {
         UserAccount userAccount = createTestAccountInAccountManager(userAccMgr);
         checkSameUserAccount(userAccount, userAccMgr.getCurrentUser());
+    }
+
+    /*
+     * Deterministic regression test for the switch race originally caught by
+     * a probabilistic stress test: storeCurrentUserInfo() and
+     * clearStoredCurrentUserInfo() must be mutually exclusive with a
+     * concurrent getCachedCurrentUser()/getCurrentUser() cache-populate call,
+     * so that a reader can never observe (or publish) a stale user/org ID
+     * that a concurrent switch or clear is in the middle of replacing.
+     *
+     * Rather than racing threads against each other and hoping the scheduler
+     * lands in the vulnerable window (probabilistic, slow, and only ever
+     * proves absence of failure over N trials), this pins a reader inside
+     * getCurrentAccount() - the innermost call made while holding
+     * currentUserLock - using a same-package subclass that blocks on a
+     * CountDownLatch. While the reader is parked there it provably still
+     * holds the lock, so a concurrent writer call is provably blocked, not
+     * merely unobserved to race. This exercises the exact mechanism the fix
+     * relies on (a single shared monitor around the whole read/write
+     * sequence) directly and deterministically, in under a second, instead
+     * of inferring it from thousands of racing trials.
+     */
+    private static final class BlockingUserAccountManager extends UserAccountManager {
+
+        private final CountDownLatch readerEnteredCriticalSection = new CountDownLatch(1);
+        private final CountDownLatch releaseReader = new CountDownLatch(1);
+        private volatile boolean pauseOnNextRead = false;
+
+        @Override
+        public Account getCurrentAccount() {
+            final Account account = super.getCurrentAccount();
+            if (pauseOnNextRead) {
+                pauseOnNextRead = false;
+                readerEnteredCriticalSection.countDown();
+                try {
+                    releaseReader.await(5, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return account;
+        }
+    }
+
+    @Test
+    public void testStoreCurrentUserInfoBlocksUntilConcurrentCacheReadCompletes() throws InterruptedException {
+        BlockingUserAccountManager blockingMgr = new BlockingUserAccountManager();
+        UserAccount userA = createTestAccountInAccountManager(blockingMgr);
+        UserAccount userB = UserAccountTest.createOtherTestAccount();
+        blockingMgr.createAccount(userB);
+        blockingMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+        blockingMgr.clearCachedCurrentUser();
+
+        blockingMgr.pauseOnNextRead = true;
+        Thread reader = new Thread(blockingMgr::getCachedCurrentUser);
+        reader.start();
+        Assert.assertTrue("Reader must enter its critical section",
+                blockingMgr.readerEnteredCriticalSection.await(5, TimeUnit.SECONDS));
+
+        final AtomicBoolean writerReturned = new AtomicBoolean(false);
+        Thread writer = new Thread(() -> {
+            blockingMgr.storeCurrentUserInfo(userB.getUserId(), userB.getOrgId());
+            writerReturned.set(true);
+        });
+        writer.start();
+        writer.join(200);
+        Assert.assertFalse("storeCurrentUserInfo() must block while the reader holds currentUserLock",
+                writerReturned.get());
+
+        blockingMgr.releaseReader.countDown();
+        reader.join(5000);
+        writer.join(5000);
+        Assert.assertTrue("storeCurrentUserInfo() must complete once the reader releases the lock",
+                writerReturned.get());
+        checkSameUserAccount(userB, blockingMgr.getCachedCurrentUser());
+    }
+
+    @Test
+    public void testClearStoredCurrentUserInfoBlocksUntilConcurrentCacheReadCompletes() throws InterruptedException {
+        BlockingUserAccountManager blockingMgr = new BlockingUserAccountManager();
+        UserAccount userA = createTestAccountInAccountManager(blockingMgr);
+        blockingMgr.storeCurrentUserInfo(userA.getUserId(), userA.getOrgId());
+        blockingMgr.clearCachedCurrentUser();
+
+        blockingMgr.pauseOnNextRead = true;
+        Thread reader = new Thread(blockingMgr::getCachedCurrentUser);
+        reader.start();
+        Assert.assertTrue("Reader must enter its critical section",
+                blockingMgr.readerEnteredCriticalSection.await(5, TimeUnit.SECONDS));
+
+        final AtomicBoolean writerReturned = new AtomicBoolean(false);
+        Thread writer = new Thread(() -> {
+            blockingMgr.clearStoredCurrentUserInfo();
+            writerReturned.set(true);
+        });
+        writer.start();
+        writer.join(200);
+        Assert.assertFalse("clearStoredCurrentUserInfo() must block while the reader holds currentUserLock",
+                writerReturned.get());
+
+        blockingMgr.releaseReader.countDown();
+        reader.join(5000);
+        writer.join(5000);
+        Assert.assertTrue("clearStoredCurrentUserInfo() must complete once the reader releases the lock",
+                writerReturned.get());
+        Assert.assertNull("Cached current user must be cleared after clearStoredCurrentUserInfo() returns",
+                blockingMgr.getCachedCurrentUser());
     }
 
     /**
