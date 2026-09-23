@@ -977,6 +977,229 @@ class ClientManagerMockTest {
     }
 
     @Test
+    fun testClearRefreshState_RemovesOnlyMatchingAccount() {
+        val userA = testUser(userId = "user-a", orgId = "org-a")
+        val userB = testUser(userId = "user-b", orgId = "org-b")
+        ClientManager.AccMgrAuthTokenProvider.createRefreshStateForTest(userA)
+        ClientManager.AccMgrAuthTokenProvider.createRefreshStateForTest(userB)
+
+        ClientManager.AccMgrAuthTokenProvider.clearRefreshState(userA)
+        ClientManager.AccMgrAuthTokenProvider.clearRefreshState(userA)
+
+        assertFalse(
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(userA),
+        )
+        assertTrue(
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(userB),
+        )
+    }
+
+    @Test
+    fun testClearRefreshState_DefersRemovalUntilInFlightCallerDrains() {
+        val userId = "same-user"
+        val orgId = "same-org"
+        val oldRefreshToken = "old-session-refresh-token"
+        val newRefreshToken = "new-session-refresh-token"
+        val oldFixture = boundFixture(
+            refreshToken = oldRefreshToken,
+            userId = userId,
+            orgId = orgId,
+        )
+        val oldUser = oldFixture.liveUser.get()!!
+        val oldRequestStarted = CountDownLatch(1)
+        val releaseOldRequest = CountDownLatch(1)
+        val tokenEndpointCalls = AtomicInteger(0)
+        val activeRequests = AtomicInteger(0)
+        val maxConcurrentRequests = AtomicInteger(0)
+        val postedRefreshTokens = arrayOfNulls<String>(3)
+
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } answers {
+                val request = firstArg<Request>()
+                mockk<Call> {
+                    every { execute() } answers {
+                        val callIndex = tokenEndpointCalls.getAndIncrement()
+                        postedRefreshTokens[callIndex] = postedRefreshToken(request)
+                        val inFlight = activeRequests.incrementAndGet()
+                        maxConcurrentRequests.set(
+                            maxOf(maxConcurrentRequests.get(), inFlight),
+                        )
+                        try {
+                            if (callIndex == 0) {
+                                oldRequestStarted.countDown()
+                                releaseOldRequest.await(5, TimeUnit.SECONDS)
+                                successResponse(
+                                    "old-session-rotated-refresh-token",
+                                    accessToken = "old-session-refreshed-access-token",
+                                    userId = userId,
+                                    orgId = orgId,
+                                    tokenType = "DPoP",
+                                    uiSid = "old-session-ui-sid",
+                                )
+                            } else {
+                                successResponse(
+                                    "new-session-rotated-refresh-token",
+                                    accessToken = "new-session-refreshed-access-token",
+                                    userId = userId,
+                                    orgId = orgId,
+                                )
+                            }
+                        } finally {
+                            activeRequests.decrementAndGet()
+                        }
+                    }
+                }
+            }
+        }
+
+        val oldProvider = ClientManager.AccMgrAuthTokenProvider(oldFixture.manager)
+        val oldResult = AtomicReference<String?>()
+        val oldThread = Thread { oldResult.set(oldProvider.getNewAuthToken()) }
+        oldThread.start()
+        assertTrue(oldRequestStarted.await(5, TimeUnit.SECONDS))
+
+        oldFixture.liveUser.set(null)
+        ClientManager.AccMgrAuthTokenProvider.clearRefreshState(oldUser)
+        assertTrue(
+            "An active state must remain mapped until its lifecycle lease is released",
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(oldUser),
+        )
+
+        // Recreate the same identity on the same backing Android Account while the old token POST
+        // is still in flight. This is the relogin shape that must not receive old-session effects.
+        oldFixture.liveUser.set(testUser(
+            authToken = "new-session-access-token",
+            refreshToken = newRefreshToken,
+            userId = userId,
+            orgId = orgId,
+        ))
+        val newProvider = ClientManager.AccMgrAuthTokenProvider(oldFixture.manager)
+        val blockedReloginResult = AtomicReference<String?>()
+        val blockedReloginThread = Thread {
+            blockedReloginResult.set(newProvider.getNewAuthToken())
+        }
+        blockedReloginThread.start()
+        blockedReloginThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Relogin refresh thread did not finish", blockedReloginThread.isAlive)
+        assertNull(blockedReloginResult.get())
+        assertEquals(1, tokenEndpointCalls.get())
+
+        releaseOldRequest.countDown()
+        oldThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Old-session refresh thread did not finish", oldThread.isAlive)
+        assertNull(oldResult.get())
+        assertNull(
+            "Logout must scrub an in-flight old-session UI SID from the provider",
+            oldProvider.uiSid,
+        )
+        assertEquals("new-session-access-token", oldFixture.liveUser.get()?.authToken)
+        assertEquals(newRefreshToken, oldFixture.liveUser.get()?.refreshTokenForPersistence)
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(oldFixture.account, any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
+        assertFalse(
+            "The last lifecycle lease must complete deferred state removal",
+            ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(oldUser),
+        )
+
+        assertEquals("new-session-refreshed-access-token", newProvider.getNewAuthToken())
+        assertEquals(2, tokenEndpointCalls.get())
+        assertEquals(1, maxConcurrentRequests.get())
+        assertEquals(oldRefreshToken, postedRefreshTokens[0])
+        assertEquals(newRefreshToken, postedRefreshTokens[1])
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(oldFixture.account, any()) }
+    }
+
+    @Test
+    fun testClearRefreshState_InFlightInvalidGrant_DoesNotLogOutReloggedSameAccount() {
+        val userId = "same-user-invalid-grant"
+        val orgId = "same-org-invalid-grant"
+        val fixture = boundFixture(
+            refreshToken = "old-session-refresh-token",
+            userId = userId,
+            orgId = orgId,
+        )
+        val oldUser = fixture.liveUser.get()!!
+        val requestStarted = CountDownLatch(1)
+        val releaseResponse = CountDownLatch(1)
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    requestStarted.countDown()
+                    releaseResponse.await(5, TimeUnit.SECONDS)
+                    invalidGrantResponse()
+                }
+            }
+        }
+
+        val result = AtomicReference<String?>()
+        val failure = AtomicReference<Throwable?>()
+        val refreshThread = Thread {
+            try {
+                result.set(
+                    ClientManager.AccMgrAuthTokenProvider(fixture.manager).getNewAuthToken()
+                )
+            } catch (throwable: Throwable) {
+                failure.set(throwable)
+            }
+        }
+        refreshThread.start()
+        try {
+            assertTrue(requestStarted.await(5, TimeUnit.SECONDS))
+            fixture.liveUser.set(null)
+            ClientManager.AccMgrAuthTokenProvider.clearRefreshState(oldUser)
+            fixture.liveUser.set(testUser(
+                authToken = "new-session-access-token",
+                refreshToken = "new-session-refresh-token",
+                userId = userId,
+                orgId = orgId,
+            ))
+        } finally {
+            releaseResponse.countDown()
+        }
+        refreshThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Old-session refresh thread did not finish", refreshThread.isAlive)
+        assertNull(failure.get())
+        assertNull(result.get())
+        assertEquals("new-session-access-token", fixture.liveUser.get()?.authToken)
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(any(), any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
+    }
+
+    @Test
+    fun testGetNewAuthToken_AccountRemovedBeforeRefresh_FailsClosedWithoutUnlinkingSharedState() {
+        val account = mockk<Account>(relaxed = true)
+        val user = testUser(userId = "removed-user", orgId = "removed-org")
+        val validationCalls = AtomicInteger(0)
+        val manager = mockk<ClientManager>(relaxed = true) {
+            every { getAccount() } returns account
+            every { getValidatedUser(any()) } answers {
+                if (validationCalls.getAndIncrement() < 2) user else null
+            }
+        }
+        val provider = ClientManager.AccMgrAuthTokenProvider(manager)
+
+        try {
+            assertNull(provider.getNewAuthToken())
+            assertTrue(
+                "A failed revalidation must not unlink state another provider may already share",
+                ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(user),
+            )
+            verify(exactly = 0) { mockOkHttpClient.newCall(any()) }
+        } finally {
+            ClientManager.AccMgrAuthTokenProvider.clearRefreshState(user)
+        }
+    }
+
+    @Test
     fun testGetNewAuthToken_AccountRemovedDuringSuccessfulRefresh_DiscardsResponse() {
         assertInFlightRemovalSuppressesSideEffects(successResponse(ROTATED_REFRESH_TOKEN))
     }
@@ -1630,12 +1853,14 @@ class ClientManagerMockTest {
             ?.let { URLDecoder.decode(it, "UTF-8") }
     }
 
-    /** Deterministically blocks until [count] threads are parked in WAITING/TIMED_WAITING. */
+    /** Deterministically blocks until [count] threads are parked on a wait or state monitor. */
     private fun awaitThreadsParked(threads: List<Thread>, count: Int) {
         val deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5)
         while (System.currentTimeMillis() < deadline) {
             val parked = threads.count {
-                it.state == Thread.State.WAITING || it.state == Thread.State.TIMED_WAITING
+                it.state == Thread.State.BLOCKED
+                    || it.state == Thread.State.WAITING
+                    || it.state == Thread.State.TIMED_WAITING
             }
             if (parked >= count) return
             Thread.sleep(50)
@@ -1649,16 +1874,20 @@ class ClientManagerMockTest {
         accessToken: String = REFRESHED_ACCESS_TOKEN,
         userId: String = "userId",
         orgId: String = "orgId",
+        tokenType: String = "Bearer",
+        uiSid: String? = null,
     ): Response {
         val instanceLine = if (instanceUrl != null) "\"instance_url\": \"$instanceUrl\"," else ""
         val refreshLine = if (refreshToken != null) "\"refresh_token\": \"$refreshToken\"," else ""
+        val uiSidLine = if (uiSid != null) "\"ui_sid\": \"$uiSid\"," else ""
         val responseBody = """
                 {
                     "access_token": "$accessToken",
                     $refreshLine
                     $instanceLine
+                    $uiSidLine
                     "id": "https://login.salesforce.com/id/$orgId/$userId",
-                    "token_type": "Bearer",
+                    "token_type": "$tokenType",
                     "issued_at": "1234567890",
                     "signature": "mock-signature"
                 }

@@ -146,6 +146,7 @@ import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.clearRefreshStateForUser
 import com.salesforce.androidsdk.rest.peekRestClientWithResolvedUser
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
@@ -1067,6 +1068,8 @@ open class SalesforceSDKManager protected constructor(
         cachedClientManager = null
 
         userAccount?.let { userAccountResolved ->
+            clearRefreshStateForUser(userAccountResolved)
+
             /*
              * Drops this user's persisted feature markers so a later login
              * as the same identity starts from an empty set rather than

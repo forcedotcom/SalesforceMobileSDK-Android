@@ -41,3 +41,8 @@ import com.salesforce.androidsdk.accounts.UserAccount
 internal fun ClientManager.peekRestClientWithResolvedUser(
     user: UserAccount,
 ): RestClient? = peekRestClient(user)
+
+/** Removes process-local refresh coordination data when an account session ends. */
+internal fun clearRefreshStateForUser(user: UserAccount) {
+    ClientManager.AccMgrAuthTokenProvider.clearRefreshState(user)
+}
