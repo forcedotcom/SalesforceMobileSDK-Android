@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.auth.dpop
 
 import com.salesforce.androidsdk.accounts.UserAccount
+import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import okhttp3.Request
@@ -39,7 +40,9 @@ import java.io.IOException
  *
  * Gating is per-credential via [DPoPKeyManager.shouldAttachDPoP], not the global
  * [com.salesforce.androidsdk.app.SalesforceSDKManager.useDPoP] flag. A DPoP-bound
- * credential carries proofs on every request regardless of that flag.
+ * credential normally carries proofs regardless of that flag; when a UI session exists,
+ * [SalesforceSDKManager.shouldUseUiSidBearerForPath] may select clean UI-session Bearer
+ * authentication for a request path instead.
  */
 object DPoPRequestDecorator {
 
@@ -61,8 +64,57 @@ object DPoPRequestDecorator {
         val authToken = userAccount.authToken ?: return
         if (authToken.isEmpty()) return
 
+        applyAuthHeaders(
+            builder,
+            credentialsIdentifier,
+            tokenType,
+            authToken,
+            userAccount.uiSid,
+        )
+    }
+
+    /**
+     * Applies the complete authentication header set for one request. A DPoP credential may use
+     * `Bearer <ui_sid>` when the SDK manager's path policy selects it; otherwise normal DPoP or
+     * Bearer access-token authentication is retained.
+     */
+    @JvmName("applyAuthHeaders")
+    internal fun applyAuthHeaders(
+        builder: Request.Builder,
+        credentialsIdentifier: String?,
+        tokenType: String?,
+        authToken: String?,
+        uiSid: String?,
+    ) {
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
+        if (authToken.isNullOrEmpty()) return
+
+        val requestPath = builder.build().url.encodedPath
+        val useUiSidBearer = DPoPKeyManager.isDPoPTokenType(tokenType) &&
+            !uiSid.isNullOrBlank() &&
+            shouldUseUiSidBearerForPath(requestPath)
+
+        // A replay starts from the previously authenticated request. Remove any old proof before
+        // selecting the complete header set for this attempt so switching to UI-session Bearer is
+        // always clean.
+        builder.removeHeader(DPOP_HEADER)
+        if (useUiSidBearer) {
+            OAuth2.addAuthorizationHeader(builder, uiSid, "Bearer")
+            return
+        }
+
         OAuth2.addAuthorizationHeader(builder, authToken, tokenType)
         attachProof(builder, credentialsIdentifier, tokenType, authToken)
+    }
+
+    private fun shouldUseUiSidBearerForPath(path: String): Boolean = try {
+        SalesforceSDKManager.getInstance().shouldUseUiSidBearerForPath(path)
+    } catch (_: Exception) {
+        SalesforceSDKLogger.w(
+            TAG,
+            "UI session path policy failed; using DPoP authentication",
+        )
+        false
     }
 
     /**
