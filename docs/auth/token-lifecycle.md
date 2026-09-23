@@ -110,7 +110,10 @@ applyAuthHeaders(builder, credentialsIdentifier, tokenType, authToken, uiSid):
 apps may replace. Its built-in implementation returns false for every path, so no request uses
 UI-session Bearer authentication until an app registers a policy. Authentication evaluates it only
 for an explicit DPoP token type with a nonblank `uiSid`. Bearer credentials and DPoP credentials
-without a UI session do not invoke it.
+without a UI session do not invoke it. The callback must be fast and non-blocking because requests
+for the same user are serialized while it runs. If it throws, authentication safely falls back to
+DPoP.
+
 `DPoPKeyManager` keeps a process-local cache keyed by the Android Keystore alias. A warm request
 returns the cached `KeyPair` handle without querying Android Keystore for the private-key metadata
 or certificate again. The first use after process start loads the persistent key into the cache;

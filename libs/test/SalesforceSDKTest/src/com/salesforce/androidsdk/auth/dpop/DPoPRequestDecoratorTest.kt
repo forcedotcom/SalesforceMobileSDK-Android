@@ -305,6 +305,30 @@ class DPoPRequestDecoratorTest {
     }
 
     @Test
+    fun applyAuthHeaders_dpopWithUiSidWhenPolicyThrows_fallsBackToDpopHeaders() {
+        seedKeyPair(testScope)
+        val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = {
+                throw IllegalStateException("policy failure")
+            }
+            val builder = requestBuilder("/services/session")
+
+            DPoPRequestDecorator.applyAuthHeaders(
+                builder,
+                userAccount(tokenType = "DPoP", uiSid = "__UI_SID__"),
+            )
+
+            val request = builder.build()
+            assertEquals("DPoP __ACCESS_TOKEN__", request.header("Authorization"))
+            assertNotNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
     fun applyAuthHeaders_customPolicyOverridesDefault() {
         val sdkManager = com.salesforce.androidsdk.app.SalesforceSDKManager.getInstance()
         val originalPolicy = sdkManager.shouldUseUiSidBearerForPath

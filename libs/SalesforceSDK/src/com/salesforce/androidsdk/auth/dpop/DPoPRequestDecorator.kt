@@ -85,8 +85,7 @@ object DPoPRequestDecorator {
         val requestPath = builder.build().url.encodedPath
         val useUiSidBearer = DPoPKeyManager.isDPoPTokenType(tokenType) &&
             !uiSid.isNullOrBlank() &&
-            SalesforceSDKManager.getInstance()
-                .shouldUseUiSidBearerForPath(requestPath)
+            shouldUseUiSidBearerForPath(requestPath)
 
         // A replay starts from the previously authenticated request. Remove any old proof before
         // selecting the complete header set for this attempt so switching to UI-session Bearer is
@@ -99,6 +98,16 @@ object DPoPRequestDecorator {
 
         OAuth2.addAuthorizationHeader(builder, authToken, tokenType)
         attachProof(builder, credentialsIdentifier, tokenType, authToken)
+    }
+
+    private fun shouldUseUiSidBearerForPath(path: String): Boolean = try {
+        SalesforceSDKManager.getInstance().shouldUseUiSidBearerForPath(path)
+    } catch (_: Exception) {
+        SalesforceSDKLogger.w(
+            TAG,
+            "UI session path policy failed; using DPoP authentication",
+        )
+        false
     }
 
     /**

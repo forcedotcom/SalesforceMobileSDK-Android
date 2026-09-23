@@ -150,8 +150,8 @@ class RestClientDPoPGateTests {
 
     // Belt-and-suspenders: no tokenType, but a key pair exists for the credential
     // → interceptor still attaches a DPoP proof (Authorization stays Bearer
-    // because setAuthHeader keys off exact tokenType match — this asymmetry
-    // is intentional and documented).
+    // because DPoPRequestDecorator.applyAuthHeaders derives Authorization from
+    // tokenType while proof attachment also accepts an existing key pair).
     @Test
     fun test_givenNoTokenTypeButExistingKeyPair_whenIntercept_thenAttachesProof() {
         val id = trackId("belt_haskeypair")

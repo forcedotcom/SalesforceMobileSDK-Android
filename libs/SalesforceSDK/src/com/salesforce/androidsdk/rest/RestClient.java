@@ -972,6 +972,8 @@ public class RestClient {
                 String candidateCredentialsIdentifier,
                 String candidateUiSid) {
             if (!Objects.equals(authToken, candidateAuthToken)) {
+                SalesforceSDKLogger.d(TAG,
+                        "Skipped cached credential metadata update because the access token generation changed");
                 return;
             }
             tokenType = candidateTokenType;
