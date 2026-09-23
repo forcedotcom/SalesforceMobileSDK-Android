@@ -23,7 +23,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 14.0.0-rc.2
+### What's New in 14.0.0
 See [release notes](https://github.com/forcedotcom/SalesforceMobileSDK-Android/releases).
 
 ### Native Applications
