@@ -1033,6 +1033,8 @@ class ClientManagerMockTest {
                                     accessToken = "old-session-refreshed-access-token",
                                     userId = userId,
                                     orgId = orgId,
+                                    tokenType = "DPoP",
+                                    uiSid = "old-session-ui-sid",
                                 )
                             } else {
                                 successResponse(
@@ -1085,6 +1087,10 @@ class ClientManagerMockTest {
 
         assertFalse("Old-session refresh thread did not finish", oldThread.isAlive)
         assertNull(oldResult.get())
+        assertNull(
+            "Logout must scrub an in-flight old-session UI SID from the provider",
+            oldProvider.uiSid,
+        )
         assertFalse(
             "The last lifecycle lease must complete deferred state removal",
             ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(oldUser),
@@ -1795,16 +1801,20 @@ class ClientManagerMockTest {
         accessToken: String = REFRESHED_ACCESS_TOKEN,
         userId: String = "userId",
         orgId: String = "orgId",
+        tokenType: String = "Bearer",
+        uiSid: String? = null,
     ): Response {
         val instanceLine = if (instanceUrl != null) "\"instance_url\": \"$instanceUrl\"," else ""
         val refreshLine = if (refreshToken != null) "\"refresh_token\": \"$refreshToken\"," else ""
+        val uiSidLine = if (uiSid != null) "\"ui_sid\": \"$uiSid\"," else ""
         val responseBody = """
                 {
                     "access_token": "$accessToken",
                     $refreshLine
                     $instanceLine
+                    $uiSidLine
                     "id": "https://login.salesforce.com/id/$orgId/$userId",
-                    "token_type": "Bearer",
+                    "token_type": "$tokenType",
                     "issued_at": "1234567890",
                     "signature": "mock-signature"
                 }
