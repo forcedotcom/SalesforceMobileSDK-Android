@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">14.0.0-rc.1
+        <div class="library-version" id="library-version">14.0.0-rc.2
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span>apply</span><wbr><span>Auth</span><wbr><span><span>Headers</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="apply-auth-headers.html"><span class="token function">applyAuthHeaders</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">builder<span class="token operator">: </span><span data-unresolved-link="okhttp3/Request.Builder///PointingToDeclaration/">Request.Builder</span><span class="token punctuation">, </span></span><span class="parameter ">userAccount<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Stamps Authorization and, if the account is DPoP-bound, a DPoP proof header on <a href="apply-auth-headers.html">builder</a>. No-op when <a href="../../../../libs/SalesforceSDK/com.salesforce.androidsdk.accounts/-user-account/get-auth-token.html">UserAccount.getAuthToken</a> is null or empty.</p></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="apply-auth-headers.html"><span class="token function">applyAuthHeaders</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">builder<span class="token operator">: </span><span data-unresolved-link="okhttp3/Request.Builder///PointingToDeclaration/">Request.Builder</span><span class="token punctuation">, </span></span><span class="parameter ">userAccount<span class="token operator">: </span><a href="../../com.salesforce.androidsdk.accounts/-user-account/index.html">UserAccount</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Stamps Authorization and, if the account is DPoP-bound, a DPoP proof header on <a href="apply-auth-headers.html">builder</a>. No-op when <a href="../../../../libs/SalesforceSDK/com.salesforce.androidsdk.accounts/-user-account/get-auth-token.html">UserAccount.getAuthToken</a> is null or empty. Rejects an incomplete DPoP credential with <a href="https://developer.android.com/reference/kotlin/java/io/IOException.html">IOException</a> before mutating <a href="apply-auth-headers.html">builder</a>.</p></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>

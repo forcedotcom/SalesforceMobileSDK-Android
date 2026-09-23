@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">14.0.0-rc.1
+        <div class="library-version" id="library-version">14.0.0-rc.2
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span>client</span><wbr><span><span>Manager</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="client-manager.html">clientManager</a><span class="token operator">: </span><a href="../../com.salesforce.androidsdk.rest/-client-manager/index.html">ClientManager</a><span class="token operator">?</span></div><p class="paragraph">Returns a manager bound to the user who is current at the time of access, or null when there is no current user. Retaining the returned manager retains that user's identity even if the application later switches users.</p></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":libs:SalesforceSDK/release"><div class="symbol monospace"><span class="token keyword">val </span><a href="client-manager.html">clientManager</a><span class="token operator">: </span><a href="../../com.salesforce.androidsdk.rest/-client-manager/index.html">ClientManager</a><span class="token operator">?</span></div><p class="paragraph">Returns a manager bound to the user who is current at the time of access, or null when there is no current user. Retaining the returned manager retains that user's identity even if the application later switches users.</p><p class="paragraph">The manager is cached per current-user identity to avoid re-resolving the AccountManager-backed account on every access; the cache is invalidated whenever the current user's identity changes.</p><p class="paragraph">Uses <a href="../../com.salesforce.androidsdk.accounts/-user-account-manager/get-cached-current-user.html">UserAccountManager.getCachedCurrentUser</a> rather than <code class="lang-kotlin">getCurrentUser()</code> for the identity lookup: <code class="lang-kotlin">getCurrentUser()</code> unconditionally re-resolves the current account via <code class="lang-kotlin">AccountManager</code> on every call, which would reintroduce exactly the IPC this cache exists to avoid. <code class="lang-kotlin">cachedCurrentUser</code> only cares about identity (org/user ID) to compute the cache key, so its possibly-stale OAuth fields are fine here; <code class="lang-kotlin">storeCurrentUserInfo</code> invalidates this underlying cache on every user switch, so the identity itself is never stale across a switch.</p></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
