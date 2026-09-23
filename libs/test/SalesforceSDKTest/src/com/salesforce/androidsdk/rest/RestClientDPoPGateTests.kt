@@ -44,6 +44,8 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
+import java.net.URI
 import java.util.UUID
 
 /**
@@ -187,7 +189,7 @@ class RestClientDPoPGateTests {
             every { request() } returns outbound
         }
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(IOException::class.java) {
             interceptor.intercept(chain)
         }
 
@@ -211,10 +213,65 @@ class RestClientDPoPGateTests {
             every { request() } returns outbound
         }
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(IOException::class.java) {
             interceptor.intercept(chain)
         }
 
         verify(exactly = 0) { chain.proceed(any()) }
     }
+
+    @Test
+    fun test_givenCachedBearerInterceptorMigratesToIncompleteDPoP_whenReplay_thenReportsIoFailure() {
+        val provider = object : RestClient.AuthTokenProvider {
+            override fun getInstanceUrl() = "https://instance.example.com"
+            override fun getNewAuthToken() = "__DPOP_ACCESS_TOKEN__"
+            override fun getRefreshToken() = "__REFRESH_TOKEN__"
+            override fun getLastRefreshTime() = 0L
+            override fun getTokenType() = "DPoP"
+        }
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__BEARER_ACCESS_TOKEN__",
+            "Bearer",
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val attempts = mutableListOf<Request>()
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns outbound
+            every { proceed(any()) } answers {
+                val attemptedRequest = firstArg<Request>()
+                attempts += attemptedRequest
+                Response.Builder()
+                    .request(attemptedRequest)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(401)
+                    .message("Unauthorized")
+                    .build()
+            }
+        }
+
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        assertTrue(attempts.single().header("Authorization")!!.startsWith("Bearer "))
+        verify(exactly = 1) { chain.proceed(any()) }
+    }
+
+    private fun clientInfo() = RestClient.ClientInfo(
+        URI.create("https://instance.example.com"),
+        URI.create("https://login.example.com"),
+        URI.create("https://login.example.com/id/orgId/userId"),
+        "account",
+        "user@example.com",
+        "userId",
+        "orgId",
+        null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null,
+    )
 }

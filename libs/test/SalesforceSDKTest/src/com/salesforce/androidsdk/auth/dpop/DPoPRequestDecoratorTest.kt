@@ -43,6 +43,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 
 /**
  * Unit tests for [DPoPRequestDecorator], the public convenience API for stamping
@@ -138,7 +139,7 @@ class DPoPRequestDecoratorTest {
         listOf<String?>(null, "", "   ").forEach { identifier ->
             val builder = requestBuilder()
 
-            assertThrows(IllegalStateException::class.java) {
+            assertThrows(IOException::class.java) {
                 DPoPRequestDecorator.applyAuthHeaders(
                     builder,
                     userAccount(
@@ -157,7 +158,7 @@ class DPoPRequestDecoratorTest {
     fun applyAuthHeaders_dpopAccountWithMissingToken_failsClosed() {
         val builder = requestBuilder()
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(IOException::class.java) {
             DPoPRequestDecorator.applyAuthHeaders(
                 builder,
                 userAccount(
