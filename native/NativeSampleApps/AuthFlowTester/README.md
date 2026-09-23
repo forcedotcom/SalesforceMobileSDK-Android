@@ -6,8 +6,8 @@ A native Android sample app for the Salesforce Mobile SDK that serves as the pri
 
 Tests are executed by GitHub Actions via `.github/workflows/reusable-ui-workflow.yaml` and run in [Firebase Test Lab](https://firebase.google.com/docs/test-lab) across all supported API levels using the AndroidX Test Orchestrator.
 
-- **PR runs** — a subset of representative tests on a single API level
-- **Nightly runs** — all tests batched across API level. Multi-user tests run in separate batches with even/odd API level splitting to avoid credential collisions between adjacent levels.
+- **PR runs** — a representative smoke subset on one API level; AuthFlowTester-changing PRs run the complete inventory in four sequential groups.
+- **Nightly runs** — all 110 logical test executions run on every supported API level in four sequential groups: login/catch-all, welcome discovery, token lifecycle, and multi-user. Keeping the groups sequential prevents concurrent runs from competing for shared test credentials.
 
 ### Test Suites
 
@@ -20,6 +20,15 @@ Legacy login tests using the default Connected App (CA) opaque configuration fro
 | `testCAOpaque_DefaultScopes_WebServerFlow_NotHybrid` | CA Opaque | Default | Web Server | No |
 | `testCAOpaque_DefaultScopes_UserAgentFlow` | CA Opaque | Default | User Agent | Yes |
 | `testCAOpaque_DefaultScopes_UserAgentFlow_NotHybrid` | CA Opaque | Default | User Agent | No |
+
+#### LegacyLoginTests
+Bearer compatibility tests that explicitly disable DPoP while exercising the legacy Connected App configuration.
+
+| Test | App Config | Scopes | Flow |
+|------|-----------|--------|------|
+| `testCAOpaque_DefaultScopes_WebServerFlow` | CA Opaque | Default | Web Server |
+| `testCAOpaque_SubsetScopes_WebServerFlow` | CA Opaque | Subset | Web Server |
+| `testCAOpaque_AllScopes_WebServerFlow` | CA Opaque | All | Web Server |
 
 #### CAScopeSelectionLoginTests
 Connected App login tests with explicit scope selection across web server and user agent flows, both hybrid and non-hybrid. Includes in-app WebView variants (`forceAdvancedAuthentication = false`) that exercise the legacy WKWebView path.
@@ -71,6 +80,9 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testECAJwtDPoP_ViaLoginPoolServer` | ECA JWT DPoP | — | Pool server login with DPoP; `dpop_jkt` accepted; L1 (production) marker in UA |
 | `testECAJwtDPoP_ViaLoginPoolServer_Rtr` | ECA JWT DPoP RTR | — | Pool server + DPoP + RTR; safety net: refresh token must survive the post-login identity fetch |
 | `testLoginForAdmin_DPoP` | ECA JWT DPoP | — | Login for Admins hand-off to Custom Tab works with DPoP |
+| `testECAJwtDPoP_RevokeWhenInFlight_PreservesBindingAndRecovers` | ECA JWT DPoP | — | Concurrent mixed batch; automatic in-flight revoke; follow-up refresh preserves DPoP binding |
+| `testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding` | ECA JWT DPoP RTR | — | Twenty concurrent 401s share one refresh; access and refresh tokens rotate while DPoP binding remains valid |
+| `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; at most one nonce challenge/retry; key binding survives restart |
 
 #### RTRLoginTests
 Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies that the refresh token rotates on each token refresh cycle. The `assertRevokeAndRefreshWorks` check asserts the refresh token **changes** after a revoke/refresh cycle for RTR apps. The restart regression also observes the final outbound token-request User-Agent and verifies its request-scoped RT, auth-flow, and token-format markers. DPoP+RTR tests live in `DPoPLoginTests`.
@@ -82,6 +94,19 @@ Tests for ECA configurations with Refresh Token Rotation (RTR) enabled. Verifies
 | `testECAOpaqueRtr_Hybrid` | ECA Opaque RTR | Yes | |
 | `testECAOpaqueRtr_NoHybrid` | ECA Opaque RTR | No | |
 | `testECAOpaqueRtr_Hybrid_WithRestart` | ECA Opaque RTR | Yes | After restart, the first refresh request sends RT + A2 + OT in its final User-Agent |
+| `testECAJwtRtr_RevokedBeforeManyRequests_OneRefreshAndAllSucceed` | ECA JWT RTR | Yes | Twenty concurrent 401s share exactly one token refresh and all replay successfully |
+| `testECAJwtRtr_RevokeWhenInFlight_BatchAndFollowUpRecover` | ECA JWT RTR | Yes | Automatic in-flight revoke; terminal accounting and follow-up refresh recovery |
+
+#### ConcurrentRestRequestTests
+Concurrent REST stress-harness tests. The card defaults to twenty read-only requests in a
+API Resources / API Resources / Describe Global weighted mix. It can interrupt a live batch with revoke or
+logout and exposes stable Compose semantics for each request and aggregate count.
+
+| Test | App Config | Notes |
+|------|------------|-------|
+| `testECAJwtRtr_ManyMixedRequests_DefaultsAndSuccess` | ECA JWT RTR | Validates collapsed defaults, 20 successful terminal results, request mix, and app liveness |
+| `testFailedRequest_TappingSquareShowsErrorDetails` | ECA JWT RTR | DEBUG/UI-test-only invalid endpoint; verifies one isolated failure, diagnostic dialog, and copy action |
+| `testECAJwtRtr_LogoutWhenInFlight_RemainsLoggedOutAfterRestart` | ECA JWT RTR | Logs out after requests enter flight; verifies login navigation and no session resurrection after cold relaunch |
 
 #### BeaconLoginTests
 Beacon app login tests for lightweight authentication use cases, covering both opaque and JWT token formats.
@@ -148,6 +173,7 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testSameApp_SameScopes_uniqueTokens` | Two users on CA Opaque; validates unique tokens, user switching, and token refresh per user |
 | `testSameApp_ECA_DifferentScopes` | Two users on ECA JWT with different scopes; validates scope isolation after switching |
 | `testSameApp_Beacon_DifferentScopes` | Two users on Beacon Opaque with different scopes |
+| `testRetainedUserClient_refreshesWhileOtherUserCurrent` | Retains User A's SDK client while User B is current; validates User A's 401, refresh, and request retry without switching users |
 | `testFirstStatic_SecondDynamic_DifferentApps` | First user on boot config (CA), second on dynamic config (Beacon JWT) |
 | `testFirstDynamic_SecondStatic_DifferentApps` | First user on dynamic config (ECA JWT), second on boot config (CA) |
 | `testDifferentApps_differentScopes` | Two users on different apps with different scopes |
@@ -160,6 +186,8 @@ End-to-end tests for multi-user scenarios: logging in two users, switching betwe
 | `testFlagDiversity_WebServerNonHybridOpaque_vs_WebServerHybridJwt` | User A: A1+OT; User B: A2+JT. Detects A-marker and token-format leakage across user switches. |
 | `testFlagDiversity_WebServerHybridBeaconJwt_vs_WebServerNonHybridOpaque` | User A: A2+JT+BN (beacon); User B: A1+OT. Maximum orthogonality — all three axes (A-marker, token format, beacon) differ. |
 | `testFlagDiversity_WebServerHybridBeaconOpaque_vs_WebServerNonHybridOpaque` | User A: A2+OT+BN (beacon); User B: A1+OT. Tests A-marker and BN leakage; both users use web server flow. |
+| `testMultiUser_TM_isolation` | Migrates one user and verifies the TM, token-format, and beacon flags remain isolated from the other user |
+| `testRtrAndDPoPRtrUsers_LogoutCurrentDuringManyRequests_OtherUserRemainsUsable` | User A uses RTR; User B uses DPoP+RTR and logs out under concurrent load; User A's tokens remain unchanged and usable before and after restart. |
 
 ### Multi-user flag leakage detection tests
 
@@ -339,7 +367,7 @@ L3 takes priority over the resolved domain: even if Welcome Discovery resolves t
 | `ChromeCustomTabPageObject` | Advanced auth login in Chrome Custom Tab (extends `LoginPageObject`) | UIAutomator |
 | `LoginOptionsPageObject` | SDK Login Options screen (toggle web server flow, hybrid token, DPoP, override boot config) | Compose Test |
 | `AuthorizationPageObject` | OAuth "Allow" button handling after login or migration | UIAutomator |
-| `AuthFlowTesterPageObject` | Main app screen (credentials, tokens, user switching, migration, API requests, revocation) | Compose Test + UIAutomator |
+| `AuthFlowTesterPageObject` | Main app screen (credentials, tokens, user switching, migration, single/concurrent API requests, revocation, batch status/error details) | Compose Test + UIAutomator |
 
 ### Configuration
 
@@ -402,6 +430,28 @@ Tap **"Revoke Access Token"** to POST to `/services/oauth2/revoke` with the curr
 ### Make REST API Request
 
 Tap **"Make REST API Request"** to send a lightweight REST request using the current tokens. A dialog shows success or failure, and an expandable "Response Details" section displays the full JSON response.
+
+### Concurrent REST Requests
+
+The separate **Concurrent REST Requests** card launches a read-only mixed batch without changing
+the existing single-request workflow. Its options are collapsed initially:
+
+- **Request count:** 5, 10, 20, or 50 (default 20)
+- **Request mix:** fixed weighted cycle of two API Resources requests and one Describe Global request
+- **Interruption:** Manual (default), Revoke when requests are in flight, or Logout when requests
+  are in flight
+
+Each square represents one request: gray is queued, blue is in flight, green is successful, and red
+is failed. Text below the grid reports completed, successful, failed, in-flight, and queued counts. Tap a
+red square to inspect and copy its request type, endpoint, HTTP status, error, and response body.
+Automatic interruption begins after up to five requests have been submitted to OkHttp and reports its state
+inline; it does not show a modal confirmation that would block the race being exercised.
+
+#### Screenshots
+
+| Expanded options | Completed request grid | Tappable error details |
+|------------------|------------------------|------------------------|
+| ![Concurrent REST request options](Screenshots/concurrent-rest-options.png) | ![Twenty completed concurrent REST requests](Screenshots/concurrent-rest-completed.png) | ![Concurrent REST request error details](Screenshots/concurrent-rest-error-details.png) |
 
 ### Token Migration
 

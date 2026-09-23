@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.accounts.UserAccountBuilder
 import com.salesforce.androidsdk.auth.AuthenticatorService
 import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.rest.ClientManager
+import com.salesforce.androidsdk.rest.RefreshStateTestAccess
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.ui.LoginActivity
 import io.mockk.CapturingSlot
@@ -44,6 +45,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import okhttp3.Call
@@ -109,6 +111,236 @@ class SalesforceSDKManagerClientManagerTest {
         assertManagerBoundTo(retainedManagerA, userA)
         assertManagerBoundTo(freshManagerB, userB)
         assertManagerBoundTo(retainedManagerA, userA)
+    }
+
+    @Test
+    fun clientManager_repeatedAccessForSameCurrentUser_returnsSameCachedInstance() {
+        /*
+         * Regression guard for the account-resolution caching fix: repeated
+         * access for an unchanged current user must not reconstruct
+         * ClientManager (and re-resolve its backing Account) on every call.
+         */
+        persistUser("cached")
+        val first = requireNotNull(sdkManager.clientManager)
+        val second = requireNotNull(sdkManager.clientManager)
+        val third = requireNotNull(sdkManager.clientManager)
+
+        assertTrue("Repeated access for the same current user must return the cached instance", first === second)
+        assertTrue("Repeated access for the same current user must return the cached instance", second === third)
+    }
+
+    @Test
+    fun clientManager_survivesTwoSequentialRefreshTokenRotationsWithoutReconstructionOrLogout() {
+        /*
+         * Regression guard: the cached clientManager must keep working
+         * correctly across repeated server-side refresh token rotations
+         * (RTR), not just a single one. Guards the token-provider
+         * rehydration path (peekRestClient() -> getValidatedUser() ->
+         * UserAccountManager.buildUserAccount()) against silently breaking
+         * under a cached manager in a future change: if the cache ever held
+         * a stale reference across a rotation, the second refresh would
+         * submit the ORIGINAL refresh token (already invalidated by the
+         * server after the first rotation) instead of the newly-rotated
+         * one, and/or the manager identity would change between accesses.
+         */
+        val user = persistUser("rtr-two-rounds")
+        val managerBeforeFirstRefresh = requireNotNull(sdkManager.clientManager)
+        val client = requireNotNull(managerBeforeFirstRefresh.peekRestClient())
+        val account = requireNotNull(managerBeforeFirstRefresh.account)
+
+        val firstRequest = slot<Request>()
+        mockRefreshHttpClient(
+            firstRequest,
+            successfulRefreshResponse(
+                suffix = "rtr-two-rounds",
+                accessToken = "auth-token-rtr-round-1",
+                refreshToken = "refresh-token-rtr-round-1",
+            ),
+        )
+        try {
+            client.refreshAccessToken()
+        } finally {
+            unmockkObject(HttpAccess.DEFAULT)
+        }
+        assertEquals(
+            "First refresh must submit the originally-persisted refresh token",
+            "refresh-token-rtr-two-rounds",
+            requestFormValue(firstRequest.captured, "refresh_token"),
+        )
+
+        val managerAfterFirstRefresh = requireNotNull(sdkManager.clientManager)
+        assertTrue(
+            "The cached manager must be reused across a refresh, not reconstructed",
+            managerBeforeFirstRefresh === managerAfterFirstRefresh,
+        )
+
+        val secondRequest = slot<Request>()
+        val secondHttpClient = mockRefreshHttpClient(
+            secondRequest,
+            successfulRefreshResponse(
+                suffix = "rtr-two-rounds",
+                accessToken = "auth-token-rtr-round-2",
+                refreshToken = "refresh-token-rtr-round-2",
+            ),
+        )
+        try {
+            managerAfterFirstRefresh.peekRestClient()!!.refreshAccessToken()
+        } finally {
+            unmockkObject(HttpAccess.DEFAULT)
+        }
+
+        assertEquals(
+            "The second refresh must submit the FIRST rotation's refresh token, not the " +
+                "original one, proving the cached manager rehydrated the latest persisted state",
+            "refresh-token-rtr-round-1",
+            requestFormValue(secondRequest.captured, "refresh_token"),
+        )
+        val finalUser = requireNotNull(userAccountManager.buildUserAccount(account))
+        assertEquals(
+            "The second rotation's refresh token must be persisted",
+            "refresh-token-rtr-round-2",
+            finalUser.refreshTokenForPersistence,
+        )
+        assertEquals("auth-token-rtr-round-2", finalUser.authToken)
+        assertEquals(
+            "No logout must occur across either rotation",
+            user.userId,
+            userAccountManager.currentUser?.userId,
+        )
+        assertEquals(user.orgId, userAccountManager.currentUser?.orgId)
+        verify(exactly = 1) { secondHttpClient.newCall(any()) }
+    }
+
+    @Test
+    fun clientManager_repeatedAccess_doesNotForceFreshCurrentUserResolution() {
+        /*
+         * Regression guard: clientManager's identity lookup must not
+         * unconditionally re-resolve the current user via AccountManager on
+         * every access. UserAccountManager.getCurrentUser() always
+         * allocates a new UserAccount by decrypting AccountManager-backed
+         * fields, so its cached reference changes identity every time it
+         * runs. Seeding that cache once and then confirming the reference
+         * is unchanged after repeated clientManager access proves those
+         * accesses used the cached identity lookup instead of re-invoking
+         * getCurrentUser().
+         */
+        persistUser("no-fresh-lookup")
+        val seededCurrentUser = requireNotNull(userAccountManager.currentUser)
+
+        requireNotNull(sdkManager.clientManager)
+        requireNotNull(sdkManager.clientManager)
+        requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "Repeated clientManager access must not force a fresh currentUser resolution",
+            seededCurrentUser === userAccountManager.cachedCurrentUser,
+        )
+    }
+
+    @Test
+    fun clientManager_afterCurrentUserSwitch_freshGetterReturnsNewInstanceBoundToNewUser() {
+        /*
+         * Regression guard: switching the current user must invalidate the
+         * cache so the next access resolves a client bound to the new user,
+         * not a stale cached instance from the old user.
+         */
+        val userA = persistUser("switch-a")
+        val managerForA = requireNotNull(sdkManager.clientManager)
+
+        val userB = persistUser("switch-b")
+        val managerForB = requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "Switching the current user must produce a differently-bound ClientManager instance",
+            managerForA !== managerForB,
+        )
+        assertManagerBoundTo(managerForA, userA)
+        assertManagerBoundTo(managerForB, userB)
+    }
+
+    @Test
+    fun clientManager_afterCachedAccountIsRemovedAndReAdded_returnsFreshlyBoundInstance() {
+        /*
+         * Regression guard: the cache must not survive removal of the
+         * account it is bound to. If the same identity is re-added
+         * afterward, the next access must resolve a fresh ClientManager
+         * bound to the new persisted Account, not the stale cached instance
+         * from before the removal.
+         */
+        val user = persistUser("removed-and-readded")
+        val staleManager = requireNotNull(sdkManager.clientManager)
+        val staleAccount = requireNotNull(staleManager.account)
+
+        sdkManager.logout(staleAccount, null, false)
+
+        userAccountManager.createAccount(user)
+        val freshManager = requireNotNull(sdkManager.clientManager)
+
+        assertTrue(
+            "A cache entry must not survive removal of the account it is bound to",
+            staleManager !== freshManager,
+        )
+        assertManagerBoundTo(freshManager, user)
+    }
+
+    @Test
+    fun logout_removesOnlyDepartingAccountsRefreshState() {
+        val userA = persistUser("refresh-state-a")
+        val accountA = requireNotNull(userAccountManager.buildAccount(userA))
+        val userB = persistUser("refresh-state-b")
+        RefreshStateTestAccess.create(userA)
+        RefreshStateTestAccess.create(userB)
+
+        try {
+            sdkManager.logout(accountA, null, false)
+
+            assertFalse(
+                "Logout must remove refresh coordination state for the departing account",
+                RefreshStateTestAccess.contains(userA),
+            )
+            assertTrue(
+                "Logout must preserve refresh coordination state for other accounts",
+                RefreshStateTestAccess.contains(userB),
+            )
+        } finally {
+            RefreshStateTestAccess.clear(userB)
+        }
+    }
+
+    @Test
+    fun clientManager_afterLogoutAndReloginAsSameIdentity_startsWithClearedFeatureMarkers() {
+        /*
+         * Regression guard: logging out and back in as the same identity
+         * must not carry the previous session's per-user feature markers
+         * forward. cleanUp() must drop this identity's perUserFeatures
+         * entry so a fresh login starts from an empty set and can select a
+         * different login type without the old session's markers lingering.
+         */
+        val user = persistUser("relogin-same-identity")
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_NATIVE, user)
+        assertTrue(
+            "Marker must be registered before logout",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
+
+        sdkManager.logout(requireNotNull(userAccountManager.buildAccount(user)), null, false)
+
+        userAccountManager.createAccount(user)
+        assertFalse(
+            "A fresh login as the same identity must not inherit the previous " +
+                "session's feature markers",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
+
+        sdkManager.registerUsedAppFeature(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, user)
+        assertTrue(
+            "The new session must be able to select a different login type",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID, user),
+        )
+        assertFalse(
+            "The old session's login-type marker must not carry forward",
+            sdkManager.isUserFeatureRegistered(Features.FEATURE_AUTH_TYPE_NATIVE, user),
+        )
     }
 
     @Test
@@ -305,6 +537,33 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun getRestClient_withCurrentUser_populatesClientManagerCacheWithDeliveredInstance() {
+        /*
+         * Regression guard for the account-resolution caching fix:
+         * getRestClient() must resolve through the cached clientManager
+         * property rather than constructing a new ClientManager per call,
+         * since it is invoked from SalesforceActivityDelegate's onResume()
+         * on every Activity resume. Before the fix, getRestClient() built
+         * its own ClientManager directly and never touched the cache field,
+         * so this assertion fails against the pre-fix implementation.
+         */
+        val user = persistUser("resume")
+        val activity = mockk<Activity>(relaxed = true)
+        val deliveredManagers = mutableListOf<RestClient>()
+        clearCachedClientManagerField()
+
+        sdkManager.getRestClient(activity) { client -> deliveredManagers += client }
+
+        assertEquals(1, deliveredManagers.size)
+        assertClientFor(deliveredManagers.single(), user)
+        val cachedEntry = readCachedClientManagerField()
+        assertTrue(
+            "getRestClient() must populate the clientManager cache, not bypass it",
+            cachedEntry != null,
+        )
+    }
+
+    @Test
     fun getRestClient_withUnusableCurrentUser_removesExactAccountWithoutCallback() {
         val user = persistUser("unusable")
         val account = requireNotNull(userAccountManager.buildAccount(user))
@@ -336,6 +595,57 @@ class SalesforceSDKManagerClientManagerTest {
         verify(exactly = 0) {
             activity.startActivityForResult(any<Intent>(), any())
         }
+    }
+
+    @Test
+    fun getRestClient_withDPoPAccountMissingCredentialsIdentifier_removesItWithoutCallback() {
+        val corruptUser = UserAccountBuilder.getInstance()
+            .populateFromUserAccount(buildUser("corrupt-dpop"))
+            .tokenType("dPoP")
+            .allowUnset(true)
+            .credentialsIdentifier(null)
+            .build()
+        userAccountManager.createAccount(corruptUser)
+        val account = requireNotNull(userAccountManager.buildAccount(corruptUser))
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        sdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(0, callbackCount)
+        assertFalse(accountManager.getAccountsByType(account.type).contains(account))
+        verify(exactly = 0) {
+            activity.startActivityForResult(any<Intent>(), any())
+        }
+    }
+
+    @Test
+    fun getRestClient_resolvesCurrentAccountExactlyOnce() {
+        /*
+         * Regression guard for a switch race: before the fix, account came
+         * from userAccountManager.currentAccount and client came from
+         * clientManager, which independently re-resolves identity via
+         * cachedCurrentUser — two separate current-user reads that could
+         * observe different users if the current user switched in between,
+         * e.g. delivering one user's client while logging out a different,
+         * stale-snapshot account. The fix reads currentAccount exactly once
+         * and derives the client from that same account (via
+         * buildUserAccount + the shared resolveClientManager helper), so
+         * there is only one identity read for the whole call, closing the
+         * window by construction. Asserting the call count directly catches
+         * a future regression that reintroduces a second independent read.
+         */
+        persistUser("single-read")
+        val spyUserAccountManager = spyk(userAccountManager)
+        val spySdkManager = spyk(sdkManager)
+        every { spySdkManager.userAccountManager } returns spyUserAccountManager
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        spySdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(1, callbackCount)
+        verify(exactly = 1) { spyUserAccountManager.currentAccount }
     }
 
     @Test
@@ -377,6 +687,18 @@ class SalesforceSDKManagerClientManagerTest {
         assertEquals(user.userId, client.clientInfo.userId)
         assertEquals(user.orgId, client.clientInfo.orgId)
     }
+
+    private fun cachedClientManagerField() =
+        SalesforceSDKManager::class.java.getDeclaredField("cachedClientManager").apply {
+            isAccessible = true
+        }
+
+    private fun clearCachedClientManagerField() {
+        cachedClientManagerField().set(sdkManager, null)
+    }
+
+    private fun readCachedClientManagerField(): Any? =
+        cachedClientManagerField().get(sdkManager)
 
     private fun mockRefreshHttpClient(
         request: CapturingSlot<Request>,

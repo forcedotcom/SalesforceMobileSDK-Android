@@ -200,7 +200,13 @@ public class ClientManagerTest {
     /** Provider credentials come only from the manager's bound user. */
     @Test
     public void testProviderInheritsManagerIdentity() {
-        final UserAccount userA = createTestAccountInAccountManager();
+        final UserAccount userA = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("DPoP")
+                .uiSid("test_ui_sid")
+                .build();
+        userAccountManager.createAccount(userA);
+        clientManager = new ClientManager(targetContext, userA);
         final UserAccount userB = UserAccountBuilder.getInstance()
                 .populateFromUserAccount(UserAccountTest.createOtherTestAccount())
                 .refreshToken("other_refresh_token")
@@ -212,6 +218,8 @@ public class ClientManagerTest {
                 new ClientManager.AccMgrAuthTokenProvider(clientManager);
 
         Assert.assertEquals(userA.getRefreshToken(), provider.getRefreshToken());
+        Assert.assertEquals(userA.getTokenType(), provider.getTokenType());
+        Assert.assertEquals(userA.getUiSid(), provider.getUiSid());
     }
 
     /** Missing required identifiers leave the manager unbound without throwing. */
@@ -316,6 +324,88 @@ public class ClientManagerTest {
         accountManager.removeAccountExplicitly(boundAccount);
 
         Assert.assertNull(clientManager.peekRestClient());
+    }
+
+    /**
+     * The {@code UserAccount}-accepting overload builds the same client as the no-arg overload,
+     * given the exact user the manager is bound to.
+     */
+    @Test
+    public void testPeekRestClientWithUserProducesSameClientAsNoArgOverload() throws URISyntaxException {
+        final UserAccount userAccount = createTestAccountInAccountManager();
+
+        final RestClient restClient = clientManager.peekRestClient(userAccount);
+
+        Assert.assertNotNull("RestClient expected", restClient);
+        Assert.assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
+        Assert.assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+    }
+
+    /** The overload still re-checks liveness rather than trusting the caller's user unconditionally. */
+    @Test
+    public void testPeekRestClientWithUserFailsClosedWhenBoundAccountRemoved() {
+        final UserAccount userAccount = createTestAccountInAccountManager();
+        final Account boundAccount = clientManager.getAccount();
+        Assert.assertNotNull(boundAccount);
+        accountManager.removeAccountExplicitly(boundAccount);
+
+        Assert.assertNull(clientManager.peekRestClient(userAccount));
+    }
+
+    /** The overload still applies field-completeness validation to the supplied user. */
+    @Test
+    public void testPeekRestClientWithUserFailsClosedWhenSuppliedUserMissingUserId() {
+        createTestAccountInAccountManager();
+        final UserAccount incompleteUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .userId(null)
+                .build();
+
+        Assert.assertNull(clientManager.peekRestClient(incompleteUser));
+    }
+
+    /** Persisted DPoP credentials without a key identifier are rejected as corrupt. */
+    @Test
+    public void testPeekRestClientWithDPoPAndNullCredentialsIdentifierReturnsNull() {
+        final UserAccount corruptUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("DPoP")
+                .allowUnset(true)
+                .credentialsIdentifier(null)
+                .build();
+        userAccountManager.createAccount(corruptUser);
+        clientManager = new ClientManager(targetContext, corruptUser);
+
+        Assert.assertNull(clientManager.peekRestClient());
+    }
+
+    /** DPoP matching is case-insensitive and whitespace is not a usable key identifier. */
+    @Test
+    public void testPeekRestClientWithMixedCaseDPoPAndBlankCredentialsIdentifierReturnsNull() {
+        final UserAccount corruptUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("dPoP")
+                .credentialsIdentifier("   ")
+                .build();
+        userAccountManager.createAccount(corruptUser);
+        clientManager = new ClientManager(targetContext, corruptUser);
+
+        Assert.assertNull(clientManager.peekRestClient());
+    }
+
+    /** Bearer accounts do not require a DPoP credentials identifier. */
+    @Test
+    public void testPeekRestClientWithBearerAndNullCredentialsIdentifierReturnsClient() {
+        final UserAccount bearerUser = UserAccountBuilder.getInstance()
+                .populateFromUserAccount(UserAccountTest.createTestAccount())
+                .tokenType("Bearer")
+                .allowUnset(true)
+                .credentialsIdentifier(null)
+                .build();
+        userAccountManager.createAccount(bearerUser);
+        clientManager = new ClientManager(targetContext, bearerUser);
+
+        Assert.assertNotNull(clientManager.peekRestClient());
     }
 
     /**

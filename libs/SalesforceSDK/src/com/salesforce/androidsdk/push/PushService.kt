@@ -610,6 +610,9 @@ open class PushService {
                     account.csrfToken
                 ),
                 account.authToken,
+                account.tokenType,
+                account.credentialsIdentifier,
+                account.uiSid,
                 HttpAccess.DEFAULT,
                 AccMgrAuthTokenProvider(clientManager)
             )

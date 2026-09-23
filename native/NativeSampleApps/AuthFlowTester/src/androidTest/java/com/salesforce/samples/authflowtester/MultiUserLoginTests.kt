@@ -31,7 +31,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID
-import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
@@ -40,15 +39,17 @@ import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestRequest
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.BEACON_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
+import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_RTR
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
-import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
@@ -75,6 +76,50 @@ import java.net.URI
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class MultiUserLoginTests: AuthFlowTest() {
+
+    @Test
+    fun testRtrAndDPoPRtrUsers_LogoutCurrentDuringManyRequests_OtherUserRemainsUsable() {
+        val retainedUsername = testConfig.getUser(REGULAR_AUTH, user).username
+        val removedUsername = testConfig.getUser(REGULAR_AUTH, otherUser).username
+        loginAndValidate(knownAppConfig = ECA_JWT_RTR)
+        val retainedUserTokens = app.getTokens()
+
+        addOtherUserAndValidate(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            useDPoP = true,
+        )
+        app.selectManyRequestInterruption(ManyRequestInterruption.LOGOUT)
+
+        app.startManyRequests()
+
+        app.waitForManyRequestsSubmitted()
+        app.waitForManyRequestInterruption("Logout requested")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        waitForUserCount(sdkManager.userAccountManager, expectedCount = 1)
+        app.waitForAppLoad()
+        app.validateUser(
+            knownLoginHostConfig = REGULAR_AUTH,
+            knownUserConfig = user,
+            isMultiUser = false,
+            expectAdvancedAuth = true,
+            isDpop = false,
+            expectedBMarker = Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG,
+            expectedLMarker = Features.FEATURE_LOGIN_SERVER_MY_DOMAIN,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            isJwt = true,
+            expectedRtMarker = false,
+        )
+        assertEquals(retainedUserTokens, app.getTokens())
+        app.validateApiRequest()
+
+        restartAndValidateUser(knownAppConfig = ECA_JWT_RTR)
+        val usersAfterRestart = sdkManager.userAccountManager.authenticatedUsers.orEmpty()
+        assertEquals(1, usersAfterRestart.size)
+        assertEquals(retainedUsername, usersAfterRestart.single().username)
+        assertTrue(usersAfterRestart.none { it.username == removedUsername })
+        assertEquals(retainedUserTokens, app.getTokens())
+        app.validateApiRequest()
+    }
 
     // Both users use the same default app type and default scopes, with additional token validation.
     @Test
@@ -645,7 +690,11 @@ class MultiUserLoginTests: AuthFlowTest() {
             isJwt = false,
             isBeacon = false,
         )
-        app.validateOAuthValues(knownAppConfig = ECA_OPAQUE, scopeSelection = EMPTY)
+        app.validateOAuthValues(
+            knownAppConfig = ECA_OPAQUE,
+            scopeSelection = EMPTY,
+            useHybridAuthToken = false,
+        )
     }
 
     /**
@@ -852,7 +901,11 @@ class MultiUserLoginTests: AuthFlowTest() {
             isJwt = true,
             isBeacon = true,
         )
-        app.validateOAuthValues(knownAppConfig = BEACON_JWT, scopeSelection = EMPTY)
+        app.validateOAuthValues(
+            knownAppConfig = BEACON_JWT,
+            scopeSelection = EMPTY,
+            useHybridAuthToken = false,
+        )
 
         // Switch back to User B — must still have A2, OT, no BN
         switchToUserAndValidate(

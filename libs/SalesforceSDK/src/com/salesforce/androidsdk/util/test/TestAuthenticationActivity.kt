@@ -61,7 +61,12 @@ import kotlinx.coroutines.withContext
  * rather than user interaction.  This is intended only for test automation in
  * app debug build variants.  This class should not be used in release builds as
  * it will simply finish without any action.
+ *
+ * @deprecated Deprecated in 14.0. Will be removed in 15.0.
+ * External developers will no longer be able to use it once DPoP is enforced.
  */
+@Deprecated(message = "TestAuthenticationActivity is deprecated in 14.0 and will " +
+        "be removed in 15.0. It is incompatible with DPoP enforcement.")
 class TestAuthenticationActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

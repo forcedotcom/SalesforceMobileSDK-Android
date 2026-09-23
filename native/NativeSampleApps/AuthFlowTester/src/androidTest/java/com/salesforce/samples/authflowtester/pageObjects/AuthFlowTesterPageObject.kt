@@ -29,18 +29,24 @@ package com.salesforce.samples.authflowtester.pageObjects
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context.CLIPBOARD_SERVICE
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
@@ -67,11 +73,14 @@ import com.salesforce.samples.authflowtester.REQUEST_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.REVOKE_BUTTON_CONTENT_DESC
 import com.salesforce.samples.authflowtester.SCROLL_CONTAINER_CONTENT_DESC
 import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC
 import com.salesforce.samples.authflowtester.USER_AGENT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.ConcurrentRequestType
 import com.salesforce.samples.authflowtester.components.ACCESS_TOKEN
 import com.salesforce.samples.authflowtester.components.CLIENT_ID
 import com.salesforce.samples.authflowtester.components.CONTENT_DOMAIN
 import com.salesforce.samples.authflowtester.components.CONTENT_SID
+import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.components.DPOP_KEY_THUMBPRINT
 import com.salesforce.samples.authflowtester.components.DPOP_NONCE
 import com.salesforce.samples.authflowtester.components.LIGHTNING_DOMAIN
@@ -86,6 +95,22 @@ import com.salesforce.samples.authflowtester.components.UI_SID
 import com.salesforce.samples.authflowtester.components.USERNAME
 import com.salesforce.samples.authflowtester.components.VF_DOMAIN
 import com.salesforce.samples.authflowtester.components.VF_SID
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_BUTTON_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_COMPLETED_COUNT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_ERROR_COPY_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_ERROR_DETAILS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_FAILURE_COUNT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_INTERRUPTION_STATUS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_IN_FLIGHT_COUNT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_EXPANDED_STATE
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_OPTIONS_TEST_TAG
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_QUEUED_COUNT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.MANY_REQUEST_SUCCESS_COUNT_CONTENT_DESC
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
+import com.salesforce.samples.authflowtester.components.manyRequestCountContentDescription
+import com.salesforce.samples.authflowtester.components.manyRequestInterruptionContentDescription
+import com.salesforce.samples.authflowtester.components.manyRequestSquareTestTag
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig
 import com.salesforce.samples.authflowtester.testUtility.KnownUserConfig
@@ -97,6 +122,12 @@ import org.junit.Assert.assertEquals
 import com.salesforce.androidsdk.R as sdkR
 
 private const val APP_LOAD_TIMEOUT_MS = 30_000L
+private const val READ_RETRY_INTERVAL_MS = 500L
+private const val SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS = 2_000L
+private const val EMPTY_VALUE_PLACEHOLDER = "(empty)"
+private const val MANY_REQUEST_TIMEOUT_MS = 120_000L
+private const val MANY_REQUEST_REVEAL_SCROLL_ATTEMPTS = 12
+private const val MANY_REQUEST_REVEAL_SCROLL_STEP_PX = 180f
 
 data class Tokens(
     val accessToken: String,
@@ -202,6 +233,17 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             false // Compose hierarchy temporarily unavailable
         }
 
+    fun waitForAppUnloaded(timeoutMillis: Long = APP_LOAD_TIMEOUT_MS) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis) { !isAppLoaded() }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out after ${timeoutMillis}ms waiting for the session detail screen to close",
+                e,
+            )
+        }
+    }
+
     fun revokeAccessToken() {
         composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
             .performScrollToNode(hasContentDescription(REVOKE_BUTTON_CONTENT_DESC))
@@ -223,6 +265,275 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         composeTestRule.onNodeWithContentDescription(ALERT_POSITIVE_BUTTON_CONTENT_DESC)
             .performClick()
         composeTestRule.waitForIdle()
+    }
+
+    fun validateDefaultManyRequestOptions() {
+        scrollToManyRequestNode(MANY_REQUEST_OPTIONS_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(MANY_REQUEST_OPTIONS_CONTENT_DESC)
+            .assertTextEquals("Options: 20 requests · Mixed · Manual")
+    }
+
+    fun configureFailedManyRequest(index: Int) {
+        ConcurrentRequestTestHooks.failedRequestIndex = index
+    }
+
+    fun selectManyRequestCount(count: Int) {
+        expandManyRequestOptions()
+        val contentDescription = manyRequestCountContentDescription(count)
+        waitForNode(contentDescription)
+        composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    fun selectManyRequestInterruption(interruption: ManyRequestInterruption) {
+        expandManyRequestOptions()
+        revealManyRequestNode(
+            manyRequestInterruptionContentDescription(ManyRequestInterruption.MANUAL)
+        )
+        val contentDescription = manyRequestInterruptionContentDescription(interruption)
+        revealManyRequestNode(contentDescription)
+        composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+        composeTestRule.waitForIdle()
+    }
+
+    private fun expandManyRequestOptions() {
+        val firstCountContentDescription = manyRequestCountContentDescription(5)
+        val alreadyExpanded = composeTestRule
+            .onAllNodesWithContentDescription(firstCountContentDescription)
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+        if (alreadyExpanded) return
+
+        scrollToManyRequestNode(MANY_REQUEST_OPTIONS_CONTENT_DESC)
+        composeTestRule.onNodeWithTag(MANY_REQUEST_OPTIONS_TEST_TAG, useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        waitForManyRequestOptionsExpanded()
+        revealManyRequestNode(firstCountContentDescription)
+    }
+
+    private fun waitForManyRequestOptionsExpanded() {
+        try {
+            composeTestRule.waitUntil(TIMEOUT_MS) {
+                composeTestRule
+                    .onAllNodesWithTag(MANY_REQUEST_OPTIONS_TEST_TAG, useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .firstOrNull()
+                    ?.config
+                    ?.let { config ->
+                        if (config.contains(SemanticsProperties.StateDescription)) {
+                            config[SemanticsProperties.StateDescription]
+                        } else {
+                            null
+                        }
+                    } ==
+                    MANY_REQUEST_OPTIONS_EXPANDED_STATE
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Concurrent request options did not expand", e)
+        }
+        composeTestRule.waitForIdle()
+    }
+
+    fun startManyRequests() {
+        scrollToManyRequestNode(MANY_REQUEST_BUTTON_CONTENT_DESC)
+        composeTestRule.onNodeWithContentDescription(MANY_REQUEST_BUTTON_CONTENT_DESC)
+            .performSemanticsAction(SemanticsActions.OnClick)
+    }
+
+    fun waitForManyRequestsToComplete(
+        configuredCount: Int,
+        timeoutMillis: Long = MANY_REQUEST_TIMEOUT_MS,
+    ): ManyRequestCounts {
+        val expected = "$configuredCount / $configuredCount completed"
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                readTextOrNull(MANY_REQUEST_COMPLETED_COUNT_CONTENT_DESC) == expected
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out after ${timeoutMillis}ms waiting for concurrent REST batch: " +
+                    "${readTextOrNull(MANY_REQUEST_COMPLETED_COUNT_CONTENT_DESC)}",
+                e,
+            )
+        }
+        return manyRequestCounts(configuredCount)
+    }
+
+    fun waitForManyRequestInterruption(
+        expectedStatus: String,
+        timeoutMillis: Long = MANY_REQUEST_TIMEOUT_MS,
+    ) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                ConcurrentRequestTestHooks.lastInterruptionStatus == expectedStatus ||
+                    readTextOrNull(MANY_REQUEST_INTERRUPTION_STATUS_CONTENT_DESC) == expectedStatus
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out after ${timeoutMillis}ms waiting for interruption status " +
+                    "'$expectedStatus'; last status was " +
+                    "'${readTextOrNull(MANY_REQUEST_INTERRUPTION_STATUS_CONTENT_DESC)}'",
+                e,
+            )
+        }
+    }
+
+    fun waitForManyRequestsSubmitted(
+        minimumCount: Int = 5,
+        timeoutMillis: Long = TIMEOUT_MS,
+    ) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                ConcurrentRequestTestHooks.submittedCount >= minimumCount
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out waiting for $minimumCount submitted requests; observed " +
+                    ConcurrentRequestTestHooks.submittedCount,
+                e,
+            )
+        }
+    }
+
+    fun validateMixedSuccessfulRequests(count: Int) {
+        val expectedRequestTypes = listOf(
+            ConcurrentRequestType.RESOURCES,
+            ConcurrentRequestType.RESOURCES,
+            ConcurrentRequestType.DESCRIBE_GLOBAL,
+        )
+        repeat(count) { index ->
+            waitForManyRequestSquareState(index, "Succeeded")
+            val expectedType = expectedRequestTypes[index % expectedRequestTypes.size]
+            val descriptions = composeTestRule.onNodeWithTag(manyRequestSquareTestTag(index))
+                .fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
+            assertEquals(listOf("Request ${index + 1}, ${expectedType.displayName}"), descriptions)
+        }
+    }
+
+    fun failedManyRequestIndices(count: Int): List<Int> =
+        (0 until count).filter { index ->
+            composeTestRule.onNodeWithTag(manyRequestSquareTestTag(index))
+                .fetchSemanticsNode().config[SemanticsProperties.StateDescription] == "Failed"
+        }.map { it + 1 }
+
+    fun tapFailedManyRequest(index: Int, type: ConcurrentRequestType): String {
+        val testTag = manyRequestSquareTestTag(index)
+        waitForManyRequestSquareState(index, "Failed")
+        scrollToManyRequestTag(testTag)
+        val node = composeTestRule.onNodeWithTag(testTag)
+        val descriptions = node.fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
+        assertEquals(listOf("Request ${index + 1}, ${type.displayName}"), descriptions)
+        node.performClick()
+        waitForNode(MANY_REQUEST_ERROR_DETAILS_CONTENT_DESC)
+        return requireNotNull(readTextOrNull(MANY_REQUEST_ERROR_DETAILS_CONTENT_DESC))
+    }
+
+    fun validateManyRequestErrorCopyAvailable() {
+        waitForNode(MANY_REQUEST_ERROR_COPY_CONTENT_DESC)
+    }
+
+    private fun manyRequestCounts(configuredCount: Int): ManyRequestCounts {
+        val successes = firstInteger(readText(MANY_REQUEST_SUCCESS_COUNT_CONTENT_DESC))
+        val failures = firstInteger(readText(MANY_REQUEST_FAILURE_COUNT_CONTENT_DESC))
+        val completed = firstInteger(readText(MANY_REQUEST_COMPLETED_COUNT_CONTENT_DESC))
+        val inFlight = firstInteger(readText(MANY_REQUEST_IN_FLIGHT_COUNT_CONTENT_DESC))
+        val queued = firstInteger(readText(MANY_REQUEST_QUEUED_COUNT_CONTENT_DESC))
+        assertEquals("Every request should have one terminal result", configuredCount, completed)
+        assertEquals("Successes plus failures should equal completed", completed, successes + failures)
+        assertEquals("No request should remain queued after completion", 0, queued)
+        assertEquals("No request should remain in flight after completion", 0, inFlight)
+        return ManyRequestCounts(completed, successes, failures, inFlight, queued)
+    }
+
+    private fun firstInteger(text: String): Int =
+        Regex("\\d+").find(text)?.value?.toInt()
+            ?: throw AssertionError("Expected an integer in '$text'")
+
+    private fun readText(contentDescription: String): String =
+        requireNotNull(readTextOrNull(contentDescription)) {
+            "No text found for node '$contentDescription'"
+        }
+
+    private fun readTextOrNull(contentDescription: String): String? = try {
+        val nodes = composeTestRule
+            .onAllNodesWithContentDescription(contentDescription)
+            .fetchSemanticsNodes()
+        nodes.firstOrNull()?.config?.let { config ->
+            if (config.contains(SemanticsProperties.Text)) {
+                config[SemanticsProperties.Text].lastOrNull()?.text
+            } else {
+                null
+            }
+        }
+    } catch (_: Throwable) {
+        null
+    }
+
+    private fun scrollToManyRequestNode(contentDescription: String) {
+        composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
+            .performScrollToNode(hasContentDescription(contentDescription))
+        waitForNode(contentDescription)
+    }
+
+    /**
+     * Brings a control added below the visible part of the non-lazy scroll container into its
+     * semantics tree. `performScrollToNode` cannot target a node until Compose exposes it, so
+     * advance in small bounded steps before doing the precise scroll.
+     */
+    private fun revealManyRequestNode(contentDescription: String) {
+        val scrollContainer = composeTestRule
+            .onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
+        repeat(MANY_REQUEST_REVEAL_SCROLL_ATTEMPTS) {
+            val isExposed = composeTestRule
+                .onAllNodesWithContentDescription(contentDescription)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+            if (isExposed) {
+                scrollToManyRequestNode(contentDescription)
+                return
+            }
+            scrollContainer.performTouchInput {
+                swipe(
+                    start = center + Offset(0f, MANY_REQUEST_REVEAL_SCROLL_STEP_PX / 2),
+                    end = center - Offset(0f, MANY_REQUEST_REVEAL_SCROLL_STEP_PX / 2),
+                    durationMillis = 100,
+                )
+            }
+            composeTestRule.waitForIdle()
+        }
+        waitForNode(contentDescription)
+    }
+
+    private fun scrollToManyRequestTag(testTag: String) {
+        composeTestRule.onNodeWithContentDescription(SCROLL_CONTAINER_CONTENT_DESC)
+            .performScrollToNode(hasTestTag(testTag))
+        waitForManyRequestSquareState(
+            index = testTag.substringAfterLast('_').toInt() - 1,
+            expectedState = null,
+        )
+    }
+
+    private fun waitForManyRequestSquareState(
+        index: Int,
+        expectedState: String?,
+        timeoutMillis: Long = TIMEOUT_MS,
+    ) {
+        val testTag = manyRequestSquareTestTag(index)
+        try {
+            composeTestRule.waitUntil(timeoutMillis) {
+                val nodes = composeTestRule.onAllNodesWithTag(testTag).fetchSemanticsNodes()
+                nodes.firstOrNull()?.let { node ->
+                    expectedState == null ||
+                        (node.config.contains(SemanticsProperties.StateDescription) &&
+                            node.config[SemanticsProperties.StateDescription] == expectedState)
+                } == true
+            }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError(
+                "Timed out waiting for request ${index + 1} state '$expectedState'",
+                e,
+            )
+        }
     }
 
     /** Clicks the revoke-access-token button and waits for its result dialog. */
@@ -320,39 +631,42 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         isJwt: Boolean = false,
         isBeacon: Boolean = false,
         expectedRtMarker: Boolean = false,
+        assertUsername: Boolean = true,
     ) {
         val expected = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
 
         waitForNode(CREDS_SECTION_CONTENT_DESC)
 
-        // Wait for the UI to update asynchronously after login or user switch.
-        // The view may be recreated and collapsed when the current user state updates.
-        try {
-            composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
-                try {
-                    val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
-                    val isVisible = nodes.isNotEmpty()
-                    var isMatch = false
+        if (assertUsername) {
+            // Wait for the UI to update asynchronously after login or user switch.
+            // The view may be recreated and collapsed when the current user state updates.
+            try {
+                composeTestRule.waitUntil(APP_LOAD_TIMEOUT_MS) {
+                    try {
+                        val nodes = composeTestRule.onAllNodesWithContentDescription(USERNAME).fetchSemanticsNodes()
+                        val isVisible = nodes.isNotEmpty()
+                        var isMatch = false
 
-                    if (isVisible) {
-                        val config = nodes.first().config
-                        if (config.contains(SemanticsProperties.Text)) {
-                            isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                        if (isVisible) {
+                            val config = nodes.first().config
+                            if (config.contains(SemanticsProperties.Text)) {
+                                isMatch = config[SemanticsProperties.Text].last().text == expected.username
+                            }
+                        } else {
+                            composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
+                            composeTestRule.waitForIdle()
                         }
-                    } else {
-                        composeTestRule.onNodeWithContentDescription(CREDS_SECTION_CONTENT_DESC).performClick()
-                        composeTestRule.waitForIdle()
-                    }
 
-                    isMatch
-                } catch (_: Exception) {
-                    false
+                        isMatch
+                    } catch (_: Exception) {
+                        false
+                    }
                 }
+            } catch (e: ComposeTimeoutException) {
+                throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
             }
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out after ${APP_LOAD_TIMEOUT_MS}ms waiting for username to show \"${expected.username}\"", e)
+            assertEquals(expected.username, getText(USERNAME))
         }
-        assertEquals(expected.username, getText(USERNAME))
 
         // Validate feature flags — UI is already settled, reuse the existing layout traversal
         expandUserCredentialsSection(targetNode = USER_AGENT_CONTENT_DESC)
@@ -433,7 +747,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
     }
 
-    private fun String.emptyIfPlaceholder() = if (this == "(empty)") "" else this
+    private fun String.emptyIfPlaceholder() = if (this == EMPTY_VALUE_PLACEHOLDER) "" else this
 
     fun migrateToNewApp(
         knownAppConfig: KnownAppConfig,
@@ -651,25 +965,120 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
     }
 
     private fun getSensitiveValue(contentDescription: String): String {
-        val node = composeTestRule.onNodeWithContentDescription(contentDescription)
-        node.performScrollTo()
-        node.performSemanticsAction(SemanticsActions.OnClick) // Reveal full value
-        composeTestRule.waitForIdle()
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        var revealMayHaveSucceeded = false
+        try {
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    val hiddenText = readTextFromFreshNode(contentDescription)
+                    if (hiddenText == EMPTY_VALUE_PLACEHOLDER) return hiddenText
+                    if (!hiddenText.contains("...")) {
+                        revealMayHaveSucceeded = true
+                        return hiddenText
+                    }
 
-        val text = node.fetchSemanticsNode()
-            .config[SemanticsProperties.Text]
-            .last().text // Value is last; first is the label (e.g. "Access Token:")
+                    revealMayHaveSucceeded = true
+                    composeTestRule.onNodeWithContentDescription(contentDescription)
+                        .performSemanticsAction(SemanticsActions.OnClick)
+                    composeTestRule.waitForIdle()
 
-        assert(!text.contains("...")) {
-            "Got truncated value for '$contentDescription': $text"
+                    waitForSensitiveTextState(
+                        contentDescription = contentDescription,
+                        shouldBeHidden = false,
+                        overallDeadline = deadline,
+                    )?.let { return it }
+                } catch (_: AssertionError) {
+                    // Retry below.
+                } catch (_: IllegalStateException) {
+                    // Retry below.
+                }
+                // The keyed credentials view can be replaced while a user switch settles. Resolve
+                // a fresh node on the next pass instead of retaining a stale interaction.
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            }
+            throw AssertionError("Timed out revealing full value for '$contentDescription'")
+        } finally {
+            if (revealMayHaveSucceeded) {
+                hideSensitiveValue(contentDescription)
+            }
         }
+    }
 
-        node.performSemanticsAction(SemanticsActions.OnClick) // Hide value
-        composeTestRule.waitForIdle()
-        return text
+    private fun hideSensitiveValue(contentDescription: String) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                if (readTextFromFreshNode(contentDescription).contains("...")) return
+
+                composeTestRule.onNodeWithContentDescription(contentDescription)
+                    .performSemanticsAction(SemanticsActions.OnClick)
+                composeTestRule.waitForIdle()
+                val hiddenText = waitForSensitiveTextState(
+                    contentDescription = contentDescription,
+                    shouldBeHidden = true,
+                    overallDeadline = deadline,
+                )
+                if (hiddenText != null) return
+            } catch (_: AssertionError) {
+                // Retry with a fresh node below.
+            } catch (_: IllegalStateException) {
+                // Retry with a fresh node below.
+            }
+            Thread.sleep(READ_RETRY_INTERVAL_MS)
+        }
+        throw AssertionError("Timed out restoring hidden value for '$contentDescription'")
+    }
+
+    /**
+     * Gives a sensitive-row click time to finish recomposing before another click is attempted.
+     * Without this settle window, a delayed reveal can be immediately toggled back to hidden.
+     */
+    private fun waitForSensitiveTextState(
+        contentDescription: String,
+        shouldBeHidden: Boolean,
+        overallDeadline: Long,
+    ): String? {
+        val transitionDeadline = minOf(
+            overallDeadline,
+            System.currentTimeMillis() + SENSITIVE_TOGGLE_SETTLE_TIMEOUT_MS,
+        )
+        while (System.currentTimeMillis() < transitionDeadline) {
+            try {
+                val text = readTextFromFreshNode(contentDescription)
+                if (text == EMPTY_VALUE_PLACEHOLDER) {
+                    if (shouldBeHidden) return text
+                } else if (text.contains("...") == shouldBeHidden) {
+                    return text
+                }
+            } catch (_: AssertionError) {
+                // Resolve a fresh node on the next pass.
+            } catch (_: IllegalStateException) {
+                // Resolve a fresh node on the next pass.
+            }
+
+            val remaining = transitionDeadline - System.currentTimeMillis()
+            if (remaining > 0) {
+                Thread.sleep(minOf(READ_RETRY_INTERVAL_MS, remaining))
+            }
+        }
+        return null
     }
 
     private fun getText(contentDescription: String): String {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                return readTextFromFreshNode(contentDescription)
+            } catch (_: AssertionError) {
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            } catch (_: IllegalStateException) {
+                Thread.sleep(READ_RETRY_INTERVAL_MS)
+            }
+        }
+        throw AssertionError("Timed out reading value for '$contentDescription'")
+    }
+
+    private fun readTextFromFreshNode(contentDescription: String): String {
         val node = composeTestRule.onNodeWithContentDescription(contentDescription)
         node.performScrollTo()
         return node.fetchSemanticsNode()
@@ -707,6 +1116,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
                 "Expected '$expectedMarker' in the last token-request User-Agent: $userAgent"
             }
         }
+    }
+
+    fun getCapturedTokenRequestCount(): Int {
+        expandUserCredentialsSection(targetNode = TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC)
+        return getText(TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC).toInt()
     }
 
     private fun validateUserAgent(
@@ -881,3 +1295,11 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         }
     }
 }
+
+data class ManyRequestCounts(
+    val completed: Int,
+    val successes: Int,
+    val failures: Int,
+    val inFlight: Int,
+    val queued: Int,
+)

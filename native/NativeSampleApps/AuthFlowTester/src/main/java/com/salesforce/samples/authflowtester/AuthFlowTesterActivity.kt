@@ -133,6 +133,9 @@ import com.salesforce.samples.authflowtester.components.SECTION_TITLE_SIZE
 import com.salesforce.samples.authflowtester.components.JwtTokenView
 import com.salesforce.samples.authflowtester.components.OAuthConfigurationView
 import com.salesforce.samples.authflowtester.components.UserCredentialsView
+import com.salesforce.samples.authflowtester.components.ConcurrentRestRequestsCard
+import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
+import com.salesforce.samples.authflowtester.components.ConcurrentRequestBatchContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -171,6 +174,7 @@ const val ALERT_POSITIVE_BUTTON_CONTENT_DESC = "alert_positive"
 const val SCROLL_CONTAINER_CONTENT_DESC = "scroll_container"
 const val USER_AGENT_CONTENT_DESC = "user_agent"
 const val TOKEN_ENDPOINT_USER_AGENT_CONTENT_DESC = "token_endpoint_user_agent"
+const val TOKEN_ENDPOINT_REQUEST_COUNT_CONTENT_DESC = "token_endpoint_request_count"
 
 class AuthFlowTesterActivity : SalesforceActivity() {
     private var client: RestClient? = null
@@ -312,6 +316,36 @@ class AuthFlowTesterActivity : SalesforceActivity() {
                 Spacer(Modifier.height(innerPadding.calculateTopPadding()))
                 RevokeButtonCard()
                 RequestButtonCard()
+                ConcurrentRestRequestsCard(
+                    revokeAction = ::revokeAccessTokenAction,
+                    batchContextProvider = {
+                        val manager = SalesforceSDKManager.getInstance()
+                        val capturedUser = manager.userAccountManager.currentUser
+                        val capturedAccount = capturedUser?.let {
+                            manager.userAccountManager.buildAccount(it)
+                        }
+                        val logoutCapturedAccount: () -> Unit = {
+                            if (capturedAccount != null) {
+                                manager.logout(
+                                    account = capturedAccount,
+                                    frontActivity = this@AuthFlowTesterActivity,
+                                )
+                            }
+                        }
+                        ConcurrentRequestBatchContext(
+                            client = capturedUser?.let {
+                                ClientManager(applicationContext, it).peekRestClient()
+                            },
+                            accessToken = capturedUser?.authToken,
+                            logoutAction = logoutCapturedAccount,
+                        )
+                    },
+                    failedRequestIndexProvider = {
+                        ConcurrentRequestTestHooks.failedRequestIndex.takeIf {
+                            BuildConfig.DEBUG && SalesforceSDKManager.getInstance().isUiTesting
+                        }
+                    },
+                )
 
                 // Use key() to force recomposition when tokens change (UserAccount.equals only compares userId/orgId)
                 key(currentUser.value?.authToken, currentUser.value?.refreshToken) {

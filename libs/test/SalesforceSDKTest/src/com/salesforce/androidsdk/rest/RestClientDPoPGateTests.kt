@@ -27,21 +27,27 @@
 package com.salesforce.androidsdk.rest
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.androidsdk.auth.dpop.DPoPKeyManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import org.junit.After
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
+import java.net.URI
 import java.util.UUID
 
 /**
@@ -68,9 +74,12 @@ class RestClientDPoPGateTests {
         return id
     }
 
-    private fun captureAuthenticatedRequest(interceptor: RestClient.OAuthRefreshInterceptor): Request {
+    private fun captureAuthenticatedRequest(
+        interceptor: RestClient.OAuthRefreshInterceptor,
+        path: String = "/services/data/v65.0/query",
+    ): Request {
         val outbound = Request.Builder()
-            .url("https://instance.example.com/services/data/v65.0/query")
+            .url("https://instance.example.com$path")
             .get()
             .build()
         val outboundSlot = slot<Request>()
@@ -144,8 +153,8 @@ class RestClientDPoPGateTests {
 
     // Belt-and-suspenders: no tokenType, but a key pair exists for the credential
     // → interceptor still attaches a DPoP proof (Authorization stays Bearer
-    // because setAuthHeader keys off exact tokenType match — this asymmetry
-    // is intentional and documented).
+    // because DPoPRequestDecorator.applyAuthHeaders derives Authorization from
+    // tokenType while proof attachment also accepts an existing key pair).
     @Test
     fun test_givenNoTokenTypeButExistingKeyPair_whenIntercept_thenAttachesProof() {
         val id = trackId("belt_haskeypair")
@@ -166,22 +175,263 @@ class RestClientDPoPGateTests {
         )
     }
 
-    // Null credentialsIdentifier short-circuits — no DPoP header regardless of tokenType.
+    // An explicit DPoP token type without its key identifier is corrupt. Fail before the
+    // OkHttp chain can transmit an Authorization header without a proof.
     @Test
-    fun test_givenNullCredentialsIdentifier_whenIntercept_thenNoDPoPHeader() {
+    fun test_givenDPoPWithNullCredentialsIdentifier_whenIntercept_thenFailsBeforeNetwork() {
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            null,
+            "__ACCESS_TOKEN__",
+            "dPoP",
+            null,
+            null,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
+
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        verify(exactly = 0) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenDPoPWithBlankCredentialsIdentifier_whenIntercept_thenFailsBeforeNetwork() {
         val interceptor = RestClient.OAuthRefreshInterceptor(
             null,
             "__ACCESS_TOKEN__",
             "DPoP",
-            null,
+            "   ",
             null,
         )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val chain = mockk<Interceptor.Chain>(relaxed = true) {
+            every { request() } returns outbound
+        }
 
-        val captured = captureAuthenticatedRequest(interceptor)
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
 
-        assertNull(
-            "Did not expect DPoP header when credentialsIdentifier is null",
-            captured.header("DPoP"),
-        )
+        verify(exactly = 0) { chain.proceed(any()) }
     }
+
+    @Test
+    fun test_givenIncompleteDPoPAndUiSidPolicy_whenIntercept_thenFailsBeforeNetwork() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
+            val interceptor = RestClient.OAuthRefreshInterceptor(
+                null,
+                "__ACCESS_TOKEN__",
+                "DPoP",
+                null,
+                "__UI_SID__",
+                null,
+            )
+            val outbound = Request.Builder()
+                .url("https://instance.example.com/services/session/bootstrap")
+                .get()
+                .build()
+            val chain = mockk<Interceptor.Chain>(relaxed = true) {
+                every { request() } returns outbound
+            }
+
+            assertThrows(IOException::class.java) {
+                interceptor.intercept(chain)
+            }
+
+            verify(exactly = 0) { chain.proceed(any()) }
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
+    fun test_givenCachedBearerInterceptorMigratesToIncompleteDPoP_whenReplay_thenReportsIoFailure() {
+        val provider = object : RestClient.AuthTokenProvider {
+            override fun getInstanceUrl() = "https://instance.example.com"
+            override fun getNewAuthToken() = "__DPOP_ACCESS_TOKEN__"
+            override fun getRefreshToken() = "__REFRESH_TOKEN__"
+            override fun getLastRefreshTime() = 0L
+            override fun getTokenType() = "DPoP"
+        }
+        val interceptor = RestClient.OAuthRefreshInterceptor(
+            clientInfo(),
+            "__BEARER_ACCESS_TOKEN__",
+            "Bearer",
+            null,
+            provider,
+        )
+        val outbound = Request.Builder()
+            .url("https://instance.example.com/services/data/v65.0/query")
+            .get()
+            .build()
+        val attempts = mutableListOf<Request>()
+        val chain = mockk<Interceptor.Chain> {
+            every { request() } returns outbound
+            every { proceed(any()) } answers {
+                val attemptedRequest = firstArg<Request>()
+                attempts += attemptedRequest
+                Response.Builder()
+                    .request(attemptedRequest)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(401)
+                    .message("Unauthorized")
+                    .build()
+            }
+        }
+
+        assertThrows(IOException::class.java) {
+            interceptor.intercept(chain)
+        }
+
+        assertTrue(attempts.single().header("Authorization")!!.startsWith("Bearer "))
+        verify(exactly = 1) { chain.proceed(any()) }
+    }
+
+    @Test
+    fun test_givenDPoPAndUiSidWhenPolicySelects_whenIntercept_thenUsesCleanUiSidBearerHeaders() {
+        val id = trackId("selected_ui_sid")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
+            val interceptor = RestClient.OAuthRefreshInterceptor(
+                null,
+                "__ACCESS_TOKEN__",
+                "DPoP",
+                id,
+                "__UI_SID__",
+                null,
+            )
+
+            val captured = captureAuthenticatedRequest(interceptor, "/services/session/bootstrap")
+
+            assertEquals("Bearer __UI_SID__", captured.header("Authorization"))
+            assertNull(captured.header("DPoP"))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
+    fun test_givenRefreshChangesPolicyAndUiSid_whenReplay_thenHeadersSwitchAtomically() {
+        val id = trackId("refresh_ui_sid")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { false }
+            val provider = object : RestClient.AuthTokenProvider {
+                override fun getInstanceUrl() = "https://instance.example.com"
+                override fun getNewAuthToken(): String {
+                    sdkManager.shouldUseUiSidBearerForPath = { true }
+                    return "__NEW_ACCESS_TOKEN__"
+                }
+                override fun getRefreshToken() = "__REFRESH_TOKEN__"
+                override fun getLastRefreshTime() = 0L
+                override fun getTokenType() = "DPoP"
+                override fun getUiSid() = "__NEW_UI_SID__"
+            }
+            val interceptor = RestClient.OAuthRefreshInterceptor(
+                clientInfo(),
+                "__OLD_ACCESS_TOKEN__",
+                "DPoP",
+                id,
+                "__OLD_UI_SID__",
+                provider,
+            )
+            val original = Request.Builder()
+                .url("https://instance.example.com/services/session/bootstrap")
+                .get()
+                .build()
+            val attempts = mutableListOf<Request>()
+            val chain = mockk<Interceptor.Chain> {
+                every { request() } returns original
+                every { proceed(any()) } answers {
+                    val attemptedRequest = firstArg<Request>()
+                    attempts += attemptedRequest
+                    Response.Builder()
+                        .request(attemptedRequest)
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(if (attempts.size == 1) 401 else 200)
+                        .message(if (attempts.size == 1) "Unauthorized" else "OK")
+                        .build()
+                }
+            }
+
+            interceptor.intercept(chain)
+
+            assertEquals(2, attempts.size)
+            assertEquals("DPoP __OLD_ACCESS_TOKEN__", attempts[0].header("Authorization"))
+            assertNotNull(attempts[0].header("DPoP"))
+            assertEquals("Bearer __NEW_UI_SID__", attempts[1].header("Authorization"))
+            assertNull(attempts[1].header("DPoP"))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+        }
+    }
+
+    @Test
+    fun test_givenCachedInterceptorWithoutUiSid_whenSameTokenClientAddsUiSid_thenCacheAdoptsMetadata() {
+        RestClient.clearCaches()
+        val id = trackId("cached_ui_sid")
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalPolicy = sdkManager.shouldUseUiSidBearerForPath
+        try {
+            sdkManager.shouldUseUiSidBearerForPath = { true }
+            val info = clientInfo()
+            RestClient(
+                info,
+                "__ACCESS_TOKEN__",
+                "DPoP",
+                id,
+                null,
+                HttpAccess.DEFAULT,
+                null,
+            )
+            val updatedClient = RestClient(
+                info,
+                "__ACCESS_TOKEN__",
+                "DPoP",
+                id,
+                "__UI_SID__",
+                HttpAccess.DEFAULT,
+                null,
+            )
+
+            val captured = captureAuthenticatedRequest(
+                updatedClient.oAuthRefreshInterceptor,
+                "/services/session/bootstrap",
+            )
+
+            assertEquals("Bearer __UI_SID__", captured.header("Authorization"))
+            assertNull(captured.header("DPoP"))
+        } finally {
+            sdkManager.shouldUseUiSidBearerForPath = originalPolicy
+            RestClient.clearCaches()
+        }
+    }
+
+    private fun clientInfo() = RestClient.ClientInfo(
+        URI.create("https://instance.example.com"),
+        URI.create("https://login.example.com"),
+        URI.create("https://login.example.com/id/orgId/userId"),
+        "account",
+        "user@example.com",
+        "userId",
+        "orgId",
+        null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null,
+    )
 }

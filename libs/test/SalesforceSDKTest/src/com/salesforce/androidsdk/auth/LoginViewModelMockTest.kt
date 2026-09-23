@@ -129,6 +129,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -171,6 +172,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -204,6 +206,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -245,6 +248,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -278,6 +282,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -318,6 +323,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -512,6 +518,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -552,6 +559,7 @@ class LoginViewModelMockTest {
                 runtimeConfig = any(),
                 updateLoggingPrefs = any(),
                 fetchUserIdentity = any(),
+                fetchUserIdentityResult = any(),
                 startMainActivity = any(),
                 setAdministratorPreferences = any(),
                 addAccount = any(),
@@ -890,7 +898,9 @@ class LoginViewModelMockTest {
         UserAccountManager.getInstance().createAccount(nativeLoginUser)
         bioAuthManager.storeMobilePolicy(nativeLoginUser, enabled = true, timeout = 15)
         bioAuthManager.biometricOptIn(true)
-        bioAuthManager.lock()
+        // Set only the state under test. Calling lock() also launches LoginActivity, which is an
+        // unrelated UI side effect that can outlive this unit test and crash the test process.
+        bioAuthManager.locked = true
 
         assertFalse(
             "Should not report biometric locked for native login user.",
@@ -909,7 +919,7 @@ class LoginViewModelMockTest {
         UserAccountManager.getInstance().createAccount(account)
         bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
         bioAuthManager.biometricOptIn(true)
-        bioAuthManager.lock()
+        bioAuthManager.locked = true
 
         assertTrue(
             "Should report biometric locked for non-native login user.",
@@ -928,7 +938,7 @@ class LoginViewModelMockTest {
         UserAccountManager.getInstance().createAccount(account)
         bioAuthManager.storeMobilePolicy(account, enabled = true, timeout = 15)
         // Not opted in.
-        bioAuthManager.lock()
+        bioAuthManager.locked = true
 
         assertFalse(
             "Should not report biometric locked when not opted in.",

@@ -41,6 +41,7 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Build.MODEL
@@ -57,6 +58,7 @@ import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import android.webkit.CookieManager
 import android.webkit.URLUtil.isHttpsUrl
 import android.widget.Toast
+import androidx.annotation.CallSuper
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.Companion.PRIVATE
 import androidx.annotation.VisibleForTesting.Companion.PROTECTED
@@ -73,7 +75,6 @@ import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
 import androidx.window.layout.WindowMetricsCalculator
-import com.salesforce.androidsdk.BuildConfig.DEBUG
 import com.salesforce.androidsdk.R.string.account_type
 import com.salesforce.androidsdk.R.string.sf__dev_support_title
 import com.salesforce.androidsdk.R.style.SalesforceSDK_AlertDialog
@@ -105,7 +106,6 @@ import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_CLIENT_SRC
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_COOKIE_SID_CLIENT
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CREDENTIALS_IDENTIFIER
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_CSRF_TOKEN
-import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_INSTANCE_URL
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_LIGHTNING_SID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_ORG_ID
 import com.salesforce.androidsdk.auth.AuthenticatorService.KEY_PARENT_SID
@@ -146,6 +146,8 @@ import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.NotificationsActionsResponseBody
 import com.salesforce.androidsdk.rest.NotificationsApiClient
 import com.salesforce.androidsdk.rest.RestClient
+import com.salesforce.androidsdk.rest.clearRefreshStateForUser
+import com.salesforce.androidsdk.rest.peekRestClientWithResolvedUser
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator
 import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getEncryptionKey
@@ -316,6 +318,24 @@ open class SalesforceSDKManager protected constructor(
     var appConfigForLoginHost: suspend (server: String) -> OAuthConfig? = {
         OAuthConfig(getBootConfig(appContext))
     }
+
+    /**
+     * Selects requests that should use the UI session as a Bearer token when the current
+     * credential is DPoP-bound and has a non-empty UI session ID. This policy is synchronous
+     * because it is evaluated while an HTTP request is being authenticated. The callback must be
+     * fast and non-blocking because requests for the same user are serialized while it runs. If
+     * it throws, the SDK safely falls back to DPoP authentication.
+     *
+     * Apps may replace this function process-wide. It is not called for ordinary Bearer
+     * credentials or when no UI session ID is available. By default it returns false for every
+     * path, so no request uses the UI session until an app opts specific paths in.
+     */
+    @Volatile
+    var shouldUseUiSidBearerForPath: (path: String) -> Boolean = { false }
+
+    /** Resolves [shouldUseUiSidBearerForPath] for an authenticated request path. */
+    fun shouldUseUiSidBearerForPath(path: String): Boolean =
+        shouldUseUiSidBearerForPath.invoke(path)
 
     internal var debugOverrideAppConfig: OAuthConfig? = null
 
@@ -735,13 +755,13 @@ open class SalesforceSDKManager protected constructor(
 
     /**
      * The app specified option to enable developer support features, which
-     * overrides the default value from BuildConfig.DEBUG.
+     * overrides the default value from the app's debuggable state.
      */
     private var isDevSupportEnabledOverride: Boolean? = null
 
     /**
      * Indicates if developer support features are enabled.  Defaults to
-     * BuildConfig.DEBUG unless another value is specified.
+     * the app's debuggable state unless another value is specified.
      * @return Boolean true enables developer support features; false otherwise
      */
     open fun isDevSupportEnabled() = isDevSupportEnabledOverride ?: isDebugBuild
@@ -1017,14 +1037,51 @@ open class SalesforceSDKManager protected constructor(
     /**
      * Clean up cached data.
      *
+     * Overrides must call `super.cleanUp(userAccount)` — this base
+     * implementation invalidates [cachedClientManager] and other
+     * account-scoped caches. Skipping the super call reintroduces stale
+     * cache reads for the removed/malformed account. [CallSuper] makes
+     * Android Lint enforce this at build time.
+     *
      * @param userAccount The user account
      */
+    @CallSuper
     protected open fun cleanUp(userAccount: UserAccount?) {
         SalesforceAnalyticsManager.reset(userAccount)
         RestClient.clearCaches(userAccount)
         UserAccountManager.getInstance().clearCachedCurrentUser()
 
+        /*
+         * The removed/malformed account may be the one clientManager has
+         * cached; drop it so the next access re-resolves rather than
+         * returning a manager bound to a now-invalid account.
+         *
+         * This is event-driven invalidation, not per-access re-validation:
+         * the cache is only checked for validity here, when an account is
+         * actually removed, not on every clientManager read. Re-validating
+         * on every access would reintroduce the AccountManager IPC cost
+         * this whole cache exists to avoid. Every account-removal path
+         * (logout, purgeMalformedPersistedAccount, and the corrupt-account
+         * path in getRestClient) funnels through this method, so it is a
+         * complete invalidation point for the cache's lifetime.
+         */
+        cachedClientManager = null
+
         userAccount?.let { userAccountResolved ->
+            clearRefreshStateForUser(userAccountResolved)
+
+            /*
+             * Drops this user's persisted feature markers so a later login
+             * as the same identity starts from an empty set rather than
+             * inheriting the previous session's markers. Without this, the
+             * no-op guards in registerUsedAppFeature/unregisterUsedAppFeature
+             * (which only persist on an actual set change) can skip writing
+             * the new session's flags if they happen to match what's left
+             * over from the old one, leaving in-memory and persisted state
+             * inconsistent.
+             */
+            perUserFeatures.remove("${userAccountResolved.orgId}/${userAccountResolved.userId}")
+
             (screenLockManager as ScreenLockManager?)?.cleanUp(userAccountResolved)
             (biometricAuthenticationManager as BiometricAuthenticationManager)
                 .cleanUp(userAccountResolved)
@@ -1225,12 +1282,10 @@ open class SalesforceSDKManager protected constructor(
             isLastPersistedAccount,
         )
         userAccount.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
-            runCatching {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
-                DPoPNonceCache.clear(id)
-            }.onFailure { e ->
-                w(TAG, "Failed to delete DPoP key pair on logout", e)
+            if (!DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))) {
+                w(TAG, "Failed to delete DPoP key pair on logout")
             }
+            DPoPNonceCache.clear(id)
         }
 
         clearWebViewCookiesAfterLogout()
@@ -1531,8 +1586,14 @@ open class SalesforceSDKManager protected constructor(
         if (user == null) { registerUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
         val set = perUserFeatures.getOrPut(key) { ConcurrentSkipListSet(CASE_INSENSITIVE_ORDER) }
-        set.add(appFeatureCode)
-        persistUserFeatureFlags(user, set)
+        /*
+         * add() returns false when the code is already present, so this skips
+         * the AccountManager round-trip in persistUserFeatureFlags on repeat
+         * calls.
+         */
+        if (set.add(appFeatureCode)) {
+            persistUserFeatureFlags(user, set)
+        }
     }
 
     /**
@@ -1544,8 +1605,15 @@ open class SalesforceSDKManager protected constructor(
     fun unregisterUsedAppFeature(appFeatureCode: String, user: UserAccount?) {
         if (user == null) { unregisterUsedAppFeature(appFeatureCode); return }
         val key = "${user.orgId}/${user.userId}"
-        perUserFeatures[key]?.remove(appFeatureCode)
-        persistUserFeatureFlags(user, perUserFeatures[key] ?: emptySet())
+        val set = perUserFeatures[key] ?: return
+        /*
+         * remove() returns false when the code was already absent, so this
+         * skips the AccountManager round-trip in persistUserFeatureFlags on
+         * repeat/no-op calls.
+         */
+        if (set.remove(appFeatureCode)) {
+            persistUserFeatureFlags(user, set)
+        }
     }
 
     private fun persistUserFeatureFlags(user: UserAccount, flags: Set<String>) {
@@ -1594,15 +1662,73 @@ open class SalesforceSDKManager protected constructor(
         """.trimIndent()
 
     /**
+     * Single-entry current-user cache for [clientManager], keyed by the
+     * current user's org/user ID pair.
+     *
+     * Holds at most one `(key, manager)` pair, not a per-account map: an A
+     * -> B -> A user-switch sequence does not retain A's manager across the
+     * trip through B, it replaces A with B and then constructs a new
+     * manager when A becomes current again. The tradeoff: an access
+     * pattern that rapidly alternates the current user gets no caching
+     * benefit (every access is a miss). Not a regression, since that
+     * pattern paid the full IPC cost before this cache existed too.
+     */
+    @Volatile
+    private var cachedClientManager: Pair<String, ClientManager>? = null
+
+    /**
      * Returns a manager bound to the user who is current at the time of access,
      * or null when there is no current user. Retaining the returned manager
      * retains that user's identity even if the application later switches
      * users.
+     *
+     * The manager is cached per current-user identity to avoid re-resolving the
+     * AccountManager-backed account on every access; the cache is invalidated
+     * whenever the current user's identity changes.
+     *
+     * Uses [UserAccountManager.getCachedCurrentUser] rather than
+     * `getCurrentUser()` for the identity lookup: `getCurrentUser()`
+     * unconditionally re-resolves the current account via `AccountManager`
+     * on every call, which would reintroduce exactly the IPC this cache
+     * exists to avoid. `cachedCurrentUser` only cares about identity
+     * (org/user ID) to compute the cache key, so its possibly-stale OAuth
+     * fields are fine here; `storeCurrentUserInfo` invalidates this
+     * underlying cache on every user switch, so the identity itself is
+     * never stale across a switch.
      */
     val clientManager: ClientManager?
-        get() = userAccountManager.currentUser?.let { user ->
-            ClientManager(appContext, user)
-        }?.takeIf { manager -> manager.account != null }
+        get() {
+            val user = userAccountManager.cachedCurrentUser ?: return null
+            return resolveClientManager(user)
+        }
+
+    /**
+     * Resolves (and caches) the [ClientManager] bound to [user]'s identity.
+     * Shared by [clientManager] and [getRestClient], which each obtain
+     * [user] from a different identity source: [clientManager] re-resolves
+     * "who is current" itself via `cachedCurrentUser`, while [getRestClient]
+     * derives it from an [Account] it already read once, so the two callers
+     * never perform two independent current-user resolutions within the
+     * same request.
+     */
+    private fun resolveClientManager(user: UserAccount): ClientManager? {
+        val key = "${user.orgId}/${user.userId}"
+        cachedClientManager?.let { (cachedKey, manager) ->
+            if (cachedKey == key) return manager
+        }
+        /*
+         * Check-then-act, not atomic: concurrent callers can both miss here
+         * and each construct their own ClientManager, with the last write to
+         * cachedClientManager winning. @Volatile only guarantees the write is
+         * visible to other threads, not that this read-then-write is
+         * exclusive. Accepted as benign — the losing manager is simply
+         * discarded, not left in an inconsistent state — rather than paying
+         * for a lock on this hot path.
+         */
+        val manager = ClientManager(appContext, user).takeIf { it.account != null } ?: return null
+        cachedClientManager = key to manager
+        return manager
+    }
 
     /**
      * Returns an authenticated client for the current user or starts login when
@@ -1610,15 +1736,44 @@ open class SalesforceSDKManager protected constructor(
      * valid user and client, removes that exact corrupt account and completes
      * the normal logout, account-switching, or login flow without invoking
      * [restClientCallback].
+     *
+     * Called from `SalesforceActivityDelegate.onResume()`, so this is on the
+     * Activity-resume hot path; it goes through [clientManager] rather than
+     * constructing a `ClientManager` directly so repeated resumes for the
+     * same current user reuse the cached instance instead of re-resolving
+     * the account via `AccountManager` on every resume. Passes the already-
+     * built [user] into `ClientManager`'s package-private
+     * [UserAccount]-accepting `peekRestClient` overload (via the module-
+     * internal `peekRestClientWithResolvedUser` bridge in
+     * `ClientManagerInternal.kt`) rather than its public no-arg overload,
+     * which would otherwise re-decrypt a second [UserAccount] from the same
+     * [Account] on every call.
      */
     fun getRestClient(
         activityContext: Activity,
         restClientCallback: RestClientCallback,
     ) {
+
+        /*
+         * Resolve identity once (account, then the user built from that
+         * exact account) rather than reading userAccountManager.currentAccount
+         * and clientManager separately: each independently re-resolves "who
+         * is current," so reading them apart could observe two different
+         * users if the current user switches in between, delivering one
+         * user's client while logging out the other's (stale) account
+         * snapshot. Resolving the user from this exact account (rather than
+         * from clientManager's own cachedCurrentUser lookup) also preserves
+         * the corrupt-account detection below: a malformed account (missing
+         * a required field) still resolves to a non-null Account here, so
+         * it's still the exact account removed on failure, matching the
+         * pre-cache behavior.
+         */
         val account = userAccountManager.currentAccount
+        val user = account?.let { userAccountManager.buildUserAccount(it) }
         if (account != null) {
-            val user = userAccountManager.buildUserAccount(account)
-            val client = user?.let { ClientManager(appContext, it).peekRestClient() }
+            val client = user?.let { resolvedUser ->
+                resolveClientManager(resolvedUser)?.peekRestClientWithResolvedUser(resolvedUser)
+            }
             if (client == null) {
                 w(TAG, "Removing a corrupt current account that cannot create a REST client")
                 logout(
@@ -1789,6 +1944,13 @@ open class SalesforceSDKManager protected constructor(
         user: UserAccount,
         restClient: RestClient? = null
     ): String = try {
+        /*
+         * Deliberately does not go through the clientManager cache: that
+         * cache is bound to userAccountManager.currentUser, but the debug
+         * action this backs lets a developer force-refresh a non-current
+         * user's token, so this must resolve fresh for the exact [user]
+         * passed in rather than reusing whichever account is cached.
+         */
         val resolvedClient = restClient ?: ClientManager(appContext, user).peekRestClient()
         if (resolvedClient == null) {
             "Token refresh failed: user is unavailable"
@@ -1908,9 +2070,9 @@ open class SalesforceSDKManager protected constructor(
         fun onSelected()
     }
 
-    /** Indicates if this is a debug build */
+    /** Indicates if the application consuming the SDK is debuggable. */
     internal open val isDebugBuild
-        get() = DEBUG
+        get() = appContext.applicationInfo.flags and FLAG_DEBUGGABLE != 0
 
 
     /**
@@ -2044,7 +2206,7 @@ open class SalesforceSDKManager protected constructor(
         protected var INSTANCE: SalesforceSDKManager? = null
 
         /** The current version of this SDK */
-        const val SDK_VERSION = "14.0.0-rc.1"
+        const val SDK_VERSION = "14.0.0.dev"
 
         /**
          * An intent action meant for instances of Salesforce SDK manager

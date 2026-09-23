@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.ui.components.LoginViewTestTags
 import com.salesforce.samples.authflowtester.AuthFlowTesterActivity
 import com.salesforce.samples.authflowtester.pageObjects.AuthFlowTesterPageObject
+import com.salesforce.samples.authflowtester.components.ConcurrentRequestTestHooks
 import com.salesforce.samples.authflowtester.pageObjects.AuthorizationPageObject
 import com.salesforce.samples.authflowtester.pageObjects.ChromeCustomTabPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
@@ -103,12 +104,12 @@ abstract class AuthFlowTest {
     /**
      * Per-user, observed RT feature-marker state.
      *
-     * RT is a sticky SDK marker: it starts absent after login and is registered only when a normal
-     * refresh (through the session refresher) observes a changed refresh token. Login, migration,
-     * and restart never advance it. A config that *can* rotate ([AppConfig.expectsRefreshTokenRotation])
-     * is not the same as a user that *has* been observed rotating — so UA assertions must consult
-     * this observed state rather than the config capability, otherwise migrations that follow a
-     * rotating refresh would falsely expect RT to be absent (or present). Mirrors iOS
+     * RT is a sticky SDK marker registered after an observed refresh-token rotation. It normally
+     * starts absent after an authorization-code login, but login-pool identity recovery may need
+     * an immediate refresh and therefore register RT before the app first renders. Initialize the
+     * expectation from the persisted rotation metadata, then carry it forward as later test-driven
+     * refreshes rotate tokens. A config that *can* rotate ([AppConfig.expectsRefreshTokenRotation])
+     * is not the same as a user that *has* been observed rotating. Mirrors iOS
      * `BaseAuthFlowTester.expectedRTRFeatureMarkerByUsername`.
      */
     private val expectedRtMarkerByUsername = mutableMapOf<String, Boolean>()
@@ -146,6 +147,9 @@ abstract class AuthFlowTest {
      */
     @Before
     open fun baselineDPoPOff() {
+        ConcurrentRequestTestHooks.failedRequestIndex = null
+        ConcurrentRequestTestHooks.submittedCount = 0
+        ConcurrentRequestTestHooks.lastInterruptionStatus = null
         SalesforceSDKManager.getInstance().useDPoP = false
         // Each test logs in fresh users; cleanup() logs everyone out, clearing the SDK's per-user
         // markers. Reset the mirrored observed-RT state so it cannot leak across tests.
@@ -154,6 +158,9 @@ abstract class AuthFlowTest {
 
     @After
     open fun cleanup() {
+        ConcurrentRequestTestHooks.failedRequestIndex = null
+        ConcurrentRequestTestHooks.submittedCount = 0
+        ConcurrentRequestTestHooks.lastInterruptionStatus = null
         with(SalesforceSDKManager.getInstance()) {
             userAccountManager.authenticatedUsers?.forEach { userAccount ->
                 logout(
@@ -300,6 +307,7 @@ abstract class AuthFlowTest {
         useWelcomeDiscovery: Boolean = false,
         isMultiUser: Boolean = false,
         useLoginPoolHost: Boolean = false,
+        assertUsername: Boolean = true,
     ) {
         // When forceAdvancedAuthentication is true (default) every login completes in a Custom Tab:
         // a ChromeCustomTabPageObject serves both roles — its inherited Compose actions
@@ -429,11 +437,14 @@ abstract class AuthFlowTest {
             else -> Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID
         }
         val appConfig = testConfig.getApp(knownAppConfig)
-        // An authorization-code login never runs the session refresher, so it cannot set RT.
-        // Record this explicitly: later migration/switch/restart checks preserve it until a
-        // test-triggered normal refresh observes token rotation.
         val username = usernameFor(knownLoginHostConfig, knownUserConfig)
-        expectedRtMarkerByUsername[username] = false
+        // Most authorization-code logins have not rotated yet. Login-pool identity recovery is
+        // the exception: a selected 403 can trigger a refresh before the first screen, and the SDK
+        // persists lastTokenRotationTime when that refresh returns a replacement token. Reading
+        // the independent persisted metadata keeps this assertion valid both before and after the
+        // server-side W-23992239 behavior changes.
+        expectedRtMarkerByUsername[username] = SalesforceSDKManager.getInstance()
+            .userAccountManager.currentUser?.lastTokenRotationTime?.isNotBlank() == true
         app.validateUser(
             knownLoginHostConfig,
             knownUserConfig,
@@ -447,6 +458,7 @@ abstract class AuthFlowTest {
             isJwt = appConfig.issuesJwt,
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
+            assertUsername = assertUsername,
         )
         app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP)
         app.validateApiRequest()
@@ -463,7 +475,7 @@ abstract class AuthFlowTest {
      * After the kill, we relaunch via an explicit intent so the SDK re-runs
      * `hydratePerUserFeatures()` from disk, exercising the same code path as a real restart.
      */
-    fun restartApp() {
+    fun restartApp(waitForAuthenticatedApp: Boolean = true) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val packageName = context.packageName
@@ -485,7 +497,7 @@ abstract class AuthFlowTest {
             putExtra(AuthFlowTesterActivity.EXTRA_IS_UI_TESTING, true)
         }
         context.startActivity(launchIntent)
-        app.waitForAppLoad()
+        if (waitForAuthenticatedApp) app.waitForAppLoad()
     }
 
     /**
@@ -629,9 +641,8 @@ abstract class AuthFlowTest {
         chromePage.skipGoogleSignIn()
         val (username, password) = testConfig.getUser(REGULAR_AUTH, user)
         chromePage.setUsername(username)
-        chromePage.tapLogin()
-        chromePage.setPassword(password)
-        chromePage.tapLogin()
+        chromePage.advanceToPasswordStep()
+        chromePage.submitPassword(password)
 
         // OAuth approval page is rendered inside the Chrome Custom Tab.
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(ADVANCED_AUTH)
@@ -705,9 +716,8 @@ abstract class AuthFlowTest {
         val (username, password) = testConfig.getUser(REGULAR_AUTH, knownUserConfig)
         try {
             loginPage.setUsername(username)
-            loginPage.tapLogin()
-            loginPage.setPassword(password)
-            loginPage.tapLogin()
+            loginPage.advanceToPasswordStep()
+            loginPage.submitPassword(password)
         } catch (e: AssertionError) {
             // Verify the failure was due to a missing login form, not a different
             // test-infrastructure issue. The Custom Tab must still be in front (otherwise we
@@ -897,6 +907,7 @@ abstract class AuthFlowTest {
         wasMigrated: Boolean = false,
         isJwt: Boolean = false,
         useLoginPoolHost: Boolean = false,
+        assertRefreshUserAgent: Boolean = true,
     ) {
         val (preAccessToken, preRefreshToken) = app.getTokens()
         app.revokeAccessToken()
@@ -915,13 +926,15 @@ abstract class AuthFlowTest {
         // This is a normal refresh through the session refresher, the only path that registers the
         // sticky RT marker. Record the observation for the current user *before* reading it back for
         // the UA assertion, so a rotation seen here is reflected in what we expect the UA to carry.
-        val username = currentUsername()
-        recordRefreshTokenRotation(username, rotated = refreshTokenRotated)
+        val username = if (assertRefreshUserAgent) currentUsername() else null
+        username?.let { recordRefreshTokenRotation(it, rotated = refreshTokenRotated) }
 
         if (isDpop) {
             val postNonce = app.getDpopInfo().nonce
             assert(postNonce.isNotEmpty()) { "DPoP nonce should be non-empty after refresh" }
         }
+        if (username == null) return
+
         val expectedBMarker = if (expectAdvancedAuth) {
             Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG
         } else {

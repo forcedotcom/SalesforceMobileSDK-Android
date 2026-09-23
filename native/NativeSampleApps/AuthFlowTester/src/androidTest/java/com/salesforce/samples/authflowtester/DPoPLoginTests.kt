@@ -30,13 +30,16 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.samples.authflowtester.components.ManyRequestInterruption
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP_RTR
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection
 import com.salesforce.samples.authflowtester.testUtility.testConfig
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -52,6 +55,97 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class DPoPLoginTests : AuthFlowTest() {
+
+    @Test
+    fun testECAJwtDPoP_RevokeWhenInFlight_PreservesBindingAndRecovers() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP, useDPoP = true)
+        val beforeTokens = app.getTokens()
+        val beforeDpop = app.getDpopInfo()
+        app.selectManyRequestInterruption(ManyRequestInterruption.REVOKE)
+
+        app.startManyRequests()
+
+        app.waitForManyRequestsSubmitted()
+        app.waitForManyRequestInterruption("Revoke completed")
+        app.waitForManyRequestsToComplete(configuredCount = 20)
+        app.validateApiRequest()
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
+    }
+
+    @Test
+    fun testECAJwtDPoPRtr_RevokedBeforeManyRequests_RotatesAndPreservesBinding() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        val beforeTokens = app.getTokens()
+        val beforeDpop = app.getDpopInfo()
+        app.revokeAccessToken()
+        val tokenRequestsBeforeBatch = app.getCapturedTokenRequestCount()
+
+        app.startManyRequests()
+
+        val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
+        val failedRequests = app.failedManyRequestIndices(20)
+        val firstFailure = failedRequests.firstOrNull()?.let { requestNumber ->
+            val index = requestNumber - 1
+            app.tapFailedManyRequest(index, concurrentRequestType(index))
+        }
+        assertEquals("Failed requests: $failedRequests; first failure: $firstFailure", 20, counts.successes)
+        assertEquals(0, counts.failures)
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(beforeDpop.keyThumbprint, afterDpop.keyThumbprint)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
+        assertEquals(
+            "A warm DPoP+RTR batch should share one token refresh",
+            1,
+            app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch,
+        )
+    }
+
+    @Test
+    fun testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds() {
+        loginAndValidate(knownAppConfig = ECA_JWT_DPOP_RTR, useDPoP = true)
+        val keyThumbprintBeforeRestart = app.getDpopInfo().keyThumbprint
+        restartAndValidateUser(
+            knownAppConfig = ECA_JWT_DPOP_RTR,
+            isDpop = true,
+        )
+        val beforeTokens = app.getTokens()
+        app.revokeAccessToken()
+        val tokenRequestsBeforeBatch = app.getCapturedTokenRequestCount()
+
+        app.startManyRequests()
+
+        val counts = app.waitForManyRequestsToComplete(configuredCount = 20)
+        val failedRequests = app.failedManyRequestIndices(20)
+        val firstFailure = failedRequests.firstOrNull()?.let { requestNumber ->
+            val index = requestNumber - 1
+            app.tapFailedManyRequest(index, concurrentRequestType(index))
+        }
+        assertEquals("Failed requests: $failedRequests; first failure: $firstFailure", 20, counts.successes)
+        assertEquals(0, counts.failures)
+        val afterTokens = app.getTokens()
+        val afterDpop = app.getDpopInfo()
+        assertNotEquals(beforeTokens.accessToken, afterTokens.accessToken)
+        assertNotEquals(beforeTokens.refreshToken, afterTokens.refreshToken)
+        assertEquals("DPoP", afterDpop.tokenType)
+        assertEquals(keyThumbprintBeforeRestart, afterDpop.keyThumbprint)
+        assertTrue(afterDpop.nonce.isNotEmpty() && afterDpop.nonce != "(empty)")
+        val tokenRequestCount = app.getCapturedTokenRequestCount() - tokenRequestsBeforeBatch
+        assertTrue(
+            "A cold DPoP+RTR batch should use one shared refresh, with at most one nonce retry; " +
+                "observed $tokenRequestCount token requests",
+            tokenRequestCount in 1..2,
+        )
+    }
 
     // region ECA JWT DPoP Tests
 
@@ -279,16 +373,19 @@ class DPoPLoginTests : AuthFlowTest() {
             useDPoP = true,
             useLoginPoolHost = true,
         )
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = false,
+            isDpop = true,
+            isJwt = true,
+            useLoginPoolHost = true,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+        )
     }
 
     // Login via the pool server with DPoP + RTR and verify refresh token rotation holds after login.
     // This is a safety net for the RTR-unsafe credential-refresh pattern seen on iOS: if the
-    // identity fetch were to consume the refresh token (e.g. by triggering a credential refresh
-    // to resolve a Wrong_Org routing error), assertRevokeAndRefreshWorks below would fail because
-    // the refresh token would already be spent. Android's two-attempt URL strategy avoids that by
-    // resolving the routing problem with the still-valid access token, never touching the refresh
-    // token. W-23991713 tracks the equivalent iOS investigation.
+    // identity fetch consumes the refresh token to recover from a 401/403, the SDK must persist the
+    // rotated replacement. assertRevokeAndRefreshWorks below catches any stale-token persistence.
     @Test
     fun testECAJwtDPoP_ViaLoginPoolServer_Rtr() {
         loginAndValidate(
@@ -297,7 +394,13 @@ class DPoPLoginTests : AuthFlowTest() {
             useDPoP = true,
             useLoginPoolHost = true,
         )
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = true, isDpop = true, isJwt = true, useLoginPoolHost = true, expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID)
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = true,
+            isDpop = true,
+            isJwt = true,
+            useLoginPoolHost = true,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+        )
     }
 
     // endregion
