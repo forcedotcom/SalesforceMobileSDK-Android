@@ -87,19 +87,32 @@ delegates to `AccMgrAuthTokenProvider.getNewAuthToken()`. That method:
 ## 3. DPoP Proof Attachment
 
 Every outgoing API call goes through `OAuthRefreshInterceptor.buildAuthenticatedRequest()`,
-which calls `attachDPoPProofIfNeeded()`:
+which delegates the complete header choice to `DPoPRequestDecorator.applyAuthHeaders()`:
 
 ```
-attachDPoPProofIfNeeded(builder, method, url):
-  if !DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType)  →  return
-  htu    = DPoPURLHelper.canonicalize(url)   // strips query + fragment
-  host   = HttpUrl.get(url).host()
-  alias  = DPoPKeyManager.aliasForCredentialsIdentifier(credentialsIdentifier)
-  keyPair = DPoPKeyManager.generateOrLoadKeyPair(alias) // process cache, then AndroidKeyStore
-  nonce  = DPoPNonceCache.get(credentialsIdentifier, host)  // null until token exchange completes
-  proof  = DPoPProofBuilder.buildProof(method, htu, keyPair, nonce, authToken)
-  builder.header("DPoP", proof)
+applyAuthHeaders(builder, credentialsIdentifier, tokenType, authToken, uiSid):
+  if authToken is empty  →  return
+  path = builder.url.encodedPath
+  useUiSid = isDPoPTokenType(tokenType)
+             && uiSid is nonblank
+             && SalesforceSDKManager.shouldUseUiSidBearerForPath(path)
+  remove any stale DPoP header
+  if useUiSid:
+    set Authorization to "Bearer <uiSid>"
+  else:
+    set Authorization from authToken and tokenType
+    if DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType):
+      build a fresh proof with htm, htu, keypair, nonce, and ath
+      set the DPoP header
 ```
+
+`SalesforceSDKManager.shouldUseUiSidBearerForPath` is a synchronous, process-wide function that
+apps may replace. Its built-in implementation returns false for every path, so no request uses
+UI-session Bearer authentication until an app registers a policy. Authentication evaluates it only
+for an explicit DPoP token type with a nonblank `uiSid`. Bearer credentials and DPoP credentials
+without a UI session do not invoke it. The callback must be fast and non-blocking because requests
+for the same user are serialized while it runs. If it throws, authentication safely falls back to
+DPoP.
 
 `DPoPKeyManager` keeps a process-local cache keyed by the Android Keystore alias. A warm request
 returns the cached `KeyPair` handle without querying Android Keystore for the private-key metadata
@@ -107,16 +120,22 @@ or certificate again. The first use after process start loads the persistent key
 the first use for a new credential generates and caches it. Proof signing still uses Android
 Keystore for every request and never exports private-key material.
 
-`setAuthHeader()` also sets `Authorization: DPoP <accessToken>` (instead of Bearer) when
-`tokenType == "DPoP"`.
-
 The gate is deliberately per credential, not the mutable global `useDPoP` flag. Once a
 credential is DPoP-bound, its requests must continue carrying proofs even if the global flag
-later changes.
+later changes, except when the request-path policy deliberately selects the separate UI session.
+
+`RestClient` carries `uiSid` with `authToken`, `tokenType`, and `credentialsIdentifier`.
+`AuthTokenProvider.getUiSid()` has a null-returning default for compatibility. After refresh,
+`OAuthRefreshInterceptor` updates the access token, token type, and UI session atomically before
+rebuilding the request. A cached interceptor may adopt credential metadata only when the supplied
+access token is the same generation, so constructing a client from stale account data cannot roll
+back a refreshed token.
 
 The interceptor normally reads the nonce cache. It also writes a resource-host nonce when an
 HTTP 400 `use_dpop_nonce` challenge includes `DPoP-Nonce`, then rebuilds and retries that
-request once. A 401 remains the access-token-refresh path.
+request once. This inline retry requires the failed request to carry a `DPoP` proof, so a request
+sent as `Bearer <uiSid>` never enters DPoP nonce handling. A 401 remains the access-token-refresh
+path.
 
 ---
 
@@ -141,6 +160,7 @@ class RefreshState {
     String newInstanceUrl
     String rotatedRefreshToken    // refresh token as rotated by the last winner
     String newTokenType
+    String newUiSid               // UI session paired with the published token generation
     long lastRefreshTime          // wall-clock time of last successful publish
 }
 ```
@@ -171,6 +191,8 @@ broadcast ACCESS_TOKEN_REFRESH_INTENT
 synchronized(state.lock)
   state.refreshing = false
   state.newAuthToken = <new>
+  state.newTokenType = <new type>
+  state.newUiSid = <new UI session>
   state.publishGeneration++          ← edge: B detects this
   state.lock.notifyAll()
 lock released
@@ -244,7 +266,7 @@ if isNonceChallenge(response):
 
 ```
 response = chain.proceed(authenticatedRequest)
-if response is HTTP 400 use_dpop_nonce and the request carried DPoP:
+if response is HTTP 400 use_dpop_nonce and the request carried a DPoP proof:
     harvest DPoP-Nonce for (credentialsIdentifier, resourceHost)
     rebuild the request with a fresh proof
     retry once
@@ -255,7 +277,7 @@ token endpoint, and the subsequent identity request is rebuilt with the refreshe
 
 ### Read path (interceptor + OAuth2.java)
 
-Every DPoP proof — whether in `attachDPoPProofIfNeeded()` (API calls) or
+Every DPoP proof — whether selected by `DPoPRequestDecorator.applyAuthHeaders()` (API calls) or
 `makeTokenEndpointRequest()` (token requests) — reads the cache before calling
 `buildProof()`. On a warm path (cache hit) the nonce is included proactively and no
 extra round-trip occurs. Because entries are host-scoped, the login host and instance host do
@@ -292,7 +314,24 @@ intercept()
   return response
 ```
 
-### 6.2 Access token expired
+### 6.2 UI-session path under a DPoP credential
+
+```
+intercept()
+  buildAuthenticatedRequest()
+    tokenType is DPoP and uiSid is nonblank
+    shouldUseUiSidBearerForPath(encodedPath)  →  true
+    Authorization: Bearer <uiSid>
+    no DPoP header
+  chain.proceed()
+  skip DPoP nonce retry because the attempt carried no proof
+```
+
+Refresh and replay update `uiSid` together with the access token and token type, then reevaluate the
+path policy. A stale DPoP proof from an earlier attempt is removed before either header mode is
+selected.
+
+### 6.3 Access token expired
 
 ```
 intercept()
@@ -313,7 +352,7 @@ intercept()
   return response
 ```
 
-### 6.3 Resource-server nonce challenge
+### 6.4 Resource-server nonce challenge
 
 ```
 intercept()
@@ -328,7 +367,7 @@ intercept()
 Only HTTP 400 takes this inline nonce-retry path. A resource-server 401 continues to token
 refresh.
 
-### 6.4 Access token expired + token-endpoint nonce missing or expired
+### 6.5 Access token expired + token-endpoint nonce missing or expired
 
 ```
 intercept()
@@ -349,11 +388,11 @@ intercept()
   return response
 ```
 
-Note: cases 6.2 and 6.4 collapse into the same token-refresh code path. The distinction is invisible to
+Note: cases 6.3 and 6.5 collapse into the same token-refresh code path. The distinction is invisible to
 `intercept()` — it always sees a single 401 from the resource server and a single successful
 token after `refreshAccessToken()` returns.
 
-### 6.5 Concurrent 401s from two threads (same account, RTR enabled)
+### 6.6 Concurrent 401s from two threads (same account, RTR enabled)
 
 ```
 Thread A                              Thread B
