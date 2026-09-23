@@ -598,6 +598,28 @@ class SalesforceSDKManagerClientManagerTest {
     }
 
     @Test
+    fun getRestClient_withDPoPAccountMissingCredentialsIdentifier_removesItWithoutCallback() {
+        val corruptUser = UserAccountBuilder.getInstance()
+            .populateFromUserAccount(buildUser("corrupt-dpop"))
+            .tokenType("dPoP")
+            .allowUnset(true)
+            .credentialsIdentifier(null)
+            .build()
+        userAccountManager.createAccount(corruptUser)
+        val account = requireNotNull(userAccountManager.buildAccount(corruptUser))
+        val activity = mockk<Activity>(relaxed = true)
+        var callbackCount = 0
+
+        sdkManager.getRestClient(activity) { callbackCount++ }
+
+        assertEquals(0, callbackCount)
+        assertFalse(accountManager.getAccountsByType(account.type).contains(account))
+        verify(exactly = 0) {
+            activity.startActivityForResult(any<Intent>(), any())
+        }
+    }
+
+    @Test
     fun getRestClient_resolvesCurrentAccountExactlyOnce() {
         /*
          * Regression guard for a switch race: before the fix, account came

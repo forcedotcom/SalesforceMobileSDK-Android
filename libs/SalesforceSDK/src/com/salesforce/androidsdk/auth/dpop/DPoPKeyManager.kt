@@ -55,6 +55,17 @@ object DPoPKeyManager {
     fun isDPoPTokenType(tokenType: String?): Boolean =
         tokenType?.equals(DPOP_TOKEN_TYPE, ignoreCase = true) == true
 
+    /**
+     * Returns whether the persisted fields required to use [tokenType] are internally
+     * consistent. A DPoP-bound credential must identify the key pair used for its proof;
+     * Bearer and transitional credentials do not require that identifier.
+     */
+    @JvmStatic
+    fun hasCompleteDPoPCredentials(
+        credentialsIdentifier: String?,
+        tokenType: String?
+    ): Boolean = !isDPoPTokenType(tokenType) || !credentialsIdentifier.isNullOrBlank()
+
     private const val TAG = "DPoPKeyManager"
     private val keyPairCache = ConcurrentHashMap<String, KeyPair>()
     private val keyStoreLock = Any()

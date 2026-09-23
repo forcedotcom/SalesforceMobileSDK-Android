@@ -39,9 +39,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 
 /**
  * Unit tests for [DPoPRequestDecorator], the public convenience API for stamping
@@ -137,6 +139,44 @@ class DPoPRequestDecoratorTest {
         assertNotNull(auth)
         assertTrue("Expected Bearer scheme but got: $auth", auth!!.startsWith("Bearer "))
         assertNull(request.header(DPoPRequestDecorator.DPOP_HEADER))
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopAccountWithMissingIdentifier_failsBeforeAddingHeaders() {
+        listOf<String?>(null, "", "   ").forEach { identifier ->
+            val builder = requestBuilder()
+
+            assertThrows(IOException::class.java) {
+                DPoPRequestDecorator.applyAuthHeaders(
+                    builder,
+                    userAccount(
+                        tokenType = "dPoP",
+                        credentialsIdentifier = identifier,
+                    ),
+                )
+            }
+
+            assertNull(builder.build().header("Authorization"))
+            assertNull(builder.build().header(DPoPRequestDecorator.DPOP_HEADER))
+        }
+    }
+
+    @Test
+    fun applyAuthHeaders_dpopAccountWithMissingToken_failsClosed() {
+        val builder = requestBuilder()
+
+        assertThrows(IOException::class.java) {
+            DPoPRequestDecorator.applyAuthHeaders(
+                builder,
+                userAccount(
+                    authToken = null,
+                    tokenType = "DPoP",
+                    credentialsIdentifier = null,
+                ),
+            )
+        }
+
+        assertNull(builder.build().header("Authorization"))
     }
 
     @Test

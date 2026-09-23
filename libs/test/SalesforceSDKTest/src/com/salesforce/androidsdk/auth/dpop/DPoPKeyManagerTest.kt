@@ -273,6 +273,18 @@ class DPoPKeyManagerTest {
     }
 
     @Test
+    fun test_hasCompleteDPoPCredentials_requiresNonBlankIdentifierOnlyForDPoP() {
+        assertTrue(DPoPKeyManager.hasCompleteDPoPCredentials("credential-id", "DPoP"))
+        assertTrue(DPoPKeyManager.hasCompleteDPoPCredentials("credential-id", "dPoP"))
+        assertFalse(DPoPKeyManager.hasCompleteDPoPCredentials(null, "DPoP"))
+        assertFalse(DPoPKeyManager.hasCompleteDPoPCredentials("", "dpop"))
+        assertFalse(DPoPKeyManager.hasCompleteDPoPCredentials("   ", "DPOP"))
+
+        assertTrue(DPoPKeyManager.hasCompleteDPoPCredentials(null, "Bearer"))
+        assertTrue(DPoPKeyManager.hasCompleteDPoPCredentials("", null))
+    }
+
+    @Test
     fun test_shouldAttachDPoP_lowercaseDPoPTokenType_returnsTrue() {
         // Regression for W-24027018: server returns lowercase "dpop" in refresh responses.
         val id = "lowercase_dpop_${UUID.randomUUID()}"

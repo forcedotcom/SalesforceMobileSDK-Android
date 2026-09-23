@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.auth.OAuth2
 import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
 
 /**
  * Public convenience API for app developers stamping DPoP/Bearer authorization
@@ -51,17 +52,22 @@ object DPoPRequestDecorator {
     private const val NONCE_ERROR_VALUE = "use_dpop_nonce"
 
     /**
-     * Stamps the complete [Authorization] and optional [DPoP] proof header set on [builder].
-     * No-op when [UserAccount.getAuthToken] is null or empty.
+     * Stamps [Authorization] and, if the account is DPoP-bound, a [DPoP] proof header
+     * on [builder]. No-op when [UserAccount.getAuthToken] is null or empty. Rejects an
+     * incomplete DPoP credential with [IOException] before mutating [builder].
      */
     fun applyAuthHeaders(builder: Request.Builder, userAccount: UserAccount) {
+        val tokenType = userAccount.tokenType
+        val credentialsIdentifier = userAccount.credentialsIdentifier
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
+
         val authToken = userAccount.authToken ?: return
         if (authToken.isEmpty()) return
 
         applyAuthHeaders(
             builder,
-            userAccount.credentialsIdentifier,
-            userAccount.tokenType,
+            credentialsIdentifier,
+            tokenType,
             authToken,
             userAccount.uiSid,
         )
@@ -80,6 +86,7 @@ object DPoPRequestDecorator {
         authToken: String?,
         uiSid: String?,
     ) {
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
         if (authToken.isNullOrEmpty()) return
 
         val requestPath = builder.build().url.encodedPath
@@ -139,7 +146,8 @@ object DPoPRequestDecorator {
 
     /**
      * Package-private helper used by RestClient.OAuthRefreshInterceptor to delegate
-     * the proof-building step without constructing a UserAccount.
+     * the proof-building step without constructing a UserAccount. An incomplete DPoP
+     * credential throws [IOException] so OkHttp reports it through normal request failure.
      */
     @JvmName("attachProof")
     internal fun attachProof(
@@ -148,6 +156,7 @@ object DPoPRequestDecorator {
         tokenType: String?,
         authToken: String?
     ) {
+        requireCompleteDPoPCredentials(credentialsIdentifier, tokenType)
         if (!DPoPKeyManager.shouldAttachDPoP(credentialsIdentifier, tokenType)) return
         try {
             val request = builder.build()
@@ -164,4 +173,17 @@ object DPoPRequestDecorator {
             SalesforceSDKLogger.e(TAG, "Failed to attach DPoP proof", e)
         }
     }
+
+    private fun requireCompleteDPoPCredentials(
+        credentialsIdentifier: String?,
+        tokenType: String?
+    ) {
+        if (!DPoPKeyManager.hasCompleteDPoPCredentials(credentialsIdentifier, tokenType)) {
+            throw IncompleteDPoPCredentialsException()
+        }
+    }
+
+    private class IncompleteDPoPCredentialsException : IOException(
+        "DPoP credentials require a non-blank credentials identifier"
+    )
 }
