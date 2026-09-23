@@ -85,6 +85,7 @@ class UserAccountManagerMigrateTokenTest {
         every { SalesforceSDKLogger.e(any(), any()) } just runs
         every { SalesforceSDKLogger.e(any(), any(), any()) } just runs
         every { SalesforceSDKLogger.i(any(), any()) } just runs
+        every { SalesforceSDKLogger.w(any(), any()) } just runs
 
         mockkObject(MigrationCallbackRegistry)
     }
@@ -462,7 +463,7 @@ class UserAccountManagerMigrateTokenTest {
         mockkObject(DPoPKeyManager)
         mockkObject(DPoPNonceCache)
         every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
-        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns true
         every { DPoPNonceCache.clear(any()) } just runs
 
         val oldCredId = "old-dpop-cred-id"
@@ -509,12 +510,53 @@ class UserAccountManagerMigrateTokenTest {
     }
 
     @Test
+    fun downgradeFromDPoP_onSuccess_whenKeyDeletionFails_warnsClearsNonceAndSucceeds() {
+        mockkObject(DPoPKeyManager)
+        mockkObject(DPoPNonceCache)
+        every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns false
+        every { DPoPNonceCache.clear(any()) } just runs
+
+        val oldCredId = "old-dpop-cred-id"
+        val mockUserAccount: UserAccount = mockk(relaxed = true)
+        every { mockUserAccount.userId } returns "testUserId"
+        every { mockUserAccount.orgId } returns "testOrgId"
+        every { mockUserAccount.clientId } returns "testClientId"
+        every { mockUserAccount.loginServer } returns "login.example.com"
+        every { mockUserAccount.redirectUri } returns "testapp://callback"
+        every { mockUserAccount.scope } returns null
+        every { mockUserAccount.tokenType } returns DPoPKeyManager.DPOP_TOKEN_TYPE
+        every { mockUserAccount.credentialsIdentifier } returns oldCredId
+
+        val callbacksSlot = slot<MigrationCallbackRegistry.MigrationCallbacks>()
+        every { MigrationCallbackRegistry.register(capture(callbacksSlot)) } returns "callback-key"
+        val activityStarted = CountDownLatch(1)
+        every { mockContext.startActivity(any()) } answers { activityStarted.countDown() }
+
+        mockUserAccountManager.downgradeFromDPoP(
+            userAccount = mockUserAccount,
+            onSuccess = onMigrationSuccess,
+            onFailure = onMigrationError,
+        )
+        assertTrue(activityStarted.await(5, TimeUnit.SECONDS))
+        val migratedAccount: UserAccount = mockk(relaxed = true)
+        callbacksSlot.captured.onMigrationSuccess(migratedAccount)
+
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(any(), "Failed to delete obsolete DPoP state on downgrade")
+        }
+        verify(exactly = 1) { DPoPNonceCache.clear(oldCredId) }
+        verify(exactly = 1) { onMigrationSuccess.invoke(migratedAccount) }
+        verify(exactly = 0) { onMigrationError.invoke(any(), any(), any()) }
+    }
+
+    @Test
     fun downgradeFromDPoP_onFailure_retainsDPoPKeyAndNonce() {
         // Given
         mockkObject(DPoPKeyManager)
         mockkObject(DPoPNonceCache)
         every { DPoPKeyManager.aliasForCredentialsIdentifier(any()) } answers { callOriginal() }
-        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns true
         every { DPoPNonceCache.clear(any()) } just runs
 
         val oldCredId = "old-dpop-cred-id"
@@ -590,7 +632,7 @@ class UserAccountManagerMigrateTokenTest {
         // Given - an account already Bearer (non-DPoP).
         mockkObject(DPoPKeyManager)
         mockkObject(DPoPNonceCache)
-        every { DPoPKeyManager.deleteKeyPair(any()) } just runs
+        every { DPoPKeyManager.deleteKeyPair(any()) } returns true
         every { DPoPNonceCache.clear(any()) } just runs
 
         val mockUserAccount: UserAccount = mockk(relaxed = true)

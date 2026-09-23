@@ -1264,12 +1264,10 @@ open class SalesforceSDKManager protected constructor(
             isLastPersistedAccount,
         )
         userAccount.credentialsIdentifier?.takeIf { it.isNotEmpty() }?.let { id ->
-            runCatching {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))
-                DPoPNonceCache.clear(id)
-            }.onFailure { e ->
-                w(TAG, "Failed to delete DPoP key pair on logout", e)
+            if (!DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(id))) {
+                w(TAG, "Failed to delete DPoP key pair on logout")
             }
+            DPoPNonceCache.clear(id)
         }
 
         clearWebViewCookiesAfterLogout()

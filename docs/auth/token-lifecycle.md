@@ -273,8 +273,8 @@ therefore share credential state but do not perform network I/O while holding th
 ### Logout
 
 `SalesforceSDKManager.removeAccount()` calls:
-- `DPoPKeyManager.deleteKeyPair(alias)` — evicts the process-local handle and destroys the EC
-  keypair from the Android Keystore
+- `DPoPKeyManager.deleteKeyPair(alias)` — evicts the process-local handle and attempts to destroy
+  the EC keypair from the Android Keystore
 - `DPoPNonceCache.clear(credentialsIdentifier)` — evicts cached nonces for this session
 
 ---

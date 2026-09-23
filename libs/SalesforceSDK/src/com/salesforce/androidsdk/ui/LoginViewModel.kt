@@ -74,6 +74,7 @@ import com.salesforce.androidsdk.security.SalesforceKeyGenerator.getSHA256Hash
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.isSalesforceWelcomeDiscoveryUrlPath
 import com.salesforce.androidsdk.util.SalesforceSDKLogger.e
+import com.salesforce.androidsdk.util.SalesforceSDKLogger.w
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -778,7 +779,10 @@ open class LoginViewModel(
             // Clear any stale dpop_jkt and its key from a previous server-picker entry.
             params.remove("dpop_jkt")
             pendingCredentialsIdentifier?.let {
-                DPoPKeyManager.deleteKeyPair(DPoPKeyManager.aliasForCredentialsIdentifier(it))
+                val alias = DPoPKeyManager.aliasForCredentialsIdentifier(it)
+                if (!DPoPKeyManager.deleteKeyPair(alias)) {
+                    w(TAG, "Failed to delete stale DPoP key pair")
+                }
             }
             pendingCredentialsIdentifier = null
             return

@@ -91,7 +91,15 @@ object DPoPKeyManager {
         return keyPairGenerator.generateKeyPair()
     }
 
-    fun deleteKeyPair(alias: String) {
+    /**
+     * Idempotently deletes the key pair for [alias].
+     *
+     * Returns `true` when all AndroidKeyStore operations complete normally, including when the
+     * alias is absent. Returns `false` when an ordinary [Exception] prevents completion; physical
+     * deletion is not guaranteed in that case. Such failures are logged by exception type without
+     * exception details or the alias, and do not escape this method.
+     */
+    fun deleteKeyPair(alias: String): Boolean = try {
         synchronized(keyStoreLock) {
             keyPairCache.remove(alias)
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -99,6 +107,10 @@ object DPoPKeyManager {
                 keyStore.deleteEntry(alias)
             }
         }
+        true
+    } catch (e: Exception) {
+        SalesforceSDKLogger.w(TAG, "DPoP key pair deletion failed (${e.javaClass.simpleName})")
+        false
     }
 
     /** Clears process-local key handles without deleting their Android Keystore entries. */
