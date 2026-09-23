@@ -174,6 +174,12 @@ If callers are still active, the scrubbed state remains mapped until the final l
 new callers that encounter it fail closed. This prevents a quick same-identity login from creating
 a second coordinator while an old-session refresh is still in flight.
 
+The same state lock also fences every post-response side effect. After the token endpoint returns,
+the old winner checks `cleanupRequested` while holding `state.lock` before persisting credentials,
+logging out, registering RTR, or broadcasting. If logout retired the state while the request was
+in flight, the response is discarded even when a quick relogin has recreated the same backing
+Android Account.
+
 ### Flow
 
 ```
@@ -195,7 +201,11 @@ refreshStaleToken()
   → POST /token  (DPoP proof + nonce)
   → 400 use_dpop_nonce  → cache nonce → retry
   → 200: new access_token, rotated refresh_token
-broadcast ACCESS_TOKEN_REFRESH_INTENT
+synchronized(state.lock)
+  cleanupRequested == false
+  → persist refreshed credentials
+  → register RTR and broadcast ACCESS_TOKEN_REFRESH_INTENT
+lock released
 
 synchronized(state.lock)
   state.refreshing = false

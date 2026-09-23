@@ -1065,12 +1065,15 @@ class ClientManagerMockTest {
             ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(oldUser),
         )
 
-        val newFixture = boundFixture(
+        // Recreate the same identity on the same backing Android Account while the old token POST
+        // is still in flight. This is the relogin shape that must not receive old-session effects.
+        oldFixture.liveUser.set(testUser(
+            authToken = "new-session-access-token",
             refreshToken = newRefreshToken,
             userId = userId,
             orgId = orgId,
-        )
-        val newProvider = ClientManager.AccMgrAuthTokenProvider(newFixture.manager)
+        ))
+        val newProvider = ClientManager.AccMgrAuthTokenProvider(oldFixture.manager)
         val blockedReloginResult = AtomicReference<String?>()
         val blockedReloginThread = Thread {
             blockedReloginResult.set(newProvider.getNewAuthToken())
@@ -1091,6 +1094,13 @@ class ClientManagerMockTest {
             "Logout must scrub an in-flight old-session UI SID from the provider",
             oldProvider.uiSid,
         )
+        assertEquals("new-session-access-token", oldFixture.liveUser.get()?.authToken)
+        assertEquals(newRefreshToken, oldFixture.liveUser.get()?.refreshTokenForPersistence)
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(oldFixture.account, any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
         assertFalse(
             "The last lifecycle lease must complete deferred state removal",
             ClientManager.AccMgrAuthTokenProvider.hasRefreshStateForTest(oldUser),
@@ -1101,6 +1111,67 @@ class ClientManagerMockTest {
         assertEquals(1, maxConcurrentRequests.get())
         assertEquals(oldRefreshToken, postedRefreshTokens[0])
         assertEquals(newRefreshToken, postedRefreshTokens[1])
+        verify(exactly = 1) { mockUserAccountManager.updateAccount(oldFixture.account, any()) }
+    }
+
+    @Test
+    fun testClearRefreshState_InFlightInvalidGrant_DoesNotLogOutReloggedSameAccount() {
+        val userId = "same-user-invalid-grant"
+        val orgId = "same-org-invalid-grant"
+        val fixture = boundFixture(
+            refreshToken = "old-session-refresh-token",
+            userId = userId,
+            orgId = orgId,
+        )
+        val oldUser = fixture.liveUser.get()!!
+        val requestStarted = CountDownLatch(1)
+        val releaseResponse = CountDownLatch(1)
+        every { HttpAccess.DEFAULT.okHttpClient } returns mockk<OkHttpClient> {
+            every { newCall(any()) } returns mockk<Call> {
+                every { execute() } answers {
+                    requestStarted.countDown()
+                    releaseResponse.await(5, TimeUnit.SECONDS)
+                    invalidGrantResponse()
+                }
+            }
+        }
+
+        val result = AtomicReference<String?>()
+        val failure = AtomicReference<Throwable?>()
+        val refreshThread = Thread {
+            try {
+                result.set(
+                    ClientManager.AccMgrAuthTokenProvider(fixture.manager).getNewAuthToken()
+                )
+            } catch (throwable: Throwable) {
+                failure.set(throwable)
+            }
+        }
+        refreshThread.start()
+        try {
+            assertTrue(requestStarted.await(5, TimeUnit.SECONDS))
+            fixture.liveUser.set(null)
+            ClientManager.AccMgrAuthTokenProvider.clearRefreshState(oldUser)
+            fixture.liveUser.set(testUser(
+                authToken = "new-session-access-token",
+                refreshToken = "new-session-refresh-token",
+                userId = userId,
+                orgId = orgId,
+            ))
+        } finally {
+            releaseResponse.countDown()
+        }
+        refreshThread.join(TimeUnit.SECONDS.toMillis(5))
+
+        assertFalse("Old-session refresh thread did not finish", refreshThread.isAlive)
+        assertNull(failure.get())
+        assertNull(result.get())
+        assertEquals("new-session-access-token", fixture.liveUser.get()?.authToken)
+        verify(exactly = 0) {
+            mockUserAccountManager.updateAccount(any(), any())
+            mockSDKManager.logout(any(), any(), any(), any())
+            mockAppContext.sendBroadcast(any())
+        }
     }
 
     @Test
@@ -1782,12 +1853,14 @@ class ClientManagerMockTest {
             ?.let { URLDecoder.decode(it, "UTF-8") }
     }
 
-    /** Deterministically blocks until [count] threads are parked in WAITING/TIMED_WAITING. */
+    /** Deterministically blocks until [count] threads are parked on a wait or state monitor. */
     private fun awaitThreadsParked(threads: List<Thread>, count: Int) {
         val deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5)
         while (System.currentTimeMillis() < deadline) {
             val parked = threads.count {
-                it.state == Thread.State.WAITING || it.state == Thread.State.TIMED_WAITING
+                it.state == Thread.State.BLOCKED
+                    || it.state == Thread.State.WAITING
+                    || it.state == Thread.State.TIMED_WAITING
             }
             if (parked >= count) return
             Thread.sleep(50)
