@@ -537,21 +537,35 @@ class LoginActivityTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun buildCustomTabAuthorizeUrl_withSharedBrowserSession_omitsPromptLogin() {
+    fun buildCustomTabAuthorizeUrl_promptLoginDependsOnlyOnSharedBrowserSession() {
         val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.forceAdvancedAuthentication } returns false
         every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
         val activity = mockk<LoginActivity>(relaxed = true)
-        every { activity.sharedBrowserSession } returns true
         every {
             activity.buildCustomTabAuthorizeUrl(any(), any(), any())
         } answers { callOriginal() }
 
-        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+        listOf(false, true).forEach { useEphemeralSession ->
+            every {
+                sdkManager.useEphemeralSessionForAdvancedAuth
+            } returns useEphemeralSession
 
-        assertFalse("prompt=login should be omitted for a shared browser session",
-            result.contains("prompt=login"))
+            every { activity.sharedBrowserSession } returns false
+            val isolatedResult = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+            assertTrue(
+                "prompt=login should be appended regardless of the ephemeral setting",
+                isolatedResult.contains("prompt=login"),
+            )
+
+            every { activity.sharedBrowserSession } returns true
+            val sharedResult = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+            assertFalse(
+                "prompt=login should be omitted regardless of the ephemeral setting",
+                sharedResult.contains("prompt=login"),
+            )
+        }
     }
 
     // endregion

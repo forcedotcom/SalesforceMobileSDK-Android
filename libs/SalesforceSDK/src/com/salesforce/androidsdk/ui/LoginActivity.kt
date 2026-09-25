@@ -1140,7 +1140,11 @@ open class LoginActivity : FragmentActivity() {
 
     @OptIn(ExperimentalInitialNavigationCanLeaveBrowser::class)
     @VisibleForTesting
-    internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+    internal fun loadLoginPageInCustomTab(
+        loginUrl: String,
+        customTabLauncher: ActivityResultLauncher<Intent>,
+        callbackSchemeRegistered: (String) -> Boolean = ::isCallbackSchemeRegistered,
+    ) {
         completedViaBrowserTab = true
         registerAuthTypeFeatureGlobal()
         val sdkManager = SalesforceSDKManager.getInstance()
@@ -1193,7 +1197,7 @@ open class LoginActivity : FragmentActivity() {
 
         val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
-        if (!isCallbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
+        if (!callbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
             val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme
                 ?: viewModel.oAuthConfig.redirectUri
             e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
