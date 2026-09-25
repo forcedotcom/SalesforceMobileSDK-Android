@@ -41,6 +41,7 @@ import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
 import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
+import androidx.browser.customtabs.CustomTabsClient
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
@@ -389,7 +390,7 @@ class LoginActivityTest {
         with(activity) {
             builder.configureEphemeralBrowsing(
                 enabled = true,
-                provider = "com.example.browser",
+                requestedBrowser = "com.example.browser",
                 isSupported = { _, _ -> true },
             )
         }
@@ -410,7 +411,7 @@ class LoginActivityTest {
         with(activity) {
             builder.configureEphemeralBrowsing(
                 enabled = false,
-                provider = "com.example.browser",
+                requestedBrowser = "com.example.browser",
                 isSupported = { _, _ -> error("Capability must not be checked when disabled") },
             )
         }
@@ -434,12 +435,50 @@ class LoginActivityTest {
         with(activity) {
             builder.configureEphemeralBrowsing(
                 enabled = true,
-                provider = provider,
+                requestedBrowser = provider,
                 isSupported = { _, _ -> false },
             )
         }
 
         assertTrue(builder.build().isEphemeralBrowsingEnabled)
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(
+                any(),
+                match { it.contains(provider) && it.contains("does not advertise support") },
+            )
+        }
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_withoutRequestedBrowser_checksDefaultProvider() {
+        mockkStatic(CustomTabsClient::class)
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+        val provider = "com.example.defaultbrowser"
+        every { CustomTabsClient.getPackageName(activity, null) } returns provider
+        var checkedProvider: String? = null
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                requestedBrowser = null,
+                isSupported = { _, packageName ->
+                    checkedProvider = packageName
+                    false
+                },
+            )
+        }
+
+        assertEquals(provider, checkedProvider)
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+        verify(exactly = 1) { CustomTabsClient.getPackageName(activity, null) }
         verify(exactly = 1) {
             SalesforceSDKLogger.w(
                 any(),

@@ -37,7 +37,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.app.AlertDialog
 import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
@@ -1180,7 +1179,7 @@ open class LoginActivity : FragmentActivity() {
             setBackgroundInteractionEnabled(false)
             configureEphemeralBrowsing(
                 enabled = sdkManager.useEphemeralSessionForAdvancedAuth,
-                provider = customTabBrowser.takeIf { customTabBrowserExists },
+                requestedBrowser = customTabBrowser.takeIf { customTabBrowserExists },
             )
         }.build()
 
@@ -1228,11 +1227,12 @@ open class LoginActivity : FragmentActivity() {
     @VisibleForTesting
     internal fun CustomTabsIntent.Builder.configureEphemeralBrowsing(
         enabled: Boolean,
-        provider: String?,
+        requestedBrowser: String?,
         isSupported: (Context, String) -> Boolean = CustomTabsClient::isEphemeralBrowsingSupported,
     ) {
         if (!enabled) return
 
+        val provider = requestedBrowser ?: CustomTabsClient.getPackageName(this@LoginActivity, null)
         if (provider != null && !isSupported(this@LoginActivity, provider)) {
             w(
                 TAG,
