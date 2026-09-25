@@ -78,6 +78,7 @@ class LoginOptionsActivityTest {
     private var originalUseWebServer: Boolean = false
     private var originalUseHybridToken: Boolean = false
     private var originalForceAdvancedAuth: Boolean = true
+    private var originalUseEphemeralSessionForAdvancedAuth: Boolean = true
     private lateinit var dynamicToggle: SemanticsNodeInteraction
     private lateinit var consumerKeyField: SemanticsNodeInteraction
     private lateinit var redirectUriField: SemanticsNodeInteraction
@@ -85,6 +86,7 @@ class LoginOptionsActivityTest {
     private lateinit var webserverToggle: SemanticsNodeInteraction
     private lateinit var hybridToggle: SemanticsNodeInteraction
     private lateinit var forceAdvancedAuthToggle: SemanticsNodeInteraction
+    private lateinit var ephemeralSessionToggle: SemanticsNodeInteraction
     private lateinit var saveButton: SemanticsNodeInteraction
 
     @Before
@@ -94,6 +96,8 @@ class LoginOptionsActivityTest {
         originalUseWebServer = SalesforceSDKManager.getInstance().useWebServerAuthentication
         originalUseHybridToken = SalesforceSDKManager.getInstance().useHybridAuthentication
         originalForceAdvancedAuth = SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        originalUseEphemeralSessionForAdvancedAuth =
+            SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
 
         dynamicToggle = composeTestRule.onNodeWithContentDescription(
@@ -117,6 +121,9 @@ class LoginOptionsActivityTest {
         forceAdvancedAuthToggle = composeTestRule.onNodeWithContentDescription(
             composeTestRule.activity.getString(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
         )
+        ephemeralSessionToggle = composeTestRule.onNodeWithContentDescription(
+            composeTestRule.activity.getString(R.string.sf__login_options_ephemeral_session_toggle_content_description),
+        )
         saveButton = composeTestRule.onNodeWithText(
             composeTestRule.activity.getString(R.string.sf__login_options_save_and_login),
         )
@@ -129,6 +136,8 @@ class LoginOptionsActivityTest {
         SalesforceSDKManager.getInstance().useWebServerAuthentication = originalUseWebServer
         SalesforceSDKManager.getInstance().useHybridAuthentication = originalUseHybridToken
         SalesforceSDKManager.getInstance().forceAdvancedAuthentication = originalForceAdvancedAuth
+        SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth =
+            originalUseEphemeralSessionForAdvancedAuth
         SalesforceSDKManager.getInstance().debugOverrideAppConfig = null
         SalesforceSDKManager.getInstance().loginDevMenuReload = false
     }
@@ -283,6 +292,46 @@ class LoginOptionsActivityTest {
         assertFalse(
             "Force Advanced Authentication should be disabled after toggling off",
             SalesforceSDKManager.getInstance().forceAdvancedAuthentication
+        )
+    }
+
+    @Test
+    fun loginOptionsActivity_EphemeralSessionToggle_ReflectsAndUpdatesSdkManager() {
+        composeTestRule.activity.runOnUiThread {
+            SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth = false
+            composeTestRule.activity.useEphemeralSessionForAdvancedAuth.value = false
+        }
+        composeTestRule.waitForIdle()
+
+        ephemeralSessionToggle.performScrollTo()
+        ephemeralSessionToggle.assertIsDisplayed()
+        ephemeralSessionToggle.assertIsOff()
+
+        ephemeralSessionToggle.performClick()
+        composeTestRule.waitForIdle()
+
+        ephemeralSessionToggle.assertIsOn()
+        assertTrue(SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth)
+    }
+
+    @Test
+    fun devSupportInfo_IncludesEphemeralAdvancedAuthentication_WithCurrentValue() {
+        SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth = true
+        val authConfigOn = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals(
+            "true",
+            authConfigOn?.find {
+                it.first == "Use Ephemeral Session for Advanced Authentication"
+            }?.second,
+        )
+
+        SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth = false
+        val authConfigOff = SalesforceSDKManager.getInstance().devSupportInfo.authConfigSection?.second
+        assertEquals(
+            "false",
+            authConfigOff?.find {
+                it.first == "Use Ephemeral Session for Advanced Authentication"
+            }?.second,
         )
     }
 
