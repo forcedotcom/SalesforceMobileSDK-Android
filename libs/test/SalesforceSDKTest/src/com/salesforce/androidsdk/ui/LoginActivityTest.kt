@@ -41,6 +41,7 @@ import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
 import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
@@ -50,6 +51,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_FORCE_ADVANCED_AUTH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_LOGIN_FOR_ADMIN
@@ -70,6 +72,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -367,6 +370,82 @@ class LoginActivityTest {
 
         verify(exactly = 1) { activity.loadLoginPageInCustomTab(testUrl, any()) }
         verify(exactly = 0) { activity.onBioAuthClick() }
+    }
+
+    // endregion
+
+    // region Ephemeral Custom Tabs
+
+    @Test
+    fun configureEphemeralBrowsing_whenEnabledAndSupported_setsIntentExtra() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                provider = "com.example.browser",
+                isSupported = { _, _ -> true },
+            )
+        }
+
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_whenDisabled_doesNotSetIntentExtra() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = false,
+                provider = "com.example.browser",
+                isSupported = { _, _ -> error("Capability must not be checked when disabled") },
+            )
+        }
+
+        assertFalse(builder.build().isEphemeralBrowsingEnabled)
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_whenSupportIsNotAdvertised_warnsAndStillSetsIntentExtra() {
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+        val provider = "com.example.browser"
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                provider = provider,
+                isSupported = { _, _ -> false },
+            )
+        }
+
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(
+                any(),
+                match { it.contains(provider) && it.contains("does not advertise support") },
+            )
+        }
     }
 
     // endregion
