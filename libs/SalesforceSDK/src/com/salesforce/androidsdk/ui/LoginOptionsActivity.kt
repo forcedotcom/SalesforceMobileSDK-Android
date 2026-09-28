@@ -103,6 +103,9 @@ class LoginOptionsActivity: ComponentActivity() {
     // suppress the deprecation nudge here (it fires on the public property from outside the SDK).
     @Suppress("DEPRECATION")
     val forceAdvancedAuth = MutableLiveData(SalesforceSDKManager.getInstance().forceAdvancedAuthentication)
+    val useEphemeralSessionForAdvancedAuth = MutableLiveData(
+        SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth,
+    )
     val useDPoP = MutableLiveData(SalesforceSDKManager.getInstance().useDPoP)
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -133,6 +136,12 @@ class LoginOptionsActivity: ComponentActivity() {
                 value -> SalesforceSDKManager.getInstance().forceAdvancedAuthentication = value
             },
         )
+        useEphemeralSessionForAdvancedAuth.observe(
+            /* owner = */ this,
+            Observer<Boolean> {
+                value -> SalesforceSDKManager.getInstance().useEphemeralSessionForAdvancedAuth = value
+            },
+        )
         useDPoP.observe(
             /* owner = */ this,
             Observer<Boolean> {
@@ -158,6 +167,7 @@ class LoginOptionsActivity: ComponentActivity() {
                         useWebServer,
                         useHybridToken,
                         forceAdvancedAuth,
+                        useEphemeralSessionForAdvancedAuth,
                         useDPoP,
                         SalesforceSDKManager.getInstance().debugOverrideAppConfig,
                     )
@@ -337,6 +347,7 @@ fun LoginOptionsScreen(
     useWebServer: MutableLiveData<Boolean>,
     useHybridToken: MutableLiveData<Boolean>,
     forceAdvancedAuth: MutableLiveData<Boolean>,
+    useEphemeralSessionForAdvancedAuth: MutableLiveData<Boolean>,
     useDPoP: MutableLiveData<Boolean>,
     overrideConfig: OAuthConfig?,
     bootConfig: BootConfig = BootConfig.getBootConfig(LocalContext.current),
@@ -364,6 +375,11 @@ fun LoginOptionsScreen(
             "Force Advanced Authentication",
             stringResource(R.string.sf__login_options_force_advanced_auth_toggle_content_description),
             forceAdvancedAuth,
+        )
+        OptionToggle(
+            "Use Ephemeral Session",
+            stringResource(R.string.sf__login_options_ephemeral_session_toggle_content_description),
+            useEphemeralSessionForAdvancedAuth,
         )
         OptionToggle(
             "Use DPoP",
@@ -587,6 +603,7 @@ fun LoginOptionsScreenPreview() {
         useWebServer = MutableLiveData(true),
         useHybridToken = MutableLiveData(false),
         forceAdvancedAuth = MutableLiveData(true),
+        useEphemeralSessionForAdvancedAuth = MutableLiveData(true),
         useDPoP = MutableLiveData(false),
         overrideConfig = null,
         bootConfig = object : BootConfig() {

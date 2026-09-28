@@ -28,6 +28,11 @@ package com.salesforce.androidsdk.ui
 
 import android.content.Intent
 import android.webkit.WebView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.ActivityOptionsCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.Lifecycle.State.STARTED
@@ -38,6 +43,7 @@ import com.salesforce.androidsdk.app.Features
 import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.config.LoginServerManager.PRODUCTION_LOGIN_URL
 import com.salesforce.androidsdk.config.LoginServerManager.WELCOME_LOGIN_URL
+import com.salesforce.androidsdk.config.OAuthConfig
 import com.salesforce.androidsdk.security.BiometricAuthenticationManager
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HINT
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.EXTRA_KEY_LOGIN_HOST
@@ -122,6 +128,91 @@ class LoginActivityScenarioTest {
                     "onBrowserCustomTabReady should be set in LoginActivity.onCreate",
                     activity.viewModel.onBrowserCustomTabReady,
                 )
+            }
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun loadLoginPageInCustomTab_usesCurrentEphemeralSettingAndConfiguredBrowser() {
+        val sdkManager = SalesforceSDKManager.getInstance()
+        val originalForceAdvancedAuth = sdkManager.forceAdvancedAuthentication
+        val originalCustomTabBrowser = sdkManager.customTabBrowser
+        val originalUseEphemeralSession = sdkManager.useEphemeralSessionForAdvancedAuth
+        val affectedFeatures = listOf(
+            Features.FEATURE_BROWSER_LOGIN,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_NON_HYBRID,
+            Features.FEATURE_AUTH_TYPE_USER_AGENT_HYBRID,
+            Features.FEATURE_AUTH_TYPE_NATIVE,
+        )
+        val originalFeatureState = affectedFeatures.associateWith(sdkManager::isGlobalFeatureRegistered)
+        val configuredBrowser = getApplicationContext<android.content.Context>().packageName
+        val launchedIntents = mutableListOf<Intent>()
+        val launcher = object : ActivityResultLauncher<Intent>() {
+            override fun launch(input: Intent, options: ActivityOptionsCompat?) {
+                launchedIntents += input
+            }
+
+            override fun unregister() = Unit
+
+            override val contract: ActivityResultContract<Intent, *> = StartActivityForResult()
+        }
+
+        try {
+            sdkManager.forceAdvancedAuthentication = false
+            sdkManager.customTabBrowser = configuredBrowser
+
+            launch<LoginActivity>(
+                Intent(getApplicationContext(), LoginActivity::class.java)
+            ).use { activityScenario ->
+                activityScenario.onActivity { activity ->
+                    activity.viewModel.oAuthConfig = OAuthConfig(
+                        consumerKey = "test-consumer-key",
+                        redirectUri = "testsfdc://success/done",
+                    )
+                    sdkManager.useEphemeralSessionForAdvancedAuth = true
+                    activity.loadLoginPageInCustomTab(
+                        "https://example.com/services/oauth2/authorize?client_id=abc",
+                        launcher,
+                        callbackSchemeRegistered = { true },
+                    )
+
+                    sdkManager.useEphemeralSessionForAdvancedAuth = false
+                    activity.loadLoginPageInCustomTab(
+                        "https://example.com/services/oauth2/authorize?client_id=abc",
+                        launcher,
+                        callbackSchemeRegistered = { true },
+                    )
+                }
+            }
+
+            assertEquals(2, launchedIntents.size)
+            assertEquals(configuredBrowser, launchedIntents[0].`package`)
+            assertTrue(
+                launchedIntents[0].getBooleanExtra(
+                    CustomTabsIntent.EXTRA_ENABLE_EPHEMERAL_BROWSING,
+                    false,
+                )
+            )
+            assertEquals(configuredBrowser, launchedIntents[1].`package`)
+            assertFalse(
+                launchedIntents[1].getBooleanExtra(
+                    CustomTabsIntent.EXTRA_ENABLE_EPHEMERAL_BROWSING,
+                    false,
+                )
+            )
+        } finally {
+            sdkManager.forceAdvancedAuthentication = originalForceAdvancedAuth
+            sdkManager.customTabBrowser = originalCustomTabBrowser
+            sdkManager.useEphemeralSessionForAdvancedAuth = originalUseEphemeralSession
+            originalFeatureState.forEach { (feature, wasRegistered) ->
+                if (wasRegistered) {
+                    sdkManager.registerUsedAppFeature(feature)
+                } else {
+                    sdkManager.unregisterUsedAppFeature(feature)
+                }
             }
         }
     }

@@ -534,6 +534,15 @@ open class SalesforceSDKManager protected constructor(
     @set:Synchronized
     var customTabBrowser: String? = "com.android.chrome"
 
+    /**
+     * Whether advanced authentication requests an ephemeral Custom Tab. A browser that does not
+     * support ephemeral browsing may use a regular Custom Tab instead. Defaults to true.
+     */
+    @get:JvmName("shouldUseEphemeralSessionForAdvancedAuth")
+    @set:Synchronized
+    @Volatile
+    var useEphemeralSessionForAdvancedAuth = true
+
     // Backing field for [useWebServerAuthentication].  The SDK reads this directly so its own
     // internal use of the flag doesn't trigger the deprecation warning on the public property.
     @Volatile
@@ -1980,6 +1989,7 @@ open class SalesforceSDKManager protected constructor(
                 "Use Web Server Authentication" to "$_useWebServerAuthentication",
                 "Use Hybrid Authentication Token" to "$useHybridAuthentication",
                 "Force Advanced Authentication" to "$_forceAdvancedAuthentication",
+                "Use Ephemeral Session for Advanced Authentication" to "$useEphemeralSessionForAdvancedAuth",
                 "My Domain Browser Login Enabled" to "$isBrowserLoginEnabled",
                 "IDP Enabled" to "$isIDPLoginFlowEnabled",
                 "Identity Provider" to "$isIdentityProvider",

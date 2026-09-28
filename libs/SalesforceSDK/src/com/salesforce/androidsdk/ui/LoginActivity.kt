@@ -37,7 +37,6 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
 import android.app.AlertDialog
 import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_FACE
 import android.content.pm.PackageManager.FEATURE_IRIS
 import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
@@ -97,6 +96,7 @@ import androidx.biometric.BiometricPrompt.AuthenticationCallback
 import androidx.biometric.BiometricPrompt.AuthenticationResult
 import androidx.biometric.BiometricPrompt.PromptInfo
 import androidx.browser.customtabs.CustomTabColorSchemeParams
+import androidx.browser.customtabs.CustomTabsClient
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsIntent.OPEN_IN_BROWSER_STATE_OFF
 import androidx.browser.customtabs.ExperimentalInitialNavigationCanLeaveBrowser
@@ -1139,10 +1139,18 @@ open class LoginActivity : FragmentActivity() {
 
     @OptIn(ExperimentalInitialNavigationCanLeaveBrowser::class)
     @VisibleForTesting
-    internal fun loadLoginPageInCustomTab(loginUrl: String, customTabLauncher: ActivityResultLauncher<Intent>) {
+    internal fun loadLoginPageInCustomTab(
+        loginUrl: String,
+        customTabLauncher: ActivityResultLauncher<Intent>,
+        callbackSchemeRegistered: (String) -> Boolean = ::isCallbackSchemeRegistered,
+    ) {
         completedViaBrowserTab = true
         registerAuthTypeFeatureGlobal()
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_BROWSER_LOGIN)
+        val sdkManager = SalesforceSDKManager.getInstance()
+        sdkManager.registerUsedAppFeature(FEATURE_BROWSER_LOGIN)
+
+        val customTabBrowser = sdkManager.customTabBrowser
+        val customTabBrowserExists = doesBrowserExist(customTabBrowser)
         val customTabsIntent = CustomTabsIntent.Builder().apply {
             /*
              * Set a custom animation to slide in and out for Chrome custom tab
@@ -1169,6 +1177,10 @@ open class LoginActivity : FragmentActivity() {
             setOpenInBrowserButtonState(OPEN_IN_BROWSER_STATE_OFF)
             setInstantAppsEnabled(false)
             setBackgroundInteractionEnabled(false)
+            configureEphemeralBrowsing(
+                enabled = sdkManager.useEphemeralSessionForAdvancedAuth,
+                requestedBrowser = customTabBrowser.takeIf { customTabBrowserExists },
+            )
         }.build()
 
         /*
@@ -1178,14 +1190,13 @@ open class LoginActivity : FragmentActivity() {
          * - If getCustomTabBrowser() returns null
          * - Or if the specified browser is not installed
          */
-        val customTabBrowser = SalesforceSDKManager.getInstance().customTabBrowser
-        if (doesBrowserExist(customTabBrowser)) {
+        if (customTabBrowserExists) {
             customTabsIntent.intent.setPackage(customTabBrowser)
         }
 
         val urlString = buildCustomTabAuthorizeUrl(loginUrl, completedViaAdminCustomTab)
 
-        if (!isCallbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
+        if (!callbackSchemeRegistered(viewModel.oAuthConfig.redirectUri)) {
             val scheme = viewModel.oAuthConfig.redirectUri.toUri().scheme
                 ?: viewModel.oAuthConfig.redirectUri
             e(TAG, "Advanced auth misconfiguration: redirect URI scheme '$scheme' has no " +
@@ -1211,6 +1222,25 @@ open class LoginActivity : FragmentActivity() {
             }
             clearWebView()
         }
+    }
+
+    @VisibleForTesting
+    internal fun CustomTabsIntent.Builder.configureEphemeralBrowsing(
+        enabled: Boolean,
+        requestedBrowser: String?,
+        isSupported: (Context, String) -> Boolean = CustomTabsClient::isEphemeralBrowsingSupported,
+    ) {
+        if (!enabled) return
+
+        val provider = requestedBrowser ?: CustomTabsClient.getPackageName(this@LoginActivity, null)
+        if (provider != null && !isSupported(this@LoginActivity, provider)) {
+            w(
+                TAG,
+                "Ephemeral browsing was requested, but Custom Tabs provider '$provider' does not " +
+                    "advertise support. The browser may use a regular session.",
+            )
+        }
+        setEphemeralBrowsingEnabled(true)
     }
 
     /**
