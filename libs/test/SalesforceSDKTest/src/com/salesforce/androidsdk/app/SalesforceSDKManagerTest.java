@@ -126,6 +126,26 @@ public class SalesforceSDKManagerTest {
     }
 
     /**
+     * Test the default and Java API for ephemeral advanced-auth sessions.
+     */
+    @Test
+    public void testUseEphemeralSessionForAdvancedAuthDefaultsToTrueAndCanBeUpdated() {
+        SalesforceSDKTestManager.resetInstance();
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(), MainActivity.class);
+        final SalesforceSDKManager sdkManager = SalesforceSDKTestManager.getInstance();
+
+        try {
+            Assert.assertTrue(sdkManager.shouldUseEphemeralSessionForAdvancedAuth());
+
+            sdkManager.setUseEphemeralSessionForAdvancedAuth(false);
+
+            Assert.assertFalse(sdkManager.shouldUseEphemeralSessionForAdvancedAuth());
+        } finally {
+            SalesforceSDKTestManager.resetInstance();
+        }
+    }
+
+    /**
      * Test setting dark theme.
      */
     @Test

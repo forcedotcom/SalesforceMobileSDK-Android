@@ -41,6 +41,8 @@ import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED
 import androidx.biometric.BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED
 import androidx.biometric.BiometricManager.BIOMETRIC_STATUS_UNKNOWN
+import androidx.browser.customtabs.CustomTabsClient
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.lifecycle.MediatorLiveData
@@ -50,6 +52,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager
 import com.salesforce.androidsdk.rest.ClientManager
 import com.salesforce.androidsdk.rest.RestClient
 import com.salesforce.androidsdk.rest.RestClient.OAuthRefreshInterceptor
+import com.salesforce.androidsdk.util.SalesforceSDKLogger
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.ABOUT_BLANK
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_FORCE_ADVANCED_AUTH
 import com.salesforce.androidsdk.ui.LoginActivity.Companion.AUTH_TRIGGER_LOGIN_FOR_ADMIN
@@ -70,6 +73,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -371,6 +375,120 @@ class LoginActivityTest {
 
     // endregion
 
+    // region Ephemeral Custom Tabs
+
+    @Test
+    fun configureEphemeralBrowsing_whenEnabledAndSupported_setsIntentExtra() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                requestedBrowser = "com.example.browser",
+                isSupported = { _, _ -> true },
+            )
+        }
+
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_whenDisabled_doesNotSetIntentExtra() {
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = false,
+                requestedBrowser = "com.example.browser",
+                isSupported = { _, _ -> error("Capability must not be checked when disabled") },
+            )
+        }
+
+        assertFalse(builder.build().isEphemeralBrowsingEnabled)
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_whenSupportIsNotAdvertised_warnsAndStillSetsIntentExtra() {
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+        val provider = "com.example.browser"
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                requestedBrowser = provider,
+                isSupported = { _, _ -> false },
+            )
+        }
+
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(
+                any(),
+                match { it.contains(provider) && it.contains("does not advertise support") },
+            )
+        }
+    }
+
+    @Test
+    fun configureEphemeralBrowsing_withoutRequestedBrowser_checksDefaultProvider() {
+        mockkStatic(CustomTabsClient::class)
+        mockkStatic(SalesforceSDKLogger::class)
+        every { SalesforceSDKLogger.w(any(), any()) } just Runs
+        val activity = mockk<LoginActivity>(relaxed = true)
+        every {
+            with(activity) {
+                any<CustomTabsIntent.Builder>().configureEphemeralBrowsing(any(), any(), any())
+            }
+        } answers { callOriginal() }
+        val builder = CustomTabsIntent.Builder()
+        val provider = "com.example.defaultbrowser"
+        every { CustomTabsClient.getPackageName(activity, null) } returns provider
+        var checkedProvider: String? = null
+
+        with(activity) {
+            builder.configureEphemeralBrowsing(
+                enabled = true,
+                requestedBrowser = null,
+                isSupported = { _, packageName ->
+                    checkedProvider = packageName
+                    false
+                },
+            )
+        }
+
+        assertEquals(provider, checkedProvider)
+        assertTrue(builder.build().isEphemeralBrowsingEnabled)
+        verify(exactly = 1) { CustomTabsClient.getPackageName(activity, null) }
+        verify(exactly = 1) {
+            SalesforceSDKLogger.w(
+                any(),
+                match { it.contains(provider) && it.contains("does not advertise support") },
+            )
+        }
+    }
+
+    // endregion
+
     // region Custom Tab toolbar color
 
     @Test
@@ -458,21 +576,35 @@ class LoginActivityTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun buildCustomTabAuthorizeUrl_withSharedBrowserSession_omitsPromptLogin() {
+    fun buildCustomTabAuthorizeUrl_promptLoginDependsOnlyOnSharedBrowserSession() {
         val loginUrl = "https://example.com/services/oauth2/authorize?client_id=abc"
         val sdkManager = mockk<SalesforceSDKManager>(relaxed = true)
         every { sdkManager.forceAdvancedAuthentication } returns false
         every { sdkManager.getUserAgent("") } returns "SalesforceMobileSDK/test"
         val activity = mockk<LoginActivity>(relaxed = true)
-        every { activity.sharedBrowserSession } returns true
         every {
             activity.buildCustomTabAuthorizeUrl(any(), any(), any())
         } answers { callOriginal() }
 
-        val result = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+        listOf(false, true).forEach { useEphemeralSession ->
+            every {
+                sdkManager.useEphemeralSessionForAdvancedAuth
+            } returns useEphemeralSession
 
-        assertFalse("prompt=login should be omitted for a shared browser session",
-            result.contains("prompt=login"))
+            every { activity.sharedBrowserSession } returns false
+            val isolatedResult = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+            assertTrue(
+                "prompt=login should be appended regardless of the ephemeral setting",
+                isolatedResult.contains("prompt=login"),
+            )
+
+            every { activity.sharedBrowserSession } returns true
+            val sharedResult = activity.buildCustomTabAuthorizeUrl(loginUrl, false, sdkManager)
+            assertFalse(
+                "prompt=login should be omitted regardless of the ephemeral setting",
+                sharedResult.contains("prompt=login"),
+            )
+        }
     }
 
     // endregion
