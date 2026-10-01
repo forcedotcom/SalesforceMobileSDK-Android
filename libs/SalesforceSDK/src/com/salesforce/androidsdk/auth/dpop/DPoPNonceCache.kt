@@ -35,28 +35,44 @@ import java.util.concurrent.ConcurrentHashMap
  * client must echo that value in the `nonce` claim of its next DPoP proof for the
  * same endpoint. This cache is keyed by `(credentialsIdentifier, host)` so that
  * the AS nonce (login host) and RS nonce (instance host) never overwrite each other.
- * This matches the per-host isolation used by the iOS implementation, while also
- * ensuring per-user isolation consistent with [DPoPKeyManager].
+ *
+ * Some resource servers (e.g. communities/Experience Cloud sites) never issue their
+ * own `DPoP-Nonce` challenge; they expect the client to carry forward whatever nonce
+ * was last issued for that credential, regardless of host. To support that, [get]
+ * falls back to the most recently stored nonce for [credentialsIdentifier] (any host)
+ * when there is no entry for the exact `(credentialsIdentifier, host)` pair. An exact
+ * host match always takes precedence over the fallback. This matches the credential-scoped
+ * fallback used by the iOS implementation (`DPoPNonceCache.swift`'s `nonce(htu:scope:) ??
+ * latest(forScope:)`), layered on top of Android's existing per-host isolation.
  */
 object DPoPNonceCache {
 
     private val cache = ConcurrentHashMap<String, String>()
+    private val latestByCredential = ConcurrentHashMap<String, String>()
 
     private fun cacheKey(credentialsIdentifier: String, host: String) =
         "$credentialsIdentifier|$host"
 
+    /**
+     * Returns the nonce cached for the exact `(credentialsIdentifier, host)` pair, or,
+     * if none was ever stored for that host, the most recently stored nonce for
+     * [credentialsIdentifier] on any host. Returns null if neither is available.
+     */
     fun get(credentialsIdentifier: String, host: String): String? =
-        cache[cacheKey(credentialsIdentifier, host)]
+        cache[cacheKey(credentialsIdentifier, host)] ?: latestByCredential[credentialsIdentifier]
 
     fun store(credentialsIdentifier: String, host: String, nonce: String) {
         cache[cacheKey(credentialsIdentifier, host)] = nonce
+        latestByCredential[credentialsIdentifier] = nonce
     }
 
     fun clear(credentialsIdentifier: String) {
         cache.keys.removeAll { it.startsWith("$credentialsIdentifier|") }
+        latestByCredential.remove(credentialsIdentifier)
     }
 
     fun clearAll() {
         cache.clear()
+        latestByCredential.clear()
     }
 }

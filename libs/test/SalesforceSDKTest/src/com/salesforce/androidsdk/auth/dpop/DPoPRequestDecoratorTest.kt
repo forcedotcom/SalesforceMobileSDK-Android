@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.auth.dpop
 
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.salesforce.androidsdk.accounts.UserAccount
 import com.salesforce.androidsdk.accounts.UserAccountBuilder
@@ -34,6 +35,7 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -286,6 +288,42 @@ class DPoPRequestDecoratorTest {
                 "test.salesforce.com",
             )
             assertNull(DPoPNonceCache.get(testScope, "test.salesforce.com"))
+        } finally {
+            DPoPNonceCache.clearAll()
+        }
+    }
+
+    private fun decodeJson(segment: String): JSONObject = JSONObject(
+        String(
+            Base64.decode(segment, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP),
+            Charsets.UTF_8,
+        ),
+    )
+
+    /*
+     * W-24342940: a community/Experience Cloud resource server never issues its own
+     * DPoP-Nonce challenge; it rejects a proof carrying no nonce. The client must reuse the
+     * nonce harvested from the /token host when attaching a proof for a different (resource)
+     * host under the same credential.
+     */
+    @Test
+    fun applyAuthHeaders_dpopAccount_nonceHarvestedOnDifferentHost_fallsBackToLatestNonce() {
+        DPoPNonceCache.clearAll()
+        try {
+            seedKeyPair(testScope)
+            DPoPNonceCache.store(testScope, "community.my.site.com", "token-host-nonce")
+
+            val builder = Request.Builder().url("https://community.my.salesforce.com/id/orgId/userId").get()
+            DPoPRequestDecorator.applyAuthHeaders(builder, userAccount(tokenType = "DPoP"))
+
+            val proof = builder.build().header(DPoPRequestDecorator.DPOP_HEADER)
+            assertNotNull("Expected a DPoP proof header", proof)
+            val payload = decodeJson(proof!!.split(".")[1])
+            assertEquals(
+                "Expected the /token-host nonce to be reused for the resource host",
+                "token-host-nonce",
+                payload.getString("nonce"),
+            )
         } finally {
             DPoPNonceCache.clearAll()
         }
