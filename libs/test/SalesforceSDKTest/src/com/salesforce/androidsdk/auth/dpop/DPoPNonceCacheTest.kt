@@ -91,11 +91,11 @@ class DPoPNonceCacheTest {
     }
 
     /*
-     * W-24342940: some resource servers (e.g. communities/Experience Cloud sites) never issue
-     * their own DPoP-Nonce challenge; they expect the client to carry forward the nonce most
-     * recently issued for that credential, regardless of host. When no nonce was ever stored
-     * for the exact (credentialsIdentifier, host) pair, get() must fall back to the most
-     * recently stored nonce for that credential on any host.
+     * W-24342940: Salesforce only issues DPoP-Nonce from the token endpoint; resource
+     * servers (identity, REST) never issue their own, so the client must carry forward
+     * the nonce most recently issued for that credential, regardless of host. When no
+     * nonce was ever stored for the exact (credentialsIdentifier, host) pair, get() must
+     * fall back to the most recently stored nonce for that credential on any host.
      */
     @Test
     fun test_givenNonceStoredForOtherHost_whenGetForUnseenHost_thenFallbackNonceReturned() {

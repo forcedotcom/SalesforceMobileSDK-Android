@@ -31,19 +31,21 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Thread-safe in-memory nonce cache for DPoP proof JWTs.
  *
- * RFC 9449 §8 allows the AS/RS to supply a `DPoP-Nonce` response header. The
- * client must echo that value in the `nonce` claim of its next DPoP proof for the
- * same endpoint. This cache is keyed by `(credentialsIdentifier, host)` so that
- * the AS nonce (login host) and RS nonce (instance host) never overwrite each other.
+ * RFC 9449 §8 allows a server to supply a `DPoP-Nonce` response header. Salesforce
+ * only ever issues nonces from the token endpoint — resource-server responses
+ * (identity, REST) never carry `DPoP-Nonce`, on success or on rejection. This cache
+ * is keyed by `(credentialsIdentifier, host)` so a per-host nonce, if a server ever
+ * does supply one, takes precedence.
  *
- * Some resource servers (e.g. communities/Experience Cloud sites) never issue their
- * own `DPoP-Nonce` challenge; they expect the client to carry forward whatever nonce
- * was last issued for that credential, regardless of host. To support that, [get]
- * falls back to the most recently stored nonce for [credentialsIdentifier] (any host)
- * when there is no entry for the exact `(credentialsIdentifier, host)` pair. An exact
- * host match always takes precedence over the fallback. This matches the credential-scoped
- * fallback used by the iOS implementation (`DPoPNonceCache.swift`'s `nonce(htu:scope:) ??
- * latest(forScope:)`), layered on top of Android's existing per-host isolation.
+ * Since resource servers don't issue their own nonce, [get] falls back to the most
+ * recently stored nonce for [credentialsIdentifier] (any host) when there is no entry
+ * for the exact `(credentialsIdentifier, host)` pair, so the client reuses the latest
+ * token-endpoint nonce on every DPoP call for that credential. An exact host match
+ * always takes precedence over the fallback. Logins where the token host differs from
+ * the resource hosts (e.g. communities, login.* pool servers) rely on this fallback.
+ * This matches the credential-scoped fallback used by the iOS implementation
+ * (`DPoPNonceCache.swift`'s `nonce(htu:scope:) ?? latest(forScope:)`), layered on top
+ * of Android's existing per-host isolation.
  */
 object DPoPNonceCache {
 
@@ -56,7 +58,8 @@ object DPoPNonceCache {
     /**
      * Returns the nonce cached for the exact `(credentialsIdentifier, host)` pair, or,
      * if none was ever stored for that host, the most recently stored nonce for
-     * [credentialsIdentifier] on any host. Returns null if neither is available.
+     * [credentialsIdentifier] on any host — i.e. the latest nonce issued at the token
+     * endpoint for this credential. Returns null if neither is available.
      */
     fun get(credentialsIdentifier: String, host: String): String? =
         cache[cacheKey(credentialsIdentifier, host)] ?: latestByCredential[credentialsIdentifier]
