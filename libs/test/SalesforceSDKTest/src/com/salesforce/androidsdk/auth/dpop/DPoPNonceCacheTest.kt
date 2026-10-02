@@ -91,8 +91,8 @@ class DPoPNonceCacheTest {
     }
 
     /*
-     * W-24342940: Salesforce only issues DPoP-Nonce from the token endpoint; resource
-     * servers (identity, REST) never issue their own, so the client must carry forward
+     * Salesforce issues DPoP-Nonce from the token endpoint; resource servers (identity,
+     * REST) are not expected to issue their own, so the client must carry forward
      * the nonce most recently issued for that credential, regardless of host. When no
      * nonce was ever stored for the exact (credentialsIdentifier, host) pair, get() must
      * fall back to the most recently stored nonce for that credential on any host.

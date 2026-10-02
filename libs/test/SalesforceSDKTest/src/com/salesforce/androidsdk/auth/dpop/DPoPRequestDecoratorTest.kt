@@ -301,8 +301,8 @@ class DPoPRequestDecoratorTest {
     )
 
     /*
-     * W-24342940: resource servers (identity, REST) never issue their own DPoP-Nonce
-     * challenge; they reject a proof carrying no nonce. The client must reuse the nonce
+     * Community logins: the token host differs from the resource hosts (identity, REST),
+     * which reject a proof carrying no nonce. The client must reuse the nonce
      * harvested from the /token host when attaching a proof for a different (resource)
      * host under the same credential.
      */

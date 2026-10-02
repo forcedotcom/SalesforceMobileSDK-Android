@@ -32,12 +32,13 @@ import java.util.concurrent.ConcurrentHashMap
  * Thread-safe in-memory nonce cache for DPoP proof JWTs.
  *
  * RFC 9449 §8 allows a server to supply a `DPoP-Nonce` response header. Salesforce
- * only ever issues nonces from the token endpoint — resource-server responses
- * (identity, REST) never carry `DPoP-Nonce`, on success or on rejection. This cache
- * is keyed by `(credentialsIdentifier, host)` so a per-host nonce, if a server ever
- * does supply one, takes precedence.
+ * issues nonces from the token endpoint; resource-server responses (identity, REST)
+ * are not expected to carry one, though the SDK still harvests a `DPoP-Nonce` from
+ * any response that does (e.g. the userinfo nonce-challenge retry in
+ * `AuthenticationUtilities`). This cache is keyed by `(credentialsIdentifier, host)`
+ * so a nonce supplied by a specific host takes precedence for that host.
  *
- * Since resource servers don't issue their own nonce, [get] falls back to the most
+ * Since resource servers aren't expected to issue their own nonce, [get] falls back to the most
  * recently stored nonce for [credentialsIdentifier] (any host) when there is no entry
  * for the exact `(credentialsIdentifier, host)` pair, so the client reuses the latest
  * token-endpoint nonce on every DPoP call for that credential. An exact host match
