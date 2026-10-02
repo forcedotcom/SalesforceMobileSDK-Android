@@ -472,14 +472,17 @@ class ChromeCustomTabPageObject(composeTestRule: ComposeTestRule): LoginPageObje
     private fun isLoginButtonVisible(): Boolean =
         device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID)).exists() ||
             device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
+                // textMatches regex with the (?i) flag instead of textContains, since UiSelector's
+                // textContains is case-sensitive and a community ECA's hosted login page is free to
+                // render the button as "Log in" rather than Chrome's own "Log In".
+                UiSelector().className("android.widget.Button").textMatches("(?i).*log in.*")
             ).exists()
 
     private fun findLoginButton(fallbackTimeoutMs: Long) =
         device.findObject(UiSelector().resourceId(LOGIN_BUTTON_ID))
             .takeIf { it.waitForExists(QUICK_CHECK_TIMEOUT_MS) }
             ?: device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
+                UiSelector().className("android.widget.Button").textMatches("(?i).*log in.*")
             ).takeIf { it.waitForExists(fallbackTimeoutMs) }
 
     /**

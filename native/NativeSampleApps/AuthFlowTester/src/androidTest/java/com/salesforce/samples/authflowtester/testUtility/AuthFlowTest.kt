@@ -48,6 +48,7 @@ import com.salesforce.samples.authflowtester.pageObjects.LoginOptionsPageObject
 import com.salesforce.samples.authflowtester.pageObjects.LoginPageObject
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.CA_OPAQUE
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.ADVANCED_AUTH
+import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.COMMUNITY_AUTH
 import com.salesforce.samples.authflowtester.testUtility.KnownLoginHostConfig.REGULAR_AUTH
 import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import org.junit.After
@@ -428,6 +429,9 @@ abstract class AuthFlowTest {
             useWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
             // Pool server (login.salesforce.com, login.*.salesforce.com) registers L1, not L4.
             useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
             else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
@@ -518,10 +522,12 @@ abstract class AuthFlowTest {
         restartApp()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
-        val expectedLMarker = if (usesWelcomeDiscovery) {
-            Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            usesWelcomeDiscovery -> Features.FEATURE_LOGIN_SERVER_WELCOME_DISCOVERY
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         val expectedAMarker = when {
             useWebServerFlow && useHybridAuthToken -> Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
@@ -940,10 +946,12 @@ abstract class AuthFlowTest {
         } else {
             null
         }
-        val expectedLMarker = if (useLoginPoolHost) {
-            Features.FEATURE_LOGIN_SERVER_PRODUCTION
-        } else {
-            Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
+        val expectedLMarker = when {
+            useLoginPoolHost -> Features.FEATURE_LOGIN_SERVER_PRODUCTION
+            // community_auth is a *.my.site.com Experience Cloud site, not a *.my.salesforce.com
+            // My Domain host, so the SDK classifies it L5 (Other) rather than L4 (My Domain).
+            knownLoginHostConfig == COMMUNITY_AUTH -> Features.FEATURE_LOGIN_SERVER_OTHER
+            else -> Features.FEATURE_LOGIN_SERVER_MY_DOMAIN
         }
         app.validateUserAgent(
             knownLoginHostConfig = knownLoginHostConfig,
@@ -970,7 +978,12 @@ abstract class AuthFlowTest {
         expectedAMarker: String? = Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
         isJwt: Boolean = false,
     ) {
-        app.switchToUser(knownUserConfig)
+        // Pass the host through: the username/displayName lookup used to find the picker row
+        // depends on which login host provisioned this user. Every existing caller logs both
+        // users in from REGULAR_AUTH (the default), where this is a no-op, but community-ECA
+        // multi-host scenarios pair a COMMUNITY_AUTH user with a REGULAR_AUTH one, so the
+        // argument must be forwarded or the picker lookup resolves the wrong account.
+        app.switchToUser(knownUserConfig, knownLoginHostConfig)
         composeTestRule.waitForIdle()
         val shouldHaveBW = expectAdvancedAuth || knownLoginHostConfig == ADVANCED_AUTH
         val expectedBMarker = if (shouldHaveBW) Features.FEATURE_BROWSER_LOGIN_FORCE_FLAG else null
