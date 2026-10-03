@@ -464,7 +464,7 @@ abstract class AuthFlowTest {
             expectedRtMarker = expectedRtMarker(username),
             assertUsername = assertUsername,
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, useHybridAuthToken = useHybridAuthToken, isDpop = useDPoP, knownLoginHostConfig = knownLoginHostConfig)
         app.validateApiRequest()
     }
 
@@ -799,7 +799,7 @@ abstract class AuthFlowTest {
             isBeacon = appConfig.isBeacon,
             expectedRtMarker = expectedRtMarker(username),
         )
-        app.validateOAuthValues(knownAppConfig, scopeSelection)
+        app.validateOAuthValues(knownAppConfig, scopeSelection, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert new tokens work. This revoke forces a normal refresh through the session refresher —
         // the one path that registers the sticky RT marker.
@@ -847,7 +847,7 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = true)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = true, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert the newly DPoP-bound tokens work. upgradeToDPoP delegates to the refresh-token
         // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
@@ -894,7 +894,7 @@ abstract class AuthFlowTest {
         )
 
         // The consumer key is unchanged — same app, only the DPoP binding changed.
-        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = false)
+        app.validateOAuthValues(knownAppConfig, scopeSelection = EMPTY, isDpop = false, knownLoginHostConfig = knownLoginHostConfig)
 
         // Assert the newly Bearer tokens work with no DPoP proof. downgradeFromDPoP delegates to
         // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is

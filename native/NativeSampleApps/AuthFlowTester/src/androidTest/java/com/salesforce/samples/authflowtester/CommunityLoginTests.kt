@@ -408,7 +408,7 @@ class CommunityLoginTests : AuthFlowTest() {
             isDpop = true,
             isJwt = true,
         )
-        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY)
+        app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY, knownLoginHostConfig = COMMUNITY_AUTH)
         assertRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,

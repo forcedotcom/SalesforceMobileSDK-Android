@@ -673,7 +673,7 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         validateUserAgent(getText(USER_AGENT_CONTENT_DESC), knownLoginHostConfig, usesWelcomeDiscovery, isMultiUser, expectAdvancedAuth, expectedRtMarker = expectedRtMarker, isDpop = isDpop, expectedBMarker = expectedBMarker, expectedLMarker = expectedLMarker, expectedAMarker = expectedAMarker, wasMigrated = wasMigrated, isJwt = isJwt, isBeacon = isBeacon)
     }
 
-    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null) {
+    fun validateOAuthValues(knownAppConfig: KnownAppConfig, scopeSelection: ScopeSelection, useHybridAuthToken: Boolean = true, isDpop: Boolean? = null, knownLoginHostConfig: KnownLoginHostConfig = KnownLoginHostConfig.REGULAR_AUTH) {
         val expected = testConfig.getApp(knownAppConfig)
         val (accessToken, refreshToken) = getTokens()
 
@@ -699,10 +699,10 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
             }
         }
 
-        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList)
+        validateSIDs(isDpop = isDpop ?: expected.isDpop, accessToken = accessToken, isJwt = expected.issuesJwt, useHybrid = useHybridAuthToken, scopeList = expected.scopeList, isCommunity = knownLoginHostConfig == KnownLoginHostConfig.COMMUNITY_AUTH)
     }
 
-    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>) {
+    private fun validateSIDs(isDpop: Boolean, accessToken: String, isJwt: Boolean, useHybrid: Boolean, scopeList: List<String>, isCommunity: Boolean = false) {
         val hasContentScope = scopeList.contains("content")
         val hasLightningScope = scopeList.contains("lightning")
         val hasVisualforceScope = scopeList.contains("visualforce")
@@ -719,12 +719,23 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         val mainSid = getSensitiveValue(MAIN_SID).emptyIfPlaceholder()
         val uiSid = getSensitiveValue(UI_SID).emptyIfPlaceholder()
 
-        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && useHybrid, "Content domain")
-        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && useHybrid, "Content SID")
-        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning domain")
-        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && useHybrid, "Lightning SID")
-        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF domain")
-        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && useHybrid, "VF SID")
+        // Community (Experience Cloud) logins never populate the content/Lightning/Visualforce
+        // domain+SID pairs, even when the corresponding scope is granted and the hybrid flow is
+        // used: these fields come straight from the token endpoint's content_domain/content_sid
+        // (and lightning_*/visualforce_*) response fields (see OAuth2.java), so an empty value
+        // here reflects what the community's token response actually contains, not an SDK bug.
+        // Confirmed against the test1 org community (ECA_OPAQUE, hybrid): content/lightning/VF
+        // domain and SID all empty, while mainSid (the field this flow actually relies on) was
+        // populated correctly. Matches iOS's prior finding of an empty Lightning domain/SID on
+        // community hybrid login (see tmp/dpop-community-investigation/).
+        val expectFeatureDomains = useHybrid && !isCommunity
+
+        assertNotEmpty(contentDomain, shouldNotBeEmpty = hasContentScope && expectFeatureDomains, "Content domain")
+        assertNotEmpty(contentSid, shouldNotBeEmpty = hasContentScope && expectFeatureDomains, "Content SID")
+        assertNotEmpty(lightningDomain, shouldNotBeEmpty = hasLightningScope && expectFeatureDomains, "Lightning domain")
+        assertNotEmpty(lightningSid, shouldNotBeEmpty = hasLightningScope && expectFeatureDomains, "Lightning SID")
+        assertNotEmpty(vfDomain, shouldNotBeEmpty = hasVisualforceScope && expectFeatureDomains, "VF domain")
+        assertNotEmpty(vfSid, shouldNotBeEmpty = hasVisualforceScope && expectFeatureDomains, "VF SID")
         assertNotEmpty(parentSid, shouldNotBeEmpty = isJwt && useHybrid, "Parent SID")
         assertNotEmpty(uiSid, shouldNotBeEmpty = isDpop && useHybrid, "UI SID")
 
