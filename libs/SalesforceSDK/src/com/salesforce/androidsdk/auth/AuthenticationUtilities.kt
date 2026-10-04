@@ -107,9 +107,6 @@ private const val TAG = "AuthenticationUtilities"
 private const val BAD_OAUTH_TOKEN = "Bad_OAuth_Token"
 private const val WRONG_ORG = "Wrong_Org"
 
-/** Safety cap on refresh-then-replay cycles for community users; iOS has no cap and needed up to 13. */
-internal const val MAX_COMMUNITY_IDENTITY_REFRESHES = 30
-
 @VisibleForTesting
 internal data class IdentityFetchResult(
     val identity: OAuth2.IdServiceResponse?,
@@ -528,34 +525,19 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
 }
 
 /**
- * Fetches user identity using the URL appropriate for the login server.
+ * Fetches user identity the same way iOS does: always from the raw [TokenEndpointResponse.idUrl]
+ * returned by the token endpoint, for every user and every attempt.
  *
- * Salesforce always puts the pool-server host in the `id` field of the token response
- * regardless of which server issued the token. [TokenEndpointResponse.idUrlWithInstance]
- * corrects this by substituting the issuing server's host, which is correct for My Domain
- * logins and for Bearer tokens on any server.
+ * The identity service can answer 401 or 403 (including `Wrong_Org` and `Bad_OAuth_Token`) for a
+ * valid token, for example when the id host is not the host that issued the token (pool server
+ * logins, community users) or right after login. Every 401 or 403 is therefore treated as
+ * refreshable: the credentials are refreshed, the complete refreshed state (including a rotated
+ * refresh token) is merged into [tokenResponse], and the request is replayed. This repeats with no
+ * cap, as on iOS, until the identity service accepts the token or a refresh fails. Any other error
+ * fails immediately, as does a 401 or 403 when there is no refresh token.
  *
- * Workaround for
- * [W-23992239](https://gus.my.salesforce.com/lightning/r/ADM_Work__c/a07EE00002imeECYAY/view):
- * for DPoP tokens issued by a pool server, [TokenEndpointResponse.idUrlWithInstance] points
- * to My Domain, which rejects pool-server-issued DPoP tokens with `Bad_OAuth_Token` — it
- * does not issue a nonce challenge the way data endpoints do. The raw
- * [TokenEndpointResponse.idUrl] (pool-server host) must be used for the initial request instead.
- * If that request requires a credential refresh, the refreshed token is issued by the instance
- * token endpoint, so the replay uses [TokenEndpointResponse.idUrlWithInstance].
- *
- * Community (Experience Cloud) users: the token response `id` host is the issuing login host and
- * the identity service rejects the instance-host substitution with `Wrong_Org`, so for these
- * users [TokenEndpointResponse.idUrl] is used for the initial request and every replay. Right after
- * login the identity service can keep answering 401 or `Wrong_Org` for a while, even for a valid
- * token; refreshing and replaying eventually succeeds (iOS needed up to 13 cycles). Community users
- * therefore loop refresh-then-replay, up to [MAX_COMMUNITY_IDENTITY_REFRESHES] refreshes as a safety
- * net (iOS is unbounded); if the cap is hit a warning is logged and the last error is thrown.
- *
- * Other users: identity 401 responses and the known `Bad_OAuth_Token`/`Wrong_Org` 403 responses
- * trigger one refresh against the instance token endpoint, then one replay. In all cases the
- * complete refreshed credential state (including a rotated refresh token) is applied before each
- * replay. Other 403 responses are surfaced without retry so authorization failures are not masked.
+ * One `IDENTITY_ATTEMPTS` info line is logged when the fetch finishes (see [logIdentityAttempts]),
+ * and one line per 401/403 received. Neither contains tokens or user data.
  */
 @VisibleForTesting
 internal suspend fun fetchUserIdentityWithRetry(
@@ -570,59 +552,83 @@ internal suspend fun fetchUserIdentityWithRetry(
         consumerKey: String,
     ) -> TokenEndpointResponse = ::refreshCredentialsForIdentity,
 ): IdentityFetchResult {
-    val isCommunityUser = !tokenResponse.communityId.isNullOrEmpty() &&
-        !tokenResponse.communityUrl.isNullOrEmpty()
-    val initialUrl = if (
-        isCommunityUser ||
-        ("DPoP".equals(tokenResponse.tokenType, ignoreCase = true) &&
-            LoginServerManager.isPoolServer(loginServer))
-    ) tokenResponse.idUrl else tokenResponse.idUrlWithInstance
-
-    try {
-        return IdentityFetchResult(identityFetcher(initialUrl, tokenResponse))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
-            w(TAG, "Cannot fetch user identity due to an error.", e)
-            throw e
-        }
-
-        val statusCode = (e as OAuth2.IdentityServiceException).httpStatusCode
-        i(TAG, "Identity request returned HTTP $statusCode; refreshing credentials.")
-    }
-
-    val maxRefreshes = if (isCommunityUser) MAX_COMMUNITY_IDENTITY_REFRESHES else 1
+    val startNanos = System.nanoTime()
+    var attempts = 0
+    var refreshes = 0
     var refreshTokenRotated = false
-    var refreshCount = 0
+
+    fun finish(status: String) = logIdentityAttempts(
+        tokenResponse, loginServer, attempts, refreshes, status,
+        (System.nanoTime() - startNanos) / 1_000_000,
+    )
+
     while (true) {
-        val previousRefreshToken = tokenResponse.refreshToken
-        val refreshedResponse = tokenRefresher(tokenResponse, loginServer, consumerKey)
-        refreshCount++
-        if (!refreshedResponse.refreshToken.isNullOrBlank() &&
-            refreshedResponse.refreshToken != previousRefreshToken
-        ) refreshTokenRotated = true
-        mergeRefreshedCredentials(tokenResponse, refreshedResponse)
         try {
+            attempts++
+            val identity = identityFetcher(tokenResponse.idUrl, tokenResponse)
+            finish("200")
             return IdentityFetchResult(
-                identity = identityFetcher(
-                    if (isCommunityUser) tokenResponse.idUrl else tokenResponse.idUrlWithInstance,
-                    tokenResponse,
-                ),
+                identity = identity,
                 refreshTokenRotationTime = if (refreshTokenRotated) Instant.now().toString() else null,
             )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            if (refreshCount >= maxRefreshes || !isRefreshableIdentityFailure(e)) {
-                if (refreshCount >= maxRefreshes && isRefreshableIdentityFailure(e)) {
-                    w(TAG, "Giving up on user identity after $refreshCount credential refreshes.")
-                }
-                w(TAG, "Cannot fetch user identity after refreshing credentials.", e)
+            val statusCode = (e as? OAuth2.IdentityServiceException)?.httpStatusCode
+            if (statusCode != null) {
+                i(TAG, "Identity request returned HTTP $statusCode errorCode=${identityErrorCode(e)}")
+            }
+            if (!isRefreshableIdentityFailure(e) || tokenResponse.refreshToken.isNullOrBlank()) {
+                w(TAG, "Cannot fetch user identity due to an error.", e)
+                finish(statusCode?.toString() ?: "error")
                 throw e
             }
-            i(TAG, "Identity request returned HTTP ${(e as OAuth2.IdentityServiceException).httpStatusCode}; refreshing credentials again.")
         }
+
+        try {
+            val previousRefreshToken = tokenResponse.refreshToken
+            val refreshedResponse = tokenRefresher(tokenResponse, loginServer, consumerKey)
+            refreshes++
+            if (!refreshedResponse.refreshToken.isNullOrBlank() &&
+                refreshedResponse.refreshToken != previousRefreshToken
+            ) refreshTokenRotated = true
+            mergeRefreshedCredentials(tokenResponse, refreshedResponse)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            w(TAG, "Cannot refresh credentials while fetching user identity.", e)
+            finish("refresh_failed")
+            throw e
+        }
+    }
+}
+
+/** Logs the greppable `IDENTITY_ATTEMPTS` summary line; it carries no tokens or user data. */
+private fun logIdentityAttempts(
+    tokenResponse: TokenEndpointResponse,
+    loginServer: String,
+    attempts: Int,
+    refreshes: Int,
+    status: String,
+    elapsedMs: Long,
+) {
+    val host = runCatching { URI(loginServer).host }.getOrNull() ?: "unknown"
+    i(
+        TAG,
+        "IDENTITY_ATTEMPTS attempts=$attempts refreshes=$refreshes status=$status " +
+            "elapsedMs=$elapsedMs " +
+            "dpop=${DPoPKeyManager.isDPoPTokenType(tokenResponse.tokenType)} " +
+            "community=${!tokenResponse.communityUrl.isNullOrEmpty()} " +
+            "pool=${LoginServerManager.isPoolServer(loginServer)} host=$host",
+    )
+}
+
+private fun identityErrorCode(error: OAuth2.IdentityServiceException): String {
+    val body = error.responseBody ?: return "none"
+    return when {
+        body.contains(WRONG_ORG, ignoreCase = true) -> WRONG_ORG
+        body.contains(BAD_OAUTH_TOKEN, ignoreCase = true) -> BAD_OAUTH_TOKEN
+        else -> "other"
     }
 }
 
@@ -663,15 +669,10 @@ private suspend fun refreshCredentialsForIdentity(
     )
 }
 
+/** iOS refreshes on every 401 or 403: the identity service answers 403 for expired sessions. */
 private fun isRefreshableIdentityFailure(error: Exception): Boolean {
-    val identityError = error as? OAuth2.IdentityServiceException ?: return false
-    if (identityError.httpStatusCode == HTTP_UNAUTHORIZED) return true
-    if (identityError.httpStatusCode != HTTP_FORBIDDEN) return false
-
-    return identityError.responseBody?.let { body ->
-        body.contains(BAD_OAUTH_TOKEN, ignoreCase = true) ||
-            body.contains(WRONG_ORG, ignoreCase = true)
-    } == true
+    val code = (error as? OAuth2.IdentityServiceException)?.httpStatusCode
+    return code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN
 }
 
 /**
