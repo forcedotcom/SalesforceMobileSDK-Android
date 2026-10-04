@@ -85,12 +85,15 @@ All DPoP tests live here — basic login, RTR, multi-user, migration, server enf
 | `testECAJwtDPoPRtr_AfterRestart_ManyRequestNonceRecoverySucceeds` | ECA JWT DPoP RTR | — | Cold nonce cache plus concurrent refresh; at most one nonce challenge/retry; key binding survives restart |
 
 #### CommunityLoginTests
-Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user.
+Tests for login against a community (Experience Cloud) login host, using the `community_auth` login host and the existing ECAs (no dedicated community app config — the community in the AuthFlowTester test org is set up so the existing apps' consumer keys/redirect URIs work unchanged for the community user; see `CommunityLoginTests`' class doc for the app chosen per scenario). Follows up on the DPoP + community investigation (W-24342940): community sites route through an Experience Cloud front door rather than a plain My Domain host, so these tests confirm the existing login/DPoP/multi-user/restart/migration helpers behave the same way against that front door as they do against `regular_auth`. `community_auth` requires a dedicated Experience Cloud site and is not provisioned in every environment — every test skips cleanly (`Assume.assumeTrue`) when the host is absent from `ui_test_config.json`. The `community_auth` login host provisions only one user, so cross-host multi-user coverage pairs it with a `regular_auth` DPoP user instead of a second `community_auth` user. Each refresh-based test also asserts that the stored community URL equals the configured `community_auth` URL (host and path) and that every `/services/oauth2/token` request goes to that community host and path, including after a restart.
 
 | Test | App Config | DPoP | Hybrid | Notes |
 |------|-----------|------|--------|-------|
 | `testCommunity_Hybrid` | ECA Opaque | No | Yes | Basic login; revoke+refresh works |
 | `testCommunity_NoHybrid` | ECA Opaque | No | No | |
+| `testCommunity_WithRestart` | ECA Opaque | No | Yes | Session survives a cold restart; revoke+refresh still targets the community |
+| `testCommunityJwt_Hybrid` | ECA JWT | No | Yes | JWT access token, Bearer; revoke+refresh works |
+| `testCommunityJwt_NoHybrid` | ECA JWT | No | No | |
 | `testCommunity_ViaAlternateAuthSurface_WebView` | ECA Opaque | No | Yes | Login via the in-app WebView instead of the default Chrome Custom Tab |
 | `testCommunityDPoP_Hybrid` | ECA JWT DPoP | Yes | Yes | |
 | `testCommunityDPoP_NoHybrid` | ECA JWT DPoP | Yes | No | |
@@ -99,7 +102,7 @@ Tests for login against a community (Experience Cloud) login host, using the `co
 | `testCommunityDPoP_WithRestart` | ECA JWT DPoP | Yes | Yes | DPoP EC key pair survives process restart (AndroidKeyStore) |
 | `testCommunityUpgradeToDPoP_InPlace` | ECA JWT | — | Yes | Bearer → DPoP in-place upgrade, same consumer key |
 | `testCommunityDowngradeFromDPoP_InPlace` | ECA JWT | — | Yes | DPoP → Bearer in-place downgrade, same consumer key |
-| `testCommunity_LogoutAndRelogin_DPoP` | ECA JWT DPoP | Yes | Yes | Full logout (not just revoke) followed by a fresh login; new tokens and new DPoP key pair |
+| `testCommunity_BearerLogoutThenReloginWithDPoP` | ECA JWT | — | Yes | Bearer login, full logout (not just revoke), then DPoP login; token type is DPoP and tokens and DPoP key pair are new |
 | `testCommunityDPoP_And_RegularAuthDPoP_MultiHost_UniqueTokensAndIsolatedNonces` | ECA JWT DPoP | Yes | Yes | Community user + `regular_auth` ECA JWT DPoP user; unique tokens/keys, independent revoke+refresh and nonce rotation per user/host |
 
 #### RTRLoginTests

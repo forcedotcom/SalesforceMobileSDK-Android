@@ -28,8 +28,10 @@ package com.salesforce.samples.authflowtester
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID
 import com.salesforce.androidsdk.app.Features.FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID
 import com.salesforce.androidsdk.app.SalesforceSDKManager
+import com.salesforce.androidsdk.auth.HttpAccess
 import com.salesforce.samples.authflowtester.testUtility.AuthFlowTest
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT
 import com.salesforce.samples.authflowtester.testUtility.KnownAppConfig.ECA_JWT_DPOP
@@ -42,10 +44,14 @@ import com.salesforce.samples.authflowtester.testUtility.ScopeSelection.EMPTY
 import com.salesforce.samples.authflowtester.testUtility.testConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CopyOnWriteArrayList
+import okhttp3.HttpUrl.Companion.toHttpUrl
 
 /**
  * Tests for login flows against a community (Experience Cloud) login host, using the
@@ -94,9 +100,8 @@ class CommunityLoginTests : AuthFlowTest() {
             knownLoginHostConfig = COMMUNITY_AUTH,
             knownUserConfig = KnownUserConfig.FIRST,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
-            knownLoginHostConfig = COMMUNITY_AUTH,
         )
     }
 
@@ -109,10 +114,37 @@ class CommunityLoginTests : AuthFlowTest() {
             knownUserConfig = KnownUserConfig.FIRST,
             useHybridAuthToken = false,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+        )
+    }
+
+    // Login to the community host with a JWT access token (ECA_JWT, Bearer, no DPoP) using the
+    // hybrid auth token flow; revoke+refresh works.
+    @Test
+    fun testCommunityJwt_Hybrid() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            knownUserConfig = KnownUserConfig.FIRST,
+        )
+        assertCommunityRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isJwt = true)
+    }
+
+    // Same as [testCommunityJwt_Hybrid] without the hybrid auth token.
+    @Test
+    fun testCommunityJwt_NoHybrid() {
+        loginAndValidate(
+            knownAppConfig = ECA_JWT,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            knownUserConfig = KnownUserConfig.FIRST,
+            useHybridAuthToken = false,
+        )
+        assertCommunityRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = false,
+            expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
+            isJwt = true,
         )
     }
 
@@ -128,9 +160,8 @@ class CommunityLoginTests : AuthFlowTest() {
             knownUserConfig = KnownUserConfig.FIRST,
             forceAdvancedAuthentication = false,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             expectAdvancedAuth = false,
         )
     }
@@ -149,10 +180,9 @@ class CommunityLoginTests : AuthFlowTest() {
             knownUserConfig = KnownUserConfig.FIRST,
             useDPoP = true,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             isJwt = true,
         )
     }
@@ -167,10 +197,9 @@ class CommunityLoginTests : AuthFlowTest() {
             useHybridAuthToken = false,
             useDPoP = true,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             expectedAMarker = FEATURE_AUTH_TYPE_WEB_SERVER_NON_HYBRID,
             isJwt = true,
         )
@@ -186,10 +215,9 @@ class CommunityLoginTests : AuthFlowTest() {
             useDPoP = true,
             forceAdvancedAuthentication = false,
         )
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             expectAdvancedAuth = false,
             isJwt = true,
         )
@@ -210,18 +238,16 @@ class CommunityLoginTests : AuthFlowTest() {
         )
         val keyThumbprintAfterLogin = app.getDpopInfo().keyThumbprint
 
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             isJwt = true,
         )
         assertEquals(keyThumbprintAfterLogin, app.getDpopInfo().keyThumbprint)
 
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = true,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             isJwt = true,
         )
         assertEquals(keyThumbprintAfterLogin, app.getDpopInfo().keyThumbprint)
@@ -230,6 +256,23 @@ class CommunityLoginTests : AuthFlowTest() {
     // endregion
 
     // region Restart Tests
+
+    // Login to the community host without DPoP (ECA_OPAQUE), restart the app, and confirm the
+    // session survives the restart and revoke+refresh still targets the community.
+    @Test
+    fun testCommunity_WithRestart() {
+        loginAndValidate(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            knownUserConfig = KnownUserConfig.FIRST,
+        )
+        restartAndValidateUser(
+            knownAppConfig = ECA_OPAQUE,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            knownUserConfig = KnownUserConfig.FIRST,
+        )
+        assertCommunityRevokeAndRefreshWorks(expectsRefreshTokenRotation = false)
+    }
 
     // Login to the community host with DPoP, restart the app, and confirm the DPoP key pair
     // (loaded from AndroidKeyStore, not regenerated) and the session both survive the restart.
@@ -251,10 +294,9 @@ class CommunityLoginTests : AuthFlowTest() {
         )
         assertEquals(keyThumbprintBeforeRestart, app.getDpopInfo().keyThumbprint)
 
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             isJwt = true,
         )
     }
@@ -304,17 +346,19 @@ class CommunityLoginTests : AuthFlowTest() {
 
     // region Logout Tests
 
-    // Full logout (not just revoke) followed by a fresh DPoP login: the account is fully removed,
-    // and the subsequent login establishes new tokens and a new DPoP key pair rather than reusing
-    // anything left over from the previous session.
+    // Full logout (not just revoke) of a Bearer session followed by a fresh DPoP login: the initial
+    // login is Bearer and the relogin is DPoP, so a stale token type retained across logout would
+    // fail the token type assertion. The account is fully removed, and the subsequent login
+    // establishes new tokens and a new DPoP key pair rather than reusing anything left over.
     @Test
-    fun testCommunity_LogoutAndRelogin_DPoP() {
+    fun testCommunity_BearerLogoutThenReloginWithDPoP() {
         loginAndValidate(
-            knownAppConfig = ECA_JWT_DPOP,
+            knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
             knownUserConfig = KnownUserConfig.FIRST,
-            useDPoP = true,
+            useDPoP = false,
         )
+        assertEquals("Bearer", app.getDpopInfo().tokenType)
         val (accessTokenBeforeLogout, refreshTokenBeforeLogout) = app.getTokens()
         val keyThumbprintBeforeLogout = app.getDpopInfo().keyThumbprint
 
@@ -331,18 +375,20 @@ class CommunityLoginTests : AuthFlowTest() {
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 0)
 
         loginAndValidate(
-            knownAppConfig = ECA_JWT_DPOP,
+            knownAppConfig = ECA_JWT,
             knownLoginHostConfig = COMMUNITY_AUTH,
             knownUserConfig = KnownUserConfig.FIRST,
             useDPoP = true,
         )
+        val dpopInfoAfterRelogin = app.getDpopInfo()
+        assertEquals("DPoP", dpopInfoAfterRelogin.tokenType)
         val (accessTokenAfterRelogin, refreshTokenAfterRelogin) = app.getTokens()
         assertNotEquals(accessTokenBeforeLogout, accessTokenAfterRelogin)
         assertNotEquals(refreshTokenBeforeLogout, refreshTokenAfterRelogin)
         assertNotEquals(
             "A fresh login after full logout should generate a new DPoP key pair, not reuse the old one",
             keyThumbprintBeforeLogout,
-            app.getDpopInfo().keyThumbprint,
+            dpopInfoAfterRelogin.keyThumbprint,
         )
     }
 
@@ -409,11 +455,10 @@ class CommunityLoginTests : AuthFlowTest() {
             isJwt = true,
         )
         app.validateOAuthValues(knownAppConfig = ECA_JWT_DPOP, scopeSelection = EMPTY, knownLoginHostConfig = COMMUNITY_AUTH)
-        assertRevokeAndRefreshWorks(
+        assertCommunityRevokeAndRefreshWorks(
             expectsRefreshTokenRotation = false,
             isDpop = true,
             isMultiUser = true,
-            knownLoginHostConfig = COMMUNITY_AUTH,
             isJwt = true,
         )
 
@@ -432,6 +477,94 @@ class CommunityLoginTests : AuthFlowTest() {
             isMultiUser = true,
             isJwt = true,
         )
+    }
+
+    // endregion
+
+    // region Community refresh endpoint helpers
+
+    /**
+     * Records every request URL sent through the SDK's shared [HttpAccess] so a test can observe
+     * where a refresh actually went. Wraps the client via `newBuilder()` so the connection pool and
+     * the SDK's network interceptors are preserved.
+     */
+    private class RecordingHttpAccess(
+        private val delegate: HttpAccess,
+        private val requestUrls: MutableList<String>,
+    ) : HttpAccess(null, delegate.userAgent) {
+        override fun getOkHttpClient() = delegate.okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                requestUrls.add(chain.request().url.toString())
+                chain.proceed(chain.request())
+            }
+            .build()
+
+        override fun hasNetwork() = delegate.hasNetwork()
+    }
+
+    private val requestUrls = CopyOnWriteArrayList<String>()
+    private var originalHttpAccess: HttpAccess? = null
+
+    @After
+    fun restoreHttpAccess() {
+        originalHttpAccess?.let { HttpAccess.DEFAULT = it }
+        originalHttpAccess = null
+    }
+
+    // Idempotent: a restart can replace HttpAccess.DEFAULT, so this is re-run before each refresh.
+    private fun recordHttpRequests() {
+        val current = HttpAccess.DEFAULT
+        if (current is RecordingHttpAccess) return
+        originalHttpAccess = current
+        HttpAccess.DEFAULT = RecordingHttpAccess(current, requestUrls)
+    }
+
+    /** Scheme + host + port + path of a URL, dropping any query, with no trailing slash. */
+    private fun urlWithoutQuery(url: String) =
+        url.toHttpUrl().newBuilder().query(null).build().toString().trimEnd('/')
+
+    /**
+     * [assertRevokeAndRefreshWorks] against the community host, additionally asserting that the
+     * stored community URL equals the configured community (host and path) and that the refresh
+     * request itself went to that community's token endpoint rather than the instance URL.
+     */
+    private fun assertCommunityRevokeAndRefreshWorks(
+        expectsRefreshTokenRotation: Boolean,
+        isDpop: Boolean = false,
+        expectAdvancedAuth: Boolean = true,
+        isMultiUser: Boolean = false,
+        expectedAMarker: String? = FEATURE_AUTH_TYPE_WEB_SERVER_HYBRID,
+        isJwt: Boolean = false,
+    ) {
+        val configuredCommunityUrl = urlWithoutQuery(testConfig.getLoginHost(COMMUNITY_AUTH).url)
+        val storedCommunityUrl = SalesforceSDKManager.getInstance().userAccountManager
+            .currentUser?.communityUrl
+        assertEquals(
+            "Stored community URL should equal the configured community (host and path)",
+            configuredCommunityUrl,
+            storedCommunityUrl?.let { urlWithoutQuery(it) },
+        )
+
+        recordHttpRequests()
+        requestUrls.clear()
+        assertRevokeAndRefreshWorks(
+            expectsRefreshTokenRotation = expectsRefreshTokenRotation,
+            isDpop = isDpop,
+            knownLoginHostConfig = COMMUNITY_AUTH,
+            expectAdvancedAuth = expectAdvancedAuth,
+            isMultiUser = isMultiUser,
+            expectedAMarker = expectedAMarker,
+            isJwt = isJwt,
+        )
+        val tokenRequests = requestUrls.filter { it.toHttpUrl().encodedPath.endsWith("/services/oauth2/token") }
+        assertTrue("Expected at least one token endpoint request during refresh", tokenRequests.isNotEmpty())
+        tokenRequests.forEach {
+            assertEquals(
+                "Refresh should go to the community token endpoint, not the instance URL",
+                "$configuredCommunityUrl/services/oauth2/token",
+                urlWithoutQuery(it),
+            )
+        }
     }
 
     // endregion

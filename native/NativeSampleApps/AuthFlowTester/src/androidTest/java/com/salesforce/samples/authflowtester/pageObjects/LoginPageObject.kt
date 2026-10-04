@@ -56,6 +56,20 @@ internal const val PASSWORD_ID = "password"
 internal const val LOGIN_BUTTON_ID = "Login"
 
 /**
+ * CSS selectors used in place of the fixed element IDs above on community login pages. Confirmed
+ * via a WebView DOM dump that the community page never renders
+ * `id="username"`/`id="password"`/`id="Login"` — it uses platform-generated numeric ids (e.g.
+ * `148:0`) instead, stable for the full page lifetime (no late render, no iframe). This mirrors
+ * iOS, which never looks up these fields by id either — [LoginPageObject.swift]'s
+ * `performLogin` locates them by XCUIElement type (`.textField`/`.secureTextField`). Matching that
+ * approach here with a type-based CSS selector, scoped to [KnownLoginHostConfig.COMMUNITY_AUTH]
+ * only, since the fixed ids are confirmed to still work for every other known host.
+ */
+private const val COMMUNITY_USERNAME_SELECTOR = "input[type='text']"
+private const val COMMUNITY_PASSWORD_SELECTOR = "input[type='password']"
+private const val COMMUNITY_LOGIN_BUTTON_SELECTOR = "button"
+
+/**
  * Interval between retries of the dev-support dialog tap in [LoginPageObject.openLoginOptions].
  * Short enough to re-issue a tap promptly once the dialog's fade-in animation completes.
  */
@@ -79,18 +93,74 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
     }
 
     open fun login(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        activeLoginHostConfig = knownLoginHostConfig
         val (username, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         waitForPageLoad()
         retryWebAction(timeoutMs = WEBVIEW_ACTION_TIMEOUT_MS) {
-            onWebView().withElement(findElement(Locator.ID, USERNAME_ID))
+            val (locator, value) = usernameLocator()
+            onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(username))
         }
-        tapLogin()
+        // The community host's single-page login form renders username + password together, so
+        // the password field is already present right after typing the username. A two-step form
+        // instead shows a username-only page and needs a Log In tap to advance to the password
+        // page. Tapping Log In on a combined page submits an empty password, which the server
+        // rejects and re-renders the form (confirmed via a DOM dump) —
+        // mirrors ChromeCustomTabPageObject.login's passwordAlreadyVisible check for the same page.
+        val passwordAlreadyVisible = isPasswordFieldVisible()
+        if (!passwordAlreadyVisible) {
+            tapLogin()
+        }
         setPassword(password)
         tapLogin()
         AuthorizationPageObject(composeTestRule).tapAllowAfterLogin(knownLoginHostConfig)
     }
+
+    /**
+     * Host config for the login currently in progress. Set by [login]/[welcomeLogin] and
+     * consulted by [setUsername]/[setPassword]/[tapLogin] to pick an element locator that matches
+     * the actual markup of that host's login page (see [COMMUNITY_USERNAME_SELECTOR] and friends).
+     * Left `null` (meaning: use the fixed element ids) when neither entry point has run yet.
+     */
+    private var activeLoginHostConfig: KnownLoginHostConfig? = null
+
+    private fun usernameLocator(): Pair<Locator, String> =
+        if (activeLoginHostConfig == KnownLoginHostConfig.COMMUNITY_AUTH) {
+            Locator.CSS_SELECTOR to COMMUNITY_USERNAME_SELECTOR
+        } else {
+            Locator.ID to USERNAME_ID
+        }
+
+    private fun passwordLocator(): Pair<Locator, String> =
+        if (activeLoginHostConfig == KnownLoginHostConfig.COMMUNITY_AUTH) {
+            Locator.CSS_SELECTOR to COMMUNITY_PASSWORD_SELECTOR
+        } else {
+            Locator.ID to PASSWORD_ID
+        }
+
+    private fun loginButtonLocator(): Pair<Locator, String> =
+        if (activeLoginHostConfig == KnownLoginHostConfig.COMMUNITY_AUTH) {
+            Locator.CSS_SELECTOR to COMMUNITY_LOGIN_BUTTON_SELECTOR
+        } else {
+            Locator.ID to LOGIN_BUTTON_ID
+        }
+
+    /**
+     * Single, non-retrying check for whether the password field is already present in the
+     * WebView DOM — i.e. the page is a combined single-page form rather than a two-step flow.
+     * `withElement(findElement(...))` throws synchronously when the element isn't found, so that
+     * is treated as "not visible yet" rather than retried; callers that need to wait for a step
+     * transition should poll separately.
+     */
+    private fun isPasswordFieldVisible(): Boolean =
+        try {
+            val (locator, value) = passwordLocator()
+            onWebView().withElement(findElement(locator, value))
+            true
+        } catch (_: Exception) {
+            false
+        }
 
     /**
      * Exits the login flow when the non-dismissable login-server picker (W-23731759) is in front.
@@ -211,6 +281,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
      * and submit.  Mirrors iOS performWelcomeLogin.
      */
     open fun welcomeLogin(knownLoginHostConfig: KnownLoginHostConfig, knownUserConfig: KnownUserConfig) {
+        activeLoginHostConfig = knownLoginHostConfig
         val (_, password) = testConfig.getUser(knownLoginHostConfig, knownUserConfig)
         tapLogin()
         setPassword(password)
@@ -361,7 +432,8 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     open fun setUsername(name: String) {
         retryWebAction {
-            onWebView().withElement(findElement(Locator.ID, USERNAME_ID))
+            val (locator, value) = usernameLocator()
+            onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(name))
         }
@@ -369,7 +441,8 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     open fun setPassword(password: String) {
         retryWebAction {
-            onWebView().withElement(findElement(Locator.ID, PASSWORD_ID))
+            val (locator, value) = passwordLocator()
+            onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(password))
         }
@@ -377,7 +450,8 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
 
     open fun tapLogin() {
         retryWebAction {
-            onWebView().withElement(findElement(Locator.ID, LOGIN_BUTTON_ID))
+            val (locator, value) = loginButtonLocator()
+            onWebView().withElement(findElement(locator, value))
                 .perform(webClick())
         }
     }
