@@ -141,11 +141,15 @@ internal class TokenMigrationActivity : ComponentActivity() {
         viewModel.dpopOverride =
             if (intent.hasExtra(EXTRA_USE_DPOP)) intent.getBooleanExtra(EXTRA_USE_DPOP, false) else null
 
+        // Community users authorize and exchange the code against the community URL (its path
+        // prefix is part of the authorize endpoint), not the instance host.
+        val migrationServer = user.communityUrl?.takeIf { it.isNotEmpty() } ?: user.instanceServer
+
         lifecycleScope.launch {
             val frontDoorUrl = withContext(IO) {
                 runCatching {
                     val authorizationPath = viewModel.generateMigrationAuthorizationPath(
-                        server = user.instanceServer,
+                        server = migrationServer,
                         migrationOAuthConfig = oAuthConfig,
                     )
                     val request = RestRequest.getRequestForSingleAccess(authorizationPath)
@@ -181,7 +185,7 @@ internal class TokenMigrationActivity : ComponentActivity() {
                     )
                 ) {
                     TokenMigrationView(
-                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, user.instanceServer) }
+                        webViewFactory = { buildAuthWebview(frontDoorUrl, resultCallback, migrationServer) }
                     )
                 }
             }
