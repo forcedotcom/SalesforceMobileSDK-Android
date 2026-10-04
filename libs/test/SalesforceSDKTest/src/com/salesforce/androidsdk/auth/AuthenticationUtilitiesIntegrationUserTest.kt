@@ -208,11 +208,22 @@ class AuthenticationUtilitiesIntegrationUserTest {
      * instance), the harvested nonce must be stored under the response's
      * host, not the pre-redirect request's host — otherwise a retry proof
      * built for the response's host never finds it.
+     *
+     * The pre-redirect host is pre-seeded with its own, distinct nonce so
+     * this is a real test of per-host storage rather than of
+     * [DPoPNonceCache.get]'s cross-host fallback (which would otherwise mask
+     * a regression here, since the fallback returns the credential's latest
+     * nonce for any host with no exact entry — including the pre-redirect
+     * host — and `instance-nonce` would satisfy both assertions below even
+     * if the harvest wrongly landed on the pre-redirect host). The exact
+     * `(credentialsIdentifier, "instance.test")` entry staying at the
+     * pre-seeded value proves the harvest never overwrote it.
      */
     @Test
     fun test_fetchIsSalesforceIntegrationUser_crossHostRedirect_harvestsNonceUnderResponseHost() {
         generateOrLoadKeyPair(alias)
         clear(credentialsIdentifier)
+        store(credentialsIdentifier, "instance.test", "pre-redirect-nonce")
         httpAccess.enqueueIntegrationUserSuccess(
             isIntegrationUser = false,
             headers = mapOf("DPoP-Nonce" to "instance-nonce"),
@@ -223,8 +234,9 @@ class AuthenticationUtilitiesIntegrationUserTest {
 
         fetchIsSalesforceIntegrationUser(tokenResponse, "https://login.salesforce.com")
 
-        assertNull(
-            "Nonce must not be stored under the pre-redirect request host",
+        assertEquals(
+            "Pre-redirect request host's own nonce must not be overwritten by the response host's harvest",
+            "pre-redirect-nonce",
             get(credentialsIdentifier, "instance.test")
         )
         assertEquals(
