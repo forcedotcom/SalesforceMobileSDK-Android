@@ -358,9 +358,8 @@ class CommunityLoginTests : AuthFlowTest() {
             knownUserConfig = KnownUserConfig.FIRST,
             useDPoP = false,
         )
-        assertEquals("Bearer", app.getDpopInfo().tokenType)
+        assertEquals("Bearer", app.getTokenType())
         val (accessTokenBeforeLogout, refreshTokenBeforeLogout) = app.getTokens()
-        val keyThumbprintBeforeLogout = app.getDpopInfo().keyThumbprint
 
         val sdkManager = SalesforceSDKManager.getInstance()
         val communityUsername = testConfig.getUser(COMMUNITY_AUTH, KnownUserConfig.FIRST).username
@@ -373,6 +372,8 @@ class CommunityLoginTests : AuthFlowTest() {
             showLoginPage = false,
         )
         waitForUserCount(sdkManager.userAccountManager, expectedCount = 0)
+        // With no users left the app has no login screen in front; cold start brings it back.
+        restartApp(waitForAuthenticatedApp = false)
 
         loginAndValidate(
             knownAppConfig = ECA_JWT,
@@ -385,11 +386,8 @@ class CommunityLoginTests : AuthFlowTest() {
         val (accessTokenAfterRelogin, refreshTokenAfterRelogin) = app.getTokens()
         assertNotEquals(accessTokenBeforeLogout, accessTokenAfterRelogin)
         assertNotEquals(refreshTokenBeforeLogout, refreshTokenAfterRelogin)
-        assertNotEquals(
-            "A fresh login after full logout should generate a new DPoP key pair, not reuse the old one",
-            keyThumbprintBeforeLogout,
-            dpopInfoAfterRelogin.keyThumbprint,
-        )
+        // The Bearer session had no DPoP key pair, so the relogin must have generated one.
+        assertTrue(dpopInfoAfterRelogin.keyThumbprint.isNotBlank())
     }
 
     /**

@@ -608,6 +608,12 @@ class AuthFlowTesterPageObject(composeTestRule: ComposeTestRule): BasePageObject
         )
     }
 
+    /** Token type only: unlike [getDpopInfo], this works for Bearer sessions, which have no DPoP nonce. */
+    fun getTokenType(): String {
+        expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
+        return getText(OAUTH_TOKEN_TYPE)
+    }
+
     fun getDpopInfo(): DpopInfo {
         expandUserCredentialsSection(targetNode = OAUTH_TOKEN_TYPE)
         return DpopInfo(

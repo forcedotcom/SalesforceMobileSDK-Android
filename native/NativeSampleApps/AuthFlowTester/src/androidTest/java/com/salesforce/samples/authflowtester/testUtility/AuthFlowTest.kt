@@ -853,7 +853,7 @@ abstract class AuthFlowTest {
         // migration path, so the "TM" (token-migration) UA feature flag is legitimately registered
         // and persists across subsequent refreshes — the marker tracks the migration mechanism, not
         // whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = true, knownLoginHostConfig = knownLoginHostConfig, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     /**
@@ -900,7 +900,7 @@ abstract class AuthFlowTest {
         // the refresh-token migration path, so the "TM" (token-migration) UA feature flag is
         // legitimately registered and persists across subsequent refreshes — the marker tracks the
         // migration mechanism, not whether the connected app changed. Assert its presence.
-        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, wasMigrated = true, isJwt = appConfig.issuesJwt)
+        assertRevokeAndRefreshWorks(expectsRefreshTokenRotation = false, isDpop = false, knownLoginHostConfig = knownLoginHostConfig, wasMigrated = true, isJwt = appConfig.issuesJwt)
     }
 
     fun assertRevokeAndRefreshWorks(

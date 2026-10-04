@@ -39,6 +39,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.web.model.Atoms
 import androidx.test.espresso.web.sugar.Web.onWebView
 import androidx.test.espresso.web.webdriver.DriverAtoms.clearElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
@@ -101,6 +102,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(username))
+            notifyValueChanged(locator, value)
         }
         // The community host's single-page login form renders username + password together, so
         // the password field is already present right after typing the username. A two-step form
@@ -436,6 +438,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(name))
+            notifyValueChanged(locator, value)
         }
     }
 
@@ -445,6 +448,7 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             onWebView().withElement(findElement(locator, value))
                 .perform(clearElement())
                 .perform(webKeys(password))
+            notifyValueChanged(locator, value)
         }
     }
 
@@ -454,6 +458,25 @@ open class LoginPageObject(composeTestRule: ComposeTestRule): BasePageObject(com
             onWebView().withElement(findElement(locator, value))
                 .perform(webClick())
         }
+    }
+
+    /**
+     * Fires the DOM events a framework-rendered form listens for. The community login page is an
+     * Aura component that only updates its model on `change`/`keyup`/`blur`; Espresso-Web's
+     * `webKeys` sets the value without those, so the page would report "Enter a value in the
+     * User Name field." on submit even though the fields look filled. Only the community page
+     * needs this, so other hosts are left untouched.
+     */
+    private fun notifyValueChanged(locator: Locator, value: String) {
+        if (activeLoginHostConfig != KnownLoginHostConfig.COMMUNITY_AUTH || locator != Locator.CSS_SELECTOR) return
+        onWebView().perform(
+            Atoms.script(
+                "var e = document.querySelector(\"$value\");" +
+                    "['input', 'keyup', 'change', 'blur'].forEach(function(t) {" +
+                    "e.dispatchEvent(new Event(t, {bubbles: true}));});" +
+                    "return true;"
+            )
+        )
     }
 
     /** Retries a WebView action until it succeeds or times out. */
