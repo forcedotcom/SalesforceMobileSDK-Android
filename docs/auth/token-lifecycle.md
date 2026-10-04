@@ -301,8 +301,8 @@ token endpoint, and the subsequent identity request is rebuilt with the refreshe
   `sfdc_community_url`): the raw token-response `id` URL is used for the first request and every
   replay. The instance-host substitution is rejected with 403 `Wrong_Org`. Right after login the
   identity service can keep answering 401 or `Wrong_Org` for a valid token, so the flow loops
-  refresh then replay until it succeeds, up to `MAX_COMMUNITY_IDENTITY_REFRESHES` (20) as a safety
-  net. iOS does the same with no cap (it needed up to 10 cycles in testing). If the cap is hit a
+  refresh then replay until it succeeds, up to `MAX_COMMUNITY_IDENTITY_REFRESHES` (30) as a safety
+  net. iOS does the same with no cap (it needed up to 13 cycles in testing). If the cap is hit a
   warning is logged and the last error is thrown.
 
 ### Read path (interceptor + OAuth2.java)

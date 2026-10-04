@@ -107,8 +107,8 @@ private const val TAG = "AuthenticationUtilities"
 private const val BAD_OAUTH_TOKEN = "Bad_OAuth_Token"
 private const val WRONG_ORG = "Wrong_Org"
 
-/** Safety cap on refresh-then-replay cycles for community users; iOS has no cap and needed up to 10. */
-internal const val MAX_COMMUNITY_IDENTITY_REFRESHES = 20
+/** Safety cap on refresh-then-replay cycles for community users; iOS has no cap and needed up to 13. */
+internal const val MAX_COMMUNITY_IDENTITY_REFRESHES = 30
 
 @VisibleForTesting
 internal data class IdentityFetchResult(
@@ -548,7 +548,7 @@ private fun logAddAccount(account: UserAccount?, loginServerManager: LoginServer
  * the identity service rejects the instance-host substitution with `Wrong_Org`, so for these
  * users [TokenEndpointResponse.idUrl] is used for the initial request and every replay. Right after
  * login the identity service can keep answering 401 or `Wrong_Org` for a while, even for a valid
- * token; refreshing and replaying eventually succeeds (iOS needed up to 10 cycles). Community users
+ * token; refreshing and replaying eventually succeeds (iOS needed up to 13 cycles). Community users
  * therefore loop refresh-then-replay, up to [MAX_COMMUNITY_IDENTITY_REFRESHES] refreshes as a safety
  * net (iOS is unbounded); if the cap is hit a warning is logged and the last error is thrown.
  *
