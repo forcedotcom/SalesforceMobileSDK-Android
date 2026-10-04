@@ -107,8 +107,9 @@ class DPoPNonceCacheTest {
 
     @Test
     fun test_givenExactHostMatch_whenFallbackAlsoAvailable_thenExactMatchTakesPrecedence() {
-        DPoPNonceCache.store(id, loginHost, "fallback-nonce")
+        // The exact-host nonce is written first so the most recent (fallback) nonce differs from it.
         DPoPNonceCache.store(id, instanceHost, "exact-nonce")
+        DPoPNonceCache.store(id, loginHost, "fallback-nonce")
         assertEquals("exact-nonce", DPoPNonceCache.get(id, instanceHost))
     }
 
