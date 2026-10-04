@@ -90,6 +90,46 @@ class DPoPNonceCacheTest {
         assertEquals("RS nonce must be retrievable by instance host", rsNonce, DPoPNonceCache.get(id, instanceHost))
     }
 
+    /*
+     * Salesforce issues DPoP-Nonce from the token endpoint; resource servers (identity,
+     * REST) are not expected to issue their own, so the client must carry forward
+     * the nonce most recently issued for that credential, regardless of host. When no
+     * nonce was ever stored for the exact (credentialsIdentifier, host) pair, get() must
+     * fall back to the most recently stored nonce for that credential on any host.
+     */
+    @Test
+    fun test_givenNonceStoredForOtherHost_whenGetForUnseenHost_thenFallbackNonceReturned() {
+        val tokenHost = "community.my.site.com"
+        val resourceHost = "community.my.salesforce.com"
+        DPoPNonceCache.store(id, tokenHost, "token-host-nonce")
+        assertEquals("token-host-nonce", DPoPNonceCache.get(id, resourceHost))
+    }
+
+    @Test
+    fun test_givenExactHostMatch_whenFallbackAlsoAvailable_thenExactMatchTakesPrecedence() {
+        DPoPNonceCache.store(id, loginHost, "fallback-nonce")
+        DPoPNonceCache.store(id, instanceHost, "exact-nonce")
+        assertEquals("exact-nonce", DPoPNonceCache.get(id, instanceHost))
+    }
+
+    @Test
+    fun test_givenFallbackNonceStored_whenClear_thenFallbackIsAlsoRemoved() {
+        DPoPNonceCache.store(id, loginHost, "token-host-nonce")
+        DPoPNonceCache.clear(id)
+        assertNull(DPoPNonceCache.get(id, "some.other.host.salesforce.com"))
+    }
+
+    @Test
+    fun test_givenTwoDifferentIdentifiers_whenOneHasFallbackOnly_thenOtherIdentifierDoesNotLeak() {
+        val id2 = "user2"
+        DPoPNonceCache.store(id, loginHost, "user1-nonce")
+        // id2 never stores anything, including for loginHost or any other host.
+        assertNull(DPoPNonceCache.get(id2, loginHost))
+        assertNull(DPoPNonceCache.get(id2, instanceHost))
+        // id's fallback must still resolve correctly for a host it never used directly.
+        assertEquals("user1-nonce", DPoPNonceCache.get(id, instanceHost))
+    }
+
     @Test
     fun test_givenConcurrentWrites_whenMultipleThreads_thenNoRace() {
         val threadCount = 20
